@@ -1,10 +1,10 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
-import { ShareService } from '../../core/share/share.service';
+import { SHARE_SOURCE, ShareService } from '../../core/share/share.service';
 import { environment } from '../../../environments/environment';
 
 /** L'adresse d'une playlist (`/runs/<code>`), celle que les amis ouvrent, marquée `utm_source=share` comme le partage du score. */
-export const playlistUrl = (code: string): string => `${environment.appUrl}/runs/${code}?utm_source=share`;
+export const playlistUrl = (code: string): string => `${environment.appUrl}/runs/${code}?utm_source=${SHARE_SOURCE}`;
 
 /**
  * Le partage d'une playlist : une phrase et son lien, par le menu de partage du téléphone ou sinon dans le presse-papier, et l'état du bouton (copié,

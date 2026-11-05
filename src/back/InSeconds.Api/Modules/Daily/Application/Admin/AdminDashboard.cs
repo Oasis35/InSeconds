@@ -26,13 +26,20 @@ public sealed record DayKpisResponse(
 /// <summary>Les joueurs arrivés par une source (<c>instagram</c>, <c>share</c>, <c>direct</c>, un domaine, <c>other</c>).</summary>
 public sealed record ArrivalResponse(string Source, int Count);
 
+/// <summary>Des partages du score faits, par format du texte (des totaux, jamais un joueur).</summary>
+public sealed record ShareCountsResponse(int Short, int Long);
+
+/// <summary>Les partages du score : le jour demandé, et les 30 derniers jours (aujourd'hui compris).</summary>
+public sealed record DashboardSharesResponse(ShareCountsResponse SelectedDay, ShareCountsResponse Last30Days);
+
 /// <param name="DailyActivity">Parties terminées par jour, les 30 derniers jours (aujourd'hui compris), les jours sans partie à 0.</param>
 /// <param name="AvailableDates">Les jours qui ont un défi, du plus récent au plus ancien.</param>
 /// <param name="SelectedDayKpis">Vide si le jour demandé n'a pas de défi.</param>
 /// <param name="Arrivals">Joueurs créés les 30 derniers jours (aujourd'hui compris), par source d'arrivée, la plus fréquente d'abord.</param>
+/// <param name="Shares">Partages du score faits, par format : le jour demandé (même sans défi) et les 30 derniers jours.</param>
 public sealed record DashboardResponse(
     IReadOnlyList<DailyActivityResponse> DailyActivity, PlayerBreakdownResponse PlayerBreakdown, IReadOnlyList<DateOnly> AvailableDates, DayKpisResponse? SelectedDayKpis,
-    IReadOnlyList<ArrivalResponse> Arrivals);
+    IReadOnlyList<ArrivalResponse> Arrivals, DashboardSharesResponse Shares);
 
 public static class GetDashboardEndpoint
 {
@@ -45,7 +52,7 @@ public static class GetDashboardEndpoint
 
     /// <summary>
     /// <c>GET /api/admin/daily/dashboard?date=aaaa-mm-jj</c> : l'activité des 30 derniers jours, les joueurs, les
-    /// jours qui ont un défi et les chiffres du jour demandé (aujourd'hui par défaut). Tout est lu en direct, jamais dans la photo figée : ce sont
+    /// jours qui ont un défi, les chiffres du jour demandé (aujourd'hui par défaut) et les partages du score par format. Tout est lu en direct, jamais dans la photo figée : ce sont
     /// des comptes, pas le détail d'un défi. Les joueurs effacés n'y figurent pas. Les sources d'arrivée (du jour demandé et des 30 derniers jours)
     /// sont des comptes par source, jamais un joueur.
     /// </summary>
@@ -83,11 +90,15 @@ public static class GetDashboardEndpoint
         }
 
         var arrivals = await players.CountArrivalsBySourceAsync(since, today, ct);
+        var shares = new DashboardSharesResponse(
+            ToResponse(await stats.GetShareCountsAsync(selected, selected, ct)), ToResponse(await stats.GetShareCountsAsync(since, today, ct)));
         return new DashboardResponse(
             activity,
             new PlayerBreakdownResponse(breakdown.Guests, breakdown.Registered, breakdown.ActiveLast7Days, breakdown.ActiveLast30Days),
-            dates, kpis, ToResponse(arrivals));
+            dates, kpis, ToResponse(arrivals), shares);
     }
+
+    private static ShareCountsResponse ToResponse(ShareCounts shares) => new(shares.Short, shares.Long);
 
     private static List<ArrivalResponse> ToResponse(IReadOnlyList<ArrivalCount> arrivals) =>
         arrivals.Select(a => new ArrivalResponse(a.Source, a.Count)).ToList();

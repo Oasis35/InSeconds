@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { ArrivalResponse, DailyActivityResponse, DailyClient, DashboardResponse, DayKpisResponse } from '../../api/daily/api.generated';
-import { ArrivalCount, Dashboard, DayActivity, DayKpis } from '../domain/dashboard';
+import { ArrivalResponse, DailyActivityResponse, DailyClient, DashboardResponse, DayKpisResponse, ShareCountsResponse } from '../../api/daily/api.generated';
+import { ArrivalCount, Dashboard, DayActivity, DayKpis, ShareCounts } from '../domain/dashboard';
 
 /**
  * Adaptateur du tableau de bord de l'admin (module Daily) : seule porte d'entrée vers le client
@@ -29,7 +29,12 @@ function toDashboard(response: DashboardResponse): Dashboard {
     availableDays: response.availableDates.map(toDay),
     kpis: response.selectedDayKpis ? toKpis(response.selectedDayKpis) : null,
     arrivals: response.arrivals.map(toArrival),
+    shares: { selectedDay: toShares(response.shares.selectedDay), last30Days: toShares(response.shares.last30Days) },
   };
+}
+
+function toShares(shares: ShareCountsResponse): ShareCounts {
+  return { short: shares.short, long: shares.long };
 }
 
 function toActivity(item: DailyActivityResponse): DayActivity {

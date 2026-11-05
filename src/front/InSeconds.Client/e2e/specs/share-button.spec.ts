@@ -1,6 +1,33 @@
+import { Page } from '@playwright/test';
 import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
+import { shareTextProblems } from '../fixtures/share-text';
+
+/**
+ * Simule un téléphone : Chromium headless n'a pas `navigator.share` et son pointeur est fin. Comme Safari sur iPhone, le faux menu refuse
+ * (`NotAllowedError`) un appel qui ne part pas d'un geste du joueur : un `await` avant `navigator.share` le ferait échouer.
+ */
+async function simulatePhoneShareMenu(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const shared: ShareData[] = [];
+    (window as unknown as { __shared: ShareData[] }).__shared = shared;
+    Object.defineProperty(navigator, 'share', {
+      value: (data: ShareData) => {
+        if (!navigator.userActivation.isActive) return Promise.reject(new DOMException('Hors d un geste', 'NotAllowedError'));
+        shared.push(data);
+        return Promise.resolve();
+      },
+      configurable: true,
+    });
+    const realMatchMedia = window.matchMedia.bind(window);
+    window.matchMedia = (query: string) =>
+      query === '(pointer: coarse)' ? ({ ...realMatchMedia(query), matches: true, media: query } as MediaQueryList) : realMatchMedia(query);
+  });
+}
+
+const sharedTexts = (page: Page) => page.evaluate(() => (window as unknown as { __shared: ShareData[] }).__shared.map(d => d.text ?? ''));
+
 
 test.describe('Bouton partager', () => {
   test.beforeEach(async ({ api }) => {
@@ -11,19 +38,17 @@ test.describe('Bouton partager', () => {
     const game = new GamePage(page);
     await game.startWithFakeClock();
     await game.finishGame(new BlindRoundPage(page), 5);
+    // Le compteur de l'admin reçoit le partage.
+    const counted = page.waitForRequest(r => r.url().endsWith('/api/daily/shares') && r.method() === 'POST');
     await game.shareButton.click();
 
     // Le bouton passe en "Copié !"
     await expect(game.shareCopiedButton).toBeVisible();
+    await counted;
 
     const clipText = await page.evaluate(() => navigator.clipboard.readText());
-    // « InSeconds · 21/10 », une ligne d'un ✅/🔶/🅾️ par morceau, le score, le lien : ni 🎵, ni 🏆, ni palier écouté.
-    const lines = clipText.split('\n');
-    expect(lines[0]).toMatch(/^InSeconds · \d{2}\/\d{2}$/);
-    expect(lines[1]).toMatch(/^(✅|🔶|🅾️){5}$/u);
-    expect(lines[2]).toMatch(/^[\d\s\u202f]+ pts$/);
-    expect(lines[3]).toMatch(/^https?:\/\/[^/]+\/\?utm_source=share$/);
-    expect(clipText).not.toMatch(/🎵|🏆/u);
+    // « 2 410 pts · InSeconds 05/11 », une ligne par morceau (« ✅❌ 3 s »), le lien marqué utm_source=share.
+    expect(shareTextProblems(clipText, 5)).toEqual([]);
   });
 
   test('copie quand même si clipboard.writeText échoue (repli execCommand, #200)', async ({ page }) => {
@@ -44,8 +69,7 @@ test.describe('Bouton partager', () => {
 
     await expect(game.shareCopiedButton).toBeVisible();
     const copied = await page.evaluate(() => (window as unknown as { __realClipboard: Clipboard }).__realClipboard.readText());
-    expect(copied).toContain('InSeconds · ');
-    expect(copied).toMatch(/✅|🔶|🅾️/u);
+    expect(shareTextProblems(copied, 5)).toEqual([]);
   });
 
   test("affiche un message d'erreur si la copie presse-papier échoue", async ({ page }) => {
@@ -68,29 +92,15 @@ test.describe('Bouton partager', () => {
   });
 
   test("ouvre le menu de partage du téléphone sur écran tactile, sans rien copier", async ({ page }) => {
-    // Chromium headless n'a pas navigator.share et son pointeur est fin : on simule un téléphone qui en a un.
-    await page.addInitScript(() => {
-      const shared: ShareData[] = [];
-      (window as unknown as { __shared: ShareData[] }).__shared = shared;
-      Object.defineProperty(navigator, 'share', {
-        value: (data: ShareData) => { shared.push(data); return Promise.resolve(); },
-        configurable: true,
-      });
-      const realMatchMedia = window.matchMedia.bind(window);
-      window.matchMedia = (query: string) =>
-        query === '(pointer: coarse)' ? ({ ...realMatchMedia(query), matches: true, media: query } as MediaQueryList) : realMatchMedia(query);
-    });
+    await simulatePhoneShareMenu(page);
     const game = new GamePage(page);
     await game.startWithFakeClock();
     await game.finishGame(new BlindRoundPage(page), 5);
     await game.shareButton.click();
 
-    const shared = await page.evaluate(() => (window as unknown as { __shared: ShareData[] }).__shared);
+    const shared = await sharedTexts(page);
     expect(shared).toHaveLength(1);
-    const lines = (shared[0].text ?? '').split('\n');
-    expect(lines[0]).toMatch(/^InSeconds · \d{2}\/\d{2}$/);
-    expect(lines[1]).toMatch(/^(✅|🔶|🅾️){5}$/u);
-    expect(lines[3]).toMatch(/^https?:\/\/[^/]+\/\?utm_source=share$/);
+    expect(shareTextProblems(shared[0], 5)).toEqual([]);
     // Le menu du téléphone suffit : pas de « Copié ! ».
     await expect(game.shareCopiedButton).not.toBeVisible();
   });

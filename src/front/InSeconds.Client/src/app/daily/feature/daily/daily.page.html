@@ -74,6 +74,7 @@
             [countdown]="store.countdown()"
             [shareCopied]="shareCopied()"
             [shareFailed]="shareFailed()"
+            [canShare]="store.stats()?.yourScore != null"
             [lang]="language.current()"
             [streak]="store.pillStreak()"
             [linked]="store.linked()"

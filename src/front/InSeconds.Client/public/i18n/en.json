@@ -459,7 +459,15 @@
       "newcomer": "newcomer",
       "newcomers": "newcomers",
       "arrivalsTitle": "Where newcomers come from · 30 days",
-      "arrivalsCount": "new players"
+      "arrivalsCount": "new players",
+      "shares": {
+        "title": "Score shares",
+        "day": "This day",
+        "last30Days": "30 days",
+        "count": "Shares made",
+        "friends": "Friends who came by the link",
+        "note": "A share counts when the phone's share menu is confirmed or the text is copied. A friend who came through a Platines playlist link also counts under “Friends who came”."
+      }
     },
     "challenges": {
       "noChallengeThisMonth": "No challenge this month.",
@@ -671,8 +679,7 @@
       "button": "Share my score",
       "copied": "Copied!",
       "failed": "Couldn't copy to the clipboard.",
-      "title": "InSeconds · {{ date }}",
-      "score": "{{ score }} pts"
+      "header": "{{ score }} pts · InSeconds {{ date }}"
     },
     "done": {
       "artist": "Artist",

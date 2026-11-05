@@ -391,6 +391,29 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("InSeconds.Api.Modules.Daily.Domain.DailyShareCount", b =>
+                {
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<short>("Format")
+                        .HasColumnType("smallint")
+                        .HasColumnName("format");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("integer")
+                        .HasColumnName("count");
+
+                    b.HasKey("Date", "Format")
+                        .HasName("pk_share_counts");
+
+                    b.ToTable("share_counts", "daily", t =>
+                        {
+                            t.HasCheckConstraint("ck_share_counts_format", "format IN (1, 2)");
+                        });
+                });
+
             modelBuilder.Entity("InSeconds.Api.Modules.Daily.Domain.DailyStreak", b =>
                 {
                     b.Property<Guid>("PlayerId")

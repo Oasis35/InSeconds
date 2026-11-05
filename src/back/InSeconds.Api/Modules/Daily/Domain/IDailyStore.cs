@@ -73,4 +73,10 @@ public interface IDailyStore
     Task<DayStatsSnapshot?> FindDayStatsAsync(int challengeId, CancellationToken ct);
 
     void Add(DayStatsSnapshot snapshot);
+
+    /// <summary>
+    /// Compte un partage de ce format ce jour de jeu, en une seule requête (la ligne est créée au premier partage) : deux partages simultanés
+    /// s'ajoutent tous les deux, sans verrou ni lecture préalable.
+    /// </summary>
+    Task RecordShareAsync(DateOnly day, ShareFormat format, CancellationToken ct);
 }

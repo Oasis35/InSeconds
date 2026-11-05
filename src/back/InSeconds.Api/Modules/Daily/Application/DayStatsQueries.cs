@@ -16,6 +16,9 @@ public sealed record RecentChallenge(int Id, DateOnly Date, string? SnapshotJson
 /// <summary>Un défi et ses morceaux, pour l'historique de l'admin.</summary>
 public sealed record ChallengeListRow(int Id, DateOnly Date, IReadOnlyList<ChallengeTrackRef> Tracks);
 
+/// <summary>Des partages faits, par format du texte.</summary>
+public sealed record ShareCounts(int Short, int Long);
+
 /// <summary>Une partie d'un joueur, pour son historique dans l'admin.</summary>
 public sealed record PlayerHistoryRow(DateOnly Date, SessionStatus Status, int TotalScore, int FreezesUsed, bool FreezeEarned);
 
@@ -80,6 +83,9 @@ public interface IDailyStatsQueries
 
     /// <summary>Parties **terminées** par jour de défi, depuis <paramref name="since"/> (les jours sans partie sont absents).</summary>
     Task<IReadOnlyDictionary<DateOnly, int>> GetCompletedCountsByDayAsync(DateOnly since, CancellationToken ct);
+
+    /// <summary>Les partages faits du jour <paramref name="first"/> au jour <paramref name="last"/> compris, par format (des totaux, jamais un joueur).</summary>
+    Task<ShareCounts> GetShareCountsAsync(DateOnly first, DateOnly last, CancellationToken ct);
 
     /// <summary>Le meilleur score de ce joueur sur ses parties terminées, tous jours confondus ; vide sans partie terminée.</summary>
     Task<int?> GetBestScoreAsync(Guid playerId, CancellationToken ct);

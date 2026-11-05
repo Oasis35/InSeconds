@@ -103,6 +103,15 @@ public sealed class EfDailyStore(InSecondsDbContext db) : IDailyStore
 
     public void Add(DayStatsSnapshot snapshot) => db.Add(snapshot);
 
+    // Un upsert : l'incrément se fait dans la base, jamais une lecture suivie d'une écriture qui perdrait un partage simultané.
+    public Task RecordShareAsync(DateOnly day, ShareFormat format, CancellationToken ct) =>
+        db.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            INSERT INTO daily.share_counts (date, format, count) VALUES ({day}, {(short)format}, 1)
+            ON CONFLICT (date, format) DO UPDATE SET count = share_counts.count + 1
+            """,
+            ct);
+
     // Un verrou « de transaction » est relâché dès la fin d'une requête hors transaction : il ne protégerait rien.
     private void RequireTransaction(string what)
     {

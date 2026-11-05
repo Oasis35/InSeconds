@@ -20,6 +20,7 @@ import { DashboardArrivalsComponent } from '../../ui/dashboard/dashboard-arrival
 import { DashboardDayNavComponent } from '../../ui/dashboard/dashboard-day-nav/dashboard-day-nav.component';
 import { DashboardKpisComponent } from '../../ui/dashboard/dashboard-kpis/dashboard-kpis.component';
 import { DashboardPlayersComponent } from '../../ui/dashboard/dashboard-players/dashboard-players.component';
+import { DashboardSharesComponent } from '../../ui/dashboard/dashboard-shares/dashboard-shares.component';
 import { TrackChartDialog } from '../challenges/track-chart/track-chart.dialog';
 
 const CHART_DIALOG_MAX_WIDTH = '22.5rem';
@@ -31,6 +32,7 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
  * - Le détail du défi du jour, rangé comme dans l'onglet Défis : sur PC, une colonne à droite (la répartition des scores, les joueurs
  *   du jour, puis les morceaux du jour, repliés) ; sur téléphone, dans la carte (les joueurs, puis les morceaux, repliés ; pas de
  *   répartition).
+ * - Sous la carte, « Partages du score » : partages courts et détaillés, et amis venus par chaque lien, le jour affiché et sur 30 jours.
  * - L'activité des 30 derniers jours (un clic sur une barre change de jour), puis les totaux des joueurs, en une ligne.
  * Le jour affiché vit dans l'adresse (`?jour=2026-11-03`, absent pour aujourd'hui) : un F5 rouvre le même jour.
  */
@@ -38,7 +40,7 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
   selector: 'app-admin-dashboard-page',
   imports: [
     NgTemplateOutlet, TranslatePipe, ErrorMessageComponent, DashboardDayNavComponent, DashboardKpisComponent, DashboardActivityComponent, DashboardArrivalsComponent,
-    DashboardPlayersComponent, ChallengePlayerChipsComponent, ChallengeScoreChartComponent, ChallengeTrackStatsComponent,
+    DashboardPlayersComponent, DashboardSharesComponent, ChallengePlayerChipsComponent, ChallengeScoreChartComponent, ChallengeTrackStatsComponent,
   ],
   providers: [DashboardStore, ChallengesStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -93,6 +95,8 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
               }
             }
           </div>
+
+          <app-dashboard-shares [shares]="dashboard.shares" [dayArrivals]="dashboard.kpis?.arrivals ?? []" [arrivals]="dashboard.arrivals" />
 
           <app-dashboard-activity
             [activity]="dashboard.activity" [selectedDay]="store.selectedDay()" [total]="store.totalPlayers()"
