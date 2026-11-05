@@ -16,13 +16,14 @@ public class RunCardTests
     private static readonly RoundOutcome Found = new(true, true, 10m, 0);
     private static readonly RoundOutcome Missed = new(false, false, 10m, 0);
     private static readonly RunCardDealer Dealer = new(new FisherYatesShuffle());
+    private static readonly int[] AllRounds = [1, 2, 3, 4];
 
     /// <summary>Des règles par défaut dont les cartes sont tirées dans <paramref name="pool"/>, avec 2 morceaux de réserve par manche.</summary>
     private static RunChallenge Challenge(params RunCard[] pool)
     {
         var options = new RunsOptions { Cards = pool.Length == 0 ? null : [.. pool.Select(RunCards.KeyOf)] };
         var rules = options.ToRules();
-        rules = rules with { Cards = Dealer.Deal(rules.Cards!, rules, seed: 11) };
+        rules = rules with { Cards = Dealer.Deal(rules.Cards!, rules, seed: 11, AllRounds) };
         var tracks = Enumerable.Range(1, rules.TrackCount)
             .Select(id => new PlannedTrack(id, (id - 1) / rules.TracksPerRound + 1, rules.MultiplierOf((id - 1) / rules.TracksPerRound + 1)))
             .ToList();
@@ -46,15 +47,28 @@ public class RunCardTests
     {
         var rules = new RunsOptions().ToRules();
 
-        var dealt = Dealer.Deal(rules.Cards!, rules, seed: 42);
+        var dealt = Dealer.Deal(rules.Cards!, rules, seed: 42, AllRounds);
 
         Assert.NotNull(dealt.StartCard);
         Assert.Equal([1, 2, 3], dealt.Offers.Select(o => o.AfterRound));
         Assert.All(dealt.Offers, o => Assert.Equal(3, o.Cards.Distinct().Count()));
-        var again = Dealer.Deal(rules.Cards!, rules, seed: 42);
+        var again = Dealer.Deal(rules.Cards!, rules, seed: 42, AllRounds);
         Assert.Equal(dealt.StartCard, again.StartCard);
         Assert.Equal(dealt.Offers.Select(o => o.Cards), again.Offers.Select(o => o.Cards));
         Assert.Equal((2, 20m, 30, 20), (dealt.HandSize, dealt.ExtendListenSeconds, dealt.HourglassSeconds, dealt.LowerTargetPercent));
+    }
+
+    [Fact]
+    public void LeJoker_SeulementPourUneMancheQuiADeLaReserve()
+    {
+        var rules = new RunsOptions { Cards = ["joker", "year"] }.ToRules();
+
+        // Une tranche trop petite n'a rien donné en réserve aux manches 1 et 3.
+        var partial = Dealer.Deal(rules.Cards!, rules, seed: 3, [2, 4]);
+
+        Assert.Equal(RunCard.Year, partial.StartCard);
+        Assert.Equal([[RunCard.Joker, RunCard.Year], [RunCard.Year], [RunCard.Joker, RunCard.Year]],
+            partial.Offers.Select(o => o.Cards.Order().ToList()));
     }
 
     [Fact]
@@ -62,15 +76,16 @@ public class RunCardTests
     {
         var rules = new RunsOptions { ReservePerRound = 0, Cards = ["joker", "year"] }.ToRules();
 
-        var dealt = Dealer.Deal(rules.Cards!, rules, seed: 3);
+        var dealt = Dealer.Deal(rules.Cards!, rules, seed: 3, []);
 
         Assert.Equal(RunCard.Year, dealt.StartCard);
         Assert.All(dealt.Offers, o => Assert.Equal([RunCard.Year], o.Cards));
     }
 
     [Fact]
-    public void SansCarte_NiCarteDeDepartNiOffre()
+    public void CartesCoupees_NiCarteDeDepartNiOffre()
     {
+        Assert.Null(new RunsOptions { CardsEnabled = false }.ToRules().Cards);
         var rules = new RunsOptions { Cards = [] }.ToRules();
 
         Assert.Null(rules.Cards);
@@ -100,7 +115,7 @@ public class RunCardTests
         Assert.Equal(1, offer.AfterRound);
         Assert.Equal(3, offer.Cards.Count);
 
-        session.TakeCard(challenge, offer.Cards[0], dropSlot: null, Now);
+        session.TakeCard(challenge, 1, offer.Cards[0], dropSlot: null, Now);
         Assert.Equal(2, session.Hand.Count);
         Assert.Null(session.OpenOffer(challenge));
 
@@ -115,13 +130,13 @@ public class RunCardTests
     {
         var challenge = Challenge(RunCard.Year, RunCard.Net, RunCard.Extend);
         var session = InRoundTwo(challenge);
-        session.TakeCard(challenge, session.OpenOffer(challenge)!.Cards[0], null, Now);
+        session.TakeCard(challenge, 1, session.OpenOffer(challenge)!.Cards[0], null, Now);
         for (var i = 0; i < 5; i++)
             session.Answer(challenge, Found, Scoring, Now);
         var offer = session.OpenOffer(challenge)!;
 
-        Assert.Throws<InvalidOperationException>(() => session.TakeCard(challenge, offer.Cards[1], dropSlot: null, Now));
-        session.TakeCard(challenge, offer.Cards[1], dropSlot: 1, Now);
+        Assert.Throws<InvalidOperationException>(() => session.TakeCard(challenge, 2, offer.Cards[1], dropSlot: null, Now));
+        session.TakeCard(challenge, 2, offer.Cards[1], dropSlot: 1, Now);
 
         Assert.Equal([2, 3], session.Hand.Select(c => (int)c.Slot));
         Assert.NotNull(session.Cards.Single(c => c.Slot == 1).DroppedAt);
@@ -136,7 +151,7 @@ public class RunCardTests
         session.DropCard(1, Now);
 
         Assert.Empty(session.Hand);
-        Assert.Equal(RunCardRefusal.NotInHand, session.CanPlay(challenge, 1));
+        Assert.Equal(RunCardRefusal.NotInHand, session.CanPlay(challenge, 1, Now));
         Assert.Throws<InvalidOperationException>(() => session.DropCard(1, Now));
     }
 
@@ -179,6 +194,93 @@ public class RunCardTests
 
         var answer = Assert.Single(session.Answers);
         Assert.Equal((50, false, false), (answer.Points, answer.ArtistCorrect, answer.TitleCorrect));
+    }
+
+    [Fact]
+    public void Filet_NePaiePasUneReponseEnRetard()
+    {
+        var challenge = Challenge(RunCard.Net);
+        var session = Start(challenge);
+        session.ServeCurrent(Now);
+        session.StartClock(Now);
+
+        session.PlayCard(challenge, 1, Now);
+        session.Answer(challenge, Missed, Scoring, Now.AddSeconds(60));
+
+        Assert.Equal(0, session.Answers[0].Points);
+    }
+
+    [Fact]
+    public void Sablier_NeRachetePasUnChronoEcoule()
+    {
+        var challenge = Challenge(RunCard.Hourglass);
+        var session = Start(challenge);
+        session.ServeCurrent(Now);
+        session.StartClock(Now);
+
+        Assert.Null(session.CanPlay(challenge, 1, Now.AddSeconds(30)));
+        Assert.Equal(RunCardRefusal.Unavailable, session.CanPlay(challenge, 1, Now.AddSeconds(46)));
+    }
+
+    [Fact]
+    public void Annee_SansAnneeConnue_NeSeGachePas()
+    {
+        var challenge = Challenge(RunCard.Year);
+        var session = Start(challenge);
+
+        Assert.Equal(RunCardRefusal.Unavailable, session.CanPlay(challenge, 1, Now, yearKnown: false));
+        Assert.Null(session.CanPlay(challenge, 1, Now));
+    }
+
+    [Fact]
+    public void TroisChoix_GardeSesLeurres()
+    {
+        var challenge = Challenge(RunCard.ThreeChoices);
+        var session = Start(challenge);
+
+        var card = session.PlayCard(challenge, 1, Now, decoys: [40, 41]);
+
+        Assert.Equal([40, 41], card.DecoyTrackIds!);
+    }
+
+    [Fact]
+    public void LesRefusDePrise_OffreFermeeMainPleineCarteAbsente()
+    {
+        var challenge = Challenge(RunCard.Year, RunCard.Net, RunCard.Extend);
+        var session = InRoundTwo(challenge);
+        var offer = session.OpenOffer(challenge)!;
+
+        Assert.Equal(RunCardRefusal.OfferClosed, session.CanTake(challenge, 2, offer.Cards[0], null));
+        Assert.Null(session.CanTake(challenge, 1, offer.Cards[0], null));
+        session.TakeCard(challenge, 1, offer.Cards[0], null, Now);
+        Assert.Equal(RunCardRefusal.OfferClosed, session.CanTake(challenge, 1, offer.Cards[1], null));
+        Assert.Equal(RunCardRefusal.NotInHand, session.CanDrop(9));
+    }
+
+    [Fact]
+    public void LOffre_SeFermeAuChoixDeLaDifficulte_OuQuandOnLaPasse()
+    {
+        var challenge = Challenge(RunCard.Year, RunCard.Net, RunCard.Extend);
+        var chosen = InRoundTwo(challenge);
+        chosen.ChooseDifficulty(challenge, 2, RunDifficulty.Safe, Now);
+        Assert.Null(chosen.OpenOffer(challenge));
+
+        var passed = InRoundTwo(challenge);
+        Assert.Equal(RunCardRefusal.OfferClosed, passed.CanPass(challenge, 2));
+        passed.PassOffer(challenge, 1);
+        Assert.Null(passed.OpenOffer(challenge));
+        Assert.Equal(RunCardRefusal.OfferClosed, passed.CanPass(challenge, 1));
+        Assert.True(passed.CanChooseDifficulty(challenge, 2));
+    }
+
+    [Fact]
+    public void TroisChoix_SansDeuxLeurres_NeSeJouePas()
+    {
+        var challenge = Challenge(RunCard.ThreeChoices);
+        var session = Start(challenge);
+
+        Assert.Equal(RunCardRefusal.Unavailable, session.CanPlay(challenge, 1, Now, choicesAvailable: false));
+        Assert.Throws<InvalidOperationException>(() => session.PlayCard(challenge, 1, Now, decoys: [40]));
     }
 
     [Fact]
@@ -232,7 +334,7 @@ public class RunCardTests
         var other = start == RunCard.Joker ? RunCard.Year : RunCard.Joker;
         for (var i = 0; i < 5; i++)
             session.Answer(challenge, Found, Scoring, Now);
-        session.TakeCard(challenge, other, null, Now);
+        session.TakeCard(challenge, 1, other, null, Now);
 
         var year = session.Hand.Single(c => c.Card == RunCard.Year).Slot;
         var joker = session.Hand.Single(c => c.Card == RunCard.Joker).Slot;
@@ -248,11 +350,11 @@ public class RunCardTests
     {
         var challenge = Challenge(RunCard.Year);
         var session = InRoundTwo(challenge);
-        session.TakeCard(challenge, RunCard.Year, null, Now);
+        session.TakeCard(challenge, 1, RunCard.Year, null, Now);
 
         session.PlayCard(challenge, 1, Now);
 
-        Assert.Equal(RunCardRefusal.AlreadyActive, session.CanPlay(challenge, 2));
+        Assert.Equal(RunCardRefusal.AlreadyActive, session.CanPlay(challenge, 2, Now));
         Assert.Throws<InvalidOperationException>(() => session.PlayCard(challenge, 2, Now));
     }
 
@@ -264,14 +366,14 @@ public class RunCardTests
         // La réserve de la manche 1 compte deux morceaux : le troisième Joker n'a plus rien à sortir.
         var noReserve = RunChallenge.Create(
             "K7Q2M9", 11, challenge.Rules, challenge.Tracks.Select(t => new PlannedTrack(t.TrackId, t.Round, t.Multiplier)).ToList(), null, Now);
-        Assert.Equal(RunCardRefusal.Unavailable, RunSession.Start(0, Guid.NewGuid(), Now, noReserve.Rules).CanPlay(noReserve, 1));
+        Assert.Equal(RunCardRefusal.Unavailable, RunSession.Start(0, Guid.NewGuid(), Now, noReserve.Rules).CanPlay(noReserve, 1, Now));
 
         var hourglass = Challenge(RunCard.Hourglass);
         var noClock = RunChallenge.Create(
             "K7Q2M9", 11, hourglass.Rules with { AnswerSeconds = 0 },
             hourglass.Tracks.Select(t => new PlannedTrack(t.TrackId, t.Round, t.Multiplier)).ToList(), null, Now);
-        Assert.Equal(RunCardRefusal.Unavailable, RunSession.Start(0, Guid.NewGuid(), Now, noClock.Rules).CanPlay(noClock, 1));
-        Assert.Null(session.CanPlay(challenge, 1));
+        Assert.Equal(RunCardRefusal.Unavailable, RunSession.Start(0, Guid.NewGuid(), Now, noClock.Rules).CanPlay(noClock, 1, Now));
+        Assert.Null(session.CanPlay(challenge, 1, Now));
     }
 
     [Fact]
@@ -279,7 +381,7 @@ public class RunCardTests
     {
         var challenge = Challenge(RunCard.Year, RunCard.Net, RunCard.Extend);
         var session = InRoundTwo(challenge);
-        session.TakeCard(challenge, session.OpenOffer(challenge)!.Cards[0], null, Now);
+        session.TakeCard(challenge, 1, session.OpenOffer(challenge)!.Cards[0], null, Now);
         Assert.True(session.CanChooseDifficulty(challenge, 2));
 
         session.PlayCard(challenge, session.Hand[0].Slot, Now);

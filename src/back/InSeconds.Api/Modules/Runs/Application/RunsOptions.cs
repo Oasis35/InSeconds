@@ -90,7 +90,10 @@ public sealed class RunsOptions
     /// <summary>Les morceaux de réserve tirés pour chaque manche (Joker).</summary>
     public int ReservePerRound { get; set; } = DefaultReservePerRound;
 
-    /// <summary>Les coups de pouce que les playlists peuvent offrir (noms d'API : <c>three_choices</c>, <c>joker</c>…) ; vide : aucune carte.</summary>
+    /// <summary>Les coups de pouce : faux, aucune carte dans les nouvelles playlists (une liste vide ne s'écrit pas dans les réglages).</summary>
+    public bool CardsEnabled { get; set; } = true;
+
+    /// <summary>Les coups de pouce que les playlists peuvent offrir (noms d'API : <c>three_choices</c>, <c>joker</c>…) ; sans valeur, tous.</summary>
     public string[]? Cards { get; set; }
 
     /// <summary>Les emplacements de la main.</summary>
@@ -120,7 +123,7 @@ public sealed class RunsOptions
         var roundRules = RunRoundPlan.Plan(Rounds, thresholds, EffectiveProfiles(), ListenSeconds, BossListenSeconds);
         var pool = EffectiveCards.Select(key => RunCards.Parse(key)!.Value).Distinct().Order().ToList();
         // Les offres et la carte de départ se tirent avec la playlist (RunCardDealer, graine de la playlist).
-        var cards = pool.Count == 0
+        var cards = !CardsEnabled || pool.Count == 0
             ? null
             : new RunCardRules(HandSize, null, [], ExtendListenSeconds, HourglassSeconds, LowerTargetPercent, pool);
         return new RunRules(

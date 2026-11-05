@@ -36,7 +36,7 @@ public sealed class RunPlayer(
     /// <summary>Les morceaux du défi de cette partie, réserve du Joker comprise (noms, pochette, identifiant Deezer), en une lecture.</summary>
     public async Task<LoadedRun> LoadAsync(RunSession session, RunChallenge challenge, CancellationToken ct) =>
         new(session, challenge, await directory.GetAsync(
-            challenge.Tracks.Select(t => t.TrackId).Concat(challenge.Reserve.Select(r => r.TrackId)).Distinct().ToList(), ct));
+            challenge.AllTrackIds().Concat(session.Cards.SelectMany(c => c.DecoyTrackIds ?? [])).Distinct().ToList(), ct));
 
     /// <summary>
     /// Fait avancer la partie jusqu'au morceau à jouer : <paramref name="answered"/> est ce que la réponse du joueur vient de faire (vide pour un
@@ -62,7 +62,7 @@ public sealed class RunPlayer(
             var track = run.TrackAt(session.NextPosition)!;
             // Une manche dont la difficulté reste à choisir : rien de son premier morceau ne part (ni extrait, ni neutralisation) avant le choix,
             // sinon le joueur miserait en connaissant le morceau. Le choix (POST …/difficulty) reprend ici.
-            if (session.CanChooseDifficulty(challenge, track.Round))
+            if (session.CanChooseDifficulty(challenge, track.Round) || session.OpenOffer(challenge) is not null)
                 break;
             var trackId = run.TrackIdAt(track.Position);
             var info = run.Tracks[trackId];
@@ -75,7 +75,7 @@ public sealed class RunPlayer(
                 string? waveform = null;
                 if (preview.Url is not null && (await waveforms.GetAsync([trackId], ct)).TryGetValue(trackId, out var shape))
                     waveform = Convert.ToBase64String(shape);
-                current = RunViews.Current(session, challenge, track, preview.Url, waveform) with { Effects = await EffectsAsync(run, track.Position, ct) };
+                current = RunViews.Current(session, challenge, track, preview.Url, waveform) with { Effects = Effects(run, track.Position) };
                 // Le chrono du morceau ne peut pas partir plus tard qu'un peu après ce premier envoi (une reprise ne le remet pas à zéro).
                 if (preview.Url is not null)
                     session.ServeCurrent(time.GetUtcNow());
@@ -121,11 +121,10 @@ public sealed class RunPlayer(
     }
 
     /// <summary>
-    /// Ce que les cartes actives sur le morceau de cette position révèlent ou changent, calculé à la demande et pour lui seul (piège 31) ; vide sans
-    /// carte. « Trois choix » : deux morceaux du catalogue hors de la playlist (ni joués, ni en réserve), tirés à la graine de la playlist et de la
-    /// position (les mêmes pour tous ses joueurs), d'un autre artiste que le bon, mêlés à la bonne réponse.
+    /// Ce que les cartes actives sur le morceau de cette position révèlent ou changent, pour lui seul (piège 31) ; vide sans carte. « Trois choix » :
+    /// la bonne réponse et les deux leurres figés quand la carte a été jouée, dans un ordre tiré à la graine de la playlist (le même à la reprise).
     /// </summary>
-    private async Task<RunTrackEffectsResponse?> EffectsAsync(LoadedRun run, int position, CancellationToken ct)
+    private RunTrackEffectsResponse? Effects(LoadedRun run, int position)
     {
         var active = run.Session.ActiveCardsAt(position);
         if (active.Count == 0)
@@ -133,39 +132,19 @@ public sealed class RunPlayer(
         var info = run.InfoAt(position);
         IReadOnlyList<RunChoiceResponse>? choices = null;
         if (active.Contains(RunCard.ThreeChoices))
-            choices = await ChoicesAsync(run, position, info, ct);
-        var initials = active.Contains(RunCard.Initials);
-        var bonus = active.Contains(RunCard.Hourglass) && run.Challenge.Rules.Cards is { } cards ? cards.HourglassSeconds : 0;
-        return new RunTrackEffectsResponse(
-            active.Select(RunCards.KeyOf).ToList(), active.Contains(RunCard.Year) ? info.ReleaseYear : null,
-            initials ? RunInitials.Of(info.Artist) : null, initials ? RunInitials.Of(info.DisplayTitle) : null, choices, bonus);
-    }
-
-    private async Task<IReadOnlyList<RunChoiceResponse>> ChoicesAsync(LoadedRun run, int position, TrackInfo answer, CancellationToken ct)
-    {
-        var challenge = run.Challenge;
-        var inPlaylist = challenge.Tracks.Select(t => t.TrackId).Concat(challenge.Reserve.Select(r => r.TrackId)).ToHashSet();
-        var candidates = (await directory.ListPlayableIdsAsync(ct)).Where(id => !inPlaylist.Contains(id)).Order().ToList();
-        var seed = unchecked((challenge.Seed * 31) + position);
-        var decoys = new List<RunChoiceResponse>();
-        // Par paquets : la plupart des morceaux tirés conviennent, on n'en lit que quelques-uns.
-        foreach (var batch in shuffle.Shuffle(candidates, seed).Chunk(8))
         {
-            var infos = await directory.GetAsync(batch, ct);
-            foreach (var id in batch)
-            {
-                if (decoys.Count == 2)
-                    break;
-                if (infos.TryGetValue(id, out var decoy) && !string.Equals(decoy.Artist, answer.Artist, StringComparison.OrdinalIgnoreCase)
-                    && decoys.TrueForAll(d => !string.Equals(d.Artist, decoy.Artist, StringComparison.OrdinalIgnoreCase)))
-                    decoys.Add(new RunChoiceResponse(decoy.Artist, decoy.DisplayTitle));
-            }
-
-            if (decoys.Count == 2)
-                break;
+            var decoys = run.Session.Cards.Where(c => c.PlayedPosition == position && c.DecoyTrackIds is not null)
+                .OrderBy(c => c.PlayOrder).LastOrDefault()?.DecoyTrackIds ?? [];
+            var options = new List<RunChoiceResponse> { new(info.Artist, info.DisplayTitle) };
+            options.AddRange(decoys.Where(run.Tracks.ContainsKey).Select(id => new RunChoiceResponse(run.Tracks[id].Artist, run.Tracks[id].DisplayTitle)));
+            choices = shuffle.Shuffle(options, unchecked((run.Challenge.Seed * 31) + position + 1));
         }
 
-        return shuffle.Shuffle([new RunChoiceResponse(answer.Artist, answer.DisplayTitle), .. decoys], unchecked(seed + 1));
+        var initials = active.Contains(RunCard.Initials);
+        return new RunTrackEffectsResponse(
+            active.Select(RunCards.KeyOf).ToList(), active.Contains(RunCard.Year) ? info.ReleaseYear : null,
+            initials ? RunInitials.Of(info.Artist) : null, initials ? RunInitials.Of(info.DisplayTitle) : null, choices,
+            position == run.Session.NextPosition ? run.Session.ClockBonus(run.Challenge.Rules) : 0);
     }
 
     // Le record (partie gagnée ou perdue), dans la transaction de fin : une partie abandonnée ne compte pas.

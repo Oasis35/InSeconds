@@ -11,7 +11,7 @@ namespace InSeconds.Api.Modules.Runs.Persistence;
 /// l'effacement de ses parties (réponses, difficultés des manches, cartes), record et accès ; les défis qu'il a créés restent jouables (<c>created_by</c> à <c>null</c>). Appelé par
 /// Players dans sa propre transaction.
 /// </summary>
-public sealed class RunsPlayerData(InSecondsDbContext db) : IPlayerDataContributor
+public sealed class RunsPlayerData(InSecondsDbContext db, Catalogue.Contracts.ITrackDirectory directory) : IPlayerDataContributor
 {
     public const string ModuleName = "runs";
 
@@ -26,6 +26,10 @@ public sealed class RunsPlayerData(InSecondsDbContext db) : IPlayerDataContribut
                 orderby session.StartedAt
                 select new { Session = session, challenge.Code })
             .ToListAsync(ct);
+        // Le morceau qu'un Joker a mis à la place, désigné par son identifiant Deezer (l'identifiant interne ne dit rien au joueur).
+        var replacements = sessions.SelectMany(row => row.Session.Cards).Where(c => c.ReplacementTrackId is not null)
+            .Select(c => c.ReplacementTrackId!.Value).Distinct().ToList();
+        var deezerIds = replacements.Count == 0 ? new Dictionary<int, Catalogue.Contracts.TrackInfo>() : await directory.GetAsync(replacements, ct);
         var games = sessions.Select(row => new RunGameExport(
             row.Code, row.Session.Status.ToString(), row.Session.StartedAt, row.Session.EndedAt, row.Session.RoundsPassed, row.Session.TotalScore,
             [.. row.Session.Answers.OrderBy(a => a.Position)
@@ -33,7 +37,9 @@ public sealed class RunsPlayerData(InSecondsDbContext db) : IPlayerDataContribut
             [.. row.Session.Rounds.OrderBy(r => r.Round)
                 .Select(r => new RunRoundExport(r.Round, RunDifficulties.KeyOf(r.Difficulty), r.ChosenAt))],
             [.. row.Session.Cards.OrderBy(c => c.Slot)
-                .Select(c => new RunCardExport(RunCards.KeyOf(c.Card), c.AcquiredRound, c.AcquiredAt, c.DroppedAt, c.PlayedAt, c.PlayedPosition))])).ToList();
+                .Select(c => new RunCardExport(
+                    RunCards.KeyOf(c.Card), c.AcquiredRound, c.AcquiredAt, c.DroppedAt, c.PlayedAt, c.PlayedPosition, c.PlayedRound, c.PlayOrder,
+                    c.ReplacementTrackId is { } id && deezerIds.TryGetValue(id, out var info) ? info.DeezerTrackId : null))])).ToList();
 
         var created = await db.Set<RunChallenge>().AsNoTracking()
             .Where(c => c.CreatedBy == playerId).OrderBy(c => c.CreatedAt)

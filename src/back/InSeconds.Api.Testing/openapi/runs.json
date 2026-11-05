@@ -1174,6 +1174,87 @@
           }
         }
       }
+    },
+    "/api/runs/sessions/{id}/cards/pass": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "passRunOffer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PassRunOffer"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunPlayResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2260,6 +2341,18 @@
             "format": "int32"
           }
         }
+      },
+      "PassRunOffer": {
+        "required": [
+          "afterRound"
+        ],
+        "type": "object",
+        "properties": {
+          "afterRound": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       }
     }
   },
@@ -2278,6 +2371,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Runs.Application.DropRunCardEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.PassRunOfferEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Runs.Application.PlayRunCardEndpoint"

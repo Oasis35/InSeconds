@@ -97,6 +97,8 @@ internal sealed class RunSessionConfiguration : IEntityTypeConfiguration<RunSess
         builder.Navigation(s => s.Rounds).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.HasMany(s => s.Cards).WithOne().HasForeignKey(c => c.SessionId).OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(s => s.Cards).UsePropertyAccessMode(PropertyAccessMode.Field);
+        // La main est tirée de Cards : pas une relation (EF la prendrait pour une seconde clé étrangère vers session_cards).
+        builder.Ignore(s => s.Hand);
     }
 }
 

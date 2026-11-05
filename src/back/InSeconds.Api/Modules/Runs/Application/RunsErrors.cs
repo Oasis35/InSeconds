@@ -1,6 +1,7 @@
 using InSeconds.Api.Infrastructure.Errors;
 using InSeconds.Api.Modules.Runs.Domain;
 using Microsoft.AspNetCore.Mvc;
+using Wolverine.Http;
 
 namespace InSeconds.Api.Modules.Runs.Application;
 
@@ -98,6 +99,17 @@ internal static class RunsProblems
 
     public static ProblemDetails CardUnavailable() =>
         ApiProblem.Of(StatusCodes.Status409Conflict, RunsErrorCodes.CardUnavailable, "Cette carte ne peut pas se jouer ici.");
+
+    /// <summary>Le refus d'une carte (prise, lâcher, jeu) en problème, ou rien.</summary>
+    public static ProblemDetails ForCard(RunCardRefusal? refusal) => refusal switch
+    {
+        null => WolverineContinue.NoProblems,
+        RunCardRefusal.NotInHand => CardNotFound(),
+        RunCardRefusal.AlreadyActive => CardAlreadyActive(),
+        RunCardRefusal.OfferClosed => OfferClosed(),
+        RunCardRefusal.HandFull => HandFull(),
+        _ => CardUnavailable(),
+    };
 
     public static ProblemDetails TrackNotFound() =>
         ApiProblem.Of(StatusCodes.Status404NotFound, RunsErrorCodes.TrackNotFound, "Morceau introuvable dans cette playlist.");

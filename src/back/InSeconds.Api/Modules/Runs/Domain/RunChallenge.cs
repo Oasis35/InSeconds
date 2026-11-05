@@ -37,6 +37,9 @@ public sealed class RunChallenge
     /// </summary>
     public IReadOnlyList<RunChallengeReserveTrack> Reserve => _reserve;
 
+    /// <summary>Tous les morceaux de la playlist : ceux du défi et ceux de la réserve.</summary>
+    public IEnumerable<int> AllTrackIds() => _tracks.Select(t => t.TrackId).Concat(_reserve.Select(r => r.TrackId));
+
     /// <summary>La réserve d'une manche, dans l'ordre du tirage.</summary>
     public IEnumerable<RunChallengeReserveTrack> ReserveOf(int round) => _reserve.Where(r => r.Round == round).OrderBy(r => r.Rank);
 

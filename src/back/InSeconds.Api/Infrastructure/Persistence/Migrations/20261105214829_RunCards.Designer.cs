@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace InSeconds.Api.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(InSecondsDbContext))]
-    [Migration("20261105212347_RunCards")]
+    [Migration("20261105214829_RunCards")]
     partial class RunCards
     {
         /// <inheritdoc />
@@ -904,6 +904,10 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ended_at");
 
+                    b.Property<short>("OffersClosedThrough")
+                        .HasColumnType("smallint")
+                        .HasColumnName("offers_closed_through");
+
                     b.Property<Guid>("PlayerId")
                         .HasColumnType("uuid")
                         .HasColumnName("player_id");
@@ -962,6 +966,10 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("smallint")
                         .HasColumnName("card");
 
+                    b.PrimitiveCollection<int[]>("DecoyTrackIds")
+                        .HasColumnType("integer[]")
+                        .HasColumnName("decoy_track_ids");
+
                     b.Property<DateTimeOffset?>("DroppedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("dropped_at");
@@ -986,18 +994,11 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("replacement_track_id");
 
-                    b.Property<int?>("RunSessionId")
-                        .HasColumnType("integer")
-                        .HasColumnName("run_session_id");
-
                     b.HasKey("SessionId", "Slot")
                         .HasName("pk_session_cards");
 
                     b.HasIndex("ReplacementTrackId")
                         .HasDatabaseName("ix_session_cards_replacement_track_id");
-
-                    b.HasIndex("RunSessionId")
-                        .HasDatabaseName("ix_session_cards_run_session_id");
 
                     b.ToTable("session_cards", "runs", t =>
                         {
@@ -1376,11 +1377,6 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_session_cards_tracks_replacement_track_id");
 
                     b.HasOne("InSeconds.Api.Modules.Runs.Domain.RunSession", null)
-                        .WithMany("Hand")
-                        .HasForeignKey("RunSessionId")
-                        .HasConstraintName("fk_session_cards_sessions_run_session_id");
-
-                    b.HasOne("InSeconds.Api.Modules.Runs.Domain.RunSession", null)
                         .WithMany("Cards")
                         .HasForeignKey("SessionId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1437,8 +1433,6 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     b.Navigation("Answers");
 
                     b.Navigation("Cards");
-
-                    b.Navigation("Hand");
 
                     b.Navigation("Rounds");
                 });

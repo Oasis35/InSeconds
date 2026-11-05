@@ -24,6 +24,7 @@ public static class RunsModule
         services.AddScoped<IRunsQueries, EfRunsQueries>();
         services.AddScoped<IRunAccess, EfRunAccess>();
         services.AddScoped<RunChallengePlanner>();
+        services.AddScoped<RunChoiceDealer>();
         services.AddSingleton<IRunScoringPolicy, ArtistTitleScoring>();
         services.AddScoped<RunPlayer>();
         // Compteurs des parties et des réponses, exportés en OpenTelemetry (tableau Grafana « Activité »).

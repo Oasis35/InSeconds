@@ -11,6 +11,14 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AddColumn<short>(
+                name: "offers_closed_through",
+                schema: "runs",
+                table: "sessions",
+                type: "smallint",
+                nullable: false,
+                defaultValue: (short)0);
+
             migrationBuilder.CreateTable(
                 name: "session_cards",
                 schema: "runs",
@@ -27,18 +35,12 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     played_round = table.Column<short>(type: "smallint", nullable: true),
                     replacement_track_id = table.Column<int>(type: "integer", nullable: true),
                     play_order = table.Column<short>(type: "smallint", nullable: true),
-                    run_session_id = table.Column<int>(type: "integer", nullable: true)
+                    decoy_track_ids = table.Column<int[]>(type: "integer[]", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_session_cards", x => new { x.session_id, x.slot });
                     table.CheckConstraint("ck_session_cards_card", "card BETWEEN 1 AND 8");
-                    table.ForeignKey(
-                        name: "fk_session_cards_sessions_run_session_id",
-                        column: x => x.run_session_id,
-                        principalSchema: "runs",
-                        principalTable: "sessions",
-                        principalColumn: "id");
                     table.ForeignKey(
                         name: "fk_session_cards_sessions_session_id",
                         column: x => x.session_id,
@@ -60,12 +62,6 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                 schema: "runs",
                 table: "session_cards",
                 column: "replacement_track_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_session_cards_run_session_id",
-                schema: "runs",
-                table: "session_cards",
-                column: "run_session_id");
         }
 
         /// <inheritdoc />
@@ -74,6 +70,11 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
             migrationBuilder.DropTable(
                 name: "session_cards",
                 schema: "runs");
+
+            migrationBuilder.DropColumn(
+                name: "offers_closed_through",
+                schema: "runs",
+                table: "sessions");
         }
     }
 }

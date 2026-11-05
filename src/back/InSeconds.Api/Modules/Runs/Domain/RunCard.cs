@@ -82,21 +82,41 @@ public sealed class RunCardDealer(ISeededShuffle shuffle)
     /// <summary>Les cartes d'une offre.</summary>
     public const int OfferSize = 3;
 
-    /// <summary>Les règles des cartes complétées de la carte de départ et des offres de chaque palier, tirées dans <see cref="RunCardRules.Pool"/>.</summary>
-    public RunCardRules Deal(RunCardRules settings, RunRules rules, int seed)
+    /// <summary>
+    /// Les règles des cartes complétées de la carte de départ et des offres de chaque palier, tirées dans <see cref="RunCardRules.Pool"/>. Le Joker
+    /// n'est offert que pour une manche qui a des morceaux en réserve (<paramref name="roundsWithReserve"/> : la manche 1 pour la carte de départ,
+    /// la manche r + 1 pour l'offre du palier r).
+    /// </summary>
+    public RunCardRules Deal(RunCardRules settings, RunRules rules, int seed, IReadOnlyCollection<int> roundsWithReserve)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(rules);
-        var pool = settings.Pool.Distinct().Where(c => c != RunCard.Joker || rules.ReservePerRound > 0).Order().ToList();
-        if (pool.Count == 0)
-            return settings with { StartCard = null, Offers = [] };
+        ArgumentNullException.ThrowIfNull(roundsWithReserve);
+        List<RunCard> PoolFor(int round) =>
+            settings.Pool.Distinct().Where(c => c != RunCard.Joker || roundsWithReserve.Contains(round)).Order().ToList();
 
-        var start = shuffle.Shuffle(pool, unchecked(seed * 31 + 7))[0];
+        var startPool = PoolFor(1);
+        var start = startPool.Count == 0 ? (RunCard?)null : shuffle.Shuffle(startPool, unchecked(seed * 31 + 7))[0];
         var offers = Enumerable.Range(1, rules.Rounds - 1)
-            .Select(round => new RunCardOffer(round, shuffle.Shuffle(pool, unchecked(seed * 31 + 7 + round)).Take(OfferSize).ToList()))
+            .Select(round => new RunCardOffer(round, shuffle.Shuffle(PoolFor(round + 1), unchecked(seed * 31 + 7 + round)).Take(OfferSize).ToList()))
+            .Where(offer => offer.Cards.Count > 0)
             .ToList();
         return settings with { StartCard = start, Offers = offers };
     }
+}
+
+/// <summary>
+/// « Trois choix » : un morceau peut servir de leurre s'il est hors de la playlist (ni joué, ni en réserve) et d'un autre artiste que la bonne
+/// réponse et que les leurres déjà retenus.
+/// </summary>
+public static class RunChoices
+{
+    /// <summary>Les leurres proposés à côté de la bonne réponse.</summary>
+    public const int DecoyCount = 2;
+
+    public static bool IsDecoy(string answerArtist, string candidateArtist, IEnumerable<string> chosenArtists) =>
+        !string.Equals(candidateArtist, answerArtist, StringComparison.OrdinalIgnoreCase)
+        && !chosenArtists.Any(a => string.Equals(a, candidateArtist, StringComparison.OrdinalIgnoreCase));
 }
 
 /// <summary>Les initiales d'un nom : la première lettre ou le premier chiffre de chaque mot, en capitale.</summary>

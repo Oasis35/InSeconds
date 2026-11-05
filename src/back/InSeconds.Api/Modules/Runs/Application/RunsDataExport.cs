@@ -14,9 +14,13 @@ public sealed record RunGameExport(
     string ChallengeCode, string Status, DateTimeOffset StartedAt, DateTimeOffset? EndedAt, int RoundsPassed, int TotalScore,
     IReadOnlyList<RunAnswerExport> Answers, IReadOnlyList<RunRoundExport> Rounds, IReadOnlyList<RunCardExport> Cards);
 
-/// <summary>Un coup de pouce reçu : la carte, le palier où il a été pris (0 : au départ), puis lâché ou joué (sur quel morceau).</summary>
+/// <summary>
+/// Un coup de pouce reçu : la carte, le palier où il a été pris (0 : au départ), puis lâché ou joué (sur quel morceau, dans quelle manche, à quel
+/// rang parmi les cartes jouées) ; pour un Joker, le morceau joué à la place (identifiant Deezer).
+/// </summary>
 public sealed record RunCardExport(
-    string Card, int AcquiredRound, DateTimeOffset AcquiredAt, DateTimeOffset? DroppedAt, DateTimeOffset? PlayedAt, int? PlayedPosition);
+    string Card, int AcquiredRound, DateTimeOffset AcquiredAt, DateTimeOffset? DroppedAt, DateTimeOffset? PlayedAt, int? PlayedPosition,
+    int? PlayedRound, int? PlayOrder, long? ReplacementDeezerTrackId);
 
 /// <summary>La difficulté d'une manche à choix : <c>easy</c>, <c>safe</c> ou <c>risky</c>, et quand elle a été choisie.</summary>
 public sealed record RunRoundExport(int Round, string Difficulty, DateTimeOffset ChosenAt);

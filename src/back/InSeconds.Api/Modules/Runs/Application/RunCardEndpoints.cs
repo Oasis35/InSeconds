@@ -1,4 +1,5 @@
 using FluentValidation;
+using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Players.Contracts;
 using InSeconds.Api.Modules.Runs.Domain;
 using Microsoft.AspNetCore.Authorization;
@@ -35,20 +36,12 @@ public static class TakeRunCardEndpoint
         if (!ReferenceEquals(problem, WolverineContinue.NoProblems))
             return problem;
         var (session, challenge) = loaded!;
-        var offer = session.OpenOffer(challenge);
-        if (offer is null || offer.AfterRound != request.AfterRound || !offer.Cards.Contains(RunCards.Parse(request.Card)!.Value))
-            return RunsProblems.OfferClosed();
-        var hand = session.Hand;
-        if (hand.Count < challenge.Rules.Cards!.HandSize)
-            return WolverineContinue.NoProblems;
-        if (request.DropSlot is not { } drop)
-            return RunsProblems.HandFull();
-        return hand.Any(c => c.Slot == drop) ? WolverineContinue.NoProblems : RunsProblems.CardNotFound();
+        return RunsProblems.ForCard(session.CanTake(challenge, request.AfterRound, RunCards.Parse(request.Card)!.Value, request.DropSlot));
     }
 
     /// <summary>
-    /// <c>POST /api/runs/sessions/{id}/cards</c> : prend une carte de l'offre du palier, tant que la manche suivante n'a pas commencé (une offre par
-    /// palier ; ne rien prendre, c'est passer). Main pleine : la carte de <c>dropSlot</c> est lâchée en échange, sinon 409 <c>runs.hand_full</c>.
+    /// <c>POST /api/runs/sessions/{id}/cards</c> : prend une carte de l'offre du palier, tant qu'elle est ouverte (une par palier ; ne rien prendre,
+    /// c'est <c>…/cards/pass</c> ; choisir la difficulté la ferme aussi). Main pleine : la carte de <c>dropSlot</c> est lâchée en échange, sinon 409 <c>runs.hand_full</c>.
     /// 409 <c>runs.offer_closed</c> hors d'une offre ouverte ou pour une carte qu'elle ne propose pas. Rend l'état de la partie (main à jour).
     /// </summary>
     [Authorize]
@@ -63,7 +56,7 @@ public static class TakeRunCardEndpoint
     {
         var (session, challenge) = loaded;
         var card = RunCards.Parse(request.Card)!.Value;
-        session.TakeCard(challenge, card, request.DropSlot, time.GetUtcNow());
+        session.TakeCard(challenge, request.AfterRound, card, request.DropSlot, time.GetUtcNow());
         RunsLog.CardTaken(logger, session.Id, session.PlayerId, request.AfterRound, request.Card);
         return await player.StateAsync(await player.LoadAsync(session, challenge, ct), ct);
     }
@@ -79,7 +72,7 @@ public static class DropRunCardEndpoint
         var problem = RunSessionAccess.Check(loaded, position: null);
         if (!ReferenceEquals(problem, WolverineContinue.NoProblems))
             return problem;
-        return loaded!.Session.Hand.Any(c => c.Slot == slot) ? WolverineContinue.NoProblems : RunsProblems.CardNotFound();
+        return RunsProblems.ForCard(loaded!.Session.CanDrop(slot));
     }
 
     /// <summary>
@@ -111,23 +104,80 @@ public sealed class PlayRunCardValidator : AbstractValidator<PlayRunCard>
     }
 }
 
-public static class PlayRunCardEndpoint
+/// <summary>« Passer » l'offre du palier qui suit la manche <paramref name="AfterRound"/>.</summary>
+public sealed record PassRunOffer(int AfterRound);
+
+public sealed class PassRunOfferValidator : AbstractValidator<PassRunOffer>
+{
+    public PassRunOfferValidator()
+    {
+        RuleFor(x => x.AfterRound).GreaterThan(0);
+    }
+}
+
+public static class PassRunOfferEndpoint
 {
     public static Task<PlayableRun?> LoadAsync(int id, ICurrentPlayer current, IRunsStore store, CancellationToken ct) =>
         RunSessionAccess.LoadAsync(id, current, store, ct);
 
-    public static ProblemDetails Validate(int slot, PlayRunCard request, PlayableRun? loaded)
+    public static ProblemDetails Validate(PassRunOffer request, PlayableRun? loaded)
     {
-        var problem = RunSessionAccess.Check(loaded, request.Position);
+        var problem = RunSessionAccess.Check(loaded, position: null);
         if (!ReferenceEquals(problem, WolverineContinue.NoProblems))
             return problem;
-        return loaded!.Session.CanPlay(loaded.Challenge, slot) switch
-        {
-            null => WolverineContinue.NoProblems,
-            RunCardRefusal.NotInHand => RunsProblems.CardNotFound(),
-            RunCardRefusal.AlreadyActive => RunsProblems.CardAlreadyActive(),
-            _ => RunsProblems.CardUnavailable(),
-        };
+        return RunsProblems.ForCard(loaded!.Session.CanPass(loaded.Challenge, request.AfterRound));
+    }
+
+    /// <summary>
+    /// <c>POST /api/runs/sessions/{id}/cards/pass</c> : le joueur passe l'offre du palier (aucune carte). Rend la partie et, si la manche n'a pas de
+    /// difficulté à choisir, son premier morceau (rien ne part tant qu'une offre est ouverte). 409 <c>runs.offer_closed</c> hors d'une offre ouverte.
+    /// </summary>
+    [Authorize]
+    [WolverinePost("/api/runs/sessions/{id}/cards/pass", OperationId = "passRunOffer")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public static async Task<RunPlayResponse> Post(PassRunOffer request, [NotBody] PlayableRun loaded, [NotBody] RunPlayer player, CancellationToken ct)
+    {
+        var (session, challenge) = loaded;
+        session.PassOffer(challenge, request.AfterRound);
+        return await player.AdvanceAsync(await player.LoadAsync(session, challenge, ct), answered: null, revealed: null, isResuming: false, ct);
+    }
+}
+
+/// <summary>
+/// La partie, et ce que la carte à jouer demande de savoir du morceau en cours : son année est-elle connue, quels leurres pour « Trois choix »
+/// (deux, sinon la carte ne se joue pas).
+/// </summary>
+public sealed record CardPlay(PlayableRun Run, bool YearKnown, IReadOnlyList<int>? Decoys);
+
+public static class PlayRunCardEndpoint
+{
+    public static async Task<CardPlay?> LoadAsync(
+        int id, int slot, ICurrentPlayer current, IRunsStore store, ITrackDirectory directory, RunChoiceDealer choices, CancellationToken ct)
+    {
+        var run = await RunSessionAccess.LoadAsync(id, current, store, ct);
+        if (run is null || !run.Session.IsPending || run.Session.Hand.FirstOrDefault(c => c.Slot == slot) is not { } card)
+            return run is null ? null : new CardPlay(run, true, null);
+        var (session, challenge) = run;
+        if (card.Card is not (RunCard.Year or RunCard.ThreeChoices) || session.NextPosition > challenge.Tracks.Count)
+            return new CardPlay(run, true, null);
+        var position = session.NextPosition;
+        var info = (await directory.GetAsync([session.TrackIdAt(challenge, position)], ct)).Values.Single();
+        return card.Card == RunCard.Year
+            ? new CardPlay(run, info.ReleaseYear is not null, null)
+            : new CardPlay(run, true, await choices.DecoysAsync(challenge, position, info, ct));
+    }
+
+    public static ProblemDetails Validate(int slot, PlayRunCard request, CardPlay? loaded, TimeProvider time)
+    {
+        var problem = RunSessionAccess.Check(loaded?.Run, request.Position);
+        if (!ReferenceEquals(problem, WolverineContinue.NoProblems))
+            return problem;
+        var (session, challenge) = loaded!.Run;
+        return RunsProblems.ForCard(session.CanPlay(
+            challenge, slot, time.GetUtcNow(), loaded.YearKnown, loaded.Decoys is null || loaded.Decoys.Count == RunChoices.DecoyCount));
     }
 
     /// <summary>
@@ -144,11 +194,11 @@ public static class PlayRunCardEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public static async Task<RunPlayResponse> Post(
-        int slot, PlayRunCard request, [NotBody] PlayableRun loaded, [NotBody] RunPlayer player, TimeProvider time, ILogger<PlayRunCard> logger,
+        int slot, PlayRunCard request, [NotBody] CardPlay loaded, [NotBody] RunPlayer player, TimeProvider time, ILogger<PlayRunCard> logger,
         CancellationToken ct)
     {
-        var (session, challenge) = loaded;
-        var card = session.PlayCard(challenge, slot, time.GetUtcNow());
+        var (session, challenge) = loaded.Run;
+        var card = session.PlayCard(challenge, slot, time.GetUtcNow(), loaded.YearKnown, loaded.Decoys);
         RunsLog.CardPlayed(logger, session.Id, session.PlayerId, request.Position, RunCards.KeyOf(card.Card));
         return await player.AdvanceAsync(await player.LoadAsync(session, challenge, ct), answered: null, revealed: null, isResuming: false, ct);
     }
