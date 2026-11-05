@@ -1,9 +1,7 @@
 import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
-
-/** Une ligne de morceau du texte partagé : `✅`/`❌` de l'artiste, puis du titre, puis le palier écouté (« ✅❌ 0,5 s »). */
-const TRACK_LINE = /^[✅❌]{2} \d+(,\d)? s$/u;
+import { shareTextLines } from '../fixtures/share-text';
 
 test.describe('Bouton partager', () => {
   test.beforeEach(async ({ api }) => {
@@ -21,12 +19,7 @@ test.describe('Bouton partager', () => {
 
     const clipText = await page.evaluate(() => navigator.clipboard.readText());
     // « 2 410 pts · InSeconds 05/11 », une ligne par morceau (✅/❌ de l'artiste puis du titre, palier écouté), le lien : ni 🎵 ni 🏆.
-    const lines = clipText.split('\n');
-    expect(lines).toHaveLength(7);
-    expect(lines[0]).toMatch(/^[\d\s ]+ pts · InSeconds \d{2}\/\d{2}$/);
-    for (const line of lines.slice(1, 6)) expect(line).toMatch(TRACK_LINE);
-    expect(lines[6]).toMatch(/^https?:\/\/[^/]+\/\?utm_source=share$/);
-    expect(clipText).not.toMatch(/🎵|🏆|🔶|🅾️/u);
+    expect(shareTextLines(clipText, 5).problems).toEqual([]);
   });
 
   test('copie quand même si clipboard.writeText échoue (repli execCommand, #200)', async ({ page }) => {
@@ -47,8 +40,7 @@ test.describe('Bouton partager', () => {
 
     await expect(game.shareCopiedButton).toBeVisible();
     const copied = await page.evaluate(() => (window as unknown as { __realClipboard: Clipboard }).__realClipboard.readText());
-    expect(copied).toMatch(/ pts · InSeconds \d{2}\/\d{2}/);
-    expect(copied.split('\n')[1]).toMatch(TRACK_LINE);
+    expect(shareTextLines(copied, 5).problems).toEqual([]);
   });
 
   test("affiche un message d'erreur si la copie presse-papier échoue", async ({ page }) => {
@@ -90,10 +82,7 @@ test.describe('Bouton partager', () => {
 
     const shared = await page.evaluate(() => (window as unknown as { __shared: ShareData[] }).__shared);
     expect(shared).toHaveLength(1);
-    const lines = (shared[0].text ?? '').split('\n');
-    expect(lines[0]).toMatch(/^[\d\s ]+ pts · InSeconds \d{2}\/\d{2}$/);
-    for (const line of lines.slice(1, 6)) expect(line).toMatch(TRACK_LINE);
-    expect(lines[6]).toMatch(/^https?:\/\/[^/]+\/\?utm_source=share$/);
+    expect(shareTextLines(shared[0].text ?? '', 5).problems).toEqual([]);
     // Le menu du téléphone suffit : pas de « Copié ! ».
     await expect(game.shareCopiedButton).not.toBeVisible();
   });

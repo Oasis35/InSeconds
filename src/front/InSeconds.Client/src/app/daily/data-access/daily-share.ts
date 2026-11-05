@@ -23,7 +23,7 @@ export class DailyShare {
     const lang = this.translate.getCurrentLang() ?? 'fr';
     const text = [
       this.translate.instant('daily.share.header', { score: new Intl.NumberFormat(lang).format(score), date: dayLabel(new Date()) }),
-      ...shareLines(tracks, formatDuration),
+      ...shareLines(tracks, formatDuration, lang),
       SHARE_LINK,
     ].join('\n');
     const outcome = await this.sharing.share(text);

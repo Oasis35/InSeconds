@@ -180,16 +180,11 @@ export class DailyPage implements OnInit {
 
   /** Partage le résumé de la partie (menu du téléphone, sinon presse-papier) : le score, puis par morceau `✅`/`❌` et le palier écouté, et le lien. */
   protected share(): void {
-    const stats = this.store.stats();
-    const done = this.store.screen() === 'done';
-    const tracks = done
-      ? [...this.store.results()]
-          .sort((a, b) => a.position - b.position)
-          .map(r => ({ artistCorrect: r.artistCorrect, titleCorrect: r.titleCorrect, listenedSeconds: r.listenedSeconds }))
-      : (stats?.tracks ?? []).flatMap(t => t.listenedSeconds === null
-          ? []
-          : [{ artistCorrect: t.artistCorrect === true, titleCorrect: t.titleCorrect === true, listenedSeconds: t.listenedSeconds }]);
-    const lang = this.language.current();
-    void this.dailyShare.share(tracks, done ? this.store.totalScore() : (stats?.yourScore ?? 0), s => formatSeconds(s, lang));
+    // Les mêmes morceaux, dans le même ordre, que la liste du résultat du jour ; un morceau sans réponse n'a pas de ligne.
+    const tracks = this.resultRows().flatMap(r => r.listenedSeconds === null
+      ? []
+      : [{ artistCorrect: r.artistCorrect === true, titleCorrect: r.titleCorrect === true, listenedSeconds: r.listenedSeconds }]);
+    const score = this.store.screen() === 'done' ? this.store.totalScore() : (this.store.stats()?.yourScore ?? 0);
+    void this.dailyShare.share(tracks, score, formatSeconds);
   }
 }

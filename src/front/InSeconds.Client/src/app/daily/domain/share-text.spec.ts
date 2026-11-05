@@ -7,13 +7,14 @@ describe('shareLines', () => {
     { artistCorrect: false, titleCorrect: true, listenedSeconds: 5 },
     { artistCorrect: false, titleCorrect: false, listenedSeconds: 10 },
   ];
+  const format = (seconds: number, lang: string) => `${seconds}s (${lang})`;
 
-  it("une ligne par morceau : l'emoji de l'artiste, celui du titre, puis le palier mis en forme", () => {
-    expect(shareLines(tracks, s => `${s}s`)).toEqual(['✅✅ 0.5s', '✅❌ 3s', '❌✅ 5s', '❌❌ 10s']);
+  it("une ligne par morceau : l'emoji de l'artiste, celui du titre, puis le palier mis en forme dans la langue", () => {
+    expect(shareLines(tracks, format, 'fr')).toEqual(['✅✅ 0.5s (fr)', '✅❌ 3s (fr)', '❌✅ 5s (fr)', '❌❌ 10s (fr)']);
   });
 
   it('rien pour une partie sans morceau', () => {
-    expect(shareLines([], s => `${s}s`)).toEqual([]);
+    expect(shareLines([], format, 'fr')).toEqual([]);
   });
 });
 
