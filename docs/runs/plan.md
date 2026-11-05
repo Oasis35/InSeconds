@@ -13,7 +13,7 @@ La feuille de route décidée le 17/10/2026 peut encore changer.
    - ouvert sur invitation seulement, entrée par une carte sur l'accueil.
 
    Le code prévoit la place des bonus sans en livrer aucun. Le but est de savoir si c'est amusant et de régler les seuils et la difficulté.
-3. **Proto 2, les coups de pouce** : une seule famille de bonus, à usage unique sur le morceau en cours. Une offre de 1 parmi 3 en fin de manche.
+3. **Proto 2, palier, difficulté et coups de pouce** ([#497](https://github.com/Oasis35/InSeconds/issues/497), règles et écrans dans [`proto2.md`](proto2.md)) : un écran de palier après chaque manche passée, le choix de la difficulté de la manche suivante (Facile, Sûre, Risquée : objectif et plafond de points), une seule famille de bonus à usage unique (2 cartes en main, 1 parmi 3 à chaque palier), puis « Rejouer » en principal, le partage en grille, le fantôme d'un ami, le combo visuel et les sons d'interface. Pas encore codé.
 4. **Proto 3 et suivants** : les autres familles de bonus, une par une. D'abord les atouts, le choix de la manche suivante, les contraintes et la manche boss, les pactes. Ensuite la rareté et les déblocages.
 5. **Ouverture** :
    - accès pour tous ;
@@ -24,18 +24,17 @@ La feuille de route décidée le 17/10/2026 peut encore changer.
    - genre (depuis l'album Deezer) et étiquettes de thème dans le catalogue ;
    - thèmes de run ;
    - difficulté mixte : rang Deezer, puis taux de réussite réel dès qu'un morceau a assez de réponses (environ 30) ;
-   - fantôme : le parcours de l'ami affiché pendant la partie ;
-   - mode infini, avec les disques au-delà de l'or.
+    - mode infini, avec les disques au-delà de l'or.
 
 Chaque étape a un ticket parent et quelques PR vers `env/staging`. Les traductions, les E2E et la doc arrivent dès le proto 1.
 
 ## Après le proto 1
 
-Le proto 1 est livré (son découpage en PR : [`../historique/runs-proto1-decoupage.md`](../historique/runs-proto1-decoupage.md)). La suite : Clément organise des parties de test sur le staging, puis en prod avec quelques comptes, et règle ensuite les seuils et la difficulté avant le proto 2. Les petites suites du proto 1 (panneaux Grafana, synchronisation entre onglets, captures réelles) sont dans [`../taches.md`](../taches.md).
+Le proto 1 est livré (son découpage en PR : [`../historique/runs-proto1-decoupage.md`](../historique/runs-proto1-decoupage.md)). La suite : Clément organise des parties de test sur le staging, puis en prod avec quelques comptes, et règle ensuite les seuils et la difficulté avant le proto 2 ([`proto2.md`](proto2.md)). Les petites suites du proto 1 (panneaux Grafana, synchronisation entre onglets, captures réelles) sont dans [`../taches.md`](../taches.md).
 
 ## Bonus et contraintes (idées pour le proto 2 et après)
 
-Proposition du 17/10/2026, à itérer. Elle n'est pas dans le proto 1.
+Proposition du 17/10/2026, à itérer. Elle n'est pas dans le proto 1. Le proto 2 en retient les coups de pouce, le choix de la difficulté et la manche boss ([`proto2.md`](proto2.md)) ; le reste (atouts, contraintes, pactes, rareté) vient après.
 
 ### Structure, calquée sur Balatro
 | Famille | Équivalent Balatro | Durée | Emplacements |
