@@ -45,7 +45,7 @@ export class DayResultScreenComponent {
   /** La série sous le partage (rien sans série en cours) ; les gels pour un compte. */
   readonly streak = input<Streak | null>(null);
   readonly linked = input(false);
-  /** Le partage demandé : `short` par le bouton principal, ou le format choisi dans le menu ▾. */
+  /** Le partage demandé : `long` (le détaillé) par le bouton principal, ou le format choisi dans le menu ▾. */
   readonly share = output<ShareFormat>();
   readonly openStreak = output<void>();
 

@@ -6,13 +6,13 @@ export interface ShareTrack {
 }
 
 /**
- * Les deux formats du texte partagé : `short`, une ligne d'un emoji par morceau (le bouton principal), et `long`, une ligne par morceau
- * avec l'artiste, le titre et le temps d'écoute (choisi par la flèche ▾). Les mêmes valeurs que la route `POST /api/daily/shares`.
+ * Les deux formats du texte partagé : `long`, une ligne par morceau avec l'artiste, le titre et le temps
+ * d'écoute (le bouton principal, par défaut), et `short`, une ligne d'un emoji par morceau (choisi par la flèche ▾). Dans l'ordre du menu. Les mêmes valeurs que la route `POST /api/daily/shares`.
  */
 export type ShareFormat = 'short' | 'long';
 
 /** Les formats, dans l'ordre du menu ▾. */
-export const SHARE_FORMATS: readonly ShareFormat[] = ['short', 'long'];
+export const SHARE_FORMATS: readonly ShareFormat[] = ['long', 'short'];
 
 export function isShareFormat(value: string): value is ShareFormat {
   return (SHARE_FORMATS as readonly string[]).includes(value);

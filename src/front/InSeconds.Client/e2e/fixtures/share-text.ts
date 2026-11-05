@@ -2,7 +2,7 @@
  * Les motifs du texte partagé du jeu du jour (« Partager mon score »), en français. Les deux formats commencent par la même ligne et
  * finissent par le lien :
  *
- *   court                          détaillé
+ *   court (flèche ▾)               détaillé (bouton principal)
  *   2 410 pts · InSeconds 05/11    2 410 pts · InSeconds 05/11
  *   ✅🔶🅾️✅✅                      ✅❌ 3 s            (une ligne par morceau)
  *   https://…/?utm_source=share    https://…/?utm_source=share-long
@@ -21,7 +21,7 @@ export const SHARE_TRACK_LINE = /^[✅❌]{2} \d+(,\d)? s$/u;
 const SHARE_LINK_LINE = { short: /^https?:\/\/[^/]+\/\?utm_source=share$/, long: /^https?:\/\/[^/]+\/\?utm_source=share-long$/ };
 
 /** Ce qui ne va pas dans un texte partagé au format donné pour une partie de `trackCount` morceaux ; vide s'il est conforme. */
-export function shareTextProblems(text: string, trackCount: number, format: 'short' | 'long' = 'short'): string[] {
+export function shareTextProblems(text: string, trackCount: number, format: 'short' | 'long' = 'long'): string[] {
   const lines = text.split('\n');
   const body = lines.slice(1, -1);
   const expectedLines = format === 'long' ? trackCount + 2 : 3;

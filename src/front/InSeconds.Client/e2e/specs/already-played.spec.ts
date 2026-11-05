@@ -29,7 +29,7 @@ test.describe('Déjà joué - état already_played', () => {
     await game.shareButton.click();
     await expect(game.shareCopiedButton).toBeVisible();
 
-    // Relu dans les stats du jour : le même texte court qu'à la fin de la partie, un emoji par morceau joué.
+    // Relu dans les stats du jour : le même texte détaillé qu'à la fin de la partie, une ligne par morceau joué.
     const clipText = await page.evaluate(() => navigator.clipboard.readText());
     expect(shareTextProblems(clipText, 5)).toEqual([]);
   });

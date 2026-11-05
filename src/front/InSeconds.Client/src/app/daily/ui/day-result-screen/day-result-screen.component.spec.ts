@@ -107,10 +107,11 @@ describe('DayResultScreenComponent', () => {
     const emitted = vi.fn();
     fixture.componentInstance.share.subscribe(emitted);
     element.querySelector<HTMLButtonElement>('app-share-button button')!.click();
-    expect(emitted).toHaveBeenCalledExactlyOnceWith('short');
+    // Le détaillé est le partage par défaut : le court fait perdre aux amis le temps et le détail de la partie.
+    expect(emitted).toHaveBeenCalledExactlyOnceWith('long');
   });
 
-  it('la flèche ▾ propose le court et le détaillé, avec l aperçu de la partie, et émet le format choisi', () => {
+  it('la flèche ▾ propose le détaillé puis le court, avec l aperçu de la partie, et émet le format choisi', () => {
     const { fixture, element, byTestId } = render({
       rows: [row(), row({ position: 2, artistCorrect: true, titleCorrect: false, listenedSeconds: 3 }), row({ position: 3, artistCorrect: null, titleCorrect: null, listenedSeconds: null })],
     });
@@ -120,14 +121,14 @@ describe('DayResultScreenComponent', () => {
     fixture.detectChanges();
 
     const options = [...element.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')];
-    expect(options.map(o => o.dataset['format'])).toEqual(['short', 'long']);
+    expect(options.map(o => o.dataset['format'])).toEqual(['long', 'short']);
     // Le morceau sans réponse n'a pas d'emoji ; l'aperçu détaillé est la première ligne, suivie de « … ».
-    expect(options[0].textContent).toContain('✅🔶');
-    expect(options[0].textContent).not.toContain('🅾️');
-    expect(options[1].textContent).toContain('✅✅ 0,5 s …');
+    expect(options[0].textContent).toContain('✅✅ 0,5 s …');
+    expect(options[1].textContent).toContain('✅🔶');
+    expect(options[1].textContent).not.toContain('🅾️');
 
     options[1].click();
-    expect(emitted).toHaveBeenCalledExactlyOnceWith('long');
+    expect(emitted).toHaveBeenCalledExactlyOnceWith('short');
   });
 
   it('les réponses d hier en bas, vers la page du jour ; rien sans défi hier', () => {

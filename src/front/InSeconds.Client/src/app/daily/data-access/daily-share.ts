@@ -8,8 +8,8 @@ import { DailyApi } from './daily.api';
 /**
  * Le partage du score, en deux formats qui commencent par la même ligne (le score, le nom et la date, ce qui se lit dans l'aperçu d'une
  * conversation) et finissent par le lien :
- * - `short` : une ligne d'un emoji par morceau (`✅` / `🔶` / `🅾️`) ;
- * - `long` : une ligne par morceau (`✅`/`❌` de l'artiste puis du titre, palier écouté).
+ * - `long`, par défaut : une ligne par morceau (`✅`/`❌` de l'artiste puis du titre, palier écouté) ;
+ * - `short`, par la flèche ▾ : une ligne d'un emoji par morceau (`✅` / `🔶` / `🅾️`).
  * Par le menu de partage du téléphone, sinon dans le presse-papier, avec l'état du bouton (copié, échec) pour quelques secondes. Un partage
  * fait (menu validé ou texte copié) est compté par l'API, sans rien garder du joueur en base (seul le total du jour et du format augmente) ; un menu fermé ou un échec ne compte pas.
  */
