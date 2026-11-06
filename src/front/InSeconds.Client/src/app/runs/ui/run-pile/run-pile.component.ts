@@ -3,7 +3,7 @@ import {
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { tweenNumber, enterRow, settleLine } from '../../../ui/motion/motion';
-import { PileEntry } from '../../domain/run';
+import { PileEntry, RunGhostGap } from '../../domain/run';
 import { RunDiscComponent, discColor } from '../run-disc/run-disc.component';
 import { RunWaveComponent } from '../run-wave/run-wave.component';
 
@@ -32,6 +32,24 @@ const keyOf = (entry: PileEntry): string => (entry.kind === 'track' ? `t${entry.
       <b #total class="inline-block tabular-nums text-[26px] font-black leading-none origin-right" style="font-family:var(--font-score);color:var(--text-hi)"
         data-testid="run-total-score"></b>
     </div>
+    @if (ghost(); as ghost) {
+      <!-- Le fantôme de l'ami : son total au même morceau, en violet (les autres joueurs), et l'écart du joueur. -->
+      <p class="flex items-baseline justify-between px-0.5 pt-1.5 text-[13px]" data-testid="run-ghost">
+        <span style="color:var(--color-violet)">
+          {{ ghost.pseudo ?? ('runs.ghost.friend' | translate) }}
+          <b class="tabular-nums" style="font-family:var(--font-score)">{{ ghost.total }}</b>
+        </span>
+        <span class="font-semibold" style="color:var(--text-hi)" data-testid="run-ghost-gap">
+          @if (ghost.gap > 0) {
+            {{ 'runs.ghost.ahead' | translate: { points: ghost.gap } }}
+          } @else if (ghost.gap < 0) {
+            {{ 'runs.ghost.behind' | translate: { points: -ghost.gap } }}
+          } @else {
+            {{ 'runs.ghost.tied' | translate }}
+          }
+        </span>
+      </p>
+    }
 
     <div data-testid="run-pile">
       @for (entry of entries(); track key(entry)) {
@@ -93,6 +111,8 @@ export class RunPileComponent {
   readonly shapes = input<Readonly<Record<number, readonly number[]>>>({});
   /** Le total du run. */
   readonly total = input.required<number>();
+  /** L'écart avec le fantôme d'un ami sur la même playlist ; vide sans fantôme. */
+  readonly ghost = input<RunGhostGap | null>(null);
 
   /** Le total, que les points d'une réponse rejoignent. */
   readonly totalAnchor = viewChild.required<ElementRef<HTMLElement>>('total');

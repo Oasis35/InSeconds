@@ -254,7 +254,16 @@ test.describe('Mode Platines', () => {
     await friend.linkPlayButton.click();
     await friend.answerInput.waitFor({ state: 'visible' });
     await expect(friend.roundTitle).toHaveText('Manche 1');
-    await friend.loseFirstRound();
+    // Le fantôme de l'auteur, qui a fini la playlist : son total au même morceau et l'écart, dès la première réponse.
+    await expect(friendPage.getByTestId('run-ghost')).toHaveCount(0);
+    await friend.answerEmpty();
+    await expect(friendPage.getByTestId('run-ghost')).toContainText('AdminE2E 0');
+    await expect(friendPage.getByTestId('run-ghost-gap')).toHaveText('À égalité');
+    await inSequence([1, 2, 3], () => friend.answerEmpty());
+    await friend.answer(null);
+    await expect(friend.nextTrackButton).toHaveText(/Voir le résultat/i);
+    await friend.nextTrackButton.click();
+    await expect(friend.finished).toHaveAttribute('data-status', 'lost');
 
     // Sans accès, pas de « Rejouer » : le jeu du jour à la place.
     await expect(friend.playAgainButton).toHaveCount(0);

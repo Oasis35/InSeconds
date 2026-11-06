@@ -14,7 +14,7 @@ export const TRACK = (overrides: Partial<RunTrack> = {}): RunTrack => ({
 export const SESSION = (overrides: Partial<RunSession> = {}): RunSession => ({
   sessionId: 7, challengeCode: 'ABC234', status: 'pending', rounds: 4, tracksPerRound: 5, listenSeconds: 10, totalScore: 0, roundsPassed: 0,
   round: ROUND(), roundTracks: [], finish: null, answerSeconds: 45, clockRemainingSeconds: null, playedTracks: [], passedRounds: [],
-  difficultyChoice: null, hand: [], offer: null, handSize: 0, nextDisc: null, cardValues: null, ...overrides,
+  difficultyChoice: null, hand: [], offer: null, handSize: 0, nextDisc: null, cardValues: null, ghost: null, ...overrides,
 });
 
 export const CURRENT = (overrides: Partial<RunCurrentTrack> = {}): RunCurrentTrack => ({

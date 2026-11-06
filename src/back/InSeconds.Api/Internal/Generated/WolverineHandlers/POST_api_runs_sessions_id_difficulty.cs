@@ -69,11 +69,13 @@ namespace Internal.Generated.WolverineHandlers
             var efTrackWaveforms = new InSeconds.Api.Modules.Catalogue.Persistence.EfTrackWaveforms(inSecondsDbContext);
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var previewProvider = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Deezer.IPreviewProvider>(serviceScope.ServiceProvider);
+            var efPlayerDirectory = new InSeconds.Api.Modules.Players.Persistence.EfPlayerDirectory(inSecondsDbContext);
+            var efRunsQueries = new InSeconds.Api.Modules.Runs.Persistence.EfRunsQueries(inSecondsDbContext);
             var loggedTrackWaveforms = new InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms(efTrackWaveforms, _loggerOfLoggedTrackWaveforms);
             var deezerTrackPreviews = new InSeconds.Api.Modules.Catalogue.Persistence.DeezerTrackPreviews(previewProvider);
             var efTrackDirectory = new InSeconds.Api.Modules.Catalogue.Persistence.EfTrackDirectory(inSecondsDbContext, _optionsMonitorOfCatalogueOptions);
             var efRunsStore = new InSeconds.Api.Modules.Runs.Persistence.EfRunsStore(inSecondsDbContext);
-            var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, _seededShuffle, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, _runScoringPolicy, _runsRules, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
+            var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, _seededShuffle, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, efRunsQueries, efPlayerDirectory, _runScoringPolicy, _runsRules, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
             // Reading the request body via JSON deserialization
             var (request, jsonContinue) = await ReadJsonAsync<InSeconds.Api.Modules.Runs.Application.ChooseRunDifficulty>(httpContext);

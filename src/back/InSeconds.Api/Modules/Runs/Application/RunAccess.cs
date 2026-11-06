@@ -38,6 +38,12 @@ public interface IRunsQueries
 
     Task<RunRecord?> FindRecordAsync(Guid playerId, CancellationToken ct);
 
+    /// <summary>
+    /// Les points de chaque morceau de la partie finie (gagnée ou perdue) de ce joueur sur ce défi, par position ; vide s'il ne l'a pas finie (le
+    /// fantôme d'un ami).
+    /// </summary>
+    Task<IReadOnlyDictionary<int, int>?> FindFinishedPointsAsync(int challengeId, Guid playerId, CancellationToken ct);
+
     /// <summary>Les parties finies (gagnées ou perdues) de ce joueur, comptées par manches passées : l'étagère des disques.</summary>
     Task<IReadOnlyDictionary<int, int>> CountFinishedRunsAsync(Guid playerId, CancellationToken ct);
 

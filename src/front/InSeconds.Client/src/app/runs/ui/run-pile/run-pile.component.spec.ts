@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import fr from '../../../../../public/i18n/fr.json';
-import { PileEntry, RunTrack } from '../../domain/run';
+import { PileEntry, RunGhostGap, RunTrack } from '../../domain/run';
 import { RunPileComponent } from './run-pile.component';
 
 const track = (position: number, overrides: Partial<RunTrack> = {}): RunTrack => ({
@@ -10,7 +10,7 @@ const track = (position: number, overrides: Partial<RunTrack> = {}): RunTrack =>
 });
 
 describe('RunPileComponent', () => {
-  function render(entries: PileEntry[], total = 300) {
+  function render(entries: PileEntry[], total = 300, ghost: RunGhostGap | null = null) {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     TestBed.inject(TranslateService).setTranslation('fr', fr);
     TestBed.inject(TranslateService).use('fr');
@@ -18,6 +18,7 @@ describe('RunPileComponent', () => {
     fixture.componentRef.setInput('entries', entries);
     fixture.componentRef.setInput('shapes', { 2: [0.3, 0.9] });
     fixture.componentRef.setInput('total', total);
+    fixture.componentRef.setInput('ghost', ghost);
     fixture.detectChanges();
     return { fixture, element: fixture.nativeElement as HTMLElement };
   }
@@ -27,6 +28,20 @@ describe('RunPileComponent', () => {
 
     expect(element.querySelector('[data-testid="run-total-score"]')?.textContent).toBe('300');
     expect(element.textContent).toContain('Total du run');
+  });
+
+  it('le fantôme d\'un ami : son total au même morceau, en violet, et l\'avance ou le retard du joueur ; rien sans fantôme', () => {
+    const line = (ghost: RunGhostGap) => {
+      TestBed.resetTestingModule();
+      return render([], 300, ghost).element.querySelector<HTMLElement>('[data-testid="run-ghost"]')!;
+    };
+    expect(render([]).element.querySelector('[data-testid="run-ghost"]')).toBeNull();
+
+    const ahead = line({ pseudo: 'Alice', total: 240, gap: 60 });
+    expect(ahead.textContent?.replace(/\s+/g, ' ').trim()).toBe('Alice 240 60 pts d’avance');
+    expect((ahead.firstElementChild as HTMLElement).style.color).toBe('var(--color-violet)');
+    expect(line({ pseudo: null, total: 340, gap: -40 }).textContent?.replace(/\s+/g, ' ').trim()).toBe('Ton ami 340 40 pts de retard');
+    expect(line({ pseudo: 'Alice', total: 300, gap: 0 }).querySelector('[data-testid="run-ghost-gap"]')?.textContent?.trim()).toBe('À égalité');
   });
 
   it('un morceau : pochette, forme, « Artiste - Titre » et ses points', () => {

@@ -7,7 +7,7 @@ import { waveformFromBlob } from '../../gameplay/domain/waveform';
 import {
   AUTO_NEXT_MS, CLOCK_ALERT_SECONDS, PileEntry, RunComparison, RunCurrentTrack, RunDifficulty, RunLink, RunPlay, RunRound, RunSession, RunStep, RunsMe,
   isFinished,
-  nextObjective, palierDue, playSteps, playedCount, runPile, stepPosition,
+  ghostGap, nextObjective, palierDue, playSteps, playedCount, runPile, stepPosition,
 } from '../domain/run';
 import { RunCardKey, handFull } from '../domain/run-cards';
 import { RunTick } from './run-tick';
@@ -120,6 +120,8 @@ export const RunGameStore = signalStore(
       rounds: computed(() => store.session()?.rounds ?? 0),
       step,
       totalScore: computed(() => store.session()?.totalScore ?? 0),
+      /** L'écart avec le fantôme de l'ami qui a lancé la playlist, au dernier morceau répondu. */
+      ghost: computed(() => ghostGap(store.session())),
       /** La manche telle que l'écran la montre : celle de l'étape à l'écran, sinon celle du morceau en cours. */
       shownRound: computed<RunRound | null>(() => step()?.round ?? store.session()?.round ?? null),
       /** Le morceau auquel le joueur vient de répondre : sa réponse est dans la carte tant que l'étape est à l'écran. */

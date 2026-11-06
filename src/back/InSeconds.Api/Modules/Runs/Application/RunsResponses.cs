@@ -145,12 +145,21 @@ public sealed record RunShortfallResponse(int Points, RunDiscResponse Disc);
 /// <param name="HandSize">Les emplacements de la main (0 : une playlist sans coups de pouce).</param>
 /// <param name="NextDisc">Le disque que la manche en cours fait gagner si elle est passée (l'écran de palier : « 366 pts pour … ») ; vide une fois finie.</param>
 /// <param name="CardValues">Ce que valent les coups de pouce de cette playlist (règles figées) ; vide sans coups de pouce.</param>
+/// <param name="Ghost">Le fantôme de l'ami qui a lancé la playlist, s'il l'a finie ; vide sinon (sa propre playlist, un ami pas encore arrivé au bout).</param>
 public sealed record RunSessionResponse(
     int SessionId, string ChallengeCode, string Status, int Rounds, int TracksPerRound, decimal ListenSeconds, int TotalScore, int RoundsPassed,
     RunRoundResponse? Round, IReadOnlyList<RunTrackResponse> RoundTracks, RunFinishResponse? Finish,
     int AnswerSeconds, decimal? ClockRemainingSeconds, IReadOnlyList<RunTrackResponse> PlayedTracks, IReadOnlyList<RunPassedRoundResponse> PassedRounds,
     RunDifficultyChoiceResponse? DifficultyChoice = null, IReadOnlyList<RunHandCardResponse>? Hand = null, RunCardOfferResponse? Offer = null,
-    int HandSize = 0, RunDiscResponse? NextDisc = null, RunCardValuesResponse? CardValues = null);
+    int HandSize = 0, RunDiscResponse? NextDisc = null, RunCardValuesResponse? CardValues = null, RunGhostResponse? Ghost = null);
+
+/// <summary>
+/// Le fantôme d'un ami sur la même playlist (celui dont le lien a été ouvert) : son total après chaque morceau, seulement jusqu'au dernier que le joueur
+/// a répondu (rien d'avance). L'écart se lit morceau par morceau ; rien n'y identifie un morceau.
+/// </summary>
+/// <param name="Pseudo">Son pseudo ; vide pour un invité ou un compte effacé (« ton ami » à l'écran).</param>
+/// <param name="Totals">Son total après chacun des morceaux 1, 2… déjà répondus par le joueur.</param>
+public sealed record RunGhostResponse(string? Pseudo, IReadOnlyList<int> Totals);
 
 /// <summary>Ce que valent les coups de pouce d'une playlist, figés avec elle : l'écran les affiche, il n'en invente aucun.</summary>
 /// <param name="ExtendListenSeconds">L'écoute d'un morceau sous « Rallonge ».</param>
