@@ -1353,7 +1353,7 @@ export class RunsClient {
     /**
      * @return OK
      */
-    passRunOffer(id: number, body: PassRunOffer): Observable<RunPlayResponse> {
+    passRunOffer(id: number, body: PassRunOffer): Observable<RunSessionResponse> {
         let url_ = this.baseUrl + "/api/runs/sessions/{id}/cards/pass";
         if (id === undefined || id === null)
             throw new globalThis.Error("The parameter 'id' must be defined.");
@@ -1379,14 +1379,14 @@ export class RunsClient {
                 try {
                     return this.processPassRunOffer(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<RunPlayResponse>;
+                    return _observableThrow(e) as any as Observable<RunSessionResponse>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<RunPlayResponse>;
+                return _observableThrow(response_) as any as Observable<RunSessionResponse>;
         }));
     }
 
-    protected processPassRunOffer(response: HttpResponseBase): Observable<RunPlayResponse> {
+    protected processPassRunOffer(response: HttpResponseBase): Observable<RunSessionResponse> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -1396,7 +1396,7 @@ export class RunsClient {
         if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RunPlayResponse;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RunSessionResponse;
             return _observableOf(result200);
             }));
         } else if (status === 400) {
@@ -1615,6 +1615,7 @@ export interface RunSessionResponse {
     hand?: RunHandCardResponse[] | undefined;
     offer?: RunCardOfferResponse | undefined;
     handSize?: number;
+    nextDisc?: RunDiscResponse | undefined;
 
     [key: string]: any;
 }

@@ -1248,7 +1248,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RunPlayResponse"
+                  "$ref": "#/components/schemas/RunSessionResponse"
                 }
               }
             }
@@ -1951,6 +1951,16 @@
             "type": "integer",
             "format": "int32",
             "default": 0
+          },
+          "nextDisc": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunDiscResponse"
+              }
+            ]
           }
         }
       },

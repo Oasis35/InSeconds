@@ -135,12 +135,13 @@ public sealed record RunFinishResponse(
 /// <param name="Hand">Les cartes en main (vide sans coups de pouce).</param>
 /// <param name="Offer">L'offre du palier, tant qu'elle est ouverte.</param>
 /// <param name="HandSize">Les emplacements de la main (0 : une playlist sans coups de pouce).</param>
+/// <param name="NextDisc">Le disque que la manche en cours fait gagner si elle est passée (l'écran de palier : « 366 pts pour … ») ; vide une fois finie.</param>
 public sealed record RunSessionResponse(
     int SessionId, string ChallengeCode, string Status, int Rounds, int TracksPerRound, decimal ListenSeconds, int TotalScore, int RoundsPassed,
     RunRoundResponse? Round, IReadOnlyList<RunTrackResponse> RoundTracks, RunFinishResponse? Finish,
     int AnswerSeconds, decimal? ClockRemainingSeconds, IReadOnlyList<RunTrackResponse> PlayedTracks, IReadOnlyList<RunPassedRoundResponse> PassedRounds,
     RunDifficultyChoiceResponse? DifficultyChoice = null, IReadOnlyList<RunHandCardResponse>? Hand = null, RunCardOfferResponse? Offer = null,
-    int HandSize = 0);
+    int HandSize = 0, RunDiscResponse? NextDisc = null);
 
 /// <summary>
 /// Ce que rendent le lancement, le démarrage ou la reprise, la redemande d'extrait et la réponse : l'état à jour, puis, dans l'ordre des manches, ce

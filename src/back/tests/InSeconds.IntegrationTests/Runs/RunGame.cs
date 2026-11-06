@@ -124,8 +124,8 @@ internal sealed class RunGamer(RunGame game, Guid id, HttpClient client)
     public Task<HttpResponseMessage> PassOfferRawAsync(int sessionId, int afterRound) =>
         Client.PostAsJsonAsync($"/api/runs/sessions/{sessionId}/cards/pass", new PassRunOffer(afterRound), Ct);
 
-    public async Task<RunPlayResponse> PassOfferAsync(int sessionId, int afterRound) =>
-        await ReadAsync<RunPlayResponse>(await PassOfferRawAsync(sessionId, afterRound));
+    public async Task<RunSessionResponse> PassOfferAsync(int sessionId, int afterRound) =>
+        await ReadAsync<RunSessionResponse>(await PassOfferRawAsync(sessionId, afterRound));
 
     public Task<HttpResponseMessage> DropCardRawAsync(int sessionId, int slot) =>
         Client.PostAsync($"/api/runs/sessions/{sessionId}/cards/{slot}/drop", null, Ct);

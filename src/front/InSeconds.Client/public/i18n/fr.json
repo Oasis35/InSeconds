@@ -1000,6 +1000,46 @@
     },
     "share": {
       "text": "Je te lance une playlist sur InSeconds : 20 morceaux en 4 manches. Tu fais mieux que moi ?"
+    },
+    "palier": {
+      "round": "Manche {{round}}",
+      "shelf": "Les disques de la playlist",
+      "points": "pts",
+      "scoreLabel": "{{score}} points pour un objectif de {{objective}}",
+      "nextRound": "Manche {{round}}",
+      "pointsFor": "pts pour",
+      "offer": "Un coup de pouce",
+      "pass": "Passer",
+      "hand": "En main",
+      "emptySlot": "Emplacement libre",
+      "dropHint": "Touche la carte à lâcher",
+      "next": "Suite"
+    },
+    "cards": {
+      "three_choices": {
+        "name": "Trois choix"
+      },
+      "joker": {
+        "name": "Joker"
+      },
+      "year": {
+        "name": "Année"
+      },
+      "initials": {
+        "name": "Initiales"
+      },
+      "extend": {
+        "name": "Rallonge"
+      },
+      "net": {
+        "name": "Filet"
+      },
+      "lower_target": {
+        "name": "Seuil abaissé"
+      },
+      "hourglass": {
+        "name": "Sablier"
+      }
     }
   }
 }

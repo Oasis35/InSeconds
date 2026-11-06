@@ -60,6 +60,19 @@
         </div>
       }
 
+      <!-- Après une manche passée : le disque gagné, l'objectif suivant, l'offre de cartes et la main, puis « Suite » (qui lance la manche). -->
+      @case ('palier') {
+        @if (store.palier(); as palier) {
+          <div class="screen-enter flex-1 flex flex-col pt-1">
+            <app-run-header [round]="palier.headerRound" [rounds]="store.rounds()" [showStatus]="false" (abandon)="confirmAbandon()" />
+            <app-run-palier class="flex-1 flex flex-col" [passed]="palier.passed" [rounds]="store.rounds()" [wonDiscs]="palier.wonDiscs"
+              [nextRound]="palier.nextRound" [nextObjective]="palier.nextObjective" [nextDisc]="palier.nextDisc" [offer]="palier.offer"
+              [hand]="palier.hand" [handSize]="palier.handSize" [pending]="store.pendingCard()" [busy]="store.palierBusy()"
+              (pick)="store.pickCard($event)" (drop)="store.dropForPending($event)" (pass)="store.passOffer()" (next)="store.continueFromPalier()" />
+          </div>
+        }
+      }
+
       @case ('finished') {
         @if (store.finish(); as finish) {
           <app-run-finish [finish]="finish" [canPlayAgain]="store.canPlayAgain()" [shareCopied]="share.copied()" [shareFailed]="share.failed()"

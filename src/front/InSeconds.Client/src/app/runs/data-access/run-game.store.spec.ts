@@ -282,6 +282,167 @@ describe('RunGameStore', () => {
     });
   });
 
+  describe('écran de palier (playlist à coups de pouce)', () => {
+    const passedRound = { round: 1, score: 320, objective: 225, disc: { key: 'runs.discs.wax', stars: 0 } };
+    const palierSession = (overrides = {}) => SESSION({
+      totalScore: 320, round: ROUND({ round: 2, score: 0, objective: 366, maxScore: 665 }), roundsPassed: 1, roundTracks: [],
+      playedTracks: [TRACK(), TRACK({ position: 2 })], passedRounds: [passedRound], handSize: 2, hand: [{ slot: 1, card: 'year' }],
+      offer: { afterRound: 1, cards: ['three_choices', 'joker', 'hourglass'] }, nextDisc: { key: 'runs.discs.bronze', stars: 0 },
+      difficultyChoice: { round: 2, options: [{ difficulty: 'safe', objective: 366, maxScore: 665, listenSeconds: 10 }] },
+      ...overrides,
+    });
+    const lastOfRound = () => PLAY({
+      session: palierSession(), revealed: TRACK({ position: 2 }), roundSummaries: [summary({ objective: 225 })], current: null,
+    });
+
+    beforeEach(async () => {
+      await startRun();
+      api.answerResult = lastOfRound();
+      await send();
+      audio.calls.length = 0;
+      store.next();
+    });
+
+    it("après la manche passée, l'écran de palier, sans aucun son", () => {
+      expect(store.screen()).toBe('palier');
+      expect(audio.calls.filter(c => c.startsWith('load') || c.startsWith('play'))).toEqual([]);
+      const palier = store.palier()!;
+      expect([palier.passed.round, palier.nextRound, palier.nextObjective, palier.nextDisc]).toEqual([1, 2, 366, 'runs.discs.bronze']);
+      expect(palier.offer?.cards).toEqual(['three_choices', 'joker', 'hourglass']);
+      expect(palier.wonDiscs).toEqual(['runs.discs.wax']);
+    });
+
+    it('main avec une place : toucher une carte la prend', async () => {
+      api.takeResult = palierSession({ hand: [{ slot: 1, card: 'year' }, { slot: 2, card: 'joker' }], offer: null });
+
+      store.pickCard('joker');
+      await vi.waitFor(() => expect(store.palier()?.hand).toHaveLength(2));
+
+      expect(api.calls).toContain('takeCard:7:1:joker:');
+      expect(store.palier()?.offer).toBeNull();
+    });
+
+    it('main pleine : la carte attend, toucher une carte de la main l\'échange', async () => {
+      api.takeResult = palierSession({ hand: [{ slot: 1, card: 'year' }, { slot: 2, card: 'net' }] });
+      store.pickCard('joker');
+      await vi.waitFor(() => expect(store.palier()?.hand).toHaveLength(2));
+      api.takeResult = palierSession({ hand: [{ slot: 2, card: 'net' }, { slot: 3, card: 'hourglass' }], offer: null });
+
+      store.pickCard('hourglass');
+      expect(store.pendingCard()).toBe('hourglass');
+      expect(api.calls.filter(c => c.startsWith('takeCard'))).toHaveLength(1);
+      store.dropForPending(1);
+      await vi.waitFor(() => expect(store.pendingCard()).toBeNull());
+
+      expect(api.calls).toContain('takeCard:7:1:hourglass:1');
+    });
+
+    it('« Passer » ferme l\'offre et garde l\'écran, sans aucun morceau servi', async () => {
+      api.passResult = palierSession({ offer: null });
+
+      await store.passOffer();
+
+      expect(api.calls).toContain('passOffer:7:1');
+      expect(api.calls.filter(c => c.startsWith('refreshPreview'))).toEqual([]);
+      expect(store.screen()).toBe('palier');
+      expect(store.palier()?.offer).toBeNull();
+    });
+
+    it('une prise refusée (offre fermée ailleurs) relit la partie', async () => {
+      api.takeResult = new Error('409');
+      api.sessionResult = palierSession({ offer: null });
+
+      store.pickCard('joker');
+      await vi.waitFor(() => expect(store.palier()?.offer).toBeNull());
+
+      expect(api.calls).toContain('session:7');
+    });
+
+    it('deux touchers sur « Suite » ne choisissent qu\'une fois', async () => {
+      api.chooseResult = PLAY({
+        session: palierSession({ offer: null, difficultyChoice: null }),
+        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }),
+      });
+
+      store.continueFromPalier();
+      store.continueFromPalier();
+      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
+
+      expect(api.calls.filter(c => c.startsWith('chooseDifficulty'))).toHaveLength(1);
+      expect(store.screen()).toBe('playing');
+    });
+
+    it('« Suite » déverrouille le son dans le clic, puis la manche démarre (en Sûre, en attendant l\'écran de difficulté)', async () => {
+      api.chooseResult = PLAY({
+        session: palierSession({ offer: null, difficultyChoice: null }),
+        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }),
+      });
+
+      store.continueFromPalier();
+      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
+
+      expect(audio.calls[0]).toBe('unlock');
+      expect(api.calls).toContain('chooseDifficulty:7:2:safe');
+      expect(audio.calls).toContain('load https://cdn/preview-6.mp3');
+      expect(store.screen()).toBe('playing');
+    });
+  });
+
+  describe('palier : reprise et manche sans difficulté à choisir', () => {
+    const passedRound = { round: 1, score: 320, objective: 225, disc: { key: 'runs.discs.wax', stars: 0 } };
+    const atPalier = (overrides = {}) => SESSION({
+      totalScore: 320, round: ROUND({ round: 2, score: 0, objective: 366, maxScore: 665 }), roundsPassed: 1, roundTracks: [],
+      playedTracks: [TRACK(), TRACK({ position: 2 })], passedRounds: [passedRound], handSize: 2, hand: [{ slot: 1, card: 'year' }],
+      offer: { afterRound: 1, cards: ['three_choices', 'joker', 'hourglass'] }, nextDisc: { key: 'runs.discs.bronze', stars: 0 },
+      ...overrides,
+    });
+
+    it('reprendre une partie arrêtée au palier : l\'écran de palier revient, sans son', async () => {
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+      api.sessionResult = atPalier();
+      api.joinResult = { kind: 'ok', play: PLAY({ session: atPalier(), current: null, isResuming: true }) };
+      await store.init();
+
+      await store.begin();
+
+      expect(store.screen()).toBe('palier');
+      expect(audio.calls.filter(c => c.startsWith('load'))).toEqual([]);
+    });
+
+    it('sans difficulté à choisir : « Suite » passe l\'offre puis demande le morceau, qui part', async () => {
+      api.joinResult = { kind: 'ok', play: PLAY({ session: atPalier(), current: null, isResuming: true }) };
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+      api.refreshResult = PLAY({
+        session: atPalier({ offer: null }),
+        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }),
+      });
+      await store.init();
+      await store.begin();
+
+      store.continueFromPalier();
+      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
+
+      expect(api.calls).toContain('passOffer:7:1');
+      expect(api.calls).toContain('refreshPreview:7');
+      expect(audio.calls).toContain('load https://cdn/preview-6.mp3');
+      expect(store.screen()).toBe('playing');
+    });
+
+    it('une carte déjà prise (offre fermée) : « Suite » demande seulement le morceau', async () => {
+      api.joinResult = { kind: 'ok', play: PLAY({ session: atPalier({ offer: null, difficultyChoice: null }), current: null, isResuming: true }) };
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+      api.refreshResult = PLAY({ session: atPalier({ offer: null }), current: CURRENT({ position: 6, round: 2, positionInRound: 1 }) });
+      await store.init();
+      await store.begin();
+
+      // Sans offre ni difficulté ouvertes, le serveur ne retient plus le joueur au palier : la manche part directement.
+      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
+
+      expect(api.calls.filter(c => c.startsWith('passOffer'))).toEqual([]);
+      expect(api.calls).toContain('refreshPreview:7');
+    });
+  });
+
   describe('fin de partie', () => {
     const finish = (status: 'won' | 'lost') => ({
       status, disc: { key: 'runs.discs.gold', stars: 0 }, totalScore: 2500, roundsPassed: 4, foundCount: 18, trackCount: 20,

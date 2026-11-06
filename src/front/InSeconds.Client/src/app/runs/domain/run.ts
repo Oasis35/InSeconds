@@ -3,6 +3,8 @@
  * les écrans en tirent (barre d'objectif, pastilles, libellés). Le serveur décide de tout (points, jauge, neutralisation, fin) : le front affiche.
  */
 
+import { RunCardOffer, RunHandCard } from './run-cards';
+
 export type RunStatus = 'pending' | 'won' | 'lost' | 'abandoned';
 
 /** Un morceau joué (ou neutralisé) : ce que la carte de réponse montre. Les noms ne viennent qu'avec la réponse (piège 31). */
@@ -91,6 +93,14 @@ export interface RunSession {
    * qu'avec le choix.
    */
   readonly difficultyChoice: RunDifficultyChoice | null;
+  /** Les cartes en main (vide sans coups de pouce). */
+  readonly hand: readonly RunHandCard[];
+  /** L'offre du palier, tant qu'elle est ouverte. */
+  readonly offer: RunCardOffer | null;
+  /** Les emplacements de la main ; 0 : une playlist sans coups de pouce (pas d'écran de palier). */
+  readonly handSize: number;
+  /** Le disque que la manche en cours fait gagner si elle est passée ; `null` une fois la partie finie. */
+  readonly nextDisc: RunDisc | null;
 }
 
 /** Une difficulté de manche : objectif et plafond plus ou moins hauts. */
@@ -301,6 +311,23 @@ export function runSegments(rounds: number, shown: Pick<RunRound, 'round' | 'sco
     const bar = objectiveBar(shown);
     return { state: 'current', fill: bar.scoreRatio, mark: bar.objectiveRatio };
   });
+}
+
+/**
+ * L'écran de palier est dû : la playlist a des coups de pouce, la manche précédente vient d'être passée, et le serveur dit que la manche en cours
+ * attend encore le joueur (son offre est ouverte ou sa difficulté reste à choisir : rien n'y a commencé), sauf si le joueur l'a déjà quitté par
+ * « Suite » (`dismissedFor`, la manche qu'il a ouverte).
+ */
+export function palierDue(session: RunSession, dismissedFor: number | null): boolean {
+  const round = session.round;
+  if (session.status !== 'pending' || session.handSize <= 0 || !round || round.round < 2 || dismissedFor === round.round) return false;
+  return (session.offer !== null || session.difficultyChoice !== null) && session.roundTracks.length === 0
+    && session.passedRounds.some(p => p.round === round.round - 1);
+}
+
+/** L'objectif de la manche à venir montré au palier : celui de « Sûre » (la difficulté se choisit ensuite), sinon celui de la manche. */
+export function nextObjective(session: RunSession): number {
+  return session.difficultyChoice?.options.find(o => o.difficulty === 'safe')?.objective ?? session.round?.objective ?? 0;
 }
 
 /** Les points qui manquent pour passer la manche (0 : objectif atteint). */

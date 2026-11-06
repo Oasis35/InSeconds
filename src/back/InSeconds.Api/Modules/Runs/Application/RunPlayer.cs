@@ -199,6 +199,8 @@ internal static class RunViews
 
     public static string DifficultyOf(RoundProgress progress) => RunDifficulties.KeyOf(progress.Difficulty);
 
+    private static RunDiscResponse DiscOf(RunDisc disc) => new(disc.Key, disc.Stars);
+
     public static RunRoundSummaryResponse Summary(LoadedRun run, RunStep step, IRunScoringPolicy scoring)
     {
         var progress = run.Session.RoundProgressOf(run.Challenge, step.Round, scoring);
@@ -225,7 +227,7 @@ internal static class RunViews
         {
             var passed = session.RoundProgressOf(challenge, r, scoring);
             var disc = DiscLadder.Of(r, discs);
-            return new RunPassedRoundResponse(r, passed.Score, passed.Objective, new RunDiscResponse(disc.Key, disc.Stars), DifficultyOf(passed));
+            return new RunPassedRoundResponse(r, passed.Score, passed.Objective, DiscOf(disc), DifficultyOf(passed));
         }).ToList();
         RunDifficultyChoiceResponse? choice = null;
         if (session.IsPending)
@@ -248,7 +250,8 @@ internal static class RunViews
             rules.AnswerSeconds, session.IsPending ? session.ClockRemaining(rules, now) : null, playedTracks, passedRounds, choice,
             session.Hand.Select(c => new RunHandCardResponse(c.Slot, RunCards.KeyOf(c.Card))).ToList(),
             session.OpenOffer(challenge) is { } offer ? new RunCardOfferResponse(offer.AfterRound, offer.Cards.Select(RunCards.KeyOf).ToList()) : null,
-            rules.Cards?.HandSize ?? 0);
+            rules.Cards?.HandSize ?? 0,
+            session.IsPending ? DiscOf(DiscLadder.Of(session.RoundsPassed + 1, discs)) : null);
     }
 
     // Chaque difficulté proposée, calculée sur les morceaux de la manche (un morceau déjà neutralisé en est retiré, comme pour la jauge).
@@ -274,7 +277,7 @@ internal static class RunViews
         var disc = DiscLadder.Of(session.RoundsPassed, discs);
 
         return new RunFinishResponse(
-            StatusOf(session.Status), new RunDiscResponse(disc.Key, disc.Stars), session.TotalScore, session.RoundsPassed,
+            StatusOf(session.Status), DiscOf(disc), session.TotalScore, session.RoundsPassed,
             answers.Count(a => a.ArtistCorrect && a.TitleCorrect), challenge.Tracks.Count, tracks, rounds,
             record is null ? null : new RunRecordResponse(record.BestScore, record.BestRoundsPassed, record.SessionId == session.Id),
             challenge.Code);
