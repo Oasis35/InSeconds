@@ -54,4 +54,21 @@ describe('RunHeaderComponent', () => {
   it('le titre de la manche est le seul titre de la page', () => {
     expect(render().element.querySelectorAll('h1')).toHaveLength(1);
   });
+
+  it('le haut-parleur coupe ou remet les sons, son libellé suit', () => {
+    const { fixture, element } = render();
+    const toggled = vi.fn();
+    fixture.componentInstance.toggleSounds.subscribe(toggled);
+    const button = element.querySelector<HTMLButtonElement>('[data-testid="run-sounds"]')!;
+    expect(button.getAttribute('aria-label')).toBe('Couper les sons');
+
+    button.click();
+    fixture.componentRef.setInput('muted', true);
+    fixture.detectChanges();
+
+    expect(toggled).toHaveBeenCalledTimes(1);
+    expect(button.getAttribute('aria-label')).toBe('Remettre les sons');
+    // Le libellé dit l'action : pas d'`aria-pressed` en plus (« Remettre les sons, enfoncé » se contredirait).
+    expect(button.hasAttribute('aria-pressed')).toBe(false);
+  });
 });
