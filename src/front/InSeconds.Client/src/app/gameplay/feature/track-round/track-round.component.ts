@@ -64,7 +64,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
                     [style.border-color]="picked() === $index && phase === 'submitting' ? 'var(--color-accent)' : 'var(--border-strong)'"
                     [style.opacity]="picked() === $index && phase === 'submitting' ? 1 : null"
                     [disabled]="phase === 'submitting' || locked()" (click)="pickChoice(option, $index)" data-testid="round-choice">
-                    <span class="font-semibold">{{ option.artist }}</span> <span style="color:var(--text-light)">- {{ option.title }}</span>
+                    <span class="font-semibold">{{ option.artist }}</span>&ngsp;<span style="color:var(--text-light)">- {{ option.title }}</span>
                   </button>
                 }
               </div>

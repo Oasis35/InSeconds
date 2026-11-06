@@ -108,4 +108,18 @@ Les images de `maquettes/` sont la copie figée du 18/10/2026 ; l'app a évolué
 - **Comparaison** : le tableau est en pleine largeur, sans carte, filets en haut et en bas comme la liste des morceaux du résultat du jour ; les totaux sont dans la police du score ; sa propre ligne s'appelle « Toi » (et non son pseudo).
 - **Accès refusé** et **lien d'une playlist déjà jouée** : voir plus haut, sans écran ou directement la comparaison.
 
-Les captures réelles qui remplaceraient les maquettes restent à faire (cf. [`../taches.md`](../taches.md)).
+## Captures de l'app (06/11/2026)
+
+Prises sur un téléphone de 390 × 844 (`maquettes/app/`), proto 2 compris. Ce sont elles qui disent ce qui tourne ; les maquettes au-dessus gardent l'intention de départ.
+
+| Manche, carte en main | Carte jouée (« Trois choix » proposerait trois réponses) | Réponse dans la carte |
+|---|---|---|
+| ![Manche](maquettes/app/manche.png) | ![Carte jouée](maquettes/app/manche-carte-jouee.png) | ![Réponse](maquettes/app/reponse.png) |
+
+| Palier | « Difficulté ? » | Fin du run |
+|---|---|---|
+| ![Palier](maquettes/app/palier.png) | ![Difficulté](maquettes/app/difficulte.png) | ![Fin](maquettes/app/fin.png) |
+
+| Accueil du mode, étagère | Lien reçu | Fantôme de l'auteur et série | Comparaison |
+|---|---|---|---|
+| ![Accueil du mode](maquettes/app/accueil-mode.png) | ![Lien reçu](maquettes/app/lien-recu.png) | ![Fantôme](maquettes/app/fantome.png) | ![Comparaison](maquettes/app/comparaison.png) |

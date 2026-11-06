@@ -498,3 +498,11 @@ export function comboOf(tracks: readonly Pick<RunTrack, 'position' | 'neutralize
   }
   return combo;
 }
+
+/**
+ * Où en est une partie, vu du serveur : son statut, ses morceaux joués, l'offre et le choix de difficulté en attente, sa main. Deux relectures
+ * différentes disent qu'elle a avancé ailleurs (un autre onglet) ; la même relecture, que rien n'a bougé.
+ */
+export const progressKey = (session: Pick<RunSession, 'status' | 'playedTracks' | 'offer' | 'difficultyChoice' | 'hand'>): string =>
+  [session.status, session.playedTracks.length, session.offer?.afterRound ?? '', session.difficultyChoice?.round ?? '',
+    session.hand.map(c => `${c.slot}:${c.card}`).join(',')].join('|');

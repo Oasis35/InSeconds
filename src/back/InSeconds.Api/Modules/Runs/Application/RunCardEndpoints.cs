@@ -51,13 +51,18 @@ public static class TakeRunCardEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public static async Task<RunSessionResponse> Post(
-        TakeRunCard request, [NotBody] PlayableRun loaded, [NotBody] RunPlayer player, TimeProvider time, ILogger<TakeRunCard> logger,
-        CancellationToken ct)
+        TakeRunCard request, [NotBody] PlayableRun loaded, [NotBody] RunPlayer player, TimeProvider time, [NotBody] RunsMetrics metrics,
+        ILogger<TakeRunCard> logger, CancellationToken ct)
     {
         var (session, challenge) = loaded;
         var card = RunCards.Parse(request.Card)!.Value;
+        // La carte lâchée en échange (main pleine) se lit avant l'échange.
+        var dropped = request.DropSlot is { } slot ? session.Hand.FirstOrDefault(c => c.Slot == slot)?.Card : null;
         session.TakeCard(challenge, request.AfterRound, card, request.DropSlot, time.GetUtcNow());
         RunsLog.CardTaken(logger, session.Id, session.PlayerId, request.AfterRound, request.Card);
+        metrics.CardTaken(RunCards.KeyOf(card));
+        if (dropped is { } drop)
+            metrics.CardDropped(RunCards.KeyOf(drop));
         return await player.StateAsync(await player.LoadAsync(session, challenge, ct), ct);
     }
 }
@@ -85,10 +90,13 @@ public static class DropRunCardEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public static async Task<RunSessionResponse> Post(
-        int slot, [NotBody] PlayableRun loaded, [NotBody] RunPlayer player, TimeProvider time, CancellationToken ct)
+        int slot, [NotBody] PlayableRun loaded, [NotBody] RunPlayer player, TimeProvider time, [NotBody] RunsMetrics metrics, CancellationToken ct)
     {
         var (session, challenge) = loaded;
+        var dropped = session.Hand.FirstOrDefault(c => c.Slot == slot)?.Card;
         session.DropCard(slot, time.GetUtcNow());
+        if (dropped is { } card)
+            metrics.CardDropped(RunCards.KeyOf(card));
         return await player.StateAsync(await player.LoadAsync(session, challenge, ct), ct);
     }
 }
@@ -139,10 +147,12 @@ public static class PassRunOfferEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public static async Task<RunSessionResponse> Post(PassRunOffer request, [NotBody] PlayableRun loaded, [NotBody] RunPlayer player, CancellationToken ct)
+    public static async Task<RunSessionResponse> Post(
+        PassRunOffer request, [NotBody] PlayableRun loaded, [NotBody] RunPlayer player, [NotBody] RunsMetrics metrics, CancellationToken ct)
     {
         var (session, challenge) = loaded;
         session.PassOffer(challenge, request.AfterRound);
+        metrics.OfferPassed();
         return await player.StateAsync(await player.LoadAsync(session, challenge, ct), ct);
     }
 }
@@ -195,12 +205,13 @@ public static class PlayRunCardEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public static async Task<RunPlayResponse> Post(
-        int slot, PlayRunCard request, [NotBody] CardPlay loaded, [NotBody] RunPlayer player, TimeProvider time, ILogger<PlayRunCard> logger,
-        CancellationToken ct)
+        int slot, PlayRunCard request, [NotBody] CardPlay loaded, [NotBody] RunPlayer player, TimeProvider time, [NotBody] RunsMetrics metrics,
+        ILogger<PlayRunCard> logger, CancellationToken ct)
     {
         var (session, challenge) = loaded.Run;
         var card = session.PlayCard(challenge, slot, time.GetUtcNow(), loaded.YearKnown, loaded.Decoys);
         RunsLog.CardPlayed(logger, session.Id, session.PlayerId, request.Position, RunCards.KeyOf(card.Card));
+        metrics.CardPlayed(RunCards.KeyOf(card.Card));
         return await player.AdvanceAsync(await player.LoadAsync(session, challenge, ct), answered: null, revealed: null, isResuming: false, ct);
     }
 }

@@ -7,7 +7,7 @@ import { waveformFromBlob } from '../../gameplay/domain/waveform';
 import {
   AUTO_NEXT_MS, CLOCK_ALERT_SECONDS, COMBO_MIN, PileEntry, RunComparison, RunCurrentTrack, RunDifficulty, RunLink, RunPlay, RunRound, RunSession, RunStep, RunsMe,
   isFinished,
-  comboOf, ghostGap, nextObjective, palierDue, playSteps, playedCount, runPile, stepPosition,
+  comboOf, ghostGap, nextObjective, progressKey, palierDue, playSteps, playedCount, runPile, stepPosition,
 } from '../domain/run';
 import { RunCardKey, handFull } from '../domain/run-cards';
 import { RunSounds } from './run-sounds';
@@ -706,6 +706,43 @@ export const RunGameStore = signalStore(
         void api.startClock(session.sessionId, current.position)
           .then(left => { if (left !== null) alignClock(current.position, left); })
           .catch(() => undefined);
+      },
+      /**
+       * L'onglet revient au premier plan : la partie a pu avancer ou finir dans un autre onglet. En jeu, elle se relit : finie, l'écran de fin ;
+       * avancée, l'écran de reprise (le prochain son partira d'un toucher) ; rien n'a bougé, rien ne change. Jamais pendant un envoi (la
+       * réponse en route ferait croire à une partie avancée ailleurs). Sur l'accueil ou la reprise du mode, la partie en cours se relit aussi.
+       */
+      async refresh(): Promise<void> {
+        const screen = store.screen();
+        const session = store.session();
+        if ((screen === 'playing' || screen === 'palier' || screen === 'difficulty') && session) {
+          if (round.phase() === 'submitting' || store.cardBusy() || store.palierBusy() || store.difficultyBusy()) return;
+          try {
+            const fresh = await api.session(session.sessionId);
+            const now = store.session();
+            if (now?.sessionId !== session.sessionId || progressKey(fresh) === progressKey(now)) return;
+            if (isFinished(fresh)) {
+              round.reset();
+              cancelAutoNext();
+              stopClock();
+              patchState(store, { session: fresh, current: null, steps: [], screen: 'finished' });
+              void refreshMe();
+            } else {
+              await init();
+            }
+          } catch {
+            // hors ligne : la partie continue telle quelle
+          }
+          return;
+        }
+        if ((screen === 'welcome' || screen === 'resume') && !store.code()) {
+          try {
+            const me = await api.me();
+            if ((screen === 'welcome') !== (me.pending === null)) await init();
+          } catch {
+            // hors ligne : l'écran reste tel quel
+          }
+        }
       },
       /** Les sons d'interface sont coupés (le bouton de l'en-tête). */
       soundsMuted: sounds.muted,

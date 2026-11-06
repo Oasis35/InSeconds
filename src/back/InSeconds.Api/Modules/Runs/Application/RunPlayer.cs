@@ -159,7 +159,7 @@ public sealed class RunPlayer(
             record.Improve(session, time.GetUtcNow());
 
         RunsLog.SessionEnded(logger, session.Id, session.PlayerId, session.Status, session.RoundsPassed, session.TotalScore);
-        metrics.SessionEnded(session.Status == RunSessionStatus.Won, DiscLadder.Of(session.RoundsPassed, rules.Discs).Key);
+        metrics.SessionEnded(session.Status == RunSessionStatus.Won, DiscLadder.Of(session.RoundsPassed, rules.Discs).Key, session.RoundsPassed);
     }
 }
 

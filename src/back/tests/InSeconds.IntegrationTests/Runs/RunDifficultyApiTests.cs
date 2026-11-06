@@ -58,6 +58,24 @@ public class RunDifficultyApiTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal((6, 10m), (chosen.Current.Position, chosen.Current.ListenSeconds));
     }
 
+    private Microsoft.Extensions.Diagnostics.Metrics.Testing.MetricCollector<long> Collect(string instrument) =>
+        new(_run.Api.Services.GetRequiredService<System.Diagnostics.Metrics.IMeterFactory>(), RunsMetrics.MeterName, instrument);
+
+    private static string? Tag(Microsoft.Extensions.Diagnostics.Metrics.Testing.CollectedMeasurement<long> m, string key) =>
+        m.Tags.TryGetValue(key, out var value) ? Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) : null;
+
+    [Fact]
+    public async Task Mesure_LaDifficulteChoisie_ParManche()
+    {
+        using var difficulties = Collect(RunsMetrics.DifficultiesName);
+        var (alice, id, _) = await InRoundTwoAsync();
+
+        await alice.ChooseAsync(id, 2, "risky");
+
+        var chosen = Assert.Single(difficulties.GetMeasurementSnapshot());
+        Assert.Equal(("2", "risky"), (Tag(chosen, "round"), Tag(chosen, "difficulty")));
+    }
+
     [Fact]
     public async Task Choisir_Risquee_PointsEtObjectifALaDifficulte_PuisPlusDeChoix()
     {

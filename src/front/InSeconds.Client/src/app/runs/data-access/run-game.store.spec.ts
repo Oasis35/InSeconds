@@ -685,6 +685,58 @@ describe('RunGameStore', () => {
     });
   });
 
+  describe('retour de l\'onglet au premier plan', () => {
+    it('rien n\'a bougé ailleurs : la manche continue, sans rien relancer', async () => {
+      await startRun();
+      api.sessionResult = SESSION({ roundTracks: [], playedTracks: [] });
+      audio.calls.length = 0;
+
+      await store.refresh();
+
+      expect(api.calls).toContain('session:7');
+      expect(store.screen()).toBe('playing');
+      expect(audio.calls).toEqual([]);
+    });
+
+    it('la partie a été finie dans un autre onglet : l\'écran de fin', async () => {
+      await startRun();
+      api.sessionResult = SESSION({
+        status: 'lost', round: null, playedTracks: [1, 2, 3, 4, 5].map(position => TRACK({ position, artistCorrect: false, titleCorrect: false })),
+        finish: {
+          status: 'lost', disc: { key: 'runs.discs.scratched', stars: 0 }, totalScore: 0, roundsPassed: 0, foundCount: 0, trackCount: 20,
+          tracks: [], rounds: [], record: null, challengeCode: 'ABC234', shortfall: null,
+        },
+      });
+
+      await store.refresh();
+
+      expect(store.screen()).toBe('finished');
+      expect(store.finish()?.status).toBe('lost');
+    });
+
+    it('la partie a avancé dans un autre onglet : l\'écran de reprise (le son repartira d\'un toucher)', async () => {
+      await startRun();
+      api.sessionResult = SESSION({ playedTracks: [TRACK({ position: 1 }), TRACK({ position: 2 })], roundTracks: [TRACK({ position: 1 }), TRACK({ position: 2 })] });
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+      audio.calls.length = 0;
+
+      await store.refresh();
+
+      expect(store.screen()).toBe('resume');
+      expect(audio.calls.filter(c => c.startsWith('load'))).toEqual([]);
+    });
+
+    it('sur l\'accueil du mode, une partie lancée dans un autre onglet propose de la reprendre', async () => {
+      await store.init();
+      expect(store.screen()).toBe('welcome');
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+
+      await store.refresh();
+
+      expect(store.screen()).toBe('resume');
+    });
+  });
+
   describe('sons d\'interface', () => {
     it('le bouton les coupe puis les remet ; le toucher réveille aussi le son', () => {
       const unlock = vi.spyOn(TestBed.inject(RunSounds), 'unlock');

@@ -39,6 +39,25 @@ public class RunCardApiTests(PostgresFixture postgres) : IAsyncLifetime
         return (alice, await alice.LaunchAsync());
     }
 
+    private Microsoft.Extensions.Diagnostics.Metrics.Testing.MetricCollector<long> Collect(string instrument) =>
+        new(_run.Api.Services.GetRequiredService<System.Diagnostics.Metrics.IMeterFactory>(), RunsMetrics.MeterName, instrument);
+
+    private static string? Tag(Microsoft.Extensions.Diagnostics.Metrics.Testing.CollectedMeasurement<long> m, string key) =>
+        m.Tags.TryGetValue(key, out var value) ? Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) : null;
+
+    [Fact]
+    public async Task Mesure_UneCarteJouee_ParCarte_SansRienDuJoueur()
+    {
+        using var cards = Collect(RunsMetrics.CardsName);
+        var (alice, start) = await LaunchWithAsync("year");
+
+        await alice.PlayCardAsync(start.Session.SessionId, 1, 1);
+
+        var played = Assert.Single(cards.GetMeasurementSnapshot());
+        Assert.Equal((RunsMetrics.CardPlayedAction, "year"), (Tag(played, "action"), Tag(played, "card")));
+        Assert.Equal(["action", "card"], played.Tags.Keys.Order());
+    }
+
     [Fact]
     public async Task AuDepart_UneCarteEnMain_PasDOffre()
     {
