@@ -1,6 +1,6 @@
 # Run (Platines) : proto 2, palier, difficulté et coups de pouce
 
-Règles et écrans du proto 2, décidés avec Clément le 05/11/2026. **En cours de livraison sur le staging** : le back des difficultés et de la réserve du Joker ([#498](https://github.com/Oasis35/InSeconds/issues/498)) et celui des coups de pouce ([#499](https://github.com/Oasis35/InSeconds/issues/499)) sont faits, ainsi que l'écran de palier ([#500](https://github.com/Oasis35/InSeconds/issues/500)) et l'écran « Difficulté ? » ([#501](https://github.com/Oasis35/InSeconds/issues/501)), le reste suit ticket par ticket ; le proto 1 ([`regles.md`](regles.md)) reste la référence de ce qui tourne en prod. Les chiffres marqués « provisoire » se règlent après les parties de test. Maquette interactive : artifact « Platines, palier et pari » sur claude.ai (privé) ; les captures de [`maquettes/`](maquettes/) (`proto2-*.png`) en sont tirées le 05/11/2026. Plan et tickets : [`plan.md`](plan.md).
+Règles et écrans du proto 2, décidés avec Clément le 05/11/2026. **Livré sur le staging** (tickets [#498](https://github.com/Oasis35/InSeconds/issues/498) à [#505](https://github.com/Oasis35/InSeconds/issues/505), une PR chacun, sauf #504 en trois) : difficultés et réserve du Joker, coups de pouce, écran de palier, « Difficulté ? », cartes jouées en manche, fin du run (« Rejouer », partage en grille, étagère), fantôme d'un ami, série de bonnes réponses, sons d'interface, mesure et tableau Grafana ; le proto 1 ([`regles.md`](regles.md)) reste la référence de ce qui tourne en prod tant que `env/staging` n'est pas promu. Captures de l'app : [`ecrans.md`](ecrans.md) § Captures de l'app. Les chiffres marqués « provisoire » se règlent après les parties de test. Maquette interactive : artifact « Platines, palier et pari » sur claude.ai (privé) ; les captures de [`maquettes/`](maquettes/) (`proto2-*.png`) en sont tirées le 05/11/2026. Plan et tickets : [`plan.md`](plan.md).
 
 ## Ce que le proto 2 change
 
@@ -38,13 +38,17 @@ Du haut vers le bas, sans phrase d'explication :
 
 Le disque se pose, le score monte jusqu'au repère, les cartes arrivent une à une : animations GSAP par la façade `ui/motion`, rien entre le toucher et `play()` (pièges 44 et 46), `prefers-reduced-motion` respecté.
 
-![Écran de palier](maquettes/proto2-palier.png)
+| Maquette | L'app |
+|---|---|
+| ![Écran de palier (maquette)](maquettes/proto2-palier.png) | ![Écran de palier](maquettes/app/palier.png) |
 
 ## La difficulté de la manche
 
 Trois colonnes à plat sur une base commune, hauteur proportionnelle au **plafond de points** de la manche, avec en pointillé l'**objectif** : un cadenas et son chiffre posés sur la frontière, la zone dessous assombrie. Titre « Difficulté ? », « Ton score » en haut, le total atteignable (« → 1250 ») sous chaque plafond, les bonus en main en bas. Aucune colonne n'est présélectionnée.
 
-![Écran « Difficulté ? »](maquettes/proto2-difficulte.png)
+| Maquette | L'app |
+|---|---|
+| ![Écran « Difficulté ? » (maquette)](maquettes/proto2-difficulte.png) | ![Écran « Difficulté ? »](maquettes/app/difficulte.png) |
 
 | Difficulté | Objectif (provisoire) | Plafond de la manche (provisoire) |
 |---|---|---|
@@ -86,7 +90,9 @@ Des cartes à **usage unique**, jouées sur le morceau en cours. **2 emplacement
 - Une carte jouée monte dans la carte du morceau (animation), avec ce qu'elle révèle (l'année, les initiales, les secondes ajoutées) ; le serveur en tient le compte (une carte ne se joue qu'une fois). « Trois choix » remplace le champ et « Valider » par les trois réponses à toucher ; « Rallonge » relance l'écoute sur 20 s ; un Joker passe au morceau de réserve, écoute et chrono remis à zéro.
 - Côté serveur : une même carte ne se joue qu'une fois par morceau (« Seuil abaissé » une fois par manche) ; un Joker sort le morceau suivant de la réserve de la manche, remet l'écoute et le chrono à zéro, et efface les cartes déjà jouées sur l'ancien morceau ; « Trois choix » propose deux morceaux du catalogue hors de la playlist, d'autres artistes, les mêmes pour tous les joueurs ; « Filet » donne les points d'un morceau à moitié trouvé sans changer les verdicts (le partage montre toujours un morceau raté). L'offre d'un palier reste ouverte jusqu'à ce qu'une carte soit prise, que le joueur la passe, ou qu'il choisisse la difficulté ; tant qu'elle est ouverte, rien du premier morceau de la manche ne part. Jouer une carte ferme aussi le choix de la difficulté. Une carte qui n'aurait rien à changer ne se joue pas (Joker sans réserve, Année inconnue, Trois choix sans deux leurres, Sablier sans chrono ou après le chrono). « Rallonge » donne 20 s d'écoute même dans la manche boss ; « Filet » puis « Passer » rapporte les points d'un morceau à moitié trouvé (c'est un morceau raté), jamais une réponse en retard.
 
-![Manche 2 avec les cartes en main](maquettes/proto2-manche-cartes.png)
+| Maquette | L'app |
+|---|---|
+| ![Manche 2 avec les cartes en main (maquette)](maquettes/proto2-manche-cartes.png) | ![Une carte jouée sur le morceau](maquettes/app/manche-carte-jouee.png) |
 
 ## Fin du run, partage et viralité
 
@@ -118,7 +124,7 @@ Les noms exacts viendront de la conception ([`conception.md`](conception.md) § 
 - **Calcul des points** : côté serveur uniquement ; la difficulté et chaque carte sont des décorateurs de la politique de score ou des modificateurs des règles de la manche. Le client ne propose jamais de score.
 - **Routes** : choix de la difficulté (qui démarre le morceau), prise d'une carte, jeu d'une carte, lâcher une carte ; erreurs en ProblemDetails avec codes stables `runs.*`.
 - **Front** (domaine `runs/`) : écran de palier, écran de difficulté, main, cartes au-dessus du champ, grille de partage ; textes FR/EN ; animations par `ui/motion`.
-- **Mesure** : compteurs par difficulté choisie, par carte prise et jouée, et part des runs perdus à l'objectif (`RunsMetrics`, tableau Grafana « Activité »).
+- **Mesure** : compteurs par difficulté choisie (`inseconds.runs.difficulties`, par manche), par carte prise, lâchée et jouée et par offre passée (`inseconds.runs.cards`), et la manche ratée de chaque run perdu (étiquette `round` de l'événement `lost`), d'où la part des runs perdus à l'objectif (`RunsMetrics`, rangée « Platines » du tableau Grafana « Activité »).
 - **Tests** : unitaires des politiques de score et des cartes, intégration des routes, E2E (palier, difficulté, carte jouée, run perdu), tests de règles figées d'une playlist déjà créée.
 
 ## Découpage en tickets

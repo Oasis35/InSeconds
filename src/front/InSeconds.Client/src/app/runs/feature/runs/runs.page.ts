@@ -47,7 +47,7 @@ import { reloadMomentFor } from '../reload-moment';
   providers: [RunGameStore, TrackRoundStore, RunShare, RunSounds],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './runs.page.html',
-  host: { '(window:beforeunload)': 'onBeforeUnload($event)' },
+  host: { '(window:beforeunload)': 'onBeforeUnload($event)', '(document:visibilitychange)': 'onVisibilityChange()' },
 })
 export class RunsPage implements OnInit {
   protected readonly store = inject(RunGameStore);
@@ -95,6 +95,10 @@ export class RunsPage implements OnInit {
     void this.store.init(this.code);
   }
 
+  /** Retour de l'onglet au premier plan : la partie a pu avancer ou finir dans un autre onglet (comme au Daily). */
+  protected onVisibilityChange(): void {
+    if (document.visibilityState === 'visible') void this.store.refresh();
+  }
   protected onBeforeUnload(event: BeforeUnloadEvent): void {
     if (this.store.screen() === 'playing') event.preventDefault();
   }

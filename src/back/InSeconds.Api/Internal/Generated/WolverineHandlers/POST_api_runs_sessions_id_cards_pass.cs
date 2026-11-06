@@ -126,7 +126,7 @@ namespace Internal.Generated.WolverineHandlers
 
                 
                 // The actual HTTP request handler execution
-                var runSessionResponse_response = await InSeconds.Api.Modules.Runs.Application.PassRunOfferEndpoint.Post(request, playableRun, runPlayer, httpContext.RequestAborted).ConfigureAwait(false);
+                var runSessionResponse_response = await InSeconds.Api.Modules.Runs.Application.PassRunOfferEndpoint.Post(request, playableRun, runPlayer, _runsMetrics, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

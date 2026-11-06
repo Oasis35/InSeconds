@@ -553,6 +553,10 @@ public class RunsMetricsTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.All(answers.GetMeasurementSnapshot(), m => Assert.Equal(["artist_found", "round", "title_found"], m.Tags.Keys.Order()));
         Assert.Single(neutralized.GetMeasurementSnapshot());
         Assert.Equal(["runs.discs.scratched"], discs.GetMeasurementSnapshot().Select(m => Tag(m, "disc")));
+        // Une partie perdue dit la manche ratée (l'objectif manqué), pour régler les seuils.
+        var lost = sessions.GetMeasurementSnapshot().Single(m => Tag(m, "event") == RunsMetrics.Lost);
+        Assert.Equal("1", Tag(lost, "round"));
+        Assert.Equal(["event", "round"], lost.Tags.Keys.Order());
     }
 }
 

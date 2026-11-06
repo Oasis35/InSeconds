@@ -7,7 +7,7 @@ import { waveformFromBlob } from '../../gameplay/domain/waveform';
 import {
   AUTO_NEXT_MS, CLOCK_ALERT_SECONDS, COMBO_MIN, PileEntry, RunComparison, RunCurrentTrack, RunDifficulty, RunLink, RunPlay, RunRound, RunSession, RunStep, RunsMe,
   isFinished,
-  comboOf, ghostGap, nextObjective, palierDue, playSteps, playedCount, runPile, stepPosition,
+  comboOf, ghostGap, nextObjective, progressKey, palierDue, playSteps, playedCount, runPile, stepPosition,
 } from '../domain/run';
 import { RunCardKey, handFull } from '../domain/run-cards';
 import { RunSounds } from './run-sounds';
@@ -96,6 +96,25 @@ const canPlayCards = (phase: string | null): boolean => phase === 'loading' || p
 /** Le chrono plein d'un morceau : celui de la playlist, plus ce qu'un Sablier joué avant le premier son lui ajoute. */
 const fullClock = (answerSeconds: number, current: RunCurrentTrack | null): number =>
   answerSeconds + (current?.effects?.clockBonusSeconds ?? 0);
+
+/** Les appels qui changent la partie côté serveur. */
+const CHANGING_CALLS: ReadonlySet<string> = new Set([
+  'launch', 'join', 'refreshPreview', 'submitAnswer', 'takeCard', 'passOffer', 'playCard', 'chooseDifficulty', 'abandon',
+]);
+
+/** L'adaptateur, dont les appels qui changent la partie comptent leurs requêtes en route (`+1` au départ, `-1` à l'arrivée ou à l'échec). */
+function trackChanges(api: RunsApi, count: (delta: number) => void): RunsApi {
+  return new Proxy(api, {
+    get(target, property, receiver) {
+      const value: unknown = Reflect.get(target, property, receiver);
+      if (typeof value !== 'function' || typeof property !== 'string' || !CHANGING_CALLS.has(property)) return value;
+      return (...args: unknown[]) => {
+        count(1);
+        return (value.apply(target, args) as Promise<unknown>).finally(() => count(-1));
+      };
+    },
+  });
+}
 
 /**
  * La partie de Run : l'écran, la partie en cours, le morceau à jouer, les étapes à montrer. À fournir à la page (avec `TrackRoundStore`, qu'il
@@ -201,7 +220,10 @@ export const RunGameStore = signalStore(
       }),
     };
   }),
-  withMethods((store, api = inject(RunsApi), round = inject(TrackRoundStore), sessionLoader = inject(SessionLoader), sounds = inject(RunSounds)) => {
+  withMethods((store, rawApi = inject(RunsApi), round = inject(TrackRoundStore), sessionLoader = inject(SessionLoader), sounds = inject(RunSounds)) => {
+    /** Les requêtes en route qui changent la partie côté serveur : tant qu'il y en a une, une relecture d'un autre onglet ne conclut rien. */
+    let changing = 0;
+    const api = trackChanges(rawApi, delta => { changing += delta; });
     /** L'enchaînement automatique en attente. */
     let autoNextTimer: ReturnType<typeof setTimeout> | null = null;
     /** Le chrono en cours : son échéance (horloge du navigateur, en ms), son pas, et le morceau qu'il chronomètre. */
@@ -706,6 +728,51 @@ export const RunGameStore = signalStore(
         void api.startClock(session.sessionId, current.position)
           .then(left => { if (left !== null) alignClock(current.position, left); })
           .catch(() => undefined);
+      },
+      /**
+       * L'onglet revient au premier plan : la partie a pu avancer ou finir dans un autre onglet. En jeu, elle se relit : finie, l'écran de fin ;
+       * avancée, l'écran de reprise (le prochain son partira d'un toucher) ; rien n'a bougé, rien ne change. Jamais pendant un envoi (la
+       * réponse en route ferait croire à une partie avancée ailleurs). Sur l'accueil ou la reprise du mode, la partie en cours se relit aussi.
+       */
+      async refresh(): Promise<void> {
+        const screen = store.screen();
+        const session = store.session();
+        // Une action de cet onglet en route (réponse, carte, choix, extrait redemandé) : la relecture la prendrait pour un autre onglet.
+        const settled = (): boolean =>
+          changing === 0 && round.phase() !== 'submitting' && !store.cardBusy() && !store.palierBusy() && !store.difficultyBusy();
+        if ((screen === 'playing' || screen === 'palier' || screen === 'difficulty') && session) {
+          if (!settled()) return;
+          try {
+            const fresh = await api.session(session.sessionId);
+            // Comparée à l'état d'avant la lecture, et seulement si rien n'a bougé ici pendant : sinon, c'est cet onglet qui a avancé.
+            if (store.session() !== session || store.screen() !== screen || !settled() || progressKey(fresh) === progressKey(session)) return;
+            if (fresh.status === 'won' || fresh.status === 'lost') {
+              round.reset();
+              cancelAutoNext();
+              stopClock();
+              patchState(store, { session: fresh, current: null, steps: [], screen: 'finished' });
+              void refreshMe();
+            } else {
+              await init();
+            }
+          } catch {
+            // hors ligne : la partie continue telle quelle
+          }
+          return;
+        }
+        if ((screen === 'welcome' || screen === 'resume') && !store.code()) {
+          try {
+            const before = store.me();
+            const me = await api.me();
+            // Le joueur a bougé pendant la lecture (une partie lancée, reprise) : rien à conclure.
+            if (store.screen() !== screen || store.me() !== before || changing > 0) return;
+            // Une autre partie en cours (ou plus aucune) : l'écran se reconstruit ; sinon le record et l'étagère se mettent à jour.
+            if ((me.pending?.sessionId ?? null) !== (before?.pending?.sessionId ?? null)) await init();
+            else patchState(store, { me });
+          } catch {
+            // hors ligne : l'écran reste tel quel
+          }
+        }
       },
       /** Les sons d'interface sont coupés (le bouton de l'en-tête). */
       soundsMuted: sounds.muted,

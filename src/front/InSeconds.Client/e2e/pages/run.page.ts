@@ -131,6 +131,9 @@ export class RunPage {
       await this.submitButton.click();
       await this.confirmSubmitButton.click();
     } else {
+      // La souris reste où elle a cliqué (« Morceau suivant ») : si la liste des propositions s'ouvre dessous, le survol en surligne une, et
+      // Entrée la choisirait au lieu d'envoyer la saisie (« partie gagnée » ratait ainsi un morceau sur une machine lente). On l'écarte.
+      await this.page.mouse.move(0, 0);
       await this.answerInput.fill(text);
       // La liste de l'autocomplétion se ferme au blur (minuterie de 150 ms) ; Entrée envoie le formulaire sans viser le bouton.
       await this.answerInput.evaluate(el => (el as HTMLElement).blur());
