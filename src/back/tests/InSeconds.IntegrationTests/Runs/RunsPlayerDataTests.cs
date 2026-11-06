@@ -42,6 +42,7 @@ public class RunsPlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
             INSERT INTO runs.answers (session_id, position, artist_correct, title_correct, points, neutralized, answered_at) VALUES
               ({id}, 1, true, true, 100, false, '2026-10-21T08:01:00Z'),
               ({id}, 2, false, false, 0, false, '2026-10-21T08:02:00Z');
+            INSERT INTO runs.session_rounds (session_id, round, difficulty, chosen_at) VALUES ({id}, 2, 3, '2026-10-21T08:03:00Z');
             INSERT INTO runs.access (player_id, granted_at) VALUES ('{playerId}', '2026-10-20T08:00:00Z');
             """);
         if (record)
@@ -122,8 +123,9 @@ public class RunsPlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(["runs.access", "runs.records", "runs.sessions"], tables.Order(StringComparer.Ordinal));
         foreach (var table in tables)
             Assert.Equal(0L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM {table} WHERE player_id = '{alice.Id}'"));
-        // Seules les réponses de Bob restent ; son record et son accès aussi.
+        // Seules les réponses et la difficulté choisie de Bob restent (cascade depuis la partie) ; son record et son accès aussi.
         Assert.Equal(2L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM runs.answers"));
+        Assert.Equal(1L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM runs.session_rounds"));
         Assert.Equal(1L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.records WHERE player_id = '{bob.Id}'"));
         Assert.Equal(1L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.access WHERE player_id = '{bob.Id}'"));
         // Le défi qu'elle avait créé est toujours là, jouable, sans auteur.

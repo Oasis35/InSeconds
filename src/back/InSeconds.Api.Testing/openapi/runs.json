@@ -842,6 +842,87 @@
           }
         }
       }
+    },
+    "/api/runs/sessions/{id}/difficulty": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "chooseRunDifficulty",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChooseRunDifficulty"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunPlayResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1058,7 +1139,8 @@
           "position",
           "round",
           "positionInRound",
-          "previewUrl"
+          "previewUrl",
+          "listenSeconds"
         ],
         "type": "object",
         "properties": {
@@ -1085,6 +1167,10 @@
               "null",
               "string"
             ]
+          },
+          "listenSeconds": {
+            "type": "number",
+            "format": "double"
           }
         }
       },
@@ -1288,7 +1374,8 @@
           "round",
           "score",
           "objective",
-          "maxScore"
+          "maxScore",
+          "difficulty"
         ],
         "type": "object",
         "properties": {
@@ -1307,6 +1394,9 @@
           "maxScore": {
             "type": "integer",
             "format": "int32"
+          },
+          "difficulty": {
+            "type": "string"
           }
         }
       },
@@ -1315,7 +1405,8 @@
           "round",
           "score",
           "objective",
-          "passed"
+          "passed",
+          "difficulty"
         ],
         "type": "object",
         "properties": {
@@ -1339,6 +1430,12 @@
           },
           "passed": {
             "type": "boolean"
+          },
+          "difficulty": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -1478,6 +1575,16 @@
             "items": {
               "$ref": "#/components/schemas/RunPassedRoundResponse"
             }
+          },
+          "difficultyChoice": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunDifficultyChoiceResponse"
+              }
+            ]
           }
         }
       },
@@ -1629,7 +1736,8 @@
           "round",
           "score",
           "objective",
-          "disc"
+          "disc",
+          "difficulty"
         ],
         "type": "object",
         "properties": {
@@ -1647,6 +1755,9 @@
           },
           "disc": {
             "$ref": "#/components/schemas/RunDiscResponse"
+          },
+          "difficulty": {
+            "type": "string"
           }
         }
       },
@@ -1659,6 +1770,67 @@
           "position": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "ChooseRunDifficulty": {
+        "required": [
+          "round",
+          "difficulty"
+        ],
+        "type": "object",
+        "properties": {
+          "round": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "difficulty": {
+            "type": "string"
+          }
+        }
+      },
+      "RunDifficultyChoiceResponse": {
+        "required": [
+          "round",
+          "options"
+        ],
+        "type": "object",
+        "properties": {
+          "round": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunDifficultyOptionResponse"
+            }
+          }
+        }
+      },
+      "RunDifficultyOptionResponse": {
+        "required": [
+          "difficulty",
+          "objective",
+          "maxScore",
+          "listenSeconds"
+        ],
+        "type": "object",
+        "properties": {
+          "difficulty": {
+            "type": "string"
+          },
+          "objective": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "listenSeconds": {
+            "type": "number",
+            "format": "double"
           }
         }
       }
@@ -1703,6 +1875,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Runs.Application.SubmitRunAnswerEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.ChooseRunDifficultyEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Runs.Application.AbandonRunEndpoint"

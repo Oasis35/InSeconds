@@ -95,7 +95,7 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
 
         var session = play.Session;
         Assert.Equal(("pending", 4, 5, 10m, 0), (session.Status, session.Rounds, session.TracksPerRound, session.ListenSeconds, session.TotalScore));
-        Assert.Equal(new RunRoundResponse(1, 0, 200, 500), session.Round);
+        Assert.Equal(new RunRoundResponse(1, 0, 225, 500, "safe"), session.Round);
         Assert.Empty(session.RoundTracks);
         Assert.Null(session.Finish);
         Assert.False(play.IsResuming);
@@ -122,19 +122,21 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         var first = await alice.AnswerAsync(id, code, 1);
         var track = await _run.TrackAtAsync(code, 1);
         Assert.Equal(new RunTrackResponse(1, 1, false, true, true, 100, $"Artiste {track}", $"Titre {track}", null, 1000 + track), first.Revealed);
-        Assert.Equal(new RunRoundResponse(1, 100, 200, 500), first.Session.Round);
+        Assert.Equal(new RunRoundResponse(1, 100, 225, 500, "safe"), first.Session.Round);
         Assert.Equal([first.Revealed!], first.Session.RoundTracks);
         Assert.Equal(2, first.Current!.Position);
         Assert.Empty(first.RoundSummaries);
 
         var endOfRound = await alice.PlayAsync(id, code, 2, true, true, true, true);
         var summary = Assert.Single(endOfRound.RoundSummaries);
-        Assert.Equal((1, true, 500, 200, 500), (summary.Round, summary.Passed, summary.Score, summary.Objective, summary.TotalScore));
+        Assert.Equal((1, true, 500, 225, 500), (summary.Round, summary.Passed, summary.Score, summary.Objective, summary.TotalScore));
         Assert.Equal([1, 2, 3, 4, 5], summary.Tracks.Select(t => t.Position));
         Assert.All(summary.Tracks, t => Assert.NotNull(t.Artist));
-        Assert.Equal(new RunRoundResponse(2, 0, 333, 665), endOfRound.Session.Round);
+        Assert.Equal(new RunRoundResponse(2, 0, 366, 665, "safe"), endOfRound.Session.Round);
         Assert.Empty(endOfRound.Session.RoundTracks);
-        Assert.Equal((6, 2, 1), (endOfRound.Current!.Position, endOfRound.Current.Round, endOfRound.Current.PositionInRound));
+        // La manche 2 attend sa difficulté : son premier morceau ne part qu'avec le choix (sans choix, elle se joue en Sûre).
+        Assert.Null(endOfRound.Current);
+        Assert.Equal(2, endOfRound.Session.DifficultyChoice!.Round);
 
         await alice.PlayAsync(id, code, 6, AllFound);
         await alice.PlayAsync(id, code, 11, AllFound);
@@ -146,7 +148,8 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(("won", "runs.discs.gold", 0, 3000, 4, 20, 20), (finish.Status, finish.Disc.Key, finish.Disc.Stars, finish.TotalScore, finish.RoundsPassed, finish.FoundCount, finish.TrackCount));
         Assert.Equal(Enumerable.Range(1, 20), finish.Tracks.Select(t => t.Position));
         Assert.Equal(
-            [new RunRoundScoreResponse(1, 500, 200, true), new(2, 665, 333, true), new(3, 835, 501, true), new(4, 1000, 700, true)],
+            [new RunRoundScoreResponse(1, 500, 225, true, "safe"), new(2, 665, 366, true, "safe"), new(3, 835, 543, true, "safe"),
+                new(4, 1000, 750, true, "safe")],
             finish.Rounds);
         Assert.Equal(new RunRecordResponse(3000, 4, true), finish.Record);
         Assert.Equal(code, finish.ChallengeCode);
@@ -168,19 +171,20 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
 
         // Jauge pleine dès le 2e morceau de la manche 1 : les morceaux restants se jouent quand même.
         await alice.PlayAsync(id, code, 1, AllFound);
-        // Manche 2 : 133 + 67 = 200 points, objectif 333.
+        // Manche 2 : 133 + 67 = 200 points, objectif 366.
         await alice.AnswerAsync(id, code, 6);
         await alice.AnswerAsync(id, code, 7, artist: true, title: false);
         var last = await alice.PlayAsync(id, code, 8, false, false, false);
 
         var summary = Assert.Single(last.RoundSummaries);
-        Assert.Equal((2, false, 200, 333, 700), (summary.Round, summary.Passed, summary.Score, summary.Objective, summary.TotalScore));
+        Assert.Equal((2, false, 200, 366, 700), (summary.Round, summary.Passed, summary.Score, summary.Objective, summary.TotalScore));
         Assert.Null(last.Current);
         var finish = last.Session.Finish!;
         Assert.Equal(("lost", "runs.discs.wax", 700, 1, 6, 20), (finish.Status, finish.Disc.Key, finish.TotalScore, finish.RoundsPassed, finish.FoundCount, finish.TrackCount));
         Assert.Equal(10, finish.Tracks.Count);
         Assert.Equal(
-            [new RunRoundScoreResponse(1, 500, 200, true), new(2, 200, 333, false), new(3, null, null, false), new(4, null, null, false)],
+            [new RunRoundScoreResponse(1, 500, 225, true, "safe"), new(2, 200, 366, false, "safe"), new(3, null, null, false, null),
+                new(4, null, null, false, null)],
             finish.Rounds);
         Assert.Equal(new RunRecordResponse(700, 1, true), finish.Record);
 
@@ -329,9 +333,9 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
 
         var answer = await alice.AnswerAsync(id, code, 1);
 
-        Assert.Equal([new RunNeutralizedResponse(2, 1, 200, 160)], answer.Neutralized);
+        Assert.Equal([new RunNeutralizedResponse(2, 1, 225, 180)], answer.Neutralized);
         Assert.Equal(3, answer.Current!.Position);
-        Assert.Equal(new RunRoundResponse(1, 100, 160, 400), answer.Session.Round);
+        Assert.Equal(new RunRoundResponse(1, 100, 180, 400, "safe"), answer.Session.Round);
         Assert.Equal(
             [new RunTrackResponse(2, 1, true, false, false, 0, null, null, null, null)], answer.Session.RoundTracks.Where(t => t.Neutralized));
         Assert.True(await _run.Api.ScalarAsync<bool>($"SELECT neutralized FROM runs.answers WHERE session_id = {id} AND position = 2"));
@@ -348,14 +352,18 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         for (var position = 6; position <= 10; position++)
             await _run.RemovePreviewAsync(await _run.TrackAtAsync(code, position));
 
-        // Le 5e morceau termine la manche 1 : son bilan, puis les 5 morceaux de la manche 2 neutralisés, son bilan, et le premier de la manche 3.
-        var last = await alice.AnswerAsync(id, code, 5);
+        // Le 5e morceau termine la manche 1 ; la manche 2 attend sa difficulté, rien n'est neutralisé avant le choix.
+        Assert.Empty((await alice.AnswerAsync(id, code, 5)).Neutralized);
 
-        Assert.Equal([1, 2], last.RoundSummaries.Select(s => s.Round));
-        Assert.Equal((true, 0, 0), (last.RoundSummaries[1].Passed, last.RoundSummaries[1].Score, last.RoundSummaries[1].Objective));
+        // Le choix : les 5 morceaux de la manche 2 neutralisés, son bilan, et la manche 3 qui attend à son tour sa difficulté.
+        var last = await alice.ChooseAsync(id, 2, "safe");
+
+        Assert.Equal([2], last.RoundSummaries.Select(s => s.Round));
+        Assert.Equal((true, 0, 0), (last.RoundSummaries[0].Passed, last.RoundSummaries[0].Score, last.RoundSummaries[0].Objective));
         Assert.Equal([6, 7, 8, 9, 10], last.Neutralized.Select(n => n.Position));
-        Assert.Equal((333, 0), (last.Neutralized[0].ObjectiveBefore, last.Neutralized[^1].ObjectiveAfter));
-        Assert.Equal((11, 3), (last.Current!.Position, last.Current.Round));
+        Assert.Equal((366, 0), (last.Neutralized[0].ObjectiveBefore, last.Neutralized[^1].ObjectiveAfter));
+        Assert.Null(last.Current);
+        Assert.Equal(3, last.Session.DifficultyChoice!.Round);
         Assert.Equal(2, last.Session.RoundsPassed);
     }
 
@@ -405,10 +413,10 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         await _run.Game.SetSettingAsync("Runs:ThresholdPercents", "[90,90,90,90]");
         await _run.Game.SetSettingAsync("Runs:ListenSeconds", "5");
 
-        var last = await alice.PlayAsync(start.SessionId, start.ChallengeCode, 1, true, true, false, false, false);
+        var last = await alice.PlayAsync(start.SessionId, start.ChallengeCode, 1, true, true, true, false, false);
 
         var summary = Assert.Single(last.RoundSummaries);
-        Assert.Equal((true, 200), (summary.Passed, summary.Objective));
+        Assert.Equal((true, 225), (summary.Passed, summary.Objective));
         Assert.Equal((5, 10m), (last.Session.TracksPerRound, last.Session.ListenSeconds));
         Assert.Equal(HttpStatusCode.NoContent, (await alice.ListenRawAsync(start.SessionId, 6, 10)).StatusCode);
     }

@@ -210,7 +210,7 @@ export const RunGameStore = signalStore(
       previewUrl: current.previewUrl,
       waveform: current.waveform ?? null,
       // Écoute fixe : un seul palier, pas de « écouter plus » ; la relecture (↺) reste possible. Pas d'indice.
-      listen: { steps: [listenSeconds], extendable: false },
+      listen: { steps: [current.listenSeconds ?? listenSeconds], extendable: false },
       hints: { unlockSeconds: [] },
       refreshPreviewUrl: () => refreshPreview(current.position),
     });
@@ -239,6 +239,10 @@ export const RunGameStore = signalStore(
         return;
       }
       const current = store.current();
+      if (!current && !isFinished(session) && session.difficultyChoice) {
+        void chooseUntilScreen(session.sessionId, session.difficultyChoice.round, play);
+        return;
+      }
       if (isFinished(session) || !current) {
         round.reset();
         stopClock();
@@ -253,6 +257,18 @@ export const RunGameStore = signalStore(
         runClock(current.position, session.clockRemainingSeconds);
       }
       if (play) round.start(configOf(current, session.listenSeconds), null);
+    };
+
+    /**
+     * La manche attend sa difficulté : son premier morceau n'arrive qu'avec le choix. En attendant l'écran « Difficulté ? » (#501), elle se joue
+     * en « Sûre », la difficulté du proto 1. Le son a été déverrouillé par le clic qui mène ici (« Morceau suivant », « Reprendre »).
+     */
+    const chooseUntilScreen = async (sessionId: number, roundNumber: number, play: boolean): Promise<void> => {
+      try {
+        applyPlay(await api.chooseDifficulty(sessionId, roundNumber, 'safe'), play);
+      } catch {
+        patchState(store, { screen: 'error' });
+      }
     };
 
     /** L'étape suivante, puis le morceau suivant (le son part ; le lecteur a été déverrouillé par un clic plus tôt) ou la fin de la partie. */

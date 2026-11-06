@@ -250,6 +250,22 @@ describe('RunGameStore', () => {
       expect(store.pile()).toEqual([{ kind: 'track', track: TRACK(), past: false }]);
     });
 
+    it('une manche qui attend sa difficulté se joue en « Sûre » : le choix rend son premier morceau, lancé à son arrivée', async () => {
+      api.answerResult = { ...lastOfRound(), current: null, session: { ...lastOfRound().session, difficultyChoice: {
+        round: 2, options: [{ difficulty: 'safe', objective: 366, maxScore: 665, listenSeconds: 10 }],
+      } } };
+      api.chooseResult = PLAY({ current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }) });
+      await send();
+      audio.calls.length = 0;
+
+      store.next();
+      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
+
+      expect(api.calls).toContain('chooseDifficulty:7:2:safe');
+      expect(audio.calls[0]).toBe('unlock');
+      expect(store.screen()).toBe('playing');
+    });
+
     it('« Morceau suivant » lance la manche suivante dans le clic ; la ligne de la manche passée se pose sur ses morceaux', async () => {
       api.answerResult = lastOfRound();
       await send();

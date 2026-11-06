@@ -15,9 +15,14 @@ namespace InSeconds.Api.Modules.Runs.Domain;
 /// Le chrono d'un morceau, du premier son à la réponse (écoute et réécoutes comprises) ; 0 : pas de chrono (les playlists créées avant lui, dont la
 /// photo n'a pas ce champ).
 /// </param>
+/// <param name="RoundRules">
+/// Les difficultés proposées pour chaque manche (proto 2) ; vide pour une playlist du proto 1, dont chaque manche se joue en « Sûre » aux seuils
+/// <paramref name="ThresholdPercents"/> et à l'écoute <paramref name="ListenSeconds"/>.
+/// </param>
+/// <param name="ReservePerRound">Les morceaux de réserve tirés pour chaque manche (le coup de pouce « Joker » change de morceau) ; 0 au proto 1.</param>
 public sealed record RunRules(
     int Rounds, int TracksPerRound, decimal ListenSeconds, IReadOnlyList<int> ThresholdPercents, decimal MinMultiplier, decimal MaxMultiplier,
-    int AnswerSeconds = 0)
+    int AnswerSeconds = 0, IReadOnlyList<RunRoundRules>? RoundRules = null, int ReservePerRound = 0)
 {
     /// <summary>Le morceau a un chrono.</summary>
     public bool HasClock => AnswerSeconds > 0;
@@ -37,4 +42,25 @@ public sealed record RunRules(
             return MinMultiplier;
         return decimal.Round(MinMultiplier + (MaxMultiplier - MinMultiplier) * (round - 1) / (Rounds - 1), 2, MidpointRounding.AwayFromZero);
     }
+
+    /// <summary>
+    /// Les difficultés proposées pour la manche <paramref name="round"/> : celles figées dans la playlist, ou, pour une playlist du proto 1, la seule
+    /// « Sûre » (son seuil, sans facteur de points, l'écoute des règles).
+    /// </summary>
+    public IReadOnlyList<RunDifficultyOption> OptionsOf(int round)
+    {
+        if (round < 1 || round > Rounds)
+            throw new ArgumentOutOfRangeException(nameof(round));
+        return RoundRules?.FirstOrDefault(r => r.Round == round)?.Options
+            ?? [new RunDifficultyOption(RunDifficulty.Safe, 1m, ThresholdPercents[round - 1], ListenSeconds)];
+    }
+
+    /// <summary>Le joueur choisit la difficulté de cette manche (plusieurs sont proposées).</summary>
+    public bool HasChoice(int round) => OptionsOf(round).Count > 1;
+
+    /// <summary>Cette difficulté, si elle est proposée pour cette manche.</summary>
+    public RunDifficultyOption? OptionOf(int round, RunDifficulty difficulty) => OptionsOf(round).FirstOrDefault(o => o.Difficulty == difficulty);
+
+    /// <summary>La difficulté d'une manche que le joueur n'a pas choisie : « Sûre » si elle est proposée, sinon la première.</summary>
+    public RunDifficultyOption DefaultOptionOf(int round) => OptionOf(round, RunDifficulty.Safe) ?? OptionsOf(round)[0];
 }

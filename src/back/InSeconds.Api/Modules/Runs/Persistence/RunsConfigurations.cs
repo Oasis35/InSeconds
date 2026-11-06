@@ -39,6 +39,22 @@ internal sealed class RunChallengeConfiguration : IEntityTypeConfiguration<RunCh
             .HasForeignKey(nameof(RunChallenge.CreatedBy)).OnDelete(DeleteBehavior.SetNull);
         builder.HasMany(c => c.Tracks).WithOne().HasForeignKey(t => t.ChallengeId).OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(c => c.Tracks).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.HasMany(c => c.Reserve).WithOne().HasForeignKey(t => t.ChallengeId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(c => c.Reserve).UsePropertyAccessMode(PropertyAccessMode.Field);
+    }
+}
+
+internal sealed class RunChallengeReserveTrackConfiguration : IEntityTypeConfiguration<RunChallengeReserveTrack>
+{
+    public void Configure(EntityTypeBuilder<RunChallengeReserveTrack> builder)
+    {
+        builder.ToTable("challenge_reserve_tracks", DbSchemas.Runs);
+        builder.HasKey(t => new { t.ChallengeId, t.Round, t.Rank });
+        // Un morceau ne figure qu'une fois dans la réserve d'un défi (le domaine refuse aussi un morceau à la fois joué et en réserve).
+        builder.HasIndex(t => new { t.ChallengeId, t.TrackId }).IsUnique();
+        builder.HasIndex(t => t.TrackId);
+        builder.HasOne("InSeconds.Api.Modules.Catalogue.Domain.Track", navigationName: null).WithMany()
+            .HasForeignKey(nameof(RunChallengeReserveTrack.TrackId)).OnDelete(DeleteBehavior.Restrict);
     }
 }
 
@@ -77,6 +93,19 @@ internal sealed class RunSessionConfiguration : IEntityTypeConfiguration<RunSess
             .HasForeignKey(nameof(RunSession.PlayerId)).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(s => s.Answers).WithOne().HasForeignKey(a => a.SessionId).OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(s => s.Answers).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.HasMany(s => s.Rounds).WithOne().HasForeignKey(r => r.SessionId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(s => s.Rounds).UsePropertyAccessMode(PropertyAccessMode.Field);
+    }
+}
+
+internal sealed class RunSessionRoundConfiguration : IEntityTypeConfiguration<RunSessionRound>
+{
+    public void Configure(EntityTypeBuilder<RunSessionRound> builder)
+    {
+        // difficulty : 1 facile, 2 sûre, 3 risquée. Une ligne par manche à choix : la difficulté ne se choisit qu'une fois.
+        builder.ToTable("session_rounds", DbSchemas.Runs, table => table.HasCheckConstraint("ck_session_rounds_difficulty", "difficulty IN (1, 2, 3)"));
+        builder.HasKey(r => new { r.SessionId, r.Round });
+        builder.Property(r => r.Difficulty).HasConversion<short>();
     }
 }
 

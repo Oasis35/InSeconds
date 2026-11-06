@@ -25,6 +25,9 @@ public class RunSessionTests
 
     private static RunSession Start() => RunSession.Start(0, Guid.NewGuid(), Now);
 
+    /// <summary>Les règles d'une playlist du proto 1 : seuils de 40 à 70 %, sans difficultés ni réserve.</summary>
+    private static readonly RunRules Proto1 = new(4, 5, 10m, [40, 50, 60, 70], 1m, 2m, 45);
+
     private static List<RunStep> Play(RunSession session, RunChallenge challenge, params RoundOutcome[] outcomes) =>
         outcomes.Select(o => session.Answer(challenge, o, Scoring, Now)).ToList();
 
@@ -87,10 +90,10 @@ public class RunSessionTests
     [Fact]
     public void ObjectifAtteintPile_LaMancheEstPassee()
     {
-        var challenge = Challenge();
+        var challenge = Challenge(Proto1);
         var session = Start();
 
-        // Manche 1 : objectif 200 (40 % de 500), atteint avec 200 tout juste (>=).
+        // Manche 1 d'une playlist du proto 1 : objectif 200 (40 % de 500), atteint avec 200 tout juste (>=).
         var steps = Play(session, challenge, Found, Found, Missed, Missed, Missed);
 
         Assert.Equal(new RunStep(1, RunStepOutcome.RoundPassed), steps[^1]);
@@ -147,7 +150,7 @@ public class RunSessionTests
     {
         var challenge = Challenge();
         var session = Start();
-        Assert.Equal(200, session.RoundProgressOf(challenge, 1, Scoring).Objective);
+        Assert.Equal(225, session.RoundProgressOf(challenge, 1, Scoring).Objective);
 
         var step = session.Neutralize(challenge, Scoring, Now);
 
@@ -156,7 +159,7 @@ public class RunSessionTests
         Assert.True(answer.Neutralized);
         Assert.Equal(0, answer.Points);
         var progress = session.RoundProgressOf(challenge, 1, Scoring);
-        Assert.Equal((400, 160), (progress.MaxScore, progress.Objective));
+        Assert.Equal((400, 180), (progress.MaxScore, progress.Objective));
     }
 
     [Fact]
@@ -276,16 +279,16 @@ public class RunSessionTests
 public class RunGaugeTests
 {
     [Theory]
-    [InlineData(1, 500, 200)]
-    [InlineData(2, 665, 333)]
-    [InlineData(3, 835, 501)]
-    [InlineData(4, 1000, 700)]
+    [InlineData(1, 500, 225)]
+    [InlineData(2, 665, 366)]
+    [InlineData(3, 835, 543)]
+    [InlineData(4, 1000, 750)]
     public void Objectif_PourcentageDuMaximum_ArrondiAuPlusProche(int round, int max, int expected) =>
-        Assert.Equal(expected, RunGauge.Objective(RunsOptions.DefaultRules(), round, max));
+        Assert.Equal(expected, RunGauge.Objective(RunsOptions.DefaultRules().DefaultOptionOf(round).ObjectivePercent, max));
 
     [Fact]
     public void MancheInconnue_Refusee() =>
-        Assert.Throws<ArgumentOutOfRangeException>(() => RunGauge.Objective(RunsOptions.DefaultRules(), 5, 100));
+        Assert.Throws<ArgumentOutOfRangeException>(() => RunsOptions.DefaultRules().OptionsOf(5));
 }
 
 public class ArtistTitleScoringTests

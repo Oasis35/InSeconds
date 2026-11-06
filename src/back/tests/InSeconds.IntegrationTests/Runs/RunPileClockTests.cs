@@ -48,7 +48,7 @@ public class RunPileClockTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.All(session.PlayedTracks, t => Assert.NotNull(t.Artist));
         // La manche en cours ne garde que ses morceaux (les pastilles), la pile a tout.
         Assert.Equal([6], session.RoundTracks.Select(t => t.Position));
-        Assert.Equal([new RunPassedRoundResponse(1, 400, 200, new RunDiscResponse("runs.discs.wax", 0))], session.PassedRounds);
+        Assert.Equal([new RunPassedRoundResponse(1, 400, 225, new RunDiscResponse("runs.discs.wax", 0), "safe")], session.PassedRounds);
         Assert.Equal(45, session.AnswerSeconds);
     }
 

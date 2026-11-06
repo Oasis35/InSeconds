@@ -13,7 +13,8 @@ export const TRACK = (overrides: Partial<RunTrack> = {}): RunTrack => ({
 
 export const SESSION = (overrides: Partial<RunSession> = {}): RunSession => ({
   sessionId: 7, challengeCode: 'ABC234', status: 'pending', rounds: 4, tracksPerRound: 5, listenSeconds: 10, totalScore: 0, roundsPassed: 0,
-  round: ROUND(), roundTracks: [], finish: null, answerSeconds: 45, clockRemainingSeconds: null, playedTracks: [], passedRounds: [], ...overrides,
+  round: ROUND(), roundTracks: [], finish: null, answerSeconds: 45, clockRemainingSeconds: null, playedTracks: [], passedRounds: [],
+  difficultyChoice: null, ...overrides,
 });
 
 export const CURRENT = (overrides: Partial<RunCurrentTrack> = {}): RunCurrentTrack => ({
@@ -41,7 +42,7 @@ export const COMPARISON = (overrides: Partial<RunComparison> = {}): RunCompariso
 });
 
 /** Un faux adaptateur : chaque réponse se règle par une propriété, chaque appel est noté. */
-export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge' | 'comparison' | 'launch' | 'join' | 'refreshPreview' | 'submitAnswer' | 'startClock' | 'abandon'> {
+export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge' | 'comparison' | 'launch' | 'join' | 'refreshPreview' | 'submitAnswer' | 'startClock' | 'abandon' | 'chooseDifficulty'> {
   readonly calls: string[] = [];
   readonly answers: RunAnswerToSend[] = [];
 
@@ -53,6 +54,7 @@ export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge'
   joinResult: StartOutcome = { kind: 'ok', play: PLAY({ isResuming: true }) };
   refreshResult: RunPlay | Error = PLAY();
   answerResult: RunPlay | Error = PLAY();
+  chooseResult: RunPlay | Error = PLAY();
   abandonError: Error | null = null;
 
   me(): Promise<RunsMe> {
@@ -98,6 +100,11 @@ export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge'
 
   /** Ce que le serveur dit rester au chrono à l'annonce du premier son ; `null` : rien à recaler. */
   clockResult: number | null = null;
+
+  chooseDifficulty(sessionId: number, round: number, difficulty: string): Promise<RunPlay> {
+    this.calls.push(`chooseDifficulty:${sessionId}:${round}:${difficulty}`);
+    return this.chooseResult instanceof Error ? Promise.reject(this.chooseResult) : Promise.resolve(this.chooseResult);
+  }
 
   startClock(sessionId: number, position: number): Promise<number | null> {
     this.calls.push(`startClock:${sessionId}:${position}`);

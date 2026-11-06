@@ -36,7 +36,8 @@ public sealed class RunChallengePlanner(ITrackDirectory tracks, IRunTrackSelecto
             if (await store.CodeExistsAsync(code, ct))
                 continue;
             return new PlanResult(
-                RunChallenge.Create(code, seed, current, selection.Tracks, createdBy, time.GetUtcNow()), selection.EligibleCount, selection.Requested);
+                RunChallenge.Create(code, seed, current, selection.Tracks, createdBy, time.GetUtcNow(), selection.Reserve),
+                selection.EligibleCount, selection.Requested);
         }
 
         throw new InvalidOperationException("Impossible de trouver un code de défi libre.");

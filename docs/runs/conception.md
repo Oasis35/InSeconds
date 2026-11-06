@@ -61,7 +61,7 @@ Même forme que le Daily (`DailyChallenge` / `DailySession`) :
 ### 3.2 Politiques (une responsabilité chacune, remplaçables)
 - `IRunTrackSelector` → `RankBandSelector` : **tous** les morceaux jouables du catalogue (Daily compris), triés par rang Deezer décroissant et coupés en autant de **tranches** que de manches ; la manche *k* tire ses morceaux dans la tranche *k* avec `ISeededShuffle`. Sans rang : tranche la moins connue. Les 20 morceaux sont tirés au départ.
 - Multiplicateur : fixé au tirage selon la manche (×1,0 → ×2,0, interpolation linéaire), enregistré sur le morceau du défi.
-- `IRunScoringPolicy` → `ArtistTitleScoring` : (50 si artiste + 50 si titre) × multiplicateur, arrondi au plus proche (`MidpointRounding.AwayFromZero`) sur le total du morceau. Les bonus du proto 2 viendront **décorer** cette politique.
+- `IRunScoringPolicy` → `ArtistTitleScoring` : (50 si artiste + 50 si titre) × multiplicateur, arrondi au plus proche (`MidpointRounding.AwayFromZero`) sur le total du morceau. Elle reçoit un multiplicateur **effectif** : celui de la manche, mis à l'échelle par la partie (facteur de la difficulté choisie, puis les coups de pouce). Difficulté et cartes ne sont pas des décorateurs enregistrés dans le conteneur (la politique est unique pour toutes les parties) : la partie passe à chaque appel ce qui s'applique au morceau, et toute jauge passe par elle (`RoundProgressOf`, `RoundProgressAt`).
 - `DiscLadder` : la liste des disques est une liste de **clés** (`runs.discs.scratched`, `…gold`…), traduites par le front ; au-delà, le dernier disque + étoiles.
 
 Pas d'`IBonus` au proto 1 : un contrat naît d'un besoin réel.
@@ -117,7 +117,7 @@ Même façon de faire que le reste du projet : `module.raison` en snake_case, un
 Génériques existants : `common.unauthorized` (401), `common.bad_request` (400), `common.not_found` (404 des routes admin, joueur inconnu ou invité), `common.too_many_requests` (429), `common.unexpected` (500).
 
 ### 3.7 Réglages `Runs:` (relus à chaud, `RunsOptions` + `Effective…`)
-`Rounds` (4), `TracksPerRound` (5), `ListenSeconds` (10), `ThresholdPercents` ([40,50,60,70]), `MinMultiplier`/`MaxMultiplier` (1,0 / 2,0, moins de 10), `Discs` (liste de clés). Pas de temps de réponse. Contrôlés **au démarrage** (refus, comme `DailyOptionsStartupCheck`) **et à l'usage** : un réglage incohérent changé à chaud est journalisé une fois et le lancement d'un run retombe sur les valeurs par défaut (comme `DailyRules`).
+`Rounds` (4), `TracksPerRound` (5), `ListenSeconds` (10), `ThresholdPercents` ([45,55,65,75] ; [40,50,60,70] au proto 1), `MinMultiplier`/`MaxMultiplier` (1,0 / 2,0, moins de 10), `Discs` (liste de clés). Pas de temps de réponse. Contrôlés **au démarrage** (refus, comme `DailyOptionsStartupCheck`) **et à l'usage** : un réglage incohérent changé à chaud est journalisé une fois et le lancement d'un run retombe sur les valeurs par défaut (comme `DailyRules`).
 
 ## 4. Données : schéma `runs`
 
@@ -201,7 +201,7 @@ L'interrupteur « Platines » de l'onglet Joueurs lit `GET /api/admin/runs/acces
 
 ## 7. SOLID, point par point
 - **S** : `RunSession` garde la partie ; tirage, points, seuils, disques sont chacun une classe ; les endpoints ne font qu'enchaîner (LoadAsync / Validate / Post).
-- **O** : bonus (proto 2) = décorateurs de `IRunScoringPolicy` et modificateurs de `RunRules` ; nouvelle difficulté = nouvelle implémentation de `IRunTrackSelector` ; nouveau mode = nouveau contributeur RGPD et nouvel usage de morceaux, sans toucher Players ni Catalogue.
+- **O** : difficulté et coups de pouce = modificateurs que la partie applique (multiplicateur effectif passé à `IRunScoringPolicy`, objectif et écoute de la manche) à partir de règles figées dans `RunRules` ; nouvelle façon de tirer les morceaux (notoriété, thèmes) = nouvelle implémentation de `IRunTrackSelector` ; nouveau mode = nouveau contributeur RGPD et nouvel usage de morceaux, sans toucher Players ni Catalogue.
 - **L** : `HintPolicy.None` et une écoute fixe utilisent `TrackRound` sans cas particulier.
 - **I** : Runs ne reçoit que des contrats étroits, jamais une entité d'un autre module.
 - **D** : le domaine ne voit que ses ports (`IRunsStore`, `IRunTrackSelector`, `TimeProvider`) ; EF et Wolverine restent dans `Persistence/` et `Application/`.

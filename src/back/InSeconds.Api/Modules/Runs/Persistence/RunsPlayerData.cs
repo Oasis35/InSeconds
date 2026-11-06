@@ -8,7 +8,7 @@ namespace InSeconds.Api.Modules.Runs.Persistence;
 
 /// <summary>
 /// Runs comme contributeur aux droits d'un joueur (RGPD) : sa section « runs » de la copie de ses données (parties, défis créés, record, accès) et
-/// l'effacement de ses parties, réponses, record et accès ; les défis qu'il a créés restent jouables (<c>created_by</c> à <c>null</c>). Appelé par
+/// l'effacement de ses parties (réponses, difficultés des manches), record et accès ; les défis qu'il a créés restent jouables (<c>created_by</c> à <c>null</c>). Appelé par
 /// Players dans sa propre transaction.
 /// </summary>
 public sealed class RunsPlayerData(InSecondsDbContext db) : IPlayerDataContributor
@@ -20,7 +20,7 @@ public sealed class RunsPlayerData(InSecondsDbContext db) : IPlayerDataContribut
     public async Task<object> ExportAsync(Guid playerId, CancellationToken ct)
     {
         var sessions = await (
-                from session in db.Set<RunSession>().AsNoTracking().Include(s => s.Answers)
+                from session in db.Set<RunSession>().AsNoTracking().Include(s => s.Answers).Include(s => s.Rounds).AsSplitQuery()
                 join challenge in db.Set<RunChallenge>().AsNoTracking() on session.ChallengeId equals challenge.Id
                 where session.PlayerId == playerId
                 orderby session.StartedAt
@@ -29,7 +29,9 @@ public sealed class RunsPlayerData(InSecondsDbContext db) : IPlayerDataContribut
         var games = sessions.Select(row => new RunGameExport(
             row.Code, row.Session.Status.ToString(), row.Session.StartedAt, row.Session.EndedAt, row.Session.RoundsPassed, row.Session.TotalScore,
             [.. row.Session.Answers.OrderBy(a => a.Position)
-                .Select(a => new RunAnswerExport(a.Position, a.ArtistCorrect, a.TitleCorrect, a.Points, a.Neutralized, a.AnsweredAt))])).ToList();
+                .Select(a => new RunAnswerExport(a.Position, a.ArtistCorrect, a.TitleCorrect, a.Points, a.Neutralized, a.AnsweredAt))],
+            [.. row.Session.Rounds.OrderBy(r => r.Round)
+                .Select(r => new RunRoundExport(r.Round, RunDifficulties.KeyOf(r.Difficulty), r.ChosenAt))])).ToList();
 
         var created = await db.Set<RunChallenge>().AsNoTracking()
             .Where(c => c.CreatedBy == playerId).OrderBy(c => c.CreatedAt)
@@ -45,7 +47,8 @@ public sealed class RunsPlayerData(InSecondsDbContext db) : IPlayerDataContribut
         return new RunsDataExport(games, created, record, access);
     }
 
-    // Exécuté tout de suite, dans la transaction de l'appelant. Le record référence une partie : il part avant elles ; les réponses partent avec leur partie.
+    // Exécuté tout de suite, dans la transaction de l'appelant. Le record référence une partie : il part avant elles ; les réponses et les difficultés
+    // des manches partent avec leur partie (cascade).
     public async Task<int> DeleteAsync(Guid playerId, CancellationToken ct)
     {
         await db.Set<RunRecord>().Where(r => r.PlayerId == playerId).ExecuteDeleteAsync(ct);

@@ -64,7 +64,7 @@ test.describe('Mode Platines', () => {
     expect(tracks).toHaveLength(20);
 
     await expect(run.roundTitle).toHaveText('Manche 1');
-    await expect(run.toGo).toHaveText(/encore 200 pts pour passer/);
+    await expect(run.toGo).toHaveText(/encore 225 pts pour passer/);
     await expect(run.clock).toBeVisible();
     await expect(run.pileTracks).toHaveCount(0);
 
@@ -75,7 +75,7 @@ test.describe('Mode Platines', () => {
     await expect(run.answerCard.getByTestId('run-answer-title')).toHaveText(first.title);
     await expect(run.answerCard.getByTestId('run-answer-points')).toHaveText('+100');
     await expect(run.totalScore).toHaveText('100');
-    await expect(run.toGo).toHaveText(/encore 100 pts pour passer/);
+    await expect(run.toGo).toHaveText(/encore 125 pts pour passer/);
     await run.nextTrackButton.click();
     await expect(run.pileTracks).toHaveCount(1);
     await expect(run.pileTracks.first()).toContainText(first.artist);
@@ -112,7 +112,7 @@ test.describe('Mode Platines', () => {
     await run.loginAsAdmin();
     await run.launch();
 
-    // 5 réponses vides : 0 point, l'objectif de 200 pts est manqué.
+    // 5 réponses vides : 0 point, l'objectif de 225 pts est manqué.
     await run.answerEmpty();
     await run.answerEmpty();
     await run.answerEmpty();
@@ -162,9 +162,9 @@ test.describe('Mode Platines', () => {
 
     await expect(run.withdrawnCard).toBeVisible();
     await expect(run.withdrawnCard).toContainText('Morceau retiré de la manche');
-    // 40 % des 4 morceaux qui restent : 160 pts au lieu de 200, dont 100 déjà marqués.
-    await expect(run.withdrawnCard).toContainText('l’objectif abaissé à 160 pts');
-    await expect(run.toGo).toHaveText(/encore 60 pts pour passer/);
+    // 45 % des 4 morceaux qui restent : 180 pts au lieu de 225, dont 100 déjà marqués.
+    await expect(run.withdrawnCard).toContainText('l’objectif abaissé à 180 pts');
+    await expect(run.toGo).toHaveText(/encore 80 pts pour passer/);
     await expect(run.answerInput).toHaveCount(0);
 
     // Les animations coupées, rien ne part seul : « Morceau suivant » mène au 3e morceau ; le retrait rejoint la pile.
