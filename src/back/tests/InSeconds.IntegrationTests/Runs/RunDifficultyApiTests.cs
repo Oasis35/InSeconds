@@ -68,12 +68,19 @@ public class RunDifficultyApiTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task Mesure_LaDifficulteChoisie_ParManche()
     {
         using var difficulties = Collect(RunsMetrics.DifficultiesName);
+        using var cards = Collect(RunsMetrics.CardsName);
         var (alice, id, _) = await InRoundTwoAsync();
 
         await alice.ChooseAsync(id, 2, "risky");
 
+        // L'offre du palier, encore ouverte, se ferme avec le choix : une offre passée sans carte.
+        var passed = Assert.Single(cards.GetMeasurementSnapshot());
+        Assert.Equal((RunsMetrics.OfferPassedAction, null), (Tag(passed, "action"), Tag(passed, "card")));
+
         var chosen = Assert.Single(difficulties.GetMeasurementSnapshot());
         Assert.Equal(("2", "risky"), (Tag(chosen, "round"), Tag(chosen, "difficulty")));
+        // Une liste fermée d'étiquettes : un identifiant ajouté un jour ferait échouer ce test.
+        Assert.Equal(["difficulty", "round"], chosen.Tags.Keys.Order());
     }
 
     [Fact]

@@ -1,3 +1,5 @@
+using InSeconds.Api.Modules.Runs.Application;
+using Microsoft.Extensions.Options;
 using InSeconds.Api.Infrastructure.Settings;
 using System.Text.Json;
 using InSeconds.Api.Infrastructure.Persistence;
@@ -57,13 +59,31 @@ public static class E2EEndpoints
 
         // Pose un réglage du mode Run (« Runs:… », valeur JSON) le temps d'un test : la remise à zéro suivante les efface tous, chaque test
         // repart des valeurs par défaut. Un autre préfixe est refusé (ce n'est pas une porte vers les réglages du jeu du jour).
-        e2e.MapPost("/runs/settings", async (RunSettingRequest request, SettingsStore settings, CancellationToken ct) =>
+        e2e.MapPost("/runs/settings", async (
+            RunSettingRequest request, SettingsStore settings, IOptionsMonitor<RunsOptions> options, InSecondsDbContext db, ISettingsReloader reloader,
+            CancellationToken ct) =>
         {
-            if (!request.Key.StartsWith("Runs:", StringComparison.Ordinal))
-                return Results.BadRequest();
-            using var value = JsonDocument.Parse(request.Json);
-            await settings.SetAsync(request.Key, value.RootElement, ct);
-            return Results.NoContent();
+            if (request.Key is null || !request.Key.StartsWith("Runs:", StringComparison.Ordinal))
+                return Results.BadRequest("Un réglage « Runs:… » seulement.");
+            JsonDocument value;
+            try
+            {
+                value = JsonDocument.Parse(request.Json ?? "");
+            }
+            catch (JsonException e)
+            {
+                return Results.BadRequest($"JSON invalide : {e.Message}");
+            }
+
+            using (value)
+                await settings.SetAsync(request.Key, value.RootElement, ct);
+            // Des réglages incohérents empêcheraient tout lancement jusqu'à la remise à zéro : refusés tout de suite, avec la raison.
+            var problems = RunsOptionsChecks.Problems(options.CurrentValue);
+            if (problems.Count == 0)
+                return Results.NoContent();
+            await db.Database.ExecuteSqlAsync($"DELETE FROM infra.settings WHERE key = {request.Key}", ct);
+            reloader.Reload();
+            return Results.BadRequest(string.Join(" ; ", problems));
         });
 
         // Génère le défi du jour tout de suite, sans Hangfire (les fixtures qui ont juste besoin d'un défi) :

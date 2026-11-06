@@ -192,6 +192,7 @@ public class RunCardApiTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task AuPalier_LOffreSePrend_PuisMainPleine_LaCarteLacheeEnEchange()
     {
+        using var cards = Collect(RunsMetrics.CardsName);
         var (alice, start) = await LaunchWithAsync("year");
         var (id, code) = (start.Session.SessionId, start.Session.ChallengeCode);
         var end = await alice.PlayAsync(id, code, 1, AllFound);
@@ -209,6 +210,12 @@ public class RunCardApiTests(PostgresFixture postgres) : IAsyncLifetime
         await GameAsserts.ProblemAsync(await alice.TakeCardRawAsync(id, 2, "year", dropSlot: 9), HttpStatusCode.NotFound, RunsErrorCodes.CardNotFound);
         var swapped = await alice.TakeCardAsync(id, 2, "year", dropSlot: 1);
         Assert.Equal([2, 3], swapped.Hand!.Select(c => c.Slot));
+
+        // Mesuré : deux cartes prises, une lâchée à l'échange (main pleine), et l'offre de la manche 1 n'a pas été passée.
+        Assert.Equal(
+            [(RunsMetrics.CardTakenAction, "year"), (RunsMetrics.CardTakenAction, "year"), (RunsMetrics.CardDroppedAction, "year")],
+            cards.GetMeasurementSnapshot().Select(m => (Tag(m, "action"), Tag(m, "card"))));
+        Assert.All(cards.GetMeasurementSnapshot(), m => Assert.Equal(["action", "card"], m.Tags.Keys.Order()));
     }
 
     [Fact]

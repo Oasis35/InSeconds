@@ -56,8 +56,9 @@ public static class TakeRunCardEndpoint
     {
         var (session, challenge) = loaded;
         var card = RunCards.Parse(request.Card)!.Value;
-        // La carte lâchée en échange (main pleine) se lit avant l'échange.
-        var dropped = request.DropSlot is { } slot ? session.Hand.FirstOrDefault(c => c.Slot == slot)?.Card : null;
+        // La carte lâchée en échange se lit avant l'échange, et seulement main pleine (sinon le domaine ignore l'emplacement donné).
+        var handFull = session.Hand.Count >= (challenge.Rules.Cards?.HandSize ?? 0);
+        var dropped = handFull && request.DropSlot is { } slot ? session.Hand.FirstOrDefault(c => c.Slot == slot)?.Card : null;
         session.TakeCard(challenge, request.AfterRound, card, request.DropSlot, time.GetUtcNow());
         RunsLog.CardTaken(logger, session.Id, session.PlayerId, request.AfterRound, request.Card);
         metrics.CardTaken(RunCards.KeyOf(card));
