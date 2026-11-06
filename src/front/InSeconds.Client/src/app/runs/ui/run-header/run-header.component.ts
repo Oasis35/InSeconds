@@ -6,6 +6,7 @@ import { RunRound, pointsToGo, runSegments } from '../../domain/run';
  * L'en-tête de la partie : ✕ (abandonner, confirmé par la page), la barre du run (un segment par manche : passée en vert, en cours remplie
  * de son score avec le trait de l'objectif, à venir avec un cadenas), puis « Manche 2 » et ce qui manque pour passer. Pas de score : le total
  * est au-dessus de la pile.
+ * À droite de la barre, le haut-parleur coupe ou remet les sons d'interface (son libellé dit ce que fait le toucher).
  */
 @Component({
   selector: 'app-run-header',
@@ -39,9 +40,9 @@ import { RunRound, pointsToGo, runSegments } from '../../domain/run';
         }
       </div>
       <button type="button" (click)="toggleSounds.emit()" class="grid place-items-center touch-manipulation shrink-0 -mr-2"
-        style="width:40px;height:44px;color:var(--text-muted)" [attr.aria-pressed]="muted()" data-testid="run-sounds"
+        style="width:40px;height:44px;color:var(--text-muted)" data-testid="run-sounds"
         [attr.aria-label]="(muted() ? 'runs.header.soundsOn' : 'runs.header.soundsOff') | translate">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M4 9 H8 L13 5 V19 L8 15 H4 Z" />
           @if (muted()) {
             <path d="M17 9 L22 15 M22 9 L17 15" />

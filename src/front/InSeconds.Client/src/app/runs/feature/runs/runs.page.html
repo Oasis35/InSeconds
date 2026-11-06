@@ -83,7 +83,7 @@
       @case ('difficulty') {
         @if (store.difficulty(); as difficulty) {
           <div class="screen-enter flex-1 flex flex-col pt-1">
-            <app-run-header [round]="difficulty.headerRound" [rounds]="store.rounds()" [showStatus]="false" (abandon)="confirmAbandon()" />
+            <app-run-header [round]="difficulty.headerRound" [rounds]="store.rounds()" [showStatus]="false" [muted]="store.soundsMuted()" (toggleSounds)="store.toggleSounds()" (abandon)="confirmAbandon()" />
             <app-run-difficulty class="flex-1 flex flex-col" [round]="difficulty.round" [totalScore]="difficulty.totalScore"
               [options]="difficulty.options" [hand]="difficulty.hand" [listenSeconds]="difficulty.listenSeconds" [values]="store.session()?.cardValues ?? null" [busy]="store.difficultyBusy()"
               (choose)="store.chooseDifficulty($event)" />

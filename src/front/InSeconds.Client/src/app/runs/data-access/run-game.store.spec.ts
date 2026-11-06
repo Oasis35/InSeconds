@@ -7,6 +7,7 @@ import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RunRoundSummary } from '../domain/run';
 import { RunGameStore, RunScreen } from './run-game.store';
 import { RunSounds } from './run-sounds';
+import { MemoryStoragePort, StoragePort } from '../../core/storage/storage.port';
 import { StartOutcome } from './runs.api';
 import { COMPARISON, CURRENT, FakeRunsApi, LINK, ME, PLAY, ROUND, SESSION, TRACK, provideFakeRunsApi } from './testing/fake-runs-api';
 
@@ -22,7 +23,7 @@ describe('RunGameStore', () => {
     api = new FakeRunsApi();
     audio = new FakeAudioPort();
     TestBed.configureTestingModule({
-      providers: [provideFakeRunsApi(api), provideFakeAudio(audio), provideFakeWaveform(new FakeWaveformPort()), { provide: SessionLoader, useValue: { ensureGuest } }, TrackRoundStore, RunSounds, RunGameStore],
+      providers: [provideFakeRunsApi(api), provideFakeAudio(audio), provideFakeWaveform(new FakeWaveformPort()), { provide: SessionLoader, useValue: { ensureGuest } }, TrackRoundStore, RunSounds, RunGameStore, { provide: StoragePort, useValue: new MemoryStoragePort() }],
     });
     ensureGuest.mockReset();
     ensureGuest.mockResolvedValue(undefined);
@@ -441,6 +442,8 @@ describe('RunGameStore', () => {
 
       expect(store.screen()).toBe('palier');
       expect(audio.calls.filter(c => c.startsWith('load'))).toEqual([]);
+      // Ni extrait ni son d'interface : la manche n'a pas été passée maintenant.
+      expect(sounds).not.toHaveBeenCalledWith('roundPassed');
     });
 
     it('sans difficulté à choisir : « Suite » passe l\'offre puis demande le morceau, qui part', async () => {
@@ -693,7 +696,6 @@ describe('RunGameStore', () => {
 
       store.toggleSounds();
       expect(store.soundsMuted()).toBe(false);
-      localStorage.removeItem('runs.sounds.muted');
     });
   });
 
@@ -728,7 +730,7 @@ describe('RunGameStore', () => {
       expect(sounds).toHaveBeenCalledWith('won');
     });
 
-    it('une manche ratée mène directement à la fin, sans écran de bilan ni autre son', async () => {
+    it('une manche ratée mène directement à la fin, sans écran de bilan ni extrait ; le son du run perdu', async () => {
       api.answerResult = PLAY({
         session: SESSION({
           status: 'lost', round: null, finish: finish('lost'), playedTracks: [1, 2, 3, 4, 5].map(position => TRACK({ position })),
@@ -745,6 +747,8 @@ describe('RunGameStore', () => {
       store.next();
 
       expect(store.screen()).toBe('finished');
+      expect(sounds).toHaveBeenCalledWith('lost');
+      expect(sounds).not.toHaveBeenCalledWith('roundPassed');
       expect(audio.calls.filter(c => c.startsWith('load'))).toHaveLength(1);
     });
 
@@ -978,6 +982,18 @@ describe('RunGameStore', () => {
       vi.advanceTimersByTime(5_000);
       expect(store.timeUp()).toBe(true);
       expect(store.clockAlert()).toBe(false);
+    });
+
+    it('un tic à chaque seconde des cinq dernières (le service se tait seul pendant un extrait)', async () => {
+      await startRun();
+      audio.emit('playing');
+      TestBed.tick();
+      audio.emit('finished');
+
+      vi.advanceTimersByTime(39_900);
+      expect(sounds.mock.calls.filter(([sound]) => sound === 'tick')).toHaveLength(0);
+      vi.advanceTimersByTime(5_000);
+      expect(sounds.mock.calls.filter(([sound]) => sound === 'tick')).toHaveLength(5);
     });
 
     it('se recale sur le chrono retenu par le serveur quand il reste moins de temps, jamais pour en ajouter', async () => {

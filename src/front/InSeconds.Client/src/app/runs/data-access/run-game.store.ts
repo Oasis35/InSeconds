@@ -247,8 +247,8 @@ export const RunGameStore = signalStore(
       const update = (): void => {
         const left = Math.max(0, (clockDeadline - Date.now()) / 1000);
         const whole = Math.ceil(left);
-        // Un tic à chaque seconde des dernières, quand aucun extrait ne joue (il couvrirait le morceau).
-        if (whole !== lastWhole && whole > 0 && whole <= CLOCK_ALERT_SECONDS) sounds.play('tick', round.phase() === 'playing');
+        // Un tic à chaque seconde des dernières ; `RunSounds` se tait pendant un extrait (il couvrirait le morceau).
+        if (whole !== lastWhole && whole > 0 && whole <= CLOCK_ALERT_SECONDS) sounds.play('tick');
         lastWhole = whole;
         patchState(store, { clockLeft: left });
         if (left <= 0) {
@@ -329,11 +329,12 @@ export const RunGameStore = signalStore(
       }
       // Une manche passée (playlist à coups de pouce) : l'écran de palier, jusqu'à « Suite ».
       if (palierDue(session, store.palierDismissedFor())) {
+        // Le son d'une manche qui vient d'être passée, pas d'un palier retrouvé à la reprise ou à une relecture.
+        const justPassed = store.screen() === 'playing';
         round.reset();
         stopClock();
         patchState(store, { screen: 'palier', pendingCard: null });
-        // L'extrait vient d'être coupé (la manche est remise à zéro) : rien ne couvre le morceau.
-        sounds.play('roundPassed');
+        if (justPassed) sounds.play('roundPassed');
         return;
       }
       const current = store.current();
@@ -350,10 +351,12 @@ export const RunGameStore = signalStore(
         return;
       }
       if (isFinished(session) || !current) {
+        // Le son de la fin qui vient d'arriver, pas d'une partie finie qu'on rouvre.
+        const justEnded = store.screen() === 'playing';
         round.reset();
         stopClock();
         patchState(store, { screen: 'finished' });
-        if (session.status === 'won' || session.status === 'lost') sounds.play(session.status);
+        if (justEnded && (session.status === 'won' || session.status === 'lost')) sounds.play(session.status);
         void refreshMe();
         return;
       }
@@ -705,7 +708,7 @@ export const RunGameStore = signalStore(
           .catch(() => undefined);
       },
       /** Les sons d'interface sont coupés (le bouton de l'en-tête). */
-      soundsMuted: () => sounds.muted(),
+      soundsMuted: sounds.muted,
       /** Couper ou remettre les sons d'interface (retenu dans ce navigateur) ; un toucher sur le bouton réveille aussi le son. */
       toggleSounds(): void {
         sounds.unlock();
