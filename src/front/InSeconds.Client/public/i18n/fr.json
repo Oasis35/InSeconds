@@ -1040,6 +1040,18 @@
       "hourglass": {
         "name": "Sablier"
       }
+    },
+    "difficulty": {
+      "round": "Manche {{round}}",
+      "title": "Difficulté ?",
+      "yourScore": "Ton score",
+      "max": "max",
+      "listen": "écoute {{seconds}}",
+      "hand": "Tes bonus",
+      "easy": "Facile",
+      "safe": "Sûre",
+      "risky": "Risquée",
+      "columnLabel": "{{name}} : jusqu'à {{max}} points, objectif {{objective}}"
     }
   }
 }

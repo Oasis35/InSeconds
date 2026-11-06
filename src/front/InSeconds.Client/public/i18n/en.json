@@ -1040,6 +1040,18 @@
       "hourglass": {
         "name": "Hourglass"
       }
+    },
+    "difficulty": {
+      "round": "Round {{round}}",
+      "title": "Difficulty?",
+      "yourScore": "Your score",
+      "max": "max",
+      "listen": "{{seconds}} listen",
+      "hand": "Your boosts",
+      "easy": "Easy",
+      "safe": "Safe",
+      "risky": "Risky",
+      "columnLabel": "{{name}}: up to {{max}} points, target {{objective}}"
     }
   }
 }

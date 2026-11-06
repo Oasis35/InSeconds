@@ -61,6 +61,8 @@
   --border-subtle:  rgb(var(--rgb-border) / 0.15);
   --border-medium:  rgb(var(--rgb-border) / 0.18);
   --border-strong:  rgb(var(--rgb-border) / 0.3);
+  /* La zone sous un objectif (écran « Difficulté ? » de Platines) : assombrie. */
+  --shade-below:    rgb(0 0 0 / 0.28);
   /* Contour des boutons secondaires sans couleur de sens (Passer, indices) */
   --border-neutral: rgb(var(--rgb-text) / 0.28);
   --overlay-dark:   rgba(0,0,0,0.7);

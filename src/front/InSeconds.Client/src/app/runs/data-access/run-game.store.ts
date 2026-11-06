@@ -5,7 +5,8 @@ import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RoundConfig, RoundSubmission } from '../../gameplay/domain/track-round';
 import { waveformFromBlob } from '../../gameplay/domain/waveform';
 import {
-  AUTO_NEXT_MS, CLOCK_ALERT_SECONDS, PileEntry, RunComparison, RunCurrentTrack, RunLink, RunPlay, RunRound, RunSession, RunStep, RunsMe, isFinished,
+  AUTO_NEXT_MS, CLOCK_ALERT_SECONDS, PileEntry, RunComparison, RunCurrentTrack, RunDifficulty, RunLink, RunPlay, RunRound, RunSession, RunStep, RunsMe,
+  isFinished,
   nextObjective, palierDue, playSteps, playedCount, runPile, stepPosition,
 } from '../domain/run';
 import { RunCardKey, handFull } from '../domain/run-cards';
@@ -21,8 +22,8 @@ const CLOCK_TICK_MS = 200;
  * invitation, que la page traduit en retour au jeu du jour ; pas de playlist ; playlist inconnue ; erreur).
  */
 export type RunScreen =
-  | 'loading' | 'welcome' | 'link' | 'resume' | 'playing' | 'palier' | 'finished' | 'comparison' | 'access_denied' | 'no_challenge' | 'not_found'
-  | 'error';
+  | 'loading' | 'welcome' | 'link' | 'resume' | 'playing' | 'palier' | 'difficulty' | 'finished' | 'comparison' | 'access_denied' | 'no_challenge'
+  | 'not_found' | 'error';
 
 interface RunState {
   screen: RunScreen;
@@ -59,6 +60,8 @@ interface RunState {
   pendingCard: RunCardKey | null;
   /** Une prise ou un passage de l'offre part au serveur. */
   palierBusy: boolean;
+  /** Le choix de la difficulté part au serveur. */
+  difficultyBusy: boolean;
 }
 
 const initialState: RunState = {
@@ -81,6 +84,7 @@ const initialState: RunState = {
   palierDismissedFor: null,
   pendingCard: null,
   palierBusy: false,
+  difficultyBusy: false,
 };
 
 /**
@@ -134,6 +138,20 @@ export const RunGameStore = signalStore(
       /** « Nouvelle partie » : seulement avec l'accès (retiré en cours de partie, la partie se finit, mais pas d'autre). */
       canPlayAgain: computed(() => store.me()?.hasAccess === true),
       finish: computed(() => store.session()?.finish ?? null),
+      /** Ce que montre l'écran « Difficulté ? » : la manche, le score du run, les difficultés proposées, la main. */
+      difficulty: computed(() => {
+        const session = store.session();
+        const choice = session?.difficultyChoice;
+        if (store.screen() !== 'difficulty' || !session?.round || !choice) return null;
+        return {
+          round: choice.round,
+          totalScore: session.totalScore,
+          options: choice.options,
+          hand: session.hand,
+          listenSeconds: session.listenSeconds,
+          headerRound: { round: session.round.round, score: 0, objective: session.round.objective, maxScore: session.round.maxScore },
+        };
+      }),
       /** Ce que montre l'écran de palier : la manche passée, la suivante et son objectif, l'offre, la main. */
       palier: computed(() => {
         const session = store.session();
@@ -275,8 +293,11 @@ export const RunGameStore = signalStore(
         return;
       }
       const current = store.current();
+      // La manche attend sa difficulté : son premier morceau n'arrive qu'avec le choix (écran « Difficulté ? »).
       if (!current && !isFinished(session) && session.difficultyChoice) {
-        void chooseUntilScreen(session.sessionId, session.difficultyChoice.round, play);
+        round.reset();
+        stopClock();
+        patchState(store, { screen: 'difficulty' });
         return;
       }
       // Sans difficulté à choisir, le premier morceau de la manche n'arrive qu'une fois l'offre réglée : passée, ou une carte déjà prise.
@@ -301,20 +322,6 @@ export const RunGameStore = signalStore(
     };
 
     /**
-     * La manche attend sa difficulté : son premier morceau n'arrive qu'avec le choix. En attendant l'écran « Difficulté ? » (#501), elle se joue
-     * en « Sûre », la difficulté du proto 1. Le son a été déverrouillé par le clic qui mène ici (« Morceau suivant », « Reprendre »).
-     */
-    const chooseUntilScreen = async (sessionId: number, roundNumber: number, play: boolean): Promise<void> => {
-      try {
-        applyPlay(await api.chooseDifficulty(sessionId, roundNumber, 'safe'), play);
-      } catch {
-        patchState(store, { screen: 'error' });
-      } finally {
-        patchState(store, { palierBusy: false });
-      }
-    };
-
-    /**
      * Sans difficulté à choisir : l'offre encore ouverte se passe (une offre fermée entre-temps, autre onglet, n'est pas une erreur), puis le
      * premier morceau de la manche se demande et part.
      */
@@ -326,6 +333,16 @@ export const RunGameStore = signalStore(
         patchState(store, { screen: 'error' });
       } finally {
         patchState(store, { palierBusy: false });
+      }
+    };
+
+    /** Relit la partie entière (avec son morceau) après un refus du serveur hors du palier ; un échec mène à l'écran d'erreur. */
+    const rereadPlay = async (sessionId: number): Promise<void> => {
+      try {
+        // Encore dans le geste du toucher (le son est déverrouillé) : le morceau rendu part ; un choix encore ouvert ramène à l'écran.
+        if (store.session()?.sessionId === sessionId) applyPlay(await api.refreshPreview(sessionId), true);
+      } catch {
+        patchState(store, { screen: 'error' });
       }
     };
 
@@ -430,7 +447,7 @@ export const RunGameStore = signalStore(
       const target = code === undefined ? store.code() : code;
       patchState(store, {
         screen: 'loading', code: target, link: null, comparison: null, session: null, current: null, steps: [], shapes: {}, resumeCount: 0,
-        resumeTotal: 0, abandonLoading: false, palierDismissedFor: null, pendingCard: null, palierBusy: false,
+        resumeTotal: 0, abandonLoading: false, palierDismissedFor: null, pendingCard: null, palierBusy: false, difficultyBusy: false,
       });
       try {
         const me = await api.me();
@@ -509,6 +526,28 @@ export const RunGameStore = signalStore(
           await reread(session.sessionId);
         } finally {
           patchState(store, { palierBusy: false });
+        }
+      },
+      /**
+       * Toucher une colonne de l'écran « Difficulté ? » (un clic) : le son se déverrouille dans le toucher, avant l'appel ; le choix rend le
+       * premier morceau de la manche, qui part aussitôt (iPhone, comme « Commencer »).
+       */
+      async chooseDifficulty(difficulty: RunDifficulty): Promise<void> {
+        round.unlockAudio();
+        tick.unlock();
+        const session = store.session();
+        const choice = session?.difficultyChoice;
+        if (!session || !choice || store.difficultyBusy()) return;
+        patchState(store, { difficultyBusy: true });
+        try {
+          const play = await api.chooseDifficulty(session.sessionId, choice.round, difficulty);
+          // La partie a pu être abandonnée ou rouverte pendant l'aller-retour : une réponse périmée ne relance rien.
+          if (store.session()?.sessionId === session.sessionId && store.screen() === 'difficulty') applyPlay(play, true);
+        } catch {
+          // Refusé (choisi dans un autre onglet) ou réseau : la partie se relit et l'écran montre ce qui est vrai.
+          await rereadPlay(session.sessionId);
+        } finally {
+          patchState(store, { difficultyBusy: false });
         }
       },
       /** « Suite » (un clic) : l'écran de palier se ferme, la manche suivante démarre (le son se déverrouille dans ce clic). */
