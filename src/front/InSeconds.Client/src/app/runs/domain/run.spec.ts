@@ -1,8 +1,7 @@
 import {
   RunPassedRound, RunPlay, RunRound, RunRoundSummary, RunSession, RunTrack, clockLabel, finishSquares, gainLabel, isFinished, objectiveBar,
-  playSteps, playedCount, pointsToGo, runPile, runSegments, stepPosition,
+  ghostGap, playSteps, playedCount, pointsToGo, runPile, runSegments, stepPosition,
 } from './run';
-import { ghostGap } from './run';
 
 describe('objectiveBar', () => {
   it('place le score et le trait de l\'objectif sur le maximum de la manche', () => {
@@ -204,16 +203,15 @@ describe('finishSquares', () => {
 
 describe('ghostGap', () => {
   it('l\'écart au dernier morceau répondu : avance, retard ou égalité', () => {
-    const ghost = { pseudo: 'Alice', totals: [100, 200, 250] };
+    const ghost = { pseudo: 'Alice', total: 250, stoppedAtRound: null };
 
-    expect(ghostGap({ ghost, totalScore: 310 })).toEqual({ pseudo: 'Alice', total: 250, gap: 60 });
+    expect(ghostGap({ ghost, totalScore: 310 })).toEqual({ pseudo: 'Alice', total: 250, gap: 60, stoppedAtRound: null });
     expect(ghostGap({ ghost, totalScore: 200 })?.gap).toBe(-50);
-    expect(ghostGap({ ghost, totalScore: 250 })?.gap).toBe(0);
+    expect(ghostGap({ ghost: { ...ghost, stoppedAtRound: 2 }, totalScore: 250 })).toEqual({ pseudo: 'Alice', total: 250, gap: 0, stoppedAtRound: 2 });
   });
 
-  it('rien sans fantôme ni avant la première réponse', () => {
+  it('rien sans fantôme', () => {
     expect(ghostGap(null)).toBeNull();
     expect(ghostGap({ ghost: null, totalScore: 100 })).toBeNull();
-    expect(ghostGap({ ghost: { pseudo: null, totals: [] }, totalScore: 0 })).toBeNull();
   });
 });

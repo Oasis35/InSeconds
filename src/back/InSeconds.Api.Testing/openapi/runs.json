@@ -2459,7 +2459,8 @@
       "RunGhostResponse": {
         "required": [
           "pseudo",
-          "totals"
+          "total",
+          "stoppedAtRound"
         ],
         "type": "object",
         "properties": {
@@ -2469,12 +2470,16 @@
               "string"
             ]
           },
-          "totals": {
-            "type": "array",
-            "items": {
-              "type": "integer",
-              "format": "int32"
-            }
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "stoppedAtRound": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       }

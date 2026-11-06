@@ -103,7 +103,7 @@ Des cartes à **usage unique**, jouées sur le morceau en cours. **2 emplacement
   ```
 
   🟩 trouvé (artiste et titre), 🟨 à moitié, 🟥 raté, ⬜ morceau retiré ; seules les manches jouées ont leur ligne, et rien n'y identifie un morceau.
-- **Fantôme** : seulement celui d'un **ami sur la même playlist** (par son lien) : l'écart avec lui à chaque morceau. Il n'y a pas de fantôme de son propre record (Clément, 05/11). L'ami est l'auteur de la playlist, s'il l'a finie (gagnée ou perdue) ; sous « Total du run », son pseudo et son total au même morceau en violet, puis « 60 pts d'avance », « 40 pts de retard » ou « À égalité ». Le serveur n'envoie son total que jusqu'au dernier morceau répondu, jamais d'avance.
+- **Fantôme** : seulement celui d'un **ami sur la même playlist** (par son lien) : l'écart avec lui à chaque morceau. Il n'y a pas de fantôme de son propre record (Clément, 05/11). L'ami est l'auteur de la playlist, s'il l'a finie (gagnée ou perdue) ; sous « Total du run », son pseudo et son total au même morceau en violet, puis « 60 pts d'avance », « 40 pts de retard » ou « À égalité ». Le serveur n'envoie son total que sur les morceaux que le joueur a joués (un morceau retiré au joueur ne compte pas), jusqu'au dernier répondu, jamais d'avance ; un ami dépassé est marqué « arrêt en manche 2 ».
 - **Combo visuel** : série de bonnes réponses affichée, sans aucun point.
 - **Sons d'interface** : sons à nous, libres de droits, jamais pendant un extrait, avec un bouton pour les couper.
 - Étagère des disques gagnés sur l'accueil du mode (« Tes disques » : chaque disque et son nombre ; une partie sans manche passée ou abandonnée n'en pose pas).

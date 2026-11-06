@@ -37,11 +37,32 @@ describe('RunPileComponent', () => {
     };
     expect(render([]).element.querySelector('[data-testid="run-ghost"]')).toBeNull();
 
-    const ahead = line({ pseudo: 'Alice', total: 240, gap: 60 });
-    expect(ahead.textContent?.replace(/\s+/g, ' ').trim()).toBe('Alice 240 60 pts d’avance');
+    const ahead = line({ pseudo: 'Alice', total: 1240, gap: 1060, stoppedAtRound: null });
+    expect(ahead.textContent?.replace(/\s+/g, ' ').trim()).toBe('Alice 1 240 1 060 pts d’avance');
     expect((ahead.firstElementChild as HTMLElement).style.color).toBe('var(--color-violet)');
-    expect(line({ pseudo: null, total: 340, gap: -40 }).textContent?.replace(/\s+/g, ' ').trim()).toBe('Ton ami 340 40 pts de retard');
-    expect(line({ pseudo: 'Alice', total: 300, gap: 0 }).querySelector('[data-testid="run-ghost-gap"]')?.textContent?.trim()).toBe('À égalité');
+    // Un auteur invité (ou un compte effacé) porte le même nom qu'au lien reçu et dans la comparaison.
+    expect(line({ pseudo: null, total: 340, gap: -40, stoppedAtRound: null }).textContent?.replace(/\s+/g, ' ').trim()).toBe('Invité 340 40 pts de retard');
+    expect(line({ pseudo: 'Alice', total: 300, gap: 0, stoppedAtRound: null }).querySelector('[data-testid="run-ghost-gap"]')?.textContent?.trim()).toBe('À égalité');
+    // Le joueur est allé plus loin que l'ami : où sa partie s'est arrêtée.
+    expect(line({ pseudo: 'Alice', total: 300, gap: 900, stoppedAtRound: 2 }).querySelector('[data-testid="run-ghost-stopped"]')?.textContent?.trim())
+      .toBe('arrêt en manche 2');
+  });
+
+  it('l\'écart change quand le total a fini de compter, pas avant', () => {
+    vi.useFakeTimers();
+    const { fixture, element } = render([], 300, { pseudo: 'Alice', total: 300, gap: 0, stoppedAtRound: null });
+    const gap = () => element.querySelector('[data-testid="run-ghost-gap"]')?.textContent?.trim();
+    expect(gap()).toBe('À égalité');
+
+    fixture.componentRef.setInput('total', 400);
+    fixture.componentRef.setInput('ghost', { pseudo: 'Alice', total: 300, gap: 100, stoppedAtRound: null });
+    fixture.detectChanges();
+    expect(gap()).toBe('À égalité');
+
+    vi.advanceTimersByTime(1400);
+    fixture.detectChanges();
+    expect(gap()).toBe('100 pts d’avance');
+    vi.useRealTimers();
   });
 
   it('un morceau : pochette, forme, « Artiste - Titre » et ses points', () => {

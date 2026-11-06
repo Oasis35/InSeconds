@@ -1778,7 +1778,8 @@ export interface RunShortfallResponse {
 
 export interface RunGhostResponse {
     pseudo: string | undefined;
-    totals: number[];
+    total: number;
+    stoppedAtRound: number | undefined;
 
     [key: string]: any;
 }

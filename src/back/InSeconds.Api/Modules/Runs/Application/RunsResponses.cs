@@ -154,12 +154,16 @@ public sealed record RunSessionResponse(
     int HandSize = 0, RunDiscResponse? NextDisc = null, RunCardValuesResponse? CardValues = null, RunGhostResponse? Ghost = null);
 
 /// <summary>
-/// Le fantôme d'un ami sur la même playlist (celui dont le lien a été ouvert) : son total après chaque morceau, seulement jusqu'au dernier que le joueur
-/// a répondu (rien d'avance). L'écart se lit morceau par morceau ; rien n'y identifie un morceau.
+/// Le fantôme d'un ami sur la même playlist (l'auteur de la playlist, même pour un joueur qui l'a reçue d'un autre joueur) : son total sur les morceaux que le joueur a joués, jusqu'au dernier
+/// qu'il a répondu (rien d'avance). L'écart se lit morceau par morceau ; rien n'y identifie un morceau.
 /// </summary>
-/// <param name="Pseudo">Son pseudo ; vide pour un invité ou un compte effacé (« ton ami » à l'écran).</param>
-/// <param name="Totals">Son total après chacun des morceaux 1, 2… déjà répondus par le joueur.</param>
-public sealed record RunGhostResponse(string? Pseudo, IReadOnlyList<int> Totals);
+/// <param name="Pseudo">
+/// Son pseudo ; vide pour un invité (« Invité » à l'écran). Un auteur dont le compte est effacé n'a plus de fantôme : ses parties sont supprimées et
+/// la playlist n'a plus d'auteur.
+/// </param>
+/// <param name="Total">Son total sur les morceaux que le joueur a joués (un morceau retiré au joueur ne compte pas).</param>
+/// <param name="StoppedAtRound">La manche où sa partie s'est arrêtée, quand le joueur est allé plus loin ; vide sinon.</param>
+public sealed record RunGhostResponse(string? Pseudo, int Total, int? StoppedAtRound);
 
 /// <summary>Ce que valent les coups de pouce d'une playlist, figés avec elle : l'écran les affiche, il n'en invente aucun.</summary>
 /// <param name="ExtendListenSeconds">L'écoute d'un morceau sous « Rallonge ».</param>

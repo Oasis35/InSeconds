@@ -456,11 +456,13 @@ export function shareRounds(finish: Pick<RunFinish, 'tracks' | 'rounds'>): RunSh
     }));
 }
 
-/** Le fantôme d'un ami sur la même playlist : son total après chaque morceau déjà répondu par le joueur (rien d'avance). */
+/** Le fantôme d'un ami sur la même playlist : son total sur les morceaux que le joueur a joués, jusqu'au dernier répondu (rien d'avance). */
 export interface RunGhost {
-  /** Son pseudo ; `null` pour un invité (« ton ami » à l'écran). */
+  /** Son pseudo ; `null` pour un invité (« Invité » à l'écran). */
   readonly pseudo: string | null;
-  readonly totals: readonly number[];
+  readonly total: number;
+  /** La manche où sa partie s'est arrêtée, quand le joueur est allé plus loin ; `null` sinon. */
+  readonly stoppedAtRound: number | null;
 }
 
 /** L'écart avec le fantôme au dernier morceau répondu : son total à ce morceau, et l'avance (positive) ou le retard (négatif) du joueur. */
@@ -468,12 +470,12 @@ export interface RunGhostGap {
   readonly pseudo: string | null;
   readonly total: number;
   readonly gap: number;
+  readonly stoppedAtRound: number | null;
 }
 
-/** L'écart avec le fantôme, morceau par morceau ; `null` sans fantôme ou avant la première réponse. */
+/** L'écart avec le fantôme, morceau par morceau ; `null` sans fantôme (le serveur n'en envoie pas avant le premier morceau joué). */
 export function ghostGap(session: Pick<RunSession, 'ghost' | 'totalScore'> | null): RunGhostGap | null {
   const ghost = session?.ghost;
-  if (!ghost || ghost.totals.length === 0) return null;
-  const total = ghost.totals[ghost.totals.length - 1];
-  return { pseudo: ghost.pseudo, total, gap: session.totalScore - total };
+  if (!ghost) return null;
+  return { pseudo: ghost.pseudo, total: ghost.total, gap: session.totalScore - ghost.total, stoppedAtRound: ghost.stoppedAtRound };
 }

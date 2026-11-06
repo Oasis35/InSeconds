@@ -25,8 +25,7 @@ public sealed class RunPlayer(
     ITrackPreviews previews,
     ITrackWaveforms waveforms,
     IRunsStore store,
-    IRunsQueries queries,
-    Players.Contracts.IPlayerDirectory players,
+    RunGhosts ghosts,
     IRunScoringPolicy scoring,
     RunsRules rules,
     TimeProvider time,
@@ -119,33 +118,7 @@ public sealed class RunPlayer(
                 shapes = await waveforms.GetAsync(played, ct, reportMissing: false);
         }
 
-        return RunViews.Session(run, scoring, rules.Discs, record, shapes, time.GetUtcNow(), await GhostAsync(run, ct));
-    }
-
-    /// <summary>
-    /// Le fantôme de l'ami qui a lancé la playlist (pas celui du joueur lui-même : pas de fantôme de son propre record), s'il l'a finie : son total
-    /// après chaque morceau, jusqu'au dernier que le joueur a répondu.
-    /// </summary>
-    private async Task<RunGhostResponse?> GhostAsync(LoadedRun run, CancellationToken ct)
-    {
-        var (session, challenge, _) = run;
-        if (challenge.CreatedBy is not { } author || author == session.PlayerId || session.Answers.Count == 0)
-            return null;
-        var points = await queries.FindFinishedPointsAsync(challenge.Id, author, ct);
-        if (points is null)
-            return null;
-
-        var reached = session.Answers.Max(a => (int)a.Position);
-        var totals = new List<int>(reached);
-        var total = 0;
-        for (var position = 1; position <= reached; position++)
-        {
-            total += points.GetValueOrDefault(position);
-            totals.Add(total);
-        }
-
-        var pseudos = await players.GetPseudosAsync([author], ct);
-        return new RunGhostResponse(pseudos.GetValueOrDefault(author), totals);
+        return RunViews.Session(run, scoring, rules.Discs, record, shapes, time.GetUtcNow(), await ghosts.OfAsync(run.Session, run.Challenge, ct));
     }
 
     /// <summary>
@@ -238,7 +211,7 @@ internal static class RunViews
 
     public static RunSessionResponse Session(
         LoadedRun run, IRunScoringPolicy scoring, IReadOnlyList<string> discs, RunRecord? record, IReadOnlyDictionary<int, byte[]> shapes,
-        DateTimeOffset now, RunGhostResponse? ghost = null)
+        DateTimeOffset now, RunGhostResponse? ghost)
     {
         var (session, challenge, _) = run;
         var rules = challenge.Rules;

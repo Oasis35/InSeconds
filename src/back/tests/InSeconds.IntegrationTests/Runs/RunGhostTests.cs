@@ -5,7 +5,8 @@ namespace InSeconds.IntegrationTests.Runs;
 
 /// <summary>
 /// Le fantôme d'un ami (<c>session.ghost</c>) : celui qui a lancé la playlist, quand un autre joueur la joue par son lien et qu'il l'a finie. Son
-/// total après chaque morceau, seulement jusqu'au dernier que le joueur a répondu ; jamais de fantôme de soi-même (décision du 05/11/2026).
+/// total sur les morceaux que le joueur a joués, jusqu'au dernier qu'il a répondu ; jamais de fantôme de soi-même (décision du 05/11/2026), rien
+/// une fois sa partie finie.
 /// </summary>
 public class RunGhostTests(PostgresFixture postgres) : IAsyncLifetime
 {
@@ -15,40 +16,100 @@ public class RunGhostTests(PostgresFixture postgres) : IAsyncLifetime
 
     public ValueTask DisposeAsync() => _run.DisposeAsync();
 
-    [Fact]
-    public async Task LAmiQuiALanceLaPlaylist_SonTotalJusquAuMorceauRepondu_RienDAvance()
+    private static readonly bool[] AllFound = [true, true, true, true, true];
+
+    /// <summary>Alice lance la playlist, trouve 3 morceaux sur 5 (300 pts, manche passée) puis rate la manche 2 : perdue au morceau 10.</summary>
+    private async Task<(RunGamer Alice, string Code)> AliceLosesAtRoundTwoAsync()
     {
         var alice = await _run.NewInvitedAsync("Alice");
         var start = (await alice.LaunchAsync()).Session;
-        var code = start.ChallengeCode;
-
-        // Alice n'a pas fini : pas de fantôme pour Carole.
-        var carole = await _run.NewPlayerAsync();
-        var caroleStart = (await carole.JoinAsync(code)).Session;
-        var caroleAfter = await carole.AnswerAsync(caroleStart.SessionId, code, 1);
-        Assert.Null(caroleAfter.Session.Ghost);
-
-        // Alice : 3 morceaux trouvés sur 5 (300 pts, manche passée), puis une manche 2 ratée : partie perdue.
-        var aliceEnd = await alice.PlayAsync(start.SessionId, code, 1, true, true, true, false, false);
-        aliceEnd = await alice.PlayAsync(start.SessionId, code, 6, false, false, false, false, false);
-        Assert.Equal("lost", aliceEnd.Session.Status);
+        await alice.PlayAsync(start.SessionId, start.ChallengeCode, 1, true, true, true, false, false);
+        var end = await alice.PlayAsync(start.SessionId, start.ChallengeCode, 6, false, false, false, false, false);
+        Assert.Equal("lost", end.Session.Status);
         // Pas de fantôme de sa propre partie.
-        Assert.Null(aliceEnd.Session.Ghost);
+        Assert.Null(end.Session.Ghost);
+        return (alice, start.ChallengeCode);
+    }
+
+    [Fact]
+    public async Task AuteurPasEncoreAuBout_PasDeFantome_PuisIlArriveEnCoursDePartie()
+    {
+        var alice = await _run.NewInvitedAsync("Alice");
+        var aliceStart = (await alice.LaunchAsync()).Session;
+        var code = aliceStart.ChallengeCode;
+
+        var carole = await _run.NewPlayerAsync();
+        var start = (await carole.JoinAsync(code)).Session;
+        Assert.Null((await carole.AnswerAsync(start.SessionId, code, 1)).Session.Ghost);
+
+        // Alice finit (perdue d'entrée) : à la réponse suivante de Carole, le fantôme est là.
+        await alice.PlayAsync(aliceStart.SessionId, code, 1, false, false, false, false, false);
+        Assert.Equal(new RunGhostResponse("Alice", 0, null), (await carole.AnswerAsync(start.SessionId, code, 2)).Session.Ghost);
+    }
+
+    [Fact]
+    public async Task AuteurQuiAAbandonne_PasDeFantome()
+    {
+        var alice = await _run.NewInvitedAsync("Alice");
+        var aliceStart = (await alice.LaunchAsync()).Session;
+        await alice.AnswerAsync(aliceStart.SessionId, aliceStart.ChallengeCode, 1);
+        await alice.AbandonRawAsync(aliceStart.SessionId);
+
+        var bob = await _run.NewPlayerAsync("Bob");
+        var start = (await bob.JoinAsync(aliceStart.ChallengeCode)).Session;
+        Assert.Null((await bob.AnswerAsync(start.SessionId, aliceStart.ChallengeCode, 1)).Session.Ghost);
+    }
+
+    [Fact]
+    public async Task LAmiQuiALanceLaPlaylist_SonTotalJusquAuMorceauRepondu_RienDAvance()
+    {
+        var (_, code) = await AliceLosesAtRoundTwoAsync();
 
         var bob = await _run.NewPlayerAsync("Bob");
         var bobStart = (await bob.JoinAsync(code)).Session;
         Assert.Null(bobStart.Ghost);
 
         var first = await bob.AnswerAsync(bobStart.SessionId, code, 1, artist: false, title: false);
-        Assert.Equal("Alice", first.Session.Ghost!.Pseudo);
-        Assert.Equal([100], first.Session.Ghost.Totals);
+        Assert.Equal(new RunGhostResponse("Alice", 100, null), first.Session.Ghost);
 
         var second = await bob.AnswerAsync(bobStart.SessionId, code, 2);
-        Assert.Equal("Alice", second.Session.Ghost!.Pseudo);
-        Assert.Equal([100, 200], second.Session.Ghost.Totals);
+        Assert.Equal(new RunGhostResponse("Alice", 200, null), second.Session.Ghost);
         Assert.Equal(100, second.Session.TotalScore);
 
         // Relue, la partie rend le même fantôme (reprise).
-        Assert.Equal([100, 200], (await bob.SessionAsync(bobStart.SessionId)).Ghost!.Totals);
+        Assert.Equal(new RunGhostResponse("Alice", 200, null), (await bob.SessionAsync(bobStart.SessionId)).Ghost);
+    }
+
+    [Fact]
+    public async Task UnMorceauRetireAuJoueur_NeCompteNiPourLuiNiPourLeFantome()
+    {
+        var (_, code) = await AliceLosesAtRoundTwoAsync();
+        var bob = await _run.NewPlayerAsync("Bob");
+        var bobStart = (await bob.JoinAsync(code)).Session;
+        // Le morceau 2 (trouvé par Alice, 100 pts) n'a plus d'extrait quand Bob y arrive : il lui est retiré.
+        await _run.RemovePreviewAsync(await _run.TrackAtAsync(code, 2));
+
+        await bob.AnswerAsync(bobStart.SessionId, code, 1);
+        var third = await bob.AnswerAsync(bobStart.SessionId, code, 3);
+
+        Assert.Equal(new RunGhostResponse("Alice", 200, null), third.Session.Ghost);
+    }
+
+    [Fact]
+    public async Task LeJoueurDepasseLAuteur_LaMancheOuSaPartieSestArretee_PuisRienALaFin()
+    {
+        var (_, code) = await AliceLosesAtRoundTwoAsync();
+        var bob = await _run.NewPlayerAsync("Bob");
+        var id = (await bob.JoinAsync(code)).Session.SessionId;
+
+        await bob.PlayAsync(id, code, 1, AllFound);
+        await bob.PlayAsync(id, code, 6, AllFound);
+        var eleventh = await bob.AnswerAsync(id, code, 11);
+        Assert.Equal(new RunGhostResponse("Alice", 300, 2), eleventh.Session.Ghost);
+
+        // Partie finie : plus de fantôme (la comparaison prend le relais).
+        var end = await bob.PlayAsync(id, code, 12, false, false, false, false);
+        Assert.Equal("lost", end.Session.Status);
+        Assert.Null(end.Session.Ghost);
     }
 }

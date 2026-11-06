@@ -332,6 +332,40 @@ public class DiscLadderTests
         Assert.Equal(new RunDisc("runs.discs.gold", stars), DiscLadder.Of(rounds, Discs));
 }
 
+public class RunGhostTests
+{
+    [Fact]
+    public void Total_SurLesSeulsMorceauxJouesParLeJoueur_UnMorceauNonJoueParLAuteurNeRapporteRien()
+    {
+        var points = new Dictionary<int, int> { [1] = 100, [2] = 50, [3] = 0, [4] = 200 };
+
+        Assert.Equal(150, RunGhost.TotalOver(points, [1, 2]));
+        // Le morceau 2 retiré au joueur : les 50 points de l'auteur n'y comptent pas.
+        Assert.Equal(300, RunGhost.TotalOver(points, [1, 3, 4]));
+        Assert.Equal(300, RunGhost.TotalOver(points, [1, 4, 5]));
+        Assert.Equal(0, RunGhost.TotalOver(points, []));
+    }
+
+    [Fact]
+    public void LAuteurArreteAvantLeJoueur_SaDernierePosition_RienTantQueLeJoueurNeLADepassePas()
+    {
+        var points = new Dictionary<int, int> { [1] = 100, [2] = 0 };
+
+        Assert.Null(RunGhost.StoppedAt(points, 2));
+        Assert.Equal(2, RunGhost.StoppedAt(points, 3));
+    }
+
+    [Fact]
+    public void LAuteurHanteLesAutres_JamaisLuiMeme_NiUnePlaylistSansAuteur()
+    {
+        var author = Guid.NewGuid();
+
+        Assert.True(RunGhost.Haunts(author, Guid.NewGuid()));
+        Assert.False(RunGhost.Haunts(author, author));
+        Assert.False(RunGhost.Haunts(null, Guid.NewGuid()));
+    }
+}
+
 public class DiscShelfTests
 {
     private static readonly IReadOnlyList<string> Discs = RunsOptions.DefaultDiscs;
