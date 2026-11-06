@@ -491,8 +491,9 @@ export function comboOf(tracks: readonly Pick<RunTrack, 'position' | 'neutralize
   const played = [...tracks].sort((a, b) => b.position - a.position);
   let combo = 0;
   for (const track of played) {
-    if (track.neutralized) continue;
-    if (!(track.artistCorrect && track.titleCorrect)) break;
+    const mark = trackMark(track);
+    if (mark === 'withdrawn') continue;
+    if (mark !== 'found') break;
     combo++;
   }
   return combo;

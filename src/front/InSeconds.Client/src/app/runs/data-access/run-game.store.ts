@@ -5,7 +5,7 @@ import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RoundConfig, RoundSubmission } from '../../gameplay/domain/track-round';
 import { waveformFromBlob } from '../../gameplay/domain/waveform';
 import {
-  AUTO_NEXT_MS, CLOCK_ALERT_SECONDS, PileEntry, RunComparison, RunCurrentTrack, RunDifficulty, RunLink, RunPlay, RunRound, RunSession, RunStep, RunsMe,
+  AUTO_NEXT_MS, CLOCK_ALERT_SECONDS, COMBO_MIN, PileEntry, RunComparison, RunCurrentTrack, RunDifficulty, RunLink, RunPlay, RunRound, RunSession, RunStep, RunsMe,
   isFinished,
   comboOf, ghostGap, nextObjective, palierDue, playSteps, playedCount, runPile, stepPosition,
 } from '../domain/run';
@@ -120,8 +120,8 @@ export const RunGameStore = signalStore(
       rounds: computed(() => store.session()?.rounds ?? 0),
       step,
       totalScore: computed(() => store.session()?.totalScore ?? 0),
-      /** La série de bonnes réponses d'affilée (sans aucun point) ; affichée à partir de `COMBO_MIN`. */
-      combo: computed(() => comboOf(store.session()?.playedTracks ?? [])),
+      /** La série de bonnes réponses d'affilée (sans aucun point), quand elle atteint `COMBO_MIN` ; `null` en dessous. */
+      combo: computed(() => { const combo = comboOf(store.session()?.playedTracks ?? []); return combo >= COMBO_MIN ? combo : null; }),
       /** L'écart avec le fantôme de l'ami qui a lancé la playlist, au dernier morceau répondu. */
       ghost: computed(() => ghostGap(store.session())),
       /** La manche telle que l'écran la montre : celle de l'étape à l'écran, sinon celle du morceau en cours. */
