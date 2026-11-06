@@ -10,7 +10,7 @@ const track = (position: number, overrides: Partial<RunTrack> = {}): RunTrack =>
 });
 
 describe('RunPileComponent', () => {
-  function render(entries: PileEntry[], total = 300, ghost: RunGhostGap | null = null) {
+  function render(entries: PileEntry[], total = 300, ghost: RunGhostGap | null = null, combo = 0) {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     TestBed.inject(TranslateService).setTranslation('fr', fr);
     TestBed.inject(TranslateService).use('fr');
@@ -19,6 +19,7 @@ describe('RunPileComponent', () => {
     fixture.componentRef.setInput('shapes', { 2: [0.3, 0.9] });
     fixture.componentRef.setInput('total', total);
     fixture.componentRef.setInput('ghost', ghost);
+    fixture.componentRef.setInput('combo', combo);
     fixture.detectChanges();
     return { fixture, element: fixture.nativeElement as HTMLElement };
   }
@@ -63,6 +64,15 @@ describe('RunPileComponent', () => {
     fixture.detectChanges();
     expect(gap()).toBe('100 pts d’avance');
     vi.useRealTimers();
+  });
+
+  it('la série de bonnes réponses, à la couleur du joueur, à partir de deux ; rien en dessous', () => {
+    expect(render([], 300, null, 1).element.querySelector('[data-testid="run-combo"]')).toBeNull();
+    TestBed.resetTestingModule();
+
+    const chip = render([], 300, null, 3).element.querySelector<HTMLElement>('[data-testid="run-combo"]')!;
+    expect(chip.textContent?.trim()).toBe('3 d’affilée');
+    expect(chip.style.color).toBe('var(--color-accent-3)');
   });
 
   it('un morceau : pochette, forme, « Artiste - Titre » et ses points', () => {

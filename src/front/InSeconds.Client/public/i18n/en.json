@@ -1076,6 +1076,7 @@
       "behind": "{{ points }} pts behind",
       "tied": "Tied",
       "stopped": "stopped in round {{ round }}"
-    }
+    },
+    "combo": "{{ count }} in a row"
   }
 }

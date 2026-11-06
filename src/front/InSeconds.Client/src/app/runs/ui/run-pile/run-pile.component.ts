@@ -3,8 +3,8 @@ import {
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { motionReduced } from '../../../ui/motion/reduced-motion';
-import { tweenNumber, enterRow, settleLine } from '../../../ui/motion/motion';
-import { PileEntry, RunGhostGap } from '../../domain/run';
+import { pop, tweenNumber, enterRow, settleLine } from '../../../ui/motion/motion';
+import { COMBO_MIN, PileEntry, RunGhostGap } from '../../domain/run';
 import { RunDiscComponent, discColor } from '../run-disc/run-disc.component';
 import { RunWaveComponent } from '../run-wave/run-wave.component';
 
@@ -32,7 +32,15 @@ const keyOf = (entry: PileEntry): string => (entry.kind === 'track' ? `t${entry.
   host: { class: 'block' },
   template: `
     <div class="flex items-baseline justify-between mt-4 px-0.5 pb-2" style="border-bottom:1px solid var(--border-medium)">
-      <span class="text-[13px]" style="color:var(--text-muted)">{{ 'runs.pile.total' | translate }}</span>
+      <span class="flex items-baseline gap-2">
+        <span class="text-[13px]" style="color:var(--text-muted)">{{ 'runs.pile.total' | translate }}</span>
+        <!-- La série de bonnes réponses : à la couleur du joueur, c'est lui qui la fait ; elle ne rapporte rien. -->
+        @if (combo() >= comboMin) {
+          <span #comboChip class="inline-block text-[13px] font-bold tabular-nums" style="color:var(--color-accent-3)" data-testid="run-combo">
+            {{ 'runs.combo' | translate: { count: combo() } }}
+          </span>
+        }
+      </span>
       <b #total class="inline-block tabular-nums text-[26px] font-black leading-none origin-right" style="font-family:var(--font-score);color:var(--text-hi)"
         data-testid="run-total-score"></b>
     </div>
@@ -121,6 +129,10 @@ export class RunPileComponent {
   readonly total = input.required<number>();
   /** L'écart avec le fantôme d'un ami sur la même playlist ; vide sans fantôme. */
   readonly ghost = input<RunGhostGap | null>(null);
+  /** La série de bonnes réponses d'affilée ; affichée à partir de `COMBO_MIN`. */
+  readonly combo = input(0);
+  protected readonly comboMin = COMBO_MIN;
+  private readonly comboChip = viewChild<ElementRef<HTMLElement>>('comboChip');
   readonly lang = input<'fr' | 'en'>('fr');
   /**
    * Le fantôme affiché : il change en même temps que le total a fini de compter (les points s'envolent d'abord), sinon l'écart annoncerait le
@@ -151,6 +163,16 @@ export class RunPileComponent {
           return;
         }
         ghostTimer = setTimeout(() => { ghostTimer = null; this.shownGhost.set(ghost); }, GHOST_DELAY_MS);
+      });
+    });
+    // La série qui grandit marque un petit temps fort (rien en mouvement réduit, rien au premier affichage).
+    let shownCombo: number | null = null;
+    effect(() => {
+      const combo = this.combo();
+      untracked(() => {
+        const chip = this.comboChip()?.nativeElement;
+        if (chip && shownCombo !== null && combo > shownCombo) afterNextRender(() => pop(chip), { injector: this.injector });
+        shownCombo = combo;
       });
     });
     // Le total compte jusqu'à sa nouvelle valeur, le temps que les points le rejoignent ; posé tel quel au premier affichage.

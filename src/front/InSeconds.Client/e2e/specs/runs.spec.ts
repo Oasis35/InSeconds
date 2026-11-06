@@ -84,6 +84,8 @@ test.describe('Mode Platines', () => {
     // La manche passée : sa ligne se pose dans la pile, ses morceaux ne gardent que pochette, forme et points.
     await expect(run.paliers.first()).toContainText('Disque de cire');
     await expect(page.locator('[data-testid="run-pile-track"][data-past]')).toHaveCount(5);
+    // Cinq bonnes réponses d'affilée : la série se voit à côté du total, sans aucun point.
+    await expect(page.getByTestId('run-combo')).toHaveText('5 d’affilée');
 
     await run.winRound(tracks, 2);
     await run.winRound(tracks, 3);

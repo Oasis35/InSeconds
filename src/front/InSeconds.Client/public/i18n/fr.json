@@ -1076,6 +1076,7 @@
       "behind": "{{ points }} pts de retard",
       "tied": "À égalité",
       "stopped": "arrêt en manche {{ round }}"
-    }
+    },
+    "combo": "{{ count }} d’affilée"
   }
 }
