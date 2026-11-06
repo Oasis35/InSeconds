@@ -186,7 +186,7 @@ export class RunPileComponent {
         }, { injector: this.injector });
       });
     });
-  }
+  }
 
   /** « 1 240 » : les grands nombres au format de la langue. */
   protected format(value: number): string {
