@@ -1,7 +1,7 @@
 namespace InSeconds.Api.Modules.Runs.Application;
 
 /// <summary>
-/// La section « runs » de la copie des données d'un joueur (RGPD) : ses parties (réponses et difficulté de chaque manche), les défis qu'il a
+/// La section « runs » de la copie des données d'un joueur (RGPD) : ses parties (réponses, difficulté de chaque manche, cartes), les défis qu'il a
 /// créés, son record et son accès. Une section vide (rien joué) reste une section.
 /// </summary>
 /// <param name="Access">Quand l'admin l'a autorisé, rien s'il n'a pas de ligne d'accès (un admin l'a d'office).</param>
@@ -12,7 +12,15 @@ public sealed record RunsDataExport(
 /// <param name="Status"><c>Pending</c>, <c>Won</c>, <c>Lost</c> ou <c>Abandoned</c>.</param>
 public sealed record RunGameExport(
     string ChallengeCode, string Status, DateTimeOffset StartedAt, DateTimeOffset? EndedAt, int RoundsPassed, int TotalScore,
-    IReadOnlyList<RunAnswerExport> Answers, IReadOnlyList<RunRoundExport> Rounds);
+    IReadOnlyList<RunAnswerExport> Answers, IReadOnlyList<RunRoundExport> Rounds, IReadOnlyList<RunCardExport> Cards);
+
+/// <summary>
+/// Un coup de pouce reçu : la carte, le palier où il a été pris (0 : au départ), puis lâché ou joué (sur quel morceau, dans quelle manche, à quel
+/// rang parmi les cartes jouées) ; pour un Joker, le morceau joué à la place (identifiant Deezer).
+/// </summary>
+public sealed record RunCardExport(
+    string Card, int AcquiredRound, DateTimeOffset AcquiredAt, DateTimeOffset? DroppedAt, DateTimeOffset? PlayedAt, int? PlayedPosition,
+    int? PlayedRound, int? PlayOrder, long? ReplacementDeezerTrackId);
 
 /// <summary>La difficulté d'une manche à choix : <c>easy</c>, <c>safe</c> ou <c>risky</c>, et quand elle a été choisie.</summary>
 public sealed record RunRoundExport(int Round, string Difficulty, DateTimeOffset ChosenAt);

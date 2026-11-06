@@ -45,6 +45,17 @@ public sealed class RunsOptions
         new() { Difficulty = "risky", PointsFactor = 1.33m, ObjectiveFactor = 1.5m },
     ];
 
+    public const int DefaultHandSize = 2;
+    public const decimal DefaultExtendListenSeconds = 20m;
+    public const int DefaultHourglassSeconds = 30;
+    public const int DefaultLowerTargetPercent = 20;
+
+    /// <summary>L'écoute la plus longue d'une « Rallonge » : un extrait Deezer dure 30 s.</summary>
+    public const decimal MaxExtendListenSeconds = 30m;
+
+    /// <summary>Les coups de pouce du proto 2 (tous, provisoire) : leurs noms d'API.</summary>
+    public static string[] DefaultCards => [.. RunCards.All.Select(RunCards.KeyOf)];
+
     public static readonly string[] DefaultDiscs =
         ["runs.discs.scratched", "runs.discs.wax", "runs.discs.bronze", "runs.discs.silver", "runs.discs.gold"];
 
@@ -79,6 +90,26 @@ public sealed class RunsOptions
     /// <summary>Les morceaux de réserve tirés pour chaque manche (Joker).</summary>
     public int ReservePerRound { get; set; } = DefaultReservePerRound;
 
+    /// <summary>Les coups de pouce : faux, aucune carte dans les nouvelles playlists (une liste vide ne s'écrit pas dans les réglages).</summary>
+    public bool CardsEnabled { get; set; } = true;
+
+    /// <summary>Les coups de pouce que les playlists peuvent offrir (noms d'API : <c>three_choices</c>, <c>joker</c>…) ; sans valeur, tous.</summary>
+    public string[]? Cards { get; set; }
+
+    /// <summary>Les emplacements de la main.</summary>
+    public int HandSize { get; set; } = DefaultHandSize;
+
+    /// <summary>L'écoute d'un morceau sous « Rallonge ».</summary>
+    public decimal ExtendListenSeconds { get; set; } = DefaultExtendListenSeconds;
+
+    /// <summary>Les secondes que « Sablier » ajoute au chrono (décidé : +30 s plutôt que le chrono suspendu, docs/runs/proto2.md).</summary>
+    public int HourglassSeconds { get; set; } = DefaultHourglassSeconds;
+
+    /// <summary>La baisse de l'objectif de la manche sous « Seuil abaissé », en pourcentage.</summary>
+    public int LowerTargetPercent { get; set; } = DefaultLowerTargetPercent;
+
+    public IReadOnlyList<string> EffectiveCards => Cards ?? DefaultCards;
+
     public IReadOnlyList<int> EffectiveThresholdPercents => ThresholdPercents ?? DefaultThresholdPercents;
 
     public IReadOnlyList<string> EffectiveDiscs => Discs ?? DefaultDiscs;
@@ -90,8 +121,13 @@ public sealed class RunsOptions
     {
         var thresholds = EffectiveThresholdPercents.ToArray();
         var roundRules = RunRoundPlan.Plan(Rounds, thresholds, EffectiveProfiles(), ListenSeconds, BossListenSeconds);
+        var pool = EffectiveCards.Select(key => RunCards.Parse(key)!.Value).Distinct().Order().ToList();
+        // Les offres et la carte de départ se tirent avec la playlist (RunCardDealer, graine de la playlist).
+        var cards = !CardsEnabled || pool.Count == 0
+            ? null
+            : new RunCardRules(HandSize, null, [], ExtendListenSeconds, HourglassSeconds, LowerTargetPercent, pool);
         return new RunRules(
-            Rounds, TracksPerRound, ListenSeconds, thresholds, MinMultiplier, MaxMultiplier, AnswerSeconds, roundRules, ReservePerRound);
+            Rounds, TracksPerRound, ListenSeconds, thresholds, MinMultiplier, MaxMultiplier, AnswerSeconds, roundRules, ReservePerRound, cards);
     }
 
     /// <summary>Les difficultés des réglages, lues (à n'appeler qu'une fois les noms vérifiés).</summary>
@@ -163,6 +199,20 @@ public static class RunsOptionsChecks
 
         if (options.ReservePerRound is < 0 or > RunsOptions.MaxReservePerRound)
             problems.Add($"Runs:ReservePerRound : de 0 à {RunsOptions.MaxReservePerRound} morceaux de réserve par manche.");
+
+        var cardKeys = options.EffectiveCards.Select(RunCards.Parse).ToList();
+        if (cardKeys.Contains(null) || cardKeys.Distinct().Count() != cardKeys.Count)
+            problems.Add("Runs:Cards : des noms de cartes connus (three_choices, joker, year, initials, extend, net, lower_target, hourglass), sans doublon.");
+        if (options.HandSize is < 1 or > 5)
+            problems.Add("Runs:HandSize : de 1 à 5 emplacements.");
+        if (options.ExtendListenSeconds < options.ListenSeconds || options.ExtendListenSeconds > RunsOptions.MaxExtendListenSeconds
+            || decimal.Round(options.ExtendListenSeconds, 2) != options.ExtendListenSeconds
+            || (options.AnswerSeconds != 0 && options.AnswerSeconds <= options.ExtendListenSeconds))
+            problems.Add($"Runs:ExtendListenSeconds : de l'écoute normale à {RunsOptions.MaxExtendListenSeconds} s, deux décimales au plus, sous le chrono.");
+        if (options.HourglassSeconds is < 1 or > RunsOptions.MaxAnswerSeconds)
+            problems.Add($"Runs:HourglassSeconds : de 1 à {RunsOptions.MaxAnswerSeconds} s.");
+        if (options.LowerTargetPercent is < 1 or > 90)
+            problems.Add("Runs:LowerTargetPercent : de 1 à 90 %.");
 
         var discs = options.EffectiveDiscs;
         if (discs.Count == 0 || discs.Any(string.IsNullOrWhiteSpace))

@@ -20,9 +20,10 @@ namespace InSeconds.Api.Modules.Runs.Domain;
 /// <paramref name="ThresholdPercents"/> et à l'écoute <paramref name="ListenSeconds"/>.
 /// </param>
 /// <param name="ReservePerRound">Les morceaux de réserve tirés pour chaque manche (le coup de pouce « Joker » change de morceau) ; 0 au proto 1.</param>
+/// <param name="Cards">Les coups de pouce de la playlist (proto 2) : carte de départ, offres de chaque palier, effets ; vide : aucune carte.</param>
 public sealed record RunRules(
     int Rounds, int TracksPerRound, decimal ListenSeconds, IReadOnlyList<int> ThresholdPercents, decimal MinMultiplier, decimal MaxMultiplier,
-    int AnswerSeconds = 0, IReadOnlyList<RunRoundRules>? RoundRules = null, int ReservePerRound = 0)
+    int AnswerSeconds = 0, IReadOnlyList<RunRoundRules>? RoundRules = null, int ReservePerRound = 0, RunCardRules? Cards = null)
 {
     /// <summary>Le morceau a un chrono.</summary>
     public bool HasClock => AnswerSeconds > 0;

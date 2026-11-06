@@ -1,6 +1,6 @@
 # Run (Platines) : proto 2, palier, difficulté et coups de pouce
 
-Règles et écrans du proto 2, décidés avec Clément le 05/11/2026. **En cours de livraison sur le staging** : le back des difficultés et de la réserve du Joker ([#498](https://github.com/Oasis35/InSeconds/issues/498)) est fait, le reste suit ticket par ticket ; le proto 1 ([`regles.md`](regles.md)) reste la référence de ce qui tourne en prod. Les chiffres marqués « provisoire » se règlent après les parties de test. Maquette interactive : artifact « Platines, palier et pari » sur claude.ai (privé) ; les captures de [`maquettes/`](maquettes/) (`proto2-*.png`) en sont tirées le 05/11/2026. Plan et tickets : [`plan.md`](plan.md).
+Règles et écrans du proto 2, décidés avec Clément le 05/11/2026. **En cours de livraison sur le staging** : le back des difficultés et de la réserve du Joker ([#498](https://github.com/Oasis35/InSeconds/issues/498)) et celui des coups de pouce ([#499](https://github.com/Oasis35/InSeconds/issues/499)) sont faits, le reste suit ticket par ticket ; le proto 1 ([`regles.md`](regles.md)) reste la référence de ce qui tourne en prod. Les chiffres marqués « provisoire » se règlent après les parties de test. Maquette interactive : artifact « Platines, palier et pari » sur claude.ai (privé) ; les captures de [`maquettes/`](maquettes/) (`proto2-*.png`) en sont tirées le 05/11/2026. Plan et tickets : [`plan.md`](plan.md).
 
 ## Ce que le proto 2 change
 
@@ -78,12 +78,13 @@ Des cartes à **usage unique**, jouées sur le morceau en cours. **2 emplacement
 | Rallonge | 20 s d'écoute au lieu de 10 |
 | Filet | un morceau raté compte comme à moitié trouvé |
 | Seuil abaissé | l'objectif de la manche baisse de 20 % (gardée pour la manche, pas pour un morceau) |
-| Sablier | 30 s de plus au chrono de 45 s, **ou** chrono suspendu : à trancher, reco +30 s |
+| Sablier | 30 s de plus au chrono de 45 s (retenu le 05/11/2026 plutôt que le chrono suspendu, réglable par `Runs:HourglassSeconds`) |
 
 - Les **offres sont les mêmes pour tous les joueurs de la playlist** et figées avec elle : la comparaison reste juste.
 - **Rien d'une carte n'identifie un morceau avant la réponse** (piège 31) : « Année » et « Initiales » sont servies par le serveur à l'activation, jamais envoyées d'avance. « Trois choix » : les deux fausses réponses viennent du serveur, qui ne dit pas laquelle est juste.
 - Sur l'écran de manche, les cartes sont **au-dessus du champ de saisie** ; « Passer (0 pts) » reste un simple lien souligné sous « Valider ».
 - Une carte jouée monte dans la carte du morceau (animation), le serveur en tient le compte (une carte ne se joue qu'une fois).
+- Côté serveur : une même carte ne se joue qu'une fois par morceau (« Seuil abaissé » une fois par manche) ; un Joker sort le morceau suivant de la réserve de la manche, remet l'écoute et le chrono à zéro, et efface les cartes déjà jouées sur l'ancien morceau ; « Trois choix » propose deux morceaux du catalogue hors de la playlist, d'autres artistes, les mêmes pour tous les joueurs ; « Filet » donne les points d'un morceau à moitié trouvé sans changer les verdicts (le partage montre toujours un morceau raté). L'offre d'un palier reste ouverte jusqu'à ce qu'une carte soit prise, que le joueur la passe, ou qu'il choisisse la difficulté ; tant qu'elle est ouverte, rien du premier morceau de la manche ne part. Jouer une carte ferme aussi le choix de la difficulté. Une carte qui n'aurait rien à changer ne se joue pas (Joker sans réserve, Année inconnue, Trois choix sans deux leurres, Sablier sans chrono ou après le chrono). « Rallonge » donne 20 s d'écoute même dans la manche boss ; « Filet » puis « Passer » rapporte les points d'un morceau à moitié trouvé (c'est un morceau raté), jamais une réponse en retard.
 
 ![Manche 2 avec les cartes en main](maquettes/proto2-manche-cartes.png)
 
