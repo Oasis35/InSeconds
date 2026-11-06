@@ -10,7 +10,7 @@ import {
   comboOf, ghostGap, nextObjective, palierDue, playSteps, playedCount, runPile, stepPosition,
 } from '../domain/run';
 import { RunCardKey, handFull } from '../domain/run-cards';
-import { RunTick } from './run-tick';
+import { RunSounds } from './run-sounds';
 import { RunsApi, StartOutcome } from './runs.api';
 
 /** Le pas du chrono affiché. */
@@ -201,7 +201,7 @@ export const RunGameStore = signalStore(
       }),
     };
   }),
-  withMethods((store, api = inject(RunsApi), round = inject(TrackRoundStore), sessionLoader = inject(SessionLoader), tick = inject(RunTick)) => {
+  withMethods((store, api = inject(RunsApi), round = inject(TrackRoundStore), sessionLoader = inject(SessionLoader), sounds = inject(RunSounds)) => {
     /** L'enchaînement automatique en attente. */
     let autoNextTimer: ReturnType<typeof setTimeout> | null = null;
     /** Le chrono en cours : son échéance (horloge du navigateur, en ms), son pas, et le morceau qu'il chronomètre. */
@@ -248,7 +248,7 @@ export const RunGameStore = signalStore(
         const left = Math.max(0, (clockDeadline - Date.now()) / 1000);
         const whole = Math.ceil(left);
         // Un tic à chaque seconde des dernières, quand aucun extrait ne joue (il couvrirait le morceau).
-        if (whole !== lastWhole && whole > 0 && whole <= CLOCK_ALERT_SECONDS && round.phase() !== 'playing') tick.play();
+        if (whole !== lastWhole && whole > 0 && whole <= CLOCK_ALERT_SECONDS) sounds.play('tick', round.phase() === 'playing');
         lastWhole = whole;
         patchState(store, { clockLeft: left });
         if (left <= 0) {
@@ -332,6 +332,8 @@ export const RunGameStore = signalStore(
         round.reset();
         stopClock();
         patchState(store, { screen: 'palier', pendingCard: null });
+        // L'extrait vient d'être coupé (la manche est remise à zéro) : rien ne couvre le morceau.
+        sounds.play('roundPassed');
         return;
       }
       const current = store.current();
@@ -351,6 +353,7 @@ export const RunGameStore = signalStore(
         round.reset();
         stopClock();
         patchState(store, { screen: 'finished' });
+        if (session.status === 'won' || session.status === 'lost') sounds.play(session.status);
         void refreshMe();
         return;
       }
@@ -406,6 +409,7 @@ export const RunGameStore = signalStore(
       patchState(store, { palierBusy: true });
       try {
         patchState(store, { session: await api.takeCard(session.sessionId, session.offer.afterRound, card, dropSlot), pendingCard: null });
+        sounds.play('cardTaken');
       } catch {
         await reread(session.sessionId);
       } finally {
@@ -526,7 +530,7 @@ export const RunGameStore = signalStore(
       /** « Lancer une partie » ou « Reprendre » (un clic) : une partie neuve sur une playlist neuve, ou celle qui était en cours. */
       async begin(): Promise<void> {
         round.unlockAudio();
-        tick.unlock();
+        sounds.unlock();
         const code = store.link()?.code ?? store.me()?.pending?.challengeCode ?? null;
         await launch(() => (code ? api.join(code) : api.launch()));
       },
@@ -536,7 +540,7 @@ export const RunGameStore = signalStore(
        */
       async playLink(): Promise<void> {
         round.unlockAudio();
-        tick.unlock();
+        sounds.unlock();
         const code = store.link()?.code;
         if (!code) return;
         patchState(store, { screen: 'loading' });
@@ -580,7 +584,7 @@ export const RunGameStore = signalStore(
        */
       async playCard(slot: number): Promise<void> {
         round.unlockAudio();
-        tick.unlock();
+        sounds.unlock();
         const session = store.session();
         const current = store.current();
         const card = session?.hand.find(c => c.slot === slot);
@@ -619,7 +623,7 @@ export const RunGameStore = signalStore(
        */
       async chooseDifficulty(difficulty: RunDifficulty): Promise<void> {
         round.unlockAudio();
-        tick.unlock();
+        sounds.unlock();
         const session = store.session();
         const choice = session?.difficultyChoice;
         if (!session || !choice || store.difficultyBusy()) return;
@@ -638,7 +642,7 @@ export const RunGameStore = signalStore(
       /** « Suite » (un clic) : l'écran de palier se ferme, la manche suivante démarre (le son se déverrouille dans ce clic). */
       continueFromPalier(): void {
         round.unlockAudio();
-        tick.unlock();
+        sounds.unlock();
         // Un second toucher (double tap, réseau lent) ne relance rien.
         if (store.palierBusy() || store.screen() !== 'palier') return;
         patchState(store, { palierDismissedFor: store.session()?.round?.round ?? null, pendingCard: null, palierBusy: true });
@@ -683,7 +687,7 @@ export const RunGameStore = signalStore(
        */
       next(): void {
         round.unlockAudio();
-        tick.unlock();
+        sounds.unlock();
         advance();
       },
       /**
@@ -699,6 +703,13 @@ export const RunGameStore = signalStore(
         void api.startClock(session.sessionId, current.position)
           .then(left => { if (left !== null) alignClock(current.position, left); })
           .catch(() => undefined);
+      },
+      /** Les sons d'interface sont coupés (le bouton de l'en-tête). */
+      soundsMuted: () => sounds.muted(),
+      /** Couper ou remettre les sons d'interface (retenu dans ce navigateur) ; un toucher sur le bouton réveille aussi le son. */
+      toggleSounds(): void {
+        sounds.unlock();
+        sounds.toggleMuted();
       },
       /** Coupe (ou rétablit) l'enchaînement automatique : la page le coupe en mouvement réduit. */
       setAutoAdvance(autoAdvance: boolean): void {
@@ -727,7 +738,7 @@ export const RunGameStore = signalStore(
       /** « Rejouer » depuis la fin (un clic) : une playlist neuve, le premier morceau lancé dans ce clic. */
       async playAgain(): Promise<void> {
         round.unlockAudio();
-        tick.unlock();
+        sounds.unlock();
         patchState(store, { me: store.me() ? { ...store.me()!, pending: null } : null });
         await launch(() => api.launch());
       },

@@ -16,7 +16,7 @@ import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-bac
 import { ResumeScreenComponent } from '../../../gameplay/ui/resume-screen/resume-screen.component';
 import { RunGameStore } from '../../data-access/run-game.store';
 import { RunShare } from '../../data-access/run-share';
-import { RunTick } from '../../data-access/run-tick';
+import { RunSounds } from '../../data-access/run-sounds';
 import { RunComparisonScreenComponent } from '../../ui/run-comparison-screen/run-comparison-screen.component';
 import { RunFinishComponent } from '../../ui/run-finish/run-finish.component';
 import { RunHeaderComponent } from '../../ui/run-header/run-header.component';
@@ -44,7 +44,7 @@ import { reloadMomentFor } from '../reload-moment';
     RunWithdrawnCardComponent, RunFinishComponent, RunWelcomeScreenComponent, RunStatusScreenComponent, ResumeScreenComponent,
     RunLinkScreenComponent, RunComparisonScreenComponent, RunPalierComponent, RunDifficultyComponent, RunRoundCardsComponent,
   ],
-  providers: [RunGameStore, TrackRoundStore, RunShare, RunTick],
+  providers: [RunGameStore, TrackRoundStore, RunShare, RunSounds],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './runs.page.html',
   host: { '(window:beforeunload)': 'onBeforeUnload($event)' },

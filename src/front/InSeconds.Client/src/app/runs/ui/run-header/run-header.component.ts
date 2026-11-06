@@ -38,6 +38,18 @@ import { RunRound, pointsToGo, runSegments } from '../../domain/run';
           </div>
         }
       </div>
+      <button type="button" (click)="toggleSounds.emit()" class="grid place-items-center touch-manipulation shrink-0 -mr-2"
+        style="width:40px;height:44px;color:var(--text-muted)" [attr.aria-pressed]="muted()" data-testid="run-sounds"
+        [attr.aria-label]="(muted() ? 'runs.header.soundsOn' : 'runs.header.soundsOff') | translate">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 9 H8 L13 5 V19 L8 15 H4 Z" />
+          @if (muted()) {
+            <path d="M17 9 L22 15 M22 9 L17 15" />
+          } @else {
+            <path d="M17 9 a4 4 0 0 1 0 6 M19.5 6.5 a7.5 7.5 0 0 1 0 11" />
+          }
+        </svg>
+      </button>
     </div>
     @if (showStatus()) {
     <div class="flex justify-between items-baseline mt-2.5" style="min-height:22px">
@@ -67,6 +79,10 @@ export class RunHeaderComponent {
   /** « Manche N » et ce qui manque pour passer, sous la barre ; l'écran de palier n'en montre que la barre. */
   readonly showStatus = input(true);
   readonly abandon = output();
+  /** Les sons d'interface sont coupés. */
+  readonly muted = input(false);
+  /** Couper ou remettre les sons d'interface. */
+  readonly toggleSounds = output();
 
   protected readonly segments = computed(() => runSegments(this.rounds(), this.round()));
   protected readonly toGo = computed(() => pointsToGo(this.round()));

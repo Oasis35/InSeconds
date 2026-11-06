@@ -904,7 +904,9 @@
       "toGoBefore": "still",
       "points": "{{ points }} pts",
       "toGoAfter": "to pass",
-      "reached": "target reached"
+      "reached": "target reached",
+      "soundsOff": "Mute sounds",
+      "soundsOn": "Turn sounds back on"
     },
     "answer": {
       "next": "Next track",

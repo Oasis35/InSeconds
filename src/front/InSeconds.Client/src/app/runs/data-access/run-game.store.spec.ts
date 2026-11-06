@@ -1,3 +1,4 @@
+import type { MockInstance } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { SessionLoader } from '../../account/data-access/session-loader';
 import { FakeAudioPort, provideFakeAudio } from '../../gameplay/data-access/testing/fake-audio.port';
@@ -5,7 +6,7 @@ import { FakeWaveformPort, provideFakeWaveform } from '../../gameplay/data-acces
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RunRoundSummary } from '../domain/run';
 import { RunGameStore, RunScreen } from './run-game.store';
-import { RunTick } from './run-tick';
+import { RunSounds } from './run-sounds';
 import { StartOutcome } from './runs.api';
 import { COMPARISON, CURRENT, FakeRunsApi, LINK, ME, PLAY, ROUND, SESSION, TRACK, provideFakeRunsApi } from './testing/fake-runs-api';
 
@@ -15,17 +16,19 @@ describe('RunGameStore', () => {
   let audio: FakeAudioPort;
   let store: InstanceType<typeof RunGameStore>;
   let round: InstanceType<typeof TrackRoundStore>;
+  let sounds: MockInstance<RunSounds['play']>;
 
   beforeEach(() => {
     api = new FakeRunsApi();
     audio = new FakeAudioPort();
     TestBed.configureTestingModule({
-      providers: [provideFakeRunsApi(api), provideFakeAudio(audio), provideFakeWaveform(new FakeWaveformPort()), { provide: SessionLoader, useValue: { ensureGuest } }, TrackRoundStore, RunTick, RunGameStore],
+      providers: [provideFakeRunsApi(api), provideFakeAudio(audio), provideFakeWaveform(new FakeWaveformPort()), { provide: SessionLoader, useValue: { ensureGuest } }, TrackRoundStore, RunSounds, RunGameStore],
     });
     ensureGuest.mockReset();
     ensureGuest.mockResolvedValue(undefined);
     store = TestBed.inject(RunGameStore);
     round = TestBed.inject(TrackRoundStore);
+    sounds = vi.spyOn(TestBed.inject(RunSounds), 'play');
   });
 
   /** Le joueur valide sa saisie : la manche rend la réponse à envoyer, le store l'envoie. */
@@ -308,9 +311,10 @@ describe('RunGameStore', () => {
       store.next();
     });
 
-    it("après la manche passée, l'écran de palier, sans aucun son", () => {
+    it("après la manche passée, l'écran de palier, sans aucun extrait : le son d'une manche passée", () => {
       expect(store.screen()).toBe('palier');
       expect(audio.calls.filter(c => c.startsWith('load') || c.startsWith('play'))).toEqual([]);
+      expect(sounds).toHaveBeenCalledWith('roundPassed');
       const palier = store.palier()!;
       expect([palier.passed.round, palier.nextRound, palier.nextObjective, palier.nextDisc]).toEqual([1, 2, 366, 'runs.discs.bronze']);
       expect(palier.offer?.cards).toEqual(['three_choices', 'joker', 'hourglass']);
@@ -325,6 +329,7 @@ describe('RunGameStore', () => {
 
       expect(api.calls).toContain('takeCard:7:1:joker:');
       expect(store.palier()?.offer).toBeNull();
+      expect(sounds).toHaveBeenCalledWith('cardTaken');
     });
 
     it('main pleine : la carte attend, toucher une carte de la main l\'échange', async () => {
@@ -677,6 +682,21 @@ describe('RunGameStore', () => {
     });
   });
 
+  describe('sons d\'interface', () => {
+    it('le bouton les coupe puis les remet ; le toucher réveille aussi le son', () => {
+      const unlock = vi.spyOn(TestBed.inject(RunSounds), 'unlock');
+      expect(store.soundsMuted()).toBe(false);
+
+      store.toggleSounds();
+      expect(store.soundsMuted()).toBe(true);
+      expect(unlock).toHaveBeenCalled();
+
+      store.toggleSounds();
+      expect(store.soundsMuted()).toBe(false);
+      localStorage.removeItem('runs.sounds.muted');
+    });
+  });
+
   describe('fin de partie', () => {
     const finish = (status: 'won' | 'lost') => ({
       status, disc: { key: 'runs.discs.gold', stars: 0 }, totalScore: 2500, roundsPassed: 4, foundCount: 18, trackCount: 20,
@@ -705,6 +725,7 @@ describe('RunGameStore', () => {
       expect(store.screen()).toBe('finished');
       expect(store.finish()?.disc.key).toBe('runs.discs.gold');
       expect(store.revealed()).toBeNull();
+      expect(sounds).toHaveBeenCalledWith('won');
     });
 
     it('une manche ratée mène directement à la fin, sans écran de bilan ni autre son', async () => {

@@ -904,7 +904,9 @@
       "toGoBefore": "encore",
       "points": "{{ points }} pts",
       "toGoAfter": "pour passer",
-      "reached": "objectif atteint"
+      "reached": "objectif atteint",
+      "soundsOff": "Couper les sons",
+      "soundsOn": "Remettre les sons"
     },
     "answer": {
       "next": "Morceau suivant",
