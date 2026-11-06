@@ -510,6 +510,20 @@ describe('RunGameStore', () => {
     });
   });
 
+  describe('série de bonnes réponses', () => {
+    it("rien sous deux morceaux trouvés d'affilée", async () => {
+      api.launchResult = { kind: 'ok', play: PLAY({ session: SESSION({ playedTracks: [TRACK({ position: 1 })] }) }) };
+      await startRun();
+      expect(store.combo()).toBeNull();
+    });
+
+    it('puis leur nombre', async () => {
+      api.launchResult = { kind: 'ok', play: PLAY({ session: SESSION({ playedTracks: [TRACK({ position: 1 }), TRACK({ position: 2 })] }) }) };
+      await startRun();
+      expect(store.combo()).toBe(2);
+    });
+  });
+
   describe('cartes jouées sur le morceau', () => {
     const withHand = (overrides = {}) => SESSION({ handSize: 2, hand: [{ slot: 1, card: 'year' }, { slot: 2, card: 'joker' }], ...overrides });
 

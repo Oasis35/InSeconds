@@ -3,7 +3,7 @@ import {
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { motionReduced } from '../../../ui/motion/reduced-motion';
-import { tweenNumber, enterRow, settleLine } from '../../../ui/motion/motion';
+import { pop, tweenNumber, enterRow, settleLine } from '../../../ui/motion/motion';
 import { PileEntry, RunGhostGap } from '../../domain/run';
 import { RunDiscComponent, discColor } from '../run-disc/run-disc.component';
 import { RunWaveComponent } from '../run-wave/run-wave.component';
@@ -32,8 +32,17 @@ const keyOf = (entry: PileEntry): string => (entry.kind === 'track' ? `t${entry.
   host: { class: 'block' },
   template: `
     <div class="flex items-baseline justify-between mt-4 px-0.5 pb-2" style="border-bottom:1px solid var(--border-medium)">
-      <span class="text-[13px]" style="color:var(--text-muted)">{{ 'runs.pile.total' | translate }}</span>
-      <b #total class="inline-block tabular-nums text-[26px] font-black leading-none origin-right" style="font-family:var(--font-score);color:var(--text-hi)"
+      <span class="flex items-baseline gap-2">
+        <span class="text-[13px]" style="color:var(--text-muted)">{{ 'runs.pile.total' | translate }}</span>
+        <!-- La série de bonnes réponses : à la couleur du joueur, c'est lui qui la fait ; elle ne rapporte rien. -->
+        @if (shownCombo(); as count) {
+          <span #comboChip class="inline-block shrink-0 whitespace-nowrap text-[13px] font-bold tabular-nums" style="color:var(--color-accent-3)"
+            data-testid="run-combo">
+            {{ 'runs.combo' | translate: { count } }}
+          </span>
+        }
+      </span>
+      <b #total class="inline-block shrink-0 tabular-nums text-[26px] font-black leading-none origin-right" style="font-family:var(--font-score);color:var(--text-hi)"
         data-testid="run-total-score"></b>
     </div>
     @if (shownGhost(); as ghost) {
@@ -121,6 +130,11 @@ export class RunPileComponent {
   readonly total = input.required<number>();
   /** L'écart avec le fantôme d'un ami sur la même playlist ; vide sans fantôme. */
   readonly ghost = input<RunGhostGap | null>(null);
+  /** La série de bonnes réponses d'affilée, déjà assez longue pour s'afficher (le store en décide) ; `null` sinon. */
+  readonly combo = input<number | null>(null);
+  /** La série affichée : comme le fantôme, elle change quand le total a fini de compter, pas avant que la carte ait dit le verdict. */
+  protected readonly shownCombo = signal<number | null>(null);
+  private readonly comboChip = viewChild<ElementRef<HTMLElement>>('comboChip');
   readonly lang = input<'fr' | 'en'>('fr');
   /**
    * Le fantôme affiché : il change en même temps que le total a fini de compter (les points s'envolent d'abord), sinon l'écart annoncerait le
@@ -151,6 +165,27 @@ export class RunPileComponent {
           return;
         }
         ghostTimer = setTimeout(() => { ghostTimer = null; this.shownGhost.set(ghost); }, GHOST_DELAY_MS);
+      });
+    });
+    // La série change avec le total ; quand elle grandit (à son apparition comprise), un petit temps fort (rien en mouvement réduit, rien au
+    // premier affichage).
+    let comboTimer: ReturnType<typeof setTimeout> | null = null;
+    let comboShown = false;
+    inject(DestroyRef).onDestroy(() => { if (comboTimer !== null) clearTimeout(comboTimer); });
+    effect(() => {
+      const combo = this.combo();
+      untracked(() => {
+        if (comboTimer !== null) clearTimeout(comboTimer);
+        comboTimer = null;
+        const show = (): void => {
+          const grew = comboShown && combo !== null && combo > (this.shownCombo() ?? 0);
+          comboShown = true;
+          this.shownCombo.set(combo);
+          // La puce n'existe qu'après le rendu (à son apparition) : elle se lit dans le rappel.
+          if (grew) afterNextRender(() => { const chip = this.comboChip()?.nativeElement; if (chip) pop(chip); }, { injector: this.injector });
+        };
+        if (!comboShown || motionReduced()) show();
+        else comboTimer = setTimeout(() => { comboTimer = null; show(); }, GHOST_DELAY_MS);
       });
     });
     // Le total compte jusqu'à sa nouvelle valeur, le temps que les points le rejoignent ; posé tel quel au premier affichage.

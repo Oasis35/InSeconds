@@ -1,6 +1,6 @@
 import {
   RunPassedRound, RunPlay, RunRound, RunRoundSummary, RunSession, RunTrack, clockLabel, finishSquares, gainLabel, isFinished, objectiveBar,
-  ghostGap, playSteps, playedCount, pointsToGo, runPile, runSegments, stepPosition,
+  comboOf, ghostGap, playSteps, playedCount, pointsToGo, runPile, runSegments, stepPosition,
 } from './run';
 
 describe('objectiveBar', () => {
@@ -213,5 +213,20 @@ describe('ghostGap', () => {
   it('rien sans fantôme', () => {
     expect(ghostGap(null)).toBeNull();
     expect(ghostGap({ ghost: null, totalScore: 100 })).toBeNull();
+  });
+});
+
+describe('comboOf', () => {
+  const played = (position: number, found: boolean, neutralized = false) => ({ position, neutralized, artistCorrect: found, titleCorrect: found });
+
+  it('les derniers morceaux trouvés d\'affilée, toutes manches confondues, dans l\'ordre des positions', () => {
+    expect(comboOf([played(3, true), played(1, false), played(2, true)])).toBe(2);
+    expect(comboOf([played(1, true), played(2, true), played(3, false)])).toBe(0);
+    expect(comboOf([])).toBe(0);
+  });
+
+  it('un morceau retiré ne casse pas la série, un morceau à moitié trouvé la remet à zéro', () => {
+    expect(comboOf([played(1, true), played(2, false, true), played(3, true)])).toBe(2);
+    expect(comboOf([played(1, true), { position: 2, neutralized: false, artistCorrect: true, titleCorrect: false }])).toBe(0);
   });
 });

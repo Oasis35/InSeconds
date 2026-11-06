@@ -1,3 +1,4 @@
+import { gsap } from 'gsap';
 import { TestBed } from '@angular/core/testing';
 import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import fr from '../../../../../public/i18n/fr.json';
@@ -10,7 +11,7 @@ const track = (position: number, overrides: Partial<RunTrack> = {}): RunTrack =>
 });
 
 describe('RunPileComponent', () => {
-  function render(entries: PileEntry[], total = 300, ghost: RunGhostGap | null = null) {
+  function render(entries: PileEntry[], total = 300, ghost: RunGhostGap | null = null, combo: number | null = null) {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     TestBed.inject(TranslateService).setTranslation('fr', fr);
     TestBed.inject(TranslateService).use('fr');
@@ -19,6 +20,7 @@ describe('RunPileComponent', () => {
     fixture.componentRef.setInput('shapes', { 2: [0.3, 0.9] });
     fixture.componentRef.setInput('total', total);
     fixture.componentRef.setInput('ghost', ghost);
+    fixture.componentRef.setInput('combo', combo);
     fixture.detectChanges();
     return { fixture, element: fixture.nativeElement as HTMLElement };
   }
@@ -62,6 +64,59 @@ describe('RunPileComponent', () => {
     vi.advanceTimersByTime(1400);
     fixture.detectChanges();
     expect(gap()).toBe('100 pts d’avance');
+    vi.useRealTimers();
+  });
+
+  it('la série de bonnes réponses, à la couleur du joueur ; rien sans série', () => {
+    expect(render([], 300, null, null).element.querySelector('[data-testid="run-combo"]')).toBeNull();
+    TestBed.resetTestingModule();
+
+    const chip = render([], 300, null, 3).element.querySelector<HTMLElement>('[data-testid="run-combo"]')!;
+    expect(chip.textContent?.trim()).toBe('3 d’affilée');
+    expect(chip.style.color).toBe('var(--color-accent-3)');
+  });
+
+  it('un temps fort quand la série grandit, à son apparition comprise ; rien au premier affichage (reprise) ni quand elle retombe', () => {
+    vi.useFakeTimers();
+    const { fixture, element } = render([], 300, null, 2);
+    const chip = () => element.querySelector<HTMLElement>('[data-testid="run-combo"]');
+    const set = (combo: number | null) => {
+      fixture.componentRef.setInput('combo', combo);
+      fixture.detectChanges();
+      vi.advanceTimersByTime(1400);
+      TestBed.tick();
+    };
+    TestBed.tick();
+    expect(gsap.getTweensOf(chip()!)).toHaveLength(0);
+
+    set(3);
+    expect(gsap.getTweensOf(chip()!).length).toBeGreaterThan(0);
+
+    set(null);
+    expect(chip()).toBeNull();
+    set(2);
+    expect(gsap.getTweensOf(chip()!).length).toBeGreaterThan(0);
+    gsap.killTweensOf(chip()!);
+    vi.useRealTimers();
+  });
+
+  it('la série apparaît, grandit ou disparaît quand le total a fini de compter, pas avant que la carte dise le verdict', () => {
+    vi.useFakeTimers();
+    const { fixture, element } = render([], 300, null, null);
+    const chip = () => element.querySelector('[data-testid="run-combo"]')?.textContent?.trim() ?? null;
+    const set = (combo: number | null) => { fixture.componentRef.setInput('combo', combo); fixture.detectChanges(); };
+
+    set(2);
+    expect(chip()).toBeNull();
+    vi.advanceTimersByTime(1400);
+    fixture.detectChanges();
+    expect(chip()).toBe('2 d’affilée');
+
+    set(null);
+    expect(chip()).toBe('2 d’affilée');
+    vi.advanceTimersByTime(1400);
+    fixture.detectChanges();
+    expect(chip()).toBeNull();
     vi.useRealTimers();
   });
 

@@ -479,3 +479,22 @@ export function ghostGap(session: Pick<RunSession, 'ghost' | 'totalScore'> | nul
   if (!ghost) return null;
   return { pseudo: ghost.pseudo, total: ghost.total, gap: session.totalScore - ghost.total, stoppedAtRound: ghost.stoppedAtRound };
 }
+
+/** À partir de combien de bonnes réponses d'affilée la série s'affiche. */
+export const COMBO_MIN = 2;
+
+/**
+ * La série en cours : les derniers morceaux trouvés (artiste et titre) d'affilée, toutes manches confondues. Un morceau retiré ne la casse pas
+ * (le joueur n'y est pour rien) ; un morceau raté ou à moitié trouvé la remet à zéro. Elle ne rapporte aucun point : elle se voit, c'est tout.
+ */
+export function comboOf(tracks: readonly Pick<RunTrack, 'position' | 'neutralized' | 'artistCorrect' | 'titleCorrect'>[]): number {
+  const played = [...tracks].sort((a, b) => b.position - a.position);
+  let combo = 0;
+  for (const track of played) {
+    const mark = trackMark(track);
+    if (mark === 'withdrawn') continue;
+    if (mark !== 'found') break;
+    combo++;
+  }
+  return combo;
+}
