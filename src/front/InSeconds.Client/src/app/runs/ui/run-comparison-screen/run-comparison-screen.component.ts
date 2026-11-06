@@ -62,7 +62,7 @@ import { RunComparison } from '../../domain/run';
         </table>
       </div>
 
-      <app-share-button data-testid="run-share" [copied]="shareCopied()" [failed]="shareFailed()" labelKey="runs.finished.share"
+      <app-share-button data-testid="run-share" [copied]="shareCopied()" [failed]="shareFailed()" labelKey="runs.comparison.share"
         copiedKey="runs.finished.shareCopied" failedKey="runs.finished.shareFailed" (share)="share.emit()" />
     </div>
   `,

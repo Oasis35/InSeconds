@@ -38,6 +38,9 @@ public interface IRunsQueries
 
     Task<RunRecord?> FindRecordAsync(Guid playerId, CancellationToken ct);
 
+    /// <summary>Les parties finies (gagnées ou perdues) de ce joueur, comptées par manches passées : l'étagère des disques.</summary>
+    Task<IReadOnlyDictionary<int, int>> CountFinishedRunsAsync(Guid playerId, CancellationToken ct);
+
     /// <summary>Les parties terminées (gagnées ou perdues) de ce défi, avec leurs réponses, en lecture seule : la comparaison.</summary>
     Task<IReadOnlyList<RunSession>> ListFinishedSessionsAsync(int challengeId, CancellationToken ct);
 }

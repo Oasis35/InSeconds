@@ -16,31 +16,39 @@ namespace InSeconds.Api.Modules.Runs.Application;
 /// <param name="HasAccess">Le joueur peut lancer un run (admin, ou compte autorisé).</param>
 /// <param name="Record">Son record ; vide s'il n'en a pas.</param>
 /// <param name="Pending">Sa partie en cours la plus récente, à reprendre.</param>
-public sealed record RunsMeResponse(bool HasAccess, RunRecordResponse? Record, RunPendingResponse? Pending)
+/// <param name="Shelf">Les disques gagnés par ses parties finies, du moins bon au meilleur ; vide s'il n'en a pas.</param>
+public sealed record RunsMeResponse(bool HasAccess, RunRecordResponse? Record, RunPendingResponse? Pending, IReadOnlyList<RunShelfDiscResponse> Shelf)
 {
-    public static RunsMeResponse Nobody { get; } = new(false, null, null);
+    public static RunsMeResponse Nobody { get; } = new(false, null, null, []);
 }
+
+/// <param name="Disc">Le disque.</param>
+/// <param name="Count">Les parties qui l'ont donné.</param>
+public sealed record RunShelfDiscResponse(RunDiscResponse Disc, int Count);
 
 public sealed record RunPendingResponse(int SessionId, string ChallengeCode);
 
 public static class GetRunsMeEndpoint
 {
     /// <summary>
-    /// <c>GET /api/runs/me</c> : anonyme permis, lecture seule. L'accès du joueur (la carte de l'accueil), son record et sa partie en cours. Sans
-    /// identité : <c>hasAccess</c> à faux, rien n'est créé.
+    /// <c>GET /api/runs/me</c> : anonyme permis, lecture seule. L'accès du joueur (la carte de l'accueil), son record, sa partie en cours et l'étagère
+    /// de ses disques. Sans identité : <c>hasAccess</c> à faux, rien n'est créé.
     /// </summary>
     [WolverineGet("/api/runs/me", OperationId = "getRunsMe")]
-    public static async Task<RunsMeResponse> Get(ICurrentPlayer current, IRunAccess access, IRunsQueries queries, CancellationToken ct)
+    public static async Task<RunsMeResponse> Get(
+        ICurrentPlayer current, IRunAccess access, IRunsQueries queries, RunsRules rules, CancellationToken ct)
     {
         if (current.PlayerId is not { } playerId)
             return RunsMeResponse.Nobody;
 
         var record = await queries.FindRecordAsync(playerId, ct);
         var pending = await queries.FindPendingSessionAsync(playerId, ct);
+        var shelf = DiscShelf.Of(await queries.CountFinishedRunsAsync(playerId, ct), rules.Discs);
         return new RunsMeResponse(
             await access.CanPlayAsync(playerId, ct),
             record is null ? null : new RunRecordResponse(record.BestScore, record.BestRoundsPassed, IsNew: false),
-            pending is null ? null : new RunPendingResponse(pending.SessionId, pending.ChallengeCode));
+            pending is null ? null : new RunPendingResponse(pending.SessionId, pending.ChallengeCode),
+            shelf.Select(d => new RunShelfDiscResponse(new RunDiscResponse(d.Disc.Key, d.Disc.Stars), d.Count)).ToList());
     }
 }
 

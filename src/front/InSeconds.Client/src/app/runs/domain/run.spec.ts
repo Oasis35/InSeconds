@@ -190,7 +190,7 @@ describe('finishSquares', () => {
   it('un carré par morceau, groupé par manche ; une manche non jouée en carrés vides', () => {
     const squares = finishSquares({
       trackCount: 10,
-      rounds: [{ round: 1, score: 300, objective: 200, passed: true }, { round: 2, score: null, objective: null, passed: false }],
+      rounds: [{ round: 1, score: 300, objective: 200, passed: true, difficulty: 'safe' }, { round: 2, score: null, objective: null, passed: false, difficulty: null }],
       tracks: [track(1), track(2, { titleCorrect: false }), withdrawn(3), track(4), track(5)],
     });
 

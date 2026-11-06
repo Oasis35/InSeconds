@@ -99,12 +99,16 @@ test.describe('Mode Platines', () => {
     await expect(run.disc).toHaveText('Disque d’or !');
     await expect(run.record).toHaveText('Nouveau record');
     await expect(run.found).toHaveText('20 / 20 morceaux trouvés');
-    await expect(run.page.getByTestId('run-share')).toBeVisible();
-    await expect(run.playAgainButton).toBeVisible();
+    await expect(run.page.getByTestId('run-share')).toContainText('Partager mon score');
+    // Gagnée : « Rejouer » en action principale, rien n'a manqué.
+    await expect(run.playAgainButton).toHaveText('Rejouer');
+    await expect(run.page.getByTestId('run-shortfall')).toHaveCount(0);
 
-    // Le record apparaît ensuite sur l'accueil du mode.
+    // Le record et le disque d'or apparaissent ensuite sur l'accueil du mode.
     await page.goto('/runs');
     await expect(run.welcome.getByTestId('run-record')).toBeVisible();
+    await expect(run.welcome.getByTestId('run-shelf').locator('[data-shelf-disc]')).toContainText(['×1']);
+    await expect(run.welcome.getByTestId('run-shelf').locator('[data-shelf-disc="runs.discs.gold"]')).toHaveCount(1);
   });
 
   test('partie perdue : la première manche ratée mène directement à la fin, avec les manches non jouées', async ({ page }) => {
@@ -126,8 +130,10 @@ test.describe('Mode Platines', () => {
     await expect(run.disc).toHaveText('Disque rayé');
     await expect(run.found).toHaveText('0 / 20 morceaux trouvés');
     await expect(run.roundScores.getByText('✕')).toHaveCount(3);
+    // Ce qui a manqué pour le premier disque : tout l'objectif de la manche 1.
+    await expect(run.page.getByTestId('run-shortfall')).toHaveText('Il t’a manqué 225 pts pour le Disque de cire');
 
-    // « Nouvelle partie » tire une autre playlist, le premier morceau part dans le clic.
+    // « Rejouer » tire une autre playlist, le premier morceau part dans le clic.
     await run.playAgainButton.click();
     await expect(run.roundTitle).toHaveText('Manche 1');
     await expect(run.pileTracks).toHaveCount(0);
@@ -250,7 +256,7 @@ test.describe('Mode Platines', () => {
     await expect(friend.roundTitle).toHaveText('Manche 1');
     await friend.loseFirstRound();
 
-    // Sans accès, pas de « Nouvelle partie » : le jeu du jour à la place.
+    // Sans accès, pas de « Rejouer » : le jeu du jour à la place.
     await expect(friend.playAgainButton).toHaveCount(0);
     await expect(friend.toDailyLink).toBeVisible();
 

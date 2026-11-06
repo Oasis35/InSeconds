@@ -38,7 +38,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
           <span>{{ 'runs.link.goal' | translate: { rounds: link().rounds } }}</span>
         </li>
       </ul>
-      <button appButton type="button" size="lg" [block]="true" [glow]="true" (click)="start.emit()" data-testid="run-link-play">
+      <button appButton type="button" size="lg" [block]="true" (click)="start.emit()" data-testid="run-link-play">
         {{ 'runs.link.play' | translate }}
       </button>
     </div>

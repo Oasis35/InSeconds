@@ -34,13 +34,15 @@ describe('RunsApi', () => {
 
   afterEach(() => vi.useRealTimers());
 
-  it('lit mon accès, mon record et ma partie en cours', async () => {
+  it('lit mon accès, mon record, ma partie en cours et mon étagère', async () => {
     client['getRunsMe'].mockReturnValue(of({
       hasAccess: true, record: { bestScore: 900, bestRoundsPassed: 2, isNew: false }, pending: { sessionId: 7, challengeCode: 'ABC234' },
+      shelf: [{ disc: { key: 'runs.discs.wax', stars: 0 }, count: 2 }],
     } as RunsMeResponse));
 
     expect(await api.me()).toEqual({
       hasAccess: true, record: { bestScore: 900, bestRoundsPassed: 2, isNew: false }, pending: { sessionId: 7, challengeCode: 'ABC234' },
+      shelf: [{ disc: { key: 'runs.discs.wax', stars: 0 }, count: 2 }],
     });
   });
 
@@ -58,7 +60,7 @@ describe('RunsApi', () => {
   it('sans record ni partie en cours : `null` plutôt que `undefined`', async () => {
     client['getRunsMe'].mockReturnValue(of({ hasAccess: false } as RunsMeResponse));
 
-    expect(await api.me()).toEqual({ hasAccess: false, record: null, pending: null });
+    expect(await api.me()).toEqual({ hasAccess: false, record: null, pending: null, shelf: [] });
   });
 
   it('rend la partie en types du domaine : `undefined` devient `null`, un extrait vide aussi', async () => {

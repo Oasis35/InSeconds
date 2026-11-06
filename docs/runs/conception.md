@@ -72,7 +72,7 @@ Runs possède ses autorisations (`runs.access`), **Players n'est pas modifié**.
 ### 3.4 Routes (calquées sur celles du Daily)
 | Route | Rôle |
 |---|---|
-| `GET /api/runs/me` | anonyme permis : `hasAccess`, record, partie en cours ; sans identité, `hasAccess: false` sans rien créer |
+| `GET /api/runs/me` | anonyme permis : `hasAccess`, record, partie en cours, étagère des disques (`shelf`) ; sans identité, `hasAccess: false` sans rien créer |
 | `POST /api/runs/challenges` | lance un run : crée le défi et la partie de son auteur, rend la partie (accès requis ; verrou par joueur) |
 | `GET /api/runs/challenges/{code}` | ce que montre un lien (écran « lien reçu ») : pseudo de l'auteur, état de sa propre partie sur ce défi (pas commencée, en cours, finie). **Aucun morceau** (piège 31) |
 | `POST /api/runs/challenges/{code}/sessions` | relève le défi, ou reprend sa partie en cours dessus (comme `POST /api/daily/sessions`) |

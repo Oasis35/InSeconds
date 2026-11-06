@@ -276,12 +276,15 @@ internal static class RunViews
                 r, played ? progress.Score : null, played ? progress.Objective : null, r <= session.RoundsPassed, played ? DifficultyOf(progress) : null);
         }).ToList();
         var disc = DiscLadder.Of(session.RoundsPassed, discs);
+        var shortfall = session.ShortfallOf(challenge, scoring) is { } missed
+            ? new RunShortfallResponse(missed.Points, DiscOf(DiscLadder.Of(missed.Round, discs)))
+            : null;
 
         return new RunFinishResponse(
             StatusOf(session.Status), DiscOf(disc), session.TotalScore, session.RoundsPassed,
             answers.Count(a => a.ArtistCorrect && a.TitleCorrect), challenge.Tracks.Count, tracks, rounds,
             record is null ? null : new RunRecordResponse(record.BestScore, record.BestRoundsPassed, record.SessionId == session.Id),
-            challenge.Code);
+            challenge.Code, shortfall);
     }
 
     private static List<RunTrackResponse> PlayedTracks(LoadedRun run, int round) =>

@@ -31,7 +31,7 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         var response = await _run.Api.CreateClient().GetAsync("/api/runs/me", Ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal("""{"hasAccess":false,"record":null,"pending":null}""", await response.Content.ReadAsStringAsync(Ct));
+        Assert.Equal("""{"hasAccess":false,"record":null,"pending":null,"shelf":[]}""", await response.Content.ReadAsStringAsync(Ct));
         Assert.Equal(players, await _run.Api.ScalarAsync<long>("SELECT count(*) FROM players.players"));
         Assert.False(response.Headers.Contains("Set-Cookie"));
     }
@@ -41,7 +41,9 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
     {
         var alice = await _run.NewInvitedAsync("Alice");
         var bob = await _run.NewPlayerAsync("Bob");
-        Assert.Equal(new RunsMeResponse(false, null, null), await bob.MeAsync());
+        var nobody = await bob.MeAsync();
+        Assert.Equal((false, null, null), (nobody.HasAccess, nobody.Record, nobody.Pending));
+        Assert.Empty(nobody.Shelf);
 
         var first = await alice.LaunchAsync();
         var me = await alice.MeAsync();
@@ -53,6 +55,32 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         me = await alice.MeAsync();
         Assert.Null(me.Pending);
         Assert.Equal(new RunRecordResponse(0, 0, false), me.Record);
+    }
+
+    [Fact]
+    public async Task Me_EtagereDesDisques_ParPartieFinie_SansLePremierDisqueNiUnAbandon()
+    {
+        var alice = await _run.NewInvitedAsync("Alice");
+
+        // Un run raté d'entrée (aucune manche passée) ne pose rien sur l'étagère.
+        var lost = (await alice.LaunchAsync()).Session;
+        await alice.PlayAsync(lost.SessionId, lost.ChallengeCode, 1, false, false, false, false, false);
+        Assert.Empty((await alice.MeAsync()).Shelf);
+
+        // Deux runs à une manche passée : deux disques de cire.
+        foreach (var _ in Enumerable.Range(0, 2))
+        {
+            var run = (await alice.LaunchAsync()).Session;
+            await alice.PlayAsync(run.SessionId, run.ChallengeCode, 1, AllFound);
+            await alice.PlayAsync(run.SessionId, run.ChallengeCode, 6, false, false, false, false, false);
+        }
+
+        // Un abandon après une manche passée ne compte pas.
+        var abandoned = (await alice.LaunchAsync()).Session;
+        await alice.PlayAsync(abandoned.SessionId, abandoned.ChallengeCode, 1, AllFound);
+        Assert.Equal(HttpStatusCode.NoContent, (await alice.AbandonRawAsync(abandoned.SessionId)).StatusCode);
+
+        Assert.Equal([new RunShelfDiscResponse(new RunDiscResponse("runs.discs.wax", 0), 2)], (await alice.MeAsync()).Shelf);
     }
 
     [Fact]
@@ -146,6 +174,7 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal((4, true), (last.RoundSummaries.Single().Round, last.RoundSummaries.Single().Passed));
         var finish = last.Session.Finish!;
         Assert.Equal(("won", "runs.discs.gold", 0, 3000, 4, 20, 20), (finish.Status, finish.Disc.Key, finish.Disc.Stars, finish.TotalScore, finish.RoundsPassed, finish.FoundCount, finish.TrackCount));
+        Assert.Null(finish.Shortfall);
         Assert.Equal(Enumerable.Range(1, 20), finish.Tracks.Select(t => t.Position));
         Assert.Equal(
             [new RunRoundScoreResponse(1, 500, 225, true, "safe"), new(2, 665, 366, true, "safe"), new(3, 835, 543, true, "safe"),
@@ -187,6 +216,8 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
                 new(4, null, null, false, null)],
             finish.Rounds);
         Assert.Equal(new RunRecordResponse(700, 1, true), finish.Record);
+        // 366 - 200 : ce qui manquait à la manche 2 pour le disque de bronze.
+        Assert.Equal(new RunShortfallResponse(166, new RunDiscResponse("runs.discs.bronze", 0)), finish.Shortfall);
 
         await GameAsserts.ProblemAsync(await alice.AnswerRawAsync(id, 11, "a", "b"), HttpStatusCode.Conflict, RunsErrorCodes.AlreadyPlayed);
         await GameAsserts.ProblemAsync(await alice.JoinRawAsync(code), HttpStatusCode.Conflict, RunsErrorCodes.AlreadyPlayed);

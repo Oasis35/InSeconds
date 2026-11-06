@@ -90,12 +90,23 @@ Des cartes à **usage unique**, jouées sur le morceau en cours. **2 emplacement
 
 ## Fin du run, partage et viralité
 
-- **Rejouer** devient l'action principale de l'écran de fin, avec ce qui a manqué (« 12 points avant le prochain disque »).
-- **Partage en grille** : une ligne d'emojis par manche (trouvé, à moitié, raté, comme le partage du Daily) avec la difficulté choisie, le disque, le score et le lien `?utm_source=share`, plus une invitation « Bats-moi » vers la même playlist.
+- **Rejouer** devient l'action principale de l'écran de fin, avec ce qui a manqué (« Il t'a manqué 12 pts pour le Disque de bronze » : les points qui manquaient à l'objectif de la manche ratée ; rien pour une partie gagnée ou abandonnée).
+- **Partage en grille** : une ligne d'emojis par manche (trouvé, à moitié, raté, comme le partage du Daily) avec la difficulté choisie, le disque, le score et le lien `?utm_source=share`, plus une invitation « Bats-moi » vers la même playlist. Le score et le disque d'abord, pour qu'ils se lisent dans l'aperçu d'une conversation :
+
+  ```
+  2 410 pts · Disque d'argent · InSeconds Platines
+  🟩🟨🟥⬜🟩 Manche 1 · Sûre
+  🟩🟩🟩🟩🟨 Manche 2 · Risquée
+  🟨🟥🟩🟥🟥 Manche 3 · Facile
+  Bats-moi sur la même playlist :
+  https://inseconds.cc/runs/K7Q2M9?utm_source=share
+  ```
+
+  🟩 trouvé (artiste et titre), 🟨 à moitié, 🟥 raté, ⬜ morceau retiré ; seules les manches jouées ont leur ligne, et rien n'y identifie un morceau.
 - **Fantôme** : seulement celui d'un **ami sur la même playlist** (par son lien) : l'écart avec lui à chaque morceau. Il n'y a pas de fantôme de son propre record (Clément, 05/11).
 - **Combo visuel** : série de bonnes réponses affichée, sans aucun point.
 - **Sons d'interface** : sons à nous, libres de droits, jamais pendant un extrait, avec un bouton pour les couper.
-- Étagère des disques gagnés sur l'accueil du mode.
+- Étagère des disques gagnés sur l'accueil du mode (« Tes disques » : chaque disque et son nombre ; une partie sans manche passée ou abandonnée n'en pose pas).
 
 ## Ce que cela change côté code
 

@@ -923,7 +923,9 @@
       "title": "Platines",
       "tagline": "Vise le disque d’or.",
       "record": "Ton record : {{ score }} pts",
-      "launch": "Lancer une partie"
+      "launch": "Lancer une partie",
+      "shelf": "Tes disques",
+      "shelfEntry": "{{ disc }} : {{ count }}"
     },
     "status": {
       "no_challenge": {
@@ -954,20 +956,23 @@
     },
     "finished": {
       "found": "{{ found }} / {{ total }} morceaux trouvés",
-      "newGame": "Nouvelle partie",
       "won": "{{ disc }} !",
       "disc": "{{ disc }}",
       "newRecord": "Nouveau record",
       "record": "Record : {{ score }}",
       "round": "Manche {{ round }}",
       "notPlayed": "Manche non jouée",
-      "shareTitle": "Lance cette playlist à tes potes",
-      "shareBody": "Ils jouent exactement la même playlist que toi : les mêmes 20 morceaux, dans le même ordre. À la fin, vous comparez tous vos scores, manche par manche.",
-      "share": "Partager la playlist",
+      "shareTitle": "Défie tes potes sur cette playlist",
+      "shareBody": "Ils jouent les mêmes {{ tracks }} morceaux, dans le même ordre. Ton score part avec le message : à eux de faire mieux, puis vous comparez manche par manche.",
+      "share": "Partager mon score",
       "shareCopied": "Lien copié !",
       "shareFailed": "Copie impossible",
       "toDaily": "Jouer au défi du jour",
-      "compare": "Voir les autres joueurs"
+      "compare": "Voir les autres joueurs",
+      "playAgain": "Rejouer",
+      "shortfallBefore": "Il t’a manqué",
+      "shortfallPoints": "{{ points }} pts",
+      "shortfallAfter": "pour le {{ disc }}"
     },
     "link": {
       "guest": "Invité",
@@ -986,7 +991,8 @@
       "player": "Joueur",
       "roundShort": "M{{ round }}",
       "total": "Total",
-      "you": "Toi"
+      "you": "Toi",
+      "share": "Partager la playlist"
     },
     "discs": {
       "scratched": "Disque rayé",
@@ -1000,7 +1006,10 @@
       "body": "Impossible de récupérer l’extrait. Le morceau a été retiré de la playlist et l’objectif abaissé à {{ objective }} pts."
     },
     "share": {
-      "text": "Je te lance une playlist sur InSeconds : 20 morceaux en 4 manches. Tu fais mieux que moi ?"
+      "text": "Je te lance une playlist sur InSeconds : 20 morceaux en 4 manches. Tu fais mieux que moi ?",
+      "header": "{{ score }} pts · {{ disc }} · InSeconds Platines",
+      "round": "Manche {{ round }}",
+      "beatMe": "Bats-moi sur la même playlist :"
     },
     "palier": {
       "round": "Manche {{round}}",

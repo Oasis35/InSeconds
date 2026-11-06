@@ -10,7 +10,7 @@
       }
 
       @case ('welcome') {
-        <app-run-welcome-screen [record]="store.record()" (start)="store.begin()" />
+        <app-run-welcome-screen [record]="store.record()" [shelf]="store.shelf()" (start)="store.begin()" />
       }
 
       <!-- Le lien d'un ami : le logo seul, les règles de la playlist et « Jouer » (crée l'invité, lance le premier son dans ce clic). -->
@@ -93,7 +93,7 @@
       @case ('finished') {
         @if (store.finish(); as finish) {
           <app-run-finish [finish]="finish" [canPlayAgain]="store.canPlayAgain()" [shareCopied]="share.copied()" [shareFailed]="share.failed()"
-            [lang]="language.current()" (share)="share.share(finish.challengeCode)" (compare)="store.showComparison()" (playAgain)="store.playAgain()" />
+            [lang]="language.current()" (share)="share.shareScore(finish, language.current())" (compare)="store.showComparison()" (playAgain)="store.playAgain()" />
         }
       }
 
