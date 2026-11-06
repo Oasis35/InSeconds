@@ -27,7 +27,7 @@ describe('RunsApi', () => {
   let api: RunsApi;
 
   beforeEach(() => {
-    client = { getRunsMe: vi.fn(), getRunChallenge: vi.fn(), getRunComparison: vi.fn(), launchRun: vi.fn(), joinRun: vi.fn(), refreshRunPreview: vi.fn(), submitRunAnswer: vi.fn(), abandonRun: vi.fn() };
+    client = { getRunsMe: vi.fn(), getRunChallenge: vi.fn(), getRunComparison: vi.fn(), launchRun: vi.fn(), joinRun: vi.fn(), refreshRunPreview: vi.fn(), submitRunAnswer: vi.fn(), abandonRun: vi.fn(), playRunCard: vi.fn() };
     TestBed.configureTestingModule({ providers: [{ provide: RunsClient, useValue: client }, RunsApi] });
     api = TestBed.inject(RunsApi);
   });
@@ -42,6 +42,17 @@ describe('RunsApi', () => {
     expect(await api.me()).toEqual({
       hasAccess: true, record: { bestScore: 900, bestRoundsPassed: 2, isNew: false }, pending: { sessionId: 7, challengeCode: 'ABC234' },
     });
+  });
+
+  it('une carte jouée : ses effets sur le morceau en types du domaine, une carte inconnue ignorée', async () => {
+    client['playRunCard'].mockReturnValue(of({ ...play, current: { ...play.current, effects: {
+      cards: ['year', 'futureCard'], year: 1995, artistInitials: undefined, titleInitials: ['G', 'L'], choices: undefined, clockBonusSeconds: 0,
+    } } } as unknown as RunPlayResponse));
+
+    const result = await api.playCard(7, 2, 3);
+
+    expect(client['playRunCard']).toHaveBeenCalledWith(7, 2, { position: 3 });
+    expect(result.current?.effects).toEqual({ cards: ['year'], year: 1995, artistInitials: null, titleInitials: ['G', 'L'], choices: null, clockBonusSeconds: 0 });
   });
 
   it('sans record ni partie en cours : `null` plutôt que `undefined`', async () => {
@@ -60,7 +71,7 @@ describe('RunsApi', () => {
     expect(outcome.play.session.round).toEqual({ round: 1, score: 50, objective: 200, maxScore: 500 });
     expect(outcome.play.session.finish).toBeNull();
     expect(outcome.play.revealed).toMatchObject({ artist: 'Daft Punk', title: null, coverUrl: null, deezerTrackId: 3135553 });
-    expect(outcome.play.current).toEqual({ position: 2, round: 1, positionInRound: 2, previewUrl: null, waveform: null });
+    expect(outcome.play.current).toEqual({ position: 2, round: 1, positionInRound: 2, previewUrl: null, waveform: null, effects: null });
     expect(outcome.play.neutralized).toEqual([{ position: 2, round: 1, objectiveBefore: 200, objectiveAfter: 160 }]);
   });
 

@@ -510,6 +510,159 @@ describe('RunGameStore', () => {
     });
   });
 
+  describe('cartes jouées sur le morceau', () => {
+    const withHand = (overrides = {}) => SESSION({ handSize: 2, hand: [{ slot: 1, card: 'year' }, { slot: 2, card: 'joker' }], ...overrides });
+
+    beforeEach(async () => {
+      api.launchResult = { kind: 'ok', play: PLAY({ session: withHand() }) };
+      await startRun();
+      audio.calls.length = 0;
+    });
+
+    it('les cartes de la main sont là, au-dessus de la saisie', () => {
+      expect(store.roundCards()?.hand.map(c => c.card)).toEqual(['year', 'joker']);
+    });
+
+    it('Année : la carte part au serveur, son effet s\'affiche, rien ne se relance', async () => {
+      api.playResult = PLAY({
+        session: withHand({ hand: [{ slot: 2, card: 'joker' }] }),
+        current: CURRENT({ effects: { cards: ['year'], year: 1995, artistInitials: null, titleInitials: null, choices: null, clockBonusSeconds: 0 } }),
+      });
+
+      await store.playCard(1);
+
+      expect(api.calls).toContain('playCard:7:1:1');
+      expect(store.roundCards()?.effects?.year).toBe(1995);
+      expect(store.roundCards()?.hand.map(c => c.card)).toEqual(['joker']);
+      expect(audio.calls.filter(c => c.startsWith('load'))).toEqual([]);
+    });
+
+    it('Joker : le son se déverrouille dans le toucher, le nouveau morceau part', async () => {
+      api.playResult = PLAY({ session: withHand({ hand: [{ slot: 1, card: 'year' }] }), current: CURRENT({ previewUrl: 'https://cdn/preview-reserve.mp3' }) });
+
+      await store.playCard(2);
+
+      expect(audio.calls[0]).toBe('unlock');
+      expect(audio.calls).toContain('load https://cdn/preview-reserve.mp3');
+      expect(store.screen()).toBe('playing');
+    });
+
+    it('Rallonge : l\'écoute repart sur la durée allongée', async () => {
+      api.launchResult = { kind: 'ok', play: PLAY({ session: withHand({ hand: [{ slot: 1, card: 'extend' }] }) }) };
+      await startRun();
+      api.playResult = PLAY({ session: withHand({ hand: [] }), current: CURRENT({ listenSeconds: 20, effects: {
+        cards: ['extend'], year: null, artistInitials: null, titleInitials: null, choices: null, clockBonusSeconds: 0 } }) });
+
+      await store.playCard(1);
+
+      expect(round.maxStep()).toBe(20);
+    });
+
+    it('une carte refusée laisse la manche telle quelle et relit la partie', async () => {
+      api.playResult = new Error('409');
+
+      await store.playCard(1);
+
+      expect(api.calls).toContain('session:7');
+      expect(store.screen()).toBe('playing');
+    });
+
+    it('Joker : le morceau de réserve, à la même place, est un autre morceau pour la manche (saisie et forme neuves)', async () => {
+      const before = round.trackKey();
+      api.playResult = PLAY({ session: withHand({ hand: [{ slot: 1, card: 'year' }] }), current: CURRENT({ previewUrl: 'https://cdn/preview-reserve.mp3' }) });
+
+      await store.playCard(2);
+
+      expect(round.trackId()).toBe(1);
+      expect(round.trackKey()).not.toBe(before);
+    });
+
+    it('deux touchers sur une carte ne la jouent qu\'une fois', async () => {
+      let answer: (play: ReturnType<typeof PLAY>) => void = () => undefined;
+      vi.spyOn(api, 'playCard').mockImplementation(() => new Promise(resolve => { answer = resolve; }));
+
+      const playing = store.playCard(1);
+      void store.playCard(1);
+      answer(PLAY({ session: withHand({ hand: [{ slot: 2, card: 'joker' }] }) }));
+      await playing;
+
+      expect(api.playCard).toHaveBeenCalledTimes(1);
+      expect(store.cardBusy()).toBe(false);
+    });
+
+    it('une réponse arrivée après un abandon ne change rien, refus compris', async () => {
+      let refuse: (error: Error) => void = () => undefined;
+      vi.spyOn(api, 'playCard').mockImplementation(() => new Promise((_, reject) => { refuse = reject; }));
+      const playing = store.playCard(1);
+      await store.abandon();
+      const afterAbandon = store.session();
+
+      refuse(new Error('409'));
+      await playing;
+      await new Promise<void>(resolve => setTimeout(resolve, 0));
+
+      expect(store.session()).toBe(afterAbandon);
+      expect(store.screen()).not.toBe('playing');
+    });
+
+    it('pendant l\'envoi d\'une réponse, les cartes ne se jouent plus', async () => {
+      let answered: (play: ReturnType<typeof PLAY>) => void = () => undefined;
+      vi.spyOn(api, 'submitAnswer').mockImplementation(() => new Promise(resolve => { answered = resolve; }));
+      const sent = round.submit({ artist: 'Daft Punk', title: 'One More Time' });
+      const sending = sent ? store.submit(sent) : Promise.resolve();
+
+      expect(store.roundCards()?.playable).toBe(false);
+      await store.playCard(1);
+      expect(api.calls.filter(c => c.startsWith('playCard'))).toEqual([]);
+
+      answered(PLAY());
+      await sending;
+    });
+  });
+
+  describe('Sablier et chrono', () => {
+    const hourglass = (clockBonusSeconds: number, clockRemainingSeconds: number | null) => PLAY({
+      session: SESSION({ handSize: 2, hand: [], clockRemainingSeconds }),
+      current: CURRENT({ effects: { cards: ['hourglass'], year: null, artistInitials: null, titleInitials: null, choices: null, clockBonusSeconds } }),
+    });
+
+    beforeEach(async () => {
+      vi.useFakeTimers();
+      api.launchResult = { kind: 'ok', play: PLAY({ session: SESSION({ handSize: 2, hand: [{ slot: 1, card: 'hourglass' }] }) }) };
+      await startRun();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('joué avant le premier son : le chrono part plein, Sablier compris', async () => {
+      api.playResult = hourglass(30, null);
+      await store.playCard(1);
+      expect(store.clockShown()).toBe(75);
+
+      audio.emit('playing');
+      TestBed.tick();
+      vi.advanceTimersByTime(50_000);
+
+      expect(store.timeUp()).toBe(false);
+      expect(store.clockShown()).toBeCloseTo(25, 0);
+    });
+
+    it('joué pendant le chrono : il repart sur ce que le serveur retient', async () => {
+      audio.emit('playing');
+      TestBed.tick();
+      vi.advanceTimersByTime(40_000);
+      api.playResult = hourglass(30, 35);
+
+      await store.playCard(1);
+      vi.advanceTimersByTime(10_000);
+
+      expect(store.timeUp()).toBe(false);
+      expect(store.clockShown()).toBeCloseTo(25, 0);
+    });
+  });
+
   describe('fin de partie', () => {
     const finish = (status: 'won' | 'lost') => ({
       status, disc: { key: 'runs.discs.gold', stars: 0 }, totalScore: 2500, roundsPassed: 4, foundCount: 18, trackCount: 20,

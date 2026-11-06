@@ -3,7 +3,7 @@
  * les écrans en tirent (barre d'objectif, pastilles, libellés). Le serveur décide de tout (points, jauge, neutralisation, fin) : le front affiche.
  */
 
-import { RunCardOffer, RunHandCard } from './run-cards';
+import { RunCardOffer, RunHandCard, RunTrackEffects, RunCardValues } from './run-cards';
 
 export type RunStatus = 'pending' | 'won' | 'lost' | 'abandoned';
 
@@ -101,6 +101,8 @@ export interface RunSession {
   readonly handSize: number;
   /** Le disque que la manche en cours fait gagner si elle est passée ; `null` une fois la partie finie. */
   readonly nextDisc: RunDisc | null;
+  /** Ce que valent les cartes de la playlist (règles figées) ; `null` sans coups de pouce. */
+  readonly cardValues: RunCardValues | null;
 }
 
 /** Une difficulté de manche : objectif et plafond plus ou moins hauts. */
@@ -137,6 +139,8 @@ export interface RunCurrentTrack {
   readonly previewUrl: string | null;
   /** Son écoute fixe (la difficulté de la manche la change : la manche boss est plus courte) ; absente, celle de la partie. */
   readonly listenSeconds?: number;
+  /** Ce que les cartes jouées sur ce morceau révèlent ou changent ; absent sans carte jouée. */
+  readonly effects?: RunTrackEffects | null;
   /** La forme de l'extrait calculée par l'API (blob en base64) ; `null` si elle n'est pas prête : le navigateur calcule la sienne. */
   readonly waveform?: string | null;
 }

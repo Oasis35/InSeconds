@@ -3,7 +3,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { enterCard, revealInTurn, tweenNumber } from '../../../ui/motion/motion';
 import { RunPassedRound } from '../../domain/run';
-import { RunCardKey, RunCardOffer, RunHandCard, cardGlyph, handFull, handSlots } from '../../domain/run-cards';
+import { RunCardKey, RunCardOffer, RunCardValues, RunHandCard, cardGlyph, handFull, handSlots } from '../../domain/run-cards';
 import { RunDiscComponent } from '../run-disc/run-disc.component';
 
 /**
@@ -37,6 +37,8 @@ export class RunPalierComponent {
   readonly offer = input<RunCardOffer | null>(null);
   readonly hand = input.required<readonly RunHandCard[]>();
   readonly handSize = input.required<number>();
+  /** Ce que valent les cartes de la playlist (le signe des cartes chiffrées). */
+  readonly values = input<RunCardValues | null>(null);
   /** La carte de l'offre en attente d'échange (main pleine). */
   readonly pending = input<RunCardKey | null>(null);
   /** Une prise est en cours d'envoi : rien d'autre ne se touche. */

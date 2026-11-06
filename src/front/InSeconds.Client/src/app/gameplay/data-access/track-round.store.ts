@@ -38,6 +38,8 @@ export function withTrackRound() {
     withState<TrackRoundState>({ round: null, waveform: null }),
     withComputed(({ round, waveform }, audio = inject(AudioPort)) => ({
       trackId: computed(() => round()?.trackId ?? null),
+      /** L'identité du morceau en cours (un morceau remplacé à la même place en change) ; `null` sans manche. */
+      trackKey: computed(() => round()?.trackKey ?? null),
       phase: computed(() => round()?.phase ?? null),
       chosenSeconds: computed(() => round()?.chosenSeconds ?? 0),
       steps: computed(() => round()?.steps ?? []),
@@ -66,7 +68,7 @@ export function withTrackRound() {
       /** L'extrait suivant, chargé en arrière-plan : le seul autre son gardé en mémoire. */
       let nextPreviewUrl: string | null = null;
       /** Le morceau dont la forme est demandée (une seule demande par morceau). */
-      let waveformTrackId: number | null = null;
+      let waveformTrackKey: string | null = null;
       /** Le mode qui sait redemander une adresse d'extrait (signature expirée), pour « Réessayer ». */
       let refreshPreviewUrl: RoundConfig['refreshPreviewUrl'];
       /** La relance automatique après un échec de lecture a déjà eu lieu pour ce morceau. */
@@ -95,12 +97,12 @@ export function withTrackRound() {
           launch(changed.after);
           return;
         }
-        const trackId = changed.after.trackId;
+        const trackKey = changed.after.trackKey;
         // `undefined` : la redemande a échoué, l'adresse est gardée ; `null` : plus d'extrait du tout.
         void refresh().catch(() => undefined).then(url => {
           const round = store.round();
-          // le joueur est passé à autre chose entre-temps (passé le morceau, morceau suivant)
-          if (round?.trackId !== trackId || round.phase !== 'loading') return;
+          // le joueur est passé à autre chose entre-temps (passé le morceau, morceau suivant ou remplacé)
+          if (round?.trackKey !== trackKey || round.phase !== 'loading') return;
           if (url === null) {
             audio.stop();
             set(previewWithdrawn(round));
@@ -126,7 +128,7 @@ export function withTrackRound() {
           const started = beginListening(created);
           // La forme vient de l'API quand elle est prête : dessinée dès la première image, rien à télécharger ni à calculer.
           const fromApi = waveformFromBlob(config.waveform, maxStep(created));
-          waveformTrackId = fromApi ? config.trackId : null;
+          waveformTrackKey = fromApi ? created.trackKey : null;
           patchState(store, { waveform: fromApi });
           set(started);
           if (started !== created) launch(started);
@@ -222,7 +224,7 @@ export function withTrackRound() {
         reset(): void {
           audio.stop();
           nextPreviewUrl = null;
-          waveformTrackId = null;
+          waveformTrackKey = null;
           patchState(store, { waveform: null });
           set(null);
         },
@@ -235,19 +237,20 @@ export function withTrackRound() {
          */
         loadWaveform(): void {
           const round = store.round();
-          if (!round?.previewUrl || waveformTrackId === round.trackId || saveData()) return;
+          if (!round?.previewUrl || waveformTrackKey === round.trackKey || saveData()) return;
           const trackId = round.trackId;
-          waveformTrackId = trackId;
+          const trackKey = round.trackKey;
+          waveformTrackKey = trackKey;
           injector.get(ErrorReportingService).report({
             source: 'js',
             level: 'warning',
             message: `${WAVEFORM_FALLBACK_MESSAGE}: morceau ${trackId}, forme absente de la réponse de l'API, calculée dans le navigateur`,
           });
           void waveforms.load(round.previewUrl, maxStep(round)).then(waveform => {
-            // le joueur est passé au morceau suivant entre-temps
-            if (store.round()?.trackId !== trackId) return;
+            // le joueur est passé au morceau suivant entre-temps (ou le morceau a été remplacé)
+            if (store.round()?.trackKey !== trackKey) return;
             if (waveform) patchState(store, { waveform });
-            else waveformTrackId = null;
+            else waveformTrackKey = null;
           });
         },
       };

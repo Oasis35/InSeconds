@@ -57,6 +57,11 @@ export interface HintFact {
 
 export interface RoundConfig {
   readonly trackId: number;
+  /**
+   * L'identité du morceau, quand plusieurs se succèdent au même `trackId` (un morceau remplacé par un autre à la même place) ; absente :
+   * `trackId`. Un nouveau morceau repart d'une saisie vide et d'une forme d'onde neuve.
+   */
+  readonly trackKey?: string;
   /** L'extrait de 30 s ; `null` ou vide si Deezer n'en a pas. */
   readonly previewUrl: string | null;
   /** La forme de l'extrait calculée par l'API (blob en base64) ; absente : le navigateur la calcule, une fois le son lancé. */
@@ -103,6 +108,7 @@ export type PendingConfirm = 'empty' | 'skip';
 
 export interface TrackRound {
   readonly trackId: number;
+  readonly trackKey: string;
   readonly previewUrl: string | null;
   /** Les paliers proposés, déjà privés de ceux sous le plancher d'écoute. */
   readonly steps: readonly number[];
@@ -135,6 +141,7 @@ export function createRound(config: RoundConfig): TrackRound {
   const hasPreview = !!config.previewUrl && steps.length > 0;
   return {
     trackId: config.trackId,
+    trackKey: config.trackKey ?? String(config.trackId),
     previewUrl: hasPreview ? config.previewUrl : null,
     steps,
     extendable: config.listen.extendable,

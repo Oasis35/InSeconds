@@ -1616,6 +1616,7 @@ export interface RunSessionResponse {
     offer?: RunCardOfferResponse | undefined;
     handSize?: number;
     nextDisc?: RunDiscResponse | undefined;
+    cardValues?: RunCardValuesResponse | undefined;
 
     [key: string]: any;
 }
@@ -1746,6 +1747,14 @@ export interface TakeRunCard {
 
 export interface PassRunOffer {
     afterRound: number;
+
+    [key: string]: any;
+}
+
+export interface RunCardValuesResponse {
+    extendListenSeconds: number;
+    hourglassSeconds: number;
+    lowerTargetPercent: number;
 
     [key: string]: any;
 }

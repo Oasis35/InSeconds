@@ -1,4 +1,6 @@
-import { RUN_CARDS, cardGlyph, handFull, handSlots, isRunCard } from './run-cards';
+import { RUN_CARDS, RunCardValues, cardGlyph, handFull, handSlots, isRunCard, playedCards } from './run-cards';
+
+const VALUES: RunCardValues = { extendListenSeconds: 20, hourglassSeconds: 30, lowerTargetPercent: 25 };
 import { RunSession, nextObjective, palierDue } from './run';
 
 describe('les cartes', () => {
@@ -8,10 +10,24 @@ describe('les cartes', () => {
     expect(isRunCard('magic')).toBe(false);
   });
 
-  it('chaque carte a son signe ; les durées et pourcentages s\'écrivent avec leur espace', () => {
-    expect(RUN_CARDS.map(cardGlyph).every(g => g.length > 0)).toBe(true);
-    expect(cardGlyph('extend')).toBe('20 s');
-    expect(cardGlyph('lower_target')).toBe('−20 %');
+  it('chaque carte a son signe ; les durées et pourcentages viennent de la playlist et s\'écrivent avec leur espace', () => {
+    expect(RUN_CARDS.every(card => cardGlyph(card, VALUES).length > 0 && cardGlyph(card, null).length > 0)).toBe(true);
+    expect(cardGlyph('extend', VALUES)).toBe('20 s');
+    expect(cardGlyph('lower_target', VALUES)).toBe('−25 %');
+    expect(cardGlyph('hourglass', VALUES)).toBe('+30');
+    // Sans les valeurs (jamais pour une playlist à coups de pouce), aucun chiffre inventé.
+    expect([cardGlyph('extend', null), cardGlyph('lower_target', null), cardGlyph('hourglass', null)].some(g => /\d/.test(g))).toBe(false);
+  });
+
+  it('les cartes jouées : ce qu\'elles révèlent, la baisse de la playlist, rien pour le Joker', () => {
+    const effects = {
+      cards: ['joker', 'year', 'initials', 'lower_target', 'net'] as const, year: 1995, artistInitials: ['D', 'P'], titleInitials: ['G', 'L'],
+      choices: null, clockBonusSeconds: 0,
+    };
+    expect(playedCards(effects, VALUES)).toEqual([
+      { card: 'year', value: '1995' }, { card: 'initials', value: 'D. P. – G. L.' }, { card: 'lower_target', value: '−25 %' }, { card: 'net', value: null },
+    ]);
+    expect(playedCards(null, VALUES)).toEqual([]);
   });
 
   it('la main : les cartes dans l\'ordre, puis des emplacements vides jusqu\'à sa taille', () => {
@@ -33,7 +49,7 @@ describe('l\'écran de palier', () => {
     round: { round: 2, score: 0, objective: 366, maxScore: 665 }, roundTracks: [], finish: null, answerSeconds: 45, clockRemainingSeconds: null,
     playedTracks: [], passedRounds: [{ round: 1, score: 500, objective: 225, disc: { key: 'runs.discs.wax', stars: 0 } }],
     difficultyChoice: { round: 2, options: [{ difficulty: 'safe', objective: 366, maxScore: 665, listenSeconds: 10 }] },
-    hand: [], offer: { afterRound: 1, cards: ['year'] }, handSize: 2, nextDisc: { key: 'runs.discs.bronze', stars: 0 },
+    hand: [], offer: { afterRound: 1, cards: ['year'] }, handSize: 2, nextDisc: { key: 'runs.discs.bronze', stars: 0 }, cardValues: null,
     ...overrides,
   });
 

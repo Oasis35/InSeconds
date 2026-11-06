@@ -133,6 +133,29 @@ test.describe('Mode Platines', () => {
     await expect(run.pileTracks).toHaveCount(0);
   });
 
+  test('la carte de départ se joue pendant le morceau : elle quitte la main et son effet reste sur la manche', async ({ page }) => {
+    const run = new RunPage(page);
+    await run.loginAsAdmin();
+    await run.launch();
+
+    // La playlist tire une carte de départ au hasard (sa graine) : on joue celle qui est en main. Toutes se jouent sur le premier morceau du
+    // catalogue de test : chaque morceau y a son année, il reste assez d'autres artistes pour les leurres de « Trois choix », la réserve existe
+    // pour le Joker, et le chrono n'est pas écoulé.
+    await expect(run.handCards).toHaveCount(1);
+    const card = (await run.handCards.getAttribute('data-testid'))!.replace('run-play-', '');
+    await run.handCards.click();
+
+    await expect(run.handCards).toHaveCount(0);
+    if (card === 'joker') {
+      // Le Joker change de morceau : rien ne reste affiché, la manche continue sur le morceau de réserve.
+      await expect(run.cardEffects).toHaveCount(0);
+      await expect(page.getByTestId('round-timer')).not.toHaveText('…');
+    } else {
+      await expect(run.cardEffects.and(page.locator(`[data-card="${card}"]`))).toBeVisible();
+      if (card === 'three_choices') await expect(page.getByTestId('round-choice')).toHaveCount(3);
+    }
+  });
+
   test('le chrono à zéro envoie ce qui est tapé, sans confirmation', async ({ page }) => {
     const run = new RunPage(page);
     await run.loginAsAdmin();
