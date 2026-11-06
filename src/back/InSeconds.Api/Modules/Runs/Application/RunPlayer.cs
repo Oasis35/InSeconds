@@ -25,6 +25,7 @@ public sealed class RunPlayer(
     ITrackPreviews previews,
     ITrackWaveforms waveforms,
     IRunsStore store,
+    RunGhosts ghosts,
     IRunScoringPolicy scoring,
     RunsRules rules,
     TimeProvider time,
@@ -117,7 +118,7 @@ public sealed class RunPlayer(
                 shapes = await waveforms.GetAsync(played, ct, reportMissing: false);
         }
 
-        return RunViews.Session(run, scoring, rules.Discs, record, shapes, time.GetUtcNow());
+        return RunViews.Session(run, scoring, rules.Discs, record, shapes, time.GetUtcNow(), await ghosts.OfAsync(run.Session, run.Challenge, ct));
     }
 
     /// <summary>
@@ -210,7 +211,7 @@ internal static class RunViews
 
     public static RunSessionResponse Session(
         LoadedRun run, IRunScoringPolicy scoring, IReadOnlyList<string> discs, RunRecord? record, IReadOnlyDictionary<int, byte[]> shapes,
-        DateTimeOffset now)
+        DateTimeOffset now, RunGhostResponse? ghost)
     {
         var (session, challenge, _) = run;
         var rules = challenge.Rules;
@@ -252,7 +253,8 @@ internal static class RunViews
             session.OpenOffer(challenge) is { } offer ? new RunCardOfferResponse(offer.AfterRound, offer.Cards.Select(RunCards.KeyOf).ToList()) : null,
             rules.Cards?.HandSize ?? 0,
             session.IsPending ? DiscOf(DiscLadder.Of(session.RoundsPassed + 1, discs)) : null,
-            rules.Cards is { } cards ? new RunCardValuesResponse(cards.ExtendListenSeconds, cards.HourglassSeconds, cards.LowerTargetPercent) : null);
+            rules.Cards is { } cards ? new RunCardValuesResponse(cards.ExtendListenSeconds, cards.HourglassSeconds, cards.LowerTargetPercent) : null,
+            ghost);
     }
 
     // Chaque difficulté proposée, calculée sur les morceaux de la manche (un morceau déjà neutralisé en est retiré, comme pour la jauge).

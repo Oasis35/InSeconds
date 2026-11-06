@@ -1982,6 +1982,16 @@
                 "$ref": "#/components/schemas/RunCardValuesResponse"
               }
             ]
+          },
+          "ghost": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunGhostResponse"
+              }
+            ]
           }
         }
       },
@@ -2443,6 +2453,33 @@
           },
           "disc": {
             "$ref": "#/components/schemas/RunDiscResponse"
+          }
+        }
+      },
+      "RunGhostResponse": {
+        "required": [
+          "pseudo",
+          "total",
+          "stoppedAtRound"
+        ],
+        "type": "object",
+        "properties": {
+          "pseudo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "stoppedAtRound": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       }

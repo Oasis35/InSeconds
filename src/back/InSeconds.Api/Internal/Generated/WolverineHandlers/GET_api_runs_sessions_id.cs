@@ -58,14 +58,17 @@ namespace Internal.Generated.WolverineHandlers
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Wolverine.Runtime.ScopedMessageContextHolder>(serviceScope.ServiceProvider).Context = messageContext;
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
+            var efPlayerDirectory = new InSeconds.Api.Modules.Players.Persistence.EfPlayerDirectory(inSecondsDbContext);
+            var efRunsQueries = new InSeconds.Api.Modules.Runs.Persistence.EfRunsQueries(inSecondsDbContext);
             var efTrackWaveforms = new InSeconds.Api.Modules.Catalogue.Persistence.EfTrackWaveforms(inSecondsDbContext);
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var previewProvider = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Deezer.IPreviewProvider>(serviceScope.ServiceProvider);
+            var runGhosts = new InSeconds.Api.Modules.Runs.Application.RunGhosts(efRunsQueries, efPlayerDirectory);
             var loggedTrackWaveforms = new InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms(efTrackWaveforms, _loggerOfLoggedTrackWaveforms);
             var deezerTrackPreviews = new InSeconds.Api.Modules.Catalogue.Persistence.DeezerTrackPreviews(previewProvider);
             var efTrackDirectory = new InSeconds.Api.Modules.Catalogue.Persistence.EfTrackDirectory(inSecondsDbContext, _optionsMonitorOfCatalogueOptions);
             var efRunsStore = new InSeconds.Api.Modules.Runs.Persistence.EfRunsStore(inSecondsDbContext);
-            var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, _seededShuffle, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, _runScoringPolicy, _runsRules, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
+            var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, _seededShuffle, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, runGhosts, _runScoringPolicy, _runsRules, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Runs.Application.GetRunSessionEndpoint");
             

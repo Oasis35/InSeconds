@@ -116,6 +116,15 @@ public sealed class EfRunsQueries(InSecondsDbContext db) : IRunsQueries
     public Task<RunRecord?> FindRecordAsync(Guid playerId, CancellationToken ct) =>
         db.Set<RunRecord>().AsNoTracking().FirstOrDefaultAsync(r => r.PlayerId == playerId, ct);
 
+    public async Task<IReadOnlyDictionary<int, int>?> FindFinishedPointsAsync(int challengeId, Guid playerId, CancellationToken ct)
+    {
+        var answers = await db.Set<RunSession>().AsNoTracking()
+            .Where(s => s.ChallengeId == challengeId && s.PlayerId == playerId && (s.Status == RunSessionStatus.Won || s.Status == RunSessionStatus.Lost))
+            .Select(s => s.Answers.Select(a => new { a.Position, a.Points }).ToList())
+            .FirstOrDefaultAsync(ct);
+        return answers?.ToDictionary(a => (int)a.Position, a => a.Points);
+    }
+
     public async Task<IReadOnlyDictionary<int, int>> CountFinishedRunsAsync(Guid playerId, CancellationToken ct) =>
         await db.Set<RunSession>().AsNoTracking()
             .Where(s => s.PlayerId == playerId && (s.Status == RunSessionStatus.Won || s.Status == RunSessionStatus.Lost))

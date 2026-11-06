@@ -119,6 +119,8 @@ export interface RunSession {
   readonly nextDisc: RunDisc | null;
   /** Ce que valent les cartes de la playlist (règles figées) ; `null` sans coups de pouce. */
   readonly cardValues: RunCardValues | null;
+  /** Le fantôme de l'ami qui a lancé la playlist, s'il l'a finie ; `null` sinon (sa propre playlist, rien encore répondu). */
+  readonly ghost: RunGhost | null;
 }
 
 /** Une difficulté de manche : objectif et plafond plus ou moins hauts. */
@@ -452,4 +454,28 @@ export function shareRounds(finish: Pick<RunFinish, 'tracks' | 'rounds'>): RunSh
       difficulty: round.difficulty,
       marks: tracksOfRound(finish.tracks, round.round).map(trackMark),
     }));
+}
+
+/** Le fantôme d'un ami sur la même playlist : son total sur les morceaux que le joueur a joués, jusqu'au dernier répondu (rien d'avance). */
+export interface RunGhost {
+  /** Son pseudo ; `null` pour un invité (« Invité » à l'écran). */
+  readonly pseudo: string | null;
+  readonly total: number;
+  /** La manche où sa partie s'est arrêtée, quand le joueur est allé plus loin ; `null` sinon. */
+  readonly stoppedAtRound: number | null;
+}
+
+/** L'écart avec le fantôme au dernier morceau répondu : son total à ce morceau, et l'avance (positive) ou le retard (négatif) du joueur. */
+export interface RunGhostGap {
+  readonly pseudo: string | null;
+  readonly total: number;
+  readonly gap: number;
+  readonly stoppedAtRound: number | null;
+}
+
+/** L'écart avec le fantôme, morceau par morceau ; `null` sans fantôme (le serveur n'en envoie pas avant le premier morceau joué). */
+export function ghostGap(session: Pick<RunSession, 'ghost' | 'totalScore'> | null): RunGhostGap | null {
+  const ghost = session?.ghost;
+  if (!ghost) return null;
+  return { pseudo: ghost.pseudo, total: ghost.total, gap: session.totalScore - ghost.total, stoppedAtRound: ghost.stoppedAtRound };
 }

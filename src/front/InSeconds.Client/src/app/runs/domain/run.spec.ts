@@ -1,6 +1,6 @@
 import {
   RunPassedRound, RunPlay, RunRound, RunRoundSummary, RunSession, RunTrack, clockLabel, finishSquares, gainLabel, isFinished, objectiveBar,
-  playSteps, playedCount, pointsToGo, runPile, runSegments, stepPosition,
+  ghostGap, playSteps, playedCount, pointsToGo, runPile, runSegments, stepPosition,
 } from './run';
 
 describe('objectiveBar', () => {
@@ -68,7 +68,7 @@ const round = (overrides: Partial<RunRound> = {}): RunRound => ({ round: 1, scor
 const session = (overrides: Partial<RunSession> = {}): RunSession => ({
   sessionId: 1, challengeCode: 'ABC234', status: 'pending', rounds: 4, tracksPerRound: 5, listenSeconds: 10, totalScore: 0, roundsPassed: 0,
   round: round(), roundTracks: [], finish: null, answerSeconds: 45, clockRemainingSeconds: null, playedTracks: [], passedRounds: [],
-  difficultyChoice: null, hand: [], offer: null, handSize: 0, nextDisc: null, cardValues: null, ...overrides,
+  difficultyChoice: null, hand: [], offer: null, handSize: 0, nextDisc: null, cardValues: null, ghost: null, ...overrides,
 });
 const summary = (overrides: Partial<RunRoundSummary> = {}): RunRoundSummary => ({
   round: 1, passed: true, score: 400, objective: 200, totalScore: 400, ...overrides,
@@ -198,5 +198,20 @@ describe('finishSquares', () => {
       ['found', 'played', 'neutralized', 'found', 'found'],
       ['unplayed', 'unplayed', 'unplayed', 'unplayed', 'unplayed'],
     ]);
+  });
+});
+
+describe('ghostGap', () => {
+  it('l\'écart au dernier morceau répondu : avance, retard ou égalité', () => {
+    const ghost = { pseudo: 'Alice', total: 250, stoppedAtRound: null };
+
+    expect(ghostGap({ ghost, totalScore: 310 })).toEqual({ pseudo: 'Alice', total: 250, gap: 60, stoppedAtRound: null });
+    expect(ghostGap({ ghost, totalScore: 200 })?.gap).toBe(-50);
+    expect(ghostGap({ ghost: { ...ghost, stoppedAtRound: 2 }, totalScore: 250 })).toEqual({ pseudo: 'Alice', total: 250, gap: 0, stoppedAtRound: 2 });
+  });
+
+  it('rien sans fantôme', () => {
+    expect(ghostGap(null)).toBeNull();
+    expect(ghostGap({ ghost: null, totalScore: 100 })).toBeNull();
   });
 });

@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import fr from '../../../../../public/i18n/fr.json';
-import { PileEntry, RunTrack } from '../../domain/run';
+import { PileEntry, RunGhostGap, RunTrack } from '../../domain/run';
 import { RunPileComponent } from './run-pile.component';
 
 const track = (position: number, overrides: Partial<RunTrack> = {}): RunTrack => ({
@@ -10,7 +10,7 @@ const track = (position: number, overrides: Partial<RunTrack> = {}): RunTrack =>
 });
 
 describe('RunPileComponent', () => {
-  function render(entries: PileEntry[], total = 300) {
+  function render(entries: PileEntry[], total = 300, ghost: RunGhostGap | null = null) {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     TestBed.inject(TranslateService).setTranslation('fr', fr);
     TestBed.inject(TranslateService).use('fr');
@@ -18,6 +18,7 @@ describe('RunPileComponent', () => {
     fixture.componentRef.setInput('entries', entries);
     fixture.componentRef.setInput('shapes', { 2: [0.3, 0.9] });
     fixture.componentRef.setInput('total', total);
+    fixture.componentRef.setInput('ghost', ghost);
     fixture.detectChanges();
     return { fixture, element: fixture.nativeElement as HTMLElement };
   }
@@ -27,6 +28,41 @@ describe('RunPileComponent', () => {
 
     expect(element.querySelector('[data-testid="run-total-score"]')?.textContent).toBe('300');
     expect(element.textContent).toContain('Total du run');
+  });
+
+  it('le fantôme d\'un ami : son total au même morceau, en violet, et l\'avance ou le retard du joueur ; rien sans fantôme', () => {
+    const line = (ghost: RunGhostGap) => {
+      TestBed.resetTestingModule();
+      return render([], 300, ghost).element.querySelector<HTMLElement>('[data-testid="run-ghost"]')!;
+    };
+    expect(render([]).element.querySelector('[data-testid="run-ghost"]')).toBeNull();
+
+    const ahead = line({ pseudo: 'Alice', total: 1240, gap: 1060, stoppedAtRound: null });
+    expect(ahead.textContent?.replace(/\s+/g, ' ').trim()).toBe('Alice 1 240 1 060 pts d’avance');
+    expect((ahead.firstElementChild as HTMLElement).style.color).toBe('var(--color-violet)');
+    // Un auteur invité (ou un compte effacé) porte le même nom qu'au lien reçu et dans la comparaison.
+    expect(line({ pseudo: null, total: 340, gap: -40, stoppedAtRound: null }).textContent?.replace(/\s+/g, ' ').trim()).toBe('Invité 340 40 pts de retard');
+    expect(line({ pseudo: 'Alice', total: 300, gap: 0, stoppedAtRound: null }).querySelector('[data-testid="run-ghost-gap"]')?.textContent?.trim()).toBe('À égalité');
+    // Le joueur est allé plus loin que l'ami : où sa partie s'est arrêtée.
+    expect(line({ pseudo: 'Alice', total: 300, gap: 900, stoppedAtRound: 2 }).querySelector('[data-testid="run-ghost-stopped"]')?.textContent?.trim())
+      .toBe('arrêt en manche 2');
+  });
+
+  it('l\'écart change quand le total a fini de compter, pas avant', () => {
+    vi.useFakeTimers();
+    const { fixture, element } = render([], 300, { pseudo: 'Alice', total: 300, gap: 0, stoppedAtRound: null });
+    const gap = () => element.querySelector('[data-testid="run-ghost-gap"]')?.textContent?.trim();
+    expect(gap()).toBe('À égalité');
+
+    fixture.componentRef.setInput('total', 400);
+    fixture.componentRef.setInput('ghost', { pseudo: 'Alice', total: 300, gap: 100, stoppedAtRound: null });
+    fixture.detectChanges();
+    expect(gap()).toBe('À égalité');
+
+    vi.advanceTimersByTime(1400);
+    fixture.detectChanges();
+    expect(gap()).toBe('100 pts d’avance');
+    vi.useRealTimers();
   });
 
   it('un morceau : pochette, forme, « Artiste - Titre » et ses points', () => {

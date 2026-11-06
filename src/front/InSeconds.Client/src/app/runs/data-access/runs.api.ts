@@ -287,6 +287,9 @@ function toSession(session: RunSessionResponse): RunSession {
       ? { afterRound: session.offer.afterRound, cards: session.offer.cards.filter(isRunCard) }
       : null,
     handSize: session.handSize ?? 0,
+    ghost: session.ghost
+      ? { pseudo: session.ghost.pseudo ?? null, total: session.ghost.total, stoppedAtRound: session.ghost.stoppedAtRound ?? null }
+      : null,
     cardValues: session.cardValues
       ? {
           extendListenSeconds: session.cardValues.extendListenSeconds,

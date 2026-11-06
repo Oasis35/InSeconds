@@ -1618,6 +1618,7 @@ export interface RunSessionResponse {
     handSize?: number;
     nextDisc?: RunDiscResponse | undefined;
     cardValues?: RunCardValuesResponse | undefined;
+    ghost?: RunGhostResponse | undefined;
 
     [key: string]: any;
 }
@@ -1771,6 +1772,14 @@ export interface RunShelfDiscResponse {
 export interface RunShortfallResponse {
     points: number;
     disc: RunDiscResponse;
+
+    [key: string]: any;
+}
+
+export interface RunGhostResponse {
+    pseudo: string | undefined;
+    total: number;
+    stoppedAtRound: number | undefined;
 
     [key: string]: any;
 }

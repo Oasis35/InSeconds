@@ -156,8 +156,10 @@ export class RunPage {
   }
 
   /** Rate la première manche (5 réponses vides, 0 point, objectif manqué) : la dernière réponse mène à l'écran de fin d'une partie perdue. */
-  async loseFirstRound(): Promise<void> {
-    await inSequence([1, 2, 3, 4], () => this.answerEmpty());
+  async loseFirstRound(afterFirstAnswer?: () => Promise<void>): Promise<void> {
+    await this.answerEmpty();
+    await afterFirstAnswer?.();
+    await inSequence([2, 3, 4], () => this.answerEmpty());
     await this.answer(null);
     await expect(this.nextTrackButton).toHaveText(/Voir le résultat/i);
     await this.nextTrackButton.click();
