@@ -14,7 +14,6 @@
 > Le proto 1 est livré sur invitation ([`runs/`](runs/README.md)), le proto 2 ([`runs/proto2.md`](runs/proto2.md), ticket [#497](https://github.com/Oasis35/InSeconds/issues/497)) sur le staging. Reste :
 
 - [ ] **Parties de test et réglage** - Clément joue sur le staging puis en prod avec quelques comptes, règle les seuils (`Runs:ThresholdPercents`, multiplicateurs, écoute) et la difficulté (tranches de rang Deezer) ; si les parties montrent des abus, un chrono `Runs:AnswerSeconds` (cf. `runs/conception.md` § 9)
-- [ ] **« X % ont échoué »** sous chaque morceau joué : question ouverte, à trancher par Clément (où l'afficher depuis que l'écran de fin de manche a disparu, sur quels joueurs : ceux de la playlist, avec un minimum comme au Daily ?)
 
 ## Mode entraînement (anciens défis)
 

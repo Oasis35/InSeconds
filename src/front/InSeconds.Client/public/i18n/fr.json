@@ -1008,7 +1008,7 @@
       "body": "Impossible de récupérer l’extrait. Le morceau a été retiré de la playlist et l’objectif abaissé à {{ objective }} pts."
     },
     "share": {
-      "text": "Je te lance une playlist sur InSeconds : 20 morceaux en 4 manches. Tu fais mieux que moi ?",
+      "text": "Je te lance une playlist sur InSeconds. Tu fais mieux que moi ?",
       "header": "{{ score }} pts · {{ disc }} · InSeconds Platines",
       "round": "Manche {{ round }}",
       "beatMe": "Bats-moi sur la même playlist :"
@@ -1059,7 +1059,7 @@
       "yourScore": "Ton score",
       "max": "max",
       "listen": "écoute {{seconds}}",
-      "hand": "Tes bonus",
+      "hand": "En main",
       "easy": "Facile",
       "safe": "Sûre",
       "risky": "Risquée",
@@ -1071,7 +1071,8 @@
       "lowerTarget": "Objectif de la manche abaissé",
       "hourglass": "+{{seconds}} au chrono",
       "extend": "Écoute de {{seconds}}",
-      "choicesHint": "Une seule est juste"
+      "choicesHint": "Une seule est juste",
+      "refused": "Cette carte n'a pas pu être jouée."
     },
     "ghost": {
       "ahead": "{{ points }} pts d’avance",

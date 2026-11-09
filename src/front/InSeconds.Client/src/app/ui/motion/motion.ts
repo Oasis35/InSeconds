@@ -51,6 +51,12 @@ export function tweenNumber(element: HTMLElement, from: number, to: number, dela
     .fromTo(element, { scale: 1.06 }, { scale: 1, duration: 0.45, ease: SETTLE, clearProps: 'transform' });
 }
 
+/** Une jauge qui se remplit de gauche à droite (transform seulement), puis se pose à sa largeur. `delay` en secondes. */
+export function fillBar(element: HTMLElement, delay = 0): void {
+  if (motionReduced()) return;
+  gsap.from(element, { scaleX: 0, transformOrigin: 'left center', duration: 0.6, delay, ease: SETTLE, clearProps: 'transform' });
+}
+
 /** Des points gagnés qui montent, se posent un instant, puis rejoignent `target` (le total) en rétrécissant. */
 export function flyTo(element: HTMLElement, target: HTMLElement | null): void {
   if (motionReduced()) return;

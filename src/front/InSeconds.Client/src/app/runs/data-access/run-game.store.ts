@@ -64,6 +64,8 @@ interface RunState {
   difficultyBusy: boolean;
   /** Une carte jouée part au serveur. */
   cardBusy: boolean;
+  /** Le serveur a refusé la dernière carte jouée (déjà jouée ailleurs, chrono écoulé) : un court message le dit, jusqu'au prochain essai. */
+  cardRefused: boolean;
 }
 
 const initialState: RunState = {
@@ -88,6 +90,7 @@ const initialState: RunState = {
   palierBusy: false,
   difficultyBusy: false,
   cardBusy: false,
+  cardRefused: false,
 };
 
 /** Les phases où une carte se joue : la saisie (ni l'envoi d'une réponse, ni sa révélation). */
@@ -184,6 +187,7 @@ export const RunGameStore = signalStore(
           values: session.cardValues,
           listenSeconds: current.listenSeconds ?? session.listenSeconds,
           playable: canPlayCards(round.phase()),
+          refused: store.cardRefused(),
         };
       }),
       /** Ce que montre l'écran « Difficulté ? » : la manche, le score du run, les difficultés proposées, la main. */
@@ -521,7 +525,7 @@ export const RunGameStore = signalStore(
       patchState(store, {
         screen: 'loading', code: target, link: null, comparison: null, session: null, current: null, steps: [], shapes: {}, resumeCount: 0,
         resumeTotal: 0, abandonLoading: false, palierDismissedFor: null, pendingCard: null, palierBusy: false, difficultyBusy: false,
-        cardBusy: false,
+        cardBusy: false, cardRefused: false,
       });
       try {
         const me = await api.me();
@@ -655,7 +659,7 @@ export const RunGameStore = signalStore(
         const card = session?.hand.find(c => c.slot === slot);
         if (!session || !current || !card || store.cardBusy() || !canPlayCards(round.phase())) return;
         // La réponse attend la fin de l'aller-retour (`cardBusy` verrouille la saisie) : un Joker la ferait corriger sur le morceau de réserve.
-        patchState(store, { cardBusy: true });
+        patchState(store, { cardBusy: true, cardRefused: false });
         try {
           const play = await api.playCard(session.sessionId, slot, current.position);
           // La partie a pu être abandonnée ou le morceau répondu pendant l'aller-retour : une réponse périmée ne change rien.
@@ -676,7 +680,8 @@ export const RunGameStore = signalStore(
           const left = play.session.clockRemainingSeconds;
           if (left !== null) setClock(next.position, left);
         } catch {
-          // Refusée (déjà jouée ailleurs, chrono écoulé) : la main reste telle quelle, la partie se relit.
+          // Refusée (déjà jouée ailleurs, chrono écoulé) : le joueur en est prévenu, la main reste telle quelle, la partie se relit.
+          patchState(store, { cardRefused: true });
           await reread(session.sessionId);
         } finally {
           patchState(store, { cardBusy: false });

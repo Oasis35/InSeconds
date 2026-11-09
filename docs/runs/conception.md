@@ -226,4 +226,4 @@ L'interrupteur « Platines » de l'onglet Joueurs lit `GET /api/admin/runs/acces
 9. Entrée sur l'accueil : la carte seulement (option A), rien d'autre ne change sur l'accueil ni sur « déjà joué » (Clément, 17/10).
 10. Les maquettes de [`ecrans.md`](ecrans.md) font référence, dont la réponse après chaque morceau dans l'écran de manche (Clément, 17/10).
 11. À l'écran, le défi s'appelle une **playlist** partout (titres, boutons, comparaison) ; le code et cette conception gardent `challenge` / « défi » (Clément, 18/10).
-12. Question ouverte : remettre ou non une ligne « X % ont échoué » sous chaque morceau de la fin de manche (elle demanderait des statistiques par morceau sur les runs, absentes du proto 1).
+12. Décision (09/11/2026) : pas de ligne « X % ont échoué » (peu de joueurs par playlist, la comparaison existe).

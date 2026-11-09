@@ -27,7 +27,7 @@ import { RunRound, pointsToGo, runSegments } from '../../domain/run';
             [style.box-shadow]="segment.state === 'current' ? '0 0 0 1.5px var(--color-accent)' : null">
             <div class="h-full rounded-[4px] bar-fill" [style.width.%]="segment.fill * 100"
               [style.background]="segment.state === 'done' ? 'var(--color-success)' : 'var(--gradient-primary)'"></div>
-            @if (segment.mark !== null) {
+            @if (segment.mark !== null && showStatus()) {
               <div class="absolute" style="top:-3px;width:2px;height:18px;background:var(--text-hi)" [style.left.%]="segment.mark * 100"></div>
             }
             @if (segment.state === 'locked') {
@@ -77,7 +77,7 @@ export class RunHeaderComponent {
   readonly round = input.required<RunRound>();
   /** Le nombre de manches de la playlist. */
   readonly rounds = input.required<number>();
-  /** « Manche N » et ce qui manque pour passer, sous la barre ; l'écran de palier n'en montre que la barre. */
+  /** « Manche N » et ce qui manque pour passer, sous la barre ; les écrans de palier et de difficulté n'en montrent que la barre, sans le repère de l'objectif (il se choisit avec la difficulté). */
   readonly showStatus = input(true);
   readonly abandon = output();
   /** Les sons d'interface sont coupés. */

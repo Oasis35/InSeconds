@@ -73,7 +73,7 @@ describe('RunPileComponent', () => {
 
     const chip = render([], 300, null, 3).element.querySelector<HTMLElement>('[data-testid="run-combo"]')!;
     expect(chip.textContent?.trim()).toBe('3 d’affilée');
-    expect(chip.style.color).toBe('var(--color-accent-3)');
+    expect(chip.style.color).toBe('var(--text-streak)');
   });
 
   it('un temps fort quand la série grandit, à son apparition comprise ; rien au premier affichage (reprise) ni quand elle retombe', () => {

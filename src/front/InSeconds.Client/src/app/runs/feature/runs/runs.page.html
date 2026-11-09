@@ -10,7 +10,7 @@
       }
 
       @case ('welcome') {
-        <app-run-welcome-screen [record]="store.record()" [shelf]="store.shelf()" (start)="store.begin()" />
+        <app-run-welcome-screen [record]="store.record()" [shelf]="store.shelf()" [lang]="language.current()" (start)="store.begin()" />
       }
 
       <!-- Le lien d'un ami : le logo seul, les règles de la playlist et « Jouer » (crée l'invité, lance le premier son dans ce clic). -->
@@ -50,7 +50,7 @@
                 }
                 @if (store.roundCards(); as cards) {
                   <app-run-round-cards roundAids [hand]="cards.hand" [effects]="cards.effects" [values]="cards.values" [listenSeconds]="cards.listenSeconds"
-                    [busy]="store.cardBusy()" [playable]="cards.playable" (play)="store.playCard($event)" />
+                    [busy]="store.cardBusy()" [playable]="cards.playable" [refused]="cards.refused" [lang]="language.current()" (play)="store.playCard($event)" />
                 }
                 @if (store.revealed(); as revealed) {
                   <app-run-reveal roundReveal [track]="revealed" [peaks]="round.waveform()?.peaks ?? store.shapes()[revealed.position] ?? null"
@@ -73,7 +73,7 @@
               (toggleSounds)="store.toggleSounds()" (abandon)="confirmAbandon()" />
             <app-run-palier class="flex-1 flex flex-col" [passed]="palier.passed" [rounds]="store.rounds()" [wonDiscs]="palier.wonDiscs"
               [nextRound]="palier.nextRound" [nextObjective]="palier.nextObjective" [nextDisc]="palier.nextDisc" [offer]="palier.offer"
-              [hand]="palier.hand" [handSize]="palier.handSize" [values]="store.session()?.cardValues ?? null" [pending]="store.pendingCard()" [busy]="store.palierBusy()"
+              [hand]="palier.hand" [handSize]="palier.handSize" [values]="store.session()?.cardValues ?? null" [pending]="store.pendingCard()" [busy]="store.palierBusy()" [lang]="language.current()"
               (pick)="store.pickCard($event)" (drop)="store.dropForPending($event)" (pass)="store.passOffer()" (next)="store.continueFromPalier()" />
           </div>
         }
@@ -85,7 +85,7 @@
           <div class="screen-enter flex-1 flex flex-col pt-1">
             <app-run-header [round]="difficulty.headerRound" [rounds]="store.rounds()" [showStatus]="false" [muted]="store.soundsMuted()" (toggleSounds)="store.toggleSounds()" (abandon)="confirmAbandon()" />
             <app-run-difficulty class="flex-1 flex flex-col" [round]="difficulty.round" [totalScore]="difficulty.totalScore"
-              [options]="difficulty.options" [hand]="difficulty.hand" [listenSeconds]="difficulty.listenSeconds" [values]="store.session()?.cardValues ?? null" [busy]="store.difficultyBusy()"
+              [options]="difficulty.options" [hand]="difficulty.hand" [listenSeconds]="difficulty.listenSeconds" [values]="store.session()?.cardValues ?? null" [busy]="store.difficultyBusy()" [lang]="language.current()"
               (choose)="store.chooseDifficulty($event)" />
           </div>
         }

@@ -171,9 +171,9 @@ export class RunPage {
 
   /**
    * Répond juste à tous les morceaux d'une manche. Sauf à la dernière (qui mène à la fin) : l'écran de palier, ses trois cartes offertes,
-   * « Suite », l'écran « Difficulté ? » (Sûre), puis la ligne de la manche posée dans la pile.
+   * « Suite », l'écran « Difficulté ? » (Sûre par défaut, ou celle demandée pour la manche suivante), puis la ligne de la manche posée dans la pile.
    */
-  async winRound(tracks: RunTrack[], round: number): Promise<void> {
+  async winRound(tracks: RunTrack[], round: number, difficulty: 'easy' | 'safe' | 'risky' = 'safe'): Promise<void> {
     await expect(this.roundTitle).toHaveText(`Manche ${round}`);
     await inSequence(tracks.filter(t => t.round === round), track => this.answerRight(track));
     if (round === 4) return;
@@ -181,7 +181,7 @@ export class RunPage {
     await expect(this.palier.locator('[data-card]')).toHaveCount(3);
     await this.palierNextButton.click();
     // « Sûre » : l'objectif et les points du proto 1 ; le toucher lance le premier morceau de la manche.
-    await this.page.getByTestId('run-difficulty-safe').click();
+    await this.page.getByTestId(`run-difficulty-${difficulty}`).click();
     await expect(this.paliers).toHaveCount(round);
   }
 }

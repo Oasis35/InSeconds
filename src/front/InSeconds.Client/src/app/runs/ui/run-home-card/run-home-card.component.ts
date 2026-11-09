@@ -16,7 +16,7 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
       <span class="min-w-0 flex-1 text-left">
         <span class="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span class="text-lg font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'runs.welcome.title' | translate }}</span>
-          <span class="px-2 py-0.5 rounded-md text-[0.6875rem] font-bold uppercase tracking-wider"
+          <span class="px-2 py-0.5 rounded-md text-[0.8125rem] font-bold"
             style="color:var(--color-warn);background:rgb(var(--rgb-warning) / 0.14)">{{ 'runs.welcome.badge' | translate }}</span>
         </span>
         <span class="block text-sm" style="color:var(--text-light)">{{ 'runs.welcome.tagline' | translate }}</span>

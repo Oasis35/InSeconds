@@ -60,3 +60,5 @@ Le texte saisi déjà stocké a été supprimé par migration ; `VACUUM FULL dai
 ## Reste ouvert
 
 - **Pas de trace des actions de l'admin** (qui a consulté ou modifié quoi). Un seul admin aujourd'hui : à reconsidérer s'il y en a un deuxième.
+
+**Compteurs du mode Platines** (`RunsMetrics`) : parties, difficultés choisies et cartes jouées, comptés sans identifiant de joueur (le nom de la difficulté ou de la carte est la seule étiquette), exportés vers Grafana en prod seulement.

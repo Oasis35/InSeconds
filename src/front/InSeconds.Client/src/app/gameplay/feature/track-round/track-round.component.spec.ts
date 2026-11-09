@@ -170,8 +170,8 @@ describe('TrackRoundComponent', () => {
       expect(fixture.componentInstance.answered).toHaveLength(1);
     });
 
-    it('en ligne, « Passer » est un simple lien sous « Valider »', () => {
-      fixture.componentInstance.layout.set('inline');
+    it.each(['stacked', 'inline'] as const)('« Passer » est le même lien discret sous « Valider » (disposition %s)', (layout) => {
+      fixture.componentInstance.layout.set(layout);
       start();
 
       expect(element.querySelector('[data-testid="round-skip"]')?.className).toContain('underline');

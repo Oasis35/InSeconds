@@ -27,13 +27,12 @@ const SOUNDS: Readonly<Record<RunSound, readonly Note[]>> = {
     { hz: 783.99, at: 0.1, seconds: 0.22, type: 'triangle', gain: 0.18 },
   ],
   // Une carte prise au palier : un petit déclic.
-  cardTaken: [{ hz: 1318.5, at: 0, seconds: 0.06, type: 'sine', gain: 0.14 }],
+  cardTaken: [{ hz: 659.25, at: 0, seconds: 0.06, type: 'sine', gain: 0.14 }],
   // Le run gagné : un accord arpégé qui monte.
   won: [
     { hz: 523.25, at: 0, seconds: 0.14, type: 'triangle', gain: 0.18 },
-    { hz: 659.25, at: 0.11, seconds: 0.14, type: 'triangle', gain: 0.18 },
-    { hz: 783.99, at: 0.22, seconds: 0.14, type: 'triangle', gain: 0.18 },
-    { hz: 1046.5, at: 0.33, seconds: 0.32, type: 'triangle', gain: 0.18 },
+    { hz: 783.99, at: 0.12, seconds: 0.14, type: 'triangle', gain: 0.18 },
+    { hz: 1046.5, at: 0.24, seconds: 0.32, type: 'triangle', gain: 0.18 },
   ],
   // Le run perdu : deux notes qui descendent, sans dramatiser.
   lost: [

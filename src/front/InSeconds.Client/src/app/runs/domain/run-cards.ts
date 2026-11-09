@@ -32,10 +32,20 @@ export interface RunCardValues {
 }
 
 /**
+ * La couleur d'une carte (« une couleur = un sens ») : cyan pour ce qui touche au son et au temps (la Rallonge allonge l'écoute, le Sablier le
+ * chrono), à la couleur du joueur pour les autres. `rgb` : la même couleur pour un fond ou un contour transparent.
+ */
+export function cardColor(card: RunCardKey): { readonly color: string; readonly rgb: string } {
+  return card === 'extend' || card === 'hourglass'
+    ? { color: 'var(--color-accent-2)', rgb: 'var(--rgb-accent-2)' }
+    : { color: 'var(--color-accent)', rgb: 'var(--rgb-accent)' };
+}
+
+/**
  * Le signe d'une carte, dans son coin, à la couleur du joueur : un repère qui se lit d'un coup d'œil, à côté de son nom. Pas d'emoji ni d'icône décorative :
  * un chiffre ou un caractère qui dit l'effet. Sans les valeurs de la playlist, les cartes chiffrées n'ont que leur caractère.
  */
-export function cardGlyph(card: RunCardKey, values: RunCardValues | null): string {
+export function cardGlyph(card: RunCardKey, values: RunCardValues | null, lang = 'fr'): string {
   switch (card) {
     case 'three_choices':
       return '3';
@@ -50,7 +60,7 @@ export function cardGlyph(card: RunCardKey, values: RunCardValues | null): strin
     case 'net':
       return '½';
     case 'lower_target':
-      return values ? `−${values.lowerTargetPercent} %` : '↓';
+      return values ? lowerTargetLabel(values.lowerTargetPercent, lang) : '↓';
     case 'hourglass':
       return values ? `+${values.hourglassSeconds}` : '+';
   }
@@ -81,12 +91,17 @@ export interface RunPlayedCard {
 }
 
 /** Les cartes jouées sur le morceau, dans l'ordre ; le Joker n'en laisse rien (il a changé de morceau). */
-export function playedCards(effects: RunTrackEffects | null, values: RunCardValues | null): readonly RunPlayedCard[] {
+export function playedCards(effects: RunTrackEffects | null, values: RunCardValues | null, lang = 'fr'): readonly RunPlayedCard[] {
   if (!effects) return [];
-  return effects.cards.filter(card => card !== 'joker').map(card => ({ card, value: playedValue(card, effects, values) }));
+  return effects.cards.filter(card => card !== 'joker').map(card => ({ card, value: playedValue(card, effects, values, lang) }));
 }
 
-function playedValue(card: RunCardKey, effects: RunTrackEffects, values: RunCardValues | null): string | null {
+/** Le pourcentage dans la typographie de la langue : « −25 % » en français (espace avant), « −25% » en anglais. */
+function lowerTargetLabel(percent: number, lang: string): string {
+  return lang.startsWith('fr') ? `−${percent} %` : `−${percent}%`;
+}
+
+function playedValue(card: RunCardKey, effects: RunTrackEffects, values: RunCardValues | null, lang: string): string | null {
   switch (card) {
     case 'year':
       return effects.year === null ? null : String(effects.year);
@@ -95,7 +110,7 @@ function playedValue(card: RunCardKey, effects: RunTrackEffects, values: RunCard
         ? `${initialsLabel(effects.artistInitials)} – ${initialsLabel(effects.titleInitials)}`
         : null;
     case 'lower_target':
-      return values ? `−${values.lowerTargetPercent} %` : null;
+      return values ? lowerTargetLabel(values.lowerTargetPercent, lang) : null;
     default:
       return null;
   }
