@@ -112,7 +112,7 @@ Les images de `maquettes/` sont la copie figée du 18/10/2026 ; l'app a évolué
 
 Prises sur un téléphone de 390 × 844 (`maquettes/app/`), proto 2 compris. Ce sont elles qui disent ce qui tourne ; les maquettes au-dessus gardent l'intention de départ.
 
-| Manche, carte en main | Carte jouée (« Trois choix » proposerait trois réponses) | Réponse dans la carte |
+| Manche, carte en main | Carte jouée (« QCM » proposerait trois réponses) | Réponse dans la carte |
 |---|---|---|
 | ![Manche](maquettes/app/manche.png) | ![Carte jouée](maquettes/app/manche-carte-jouee.png) | ![Réponse](maquettes/app/reponse.png) |
 

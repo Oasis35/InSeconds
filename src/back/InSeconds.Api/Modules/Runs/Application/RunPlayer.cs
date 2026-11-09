@@ -125,7 +125,7 @@ public sealed class RunPlayer(
     /// <summary>
     /// Ce que les cartes actives sur le morceau de cette position révèlent ou changent, pour lui seul (piège 31) ; vide sans carte. Playlist durable :
     /// les cartes de la main, recalculées à chaque envoi (les leurres du QCM se retirent de la même graine, avec des morceaux proches de la bonne
-    /// réponse). Playlist d'avant : les cartes jouées sur ce morceau, « Trois choix » avec les deux leurres figés quand la carte a été jouée.
+    /// réponse). Playlist d'avant : les cartes jouées sur ce morceau, « QCM » avec les deux leurres figés quand la carte a été jouée.
     /// </summary>
     private async Task<RunTrackEffectsResponse?> EffectsAsync(LoadedRun run, int position, CancellationToken ct)
     {

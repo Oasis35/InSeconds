@@ -8,7 +8,7 @@ namespace InSeconds.Api.Modules.Runs.Domain;
 /// </summary>
 public enum RunCard : short
 {
-    /// <summary>« Trois choix » : la saisie est remplacée par trois réponses, une seule est juste.</summary>
+    /// <summary>« QCM » : la saisie est remplacée par trois réponses, une seule est juste.</summary>
     ThreeChoices = 1,
 
     /// <summary>« Joker » : change de morceau (le suivant de la réserve de la manche).</summary>
@@ -20,16 +20,16 @@ public enum RunCard : short
     /// <summary>« Initiales » : les initiales de l'artiste et du titre.</summary>
     Initials = 4,
 
-    /// <summary>« Rallonge » : une écoute plus longue (20 s au lieu de 10).</summary>
+    /// <summary>« Prolongation » : une écoute plus longue (20 s au lieu de 10).</summary>
     Extend = 5,
 
-    /// <summary>« Filet » : un morceau raté compte comme à moitié trouvé.</summary>
+    /// <summary>« Repêchage » : un morceau raté compte comme à moitié trouvé.</summary>
     Net = 6,
 
-    /// <summary>« Seuil abaissé » : l'objectif de la manche baisse (20 %), pour toute la manche.</summary>
+    /// <summary>« Rabais » : l'objectif de la manche baisse (20 %), pour toute la manche.</summary>
     LowerTarget = 7,
 
-    /// <summary>« Sablier » : du temps en plus au chrono du morceau (30 s).</summary>
+    /// <summary>« Délai » : du temps en plus au chrono du morceau (30 s).</summary>
     Hourglass = 8,
 
     /// <summary>« Genre » : le genre de l'album du morceau (le premier, par ordre alphabétique), affiché seul.</summary>
@@ -72,9 +72,9 @@ public sealed record RunCardOffer(int AfterRound, IReadOnlyList<RunCard> Cards);
 /// <param name="HandSize">Les emplacements de la main (2).</param>
 /// <param name="StartCard">La carte en main au départ du run ; vide si aucune.</param>
 /// <param name="Offers">Une offre par palier.</param>
-/// <param name="ExtendListenSeconds">L'écoute d'un morceau sous « Rallonge ».</param>
-/// <param name="HourglassSeconds">Les secondes ajoutées au chrono par « Sablier ».</param>
-/// <param name="LowerTargetPercent">La baisse de l'objectif de la manche sous « Seuil abaissé », en pourcentage.</param>
+/// <param name="ExtendListenSeconds">L'écoute d'un morceau sous « Prolongation ».</param>
+/// <param name="HourglassSeconds">Les secondes ajoutées au chrono par « Délai ».</param>
+/// <param name="LowerTargetPercent">La baisse de l'objectif de la manche sous « Rabais », en pourcentage.</param>
 /// <param name="Pool">Les cartes que la playlist pouvait tirer (les réglages du moment).</param>
 /// <param name="Durable">
 /// Les cartes agissent tant qu'elles sont en main (sauf le Joker, à usage unique), sans clic, et aucune carte n'est offerte au départ ; faux pour une
@@ -123,7 +123,7 @@ public sealed class RunCardDealer(ISeededShuffle shuffle)
 }
 
 /// <summary>
-/// « Trois choix » : un morceau peut servir de leurre s'il est hors de la playlist (ni joué, ni en réserve) et d'un autre artiste que la bonne
+/// « QCM » : un morceau peut servir de leurre s'il est hors de la playlist (ni joué, ni en réserve) et d'un autre artiste que la bonne
 /// réponse et que les leurres déjà retenus.
 /// </summary>
 public static class RunChoices

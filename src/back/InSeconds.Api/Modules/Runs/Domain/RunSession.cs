@@ -283,10 +283,10 @@ public sealed class RunSession
 
     /// <summary>
     /// Pourquoi une carte de la main ne se joue pas maintenant sur le morceau en cours, ou rien si elle le peut. Une carte qui n'aurait rien à
-    /// changer ne se gâche pas : Année sur un morceau sans année connue (<paramref name="yearKnown"/>), Sablier sans chrono ou une fois le chrono
+    /// changer ne se gâche pas : Année sur un morceau sans année connue (<paramref name="yearKnown"/>), Délai sans chrono ou une fois le chrono
     /// écoulé (il ne rachète pas une réponse en retard), Joker sans morceau en réserve dans la manche.
     /// </summary>
-    /// <param name="choicesAvailable">« Trois choix » : le catalogue a deux leurres à proposer (sinon la carte ne montrerait que la réponse).</param>
+    /// <param name="choicesAvailable">« QCM » : le catalogue a deux leurres à proposer (sinon la carte ne montrerait que la réponse).</param>
     public RunCardRefusal? CanPlay(RunChallenge challenge, int slot, DateTimeOffset now, bool yearKnown = true, bool choicesAvailable = true)
     {
         ArgumentNullException.ThrowIfNull(challenge);
@@ -314,7 +314,7 @@ public sealed class RunSession
 
     /// <summary>
     /// Joue une carte de la main sur le morceau en cours. Le Joker remplace le morceau par le suivant de la réserve de sa manche : tout repart à zéro
-    /// (écoute, envoi de l'extrait, chrono), les cartes déjà jouées sur l'ancien morceau sont perdues. « Trois choix » garde ses deux leurres
+    /// (écoute, envoi de l'extrait, chrono), les cartes déjà jouées sur l'ancien morceau sont perdues. « QCM » garde ses deux leurres
     /// (<paramref name="decoys"/>, tirés par l'application) : les mêmes à la reprise.
     /// </summary>
     public RunSessionCard PlayCard(
@@ -377,7 +377,7 @@ public sealed class RunSession
         return challenge.ReserveOf(round).Select(r => (int?)r.TrackId).FirstOrDefault(id => !used.Contains(id!.Value));
     }
 
-    /// <summary>Les secondes que « Sablier » ajoute au chrono du morceau en cours (0 sans).</summary>
+    /// <summary>Les secondes que « Délai » ajoute au chrono du morceau en cours (0 sans).</summary>
     public int ClockBonus(RunRules rules) =>
         rules.Cards is { } cards && ActiveCardsAt(rules, NextPosition).Contains(RunCard.Hourglass) ? cards.HourglassSeconds : 0;
 
@@ -398,7 +398,7 @@ public sealed class RunSession
     }
 
     /// <summary>
-    /// La durée d'écoute fixe du morceau en cours, à la difficulté de sa manche (la manche boss est plus courte), allongée par « Rallonge ».
+    /// La durée d'écoute fixe du morceau en cours, à la difficulté de sa manche (la manche boss est plus courte), allongée par « Prolongation ».
     /// </summary>
     public decimal ListenSecondsOf(RunChallenge challenge)
     {
@@ -457,7 +457,7 @@ public sealed class RunSession
         return Math.Max(0m, decimal.Round(left, 1));
     }
 
-    /// <summary>La réponse arrive après le chrono (« Sablier » compris, marge réseau comprise) : elle ne rapporte rien.</summary>
+    /// <summary>La réponse arrive après le chrono (« Délai » compris, marge réseau comprise) : elle ne rapporte rien.</summary>
     public bool IsLate(RunRules rules, DateTimeOffset now) =>
         ClockStart(rules) is { } start && now > start.AddSeconds(rules.AnswerSeconds + ClockBonus(rules)) + ClockGrace;
 
@@ -501,7 +501,7 @@ public sealed class RunSession
         }
         else
         {
-            // « Filet » (playlist d'avant) : un morceau raté rapporte comme à moitié trouvé.
+            // « Repêchage » (playlist d'avant) : un morceau raté rapporte comme à moitié trouvé.
             var scored = !found && active.Contains(RunCard.Net) ? outcome with { ArtistCorrect = true } : outcome;
             points = scoring.Points(scored, scale);
         }
@@ -550,7 +550,7 @@ public sealed class RunSession
     public RoundProgress RoundProgressAt(RunChallenge challenge, int round, RunDifficultyOption option, IRunScoringPolicy scoring) =>
         RunGauge.Of(challenge, _answers, round, scoring, option, LoweredBy(challenge, round));
 
-    /// <summary>La baisse de l'objectif de cette manche en pourcentage (« Seuil abaissé » joué dans la manche), 0 sinon.</summary>
+    /// <summary>La baisse de l'objectif de cette manche en pourcentage (« Rabais » joué dans la manche), 0 sinon.</summary>
     public int LoweredBy(RunChallenge challenge, int round)
     {
         ArgumentNullException.ThrowIfNull(challenge);
@@ -651,10 +651,10 @@ public enum RunCardRefusal
     /// <summary>Elle n'est pas (ou plus) dans la main.</summary>
     NotInHand,
 
-    /// <summary>La même carte est déjà active sur ce morceau (ou sur la manche, pour « Seuil abaissé »).</summary>
+    /// <summary>La même carte est déjà active sur ce morceau (ou sur la manche, pour « Rabais »).</summary>
     AlreadyActive,
 
-    /// <summary>Son effet n'a rien à changer : plus de morceau en réserve pour le Joker, pas d'année, pas ou plus de chrono pour le Sablier.</summary>
+    /// <summary>Son effet n'a rien à changer : plus de morceau en réserve pour le Joker, pas d'année, pas ou plus de chrono pour le Délai.</summary>
     Unavailable,
 
     /// <summary>Pas d'offre ouverte pour ce palier, ou une carte qu'elle ne propose pas.</summary>
@@ -702,7 +702,7 @@ public sealed class RunSessionCard
     /// <summary>Son rang parmi les cartes jouées de la partie (1, 2…) : l'ordre de jeu, sans dépendre de l'heure.</summary>
     public short? PlayOrder { get; private set; }
 
-    /// <summary>« Trois choix » : les deux morceaux proposés à côté de la bonne réponse, figés quand la carte est jouée.</summary>
+    /// <summary>« QCM » : les deux morceaux proposés à côté de la bonne réponse, figés quand la carte est jouée.</summary>
     public int[]? DecoyTrackIds { get; private set; }
 
     /// <summary>La carte durable lâchée à un palier : la dernière manche où elle agissait (celle qui précède l'offre où elle a été lâchée).</summary>

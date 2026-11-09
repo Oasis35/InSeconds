@@ -1031,7 +1031,7 @@
     },
     "cards": {
       "three_choices": {
-        "name": "Three choices"
+        "name": "Multiple choice"
       },
       "joker": {
         "name": "Joker"
@@ -1046,13 +1046,19 @@
         "name": "Extension"
       },
       "net": {
-        "name": "Safety net"
+        "name": "Second chance"
       },
       "lower_target": {
-        "name": "Lower target"
+        "name": "Discount"
       },
       "hourglass": {
-        "name": "Hourglass"
+        "name": "Grace"
+      },
+      "genre": {
+        "name": "Genre"
+      },
+      "either_or": {
+        "name": "Either or"
       }
     },
     "difficulty": {
@@ -1074,7 +1080,9 @@
       "hourglass": "+{{seconds}} on the clock",
       "extend": "{{seconds}} listen",
       "choicesHint": "Only one is right",
-      "refused": "That card couldn't be played."
+      "refused": "That card couldn't be played.",
+      "netQuarter": "A miss counts a quarter",
+      "eitherOr": "Artist or title: one is enough"
     },
     "ghost": {
       "ahead": "{{ points }} pts ahead",

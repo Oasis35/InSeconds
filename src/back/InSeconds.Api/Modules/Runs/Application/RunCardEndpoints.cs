@@ -159,7 +159,7 @@ public static class PassRunOfferEndpoint
 }
 
 /// <summary>
-/// La partie, et ce que la carte à jouer demande de savoir du morceau en cours : son année est-elle connue, quels leurres pour « Trois choix »
+/// La partie, et ce que la carte à jouer demande de savoir du morceau en cours : son année est-elle connue, quels leurres pour « QCM »
 /// (deux, sinon la carte ne se joue pas).
 /// </summary>
 public sealed record CardPlay(PlayableRun Run, bool YearKnown, IReadOnlyList<int>? Decoys);
@@ -197,7 +197,7 @@ public static class PlayRunCardEndpoint
     /// le morceau en cours avec ses effets (année, initiales, trois réponses, écoute, chrono), servis à cet instant pour ce morceau seulement ; pour le
     /// Joker, le nouveau morceau et son extrait. 404 <c>runs.card_not_found</c>, 409 <c>runs.card_already_active</c> (même carte déjà jouée sur ce
     /// morceau, ou Seuil abaissé déjà joué dans la manche), 409 <c>runs.card_unavailable</c> (plus de réserve pour le Joker, pas de chrono pour le
-    /// Sablier), et les refus du morceau en cours (piège 35).
+    /// Délai), et les refus du morceau en cours (piège 35).
     /// </summary>
     [Authorize]
     [WolverinePost("/api/runs/sessions/{id}/cards/{slot}/play", OperationId = "playRunCard")]

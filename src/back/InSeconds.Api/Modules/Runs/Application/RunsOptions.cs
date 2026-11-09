@@ -48,7 +48,7 @@ public sealed class RunsOptions
     public const int DefaultHandSize = 2;
     public const decimal DefaultExtendBonusSeconds = 5m;
 
-    /// <summary>L'écoute d'une « Rallonge » des playlists d'avant (cartes non durables).</summary>
+    /// <summary>L'écoute d'une « Prolongation » des playlists d'avant (cartes non durables).</summary>
     public const decimal LegacyExtendListenSeconds = 20m;
     public const int DefaultHourglassSeconds = 15;
     public const int DefaultLowerTargetPercent = 10;

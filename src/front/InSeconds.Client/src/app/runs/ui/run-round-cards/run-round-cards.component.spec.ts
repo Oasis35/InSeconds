@@ -4,10 +4,10 @@ import fr from '../../../../../public/i18n/fr.json';
 import { RunHandCard, RunTrackEffects } from '../../domain/run-cards';
 import { RunRoundCardsComponent } from './run-round-cards.component';
 
-const VALUES = { extendListenSeconds: 20, hourglassSeconds: 30, lowerTargetPercent: 25 };
+const VALUES = { extendListenSeconds: 20, hourglassSeconds: 30, lowerTargetPercent: 25, durable: false, extendBonusSeconds: 0 };
 
 const EFFECTS = (overrides: Partial<RunTrackEffects> = {}): RunTrackEffects => ({
-  cards: [], year: null, artistInitials: null, titleInitials: null, choices: null, clockBonusSeconds: 0, ...overrides,
+  cards: [], year: null, artistInitials: null, titleInitials: null, choices: null, clockBonusSeconds: 0, genre: null, ...overrides,
 });
 
 describe('RunRoundCardsComponent', () => {

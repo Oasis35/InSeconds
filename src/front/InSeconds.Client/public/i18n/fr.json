@@ -1031,7 +1031,7 @@
     },
     "cards": {
       "three_choices": {
-        "name": "Trois choix"
+        "name": "QCM"
       },
       "joker": {
         "name": "Joker"
@@ -1043,16 +1043,22 @@
         "name": "Initiales"
       },
       "extend": {
-        "name": "Rallonge"
+        "name": "Prolongation"
       },
       "net": {
-        "name": "Filet"
+        "name": "Repêchage"
       },
       "lower_target": {
-        "name": "Seuil abaissé"
+        "name": "Rabais"
       },
       "hourglass": {
-        "name": "Sablier"
+        "name": "Délai"
+      },
+      "genre": {
+        "name": "Genre"
+      },
+      "either_or": {
+        "name": "L’un ou l’autre"
       }
     },
     "difficulty": {
@@ -1074,7 +1080,9 @@
       "hourglass": "+{{seconds}} au chrono",
       "extend": "Écoute de {{seconds}}",
       "choicesHint": "Une seule est juste",
-      "refused": "Cette carte n'a pas pu être jouée."
+      "refused": "Cette carte n'a pas pu être jouée.",
+      "netQuarter": "Un raté compte un quart",
+      "eitherOr": "Artiste ou titre : un seul suffit"
     },
     "ghost": {
       "ahead": "{{ points }} pts d’avance",

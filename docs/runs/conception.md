@@ -117,7 +117,7 @@ Même façon de faire que le reste du projet : `module.raison` en snake_case, un
 Génériques existants : `common.unauthorized` (401), `common.bad_request` (400), `common.not_found` (404 des routes admin, joueur inconnu ou invité), `common.too_many_requests` (429), `common.unexpected` (500).
 
 ### 3.7 Réglages `Runs:` (relus à chaud, `RunsOptions` + `Effective…`)
-`Rounds` (4), `TracksPerRound` (5), `ListenSeconds` (10), `ThresholdPercents` ([45,55,65,75] ; [40,50,60,70] au proto 1), `MinMultiplier`/`MaxMultiplier` (1,0 / 2,0, moins de 10), `Discs` (liste de clés). Pas de temps de réponse. Contrôlés **au démarrage** (refus, comme `DailyOptionsStartupCheck`) **et à l'usage** : un réglage incohérent changé à chaud est journalisé une fois et le lancement d'un run retombe sur les valeurs par défaut (comme `DailyRules`).
+`Rounds` (4), `TracksPerRound` (5), `ListenSeconds` (10), `ThresholdPercents` ([45,55,68,80] ; [40,50,60,70] au proto 1), `MinMultiplier`/`MaxMultiplier` (1,0 / 2,0, moins de 10), `Discs` (liste de clés). Pas de temps de réponse. Contrôlés **au démarrage** (refus, comme `DailyOptionsStartupCheck`) **et à l'usage** : un réglage incohérent changé à chaud est journalisé une fois et le lancement d'un run retombe sur les valeurs par défaut (comme `DailyRules`).
 
 ## 4. Données : schéma `runs`
 
