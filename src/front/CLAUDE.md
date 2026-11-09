@@ -58,6 +58,7 @@ src/front/InSeconds.Client/
     │   ├── errors/            # AppError, table code → message, remontée des erreurs, ErrorHandler global
     │   ├── http/              # intercepteurs : cookie, remontée des 5xx
     │   ├── i18n/              # LanguageService + test de synchronisation FR/EN
+    │   ├── seo/               # PageMetaService : canonique, og:url, noindex, titre et description (page, Open Graph, X) des pages légales et des archives à chaque navigation ; pas de hreflang, les deux langues partagent les mêmes adresses (index.html est le même pour toutes les routes ; sans canonique propre, Google les prenait pour des doublons)
     │   ├── session/           # SessionStore (joueur courant, rempli par le domaine account)
     │   ├── store/             # withRequestStatus
     │   ├── clipboard/         # ClipboardService (copie, repli execCommand, piège 45)

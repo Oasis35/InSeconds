@@ -842,6 +842,7 @@
   },
   "legal": {
     "title": "Legal notice",
+    "metaDescription": "InSeconds legal notice: publisher, host and contact for the daily music blind test.",
     "updated": "Last updated: October 28, 2026",
     "intro": "InSeconds is a free music blind test game, available at https://inseconds.cc. This page gives the site's legal notice, in accordance with Article 6-III of French law n° 2004-575 of June 21, 2004 for confidence in the digital economy (LCEN). How your data is handled is described on the Privacy page.",
     "privacyLink": "See the Privacy page",
@@ -858,6 +859,7 @@
   },
   "privacy": {
     "title": "Privacy",
+    "metaDescription": "InSeconds privacy policy: data collected, retention periods and GDPR rights, with or without an account.",
     "updated": "Last updated: November 6, 2026",
     "intro": "InSeconds is a free music blind test game, available at https://inseconds.cc. It remains fully playable as a guest, without any account or registration; creating an account, using only an email address, is optional and lets you find your progress again on another device. This page describes the site's privacy policy, in accordance with the General Data Protection Regulation (GDPR, Regulation EU 2016/679). The publisher and the host are presented in the legal notice.",
     "legalLink": "See the legal notice",

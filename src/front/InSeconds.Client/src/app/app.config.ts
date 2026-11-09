@@ -16,6 +16,7 @@ import { GlobalErrorHandler } from './core/errors/global-error-handler';
 import { credentialsInterceptor } from './core/http/credentials.interceptor';
 import { httpErrorReportingInterceptor } from './core/http/http-error-reporting.interceptor';
 import { LanguageService } from './core/i18n/language.service';
+import { PageMetaService } from './core/seo/page-meta.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -32,6 +33,7 @@ export const appConfig: ApplicationConfig = {
       loader: provideTranslateHttpLoader({ prefix: 'i18n/', suffix: '.json' }),
     }),
     provideAppInitializer(() => inject(LanguageService).init()),
+    provideAppInitializer(() => inject(PageMetaService).init()),
     provideAccount(),
     provideRuns(),
     // Désactivé en dev (`ng serve`) : un service worker y servirait d'anciens fichiers.
