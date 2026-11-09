@@ -104,18 +104,13 @@ import { ButtonComponent } from '../../../ui/button/button.component';
                   {{ phase === 'submitting' ? '…' : ('gameplay.answer.validate' | translate) }}
                 </button>
               }
-              @if (inline()) {
-                <div class="flex justify-center">
-                  <button type="button" class="inline-flex items-center min-h-11 px-2 text-[15px] underline underline-offset-4 touch-manipulation disabled:opacity-50"
-                    style="color:var(--text-light)" [disabled]="phase === 'submitting' || locked()" (click)="round.askSkip()" data-testid="round-skip">
-                    {{ 'gameplay.round.skip' | translate }}
-                  </button>
-                </div>
-              } @else {
-                <button appButton type="button" variant="neutral" [block]="true" [disabled]="phase === 'submitting'" (click)="round.askSkip()">
+              <!-- « Passer » est un lien discret, le même dans tous les modes (une action sans sens propre ne prend pas la place du bouton principal). -->
+              <div class="flex justify-center">
+                <button type="button" class="inline-flex items-center min-h-11 px-2 text-[15px] underline underline-offset-4 touch-manipulation disabled:opacity-50"
+                  style="color:var(--text-light)" [disabled]="phase === 'submitting' || locked()" (click)="round.askSkip()" data-testid="round-skip">
                   {{ 'gameplay.round.skip' | translate }}
                 </button>
-              }
+              </div>
             }
           </form>
         }
