@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using InSeconds.Api.Modules.Catalogue.Application;
 using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Testing.Deezer;
@@ -283,6 +284,25 @@ public class RefreshPreviewsTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Empty(await GenresOfAsync(track.Id));
         Assert.Equal(1L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.tracks WHERE id = {track.Id} AND genres_checked_at IS NOT NULL"));
         Assert.DoesNotContain(_app.Deezer.Requests, r => r.StartsWith("/album/"));
+    }
+
+    [Fact]
+    public async Task GenreSaisiALaMain_EstReluChezDeezerChaqueMois_EtLesGenresDeDeezerLEcrasent()
+    {
+        var track = await _app.AddAsync(1001);
+        await _app.Admin().PatchAsJsonAsync($"/api/admin/catalogue/tracks/{track.Id}", new RenameTrack("A", "T", "Blues"), Ct);
+        _app.Deezer.Reset();
+
+        // Lu il y a moins d'un mois : rien n'est redemandé, le genre saisi reste.
+        await RunAsync();
+        Assert.DoesNotContain(_app.Deezer.Requests, r => r.StartsWith("/album/"));
+        Assert.Equal(["Blues"], await GenresOfAsync(track.Id));
+
+        // Plus d'un mois : l'album est relu, et les genres de Deezer écrasent celui saisi.
+        _app.Time.Advance(TimeSpan.FromDays(31));
+        await RunAsync();
+        Assert.Equal(["Dance", "Rap/Hip Hop"], await GenresOfAsync(track.Id));
+        Assert.Equal(0L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.tracks WHERE id = {track.Id} AND genres_manual"));
     }
 
     [Fact]

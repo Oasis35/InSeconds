@@ -635,6 +635,12 @@
           },
           "title": {
             "type": "string"
+          },
+          "genre": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

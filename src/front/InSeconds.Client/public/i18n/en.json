@@ -379,7 +379,8 @@
       },
       "colFound": "Found",
       "foundHint": "Over {{ count }} answers",
-      "hardestFirst": "Least found"
+      "hardestFirst": "Least found",
+      "noGenre": "No genre"
     },
     "deleteModal": {
       "title": "Confirm deletion",
@@ -398,7 +399,9 @@
       "todayWarning": "This track is in today's challenge: players who haven't answered yet will be graded against the new name.",
       "cancel": "Cancel",
       "save": "Save",
-      "saving": "Saving..."
+      "saving": "Saving...",
+      "genre": "Genre",
+      "genreHint": "Deezer is checked for the album genre every month: if it gives one, it replaces the one entered here. If Deezer has none, yours is kept."
     },
     "addPanel": {
       "title": "Add a track",
@@ -842,6 +845,7 @@
   },
   "legal": {
     "title": "Legal notice",
+    "metaDescription": "InSeconds legal notice: publisher, host and contact for the daily music blind test.",
     "updated": "Last updated: October 28, 2026",
     "intro": "InSeconds is a free music blind test game, available at https://inseconds.cc. This page gives the site's legal notice, in accordance with Article 6-III of French law n° 2004-575 of June 21, 2004 for confidence in the digital economy (LCEN). How your data is handled is described on the Privacy page.",
     "privacyLink": "See the Privacy page",
@@ -858,6 +862,7 @@
   },
   "privacy": {
     "title": "Privacy",
+    "metaDescription": "InSeconds privacy policy: data collected, retention periods and GDPR rights, with or without an account.",
     "updated": "Last updated: November 6, 2026",
     "intro": "InSeconds is a free music blind test game, available at https://inseconds.cc. It remains fully playable as a guest, without any account or registration; creating an account, using only an email address, is optional and lets you find your progress again on another device. This page describes the site's privacy policy, in accordance with the General Data Protection Regulation (GDPR, Regulation EU 2016/679). The publisher and the host are presented in the legal notice.",
     "legalLink": "See the legal notice",
@@ -1029,7 +1034,7 @@
     },
     "cards": {
       "three_choices": {
-        "name": "Three choices"
+        "name": "Multiple choice"
       },
       "joker": {
         "name": "Joker"
@@ -1044,13 +1049,19 @@
         "name": "Extension"
       },
       "net": {
-        "name": "Safety net"
+        "name": "Second chance"
       },
       "lower_target": {
-        "name": "Lower target"
+        "name": "Discount"
       },
       "hourglass": {
-        "name": "Hourglass"
+        "name": "Grace"
+      },
+      "genre": {
+        "name": "Genre"
+      },
+      "either_or": {
+        "name": "Either or"
       }
     },
     "difficulty": {
@@ -1072,7 +1083,9 @@
       "hourglass": "+{{seconds}} on the clock",
       "extend": "{{seconds}} listen",
       "choicesHint": "Only one is right",
-      "refused": "That card couldn't be played."
+      "refused": "That card couldn't be played.",
+      "netQuarter": "A miss counts a quarter",
+      "eitherOr": "Artist or title: one is enough"
     },
     "ghost": {
       "ahead": "{{ points }} pts ahead",

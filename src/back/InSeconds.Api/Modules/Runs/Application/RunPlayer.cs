@@ -22,6 +22,7 @@ public sealed record LoadedRun(RunSession Session, RunChallenge Challenge, IRead
 public sealed class RunPlayer(
     ITrackDirectory directory,
     Gameplay.Contracts.ISeededShuffle shuffle,
+    RunChoiceDealer choiceDealer,
     ITrackPreviews previews,
     ITrackWaveforms waveforms,
     IRunsStore store,
@@ -76,7 +77,7 @@ public sealed class RunPlayer(
                 string? waveform = null;
                 if (preview.Url is not null && (await waveforms.GetAsync([trackId], ct)).TryGetValue(trackId, out var shape))
                     waveform = Convert.ToBase64String(shape);
-                current = RunViews.Current(session, challenge, track, preview.Url, waveform) with { Effects = Effects(run, track.Position) };
+                current = RunViews.Current(session, challenge, track, preview.Url, waveform) with { Effects = await EffectsAsync(run, track.Position, ct) };
                 // Le chrono du morceau ne peut pas partir plus tard qu'un peu après ce premier envoi (une reprise ne le remet pas à zéro).
                 if (preview.Url is not null)
                     session.ServeCurrent(time.GetUtcNow());
@@ -122,30 +123,45 @@ public sealed class RunPlayer(
     }
 
     /// <summary>
-    /// Ce que les cartes actives sur le morceau de cette position révèlent ou changent, pour lui seul (piège 31) ; vide sans carte. « Trois choix » :
-    /// la bonne réponse et les deux leurres figés quand la carte a été jouée, dans un ordre tiré à la graine de la playlist (le même à la reprise).
+    /// Ce que les cartes actives sur le morceau de cette position révèlent ou changent, pour lui seul (piège 31) ; vide sans carte. Playlist durable :
+    /// les cartes de la main, recalculées à chaque envoi (les leurres du QCM se retirent de la même graine, avec des morceaux proches de la bonne
+    /// réponse). Playlist d'avant : les cartes jouées sur ce morceau, « QCM » avec les deux leurres figés quand la carte a été jouée.
     /// </summary>
-    private RunTrackEffectsResponse? Effects(LoadedRun run, int position)
+    private async Task<RunTrackEffectsResponse?> EffectsAsync(LoadedRun run, int position, CancellationToken ct)
     {
-        var active = run.Session.ActiveCardsAt(position);
+        var rules = run.Challenge.Rules;
+        var active = run.Session.ActiveCardsAt(rules, position);
         if (active.Count == 0)
             return null;
         var info = run.InfoAt(position);
         IReadOnlyList<RunChoiceResponse>? choices = null;
         if (active.Contains(RunCard.ThreeChoices))
         {
-            var decoys = run.Session.Cards.Where(c => c.PlayedPosition == position && c.DecoyTrackIds is not null)
-                .OrderBy(c => c.PlayOrder).LastOrDefault()?.DecoyTrackIds ?? [];
             var options = new List<RunChoiceResponse> { new(info.Artist, info.DisplayTitle) };
-            options.AddRange(decoys.Where(run.Tracks.ContainsKey).Select(id => new RunChoiceResponse(run.Tracks[id].Artist, run.Tracks[id].DisplayTitle)));
-            choices = shuffle.Shuffle(options, unchecked((run.Challenge.Seed * 31) + position + 1));
+            if (rules.Cards?.Durable == true)
+            {
+                var decoyIds = await choiceDealer.DecoysAsync(run.Challenge, position, info, ct);
+                var decoys = decoyIds.Count == 0 ? new Dictionary<int, TrackInfo>() : await directory.GetAsync(decoyIds, ct);
+                options.AddRange(decoyIds.Where(decoys.ContainsKey).Select(id => new RunChoiceResponse(decoys[id].Artist, decoys[id].DisplayTitle)));
+            }
+            else
+            {
+                var decoyIds = run.Session.Cards.Where(c => c.PlayedPosition == position && c.DecoyTrackIds is not null)
+                    .OrderBy(c => c.PlayOrder).LastOrDefault()?.DecoyTrackIds ?? [];
+                options.AddRange(decoyIds.Where(run.Tracks.ContainsKey).Select(id => new RunChoiceResponse(run.Tracks[id].Artist, run.Tracks[id].DisplayTitle)));
+            }
+
+            // Sans deux leurres, la carte ne montrerait que la réponse : elle ne montre rien.
+            if (options.Count == RunChoices.DecoyCount + 1)
+                choices = shuffle.Shuffle(options, unchecked((run.Challenge.Seed * 31) + position + 1));
         }
 
         var initials = active.Contains(RunCard.Initials);
         return new RunTrackEffectsResponse(
             active.Select(RunCards.KeyOf).ToList(), active.Contains(RunCard.Year) ? info.ReleaseYear : null,
             initials ? RunInitials.Of(info.Artist) : null, initials ? RunInitials.Of(info.DisplayTitle) : null, choices,
-            position == run.Session.NextPosition ? run.Session.ClockBonus(run.Challenge.Rules) : 0);
+            position == run.Session.NextPosition ? run.Session.ClockBonus(rules) : 0,
+            active.Contains(RunCard.Genre) ? info.Genres.FirstOrDefault() : null);
     }
 
     // Le record (partie gagnée ou perdue), dans la transaction de fin : une partie abandonnée ne compte pas.
@@ -253,7 +269,8 @@ internal static class RunViews
             session.OpenOffer(challenge) is { } offer ? new RunCardOfferResponse(offer.AfterRound, offer.Cards.Select(RunCards.KeyOf).ToList()) : null,
             rules.Cards?.HandSize ?? 0,
             session.IsPending ? DiscOf(DiscLadder.Of(session.RoundsPassed + 1, discs)) : null,
-            rules.Cards is { } cards ? new RunCardValuesResponse(cards.ExtendListenSeconds, cards.HourglassSeconds, cards.LowerTargetPercent) : null,
+            rules.Cards is { } cards ? new RunCardValuesResponse(
+                cards.ExtendListenSeconds, cards.HourglassSeconds, cards.LowerTargetPercent, cards.Durable, cards.ExtendBonusSeconds) : null,
             ghost);
     }
 

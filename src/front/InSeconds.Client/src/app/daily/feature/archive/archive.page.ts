@@ -1,9 +1,9 @@
 import {
   ChangeDetectionStrategy, Component, DestroyRef, Injector, OnInit, computed, effect, inject,
 } from '@angular/core';
-import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { PageMetaService } from '../../../core/seo/page-meta.service';
 import { AudioPreviewPlayer } from '../../../core/audio-preview/audio-preview.player';
 import { PreviewTrackData, PreviewTrackDialog } from '../../../core/audio-preview/preview-track.dialog';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
@@ -46,8 +46,7 @@ export class ArchivePage implements OnInit {
   private readonly modal = inject(ModalService);
   private readonly injector = inject(Injector);
   private readonly translate = inject(TranslateService);
-  private readonly title = inject(Title);
-  private readonly meta = inject(Meta);
+  private readonly pageMeta = inject(PageMetaService);
 
   protected readonly answerAt = answerAt;
 
@@ -68,12 +67,7 @@ export class ArchivePage implements OnInit {
   });
 
   constructor() {
-    const siteTitle = this.title.getTitle();
-    const siteDescription = this.meta.getTag('name="description"')?.content ?? null;
-    inject(DestroyRef).onDestroy(() => {
-      this.title.setTitle(siteTitle);
-      if (siteDescription !== null) this.meta.updateTag({ name: 'description', content: siteDescription });
-    });
+    inject(DestroyRef).onDestroy(() => this.pageMeta.resetPageText());
 
     // Titre et description du jour affiché, dans la langue choisie.
     effect(() => {
@@ -83,8 +77,7 @@ export class ArchivePage implements OnInit {
       const date = formatGameDate(day.date, lang);
       this.translate.get(['daily.archive.pageTitle', 'daily.archive.pageDescription'], { date, artists: artistsSummary(day) })
         .subscribe(t => {
-          this.title.setTitle(t['daily.archive.pageTitle']);
-          this.meta.updateTag({ name: 'description', content: t['daily.archive.pageDescription'] });
+          this.pageMeta.setPageText(t['daily.archive.pageTitle'], t['daily.archive.pageDescription']);
         });
     });
   }

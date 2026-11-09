@@ -2,10 +2,13 @@ using InSeconds.Api.Modules.Gameplay.Contracts;
 
 namespace InSeconds.Api.Modules.Runs.Domain;
 
-/// <summary>Un coup de pouce (une carte) du proto 2, à usage unique (colonne <c>card</c> : la valeur est stockée).</summary>
+/// <summary>
+/// Un coup de pouce (une carte), la valeur est stockée (colonne <c>card</c>). Dans une playlist « durable » (<see cref="RunCardRules.Durable"/>), une
+/// carte agit tant qu'elle est en main, sauf le Joker, à usage unique ; dans une playlist plus ancienne, toutes se jouaient une fois sur un morceau.
+/// </summary>
 public enum RunCard : short
 {
-    /// <summary>« Trois choix » : la saisie est remplacée par trois réponses, une seule est juste.</summary>
+    /// <summary>« QCM » : la saisie est remplacée par trois réponses, une seule est juste.</summary>
     ThreeChoices = 1,
 
     /// <summary>« Joker » : change de morceau (le suivant de la réserve de la manche).</summary>
@@ -17,17 +20,23 @@ public enum RunCard : short
     /// <summary>« Initiales » : les initiales de l'artiste et du titre.</summary>
     Initials = 4,
 
-    /// <summary>« Rallonge » : une écoute plus longue (20 s au lieu de 10).</summary>
+    /// <summary>« Prolongation » : une écoute plus longue (20 s au lieu de 10).</summary>
     Extend = 5,
 
-    /// <summary>« Filet » : un morceau raté compte comme à moitié trouvé.</summary>
+    /// <summary>« Repêchage » : un morceau raté compte comme à moitié trouvé.</summary>
     Net = 6,
 
-    /// <summary>« Seuil abaissé » : l'objectif de la manche baisse (20 %), pour toute la manche.</summary>
+    /// <summary>« Rabais » : l'objectif de la manche baisse (20 %), pour toute la manche.</summary>
     LowerTarget = 7,
 
-    /// <summary>« Sablier » : du temps en plus au chrono du morceau (30 s).</summary>
+    /// <summary>« Délai » : du temps en plus au chrono du morceau (30 s).</summary>
     Hourglass = 8,
+
+    /// <summary>« Genre » : le genre de l'album du morceau (le premier, par ordre alphabétique), affiché seul.</summary>
+    Genre = 9,
+
+    /// <summary>« L'un ou l'autre » : trouver l'artiste ou le titre suffit pour les points du morceau entier.</summary>
+    EitherOr = 10,
 }
 
 /// <summary>Les noms des cartes dans l'API et les réglages, jamais un texte affiché (le front les traduit).</summary>
@@ -45,6 +54,8 @@ public static class RunCards
         RunCard.Net => "net",
         RunCard.LowerTarget => "lower_target",
         RunCard.Hourglass => "hourglass",
+        RunCard.Genre => "genre",
+        RunCard.EitherOr => "either_or",
         _ => throw new ArgumentOutOfRangeException(nameof(card)),
     };
 
@@ -61,13 +72,18 @@ public sealed record RunCardOffer(int AfterRound, IReadOnlyList<RunCard> Cards);
 /// <param name="HandSize">Les emplacements de la main (2).</param>
 /// <param name="StartCard">La carte en main au départ du run ; vide si aucune.</param>
 /// <param name="Offers">Une offre par palier.</param>
-/// <param name="ExtendListenSeconds">L'écoute d'un morceau sous « Rallonge ».</param>
-/// <param name="HourglassSeconds">Les secondes ajoutées au chrono par « Sablier ».</param>
-/// <param name="LowerTargetPercent">La baisse de l'objectif de la manche sous « Seuil abaissé », en pourcentage.</param>
+/// <param name="ExtendListenSeconds">L'écoute d'un morceau sous « Prolongation ».</param>
+/// <param name="HourglassSeconds">Les secondes ajoutées au chrono par « Délai ».</param>
+/// <param name="LowerTargetPercent">La baisse de l'objectif de la manche sous « Rabais », en pourcentage.</param>
 /// <param name="Pool">Les cartes que la playlist pouvait tirer (les réglages du moment).</param>
+/// <param name="Durable">
+/// Les cartes agissent tant qu'elles sont en main (sauf le Joker, à usage unique), sans clic, et aucune carte n'est offerte au départ ; faux pour une
+/// playlist d'avant : ses cartes se jouent une fois sur un morceau.
+/// </param>
+/// <param name="ExtendBonusSeconds">Durable : les secondes que « Prolongation » ajoute à l'écoute d'un morceau.</param>
 public sealed record RunCardRules(
     int HandSize, RunCard? StartCard, IReadOnlyList<RunCardOffer> Offers, decimal ExtendListenSeconds, int HourglassSeconds, int LowerTargetPercent,
-    IReadOnlyList<RunCard> Pool)
+    IReadOnlyList<RunCard> Pool, bool Durable = false, decimal ExtendBonusSeconds = 0m)
 {
     /// <summary>L'offre du palier qui suit cette manche, vide s'il n'y en a pas.</summary>
     public IReadOnlyList<RunCard> OfferAfter(int round) => Offers.FirstOrDefault(o => o.AfterRound == round)?.Cards ?? [];
@@ -95,7 +111,8 @@ public sealed class RunCardDealer(ISeededShuffle shuffle)
         List<RunCard> PoolFor(int round) =>
             settings.Pool.Distinct().Where(c => c != RunCard.Joker || roundsWithReserve.Contains(round)).Order().ToList();
 
-        var startPool = PoolFor(1);
+        // Une playlist durable ne donne rien au départ : la première manche se joue sans carte.
+        var startPool = settings.Durable ? new List<RunCard>() : PoolFor(1);
         var start = startPool.Count == 0 ? (RunCard?)null : shuffle.Shuffle(startPool, unchecked(seed * 31 + 7))[0];
         var offers = Enumerable.Range(1, rules.Rounds - 1)
             .Select(round => new RunCardOffer(round, shuffle.Shuffle(PoolFor(round + 1), unchecked(seed * 31 + 7 + round)).Take(OfferSize).ToList()))
@@ -106,7 +123,7 @@ public sealed class RunCardDealer(ISeededShuffle shuffle)
 }
 
 /// <summary>
-/// « Trois choix » : un morceau peut servir de leurre s'il est hors de la playlist (ni joué, ni en réserve) et d'un autre artiste que la bonne
+/// « QCM » : un morceau peut servir de leurre s'il est hors de la playlist (ni joué, ni en réserve) et d'un autre artiste que la bonne
 /// réponse et que les leurres déjà retenus.
 /// </summary>
 public static class RunChoices

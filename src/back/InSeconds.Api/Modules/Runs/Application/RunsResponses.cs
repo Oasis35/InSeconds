@@ -57,13 +57,14 @@ public sealed record RunCurrentTrackResponse(
 /// <param name="Year">« Année » : l'année du morceau (vide si elle est inconnue).</param>
 /// <param name="ArtistInitials">« Initiales » : celles de chaque mot de l'artiste.</param>
 /// <param name="TitleInitials">« Initiales » : celles de chaque mot du titre.</param>
-/// <param name="Choices">« Trois choix » : trois réponses, une seule juste, dans un ordre qui ne la trahit pas.</param>
-/// <param name="ClockBonusSeconds">« Sablier » : les secondes ajoutées au chrono (0 sinon).</param>
+/// <param name="Choices">« QCM » : trois réponses, une seule juste, dans un ordre qui ne la trahit pas.</param>
+/// <param name="ClockBonusSeconds">« Délai » : les secondes ajoutées au chrono (0 sinon).</param>
+/// <param name="Genre">« Genre » : le premier genre de l'album du morceau (vide s'il n'en a pas en base).</param>
 public sealed record RunTrackEffectsResponse(
     IReadOnlyList<string> Cards, int? Year, IReadOnlyList<string>? ArtistInitials, IReadOnlyList<string>? TitleInitials,
-    IReadOnlyList<RunChoiceResponse>? Choices, int ClockBonusSeconds);
+    IReadOnlyList<RunChoiceResponse>? Choices, int ClockBonusSeconds, string? Genre = null);
 
-/// <summary>Une réponse proposée par « Trois choix ».</summary>
+/// <summary>Une réponse proposée par « QCM ».</summary>
 public sealed record RunChoiceResponse(string Artist, string Title);
 
 /// <summary>Une carte de la main.</summary>
@@ -166,10 +167,13 @@ public sealed record RunSessionResponse(
 public sealed record RunGhostResponse(string? Pseudo, int Total, int? StoppedAtRound);
 
 /// <summary>Ce que valent les coups de pouce d'une playlist, figés avec elle : l'écran les affiche, il n'en invente aucun.</summary>
-/// <param name="ExtendListenSeconds">L'écoute d'un morceau sous « Rallonge ».</param>
-/// <param name="HourglassSeconds">Les secondes que « Sablier » ajoute au chrono.</param>
-/// <param name="LowerTargetPercent">La baisse de l'objectif de la manche sous « Seuil abaissé », en pourcentage.</param>
-public sealed record RunCardValuesResponse(decimal ExtendListenSeconds, int HourglassSeconds, int LowerTargetPercent);
+/// <param name="ExtendListenSeconds">L'écoute d'un morceau sous « Prolongation » (playlist d'avant, non durable).</param>
+/// <param name="HourglassSeconds">Les secondes que « Délai » ajoute au chrono.</param>
+/// <param name="LowerTargetPercent">La baisse de l'objectif de la manche sous « Rabais », en pourcentage.</param>
+/// <param name="Durable">Les cartes agissent tant qu'elles sont en main, sans clic (sauf le Joker) ; faux pour une playlist d'avant.</param>
+/// <param name="ExtendBonusSeconds">Durable : les secondes que « Prolongation » ajoute à l'écoute.</param>
+public sealed record RunCardValuesResponse(
+    decimal ExtendListenSeconds, int HourglassSeconds, int LowerTargetPercent, bool Durable = false, decimal ExtendBonusSeconds = 0m);
 
 /// <summary>
 /// Ce que rendent le lancement, le démarrage ou la reprise, la redemande d'extrait et la réponse : l'état à jour, puis, dans l'ordre des manches, ce

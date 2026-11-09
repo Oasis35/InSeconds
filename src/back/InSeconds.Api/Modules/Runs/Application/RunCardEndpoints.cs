@@ -78,7 +78,7 @@ public static class DropRunCardEndpoint
         var problem = RunSessionAccess.Check(loaded, position: null);
         if (!ReferenceEquals(problem, WolverineContinue.NoProblems))
             return problem;
-        return RunsProblems.ForCard(loaded!.Session.CanDrop(slot));
+        return RunsProblems.ForCard(loaded!.Session.CanDrop(loaded.Challenge, slot));
     }
 
     /// <summary>
@@ -95,7 +95,7 @@ public static class DropRunCardEndpoint
     {
         var (session, challenge) = loaded;
         var dropped = session.Hand.FirstOrDefault(c => c.Slot == slot)?.Card;
-        session.DropCard(slot, time.GetUtcNow());
+        session.DropCard(challenge, slot, time.GetUtcNow());
         if (dropped is { } card)
             metrics.CardDropped(RunCards.KeyOf(card));
         return await player.StateAsync(await player.LoadAsync(session, challenge, ct), ct);
@@ -159,7 +159,7 @@ public static class PassRunOfferEndpoint
 }
 
 /// <summary>
-/// La partie, et ce que la carte à jouer demande de savoir du morceau en cours : son année est-elle connue, quels leurres pour « Trois choix »
+/// La partie, et ce que la carte à jouer demande de savoir du morceau en cours : son année est-elle connue, quels leurres pour « QCM »
 /// (deux, sinon la carte ne se joue pas).
 /// </summary>
 public sealed record CardPlay(PlayableRun Run, bool YearKnown, IReadOnlyList<int>? Decoys);
@@ -196,8 +196,8 @@ public static class PlayRunCardEndpoint
     /// <c>POST /api/runs/sessions/{id}/cards/{slot}/play</c> : joue une carte de la main sur le morceau en cours (<c>position</c>). Rend la partie et
     /// le morceau en cours avec ses effets (année, initiales, trois réponses, écoute, chrono), servis à cet instant pour ce morceau seulement ; pour le
     /// Joker, le nouveau morceau et son extrait. 404 <c>runs.card_not_found</c>, 409 <c>runs.card_already_active</c> (même carte déjà jouée sur ce
-    /// morceau, ou Seuil abaissé déjà joué dans la manche), 409 <c>runs.card_unavailable</c> (plus de réserve pour le Joker, pas de chrono pour le
-    /// Sablier), et les refus du morceau en cours (piège 35).
+    /// morceau, ou Rabais déjà joué dans la manche), 409 <c>runs.card_unavailable</c> (plus de réserve pour le Joker, pas de chrono pour le
+    /// Délai), et les refus du morceau en cours (piège 35).
     /// </summary>
     [Authorize]
     [WolverinePost("/api/runs/sessions/{id}/cards/{slot}/play", OperationId = "playRunCard")]

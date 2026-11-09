@@ -1,14 +1,17 @@
 import { AnswerSuggestion } from '../../gameplay/domain/answer';
 
 /**
- * Les coups de pouce du mode Run (proto 2) en TypeScript pur : leurs noms d'API, la main, l'offre d'un palier et le signe écrit dans le coin de
+ * Les coups de pouce du mode Run en TypeScript pur : leurs noms d'API, la main, l'offre d'un palier et le signe écrit dans le coin de
  * chaque carte. Le serveur tire, tient le compte et calcule chaque effet : le front affiche.
  */
 
 /** Un coup de pouce, par son nom d'API (le serveur le donne, les traductions sont sous `runs.cards.<nom>`). */
-export type RunCardKey = 'three_choices' | 'joker' | 'year' | 'initials' | 'extend' | 'net' | 'lower_target' | 'hourglass';
+export type RunCardKey =
+  | 'three_choices' | 'joker' | 'year' | 'initials' | 'extend' | 'net' | 'lower_target' | 'hourglass' | 'genre' | 'either_or';
 
-export const RUN_CARDS: readonly RunCardKey[] = ['three_choices', 'joker', 'year', 'initials', 'extend', 'net', 'lower_target', 'hourglass'];
+export const RUN_CARDS: readonly RunCardKey[] = [
+  'three_choices', 'joker', 'year', 'initials', 'extend', 'net', 'lower_target', 'hourglass', 'genre', 'either_or',
+];
 
 export const isRunCard = (key: string): key is RunCardKey => (RUN_CARDS as readonly string[]).includes(key);
 
@@ -29,10 +32,17 @@ export interface RunCardValues {
   readonly extendListenSeconds: number;
   readonly hourglassSeconds: number;
   readonly lowerTargetPercent: number;
+  /** Les cartes agissent tant qu'elles sont en main, sans clic (sauf le Joker) ; faux pour une playlist d'avant, dont les cartes se jouent une fois. */
+  readonly durable: boolean;
+  /** Durable : les secondes que la Prolongation ajoute à l'écoute. */
+  readonly extendBonusSeconds: number;
 }
 
+/** Cette carte se joue d'un toucher : toutes dans une playlist d'avant, le Joker seul dans une playlist durable (les autres agissent en main). */
+export const isPlayable = (card: RunCardKey, values: RunCardValues | null): boolean => !values?.durable || card === 'joker';
+
 /**
- * La couleur d'une carte (« une couleur = un sens ») : cyan pour ce qui touche au son et au temps (la Rallonge allonge l'écoute, le Sablier le
+ * La couleur d'une carte (« une couleur = un sens ») : cyan pour ce qui touche au son et au temps (la Prolongation allonge l'écoute, le Délai le
  * chrono), à la couleur du joueur pour les autres. `rgb` : la même couleur pour un fond ou un contour transparent.
  */
 export function cardColor(card: RunCardKey): { readonly color: string; readonly rgb: string } {
@@ -56,13 +66,18 @@ export function cardGlyph(card: RunCardKey, values: RunCardValues | null, lang =
     case 'initials':
       return 'A.B.';
     case 'extend':
-      return values ? `${values.extendListenSeconds} s` : '⏵';
+      if (!values) return '⏵';
+      return values.durable ? `+${values.extendBonusSeconds} s` : `${values.extendListenSeconds} s`;
     case 'net':
-      return '½';
+      return values?.durable ? '¼' : '½';
     case 'lower_target':
       return values ? lowerTargetLabel(values.lowerTargetPercent, lang) : '↓';
     case 'hourglass':
       return values ? `+${values.hourglassSeconds}` : '+';
+    case 'genre':
+      return '♪';
+    case 'either_or':
+      return 'A/T';
   }
 }
 
@@ -82,6 +97,8 @@ export interface RunTrackEffects {
   readonly titleInitials: readonly string[] | null;
   readonly choices: readonly AnswerSuggestion[] | null;
   readonly clockBonusSeconds: number;
+  /** « Genre » : le genre de l'album du morceau (vide s'il n'en a pas en base). */
+  readonly genre: string | null;
 }
 
 /** Ce qu'une carte jouée affiche dans la carte du morceau : ce qu'elle révèle (année, initiales, baisse), sinon son effet en clair. */
@@ -111,6 +128,8 @@ function playedValue(card: RunCardKey, effects: RunTrackEffects, values: RunCard
         : null;
     case 'lower_target':
       return values ? lowerTargetLabel(values.lowerTargetPercent, lang) : null;
+    case 'genre':
+      return effects.genre;
     default:
       return null;
   }

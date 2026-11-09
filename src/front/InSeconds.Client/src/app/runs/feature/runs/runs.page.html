@@ -50,7 +50,7 @@
                 }
                 @if (store.roundCards(); as cards) {
                   <app-run-round-cards roundAids [hand]="cards.hand" [effects]="cards.effects" [values]="cards.values" [listenSeconds]="cards.listenSeconds"
-                    [busy]="store.cardBusy()" [playable]="cards.playable" [refused]="cards.refused" [lang]="language.current()" (play)="store.playCard($event)" />
+                    [busy]="store.cardBusy()" [playable]="cards.playable" [refused]="cards.refused" [lang]="language.current()" (playCard)="store.playCard($event)" />
                 }
                 @if (store.revealed(); as revealed) {
                   <app-run-reveal roundReveal [track]="revealed" [peaks]="round.waveform()?.peaks ?? store.shapes()[revealed.position] ?? null"
@@ -74,7 +74,7 @@
             <app-run-palier class="flex-1 flex flex-col" [passed]="palier.passed" [rounds]="store.rounds()" [wonDiscs]="palier.wonDiscs"
               [nextRound]="palier.nextRound" [nextObjective]="palier.nextObjective" [nextDisc]="palier.nextDisc" [offer]="palier.offer"
               [hand]="palier.hand" [handSize]="palier.handSize" [values]="store.session()?.cardValues ?? null" [pending]="store.pendingCard()" [busy]="store.palierBusy()" [lang]="language.current()"
-              (pick)="store.pickCard($event)" (drop)="store.dropForPending($event)" (pass)="store.passOffer()" (next)="store.continueFromPalier()" />
+              (pick)="store.pickCard($event)" (dropCard)="store.dropForPending($event)" (pass)="store.passOffer()" (next)="store.continueFromPalier()" />
           </div>
         }
       }

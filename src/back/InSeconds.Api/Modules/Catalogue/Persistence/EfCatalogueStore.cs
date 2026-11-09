@@ -19,6 +19,19 @@ public sealed class EfCatalogueStore(InSecondsDbContext db) : ICatalogueStore
     public Task<Track?> FindWithGenresAsync(int id, CancellationToken ct) =>
         db.Set<Track>().Include(t => t.Genres).FirstOrDefaultAsync(t => t.Id == id, ct);
 
+    public async Task<Genre> FindOrAddGenreByNameAsync(string name, CancellationToken ct)
+    {
+        var lower = name.ToLowerInvariant();
+        var existing = await db.Set<Genre>().FirstOrDefaultAsync(g => g.Name.ToLower() == lower, ct);
+        if (existing is not null)
+            return existing;
+
+        var lowest = await db.Set<Genre>().MinAsync(g => (long?)g.Id, ct) ?? 0;
+        var created = new Genre(Math.Min(lowest, 0) - 1, name);
+        db.Add(created);
+        return created;
+    }
+
     public Task<bool> DeezerIdTakenAsync(long deezerTrackId, int? exceptTrackId, CancellationToken ct) =>
         db.Set<Track>().AnyAsync(t => t.DeezerTrackId == deezerTrackId && t.Id != exceptTrackId, ct);
 

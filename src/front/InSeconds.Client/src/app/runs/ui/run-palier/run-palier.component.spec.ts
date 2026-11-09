@@ -44,9 +44,9 @@ describe('RunPalierComponent', () => {
     const { element, text } = render();
 
     // Le signe dans le coin, puis le nom : deux éléments.
-    expect(text('run-offer-three_choices')).toBe('3Trois choix');
+    expect(text('run-offer-three_choices')).toBe('3QCM');
     expect(text('run-offer-joker')).toBe('↻Joker');
-    expect(text('run-offer-hourglass')).toBe('+30Sablier');
+    expect(text('run-offer-hourglass')).toBe('+30Délai');
     expect(text('run-hand-year')).toBe('’95Année');
     expect(element.querySelectorAll('[data-testid="run-hand"] > li')).toHaveLength(2);
     expect(element.querySelector('[data-testid="run-hand-drop-hint"]')).toBeNull();
@@ -72,7 +72,7 @@ describe('RunPalierComponent', () => {
   it('main pleine avec une carte en attente : « Touche la carte à lâcher », la carte de la main s\'échange', () => {
     const { fixture, element } = render({ hand: [{ slot: 1, card: 'year' }, { slot: 2, card: 'net' }], pending: 'joker' });
     const dropped: number[] = [];
-    fixture.componentInstance.drop.subscribe(slot => dropped.push(slot));
+    fixture.componentInstance.dropCard.subscribe(slot => dropped.push(slot));
 
     expect(element.querySelector('[data-testid="run-hand-drop-hint"]')?.textContent?.trim()).toBe('Touche la carte à lâcher');
     expect(element.querySelector('[data-testid="run-offer-joker"]')?.getAttribute('aria-pressed')).toBe('true');

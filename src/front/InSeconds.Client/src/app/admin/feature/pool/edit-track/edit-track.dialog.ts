@@ -7,10 +7,10 @@ import { errorMessageKey } from '../../../../core/errors/error-messages';
 import { ButtonComponent } from '../../../../ui/button/button.component';
 import { ModalFrameComponent } from '../../../../ui/modal/modal-frame.component';
 import { PoolStore } from '../../../data-access/pool.store';
-import { ARTIST_MAX_LENGTH, PoolTrack, TITLE_MAX_LENGTH, trackLabel } from '../../../domain/pool-track';
+import { ARTIST_MAX_LENGTH, GENRE_MAX_LENGTH, PoolTrack, TITLE_MAX_LENGTH, trackLabel } from '../../../domain/pool-track';
 
 /**
- * Corriger l'artiste et le titre d'un morceau. Permis à tout moment, défi du jour compris : les
+ * Corriger l'artiste, le titre et le genre d'un morceau. Permis à tout moment, défi du jour compris : les
  * réponses déjà données gardent leur verdict, les suivantes sont corrigées avec le nouveau nom (la
  * fenêtre prévient quand le morceau est dans le défi du jour). Ne change jamais l'identifiant Deezer.
  */
@@ -37,6 +37,12 @@ import { ARTIST_MAX_LENGTH, PoolTrack, TITLE_MAX_LENGTH, trackLabel } from '../.
           <input id="edit-track-title" type="text" [formField]="nameForm.title" class="app-input" />
         </div>
 
+        <div class="flex flex-col gap-1">
+          <label for="edit-track-genre" class="text-xs" style="color:var(--text-muted)">{{ 'admin.editModal.genre' | translate }}</label>
+          <input id="edit-track-genre" type="text" [formField]="nameForm.genre" class="app-input" />
+          <p class="text-[11px]" style="color:var(--text-faint)" data-testid="edit-track-genre-hint">{{ 'admin.editModal.genreHint' | translate }}</p>
+        </div>
+
         <p class="text-xs" style="color:var(--text-muted)">{{ 'admin.editModal.hint' | translate }}</p>
 
         @if (errorMessage(); as key) {
@@ -58,15 +64,18 @@ import { ARTIST_MAX_LENGTH, PoolTrack, TITLE_MAX_LENGTH, trackLabel } from '../.
 export class EditTrackDialog {
   protected readonly track = inject<PoolTrack>(DIALOG_DATA);
   protected readonly label = trackLabel(this.track);
+  private readonly originalGenre = this.track.genres.join(', ');
   private readonly pool = inject(PoolStore);
   private readonly dialog = inject<DialogRef<boolean>>(DialogRef);
 
   /** Deux champs non vides une fois les espaces retirés, longueurs de l'API. */
-  protected readonly nameForm = form(signal({ artist: this.track.artist, title: this.track.title }), path => {
+  protected readonly nameForm = form(signal({ artist: this.track.artist, title: this.track.title, genre: this.track.genres.join(', ') }), path => {
     validate(path.artist, ({ value }) => (value().trim() ? null : { kind: 'required' }));
     validate(path.title, ({ value }) => (value().trim() ? null : { kind: 'required' }));
     maxLength(path.artist, ARTIST_MAX_LENGTH);
     maxLength(path.title, TITLE_MAX_LENGTH);
+    // Les genres de Deezer, joints, peuvent dépasser la limite d'un genre saisi : elle ne vaut que si le champ a changé.
+    validate(path.genre, ({ value }) => (value().trim() === this.originalGenre || value().trim().length <= GENRE_MAX_LENGTH ? null : { kind: 'maxLength' }));
   });
 
   protected readonly saving = signal(false);
@@ -78,17 +87,18 @@ export class EditTrackDialog {
 
   /** Désactivé : un champ invalide, rien de changé, ou un envoi en cours. */
   protected readonly saveDisabled = computed(() => {
-    const { artist, title } = this.nameForm().value();
+    const { artist, title, genre } = this.nameForm().value();
     return this.nameForm().invalid() || this.saving()
-      || (artist.trim() === this.track.artist && title.trim() === this.track.title);
+      || (artist.trim() === this.track.artist && title.trim() === this.track.title && genre.trim() === this.originalGenre);
   });
 
   protected async save(): Promise<void> {
     if (this.saveDisabled()) return;
     this.saving.set(true);
     this.error.set(null);
-    const { artist, title } = this.nameForm().value();
-    const error = await this.pool.rename(this.track.id, artist, title);
+    const { artist, title, genre } = this.nameForm().value();
+    // Le genre n'est envoyé que s'il a changé : enregistrer l'artiste seul ne remplace jamais les genres de Deezer.
+    const error = await this.pool.rename(this.track.id, artist, title, genre.trim() === this.originalGenre ? undefined : genre);
     this.saving.set(false);
     if (error) this.error.set(error);
     else this.dialog.close(true);

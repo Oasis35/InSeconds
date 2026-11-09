@@ -54,7 +54,7 @@ describe('RunsApi', () => {
     const result = await api.playCard(7, 2, 3);
 
     expect(client['playRunCard']).toHaveBeenCalledWith(7, 2, { position: 3 });
-    expect(result.current?.effects).toEqual({ cards: ['year'], year: 1995, artistInitials: null, titleInitials: ['G', 'L'], choices: null, clockBonusSeconds: 0 });
+    expect(result.current?.effects).toEqual({ cards: ['year'], year: 1995, artistInitials: null, titleInitials: ['G', 'L'], choices: null, clockBonusSeconds: 0, genre: null });
   });
 
   it('sans record ni partie en cours : `null` plutôt que `undefined`', async () => {

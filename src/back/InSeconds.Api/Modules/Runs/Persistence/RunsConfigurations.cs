@@ -106,8 +106,8 @@ internal sealed class RunSessionCardConfiguration : IEntityTypeConfiguration<Run
 {
     public void Configure(EntityTypeBuilder<RunSessionCard> builder)
     {
-        // card : 1 trois choix, 2 Joker, 3 année, 4 initiales, 5 rallonge, 6 filet, 7 seuil abaissé, 8 sablier.
-        builder.ToTable("session_cards", DbSchemas.Runs, table => table.HasCheckConstraint("ck_session_cards_card", "card BETWEEN 1 AND 8"));
+        // card : 1 QCM, 2 Joker, 3 année, 4 initiales, 5 prolongation, 6 repêchage, 7 rabais, 8 délai, 9 genre, 10 l'un ou l'autre.
+        builder.ToTable("session_cards", DbSchemas.Runs, table => table.HasCheckConstraint("ck_session_cards_card", "card BETWEEN 1 AND 10"));
         builder.HasKey(c => new { c.SessionId, c.Slot });
         builder.Property(c => c.Card).HasConversion<short>();
         // Joker : le morceau de la réserve joué à la place, qui ne se supprime pas tant qu'une partie l'a joué.

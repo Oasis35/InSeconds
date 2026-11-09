@@ -177,8 +177,8 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Null(finish.Shortfall);
         Assert.Equal(Enumerable.Range(1, 20), finish.Tracks.Select(t => t.Position));
         Assert.Equal(
-            [new RunRoundScoreResponse(1, 500, 225, true, "safe"), new(2, 665, 366, true, "safe"), new(3, 835, 543, true, "safe"),
-                new(4, 1000, 750, true, "safe")],
+            [new RunRoundScoreResponse(1, 500, 225, true, "safe"), new(2, 665, 366, true, "safe"), new(3, 835, 568, true, "safe"),
+                new(4, 1000, 800, true, "safe")],
             finish.Rounds);
         Assert.Equal(new RunRecordResponse(3000, 4, true), finish.Record);
         Assert.Equal(code, finish.ChallengeCode);

@@ -4,10 +4,10 @@ import fr from '../../../../../public/i18n/fr.json';
 import { RunHandCard, RunTrackEffects } from '../../domain/run-cards';
 import { RunRoundCardsComponent } from './run-round-cards.component';
 
-const VALUES = { extendListenSeconds: 20, hourglassSeconds: 30, lowerTargetPercent: 25 };
+const VALUES = { extendListenSeconds: 20, hourglassSeconds: 30, lowerTargetPercent: 25, durable: false, extendBonusSeconds: 0 };
 
 const EFFECTS = (overrides: Partial<RunTrackEffects> = {}): RunTrackEffects => ({
-  cards: [], year: null, artistInitials: null, titleInitials: null, choices: null, clockBonusSeconds: 0, ...overrides,
+  cards: [], year: null, artistInitials: null, titleInitials: null, choices: null, clockBonusSeconds: 0, genre: null, ...overrides,
 });
 
 describe('RunRoundCardsComponent', () => {
@@ -30,7 +30,7 @@ describe('RunRoundCardsComponent', () => {
   it('les cartes de la main se jouent d\'un toucher', () => {
     const { fixture, element } = render([{ slot: 1, card: 'year' }, { slot: 3, card: 'joker' }]);
     const played: number[] = [];
-    fixture.componentInstance.play.subscribe(slot => played.push(slot));
+    fixture.componentInstance.playCard.subscribe(slot => played.push(slot));
 
     element.querySelector<HTMLButtonElement>('[data-testid="run-play-joker"]')!.click();
 
@@ -50,7 +50,7 @@ describe('RunRoundCardsComponent', () => {
     expect(render([], EFFECTS({ cards: ['joker'] })).element.querySelector('[data-testid="run-round-cards"]')).toBeNull();
   });
 
-  it('Seuil abaissé dit la baisse de la playlist, Rallonge l\'écoute du morceau ; une carte jouée prend toute la largeur', () => {
+  it('Seuil abaissé dit la baisse de la playlist, Prolongation l\'écoute du morceau ; une carte jouée prend toute la largeur', () => {
     const { element, texts } = render([], EFFECTS({ cards: ['lower_target', 'extend'] }));
 
     expect(texts('[data-testid="run-card-effect"]')).toEqual(['−25 % Objectif de la manche abaissé', 'Écoute de 20 s']);

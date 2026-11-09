@@ -81,6 +81,8 @@ export interface DeezerResult {
 /** Longueurs maximales de l'artiste et du titre (celles de l'API). */
 export const ARTIST_MAX_LENGTH = 200;
 export const TITLE_MAX_LENGTH = 300;
+/** Longueur maximale du genre saisi (validateur de l'API). */
+export const GENRE_MAX_LENGTH = 60;
 
 /** Ce que l'admin peut corriger : les deux noms, non vides une fois les espaces retirés. */
 export function isValidTrackName(artist: string, title: string): boolean {

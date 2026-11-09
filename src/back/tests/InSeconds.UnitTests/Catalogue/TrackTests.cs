@@ -239,6 +239,50 @@ public class TrackTests
     }
 
     [Fact]
+    public void GenreSaisiALaMain_RemplaceLesGenres_EtSeRelitAuBoutDUnMois()
+    {
+        var track = OnAlbum(1);
+        var rock = new Genre(-1, "Rock");
+
+        track.SetManualGenre(rock, T1);
+
+        Assert.Equal([-1L], track.Genres.Select(g => g.Id));
+        Assert.True(track.GenresManual);
+        Assert.False(track.GenresNeedReading(T1.AddDays(29), TimeSpan.FromDays(30)));
+        Assert.True(track.GenresNeedReading(T1.AddDays(30), TimeSpan.FromDays(30)));
+    }
+
+    [Fact]
+    public void GenreSaisiALaMain_DeezerQuiNEnDonneToujoursAucun_LeLaisse_UnGenreDeDeezerLEcrase()
+    {
+        var track = OnAlbum(1);
+        track.SetManualGenre(new Genre(-1, "Rock"), T1);
+
+        track.RecordGenres([], T1.AddDays(30));
+        Assert.Equal([-1L], track.Genres.Select(g => g.Id));
+        Assert.Equal(T1.AddDays(30), track.GenresCheckedAt);
+
+        track.RecordGenres([new Genre(132, "Pop")], T1.AddDays(60));
+        Assert.Equal([132L], track.Genres.Select(g => g.Id));
+        Assert.False(track.GenresManual);
+    }
+
+    [Fact]
+    public void ViderLeGenreSaisi_LeRetire_MaisNeTouchePasAuxGenresDeDeezer()
+    {
+        var manual = OnAlbum(1);
+        manual.SetManualGenre(new Genre(-1, "Rock"), T1);
+        manual.SetManualGenre(null, T1);
+        Assert.Empty(manual.Genres);
+        Assert.Null(manual.GenresCheckedAt);
+
+        var fromDeezer = OnAlbum(1);
+        fromDeezer.RecordGenres([new Genre(132, "Pop")], T1);
+        fromDeezer.SetManualGenre(null, T1);
+        Assert.Equal([132L], fromDeezer.Genres.Select(g => g.Id));
+    }
+
+    [Fact]
     public void RelireLeMemeAlbum_GardeLesGenres()
     {
         var track = OnAlbum(1);

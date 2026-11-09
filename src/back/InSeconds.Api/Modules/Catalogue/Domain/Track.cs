@@ -48,6 +48,12 @@ public sealed class Track
     /// </summary>
     public DateTimeOffset? GenresCheckedAt { get; private set; }
 
+    /// <summary>
+    /// Les genres ont été saisis à la main par l'admin (Deezer n'en donnait pas) : une lecture de Deezer qui en rend les remplace, une lecture
+    /// vide les laisse, et le contrôle nocturne les relit chaque mois (<see cref="GenresNeedReading"/>).
+    /// </summary>
+    public bool GenresManual { get; private set; }
+
     /// <summary>Les genres de l'album du morceau, vides tant qu'ils n'ont pas été lus ou si l'album n'en a pas.</summary>
     public IReadOnlyCollection<Genre> Genres => _genres;
 
@@ -176,15 +182,49 @@ public sealed class Track
 
         AlbumId = albumId;
         GenresCheckedAt = null;
+        GenresManual = false;
         _genres.Clear();
     }
 
     /// <summary>Les genres de l'album, tels que Deezer vient de les donner (aucun si l'album n'en a pas) : remplace les précédents.</summary>
     public void RecordGenres(IEnumerable<Genre> genres, DateTimeOffset now)
     {
-        _genres.Clear();
-        _genres.AddRange(genres.DistinctBy(g => g.Id));
+        var read = genres.DistinctBy(g => g.Id).ToList();
         GenresCheckedAt = now;
+        // Deezer qui n'en donne toujours aucun laisse le genre saisi à la main ; sinon ses genres l'écrasent.
+        if (read.Count == 0 && GenresManual)
+            return;
+
+        _genres.Clear();
+        _genres.AddRange(read);
+        GenresManual = false;
+    }
+
+    /// <summary>Les genres sont à lire chez Deezer : jamais lus, ou saisis à la main depuis plus de <paramref name="manualMaxAge"/>.</summary>
+    public bool GenresNeedReading(DateTimeOffset now, TimeSpan manualMaxAge) =>
+        GenresCheckedAt is null || (GenresManual && now - GenresCheckedAt.Value >= manualMaxAge);
+
+    /// <summary>
+    /// Le genre saisi par l'admin : il remplace ceux du morceau. Sans genre (<c>null</c>), les genres saisis à la main sont retirés et ceux de
+    /// Deezer seront relus ; des genres de Deezer ne sont jamais touchés par un champ vidé.
+    /// </summary>
+    public void SetManualGenre(Genre? genre, DateTimeOffset now)
+    {
+        if (genre is not null)
+        {
+            _genres.Clear();
+            _genres.Add(genre);
+            GenresManual = true;
+            GenresCheckedAt = now;
+        }
+        else if (GenresManual)
+        {
+            _genres.Clear();
+            GenresManual = false;
+            GenresCheckedAt = null;
+        }
+
+        UpdatedAt = now;
     }
 
     /// <summary>
@@ -215,6 +255,7 @@ public sealed class Track
         {
             AlbumId = metadata.AlbumId;
             GenresCheckedAt = null;
+            GenresManual = false;
             _genres.Clear();
         }
     }
