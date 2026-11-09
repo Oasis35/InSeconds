@@ -102,6 +102,16 @@ describe('EditTrackDialog', () => {
     expect(api.renameTrack).toHaveBeenLastCalledWith(9, 'Eminem Jr', 'Titre', undefined);
   });
 
+  it('des genres de Deezer plus longs que la limite n\'empêchent pas de corriger le titre', async () => {
+    const long = ['Pop', 'Dance', 'Electro', 'Rock & Folk', 'Musique de film', 'Hip Hop', 'Soul & Funk'];
+    const { fixture, title, save } = open(poolTrack({ id: 9, artist: 'Eminem', title: 'Titre', genres: long }));
+
+    type(title, 'Titre corrigé');
+    await settle(fixture);
+
+    expect(save.disabled).toBe(false);
+  });
+
   it('envoie le genre saisi, ou vide pour le retirer', async () => {
     const { fixture, element, save } = open(poolTrack({ id: 9, artist: 'Eminem', title: 'Titre' }));
     const genre = element.querySelector<HTMLInputElement>('#edit-track-genre')!;

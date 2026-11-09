@@ -176,14 +176,14 @@ public static class RefreshPreviewsHandler
         }
     }
 
+    /// <summary>Un genre saisi à la main est relu chez Deezer après ce délai (au cas où Deezer en donne un entre-temps).</summary>
+    private static readonly TimeSpan ManualGenreMaxAge = TimeSpan.FromDays(30);
+
     /// <summary>
     /// Rattrape les genres : **un appel par album** (pas par morceau) pour les albums dont les genres n'ont jamais été lus, lots espacés comme
     /// ceux des morceaux (quota Deezer, piège 16). Une réponse indisponible ne change rien (l'album sera repris au prochain contrôle) ;
     /// un album supprimé chez Deezer (800) n'a pas de genre et n'est plus redemandé. Les genres de l'album vont à tous ses morceaux du pool.
     /// </summary>
-    /// <summary>Un genre saisi à la main est relu chez Deezer après ce délai (au cas où Deezer en donne un entre-temps).</summary>
-    private static readonly TimeSpan ManualGenreMaxAge = TimeSpan.FromDays(30);
-
     private static async Task RefreshGenresAsync(
         IReadOnlyList<Track> candidates, ICatalogueStore store, IAlbumSource albums, TimeProvider time, RefreshOptions settings,
         ILogger logger, CancellationToken ct)

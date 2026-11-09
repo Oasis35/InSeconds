@@ -74,7 +74,8 @@ export class EditTrackDialog {
     validate(path.title, ({ value }) => (value().trim() ? null : { kind: 'required' }));
     maxLength(path.artist, ARTIST_MAX_LENGTH);
     maxLength(path.title, TITLE_MAX_LENGTH);
-    maxLength(path.genre, GENRE_MAX_LENGTH);
+    // Les genres de Deezer, joints, peuvent dépasser la limite d'un genre saisi : elle ne vaut que si le champ a changé.
+    validate(path.genre, ({ value }) => (value().trim() === this.originalGenre || value().trim().length <= GENRE_MAX_LENGTH ? null : { kind: 'maxLength' }));
   });
 
   protected readonly saving = signal(false);
