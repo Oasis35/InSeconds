@@ -81,6 +81,27 @@ public class RunGhostTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task AuteurEfface_PasDeFantome_LaPartieDeLAutreSeJoueNormalement()
+    {
+        var (alice, code) = await AliceLosesAtRoundTwoAsync();
+        // Ce que fait l'effacement d'un joueur (piège 48) : ses parties, son record et son accès disparaissent, le défi reste, sans auteur.
+        await _run.Api.ExecuteAsync($"""
+            DELETE FROM runs.records WHERE player_id = '{alice.Id}';
+            DELETE FROM runs.sessions WHERE player_id = '{alice.Id}';
+            DELETE FROM runs.access WHERE player_id = '{alice.Id}';
+            UPDATE runs.challenges SET created_by = NULL WHERE code = '{code}';
+            """);
+
+        var bob = await _run.NewPlayerAsync("Bob");
+        var start = (await bob.JoinAsync(code)).Session;
+        Assert.Null(start.Ghost);
+
+        var first = await bob.AnswerAsync(start.SessionId, code, 1);
+        Assert.Null(first.Session.Ghost);
+        Assert.Equal(100, first.Session.TotalScore);
+    }
+
+    [Fact]
     public async Task UnMorceauRetireAuJoueur_NeCompteNiPourLuiNiPourLeFantome()
     {
         var (_, code) = await AliceLosesAtRoundTwoAsync();

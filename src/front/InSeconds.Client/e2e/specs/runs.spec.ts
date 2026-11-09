@@ -113,6 +113,39 @@ test.describe('Mode Platines', () => {
     await expect(run.welcome.getByTestId('run-shelf').locator('[data-shelf-disc="runs.discs.gold"]')).toHaveCount(1);
   });
 
+  test("« Risquée » avant la dernière manche : le boss annonce une écoute plus courte, et la partie se gagne jusqu'au bout", async ({ page, api }) => {
+    test.slow();
+    const run = new RunPage(page);
+    await run.loginAsAdmin();
+    await run.launch();
+    const tracks = await api.latestRunTracks();
+    const difficulty = page.getByTestId('run-difficulty');
+
+    await run.winRound(tracks, 1);
+    // Avant la manche 3 : « Risquée » ne change pas l'écoute, rien n'annonce de boss.
+    await inSequence(tracks.filter(t => t.round === 2), track => run.answerRight(track));
+    await run.palierNextButton.click();
+    await expect(difficulty).toBeVisible();
+    await expect(page.getByTestId('run-difficulty-boss')).toHaveCount(0);
+    await page.getByTestId('run-difficulty-safe').click();
+    await expect(run.roundTitle).toHaveText('Manche 3');
+
+    // Avant la dernière manche : seule la colonne « Risquée » annonce l'écoute du boss (5 s au lieu de 10 s).
+    await inSequence(tracks.filter(t => t.round === 3), track => run.answerRight(track));
+    await run.palierNextButton.click();
+    await expect(page.getByTestId('run-difficulty-boss')).toHaveCount(1);
+    await expect(page.getByTestId('run-difficulty-risky').getByTestId('run-difficulty-boss')).toContainText('5');
+    await page.getByTestId('run-difficulty-risky').click();
+    await expect(run.roundTitle).toHaveText('Manche 4');
+
+    // La manche boss se joue et se gagne comme les autres.
+    const last = tracks.filter(t => t.round === 4);
+    await inSequence(last.slice(0, 4), track => run.answerRight(track));
+    await run.answer(`${last[4].artist} - ${last[4].title}`);
+    await run.nextTrackButton.click();
+    await expect(run.finished).toHaveAttribute('data-status', 'won');
+  });
+
   test('partie perdue : la première manche ratée mène directement à la fin, avec les manches non jouées', async ({ page }) => {
     const run = new RunPage(page);
     await run.loginAsAdmin();

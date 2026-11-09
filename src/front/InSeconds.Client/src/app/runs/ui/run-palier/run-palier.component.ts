@@ -51,7 +51,8 @@ export class RunPalierComponent {
   readonly pass = output();
   readonly next = output();
 
-  protected readonly glyph = cardGlyph;
+  readonly lang = input('fr');
+  protected readonly glyph = (card: RunCardKey, values: RunCardValues | null): string => cardGlyph(card, values, this.lang());
   protected readonly color = cardColor;
   protected readonly slots = computed(() => handSlots(this.hand(), this.handSize()));
   protected readonly full = computed(() => handFull(this.hand(), this.handSize()));

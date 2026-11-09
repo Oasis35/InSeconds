@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input
 import { TranslatePipe } from '@ngx-translate/core';
 import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 import { riseCard } from '../../../ui/motion/motion';
-import { RunCardValues, RunHandCard, RunTrackEffects, cardColor, cardGlyph, playedCards } from '../../domain/run-cards';
+import { RunCardKey, RunCardValues, RunHandCard, RunTrackEffects, cardColor, cardGlyph, playedCards } from '../../domain/run-cards';
 
 /**
  * Les coups de pouce sur l'écran de manche, au-dessus du champ de saisie (docs/runs/proto2.md § Les coups de pouce) : d'abord ce que les cartes
@@ -67,9 +67,10 @@ export class RunRoundCardsComponent {
   readonly refused = input(false);
   readonly play = output<number>();
 
-  protected readonly glyph = cardGlyph;
+  readonly lang = input('fr');
+  protected readonly glyph = (card: RunCardKey, values: RunCardValues | null): string => cardGlyph(card, values, this.lang());
   protected readonly color = cardColor;
-  protected readonly played = computed(() => playedCards(this.effects(), this.values()));
+  protected readonly played = computed(() => playedCards(this.effects(), this.values(), this.lang()));
 
   private readonly playedChips = viewChildren<ElementRef<HTMLElement>>('chip');
   /** Les cartes jouées déjà affichées ; `null` avant le premier affichage (une reprise montre les siennes sans les animer). */

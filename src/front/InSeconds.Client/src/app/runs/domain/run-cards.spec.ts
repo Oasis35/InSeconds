@@ -14,6 +14,7 @@ describe('les cartes', () => {
     expect(RUN_CARDS.every(card => cardGlyph(card, VALUES).length > 0 && cardGlyph(card, null).length > 0)).toBe(true);
     expect(cardGlyph('extend', VALUES)).toBe('20 s');
     expect(cardGlyph('lower_target', VALUES)).toBe('−25 %');
+    expect(cardGlyph('lower_target', VALUES, 'en')).toBe('−25%');
     expect(cardGlyph('hourglass', VALUES)).toBe('+30');
     // Sans les valeurs (jamais pour une playlist à coups de pouce), aucun chiffre inventé.
     expect([cardGlyph('extend', null), cardGlyph('lower_target', null), cardGlyph('hourglass', null)].some(g => /\d/.test(g))).toBe(false);
