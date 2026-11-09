@@ -50,6 +50,10 @@ Art. IV :
 Les URL d'extrait ne sont plus mises en cache (retiré le 17/10/2026 : signées pour 15 min, le cache ne gardait rien, piège 14) ; l'audio ne l'a jamais été. La FAQ autorise le stockage des métadonnées :
 > « Is it possible to store artist and track names locally without stocking the audio? Yes, it is possible. »
 
+### 6. Captures d'écran versionnées : aucune pochette
+
+Le dépôt est public : une capture de l'app qui montrerait une pochette y stockerait une image Deezer. Les captures de `docs/**/maquettes/` se prennent pochettes remplacées par un aplat (le navigateur de capture intercepte `cdn-images.dzcdn.net`) ; le catalogue de test porte de vrais hash de pochette, une capture prise sans cette précaution les montrerait. Le badge officiel « À écouter sur Deezer » y reste, tel quel (§ 3).
+
 ## Écarts relevés le 02/10/2026, tous corrigés
 
 | Écart | Texte | Correctif |

@@ -131,6 +131,8 @@ describe('TrackRoundComponent', () => {
       expect(button('gameplay.answer.validate')).toBeUndefined();
       const options = element.querySelectorAll<HTMLButtonElement>('[data-testid="round-choice"]');
       expect(options).toHaveLength(2);
+      // L'artiste et le titre séparés comme dans la saisie, espace compris avant le tiret.
+      expect(options[0].textContent?.replace(/\s+/g, ' ').trim()).toBe('Muse - Uprising');
       options[1].click();
       refresh();
 

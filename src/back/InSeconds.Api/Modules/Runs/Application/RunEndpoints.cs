@@ -472,13 +472,18 @@ public static class ChooseRunDifficultyEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public static async Task<RunPlayResponse> Post(
-        ChooseRunDifficulty request, [NotBody] PlayableRun loaded, [NotBody] RunPlayer player, TimeProvider time, ILogger<ChooseRunDifficulty> logger,
-        CancellationToken ct)
+        ChooseRunDifficulty request, [NotBody] PlayableRun loaded, [NotBody] RunPlayer player, TimeProvider time, [NotBody] RunsMetrics metrics,
+        ILogger<ChooseRunDifficulty> logger, CancellationToken ct)
     {
         var (session, challenge) = loaded;
         var difficulty = RunDifficulties.Parse(request.Difficulty)!.Value;
+        // Choisir la difficulté ferme l'offre encore ouverte du palier : une offre passée sans carte, comptée comme telle.
+        var offerOpen = session.OpenOffer(challenge) is not null;
         session.ChooseDifficulty(challenge, request.Round, difficulty, time.GetUtcNow());
+        if (offerOpen)
+            metrics.OfferPassed();
         RunsLog.DifficultyChosen(logger, session.Id, session.PlayerId, request.Round, RunDifficulties.KeyOf(difficulty));
+        metrics.DifficultyChosen(request.Round, RunDifficulties.KeyOf(difficulty));
         return await player.AdvanceAsync(await player.LoadAsync(session, challenge, ct), answered: null, revealed: null, isResuming: false, ct);
     }
 }

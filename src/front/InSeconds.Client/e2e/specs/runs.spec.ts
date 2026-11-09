@@ -141,6 +141,25 @@ test.describe('Mode Platines', () => {
     await expect(run.pileTracks).toHaveCount(0);
   });
 
+  test("une playlist sans coups de pouce ni choix de difficulté se joue comme au proto 1 : ni palier, ni « Difficulté ? »", async ({ page, api }) => {
+    // Comme une playlist tirée avant le proto 2 : aucune carte, une seule difficulté (« Sûre »), donc rien à choisir.
+    await api.setRunSetting('Runs:CardsEnabled', 'false');
+    await api.setRunSetting('Runs:Difficulties', '[{"difficulty":"safe","pointsFactor":1,"objectiveFactor":1}]');
+    const run = new RunPage(page);
+    await run.loginAsAdmin();
+    await run.launch();
+    const tracks = await api.latestRunTracks();
+    await expect(run.handCards).toHaveCount(0);
+
+    await inSequence(tracks.filter(t => t.round === 1), track => run.answerRight(track));
+
+    // La manche passée enchaîne directement sur la suivante : le premier morceau de la manche 2 se joue.
+    await expect(run.roundTitle).toHaveText('Manche 2');
+    await expect(run.palier).toHaveCount(0);
+    await expect(page.getByTestId('run-difficulty')).toHaveCount(0);
+    await expect(run.answerInput).toBeVisible();
+  });
+
   test('la carte de départ se joue pendant le morceau : elle quitte la main et son effet reste sur la manche', async ({ page }) => {
     const run = new RunPage(page);
     await run.loginAsAdmin();

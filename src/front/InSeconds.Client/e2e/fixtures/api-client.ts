@@ -187,6 +187,16 @@ export class ApiTestClient {
     if (!res.ok) throw new Error(`deezer/without-preview failed: ${res.status}`);
   }
 
+  /** Un réglage du mode Run (« Runs:… », valeur JSON) pour ce test ; la remise à zéro du test suivant l'efface. */
+  async setRunSetting(key: string, json: string): Promise<void> {
+    const res = await fetch(`${BASE}/api/e2e/runs/settings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, json }),
+    });
+    if (!res.ok) throw new Error(`runs/settings failed: ${res.status}`);
+  }
+
   /** L'admin ouvre le mode Run à ce joueur (interrupteur de l'onglet Joueurs). */
   async grantRunAccess(playerId: string): Promise<void> {
     // Le compte admin des tests, connecté hors du navigateur : son cookie ne touche pas celui de la page.

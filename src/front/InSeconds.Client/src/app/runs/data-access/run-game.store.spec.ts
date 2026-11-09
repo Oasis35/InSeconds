@@ -685,6 +685,96 @@ describe('RunGameStore', () => {
     });
   });
 
+  describe('retour de l\'onglet au premier plan', () => {
+    it('rien n\'a bougé ailleurs : la manche continue, sans rien relancer', async () => {
+      await startRun();
+      api.sessionResult = SESSION({ roundTracks: [], playedTracks: [] });
+      audio.calls.length = 0;
+
+      await store.refresh();
+
+      expect(api.calls).toContain('session:7');
+      expect(store.screen()).toBe('playing');
+      expect(audio.calls).toEqual([]);
+    });
+
+    it('la partie a été finie dans un autre onglet : l\'écran de fin', async () => {
+      await startRun();
+      api.sessionResult = SESSION({
+        status: 'lost', round: null, playedTracks: [1, 2, 3, 4, 5].map(position => TRACK({ position, artistCorrect: false, titleCorrect: false })),
+        finish: {
+          status: 'lost', disc: { key: 'runs.discs.scratched', stars: 0 }, totalScore: 0, roundsPassed: 0, foundCount: 0, trackCount: 20,
+          tracks: [], rounds: [], record: null, challengeCode: 'ABC234', shortfall: null,
+        },
+      });
+
+      await store.refresh();
+
+      expect(store.screen()).toBe('finished');
+      expect(store.finish()?.status).toBe('lost');
+    });
+
+    it('la partie a été abandonnée dans un autre onglet : pas d\'écran de fin, l\'accueil du mode', async () => {
+      await startRun();
+      api.sessionResult = SESSION({ status: 'abandoned', round: null });
+      api.meResult = ME();
+
+      await store.refresh();
+
+      expect(store.screen()).toBe('welcome');
+    });
+
+    it('la partie a avancé dans un autre onglet : l\'écran de reprise (le son repartira d\'un toucher)', async () => {
+      await startRun();
+      api.sessionResult = SESSION({ playedTracks: [TRACK({ position: 1 }), TRACK({ position: 2 })], roundTracks: [TRACK({ position: 1 }), TRACK({ position: 2 })] });
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+      audio.calls.length = 0;
+
+      await store.refresh();
+
+      expect(store.screen()).toBe('resume');
+      expect(audio.calls.filter(c => c.startsWith('load'))).toEqual([]);
+    });
+
+    it('une réponse en route pendant la relecture : c\'est cet onglet qui avance, la manche continue', async () => {
+      await startRun();
+      let answered: (play: ReturnType<typeof PLAY>) => void = () => undefined;
+      vi.spyOn(api, 'submitAnswer').mockImplementation(() => new Promise(resolve => { answered = resolve; }));
+      api.sessionResult = SESSION({ playedTracks: [TRACK({ position: 1 })], roundTracks: [TRACK({ position: 1 })] });
+      const sent = round.submit({ artist: 'Daft Punk', title: 'One More Time' });
+      const sending = sent ? store.submit(sent) : Promise.resolve();
+      const callsBefore = api.calls.length;
+
+      await store.refresh();
+      answered(PLAY({ revealed: TRACK({ position: 1 }), current: CURRENT({ position: 2, positionInRound: 2, previewUrl: 'https://cdn/preview-2.mp3' }) }));
+      await sending;
+
+      expect(store.screen()).toBe('playing');
+      // Ni relecture conclue ni reconstruction de l'écran (qui relirait `me`).
+      expect(api.calls.slice(callsBefore)).not.toContain('me');
+    });
+
+    it('sur l\'accueil du mode, le record et l\'étagère se relisent quand rien d\'autre n\'a bougé', async () => {
+      await store.init();
+      api.meResult = ME({ record: { bestScore: 1200, bestRoundsPassed: 2, isNew: false } });
+
+      await store.refresh();
+
+      expect(store.screen()).toBe('welcome');
+      expect(store.record()?.bestScore).toBe(1200);
+    });
+
+    it('sur l\'accueil du mode, une partie lancée dans un autre onglet propose de la reprendre', async () => {
+      await store.init();
+      expect(store.screen()).toBe('welcome');
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+
+      await store.refresh();
+
+      expect(store.screen()).toBe('resume');
+    });
+  });
+
   describe('sons d\'interface', () => {
     it('le bouton les coupe puis les remet ; le toucher réveille aussi le son', () => {
       const unlock = vi.spyOn(TestBed.inject(RunSounds), 'unlock');

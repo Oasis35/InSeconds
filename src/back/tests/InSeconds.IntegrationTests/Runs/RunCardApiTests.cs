@@ -39,6 +39,25 @@ public class RunCardApiTests(PostgresFixture postgres) : IAsyncLifetime
         return (alice, await alice.LaunchAsync());
     }
 
+    private Microsoft.Extensions.Diagnostics.Metrics.Testing.MetricCollector<long> Collect(string instrument) =>
+        new(_run.Api.Services.GetRequiredService<System.Diagnostics.Metrics.IMeterFactory>(), RunsMetrics.MeterName, instrument);
+
+    private static string? Tag(Microsoft.Extensions.Diagnostics.Metrics.Testing.CollectedMeasurement<long> m, string key) =>
+        m.Tags.TryGetValue(key, out var value) ? Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) : null;
+
+    [Fact]
+    public async Task Mesure_UneCarteJouee_ParCarte_SansRienDuJoueur()
+    {
+        using var cards = Collect(RunsMetrics.CardsName);
+        var (alice, start) = await LaunchWithAsync("year");
+
+        await alice.PlayCardAsync(start.Session.SessionId, 1, 1);
+
+        var played = Assert.Single(cards.GetMeasurementSnapshot());
+        Assert.Equal((RunsMetrics.CardPlayedAction, "year"), (Tag(played, "action"), Tag(played, "card")));
+        Assert.Equal(["action", "card"], played.Tags.Keys.Order());
+    }
+
     [Fact]
     public async Task AuDepart_UneCarteEnMain_PasDOffre()
     {
@@ -173,6 +192,7 @@ public class RunCardApiTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task AuPalier_LOffreSePrend_PuisMainPleine_LaCarteLacheeEnEchange()
     {
+        using var cards = Collect(RunsMetrics.CardsName);
         var (alice, start) = await LaunchWithAsync("year");
         var (id, code) = (start.Session.SessionId, start.Session.ChallengeCode);
         var end = await alice.PlayAsync(id, code, 1, AllFound);
@@ -190,6 +210,12 @@ public class RunCardApiTests(PostgresFixture postgres) : IAsyncLifetime
         await GameAsserts.ProblemAsync(await alice.TakeCardRawAsync(id, 2, "year", dropSlot: 9), HttpStatusCode.NotFound, RunsErrorCodes.CardNotFound);
         var swapped = await alice.TakeCardAsync(id, 2, "year", dropSlot: 1);
         Assert.Equal([2, 3], swapped.Hand!.Select(c => c.Slot));
+
+        // Mesuré : deux cartes prises, une lâchée à l'échange (main pleine), et l'offre de la manche 1 n'a pas été passée.
+        Assert.Equal(
+            [(RunsMetrics.CardTakenAction, "year"), (RunsMetrics.CardTakenAction, "year"), (RunsMetrics.CardDroppedAction, "year")],
+            cards.GetMeasurementSnapshot().Select(m => (Tag(m, "action"), Tag(m, "card"))));
+        Assert.All(cards.GetMeasurementSnapshot(), m => Assert.Equal(["action", "card"], m.Tags.Keys.Order()));
     }
 
     [Fact]

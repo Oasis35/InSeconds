@@ -129,7 +129,9 @@ export class BlindRoundPage {
     // La suggestion Deezer (réponse asynchrone) peut rouvrir la dropdown autocomplete
     // par-dessus le bouton Valider et intercepter le clic. On soumet donc le formulaire
     // au clavier (Entrée dans le champ) : déclenche ngSubmit de façon déterministe, sans
-    // dépendre de la position du bouton ni de l'état de la dropdown.
+    // dépendre de la position du bouton ni de l'état de la dropdown. La souris est d'abord écartée : posée sur la liste rouverte, elle y
+    // surlignerait une suggestion, qu'Entrée choisirait au lieu d'envoyer la saisie.
+    await this.page.mouse.move(0, 0);
     await this.answerInput.press('Enter');
   }
 

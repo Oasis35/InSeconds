@@ -58,6 +58,31 @@ public class RunDifficultyApiTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal((6, 10m), (chosen.Current.Position, chosen.Current.ListenSeconds));
     }
 
+    private Microsoft.Extensions.Diagnostics.Metrics.Testing.MetricCollector<long> Collect(string instrument) =>
+        new(_run.Api.Services.GetRequiredService<System.Diagnostics.Metrics.IMeterFactory>(), RunsMetrics.MeterName, instrument);
+
+    private static string? Tag(Microsoft.Extensions.Diagnostics.Metrics.Testing.CollectedMeasurement<long> m, string key) =>
+        m.Tags.TryGetValue(key, out var value) ? Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) : null;
+
+    [Fact]
+    public async Task Mesure_LaDifficulteChoisie_ParManche()
+    {
+        using var difficulties = Collect(RunsMetrics.DifficultiesName);
+        using var cards = Collect(RunsMetrics.CardsName);
+        var (alice, id, _) = await InRoundTwoAsync();
+
+        await alice.ChooseAsync(id, 2, "risky");
+
+        // L'offre du palier, encore ouverte, se ferme avec le choix : une offre passée sans carte.
+        var passed = Assert.Single(cards.GetMeasurementSnapshot());
+        Assert.Equal((RunsMetrics.OfferPassedAction, null), (Tag(passed, "action"), Tag(passed, "card")));
+
+        var chosen = Assert.Single(difficulties.GetMeasurementSnapshot());
+        Assert.Equal(("2", "risky"), (Tag(chosen, "round"), Tag(chosen, "difficulty")));
+        // Une liste fermée d'étiquettes : un identifiant ajouté un jour ferait échouer ce test.
+        Assert.Equal(["difficulty", "round"], chosen.Tags.Keys.Order());
+    }
+
     [Fact]
     public async Task Choisir_Risquee_PointsEtObjectifALaDifficulte_PuisPlusDeChoix()
     {
