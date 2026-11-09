@@ -26,8 +26,8 @@
         data-testid="run-palier-score">{{ passed().score }}</span>
       <span class="text-[13px]" style="color:var(--text-muted)">{{ 'runs.palier.points' | translate }}</span>
     </div>
-    <div class="relative mt-2.5 rounded-full" style="height:8px;background:var(--bg-inactive)" role="img"
-      [attr.aria-label]="'runs.palier.scoreLabel' | translate: { score: passed().score, objective: passed().objective }">
+    <span class="sr-only">{{ 'runs.palier.scoreLabel' | translate: { score: passed().score, objective: passed().objective } }}</span>
+    <div class="relative mt-2.5 rounded-full" style="height:8px;background:var(--bg-inactive)" aria-hidden="true">
       <div #fill class="absolute inset-0 rounded-full" style="background:var(--color-success)" data-testid="run-palier-fill"></div>
       <div class="absolute" style="top:-5px;width:2px;height:18px;background:var(--text-hi)" [style.left.%]="mark() * 100"></div>
     </div>
