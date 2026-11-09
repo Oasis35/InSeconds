@@ -50,7 +50,7 @@ describe('RunRoundCardsComponent', () => {
     expect(render([], EFFECTS({ cards: ['joker'] })).element.querySelector('[data-testid="run-round-cards"]')).toBeNull();
   });
 
-  it('Seuil abaissé dit la baisse de la playlist, Rallonge l\'écoute du morceau ; une carte jouée prend toute la largeur', () => {
+  it('Seuil abaissé dit la baisse de la playlist, Prolongation l\'écoute du morceau ; une carte jouée prend toute la largeur', () => {
     const { element, texts } = render([], EFFECTS({ cards: ['lower_target', 'extend'] }));
 
     expect(texts('[data-testid="run-card-effect"]')).toEqual(['−25 % Objectif de la manche abaissé', 'Écoute de 20 s']);

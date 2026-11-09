@@ -196,7 +196,7 @@ public static class PlayRunCardEndpoint
     /// <c>POST /api/runs/sessions/{id}/cards/{slot}/play</c> : joue une carte de la main sur le morceau en cours (<c>position</c>). Rend la partie et
     /// le morceau en cours avec ses effets (année, initiales, trois réponses, écoute, chrono), servis à cet instant pour ce morceau seulement ; pour le
     /// Joker, le nouveau morceau et son extrait. 404 <c>runs.card_not_found</c>, 409 <c>runs.card_already_active</c> (même carte déjà jouée sur ce
-    /// morceau, ou Seuil abaissé déjà joué dans la manche), 409 <c>runs.card_unavailable</c> (plus de réserve pour le Joker, pas de chrono pour le
+    /// morceau, ou Rabais déjà joué dans la manche), 409 <c>runs.card_unavailable</c> (plus de réserve pour le Joker, pas de chrono pour le
     /// Délai), et les refus du morceau en cours (piège 35).
     /// </summary>
     [Authorize]

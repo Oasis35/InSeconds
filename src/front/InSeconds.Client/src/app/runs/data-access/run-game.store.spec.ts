@@ -569,7 +569,7 @@ describe('RunGameStore', () => {
       expect(store.screen()).toBe('playing');
     });
 
-    it('Rallonge : l\'écoute repart sur la durée allongée', async () => {
+    it('Prolongation : l\'écoute repart sur la durée allongée', async () => {
       api.launchResult = { kind: 'ok', play: PLAY({ session: withHand({ hand: [{ slot: 1, card: 'extend' }] }) }) };
       await startRun();
       api.playResult = PLAY({ session: withHand({ hand: [] }), current: CURRENT({ listenSeconds: 20, effects: {
@@ -642,7 +642,7 @@ describe('RunGameStore', () => {
     });
   });
 
-  describe('Sablier et chrono', () => {
+  describe('Délai et chrono', () => {
     const hourglass = (clockBonusSeconds: number, clockRemainingSeconds: number | null) => PLAY({
       session: SESSION({ handSize: 2, hand: [], clockRemainingSeconds }),
       current: CURRENT({ effects: { cards: ['hourglass'], year: null, artistInitials: null, titleInitials: null, choices: null, clockBonusSeconds, genre: null } }),
@@ -658,7 +658,7 @@ describe('RunGameStore', () => {
       vi.useRealTimers();
     });
 
-    it('joué avant le premier son : le chrono part plein, Sablier compris', async () => {
+    it('joué avant le premier son : le chrono part plein, Délai compris', async () => {
       api.playResult = hourglass(30, null);
       await store.playCard(1);
       expect(store.clockShown()).toBe(75);
