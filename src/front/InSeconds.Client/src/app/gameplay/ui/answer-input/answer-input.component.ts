@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, inject, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AnswerSuggestion } from '../../domain/answer';
 
@@ -71,6 +71,16 @@ export class AnswerInputComponent {
   readonly dismiss = output<void>();
   readonly focused = output<void>();
   readonly blurred = output<void>();
+
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  constructor() {
+    // Le champ est prêt à écrire dès l'écoute d'un morceau, au PC (clavier physique). Sur un écran tactile on ne le fait pas : le clavier
+    // recouvrirait la manche, et iOS ne l'ouvre de toute façon que sur un geste du joueur.
+    afterNextRender(() => {
+      if (window.matchMedia('(pointer: fine)').matches) this.host.nativeElement.querySelector('input')?.focus({ preventScroll: true });
+    });
+  }
 
   protected onKeydown(event: KeyboardEvent): void {
     if (this.suggestions().length === 0) return;
