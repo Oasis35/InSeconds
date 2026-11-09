@@ -842,6 +842,7 @@
   },
   "legal": {
     "title": "Mentions légales",
+    "metaDescription": "Mentions légales d'InSeconds : éditeur, hébergeur et contact du blind test musical quotidien.",
     "updated": "Dernière mise à jour : 28 octobre 2026",
     "intro": "InSeconds est un jeu de blind test musical gratuit, accessible à l'adresse https://inseconds.cc. Cette page donne les mentions légales du site, conformément à l'article 6-III de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN). Le traitement de vos données est décrit dans la page Confidentialité.",
     "privacyLink": "Voir la page Confidentialité",
@@ -858,6 +859,7 @@
   },
   "privacy": {
     "title": "Confidentialité",
+    "metaDescription": "Politique de confidentialité d'InSeconds : données collectées, durées de conservation et droits RGPD, avec ou sans compte.",
     "updated": "Dernière mise à jour : 6 novembre 2026",
     "intro": "InSeconds est un jeu de blind test musical gratuit, accessible à l'adresse https://inseconds.cc. Il reste intégralement jouable en mode invité, sans compte ni inscription ; la création d'un compte, par email uniquement, est optionnelle et sert à retrouver votre progression sur un autre appareil. Cette page décrit la politique de confidentialité du site, conformément au Règlement général sur la protection des données (RGPD, Règlement UE 2016/679) et à la loi Informatique et Libertés. L'éditeur et l'hébergeur sont présentés dans les mentions légales.",
     "legalLink": "Voir les mentions légales",
