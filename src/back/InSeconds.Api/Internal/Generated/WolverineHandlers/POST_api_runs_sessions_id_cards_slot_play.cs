@@ -77,9 +77,9 @@ namespace Internal.Generated.WolverineHandlers
             var loggedTrackWaveforms = new InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms(efTrackWaveforms, _loggerOfLoggedTrackWaveforms);
             var deezerTrackPreviews = new InSeconds.Api.Modules.Catalogue.Persistence.DeezerTrackPreviews(previewProvider);
             var efTrackDirectory = new InSeconds.Api.Modules.Catalogue.Persistence.EfTrackDirectory(inSecondsDbContext, _optionsMonitorOfCatalogueOptions);
-            var efRunsStore = new InSeconds.Api.Modules.Runs.Persistence.EfRunsStore(inSecondsDbContext);
-            var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, _seededShuffle2, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, runGhosts, _runScoringPolicy, _runsRules, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
             var runChoiceDealer = new InSeconds.Api.Modules.Runs.Application.RunChoiceDealer(efTrackDirectory, _seededShuffle1);
+            var efRunsStore = new InSeconds.Api.Modules.Runs.Persistence.EfRunsStore(inSecondsDbContext);
+            var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, _seededShuffle2, runChoiceDealer, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, runGhosts, _runScoringPolicy, _runsRules, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
             // Reading the request body via JSON deserialization
             var (request, jsonContinue) = await ReadJsonAsync<InSeconds.Api.Modules.Runs.Application.PlayRunCard>(httpContext);

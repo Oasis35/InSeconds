@@ -17,7 +17,7 @@ public class RunsOptionsTests
 
         Assert.Null(options.ThresholdPercents);
         Assert.Null(options.Difficulties);
-        Assert.Equal([45, 55, 65, 75], options.EffectiveThresholdPercents);
+        Assert.Equal([45, 55, 68, 80], options.EffectiveThresholdPercents);
         Assert.Equal(["easy", "safe", "risky"], options.EffectiveDifficulties.Select(d => d.Difficulty));
         Assert.Equal(5, options.EffectiveDiscs.Count);
         Assert.All(options.EffectiveDiscs, key => Assert.StartsWith("runs.discs.", key, StringComparison.Ordinal));

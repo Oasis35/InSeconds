@@ -31,7 +31,7 @@ public sealed class RunsOptions
     public const int MaxRounds = 20;
     public const int MaxTracksPerRound = 20;
 
-    public static readonly int[] DefaultThresholdPercents = [45, 55, 65, 75];
+    public static readonly int[] DefaultThresholdPercents = [45, 55, 68, 80];
 
     /// <summary>
     /// Les trois difficultés du proto 2 (provisoires, docs/runs/proto2.md) : « Sûre » reprend le seuil et les points du proto 1 ; « Facile » vise
@@ -46,11 +46,14 @@ public sealed class RunsOptions
     ];
 
     public const int DefaultHandSize = 2;
-    public const decimal DefaultExtendListenSeconds = 20m;
-    public const int DefaultHourglassSeconds = 30;
-    public const int DefaultLowerTargetPercent = 20;
+    public const decimal DefaultExtendBonusSeconds = 5m;
 
-    /// <summary>L'écoute la plus longue d'une « Rallonge » : un extrait Deezer dure 30 s.</summary>
+    /// <summary>L'écoute d'une « Rallonge » des playlists d'avant (cartes non durables).</summary>
+    public const decimal LegacyExtendListenSeconds = 20m;
+    public const int DefaultHourglassSeconds = 15;
+    public const int DefaultLowerTargetPercent = 10;
+
+    /// <summary>L'écoute la plus longue avec « Prolongation » : un extrait Deezer dure 30 s.</summary>
     public const decimal MaxExtendListenSeconds = 30m;
 
     /// <summary>Les coups de pouce du proto 2 (tous, provisoire) : leurs noms d'API.</summary>
@@ -99,13 +102,19 @@ public sealed class RunsOptions
     /// <summary>Les emplacements de la main.</summary>
     public int HandSize { get; set; } = DefaultHandSize;
 
-    /// <summary>L'écoute d'un morceau sous « Rallonge ».</summary>
-    public decimal ExtendListenSeconds { get; set; } = DefaultExtendListenSeconds;
+    /// <summary>
+    /// Les cartes des nouvelles playlists agissent tant qu'elles sont en main, sans clic (sauf le Joker), et aucune n'est offerte au départ. Faux : le
+    /// comportement des playlists d'avant (une carte jouée une fois sur un morceau), gardé pour les parties qui l'ont encore et pour les tests.
+    /// </summary>
+    public bool DurableCards { get; set; } = true;
 
-    /// <summary>Les secondes que « Sablier » ajoute au chrono (décidé : +30 s plutôt que le chrono suspendu, docs/runs/proto2.md).</summary>
+    /// <summary>Les secondes que « Prolongation » ajoute à l'écoute de chaque morceau (10 s deviennent 15 s ; la manche boss, de 5 s à 10 s).</summary>
+    public decimal ExtendBonusSeconds { get; set; } = DefaultExtendBonusSeconds;
+
+    /// <summary>Les secondes que « Délai » ajoute au chrono de chaque morceau.</summary>
     public int HourglassSeconds { get; set; } = DefaultHourglassSeconds;
 
-    /// <summary>La baisse de l'objectif de la manche sous « Seuil abaissé », en pourcentage.</summary>
+    /// <summary>La baisse de l'objectif de chaque manche sous « Rabais », en pourcentage.</summary>
     public int LowerTargetPercent { get; set; } = DefaultLowerTargetPercent;
 
     public IReadOnlyList<string> EffectiveCards => Cards ?? DefaultCards;
@@ -125,7 +134,9 @@ public sealed class RunsOptions
         // Les offres et la carte de départ se tirent avec la playlist (RunCardDealer, graine de la playlist).
         var cards = !CardsEnabled || pool.Count == 0
             ? null
-            : new RunCardRules(HandSize, null, [], ExtendListenSeconds, HourglassSeconds, LowerTargetPercent, pool);
+            : new RunCardRules(
+                HandSize, null, [], DurableCards ? ListenSeconds + ExtendBonusSeconds : LegacyExtendListenSeconds, HourglassSeconds, LowerTargetPercent, pool,
+                DurableCards, DurableCards ? ExtendBonusSeconds : 0m);
         return new RunRules(
             Rounds, TracksPerRound, ListenSeconds, thresholds, MinMultiplier, MaxMultiplier, AnswerSeconds, roundRules, ReservePerRound, cards);
     }
@@ -202,13 +213,13 @@ public static class RunsOptionsChecks
 
         var cardKeys = options.EffectiveCards.Select(RunCards.Parse).ToList();
         if (cardKeys.Contains(null) || cardKeys.Distinct().Count() != cardKeys.Count)
-            problems.Add("Runs:Cards : des noms de cartes connus (three_choices, joker, year, initials, extend, net, lower_target, hourglass), sans doublon.");
+            problems.Add("Runs:Cards : des noms de cartes connus (three_choices, joker, year, initials, extend, net, lower_target, hourglass, genre, either_or), sans doublon.");
         if (options.HandSize is < 1 or > 5)
             problems.Add("Runs:HandSize : de 1 à 5 emplacements.");
-        if (options.ExtendListenSeconds < options.ListenSeconds || options.ExtendListenSeconds > RunsOptions.MaxExtendListenSeconds
-            || decimal.Round(options.ExtendListenSeconds, 2) != options.ExtendListenSeconds
-            || (options.AnswerSeconds != 0 && options.AnswerSeconds <= options.ExtendListenSeconds))
-            problems.Add($"Runs:ExtendListenSeconds : de l'écoute normale à {RunsOptions.MaxExtendListenSeconds} s, deux décimales au plus, sous le chrono.");
+        var extended = options.ListenSeconds + options.ExtendBonusSeconds;
+        if (options.ExtendBonusSeconds <= 0 || extended > RunsOptions.MaxExtendListenSeconds || decimal.Round(options.ExtendBonusSeconds, 2) != options.ExtendBonusSeconds
+            || (options.AnswerSeconds != 0 && options.AnswerSeconds <= extended))
+            problems.Add($"Runs:ExtendBonusSeconds : plus de 0 s, deux décimales au plus, l'écoute prolongée ({RunsOptions.MaxExtendListenSeconds} s au plus) sous le chrono.");
         if (options.HourglassSeconds is < 1 or > RunsOptions.MaxAnswerSeconds)
             problems.Add($"Runs:HourglassSeconds : de 1 à {RunsOptions.MaxAnswerSeconds} s.");
         if (options.LowerTargetPercent is < 1 or > 90)

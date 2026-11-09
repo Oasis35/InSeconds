@@ -2364,6 +2364,12 @@
           "clockBonusSeconds": {
             "type": "integer",
             "format": "int32"
+          },
+          "genre": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -2421,6 +2427,15 @@
           "lowerTargetPercent": {
             "type": "integer",
             "format": "int32"
+          },
+          "durable": {
+            "type": "boolean",
+            "default": false
+          },
+          "extendBonusSeconds": {
+            "type": "number",
+            "format": "double",
+            "default": 0
           }
         }
       },

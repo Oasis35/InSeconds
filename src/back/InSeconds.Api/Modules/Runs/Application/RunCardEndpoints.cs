@@ -78,7 +78,7 @@ public static class DropRunCardEndpoint
         var problem = RunSessionAccess.Check(loaded, position: null);
         if (!ReferenceEquals(problem, WolverineContinue.NoProblems))
             return problem;
-        return RunsProblems.ForCard(loaded!.Session.CanDrop(slot));
+        return RunsProblems.ForCard(loaded!.Session.CanDrop(loaded.Challenge, slot));
     }
 
     /// <summary>
@@ -95,7 +95,7 @@ public static class DropRunCardEndpoint
     {
         var (session, challenge) = loaded;
         var dropped = session.Hand.FirstOrDefault(c => c.Slot == slot)?.Card;
-        session.DropCard(slot, time.GetUtcNow());
+        session.DropCard(challenge, slot, time.GetUtcNow());
         if (dropped is { } card)
             metrics.CardDropped(RunCards.KeyOf(card));
         return await player.StateAsync(await player.LoadAsync(session, challenge, ct), ct);

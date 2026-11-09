@@ -39,7 +39,7 @@ public sealed class RunsPlayerData(InSecondsDbContext db, Catalogue.Contracts.IT
             [.. row.Session.Cards.OrderBy(c => c.Slot)
                 .Select(c => new RunCardExport(
                     RunCards.KeyOf(c.Card), c.AcquiredRound, c.AcquiredAt, c.DroppedAt, c.PlayedAt, c.PlayedPosition, c.PlayedRound, c.PlayOrder,
-                    c.ReplacementTrackId is { } id && deezerIds.TryGetValue(id, out var info) ? info.DeezerTrackId : null))])).ToList();
+                    c.ReplacementTrackId is { } id && deezerIds.TryGetValue(id, out var info) ? info.DeezerTrackId : null, c.DroppedAfterRound))])).ToList();
 
         var created = await db.Set<RunChallenge>().AsNoTracking()
             .Where(c => c.CreatedBy == playerId).OrderBy(c => c.CreatedAt)

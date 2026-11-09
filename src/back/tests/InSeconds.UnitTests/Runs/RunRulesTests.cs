@@ -11,7 +11,7 @@ public class RunRulesTests
         var rules = RunsOptions.DefaultRules();
 
         Assert.Equal((4, 5, 20, 10m), (rules.Rounds, rules.TracksPerRound, rules.TrackCount, rules.ListenSeconds));
-        Assert.Equal([45, 55, 65, 75], rules.ThresholdPercents);
+        Assert.Equal([45, 55, 68, 80], rules.ThresholdPercents);
         Assert.Equal(2, rules.ReservePerRound);
     }
 
