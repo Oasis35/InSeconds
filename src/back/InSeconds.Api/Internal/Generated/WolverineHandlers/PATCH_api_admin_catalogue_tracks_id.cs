@@ -96,7 +96,7 @@ namespace Internal.Generated.WolverineHandlers
 
                 
                 // The actual HTTP request handler execution
-                var trackSummary_response = InSeconds.Api.Modules.Catalogue.Application.RenameTrackEndpoint.Patch(request, track, _optionsMonitorOfCatalogueOptions, _timeProvider);
+                var trackSummary_response = await InSeconds.Api.Modules.Catalogue.Application.RenameTrackEndpoint.Patch(request, track, efCatalogueStore, _optionsMonitorOfCatalogueOptions, _timeProvider, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

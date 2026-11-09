@@ -176,6 +176,9 @@ public static class RefreshPreviewsHandler
         }
     }
 
+    /// <summary>Un genre saisi à la main est relu chez Deezer après ce délai (au cas où Deezer en donne un entre-temps).</summary>
+    private static readonly TimeSpan ManualGenreMaxAge = TimeSpan.FromDays(30);
+
     /// <summary>
     /// Rattrape les genres : **un appel par album** (pas par morceau) pour les albums dont les genres n'ont jamais été lus, lots espacés comme
     /// ceux des morceaux (quota Deezer, piège 16). Une réponse indisponible ne change rien (l'album sera repris au prochain contrôle) ;
@@ -186,7 +189,7 @@ public static class RefreshPreviewsHandler
         ILogger logger, CancellationToken ct)
     {
         var pending = candidates
-            .Where(t => t.AlbumId is not null && t.GenresCheckedAt is null)
+            .Where(t => t.AlbumId is not null && t.GenresNeedReading(time.GetUtcNow(), ManualGenreMaxAge))
             .Select(t => t.AlbumId!.Value)
             .Distinct()
             .ToList();

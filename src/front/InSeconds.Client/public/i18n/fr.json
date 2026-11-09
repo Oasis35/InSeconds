@@ -379,7 +379,8 @@
       },
       "colFound": "Trouvé",
       "foundHint": "Sur {{ count }} réponses",
-      "hardestFirst": "Les moins trouvés"
+      "hardestFirst": "Les moins trouvés",
+      "noGenre": "Sans genre"
     },
     "deleteModal": {
       "title": "Confirmer la suppression",
@@ -398,7 +399,9 @@
       "todayWarning": "Ce morceau est dans le défi du jour : les joueurs qui n'ont pas encore répondu seront corrigés avec le nouveau nom.",
       "cancel": "Annuler",
       "save": "Enregistrer",
-      "saving": "Enregistrement..."
+      "saving": "Enregistrement...",
+      "genre": "Genre",
+      "genreHint": "Deezer relit le genre de l’album chaque mois : s’il en donne un, il remplace celui saisi ici. Sans genre chez Deezer, le tien est gardé."
     },
     "addPanel": {
       "title": "Ajouter un morceau",

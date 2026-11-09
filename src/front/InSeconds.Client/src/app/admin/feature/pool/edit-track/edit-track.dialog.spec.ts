@@ -83,8 +83,46 @@ describe('EditTrackDialog', () => {
     save.click();
     await settle(fixture);
 
-    expect(api.renameTrack).toHaveBeenCalledWith(7, 'Eminem', 'Titre corrigé');
+    expect(api.renameTrack).toHaveBeenCalledWith(7, 'Eminem', 'Titre corrigé', undefined);
     expect(dialog.close).toHaveBeenCalledWith(true);
+  });
+
+  it('préremplit le genre de Deezer, avertit que Deezer l\'emporte, et n\'envoie le genre que s\'il change', async () => {
+    const { fixture, element, artist, save } = open(poolTrack({ id: 9, artist: 'Eminem', genres: ['Rap/Hip Hop'] }));
+    const genre = element.querySelector<HTMLInputElement>('#edit-track-genre')!;
+
+    expect(genre.value).toBe('Rap/Hip Hop');
+    expect(element.querySelector('[data-testid="edit-track-genre-hint"]')?.textContent).toContain('admin.editModal.genreHint');
+
+    // Artiste seul : le genre de Deezer n'est pas renvoyé.
+    type(artist, 'Eminem Jr');
+    await settle(fixture);
+    save.click();
+    await settle(fixture);
+    expect(api.renameTrack).toHaveBeenLastCalledWith(9, 'Eminem Jr', 'Titre', undefined);
+  });
+
+  it('des genres de Deezer plus longs que la limite n\'empêchent pas de corriger le titre', async () => {
+    const long = ['Pop', 'Dance', 'Electro', 'Rock & Folk', 'Musique de film', 'Hip Hop', 'Soul & Funk'];
+    const { fixture, title, save } = open(poolTrack({ id: 9, artist: 'Eminem', title: 'Titre', genres: long }));
+
+    type(title, 'Titre corrigé');
+    await settle(fixture);
+
+    expect(save.disabled).toBe(false);
+  });
+
+  it('envoie le genre saisi, ou vide pour le retirer', async () => {
+    const { fixture, element, save } = open(poolTrack({ id: 9, artist: 'Eminem', title: 'Titre' }));
+    const genre = element.querySelector<HTMLInputElement>('#edit-track-genre')!;
+
+    type(genre, ' Blues ');
+    await settle(fixture);
+    expect(save.disabled).toBe(false);
+    save.click();
+    await settle(fixture);
+
+    expect(api.renameTrack).toHaveBeenCalledWith(9, 'Eminem', 'Titre', 'Blues');
   });
 
   it('reste ouverte et dit pourquoi quand l\'API refuse', async () => {

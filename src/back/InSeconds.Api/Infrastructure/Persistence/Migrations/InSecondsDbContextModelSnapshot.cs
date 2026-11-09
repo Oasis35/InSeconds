@@ -201,6 +201,12 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("genres_checked_at");
 
+                    b.Property<bool>("GenresManual")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("genres_manual");
+
                     b.Property<DateTimeOffset?>("PreviewCheckedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("preview_checked_at");

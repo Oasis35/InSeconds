@@ -675,6 +675,7 @@ export interface ProblemDetails {
 export interface RenameTrack {
     artist: string;
     title: string;
+    genre?: string | undefined;
 
     [key: string]: any;
 }
