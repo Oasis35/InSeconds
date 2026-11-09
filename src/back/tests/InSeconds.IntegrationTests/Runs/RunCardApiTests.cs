@@ -28,6 +28,10 @@ public class RunCardApiTests(PostgresFixture postgres) : IAsyncLifetime
             await postgres.CreateDatabaseAsync(), tracks: 28,
             configureServices: s => s.AddSingleton<Microsoft.Extensions.Logging.ILoggerProvider>(_logs));
         await _run.Api.ExecuteAsync("UPDATE catalogue.tracks SET release_year = 1990 + id");
+        // Ce fichier couvre le comportement des playlists d'avant (cartes jouées une fois, carte de départ) ; RunDurableCardApiTests, les cartes durables.
+        await _run.Game.SetSettingAsync("Runs:DurableCards", "false");
+        await _run.Game.SetSettingAsync("Runs:HourglassSeconds", "30");
+        await _run.Game.SetSettingAsync("Runs:LowerTargetPercent", "20");
     }
 
     public ValueTask DisposeAsync() => _run.DisposeAsync();

@@ -65,30 +65,32 @@ Règles :
 - L'objectif de « Sûre » est celui du proto 1 pour la manche (seuils de départ ci-dessous). Facile et Risquée sont des fractions et des multiples de ce seuil, à régler.
 - **Dernière manche** : « Risquée » est la **manche boss** (écoute de 5 s). Elle n'est jamais imposée. À confirmer après les parties de test, pour ne pas braquer les débutants.
 - **Sans choix**, la manche se joue en « Sûre » (rien n'est noté dans la partie). Le choix reste ouvert jusqu'au premier son de la manche, jamais après, et l'extrait de son premier morceau ne part qu'avec lui. Les réglages refusent un objectif au-dessus du plafond de sa difficulté.
-- **Seuils de départ** (`Runs:ThresholdPercents`) : 45, 55, 65, 75 % du maximum de la manche (au lieu de 40, 50, 60, 70), à ajuster après les parties de test. Les anciennes playlists gardent leurs règles figées.
+- **Seuils de départ** (`Runs:ThresholdPercents`) : 45, 55, 68, 80 % du maximum de la manche (au lieu de 40, 50, 60, 70 puis 45, 55, 65, 75), à ajuster après les parties de test. Les anciennes playlists gardent leurs règles figées.
 
 Questions à trancher avec les parties de test : barème exact des trois colonnes, facteurs de points, objectif de Facile (reste-t-il proche de Sûre ?), boss à 5 s.
 
 ## Les coups de pouce
 
-Des cartes à **usage unique**, jouées sur le morceau en cours. **2 emplacements en main**. Le joueur en reçoit **une au départ du run** et peut en prendre **une parmi 3** à chaque palier (ou aucune). Main pleine : il touche la carte à lâcher, ou refuse l'offre.
+Des cartes **durables** : une carte reste en main tant qu'on ne la lâche pas et agit **toute seule** sur chaque morceau, sans clic (seul le Joker, à usage unique, se joue). **La première manche se joue sans aucun bonus** : rien au départ. **2 emplacements en main** ; à chaque palier le joueur peut prendre **une carte parmi 3** tirées au hasard (jamais une carte qu'il a déjà en main), ou aucune. Main pleine : il touche la carte à lâcher, ou refuse l'offre ; une carte lâchée peut revenir dans une offre. Les playlists d'avant (règle figée `Durable` à faux) gardent le comportement à usage unique avec une carte de départ.
 
 | Carte | Effet (provisoire) |
 |---|---|
-| Trois choix | l'autocomplétion est remplacée par trois réponses, une seule est juste |
+| QCM | l'autocomplétion est remplacée par trois réponses dont une seule est juste ; les deux fausses sont proches (même genre ou même époque) ; la bonne réponse rapporte tous les points |
 | Joker | change de morceau |
 | Année | affiche l'année du morceau |
 | Initiales | affiche les initiales de l'artiste et du titre |
-| Rallonge | 20 s d'écoute au lieu de 10 |
-| Filet | un morceau raté compte comme à moitié trouvé |
-| Seuil abaissé | l'objectif de la manche baisse de 20 % (gardée pour la manche, pas pour un morceau) |
-| Sablier | 30 s de plus au chrono de 45 s (retenu le 05/11/2026 plutôt que le chrono suspendu, réglable par `Runs:HourglassSeconds`) |
+| Prolongation | +5 s d'écoute (`Runs:ExtendBonusSeconds`) |
+| Repêchage | un morceau raté (ou à moitié juste) rapporte le quart des points du morceau |
+| Rabais | l'objectif de la manche baisse de 10 % tant que la carte est en main |
+| Délai | +15 s au chrono de 45 s (réglable par `Runs:HourglassSeconds`) |
+| Genre | affiche le genre du morceau (celui de son album ; rien s'il n'en a pas) |
+| L'un ou l'autre | l'artiste **ou** le titre suffit pour les points entiers du morceau (sans effet avec le QCM) |
 
 - Les **offres sont les mêmes pour tous les joueurs de la playlist** et figées avec elle : la comparaison reste juste.
-- **Rien d'une carte n'identifie un morceau avant la réponse** (piège 31) : « Année » et « Initiales » sont servies par le serveur à l'activation, jamais envoyées d'avance. « Trois choix » : les deux fausses réponses viennent du serveur, qui ne dit pas laquelle est juste.
+- **Rien d'une carte n'identifie un morceau avant la réponse** (piège 31) : « Année », « Initiales » et « Genre » sont servies par le serveur avec le morceau en cours, jamais d'avance, jamais envoyées d'avance. « QCM » : les deux fausses réponses viennent du serveur, qui ne dit pas laquelle est juste.
 - Sur l'écran de manche, les cartes sont **au-dessus du champ de saisie** ; « Passer (0 pts) » reste un simple lien souligné sous « Valider ».
-- Une carte jouée monte dans la carte du morceau (animation), avec ce qu'elle révèle (l'année, les initiales, les secondes ajoutées) ; le serveur en tient le compte (une carte ne se joue qu'une fois). « Trois choix » remplace le champ et « Valider » par les trois réponses à toucher ; « Rallonge » relance l'écoute sur 20 s ; un Joker passe au morceau de réserve, écoute et chrono remis à zéro.
-- Côté serveur : une même carte ne se joue qu'une fois par morceau (« Seuil abaissé » une fois par manche) ; un Joker sort le morceau suivant de la réserve de la manche, remet l'écoute et le chrono à zéro, et efface les cartes déjà jouées sur l'ancien morceau ; « Trois choix » propose deux morceaux du catalogue hors de la playlist, d'autres artistes, les mêmes pour tous les joueurs ; « Filet » donne les points d'un morceau à moitié trouvé sans changer les verdicts (le partage montre toujours un morceau raté). L'offre d'un palier reste ouverte jusqu'à ce qu'une carte soit prise, que le joueur la passe, ou qu'il choisisse la difficulté ; tant qu'elle est ouverte, rien du premier morceau de la manche ne part. Jouer une carte ferme aussi le choix de la difficulté. Une carte qui n'aurait rien à changer ne se joue pas (Joker sans réserve, Année inconnue, Trois choix sans deux leurres, Sablier sans chrono ou après le chrono). « Rallonge » donne 20 s d'écoute même dans la manche boss ; « Filet » puis « Passer » rapporte les points d'un morceau à moitié trouvé (c'est un morceau raté), jamais une réponse en retard.
+- Une carte jouée monte dans la carte du morceau (animation), avec ce qu'elle révèle (l'année, les initiales, les secondes ajoutées) ; le serveur en tient le compte (une carte ne se joue qu'une fois). « QCM » remplace le champ et « Valider » par les trois réponses à toucher ; « Prolongation » relance l'écoute sur 20 s ; un Joker passe au morceau de réserve, écoute et chrono remis à zéro.
+- Côté serveur (règles d’avant les cartes durables ; en durable, les cartes en main agissent sans être jouées et leurs effets sont recalculés à chaque envoi du morceau) : une même carte ne se joue qu'une fois par morceau (« Rabais » une fois par manche) ; un Joker sort le morceau suivant de la réserve de la manche, remet l'écoute et le chrono à zéro, et efface les cartes déjà jouées sur l'ancien morceau ; « QCM » propose deux morceaux du catalogue hors de la playlist, d'autres artistes, les mêmes pour tous les joueurs ; « Repêchage » donne les points d'un morceau à moitié trouvé sans changer les verdicts (le partage montre toujours un morceau raté). L'offre d'un palier reste ouverte jusqu'à ce qu'une carte soit prise, que le joueur la passe, ou qu'il choisisse la difficulté ; tant qu'elle est ouverte, rien du premier morceau de la manche ne part. Jouer une carte ferme aussi le choix de la difficulté. Une carte qui n'aurait rien à changer ne se joue pas (Joker sans réserve, Année inconnue, QCM sans deux leurres, Délai sans chrono ou après le chrono). « Prolongation » donne 20 s d'écoute même dans la manche boss ; « Repêchage » puis « Passer » rapporte les points d'un morceau à moitié trouvé (c'est un morceau raté), jamais une réponse en retard.
 
 | Maquette | L'app |
 |---|---|
@@ -118,7 +120,7 @@ Des cartes à **usage unique**, jouées sur le morceau en cours. **2 emplacement
 
 Les noms exacts viendront de la conception ([`conception.md`](conception.md) § 7 prévoit déjà que les bonus décorent `IRunScoringPolicy` et modifient `RunRules`).
 
-- **Règles figées dans la playlist** : les trois difficultés de chaque manche (objectif, plafond, facteur de points), les offres de cartes de chaque palier et la carte de départ sont tirées **à la création** et enregistrées avec la playlist (`rules` en `jsonb` et colonnes de tirage). Les playlists existantes n'ont pas ces champs : elles se jouent comme au proto 1, sans palier ni choix.
+- **Règles figées dans la playlist** : les trois difficultés de chaque manche (objectif, plafond, facteur de points), les offres de cartes de chaque palier (et, avant les cartes durables, la carte de départ) sont tirées **à la création** et enregistrées avec la playlist (`rules` en `jsonb` et colonnes de tirage). Les playlists existantes n'ont pas ces champs : elles se jouent comme au proto 1, sans palier ni choix.
 - **Tirage** : pour la même manche, les trois difficultés peuvent tirer des morceaux de tranches de rang Deezer voisines ; chaque manche a ses morceaux principaux et une réserve pour « Joker ». Tout est enregistré à la création (même playlist pour tous).
 - **La partie** retient, par manche, la difficulté choisie, les cartes prises, lâchées et jouées, et les morceaux remplacés par un Joker. Aucune nouvelle donnée de joueur hors de la partie (l'effacement du joueur la couvre déjà, piège 48).
 - **Calcul des points** : côté serveur uniquement ; la difficulté et chaque carte sont des décorateurs de la politique de score ou des modificateurs des règles de la manche. Le client ne propose jamais de score.

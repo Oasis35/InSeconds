@@ -295,6 +295,8 @@ function toSession(session: RunSessionResponse): RunSession {
           extendListenSeconds: session.cardValues.extendListenSeconds,
           hourglassSeconds: session.cardValues.hourglassSeconds,
           lowerTargetPercent: session.cardValues.lowerTargetPercent,
+          durable: session.cardValues.durable ?? false,
+          extendBonusSeconds: session.cardValues.extendBonusSeconds ?? 0,
         }
       : null,
     nextDisc: session.nextDisc ? { key: session.nextDisc.key, stars: session.nextDisc.stars } : null,
@@ -310,6 +312,7 @@ function toEffects(effects: RunTrackEffectsResponse | undefined): RunTrackEffect
     titleInitials: effects.titleInitials ?? null,
     choices: effects.choices?.map(c => ({ artist: c.artist, title: c.title })) ?? null,
     clockBonusSeconds: effects.clockBonusSeconds ?? 0,
+    genre: effects.genre ?? null,
   };
 }
 

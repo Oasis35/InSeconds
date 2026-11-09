@@ -1736,6 +1736,7 @@ export interface RunTrackEffectsResponse {
     titleInitials: string[] | undefined;
     choices: RunChoiceResponse[] | undefined;
     clockBonusSeconds: number;
+    genre?: string | undefined;
 
     [key: string]: any;
 }
@@ -1758,6 +1759,8 @@ export interface RunCardValuesResponse {
     extendListenSeconds: number;
     hourglassSeconds: number;
     lowerTargetPercent: number;
+    durable?: boolean;
+    extendBonusSeconds?: number;
 
     [key: string]: any;
 }

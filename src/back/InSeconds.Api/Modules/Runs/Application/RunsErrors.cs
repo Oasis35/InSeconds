@@ -46,10 +46,10 @@ public static class RunsErrorCodes
     /// <summary>La main est pleine : prendre une carte demande d'en lâcher une.</summary>
     public const string HandFull = "runs.hand_full";
 
-    /// <summary>La même carte est déjà active sur ce morceau (ou sur la manche, pour « Seuil abaissé »).</summary>
+    /// <summary>La même carte est déjà active sur ce morceau (ou sur la manche, pour « Rabais »).</summary>
     public const string CardAlreadyActive = "runs.card_already_active";
 
-    /// <summary>La carte n'a rien sur quoi jouer : plus de morceau en réserve pour le Joker, pas de chrono pour le Sablier.</summary>
+    /// <summary>La carte n'a rien sur quoi jouer : plus de morceau en réserve pour le Joker, pas de chrono pour le Délai.</summary>
     public const string CardUnavailable = "runs.card_unavailable";
 }
 

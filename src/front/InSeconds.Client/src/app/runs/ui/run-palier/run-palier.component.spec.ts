@@ -44,9 +44,9 @@ describe('RunPalierComponent', () => {
     const { element, text } = render();
 
     // Le signe dans le coin, puis le nom : deux éléments.
-    expect(text('run-offer-three_choices')).toBe('3Trois choix');
+    expect(text('run-offer-three_choices')).toBe('3QCM');
     expect(text('run-offer-joker')).toBe('↻Joker');
-    expect(text('run-offer-hourglass')).toBe('+30Sablier');
+    expect(text('run-offer-hourglass')).toBe('+30Délai');
     expect(text('run-hand-year')).toBe('’95Année');
     expect(element.querySelectorAll('[data-testid="run-hand"] > li')).toHaveLength(2);
     expect(element.querySelector('[data-testid="run-hand-drop-hint"]')).toBeNull();

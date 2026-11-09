@@ -1,11 +1,11 @@
 import { RUN_CARDS, RunCardValues, cardGlyph, handFull, handSlots, isRunCard, playedCards } from './run-cards';
 
-const VALUES: RunCardValues = { extendListenSeconds: 20, hourglassSeconds: 30, lowerTargetPercent: 25 };
+const VALUES: RunCardValues = { extendListenSeconds: 20, hourglassSeconds: 30, lowerTargetPercent: 25, durable: false, extendBonusSeconds: 0 };
 import { RunSession, nextObjective, palierDue } from './run';
 
 describe('les cartes', () => {
-  it('reconnaît les huit cartes et rien d\'autre', () => {
-    expect(RUN_CARDS).toHaveLength(8);
+  it('reconnaît les dix cartes et rien d\'autre', () => {
+    expect(RUN_CARDS).toHaveLength(10);
     expect(RUN_CARDS.every(isRunCard)).toBe(true);
     expect(isRunCard('magic')).toBe(false);
   });
@@ -23,7 +23,7 @@ describe('les cartes', () => {
   it('les cartes jouées : ce qu\'elles révèlent, la baisse de la playlist, rien pour le Joker', () => {
     const effects = {
       cards: ['joker', 'year', 'initials', 'lower_target', 'net'] as const, year: 1995, artistInitials: ['D', 'P'], titleInitials: ['G', 'L'],
-      choices: null, clockBonusSeconds: 0,
+      choices: null, clockBonusSeconds: 0, genre: null,
     };
     expect(playedCards(effects, VALUES)).toEqual([
       { card: 'year', value: '1995' }, { card: 'initials', value: 'D. P. – G. L.' }, { card: 'lower_target', value: '−25 %' }, { card: 'net', value: null },

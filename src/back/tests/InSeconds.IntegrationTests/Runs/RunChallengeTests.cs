@@ -111,7 +111,7 @@ public class RunChallengeTests(PostgresFixture postgres) : IAsyncLifetime
         var rules = JsonSerializer.Deserialize<RunRules>(
             (await _game.Api.ScalarAsync<string>($"SELECT rules::text FROM runs.challenges WHERE id = {id}"))!, JsonSerializerOptions.Web)!;
         Assert.Equal(RunsOptions.DefaultRules().Rounds, rules.Rounds);
-        Assert.Equal([45, 55, 65, 75], rules.ThresholdPercents);
+        Assert.Equal([45, 55, 68, 80], rules.ThresholdPercents);
         Assert.Equal(RunsOptions.DefaultRules().OptionsOf(3), rules.OptionsOf(3));
         Assert.Equal(10m, rules.ListenSeconds);
         Assert.Equal("jsonb", await _game.Api.ScalarAsync<string>(

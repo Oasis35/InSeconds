@@ -21,7 +21,7 @@ public class RunCardTests
     /// <summary>Des règles par défaut dont les cartes sont tirées dans <paramref name="pool"/>, avec 2 morceaux de réserve par manche.</summary>
     private static RunChallenge Challenge(params RunCard[] pool)
     {
-        var options = new RunsOptions { Cards = pool.Length == 0 ? null : [.. pool.Select(RunCards.KeyOf)] };
+        var options = new RunsOptions { DurableCards = false, HourglassSeconds = 30, LowerTargetPercent = 20, Cards = pool.Length == 0 ? null : [.. pool.Select(RunCards.KeyOf)] };
         var rules = options.ToRules();
         rules = rules with { Cards = Dealer.Deal(rules.Cards!, rules, seed: 11, AllRounds) };
         var tracks = Enumerable.Range(1, rules.TrackCount)
@@ -45,7 +45,7 @@ public class RunCardTests
     [Fact]
     public void LeTirage_UneCarteDeDepart_TroisCartesDistinctesParPalier_ReproductiblePourLaGraine()
     {
-        var rules = new RunsOptions().ToRules();
+        var rules = new RunsOptions { DurableCards = false, HourglassSeconds = 30, LowerTargetPercent = 20 }.ToRules();
 
         var dealt = Dealer.Deal(rules.Cards!, rules, seed: 42, AllRounds);
 
@@ -61,7 +61,7 @@ public class RunCardTests
     [Fact]
     public void LeJoker_SeulementPourUneMancheQuiADeLaReserve()
     {
-        var rules = new RunsOptions { Cards = ["joker", "year"] }.ToRules();
+        var rules = new RunsOptions { DurableCards = false, Cards = ["joker", "year"] }.ToRules();
 
         // Une tranche trop petite n'a rien donné en réserve aux manches 1 et 3.
         var partial = Dealer.Deal(rules.Cards!, rules, seed: 3, [2, 4]);
@@ -74,7 +74,7 @@ public class RunCardTests
     [Fact]
     public void SansReserve_LeJokerNEstJamaisTire()
     {
-        var rules = new RunsOptions { ReservePerRound = 0, Cards = ["joker", "year"] }.ToRules();
+        var rules = new RunsOptions { DurableCards = false, ReservePerRound = 0, Cards = ["joker", "year"] }.ToRules();
 
         var dealt = Dealer.Deal(rules.Cards!, rules, seed: 3, []);
 
@@ -148,11 +148,11 @@ public class RunCardTests
         var challenge = Challenge(RunCard.Year);
         var session = Start(challenge);
 
-        session.DropCard(1, Now);
+        session.DropCard(challenge, 1, Now);
 
         Assert.Empty(session.Hand);
         Assert.Equal(RunCardRefusal.NotInHand, session.CanPlay(challenge, 1, Now));
-        Assert.Throws<InvalidOperationException>(() => session.DropCard(1, Now));
+        Assert.Throws<InvalidOperationException>(() => session.DropCard(challenge, 1, Now));
     }
 
     [Fact]
@@ -254,7 +254,7 @@ public class RunCardTests
         Assert.Null(session.CanTake(challenge, 1, offer.Cards[0], null));
         session.TakeCard(challenge, 1, offer.Cards[0], null, Now);
         Assert.Equal(RunCardRefusal.OfferClosed, session.CanTake(challenge, 1, offer.Cards[1], null));
-        Assert.Equal(RunCardRefusal.NotInHand, session.CanDrop(9));
+        Assert.Equal(RunCardRefusal.NotInHand, session.CanDrop(challenge, 9));
     }
 
     [Fact]
@@ -403,7 +403,7 @@ public class RunCardTests
     {
         Assert.Contains(RunsOptionsChecks.Problems(new RunsOptions { Cards = ["year", "magic"] }), p => p.StartsWith("Runs:Cards", StringComparison.Ordinal));
         Assert.Contains(RunsOptionsChecks.Problems(new RunsOptions { HandSize = 0 }), p => p.StartsWith("Runs:HandSize", StringComparison.Ordinal));
-        Assert.Contains(RunsOptionsChecks.Problems(new RunsOptions { ExtendListenSeconds = 31 }), p => p.StartsWith("Runs:ExtendListenSeconds", StringComparison.Ordinal));
+        Assert.Contains(RunsOptionsChecks.Problems(new RunsOptions { ExtendBonusSeconds = 21 }), p => p.StartsWith("Runs:ExtendBonusSeconds", StringComparison.Ordinal));
         Assert.Contains(RunsOptionsChecks.Problems(new RunsOptions { LowerTargetPercent = 95 }), p => p.StartsWith("Runs:LowerTargetPercent", StringComparison.Ordinal));
         Assert.Empty(RunsOptionsChecks.Problems(new RunsOptions { Cards = [] }));
     }

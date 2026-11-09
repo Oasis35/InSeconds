@@ -281,8 +281,8 @@ public class RunGaugeTests
     [Theory]
     [InlineData(1, 500, 225)]
     [InlineData(2, 665, 366)]
-    [InlineData(3, 835, 543)]
-    [InlineData(4, 1000, 750)]
+    [InlineData(3, 835, 568)]
+    [InlineData(4, 1000, 800)]
     public void Objectif_PourcentageDuMaximum_ArrondiAuPlusProche(int round, int max, int expected) =>
         Assert.Equal(expected, RunGauge.Objective(RunsOptions.DefaultRules().DefaultOptionOf(round).ObjectivePercent, max));
 

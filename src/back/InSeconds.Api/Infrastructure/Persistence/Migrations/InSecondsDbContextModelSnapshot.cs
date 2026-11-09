@@ -967,6 +967,10 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer[]")
                         .HasColumnName("decoy_track_ids");
 
+                    b.Property<short?>("DroppedAfterRound")
+                        .HasColumnType("smallint")
+                        .HasColumnName("dropped_after_round");
+
                     b.Property<DateTimeOffset?>("DroppedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("dropped_at");
@@ -999,7 +1003,7 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
 
                     b.ToTable("session_cards", "runs", t =>
                         {
-                            t.HasCheckConstraint("ck_session_cards_card", "card BETWEEN 1 AND 8");
+                            t.HasCheckConstraint("ck_session_cards_card", "card BETWEEN 1 AND 10");
                         });
                 });
 

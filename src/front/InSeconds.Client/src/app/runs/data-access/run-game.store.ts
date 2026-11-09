@@ -96,7 +96,7 @@ const initialState: RunState = {
 /** Les phases où une carte se joue : la saisie (ni l'envoi d'une réponse, ni sa révélation). */
 const canPlayCards = (phase: string | null): boolean => phase === 'loading' || phase === 'playing' || phase === 'listened';
 
-/** Le chrono plein d'un morceau : celui de la playlist, plus ce qu'un Sablier joué avant le premier son lui ajoute. */
+/** Le chrono plein d'un morceau : celui de la playlist, plus ce qu'un Délai joué avant le premier son lui ajoute. */
 const fullClock = (answerSeconds: number, current: RunCurrentTrack | null): number =>
   answerSeconds + (current?.effects?.clockBonusSeconds ?? 0);
 
@@ -298,8 +298,8 @@ export const RunGameStore = signalStore(
     };
 
     /**
-     * Remet le chrono qui tourne sur ce que le serveur retient après un coup de pouce (le Sablier en ajoute) ; il repart s'il venait de s'arrêter.
-     * Rien si le temps écoulé a déjà envoyé la réponse, ni avant le premier son (le chrono partira plein, Sablier compris).
+     * Remet le chrono qui tourne sur ce que le serveur retient après un coup de pouce (le Délai en ajoute) ; il repart s'il venait de s'arrêter.
+     * Rien si le temps écoulé a déjà envoyé la réponse, ni avant le premier son (le chrono partira plein, Délai compris).
      */
     const setClock = (position: number, seconds: number): void => {
       if (clockPosition !== position || store.timeUp()) return;
@@ -652,8 +652,8 @@ export const RunGameStore = signalStore(
       },
       /**
        * Jouer une carte de la main sur le morceau en cours (un toucher). Le son se déverrouille dans le toucher : le Joker change de morceau, la
-       * Rallonge relance l'écoute plus longue, et le nouveau son part à la réponse. Les autres cartes ne coupent rien : leurs effets s'affichent
-       * (année, initiales, trois réponses), le chrono se recale sur ce que le serveur retient (Sablier), l'objectif sur la manche (Seuil abaissé).
+       * Prolongation relance l'écoute plus longue, et le nouveau son part à la réponse. Les autres cartes ne coupent rien : leurs effets s'affichent
+       * (année, initiales, trois réponses), le chrono se recale sur ce que le serveur retient (Délai), l'objectif sur la manche (Rabais).
        */
       async playCard(slot: number): Promise<void> {
         round.unlockAudio();
