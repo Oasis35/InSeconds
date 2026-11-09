@@ -80,13 +80,12 @@
               <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left touch-manipulation"
                 style="min-height:44px;background:var(--bg-surface);border-radius:var(--radius-button)"
                 [style.border]="pending() ? '1.5px dashed var(--color-accent)' : '1px solid var(--border-neutral)'"
-                [disabled]="!pending() || busy()" (click)="drop.emit(slot.slot)" [attr.data-testid]="'run-hand-' + slot.card">
+                [disabled]="!pending() || busy()" (click)="dropCard.emit(slot.slot)" [attr.data-testid]="'run-hand-' + slot.card">
                 <span class="text-[13px] font-bold" style="font-family:var(--font-clock)" [style.color]="color(slot.card).color" aria-hidden="true">{{ glyph(slot.card, values()) }}</span>
                 <span class="text-[14px] font-semibold leading-tight" style="color:var(--text-hi)">{{ 'runs.cards.' + slot.card + '.name' | translate }}</span>
               </button>
             } @else {
-              <div role="img" style="height:44px;border:1.5px dashed var(--border-strong);border-radius:var(--radius-button)"
-                [attr.aria-label]="'runs.palier.emptySlot' | translate"></div>
+              <div style="height:44px;border:1.5px dashed var(--border-strong);border-radius:var(--radius-button)"><span class="sr-only">{{ 'runs.palier.emptySlot' | translate }}</span></div>
             }
           </li>
         }

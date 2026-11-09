@@ -30,7 +30,7 @@ describe('RunRoundCardsComponent', () => {
   it('les cartes de la main se jouent d\'un toucher', () => {
     const { fixture, element } = render([{ slot: 1, card: 'year' }, { slot: 3, card: 'joker' }]);
     const played: number[] = [];
-    fixture.componentInstance.play.subscribe(slot => played.push(slot));
+    fixture.componentInstance.playCard.subscribe(slot => played.push(slot));
 
     element.querySelector<HTMLButtonElement>('[data-testid="run-play-joker"]')!.click();
 
