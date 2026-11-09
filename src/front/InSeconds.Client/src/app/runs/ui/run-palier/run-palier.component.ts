@@ -47,7 +47,7 @@ export class RunPalierComponent {
   /** Toucher une carte de l'offre. */
   readonly pick = output<RunCardKey>();
   /** Toucher une carte de la main (pour l'échanger contre la carte en attente). */
-  readonly drop = output<number>();
+  readonly dropCard = output<number>();
   readonly pass = output();
   readonly next = output();
 

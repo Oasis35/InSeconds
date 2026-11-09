@@ -40,7 +40,7 @@ import { RunCardKey, RunCardValues, RunHandCard, RunTrackEffects, cardColor, car
         @for (card of hand(); track card.slot) {
           <button type="button" class="flex items-center gap-2 px-3 py-1.5 text-left touch-manipulation disabled:opacity-50" [disabled]="busy() || !playable()"
             style="min-height:44px;background:var(--bg-surface-2);border:1px solid var(--border-neutral);border-radius:var(--radius-button)"
-            (click)="play.emit(card.slot)" [attr.aria-label]="'runs.roundCards.play' | translate: { card: ('runs.cards.' + card.card + '.name' | translate) }"
+            (click)="playCard.emit(card.slot)" [attr.aria-label]="'runs.roundCards.play' | translate: { card: ('runs.cards.' + card.card + '.name' | translate) }"
             [attr.data-testid]="'run-play-' + card.card">
             <span class="text-[13px] font-bold" style="font-family:var(--font-clock)" [style.color]="color(card.card).color" aria-hidden="true">{{ glyph(card.card, values()) }}</span>
             <span class="text-[14px] font-semibold leading-tight" style="color:var(--text-hi)">{{ 'runs.cards.' + card.card + '.name' | translate }}</span>
@@ -65,7 +65,7 @@ export class RunRoundCardsComponent {
   readonly playable = input(true);
   /** Le serveur a refusé la dernière carte jouée. */
   readonly refused = input(false);
-  readonly play = output<number>();
+  readonly playCard = output<number>();
 
   readonly lang = input('fr');
   protected readonly glyph = (card: RunCardKey, values: RunCardValues | null): string => cardGlyph(card, values, this.lang());

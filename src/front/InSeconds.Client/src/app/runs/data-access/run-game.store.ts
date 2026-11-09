@@ -338,6 +338,16 @@ export const RunGameStore = signalStore(
       }
     };
 
+    /** La fin de la partie. Son de la fin qui vient d'arriver, pas d'une partie finie qu'on rouvre. */
+    const showEnd = (session: RunSession): void => {
+      const justEnded = store.screen() === 'playing';
+      round.reset();
+      stopClock();
+      patchState(store, { screen: 'finished' });
+      if (justEnded && (session.status === 'won' || session.status === 'lost')) sounds.play(session.status);
+      void refreshMe();
+    };
+
     /**
      * Montre la première étape qui reste ; sans étape, la fin de la partie ou le morceau à jouer. `play` : le morceau démarre (seulement dans
      * le clic du joueur ; une redemande d'extrait rend toujours une étape à montrer quand le morceau change).
@@ -377,13 +387,7 @@ export const RunGameStore = signalStore(
         return;
       }
       if (isFinished(session) || !current) {
-        // Le son de la fin qui vient d'arriver, pas d'une partie finie qu'on rouvre.
-        const justEnded = store.screen() === 'playing';
-        round.reset();
-        stopClock();
-        patchState(store, { screen: 'finished' });
-        if (justEnded && (session.status === 'won' || session.status === 'lost')) sounds.play(session.status);
-        void refreshMe();
+        showEnd(session);
         return;
       }
       patchState(store, { screen: 'playing' });
