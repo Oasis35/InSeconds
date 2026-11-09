@@ -28,31 +28,39 @@ public sealed class EfRunsStore(InSecondsDbContext db) : IRunsStore
     // Un défi ajouté dans cette transaction (le lancement d'un run) n'est pas encore en base : on le trouve d'abord dans le contexte.
     public async Task<RunChallenge?> FindChallengeAsync(string code, CancellationToken ct) =>
         db.Set<RunChallenge>().Local.FirstOrDefault(c => c.Code == code)
-        ?? await db.Set<RunChallenge>().Include(c => c.Tracks).FirstOrDefaultAsync(c => c.Code == code, ct);
+        ?? await db.Set<RunChallenge>().Include(c => c.Tracks).Include(c => c.Reserve).AsSplitQuery().FirstOrDefaultAsync(c => c.Code == code, ct);
 
     public async Task<RunChallenge?> FindChallengeAsync(int challengeId, CancellationToken ct) =>
         db.Set<RunChallenge>().Local.FirstOrDefault(c => c.Id == challengeId)
-        ?? await db.Set<RunChallenge>().Include(c => c.Tracks).FirstOrDefaultAsync(c => c.Id == challengeId, ct);
+        ?? await db.Set<RunChallenge>().Include(c => c.Tracks).Include(c => c.Reserve).AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Id == challengeId, ct);
 
     public Task<RunSession?> FindSessionAsync(int challengeId, Guid playerId, CancellationToken ct) =>
-        db.Set<RunSession>().Include(s => s.Answers).FirstOrDefaultAsync(s => s.ChallengeId == challengeId && s.PlayerId == playerId, ct);
+        db.Set<RunSession>().Include(s => s.Answers).Include(s => s.Rounds).Include(s => s.Cards).AsSplitQuery()
+            .FirstOrDefaultAsync(s => s.ChallengeId == challengeId && s.PlayerId == playerId, ct);
 
     public async Task<RunSession?> FindSessionForUpdateAsync(int sessionId, Guid playerId, CancellationToken ct)
     {
         RequireTransaction("La lecture d'une partie à modifier");
-        // FOR UPDATE doit rester à la fin de la requête : pas de composition (Include) derrière FromSql. Les réponses se chargent à part, EF les
-        // rattache à la partie.
+        // FOR UPDATE doit rester à la fin de la requête : pas de composition (Include) derrière FromSql. Les réponses et les manches
+        // se chargent à part, EF les rattache à la partie.
         var session = (await db.Set<RunSession>()
                 .FromSql($"SELECT * FROM runs.sessions WHERE id = {sessionId} AND player_id = {playerId} FOR UPDATE")
                 .ToListAsync(ct))
             .SingleOrDefault();
         if (session is not null)
+        {
             await db.Set<RunAnswer>().Where(a => a.SessionId == sessionId).LoadAsync(ct);
+            await db.Set<RunSessionRound>().Where(r => r.SessionId == sessionId).LoadAsync(ct);
+            await db.Set<RunSessionCard>().Where(c => c.SessionId == sessionId).LoadAsync(ct);
+        }
+
         return session;
     }
 
     public Task<RunSession?> ReadSessionAsync(int sessionId, Guid playerId, CancellationToken ct) =>
-        db.Set<RunSession>().AsNoTracking().Include(s => s.Answers).FirstOrDefaultAsync(s => s.Id == sessionId && s.PlayerId == playerId, ct);
+        db.Set<RunSession>().AsNoTracking().Include(s => s.Answers).Include(s => s.Rounds).Include(s => s.Cards).AsSplitQuery()
+            .FirstOrDefaultAsync(s => s.Id == sessionId && s.PlayerId == playerId, ct);
 
     public async ValueTask AddAsync(RunSession session, CancellationToken ct) => await db.AddAsync(session, ct);
 
@@ -108,8 +116,24 @@ public sealed class EfRunsQueries(InSecondsDbContext db) : IRunsQueries
     public Task<RunRecord?> FindRecordAsync(Guid playerId, CancellationToken ct) =>
         db.Set<RunRecord>().AsNoTracking().FirstOrDefaultAsync(r => r.PlayerId == playerId, ct);
 
+    public async Task<IReadOnlyDictionary<int, int>?> FindFinishedPointsAsync(int challengeId, Guid playerId, CancellationToken ct)
+    {
+        var answers = await db.Set<RunSession>().AsNoTracking()
+            .Where(s => s.ChallengeId == challengeId && s.PlayerId == playerId && (s.Status == RunSessionStatus.Won || s.Status == RunSessionStatus.Lost))
+            .Select(s => s.Answers.Select(a => new { a.Position, a.Points }).ToList())
+            .FirstOrDefaultAsync(ct);
+        return answers?.ToDictionary(a => (int)a.Position, a => a.Points);
+    }
+
+    public async Task<IReadOnlyDictionary<int, int>> CountFinishedRunsAsync(Guid playerId, CancellationToken ct) =>
+        await db.Set<RunSession>().AsNoTracking()
+            .Where(s => s.PlayerId == playerId && (s.Status == RunSessionStatus.Won || s.Status == RunSessionStatus.Lost))
+            .GroupBy(s => s.RoundsPassed)
+            .Select(g => new { RoundsPassed = (int)g.Key, Count = g.Count() })
+            .ToDictionaryAsync(e => e.RoundsPassed, e => e.Count, ct);
+
     public async Task<IReadOnlyList<RunSession>> ListFinishedSessionsAsync(int challengeId, CancellationToken ct) =>
-        await db.Set<RunSession>().AsNoTracking().Include(s => s.Answers)
+        await db.Set<RunSession>().AsNoTracking().Include(s => s.Answers).Include(s => s.Rounds).Include(s => s.Cards).AsSplitQuery()
             .Where(s => s.ChallengeId == challengeId && (s.Status == RunSessionStatus.Won || s.Status == RunSessionStatus.Lost))
             .ToListAsync(ct);
 }

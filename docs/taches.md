@@ -9,15 +9,11 @@
 - [ ] **Fin de la reprise des anciens cookies** (#237, vers le 14/01/2027) - `legacy_tokens`, `LegacyCookieTransitionMiddleware`, anciennes clés Data Protection non chiffrées
 - [ ] **Petites dettes du front** - clés i18n de l'admin qui ne servent plus ; formats de date numériques qui ne suivent pas la langue ; `aria-label` des boutons ‹ › du tableau de bord
 
-## Mode Platines (suite du proto 1)
+## Mode Platines
 
-> Le proto 1 est livré sur invitation ([`runs/`](runs/README.md)). Reste, avant le proto 2 ([`runs/proto2.md`](runs/proto2.md), ticket [#497](https://github.com/Oasis35/InSeconds/issues/497)) :
+> Le proto 1 est livré sur invitation ([`runs/`](runs/README.md)), le proto 2 ([`runs/proto2.md`](runs/proto2.md), ticket [#497](https://github.com/Oasis35/InSeconds/issues/497)) sur le staging. Reste :
 
 - [ ] **Parties de test et réglage** - Clément joue sur le staging puis en prod avec quelques comptes, règle les seuils (`Runs:ThresholdPercents`, multiplicateurs, écoute) et la difficulté (tranches de rang Deezer) ; si les parties montrent des abus, un chrono `Runs:AnswerSeconds` (cf. `runs/conception.md` § 9)
-- [ ] **Tableau Grafana « Activité »** - ajouter les panneaux des métriques `inseconds.runs.sessions`, `.answers`, `.neutralized`, `.discs` (`RunsMetrics`, déjà émises ; `deploy/grafana/`)
-- [ ] **Synchronisation entre onglets** - le Daily relit l'état au retour de l'onglet au premier plan ; Runs n'a pas d'équivalent (une partie finie dans un autre onglet n'est vue qu'au rechargement)
-- [ ] **Captures réelles** - remplacer les maquettes de `docs/runs/maquettes/` par des captures de l'app (la fin du run et la comparaison ont changé, cf. `runs/ecrans.md`)
-- [ ] **« X % ont échoué »** sous chaque morceau de la fin de manche : question ouverte (statistiques par morceau sur les runs, absentes du proto 1)
 
 ## Mode entraînement (anciens défis)
 

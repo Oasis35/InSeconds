@@ -2,12 +2,14 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom, retry, throwError, timer } from 'rxjs';
 import {
   RunChallengeResponse, RunComparisonResponse, RunCurrentTrackResponse, RunFinishResponse, RunNeutralizedResponse, RunPassedRoundResponse, RunPlayResponse, RunRecordResponse, RunRoundResponse, RunRoundScoreResponse,
-  RunRoundSummaryResponse, RunSessionResponse, RunTrackResponse, RunsClient, RunsMeResponse,
+  RunRoundSummaryResponse, RunSessionResponse, RunTrackEffectsResponse, RunTrackResponse, RunsClient, RunsMeResponse,
 } from '../../api/runs/api.generated';
 import { toAppError } from '../../core/errors/app-error';
 import {
-  RunComparison, RunCurrentTrack, RunFinish, RunLink, RunNeutralized, RunPassedRound, RunPlay, RunRecord, RunRound, RunRoundScore, RunRoundSummary, RunSession, RunStatus, RunTrack, RunsMe,
+  RunComparison, RunCurrentTrack, RunDifficulty, RunFinish, RunLink, RunNeutralized, RunPassedRound, RunPlay, RunRecord, RunRound, RunRoundScore,
+  RunRoundSummary, RunSession, RunStatus, RunTrack, RunsMe,
 } from '../domain/run';
+import { RunCardKey, RunTrackEffects, isRunCard } from '../domain/run-cards';
 
 /** Les refus que le jeu connaît : ils deviennent des issues, pas des erreurs. */
 const ACCESS_DENIED = 'runs.access_denied';
@@ -89,6 +91,26 @@ export class RunsApi {
    */
   async refreshPreview(sessionId: number): Promise<RunPlay> {
     return toPlay(await firstValueFrom(this.client.refreshRunPreview(sessionId)));
+  }
+
+  /** Prend une carte de l'offre du palier ; main pleine, `dropSlot` est la carte lâchée en échange. Rend la partie (main à jour). */
+  async takeCard(sessionId: number, afterRound: number, card: RunCardKey, dropSlot: number | null): Promise<RunSession> {
+    return toSession(await firstValueFrom(this.client.takeRunCard(sessionId, { afterRound, card, dropSlot: dropSlot ?? undefined })));
+  }
+
+  /** Joue une carte de la main sur le morceau en cours ; rend la partie et le morceau avec ses effets (le Joker : un nouveau morceau). */
+  async playCard(sessionId: number, slot: number, position: number): Promise<RunPlay> {
+    return toPlay(await firstValueFrom(this.client.playRunCard(sessionId, slot, { position })));
+  }
+
+  /** Passe l'offre du palier ; rend l'état, sans rien servir (le premier morceau ne se demande qu'à « Suite »). */
+  async passOffer(sessionId: number, afterRound: number): Promise<RunSession> {
+    return toSession(await firstValueFrom(this.client.passRunOffer(sessionId, { afterRound })));
+  }
+
+  /** Choisit la difficulté de la manche en cours ; la réponse porte son premier morceau (son extrait ne part qu'avec le choix). */
+  async chooseDifficulty(sessionId: number, round: number, difficulty: RunDifficulty): Promise<RunPlay> {
+    return toPlay(await firstValueFrom(this.client.chooseRunDifficulty(sessionId, { round, difficulty })));
   }
 
   /**
@@ -178,6 +200,7 @@ function toMe(me: RunsMeResponse): RunsMe {
     hasAccess: me.hasAccess,
     record: toRecord(me.record),
     pending: me.pending ? { sessionId: me.pending.sessionId, challengeCode: me.pending.challengeCode } : null,
+    shelf: (me.shelf ?? []).map(entry => ({ disc: { key: entry.disc.key, stars: entry.disc.stars }, count: entry.count })),
   };
 }
 
@@ -206,7 +229,10 @@ function toRound(round: RunRoundResponse | undefined): RunRound | null {
 }
 
 function toRoundScore(round: RunRoundScoreResponse): RunRoundScore {
-  return { round: round.round, score: round.score ?? null, objective: round.objective ?? null, passed: round.passed };
+  return {
+    round: round.round, score: round.score ?? null, objective: round.objective ?? null, passed: round.passed,
+    difficulty: round.difficulty ? toDifficulty(round.difficulty) : null,
+  };
 }
 
 function toFinish(finish: RunFinishResponse | undefined): RunFinish | null {
@@ -222,6 +248,9 @@ function toFinish(finish: RunFinishResponse | undefined): RunFinish | null {
     rounds: finish.rounds.map(toRoundScore),
     record: toRecord(finish.record),
     challengeCode: finish.challengeCode,
+    shortfall: finish.shortfall
+      ? { points: finish.shortfall.points, disc: { key: finish.shortfall.disc.key, stars: finish.shortfall.disc.stars } }
+      : null,
   };
 }
 
@@ -242,12 +271,58 @@ function toSession(session: RunSessionResponse): RunSession {
     clockRemainingSeconds: session.clockRemainingSeconds ?? null,
     playedTracks: (session.playedTracks ?? []).map(toTrack),
     passedRounds: (session.passedRounds ?? []).map(toPassedRound),
+    difficultyChoice: session.difficultyChoice
+      ? {
+          round: session.difficultyChoice.round,
+          options: session.difficultyChoice.options.map(option => ({
+            difficulty: toDifficulty(option.difficulty),
+            objective: option.objective,
+            maxScore: option.maxScore,
+            listenSeconds: option.listenSeconds,
+          })),
+        }
+      : null,
+    hand: (session.hand ?? []).filter(c => isRunCard(c.card)).map(c => ({ slot: c.slot, card: c.card as RunCardKey })),
+    offer: session.offer
+      ? { afterRound: session.offer.afterRound, cards: session.offer.cards.filter(isRunCard) }
+      : null,
+    handSize: session.handSize ?? 0,
+    ghost: session.ghost
+      ? { pseudo: session.ghost.pseudo ?? null, total: session.ghost.total, stoppedAtRound: session.ghost.stoppedAtRound ?? null }
+      : null,
+    cardValues: session.cardValues
+      ? {
+          extendListenSeconds: session.cardValues.extendListenSeconds,
+          hourglassSeconds: session.cardValues.hourglassSeconds,
+          lowerTargetPercent: session.cardValues.lowerTargetPercent,
+        }
+      : null,
+    nextDisc: session.nextDisc ? { key: session.nextDisc.key, stars: session.nextDisc.stars } : null,
   };
+}
+
+function toEffects(effects: RunTrackEffectsResponse | undefined): RunTrackEffects | null {
+  if (!effects) return null;
+  return {
+    cards: effects.cards.filter(isRunCard),
+    year: effects.year ?? null,
+    artistInitials: effects.artistInitials ?? null,
+    titleInitials: effects.titleInitials ?? null,
+    choices: effects.choices?.map(c => ({ artist: c.artist, title: c.title })) ?? null,
+    clockBonusSeconds: effects.clockBonusSeconds ?? 0,
+  };
+}
+
+function toDifficulty(difficulty: string): RunDifficulty {
+  return difficulty === 'easy' || difficulty === 'risky' ? difficulty : 'safe';
 }
 
 function toCurrent(current: RunCurrentTrackResponse | undefined): RunCurrentTrack | null {
   return current
-    ? { position: current.position, round: current.round, positionInRound: current.positionInRound, previewUrl: current.previewUrl || null, waveform: current.waveform ?? null }
+    ? {
+        position: current.position, round: current.round, positionInRound: current.positionInRound, previewUrl: current.previewUrl || null,
+        listenSeconds: current.listenSeconds, waveform: current.waveform ?? null, effects: toEffects(current.effects),
+      }
     : null;
 }
 

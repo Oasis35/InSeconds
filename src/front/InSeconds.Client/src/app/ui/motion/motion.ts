@@ -51,6 +51,12 @@ export function tweenNumber(element: HTMLElement, from: number, to: number, dela
     .fromTo(element, { scale: 1.06 }, { scale: 1, duration: 0.45, ease: SETTLE, clearProps: 'transform' });
 }
 
+/** Une jauge qui se remplit de gauche à droite (transform seulement), puis se pose à sa largeur. `delay` en secondes. */
+export function fillBar(element: HTMLElement, delay = 0): void {
+  if (motionReduced()) return;
+  gsap.from(element, { scaleX: 0, transformOrigin: 'left center', duration: 0.6, delay, ease: SETTLE, clearProps: 'transform' });
+}
+
 /** Des points gagnés qui montent, se posent un instant, puis rejoignent `target` (le total) en rétrécissant. */
 export function flyTo(element: HTMLElement, target: HTMLElement | null): void {
   if (motionReduced()) return;
@@ -70,6 +76,12 @@ export function flyTo(element: HTMLElement, target: HTMLElement | null): void {
 export function enterCard(element: HTMLElement): void {
   if (motionReduced()) return;
   gsap.fromTo(element, { y: -14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.38, ease: SETTLE, clearProps: 'transform,opacity' });
+}
+
+/** Une carte qui monte à sa place (un coup de pouce joué entre dans la carte du morceau). */
+export function riseCard(element: HTMLElement): void {
+  if (motionReduced()) return;
+  gsap.fromTo(element, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.38, ease: SETTLE, clearProps: 'transform,opacity' });
 }
 
 /** Un chiffre qui change avec un petit temps fort (le décompte des dernières secondes). */

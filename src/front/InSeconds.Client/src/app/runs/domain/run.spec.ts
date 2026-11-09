@@ -1,6 +1,6 @@
 import {
   RunPassedRound, RunPlay, RunRound, RunRoundSummary, RunSession, RunTrack, clockLabel, finishSquares, gainLabel, isFinished, objectiveBar,
-  playSteps, playedCount, pointsToGo, runPile, runSegments, stepPosition,
+  comboOf, ghostGap, playSteps, playedCount, pointsToGo, runPile, runSegments, stepPosition,
 } from './run';
 
 describe('objectiveBar', () => {
@@ -67,7 +67,8 @@ const withdrawn = (position: number): RunTrack => track(position, {
 const round = (overrides: Partial<RunRound> = {}): RunRound => ({ round: 1, score: 0, objective: 200, maxScore: 500, ...overrides });
 const session = (overrides: Partial<RunSession> = {}): RunSession => ({
   sessionId: 1, challengeCode: 'ABC234', status: 'pending', rounds: 4, tracksPerRound: 5, listenSeconds: 10, totalScore: 0, roundsPassed: 0,
-  round: round(), roundTracks: [], finish: null, answerSeconds: 45, clockRemainingSeconds: null, playedTracks: [], passedRounds: [], ...overrides,
+  round: round(), roundTracks: [], finish: null, answerSeconds: 45, clockRemainingSeconds: null, playedTracks: [], passedRounds: [],
+  difficultyChoice: null, hand: [], offer: null, handSize: 0, nextDisc: null, cardValues: null, ghost: null, ...overrides,
 });
 const summary = (overrides: Partial<RunRoundSummary> = {}): RunRoundSummary => ({
   round: 1, passed: true, score: 400, objective: 200, totalScore: 400, ...overrides,
@@ -189,7 +190,7 @@ describe('finishSquares', () => {
   it('un carré par morceau, groupé par manche ; une manche non jouée en carrés vides', () => {
     const squares = finishSquares({
       trackCount: 10,
-      rounds: [{ round: 1, score: 300, objective: 200, passed: true }, { round: 2, score: null, objective: null, passed: false }],
+      rounds: [{ round: 1, score: 300, objective: 200, passed: true, difficulty: 'safe' }, { round: 2, score: null, objective: null, passed: false, difficulty: null }],
       tracks: [track(1), track(2, { titleCorrect: false }), withdrawn(3), track(4), track(5)],
     });
 
@@ -197,5 +198,35 @@ describe('finishSquares', () => {
       ['found', 'played', 'neutralized', 'found', 'found'],
       ['unplayed', 'unplayed', 'unplayed', 'unplayed', 'unplayed'],
     ]);
+  });
+});
+
+describe('ghostGap', () => {
+  it('l\'écart au dernier morceau répondu : avance, retard ou égalité', () => {
+    const ghost = { pseudo: 'Alice', total: 250, stoppedAtRound: null };
+
+    expect(ghostGap({ ghost, totalScore: 310 })).toEqual({ pseudo: 'Alice', total: 250, gap: 60, stoppedAtRound: null });
+    expect(ghostGap({ ghost, totalScore: 200 })?.gap).toBe(-50);
+    expect(ghostGap({ ghost: { ...ghost, stoppedAtRound: 2 }, totalScore: 250 })).toEqual({ pseudo: 'Alice', total: 250, gap: 0, stoppedAtRound: 2 });
+  });
+
+  it('rien sans fantôme', () => {
+    expect(ghostGap(null)).toBeNull();
+    expect(ghostGap({ ghost: null, totalScore: 100 })).toBeNull();
+  });
+});
+
+describe('comboOf', () => {
+  const played = (position: number, found: boolean, neutralized = false) => ({ position, neutralized, artistCorrect: found, titleCorrect: found });
+
+  it('les derniers morceaux trouvés d\'affilée, toutes manches confondues, dans l\'ordre des positions', () => {
+    expect(comboOf([played(3, true), played(1, false), played(2, true)])).toBe(2);
+    expect(comboOf([played(1, true), played(2, true), played(3, false)])).toBe(0);
+    expect(comboOf([])).toBe(0);
+  });
+
+  it('un morceau retiré ne casse pas la série, un morceau à moitié trouvé la remet à zéro', () => {
+    expect(comboOf([played(1, true), played(2, false, true), played(3, true)])).toBe(2);
+    expect(comboOf([played(1, true), { position: 2, neutralized: false, artistCorrect: true, titleCorrect: false }])).toBe(0);
   });
 });

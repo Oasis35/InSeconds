@@ -3,6 +3,8 @@
  * les écrans en tirent (barre d'objectif, pastilles, libellés). Le serveur décide de tout (points, jauge, neutralisation, fin) : le front affiche.
  */
 
+import { RunCardOffer, RunHandCard, RunTrackEffects, RunCardValues } from './run-cards';
+
 export type RunStatus = 'pending' | 'won' | 'lost' | 'abandoned';
 
 /** Un morceau joué (ou neutralisé) : ce que la carte de réponse montre. Les noms ne viennent qu'avec la réponse (piège 31). */
@@ -49,6 +51,20 @@ export interface RunRoundScore {
   readonly score: number | null;
   readonly objective: number | null;
   readonly passed: boolean;
+  /** La difficulté jouée ; `null` pour une manche non jouée. */
+  readonly difficulty: RunDifficulty | null;
+}
+
+/** Ce qui a manqué à une partie perdue pour le disque suivant : les points qui manquaient à l'objectif de la manche ratée. */
+export interface RunShortfall {
+  readonly points: number;
+  readonly disc: RunDisc;
+}
+
+/** Un disque de l'étagère de l'accueil du mode, et les parties qui l'ont donné. */
+export interface RunShelfDisc {
+  readonly disc: RunDisc;
+  readonly count: number;
 }
 
 export interface RunFinish {
@@ -62,6 +78,8 @@ export interface RunFinish {
   readonly rounds: readonly RunRoundScore[];
   readonly record: RunRecord | null;
   readonly challengeCode: string;
+  /** Ce qui a manqué pour le disque suivant ; `null` pour une partie gagnée ou abandonnée. */
+  readonly shortfall: RunShortfall | null;
 }
 
 export interface RunSession {
@@ -86,6 +104,40 @@ export interface RunSession {
   readonly playedTracks: readonly RunTrack[];
   /** Les manches passées, dans l'ordre, avec le disque gagné à chacune (les lignes de palier de la pile). */
   readonly passedRounds: readonly RunPassedRound[];
+  /**
+   * La difficulté de la manche en cours, tant qu'elle reste à choisir (avant son premier son) ; `null` sinon. Son premier morceau n'arrive
+   * qu'avec le choix.
+   */
+  readonly difficultyChoice: RunDifficultyChoice | null;
+  /** Les cartes en main (vide sans coups de pouce). */
+  readonly hand: readonly RunHandCard[];
+  /** L'offre du palier, tant qu'elle est ouverte. */
+  readonly offer: RunCardOffer | null;
+  /** Les emplacements de la main ; 0 : une playlist sans coups de pouce (pas d'écran de palier). */
+  readonly handSize: number;
+  /** Le disque que la manche en cours fait gagner si elle est passée ; `null` une fois la partie finie. */
+  readonly nextDisc: RunDisc | null;
+  /** Ce que valent les cartes de la playlist (règles figées) ; `null` sans coups de pouce. */
+  readonly cardValues: RunCardValues | null;
+  /** Le fantôme de l'ami qui a lancé la playlist, s'il l'a finie ; `null` sinon (sa propre playlist, rien encore répondu). */
+  readonly ghost: RunGhost | null;
+}
+
+/** Une difficulté de manche : objectif et plafond plus ou moins hauts. */
+export type RunDifficulty = 'easy' | 'safe' | 'risky';
+
+/** Les difficultés proposées pour la manche en cours (l'écran « Difficulté ? »). */
+export interface RunDifficultyChoice {
+  readonly round: number;
+  readonly options: readonly RunDifficultyOption[];
+}
+
+/** Une colonne de l'écran « Difficulté ? » : l'objectif (le cadenas), le plafond (la hauteur), l'écoute d'un morceau. */
+export interface RunDifficultyOption {
+  readonly difficulty: RunDifficulty;
+  readonly objective: number;
+  readonly maxScore: number;
+  readonly listenSeconds: number;
 }
 
 /** Une manche passée : son score, son objectif et le disque qu'elle donne. */
@@ -103,6 +155,10 @@ export interface RunCurrentTrack {
   /** Sa place dans la manche, à partir de 1 (« Morceau 3 sur 5 »). */
   readonly positionInRound: number;
   readonly previewUrl: string | null;
+  /** Son écoute fixe (la difficulté de la manche la change : la manche boss est plus courte) ; absente, celle de la partie. */
+  readonly listenSeconds?: number;
+  /** Ce que les cartes jouées sur ce morceau révèlent ou changent ; absent sans carte jouée. */
+  readonly effects?: RunTrackEffects | null;
   /** La forme de l'extrait calculée par l'API (blob en base64) ; `null` si elle n'est pas prête : le navigateur calcule la sienne. */
   readonly waveform?: string | null;
 }
@@ -176,6 +232,8 @@ export interface RunsMe {
   readonly record: RunRecord | null;
   /** Une partie en cours : le joueur la reprend. */
   readonly pending: { readonly sessionId: number; readonly challengeCode: string } | null;
+  /** Les disques gagnés par ses parties finies, du moins bon au meilleur. */
+  readonly shelf: readonly RunShelfDisc[];
 }
 
 /** Ce que la barre d'objectif dessine : la part du maximum déjà marquée et l'emplacement du trait de l'objectif. */
@@ -279,6 +337,23 @@ export function runSegments(rounds: number, shown: Pick<RunRound, 'round' | 'sco
   });
 }
 
+/**
+ * L'écran de palier est dû : la playlist a des coups de pouce, la manche précédente vient d'être passée, et le serveur dit que la manche en cours
+ * attend encore le joueur (son offre est ouverte ou sa difficulté reste à choisir : rien n'y a commencé), sauf si le joueur l'a déjà quitté par
+ * « Suite » (`dismissedFor`, la manche qu'il a ouverte).
+ */
+export function palierDue(session: RunSession, dismissedFor: number | null): boolean {
+  const round = session.round;
+  if (session.status !== 'pending' || session.handSize <= 0 || !round || round.round < 2 || dismissedFor === round.round) return false;
+  return (session.offer !== null || session.difficultyChoice !== null) && session.roundTracks.length === 0
+    && session.passedRounds.some(p => p.round === round.round - 1);
+}
+
+/** L'objectif de la manche à venir montré au palier : celui de « Sûre » (la difficulté se choisit ensuite), sinon celui de la manche. */
+export function nextObjective(session: RunSession): number {
+  return session.difficultyChoice?.options.find(o => o.difficulty === 'safe')?.objective ?? session.round?.objective ?? 0;
+}
+
 /** Les points qui manquent pour passer la manche (0 : objectif atteint). */
 export const pointsToGo = (round: Pick<RunRound, 'score' | 'objective'>): number => Math.max(0, round.objective - round.score);
 
@@ -332,12 +407,105 @@ export function finishSquares(finish: Pick<RunFinish, 'tracks' | 'rounds' | 'tra
   const roundCount = Math.max(1, finish.rounds.length);
   const perRound = Math.ceil(finish.trackCount / roundCount);
   return Array.from({ length: roundCount }, (_, index) => {
-    const played = finish.tracks.filter(t => t.round === index + 1).sort((a, b) => a.position - b.position);
+    const played = tracksOfRound(finish.tracks, index + 1);
     return Array.from({ length: perRound }, (_, slot): FinishSquare => {
       const track = played[slot];
       if (!track) return 'unplayed';
-      if (track.neutralized) return 'neutralized';
-      return track.artistCorrect && track.titleCorrect ? 'found' : 'played';
+      const mark = trackMark(track);
+      if (mark === 'withdrawn') return 'neutralized';
+      return mark === 'found' ? 'found' : 'played';
     });
   });
 }
+
+/** Un morceau joué, vu de la fin et du partage : trouvé (artiste et titre), à moitié (l'un des deux), raté, ou retiré de la manche. */
+export type RunTrackMark = 'found' | 'half' | 'missed' | 'withdrawn';
+
+/** Le seul endroit qui dit ce qu'est un morceau trouvé : l'écran de fin et le partage en grille le lisent tous deux. */
+export function trackMark(track: Pick<RunTrack, 'neutralized' | 'artistCorrect' | 'titleCorrect'>): RunTrackMark {
+  if (track.neutralized) return 'withdrawn';
+  if (track.artistCorrect && track.titleCorrect) return 'found';
+  return track.artistCorrect || track.titleCorrect ? 'half' : 'missed';
+}
+
+/** Les morceaux joués d'une manche, dans l'ordre. */
+export const tracksOfRound = <T extends Pick<RunTrack, 'round' | 'position'>>(tracks: readonly T[], round: number): T[] =>
+  tracks.filter(track => track.round === round).sort((a, b) => a.position - b.position);
+
+/** Les étoiles d'un disque au-delà de l'échelle, à la suite de son nom (« ★2 ») ; rien en deçà. */
+export const discStars = (disc: RunDisc): string => (disc.stars > 0 ? ` ★${disc.stars}` : '');
+
+/** Les cases du partage, comme le partage du Daily : un carré par morceau. */
+export const RUN_SHARE_EMOJI: Readonly<Record<RunTrackMark, string>> = { found: '🟩', half: '🟨', missed: '🟥', withdrawn: '⬜' };
+
+/** Une ligne du partage : une manche jouée, sa difficulté et un carré par morceau joué. */
+export interface RunShareRound {
+  readonly round: number;
+  readonly difficulty: RunDifficulty | null;
+  readonly marks: readonly RunTrackMark[];
+}
+
+/**
+ * Les lignes du partage en grille : les manches jouées seulement, dans l'ordre, chaque morceau joué à sa place. La première manche n'a jamais de
+ * choix de difficulté : sa ligne ne porte pas de nom de difficulté.
+ */
+export function shareRounds(finish: Pick<RunFinish, 'tracks' | 'rounds'>): RunShareRound[] {
+  return finish.rounds
+    .filter(round => round.score !== null)
+    .map(round => ({
+      round: round.round,
+      difficulty: round.round === 1 ? null : round.difficulty,
+      marks: tracksOfRound(finish.tracks, round.round).map(trackMark),
+    }));
+}
+
+/** Le fantôme d'un ami sur la même playlist : son total sur les morceaux que le joueur a joués, jusqu'au dernier répondu (rien d'avance). */
+export interface RunGhost {
+  /** Son pseudo ; `null` pour un invité (« Invité » à l'écran). */
+  readonly pseudo: string | null;
+  readonly total: number;
+  /** La manche où sa partie s'est arrêtée, quand le joueur est allé plus loin ; `null` sinon. */
+  readonly stoppedAtRound: number | null;
+}
+
+/** L'écart avec le fantôme au dernier morceau répondu : son total à ce morceau, et l'avance (positive) ou le retard (négatif) du joueur. */
+export interface RunGhostGap {
+  readonly pseudo: string | null;
+  readonly total: number;
+  readonly gap: number;
+  readonly stoppedAtRound: number | null;
+}
+
+/** L'écart avec le fantôme, morceau par morceau ; `null` sans fantôme (le serveur n'en envoie pas avant le premier morceau joué). */
+export function ghostGap(session: Pick<RunSession, 'ghost' | 'totalScore'> | null): RunGhostGap | null {
+  const ghost = session?.ghost;
+  if (!ghost) return null;
+  return { pseudo: ghost.pseudo, total: ghost.total, gap: session.totalScore - ghost.total, stoppedAtRound: ghost.stoppedAtRound };
+}
+
+/** À partir de combien de bonnes réponses d'affilée la série s'affiche. */
+export const COMBO_MIN = 2;
+
+/**
+ * La série en cours : les derniers morceaux trouvés (artiste et titre) d'affilée, toutes manches confondues. Un morceau retiré ne la casse pas
+ * (le joueur n'y est pour rien) ; un morceau raté ou à moitié trouvé la remet à zéro. Elle ne rapporte aucun point : elle se voit, c'est tout.
+ */
+export function comboOf(tracks: readonly Pick<RunTrack, 'position' | 'neutralized' | 'artistCorrect' | 'titleCorrect'>[]): number {
+  const played = [...tracks].sort((a, b) => b.position - a.position);
+  let combo = 0;
+  for (const track of played) {
+    const mark = trackMark(track);
+    if (mark === 'withdrawn') continue;
+    if (mark !== 'found') break;
+    combo++;
+  }
+  return combo;
+}
+
+/**
+ * Où en est une partie, vu du serveur : son statut, ses morceaux joués, l'offre et le choix de difficulté en attente, sa main. Deux relectures
+ * différentes disent qu'elle a avancé ailleurs (un autre onglet) ; la même relecture, que rien n'a bougé.
+ */
+export const progressKey = (session: Pick<RunSession, 'status' | 'playedTracks' | 'offer' | 'difficultyChoice' | 'hand'>): string =>
+  [session.status, session.playedTracks.length, session.offer?.afterRound ?? '', session.difficultyChoice?.round ?? '',
+    session.hand.map(c => `${c.slot}:${c.card}`).join(',')].join('|');

@@ -27,27 +27,40 @@ describe('RunsApi', () => {
   let api: RunsApi;
 
   beforeEach(() => {
-    client = { getRunsMe: vi.fn(), getRunChallenge: vi.fn(), getRunComparison: vi.fn(), launchRun: vi.fn(), joinRun: vi.fn(), refreshRunPreview: vi.fn(), submitRunAnswer: vi.fn(), abandonRun: vi.fn() };
+    client = { getRunsMe: vi.fn(), getRunChallenge: vi.fn(), getRunComparison: vi.fn(), launchRun: vi.fn(), joinRun: vi.fn(), refreshRunPreview: vi.fn(), submitRunAnswer: vi.fn(), abandonRun: vi.fn(), playRunCard: vi.fn() };
     TestBed.configureTestingModule({ providers: [{ provide: RunsClient, useValue: client }, RunsApi] });
     api = TestBed.inject(RunsApi);
   });
 
   afterEach(() => vi.useRealTimers());
 
-  it('lit mon accès, mon record et ma partie en cours', async () => {
+  it('lit mon accès, mon record, ma partie en cours et mon étagère', async () => {
     client['getRunsMe'].mockReturnValue(of({
       hasAccess: true, record: { bestScore: 900, bestRoundsPassed: 2, isNew: false }, pending: { sessionId: 7, challengeCode: 'ABC234' },
+      shelf: [{ disc: { key: 'runs.discs.wax', stars: 0 }, count: 2 }],
     } as RunsMeResponse));
 
     expect(await api.me()).toEqual({
       hasAccess: true, record: { bestScore: 900, bestRoundsPassed: 2, isNew: false }, pending: { sessionId: 7, challengeCode: 'ABC234' },
+      shelf: [{ disc: { key: 'runs.discs.wax', stars: 0 }, count: 2 }],
     });
+  });
+
+  it('une carte jouée : ses effets sur le morceau en types du domaine, une carte inconnue ignorée', async () => {
+    client['playRunCard'].mockReturnValue(of({ ...play, current: { ...play.current, effects: {
+      cards: ['year', 'futureCard'], year: 1995, artistInitials: undefined, titleInitials: ['G', 'L'], choices: undefined, clockBonusSeconds: 0,
+    } } } as unknown as RunPlayResponse));
+
+    const result = await api.playCard(7, 2, 3);
+
+    expect(client['playRunCard']).toHaveBeenCalledWith(7, 2, { position: 3 });
+    expect(result.current?.effects).toEqual({ cards: ['year'], year: 1995, artistInitials: null, titleInitials: ['G', 'L'], choices: null, clockBonusSeconds: 0 });
   });
 
   it('sans record ni partie en cours : `null` plutôt que `undefined`', async () => {
     client['getRunsMe'].mockReturnValue(of({ hasAccess: false } as RunsMeResponse));
 
-    expect(await api.me()).toEqual({ hasAccess: false, record: null, pending: null });
+    expect(await api.me()).toEqual({ hasAccess: false, record: null, pending: null, shelf: [] });
   });
 
   it('rend la partie en types du domaine : `undefined` devient `null`, un extrait vide aussi', async () => {
@@ -59,8 +72,9 @@ describe('RunsApi', () => {
     if (outcome.kind !== 'ok') return;
     expect(outcome.play.session.round).toEqual({ round: 1, score: 50, objective: 200, maxScore: 500 });
     expect(outcome.play.session.finish).toBeNull();
+    expect(outcome.play.session.ghost).toBeNull();
     expect(outcome.play.revealed).toMatchObject({ artist: 'Daft Punk', title: null, coverUrl: null, deezerTrackId: 3135553 });
-    expect(outcome.play.current).toEqual({ position: 2, round: 1, positionInRound: 2, previewUrl: null, waveform: null });
+    expect(outcome.play.current).toEqual({ position: 2, round: 1, positionInRound: 2, previewUrl: null, waveform: null, effects: null });
     expect(outcome.play.neutralized).toEqual([{ position: 2, round: 1, objectiveBefore: 200, objectiveAfter: 160 }]);
   });
 

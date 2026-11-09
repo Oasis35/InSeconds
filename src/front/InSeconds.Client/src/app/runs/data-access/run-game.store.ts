@@ -5,10 +5,12 @@ import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RoundConfig, RoundSubmission } from '../../gameplay/domain/track-round';
 import { waveformFromBlob } from '../../gameplay/domain/waveform';
 import {
-  AUTO_NEXT_MS, CLOCK_ALERT_SECONDS, PileEntry, RunComparison, RunCurrentTrack, RunLink, RunPlay, RunRound, RunSession, RunStep, RunsMe, isFinished, playSteps,
-  playedCount, runPile, stepPosition,
+  AUTO_NEXT_MS, CLOCK_ALERT_SECONDS, COMBO_MIN, PileEntry, RunComparison, RunCurrentTrack, RunDifficulty, RunLink, RunPlay, RunRound, RunSession, RunStep, RunsMe,
+  isFinished,
+  comboOf, ghostGap, nextObjective, progressKey, palierDue, playSteps, playedCount, runPile, stepPosition,
 } from '../domain/run';
-import { RunTick } from './run-tick';
+import { RunCardKey, handFull } from '../domain/run-cards';
+import { RunSounds } from './run-sounds';
 import { RunsApi, StartOutcome } from './runs.api';
 
 /** Le pas du chrono affiché. */
@@ -20,7 +22,8 @@ const CLOCK_TICK_MS = 200;
  * invitation, que la page traduit en retour au jeu du jour ; pas de playlist ; playlist inconnue ; erreur).
  */
 export type RunScreen =
-  | 'loading' | 'welcome' | 'link' | 'resume' | 'playing' | 'finished' | 'comparison' | 'access_denied' | 'no_challenge' | 'not_found' | 'error';
+  | 'loading' | 'welcome' | 'link' | 'resume' | 'playing' | 'palier' | 'difficulty' | 'finished' | 'comparison' | 'access_denied' | 'no_challenge'
+  | 'not_found' | 'error';
 
 interface RunState {
   screen: RunScreen;
@@ -51,6 +54,18 @@ interface RunState {
   resumeCount: number;
   resumeTotal: number;
   abandonLoading: boolean;
+  /** La manche dont le joueur a quitté l'écran de palier par « Suite » (il ne revient pas). */
+  palierDismissedFor: number | null;
+  /** La carte de l'offre en attente d'échange (main pleine : le joueur touche ensuite la carte à lâcher). */
+  pendingCard: RunCardKey | null;
+  /** Une prise ou un passage de l'offre part au serveur. */
+  palierBusy: boolean;
+  /** Le choix de la difficulté part au serveur. */
+  difficultyBusy: boolean;
+  /** Une carte jouée part au serveur. */
+  cardBusy: boolean;
+  /** Le serveur a refusé la dernière carte jouée (déjà jouée ailleurs, chrono écoulé) : un court message le dit, jusqu'au prochain essai. */
+  cardRefused: boolean;
 }
 
 const initialState: RunState = {
@@ -70,7 +85,39 @@ const initialState: RunState = {
   resumeCount: 0,
   resumeTotal: 0,
   abandonLoading: false,
+  palierDismissedFor: null,
+  pendingCard: null,
+  palierBusy: false,
+  difficultyBusy: false,
+  cardBusy: false,
+  cardRefused: false,
 };
+
+/** Les phases où une carte se joue : la saisie (ni l'envoi d'une réponse, ni sa révélation). */
+const canPlayCards = (phase: string | null): boolean => phase === 'loading' || phase === 'playing' || phase === 'listened';
+
+/** Le chrono plein d'un morceau : celui de la playlist, plus ce qu'un Sablier joué avant le premier son lui ajoute. */
+const fullClock = (answerSeconds: number, current: RunCurrentTrack | null): number =>
+  answerSeconds + (current?.effects?.clockBonusSeconds ?? 0);
+
+/** Les appels qui changent la partie côté serveur. */
+const CHANGING_CALLS: ReadonlySet<string> = new Set([
+  'launch', 'join', 'refreshPreview', 'submitAnswer', 'takeCard', 'passOffer', 'playCard', 'chooseDifficulty', 'abandon',
+]);
+
+/** L'adaptateur, dont les appels qui changent la partie comptent leurs requêtes en route (`+1` au départ, `-1` à l'arrivée ou à l'échec). */
+function trackChanges(api: RunsApi, count: (delta: number) => void): RunsApi {
+  return new Proxy(api, {
+    get(target, property, receiver) {
+      const value: unknown = Reflect.get(target, property, receiver);
+      if (typeof value !== 'function' || typeof property !== 'string' || !CHANGING_CALLS.has(property)) return value;
+      return (...args: unknown[]) => {
+        count(1);
+        return (value.apply(target, args) as Promise<unknown>).finally(() => count(-1));
+      };
+    },
+  });
+}
 
 /**
  * La partie de Run : l'écran, la partie en cours, le morceau à jouer, les étapes à montrer. À fournir à la page (avec `TrackRoundStore`, qu'il
@@ -88,13 +135,17 @@ const initialState: RunState = {
  */
 export const RunGameStore = signalStore(
   withState<RunState>(initialState),
-  withComputed(store => {
+  withComputed((store, round = inject(TrackRoundStore)) => {
     const step = computed<RunStep | null>(() => store.steps()[0] ?? null);
     const clockLeft = store.clockLeft;
     return {
       rounds: computed(() => store.session()?.rounds ?? 0),
       step,
       totalScore: computed(() => store.session()?.totalScore ?? 0),
+      /** La série de bonnes réponses d'affilée (sans aucun point), quand elle atteint `COMBO_MIN` ; `null` en dessous. */
+      combo: computed(() => { const combo = comboOf(store.session()?.playedTracks ?? []); return combo >= COMBO_MIN ? combo : null; }),
+      /** L'écart avec le fantôme de l'ami qui a lancé la playlist, au dernier morceau répondu. */
+      ghost: computed(() => ghostGap(store.session())),
       /** La manche telle que l'écran la montre : celle de l'étape à l'écran, sinon celle du morceau en cours. */
       shownRound: computed<RunRound | null>(() => step()?.round ?? store.session()?.round ?? null),
       /** Le morceau auquel le joueur vient de répondre : sa réponse est dans la carte tant que l'étape est à l'écran. */
@@ -113,19 +164,70 @@ export const RunGameStore = signalStore(
       }),
       /** Le temps affiché par le chrono : ce qui reste, sinon le chrono plein tant qu'il n'est pas parti ; `null` sans chrono. */
       clockShown: computed<number | null>(() => {
-        const seconds = store.session()?.answerSeconds ?? 0;
-        if (seconds <= 0) return null;
-        return clockLeft() ?? seconds;
+        const session = store.session();
+        if (!session || session.answerSeconds <= 0) return null;
+        return clockLeft() ?? fullClock(session.answerSeconds, store.current());
       }),
       /** Les dernières secondes du chrono : gros chiffre, bord de la carte éclairci. */
       clockAlert: computed(() => { const left = clockLeft(); return left !== null && left > 0 && left <= CLOCK_ALERT_SECONDS; }),
       record: computed(() => store.me()?.record ?? null),
-      /** « Nouvelle partie » : seulement avec l'accès (retiré en cours de partie, la partie se finit, mais pas d'autre). */
+      /** L'étagère des disques gagnés (l'accueil du mode). */
+      shelf: computed(() => store.me()?.shelf ?? []),
+      /** « Rejouer » : seulement avec l'accès (retiré en cours de partie, la partie se finit, mais pas d'autre). */
       canPlayAgain: computed(() => store.me()?.hasAccess === true),
       finish: computed(() => store.session()?.finish ?? null),
+      /** Les cartes jouables sur le morceau en cours (la main) et ce que celles déjà jouées révèlent ; rien sans coups de pouce. */
+      roundCards: computed(() => {
+        const session = store.session();
+        const current = store.current();
+        if (!session || session.handSize <= 0 || !current || store.steps().length > 0) return null;
+        return {
+          hand: session.hand,
+          effects: current.effects ?? null,
+          values: session.cardValues,
+          listenSeconds: current.listenSeconds ?? session.listenSeconds,
+          playable: canPlayCards(round.phase()),
+          refused: store.cardRefused(),
+        };
+      }),
+      /** Ce que montre l'écran « Difficulté ? » : la manche, le score du run, les difficultés proposées, la main. */
+      difficulty: computed(() => {
+        const session = store.session();
+        const choice = session?.difficultyChoice;
+        if (store.screen() !== 'difficulty' || !session?.round || !choice) return null;
+        return {
+          round: choice.round,
+          totalScore: session.totalScore,
+          options: choice.options,
+          hand: session.hand,
+          listenSeconds: session.listenSeconds,
+          headerRound: { round: session.round.round, score: 0, objective: session.round.objective, maxScore: session.round.maxScore },
+        };
+      }),
+      /** Ce que montre l'écran de palier : la manche passée, la suivante et son objectif, l'offre, la main. */
+      palier: computed(() => {
+        const session = store.session();
+        const passed = session?.passedRounds.at(-1);
+        if (store.screen() !== 'palier' || !session?.round || !passed) return null;
+        return {
+          passed,
+          nextRound: session.round.round,
+          nextObjective: nextObjective(session),
+          nextDisc: session.nextDisc?.key ?? null,
+          wonDiscs: session.passedRounds.map(p => p.disc.key),
+          offer: session.offer,
+          hand: session.hand,
+          handSize: session.handSize,
+          /** L'en-tête : la barre du run sur la manche à venir, pas encore commencée. */
+          headerRound: { round: session.round.round, score: 0, objective: session.round.objective, maxScore: session.round.maxScore },
+        };
+      }),
     };
   }),
-  withMethods((store, api = inject(RunsApi), round = inject(TrackRoundStore), sessionLoader = inject(SessionLoader), tick = inject(RunTick)) => {
+  withMethods((store, rawApi = inject(RunsApi), round = inject(TrackRoundStore), sessionLoader = inject(SessionLoader), sounds = inject(RunSounds)) => {
+    /** Les requêtes en route qui changent la partie côté serveur : tant qu'il y en a une, une relecture d'un autre onglet ne conclut rien. */
+    let changing = 0;
+    const api = trackChanges(rawApi, delta => { changing += delta; });
     /** L'enchaînement automatique en attente. */
     let autoNextTimer: ReturnType<typeof setTimeout> | null = null;
     /** Le chrono en cours : son échéance (horloge du navigateur, en ms), son pas, et le morceau qu'il chronomètre. */
@@ -134,6 +236,8 @@ export const RunGameStore = signalStore(
     let clockPosition: number | null = null;
     /** Le dernier morceau dont le premier son a été annoncé au serveur. */
     let announced: number | null = null;
+    /** Les morceaux remplacés par un Joker depuis le chargement : le morceau de réserve, à la même place, est un autre morceau pour la manche. */
+    let replaced = 0;
 
     const cancelAutoNext = (): void => {
       if (autoNextTimer !== null) clearTimeout(autoNextTimer);
@@ -169,8 +273,8 @@ export const RunGameStore = signalStore(
       const update = (): void => {
         const left = Math.max(0, (clockDeadline - Date.now()) / 1000);
         const whole = Math.ceil(left);
-        // Un tic à chaque seconde des dernières, quand aucun extrait ne joue (il couvrirait le morceau).
-        if (whole !== lastWhole && whole > 0 && whole <= CLOCK_ALERT_SECONDS && round.phase() !== 'playing') tick.play();
+        // Un tic à chaque seconde des dernières ; `RunSounds` se tait pendant un extrait (il couvrirait le morceau).
+        if (whole !== lastWhole && whole > 0 && whole <= CLOCK_ALERT_SECONDS) sounds.play('tick');
         lastWhole = whole;
         patchState(store, { clockLeft: left });
         if (left <= 0) {
@@ -193,6 +297,16 @@ export const RunGameStore = signalStore(
       if (deadline < clockDeadline) clockDeadline = deadline;
     };
 
+    /**
+     * Remet le chrono qui tourne sur ce que le serveur retient après un coup de pouce (le Sablier en ajoute) ; il repart s'il venait de s'arrêter.
+     * Rien si le temps écoulé a déjà envoyé la réponse, ni avant le premier son (le chrono partira plein, Sablier compris).
+     */
+    const setClock = (position: number, seconds: number): void => {
+      if (clockPosition !== position || store.timeUp()) return;
+      stopClock();
+      runClock(position, seconds);
+    };
+
     /** Redemande l'extrait d'un morceau à une adresse fraîche (la signature Deezer expire, piège 14). */
     const refreshPreview = async (position: number): Promise<string | null> => {
       const sessionId = store.session()?.sessionId;
@@ -207,10 +321,11 @@ export const RunGameStore = signalStore(
 
     const configOf = (current: RunCurrentTrack, listenSeconds: number): RoundConfig => ({
       trackId: current.position,
+      trackKey: `${current.position}:${replaced}`,
       previewUrl: current.previewUrl,
       waveform: current.waveform ?? null,
       // Écoute fixe : un seul palier, pas de « écouter plus » ; la relecture (↺) reste possible. Pas d'indice.
-      listen: { steps: [listenSeconds], extendable: false },
+      listen: { steps: [current.listenSeconds ?? listenSeconds], extendable: false },
       hints: { unlockSeconds: [] },
       refreshPreviewUrl: () => refreshPreview(current.position),
     });
@@ -238,11 +353,36 @@ export const RunGameStore = signalStore(
         armAutoNext();
         return;
       }
+      // Une manche passée (playlist à coups de pouce) : l'écran de palier, jusqu'à « Suite ».
+      if (palierDue(session, store.palierDismissedFor())) {
+        // Le son d'une manche qui vient d'être passée, pas d'un palier retrouvé à la reprise ou à une relecture.
+        const justPassed = store.screen() === 'playing';
+        round.reset();
+        stopClock();
+        patchState(store, { screen: 'palier', pendingCard: null });
+        if (justPassed) sounds.play('roundPassed');
+        return;
+      }
       const current = store.current();
+      // La manche attend sa difficulté : son premier morceau n'arrive qu'avec le choix (écran « Difficulté ? »).
+      if (!current && !isFinished(session) && session.difficultyChoice) {
+        round.reset();
+        stopClock();
+        patchState(store, { screen: 'difficulty' });
+        return;
+      }
+      // Sans difficulté à choisir, le premier morceau de la manche n'arrive qu'une fois l'offre réglée : passée, ou une carte déjà prise.
+      if (!current && !isFinished(session) && session.handSize > 0) {
+        void serveRound(session, play);
+        return;
+      }
       if (isFinished(session) || !current) {
+        // Le son de la fin qui vient d'arriver, pas d'une partie finie qu'on rouvre.
+        const justEnded = store.screen() === 'playing';
         round.reset();
         stopClock();
         patchState(store, { screen: 'finished' });
+        if (justEnded && (session.status === 'won' || session.status === 'lost')) sounds.play(session.status);
         void refreshMe();
         return;
       }
@@ -253,6 +393,57 @@ export const RunGameStore = signalStore(
         runClock(current.position, session.clockRemainingSeconds);
       }
       if (play) round.start(configOf(current, session.listenSeconds), null);
+    };
+
+    /**
+     * Sans difficulté à choisir : l'offre encore ouverte se passe (une offre fermée entre-temps, autre onglet, n'est pas une erreur), puis le
+     * premier morceau de la manche se demande et part.
+     */
+    const serveRound = async (session: RunSession, play: boolean): Promise<void> => {
+      try {
+        if (session.offer) await api.passOffer(session.sessionId, session.offer.afterRound).catch(() => undefined);
+        applyPlay(await api.refreshPreview(session.sessionId), play);
+      } catch {
+        patchState(store, { screen: 'error' });
+      } finally {
+        patchState(store, { palierBusy: false });
+      }
+    };
+
+    /** Relit la partie entière (avec son morceau) après un refus du serveur hors du palier ; un échec mène à l'écran d'erreur. */
+    const rereadPlay = async (sessionId: number): Promise<void> => {
+      try {
+        // Encore dans le geste du toucher (le son est déverrouillé) : le morceau rendu part ; un choix encore ouvert ramène à l'écran.
+        if (store.session()?.sessionId === sessionId) applyPlay(await api.refreshPreview(sessionId), true);
+      } catch {
+        patchState(store, { screen: 'error' });
+      }
+    };
+
+    /** Relit l'état de la partie après un refus du serveur (offre fermée ailleurs, main changée) : l'écran montre ce qui est vrai. */
+    const reread = async (sessionId: number): Promise<void> => {
+      try {
+        const session = await api.session(sessionId);
+        // La partie a pu être abandonnée pendant l'aller-retour : une relecture périmée ne la ramène pas.
+        if (store.session()?.sessionId === sessionId) patchState(store, { session, pendingCard: null });
+      } catch {
+        // l'écran reste tel quel ; le joueur peut réessayer
+      }
+    };
+
+    /** Prend une carte de l'offre (main pleine : `dropSlot` est lâchée en échange) ; la main revient du serveur. Un refus garde l'écran tel quel. */
+    const take = async (card: RunCardKey, dropSlot: number | null): Promise<void> => {
+      const session = store.session();
+      if (!session?.offer || store.palierBusy()) return;
+      patchState(store, { palierBusy: true });
+      try {
+        patchState(store, { session: await api.takeCard(session.sessionId, session.offer.afterRound, card, dropSlot), pendingCard: null });
+        sounds.play('cardTaken');
+      } catch {
+        await reread(session.sessionId);
+      } finally {
+        patchState(store, { palierBusy: false });
+      }
     };
 
     /** L'étape suivante, puis le morceau suivant (le son part ; le lecteur a été déverrouillé par un clic plus tôt) ou la fin de la partie. */
@@ -333,7 +524,8 @@ export const RunGameStore = signalStore(
       const target = code === undefined ? store.code() : code;
       patchState(store, {
         screen: 'loading', code: target, link: null, comparison: null, session: null, current: null, steps: [], shapes: {}, resumeCount: 0,
-        resumeTotal: 0, abandonLoading: false,
+        resumeTotal: 0, abandonLoading: false, palierDismissedFor: null, pendingCard: null, palierBusy: false, difficultyBusy: false,
+        cardBusy: false, cardRefused: false,
       });
       try {
         const me = await api.me();
@@ -362,12 +554,52 @@ export const RunGameStore = signalStore(
       applyOutcome(await call());
     };
 
+    /** Une action de cet onglet en route (réponse, carte, choix, extrait redemandé) : la relecture la prendrait pour un autre onglet. */
+    const settled = (): boolean =>
+      changing === 0 && round.phase() !== 'submitting' && !store.cardBusy() && !store.palierBusy() && !store.difficultyBusy();
+
+    /** En jeu : la partie se relit ; finie ailleurs, l'écran de fin ; avancée ailleurs, l'écran de reprise ; rien n'a bougé, rien ne change. */
+    const refreshGame = async (screen: ReturnType<typeof store.screen>, session: NonNullable<ReturnType<typeof store.session>>): Promise<void> => {
+      if (!settled()) return;
+      try {
+        const fresh = await api.session(session.sessionId);
+        // Comparée à l'état d'avant la lecture, et seulement si rien n'a bougé ici pendant : sinon, c'est cet onglet qui a avancé.
+        if (store.session() !== session || store.screen() !== screen || !settled() || progressKey(fresh) === progressKey(session)) return;
+        if (fresh.status === 'won' || fresh.status === 'lost') {
+          round.reset();
+          cancelAutoNext();
+          stopClock();
+          patchState(store, { session: fresh, current: null, steps: [], screen: 'finished' });
+          void refreshMe();
+        } else {
+          await init();
+        }
+      } catch {
+        // hors ligne : la partie continue telle quelle
+      }
+    };
+
+    /** Sur l'accueil ou la reprise du mode : la partie en cours (ou son absence), le record et l'étagère se relisent. */
+    const refreshHome = async (screen: ReturnType<typeof store.screen>): Promise<void> => {
+      try {
+        const before = store.me();
+        const me = await api.me();
+        // Le joueur a bougé pendant la lecture (une partie lancée, reprise) : rien à conclure.
+        if (store.screen() !== screen || store.me() !== before || changing > 0) return;
+        // Une autre partie en cours (ou plus aucune) : l'écran se reconstruit ; sinon le record et l'étagère se mettent à jour.
+        if ((me.pending?.sessionId ?? null) !== (before?.pending?.sessionId ?? null)) await init();
+        else patchState(store, { me });
+      } catch {
+        // hors ligne : l'écran reste tel quel
+      }
+    };
+
     return {
       init,
       /** « Lancer une partie » ou « Reprendre » (un clic) : une partie neuve sur une playlist neuve, ou celle qui était en cours. */
       async begin(): Promise<void> {
         round.unlockAudio();
-        tick.unlock();
+        sounds.unlock();
         const code = store.link()?.code ?? store.me()?.pending?.challengeCode ?? null;
         await launch(() => (code ? api.join(code) : api.launch()));
       },
@@ -377,7 +609,7 @@ export const RunGameStore = signalStore(
        */
       async playLink(): Promise<void> {
         round.unlockAudio();
-        tick.unlock();
+        sounds.unlock();
         const code = store.link()?.code;
         if (!code) return;
         patchState(store, { screen: 'loading' });
@@ -388,6 +620,105 @@ export const RunGameStore = signalStore(
           return;
         }
         applyOutcome(await api.join(code));
+      },
+      /** Toucher une carte de l'offre : prise tout de suite, ou, main pleine, mise en attente de la carte à lâcher (un second toucher l'annule). */
+      pickCard(card: RunCardKey): void {
+        const session = store.session();
+        if (!session || store.palierBusy()) return;
+        if (handFull(session.hand, session.handSize)) patchState(store, { pendingCard: store.pendingCard() === card ? null : card });
+        else void take(card, null);
+      },
+      /** Toucher une carte de la main, une carte de l'offre étant en attente : l'échange. */
+      dropForPending(slot: number): void {
+        const pending = store.pendingCard();
+        if (pending) void take(pending, slot);
+      },
+      /** « Passer » : l'offre se ferme sans carte ; l'écran de palier reste jusqu'à « Suite ». */
+      async passOffer(): Promise<void> {
+        const session = store.session();
+        if (!session?.offer || store.palierBusy()) return;
+        patchState(store, { palierBusy: true, pendingCard: null });
+        try {
+          patchState(store, { session: await api.passOffer(session.sessionId, session.offer.afterRound) });
+        } catch {
+          await reread(session.sessionId);
+        } finally {
+          patchState(store, { palierBusy: false });
+        }
+      },
+      /**
+       * Jouer une carte de la main sur le morceau en cours (un toucher). Le son se déverrouille dans le toucher : le Joker change de morceau, la
+       * Rallonge relance l'écoute plus longue, et le nouveau son part à la réponse. Les autres cartes ne coupent rien : leurs effets s'affichent
+       * (année, initiales, trois réponses), le chrono se recale sur ce que le serveur retient (Sablier), l'objectif sur la manche (Seuil abaissé).
+       */
+      async playCard(slot: number): Promise<void> {
+        round.unlockAudio();
+        sounds.unlock();
+        const session = store.session();
+        const current = store.current();
+        const card = session?.hand.find(c => c.slot === slot);
+        if (!session || !current || !card || store.cardBusy() || !canPlayCards(round.phase())) return;
+        // La réponse attend la fin de l'aller-retour (`cardBusy` verrouille la saisie) : un Joker la ferait corriger sur le morceau de réserve.
+        patchState(store, { cardBusy: true, cardRefused: false });
+        try {
+          const play = await api.playCard(session.sessionId, slot, current.position);
+          // La partie a pu être abandonnée ou le morceau répondu pendant l'aller-retour : une réponse périmée ne change rien.
+          if (store.session()?.sessionId !== session.sessionId || store.current()?.position !== current.position) return;
+          const next = play.current;
+          if (card.card === 'joker' || !next || next.position !== current.position) {
+            // Le morceau de réserve (à la même place) ou un retrait : la manche repart de la réponse, comme après « Morceau suivant ».
+            announced = null;
+            replaced++;
+            applyPlay(play, true);
+            return;
+          }
+          patchState(store, { session: play.session, current: next });
+          if (card.card === 'extend' && canPlayCards(round.phase())) {
+            round.reset();
+            round.start(configOf(next, play.session.listenSeconds), null);
+          }
+          const left = play.session.clockRemainingSeconds;
+          if (left !== null) setClock(next.position, left);
+        } catch {
+          // Refusée (déjà jouée ailleurs, chrono écoulé) : le joueur en est prévenu, la main reste telle quelle, la partie se relit.
+          patchState(store, { cardRefused: true });
+          await reread(session.sessionId);
+        } finally {
+          patchState(store, { cardBusy: false });
+        }
+      },
+      /**
+       * Toucher une colonne de l'écran « Difficulté ? » (un clic) : le son se déverrouille dans le toucher, avant l'appel ; le choix rend le
+       * premier morceau de la manche, qui part aussitôt (iPhone, comme « Commencer »).
+       */
+      async chooseDifficulty(difficulty: RunDifficulty): Promise<void> {
+        round.unlockAudio();
+        sounds.unlock();
+        const session = store.session();
+        const choice = session?.difficultyChoice;
+        if (!session || !choice || store.difficultyBusy()) return;
+        patchState(store, { difficultyBusy: true });
+        try {
+          const play = await api.chooseDifficulty(session.sessionId, choice.round, difficulty);
+          // La partie a pu être abandonnée ou rouverte pendant l'aller-retour : une réponse périmée ne relance rien.
+          if (store.session()?.sessionId === session.sessionId && store.screen() === 'difficulty') applyPlay(play, true);
+        } catch {
+          // Refusé (choisi dans un autre onglet) ou réseau : la partie se relit et l'écran montre ce qui est vrai.
+          await rereadPlay(session.sessionId);
+        } finally {
+          patchState(store, { difficultyBusy: false });
+        }
+      },
+      /** « Suite » (un clic) : l'écran de palier se ferme, la manche suivante démarre (le son se déverrouille dans ce clic). */
+      continueFromPalier(): void {
+        round.unlockAudio();
+        sounds.unlock();
+        // Un second toucher (double tap, réseau lent) ne relance rien.
+        if (store.palierBusy() || store.screen() !== 'palier') return;
+        patchState(store, { palierDismissedFor: store.session()?.round?.round ?? null, pendingCard: null, palierBusy: true });
+        show(true);
+        // Une suite synchrone (morceau déjà là) a quitté le palier ; une suite qui attend le serveur relâche le verrou à sa réponse.
+        if (store.screen() !== 'palier') patchState(store, { palierBusy: false });
       },
       /** « Voir les autres joueurs » depuis la fin : la comparaison de cette playlist. */
       async showComparison(): Promise<void> {
@@ -426,7 +757,7 @@ export const RunGameStore = signalStore(
        */
       next(): void {
         round.unlockAudio();
-        tick.unlock();
+        sounds.unlock();
         advance();
       },
       /**
@@ -438,10 +769,28 @@ export const RunGameStore = signalStore(
         const current = store.current();
         if (!session || !current || session.answerSeconds <= 0 || store.steps().length > 0 || announced === current.position) return;
         announced = current.position;
-        runClock(current.position, session.answerSeconds);
+        runClock(current.position, fullClock(session.answerSeconds, current));
         void api.startClock(session.sessionId, current.position)
           .then(left => { if (left !== null) alignClock(current.position, left); })
           .catch(() => undefined);
+      },
+      /**
+       * L'onglet revient au premier plan : la partie a pu avancer ou finir dans un autre onglet. En jeu, elle se relit : finie, l'écran de fin ;
+       * avancée, l'écran de reprise (le prochain son partira d'un toucher) ; rien n'a bougé, rien ne change. Jamais pendant un envoi (la
+       * réponse en route ferait croire à une partie avancée ailleurs). Sur l'accueil ou la reprise du mode, la partie en cours se relit aussi.
+       */
+      async refresh(): Promise<void> {
+        const screen = store.screen();
+        const session = store.session();
+        if ((screen === 'playing' || screen === 'palier' || screen === 'difficulty') && session) return refreshGame(screen, session);
+        if ((screen === 'welcome' || screen === 'resume') && !store.code()) return refreshHome(screen);
+      },
+      /** Les sons d'interface sont coupés (le bouton de l'en-tête). */
+      soundsMuted: sounds.muted,
+      /** Couper ou remettre les sons d'interface (retenu dans ce navigateur) ; un toucher sur le bouton réveille aussi le son. */
+      toggleSounds(): void {
+        sounds.unlock();
+        sounds.toggleMuted();
       },
       /** Coupe (ou rétablit) l'enchaînement automatique : la page le coupe en mouvement réduit. */
       setAutoAdvance(autoAdvance: boolean): void {
@@ -467,10 +816,10 @@ export const RunGameStore = signalStore(
           patchState(store, { abandonLoading: false });
         }
       },
-      /** « Nouvelle partie » depuis la fin (un clic) : une playlist neuve, le premier morceau lancé dans ce clic. */
+      /** « Rejouer » depuis la fin (un clic) : une playlist neuve, le premier morceau lancé dans ce clic. */
       async playAgain(): Promise<void> {
         round.unlockAudio();
-        tick.unlock();
+        sounds.unlock();
         patchState(store, { me: store.me() ? { ...store.me()!, pending: null } : null });
         await launch(() => api.launch());
       },

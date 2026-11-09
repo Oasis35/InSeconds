@@ -6,6 +6,7 @@ import { RunRound, pointsToGo, runSegments } from '../../domain/run';
  * L'en-tête de la partie : ✕ (abandonner, confirmé par la page), la barre du run (un segment par manche : passée en vert, en cours remplie
  * de son score avec le trait de l'objectif, à venir avec un cadenas), puis « Manche 2 » et ce qui manque pour passer. Pas de score : le total
  * est au-dessus de la pile.
+ * À droite de la barre, le haut-parleur coupe ou remet les sons d'interface (son libellé dit ce que fait le toucher).
  */
 @Component({
   selector: 'app-run-header',
@@ -26,7 +27,7 @@ import { RunRound, pointsToGo, runSegments } from '../../domain/run';
             [style.box-shadow]="segment.state === 'current' ? '0 0 0 1.5px var(--color-accent)' : null">
             <div class="h-full rounded-[4px] bar-fill" [style.width.%]="segment.fill * 100"
               [style.background]="segment.state === 'done' ? 'var(--color-success)' : 'var(--gradient-primary)'"></div>
-            @if (segment.mark !== null) {
+            @if (segment.mark !== null && showStatus()) {
               <div class="absolute" style="top:-3px;width:2px;height:18px;background:var(--text-hi)" [style.left.%]="segment.mark * 100"></div>
             }
             @if (segment.state === 'locked') {
@@ -38,7 +39,20 @@ import { RunRound, pointsToGo, runSegments } from '../../domain/run';
           </div>
         }
       </div>
+      <button type="button" (click)="toggleSounds.emit()" class="grid place-items-center touch-manipulation shrink-0 -mr-2"
+        style="width:40px;height:44px;color:var(--text-muted)" data-testid="run-sounds"
+        [attr.aria-label]="(muted() ? 'runs.header.soundsOn' : 'runs.header.soundsOff') | translate">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 9 H8 L13 5 V19 L8 15 H4 Z" />
+          @if (muted()) {
+            <path d="M17 9 L22 15 M22 9 L17 15" />
+          } @else {
+            <path d="M17 9 a4 4 0 0 1 0 6 M19.5 6.5 a7.5 7.5 0 0 1 0 11" />
+          }
+        </svg>
+      </button>
     </div>
+    @if (showStatus()) {
     <div class="flex justify-between items-baseline mt-2.5" style="min-height:22px">
       <h1 class="text-[15px] font-bold" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="run-round-title">
         {{ 'runs.header.roundShort' | translate: { round: round().round } }}
@@ -51,6 +65,7 @@ import { RunRound, pointsToGo, runSegments } from '../../domain/run';
         }
       </p>
     </div>
+    }
   `,
   styles: `
     .bar-fill { transition: width 700ms cubic-bezier(0.2, 0.8, 0.2, 1), background-color 500ms; }
@@ -62,7 +77,13 @@ export class RunHeaderComponent {
   readonly round = input.required<RunRound>();
   /** Le nombre de manches de la playlist. */
   readonly rounds = input.required<number>();
+  /** « Manche N » et ce qui manque pour passer, sous la barre ; les écrans de palier et de difficulté n'en montrent que la barre, sans le repère de l'objectif (il se choisit avec la difficulté). */
+  readonly showStatus = input(true);
   readonly abandon = output();
+  /** Les sons d'interface sont coupés. */
+  readonly muted = input(false);
+  /** Couper ou remettre les sons d'interface. */
+  readonly toggleSounds = output();
 
   protected readonly segments = computed(() => runSegments(this.rounds(), this.round()));
   protected readonly toGo = computed(() => pointsToGo(this.round()));

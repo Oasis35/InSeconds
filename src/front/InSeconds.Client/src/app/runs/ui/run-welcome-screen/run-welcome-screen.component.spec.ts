@@ -1,13 +1,14 @@
 import { TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
-import { RunRecord } from '../../domain/run';
+import { RunRecord, RunShelfDisc } from '../../domain/run';
 import { RunWelcomeScreenComponent } from './run-welcome-screen.component';
 
 describe('RunWelcomeScreenComponent', () => {
-  function render(inputs: { record?: RunRecord | null } = {}) {
+  function render(inputs: { record?: RunRecord | null; shelf?: RunShelfDisc[] } = {}) {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     const fixture = TestBed.createComponent(RunWelcomeScreenComponent);
     fixture.componentRef.setInput('record', inputs.record ?? null);
+    fixture.componentRef.setInput('shelf', inputs.shelf ?? []);
     fixture.detectChanges();
     return { fixture, element: fixture.nativeElement as HTMLElement };
   }
@@ -17,6 +18,19 @@ describe('RunWelcomeScreenComponent', () => {
 
     expect(element.querySelector('[data-testid="run-start"]')?.textContent).toContain('runs.welcome.launch');
     expect(element.querySelector('[data-testid="run-record"]')).toBeNull();
+  });
+
+  it('l\'étagère : chaque disque gagné avec son nombre, rien sans disque', () => {
+    expect(render().element.querySelector('[data-testid="run-shelf"]')).toBeNull();
+    TestBed.resetTestingModule();
+
+    const { element } = render({ shelf: [{ disc: { key: 'runs.discs.wax', stars: 0 }, count: 3 }, { disc: { key: 'runs.discs.gold', stars: 0 }, count: 1 }] });
+    const entries = [...element.querySelectorAll('[data-testid="run-shelf"] [data-shelf-disc]')];
+
+    expect(entries.map(e => [e.getAttribute('data-shelf-disc'), e.querySelector('span[aria-hidden]')?.textContent?.trim()]))
+      .toEqual([['runs.discs.wax', '×3'], ['runs.discs.gold', '×1']]);
+    // Le lecteur d'écran lit le nom du disque et son nombre (texte masqué à l'écran).
+    expect(entries[0].querySelector('.sr-only')?.textContent).toContain('runs.welcome.shelfEntry');
   });
 
   it('montre le record du joueur', () => {

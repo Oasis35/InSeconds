@@ -1,3 +1,4 @@
+import type { MockInstance } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { SessionLoader } from '../../account/data-access/session-loader';
 import { FakeAudioPort, provideFakeAudio } from '../../gameplay/data-access/testing/fake-audio.port';
@@ -5,7 +6,8 @@ import { FakeWaveformPort, provideFakeWaveform } from '../../gameplay/data-acces
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RunRoundSummary } from '../domain/run';
 import { RunGameStore, RunScreen } from './run-game.store';
-import { RunTick } from './run-tick';
+import { RunSounds } from './run-sounds';
+import { MemoryStoragePort, StoragePort } from '../../core/storage/storage.port';
 import { StartOutcome } from './runs.api';
 import { COMPARISON, CURRENT, FakeRunsApi, LINK, ME, PLAY, ROUND, SESSION, TRACK, provideFakeRunsApi } from './testing/fake-runs-api';
 
@@ -15,17 +17,19 @@ describe('RunGameStore', () => {
   let audio: FakeAudioPort;
   let store: InstanceType<typeof RunGameStore>;
   let round: InstanceType<typeof TrackRoundStore>;
+  let sounds: MockInstance<RunSounds['play']>;
 
   beforeEach(() => {
     api = new FakeRunsApi();
     audio = new FakeAudioPort();
     TestBed.configureTestingModule({
-      providers: [provideFakeRunsApi(api), provideFakeAudio(audio), provideFakeWaveform(new FakeWaveformPort()), { provide: SessionLoader, useValue: { ensureGuest } }, TrackRoundStore, RunTick, RunGameStore],
+      providers: [provideFakeRunsApi(api), provideFakeAudio(audio), provideFakeWaveform(new FakeWaveformPort()), { provide: SessionLoader, useValue: { ensureGuest } }, TrackRoundStore, RunSounds, RunGameStore, { provide: StoragePort, useValue: new MemoryStoragePort() }],
     });
     ensureGuest.mockReset();
     ensureGuest.mockResolvedValue(undefined);
     store = TestBed.inject(RunGameStore);
     round = TestBed.inject(TrackRoundStore);
+    sounds = vi.spyOn(TestBed.inject(RunSounds), 'play');
   });
 
   /** Le joueur valide sa saisie : la manche rend la réponse à envoyer, le store l'envoie. */
@@ -250,6 +254,27 @@ describe('RunGameStore', () => {
       expect(store.pile()).toEqual([{ kind: 'track', track: TRACK(), past: false }]);
     });
 
+    it('une manche qui attend sa difficulté : l\'écran « Difficulté ? », sans son ; toucher une colonne déverrouille le son puis lance le morceau rendu', async () => {
+      api.answerResult = { ...lastOfRound(), current: null, session: { ...lastOfRound().session, difficultyChoice: {
+        round: 2, options: [{ difficulty: 'safe', objective: 366, maxScore: 665, listenSeconds: 10 }, { difficulty: 'risky', objective: 552, maxScore: 885, listenSeconds: 10 }],
+      } } };
+      api.chooseResult = PLAY({ current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }) });
+      await send();
+      store.next();
+      expect(store.screen()).toBe('difficulty');
+      expect(store.difficulty()?.options.map(o => o.difficulty)).toEqual(['safe', 'risky']);
+      expect(api.calls.filter(c => c.startsWith('chooseDifficulty'))).toEqual([]);
+      audio.calls.length = 0;
+
+      void store.chooseDifficulty('risky');
+      expect(audio.calls[0]).toBe('unlock');
+      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
+
+      expect(api.calls).toContain('chooseDifficulty:7:2:risky');
+      expect(audio.calls).toContain('load https://cdn/preview-6.mp3');
+      expect(store.screen()).toBe('playing');
+    });
+
     it('« Morceau suivant » lance la manche suivante dans le clic ; la ligne de la manche passée se pose sur ses morceaux', async () => {
       api.answerResult = lastOfRound();
       await send();
@@ -266,10 +291,508 @@ describe('RunGameStore', () => {
     });
   });
 
+  describe('écran de palier (playlist à coups de pouce)', () => {
+    const passedRound = { round: 1, score: 320, objective: 225, disc: { key: 'runs.discs.wax', stars: 0 } };
+    const palierSession = (overrides = {}) => SESSION({
+      totalScore: 320, round: ROUND({ round: 2, score: 0, objective: 366, maxScore: 665 }), roundsPassed: 1, roundTracks: [],
+      playedTracks: [TRACK(), TRACK({ position: 2 })], passedRounds: [passedRound], handSize: 2, hand: [{ slot: 1, card: 'year' }],
+      offer: { afterRound: 1, cards: ['three_choices', 'joker', 'hourglass'] }, nextDisc: { key: 'runs.discs.bronze', stars: 0 },
+      difficultyChoice: { round: 2, options: [{ difficulty: 'safe', objective: 366, maxScore: 665, listenSeconds: 10 }] },
+      ...overrides,
+    });
+    const lastOfRound = () => PLAY({
+      session: palierSession(), revealed: TRACK({ position: 2 }), roundSummaries: [summary({ objective: 225 })], current: null,
+    });
+
+    beforeEach(async () => {
+      await startRun();
+      api.answerResult = lastOfRound();
+      await send();
+      audio.calls.length = 0;
+      store.next();
+    });
+
+    it("après la manche passée, l'écran de palier, sans aucun extrait : le son d'une manche passée", () => {
+      expect(store.screen()).toBe('palier');
+      expect(audio.calls.filter(c => c.startsWith('load') || c.startsWith('play'))).toEqual([]);
+      expect(sounds).toHaveBeenCalledWith('roundPassed');
+      const palier = store.palier()!;
+      expect([palier.passed.round, palier.nextRound, palier.nextObjective, palier.nextDisc]).toEqual([1, 2, 366, 'runs.discs.bronze']);
+      expect(palier.offer?.cards).toEqual(['three_choices', 'joker', 'hourglass']);
+      expect(palier.wonDiscs).toEqual(['runs.discs.wax']);
+    });
+
+    it('main avec une place : toucher une carte la prend', async () => {
+      api.takeResult = palierSession({ hand: [{ slot: 1, card: 'year' }, { slot: 2, card: 'joker' }], offer: null });
+
+      store.pickCard('joker');
+      await vi.waitFor(() => expect(store.palier()?.hand).toHaveLength(2));
+
+      expect(api.calls).toContain('takeCard:7:1:joker:');
+      expect(store.palier()?.offer).toBeNull();
+      expect(sounds).toHaveBeenCalledWith('cardTaken');
+    });
+
+    it('main pleine : la carte attend, toucher une carte de la main l\'échange', async () => {
+      api.takeResult = palierSession({ hand: [{ slot: 1, card: 'year' }, { slot: 2, card: 'net' }] });
+      store.pickCard('joker');
+      await vi.waitFor(() => expect(store.palier()?.hand).toHaveLength(2));
+      api.takeResult = palierSession({ hand: [{ slot: 2, card: 'net' }, { slot: 3, card: 'hourglass' }], offer: null });
+
+      store.pickCard('hourglass');
+      expect(store.pendingCard()).toBe('hourglass');
+      expect(api.calls.filter(c => c.startsWith('takeCard'))).toHaveLength(1);
+      store.dropForPending(1);
+      await vi.waitFor(() => expect(store.pendingCard()).toBeNull());
+
+      expect(api.calls).toContain('takeCard:7:1:hourglass:1');
+    });
+
+    it('« Passer » ferme l\'offre et garde l\'écran, sans aucun morceau servi', async () => {
+      api.passResult = palierSession({ offer: null });
+
+      await store.passOffer();
+
+      expect(api.calls).toContain('passOffer:7:1');
+      expect(api.calls.filter(c => c.startsWith('refreshPreview'))).toEqual([]);
+      expect(store.screen()).toBe('palier');
+      expect(store.palier()?.offer).toBeNull();
+    });
+
+    it('une prise refusée (offre fermée ailleurs) relit la partie', async () => {
+      api.takeResult = new Error('409');
+      api.sessionResult = palierSession({ offer: null });
+
+      store.pickCard('joker');
+      await vi.waitFor(() => expect(store.palier()?.offer).toBeNull());
+
+      expect(api.calls).toContain('session:7');
+    });
+
+    it('« Suite » déverrouille le son dans le clic et mène à l\'écran « Difficulté ? »', () => {
+      store.continueFromPalier();
+
+      expect(audio.calls[0]).toBe('unlock');
+      expect(store.screen()).toBe('difficulty');
+      expect(store.difficulty()?.round).toBe(2);
+      expect(store.difficulty()?.totalScore).toBe(320);
+    });
+
+    it('un choix refusé (fait dans un autre onglet) relit la partie au lieu de l\'écran d\'erreur', async () => {
+      store.continueFromPalier();
+      api.chooseResult = new Error('409');
+      api.refreshResult = PLAY({
+        session: palierSession({ offer: null, difficultyChoice: null }),
+        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }),
+      });
+
+      await store.chooseDifficulty('risky');
+
+      expect(api.calls).toContain('refreshPreview:7');
+      expect(store.screen()).toBe('playing');
+      expect(store.current()?.position).toBe(6);
+    });
+
+    it('une réponse au choix arrivée après un abandon ne relance rien', async () => {
+      store.continueFromPalier();
+      let answer: (play: ReturnType<typeof PLAY>) => void = () => undefined;
+      vi.spyOn(api, 'chooseDifficulty').mockImplementation(() => new Promise(resolve => { answer = resolve; }));
+      const choosing = store.chooseDifficulty('risky');
+      await store.abandon();
+
+      answer(PLAY({ current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3' }) }));
+      await choosing;
+
+      expect(store.screen()).not.toBe('playing');
+      expect(audio.calls).not.toContain('load https://cdn/preview-6.mp3');
+    });
+
+    it('deux touchers sur une colonne ne choisissent qu\'une fois', async () => {
+      api.chooseResult = PLAY({
+        session: palierSession({ offer: null, difficultyChoice: null }),
+        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }),
+      });
+      store.continueFromPalier();
+
+      void store.chooseDifficulty('easy');
+      void store.chooseDifficulty('easy');
+      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
+
+      expect(api.calls.filter(c => c.startsWith('chooseDifficulty'))).toEqual(['chooseDifficulty:7:2:easy']);
+      expect(store.screen()).toBe('playing');
+    });
+  });
+
+  describe('palier : reprise et manche sans difficulté à choisir', () => {
+    const passedRound = { round: 1, score: 320, objective: 225, disc: { key: 'runs.discs.wax', stars: 0 } };
+    const atPalier = (overrides = {}) => SESSION({
+      totalScore: 320, round: ROUND({ round: 2, score: 0, objective: 366, maxScore: 665 }), roundsPassed: 1, roundTracks: [],
+      playedTracks: [TRACK(), TRACK({ position: 2 })], passedRounds: [passedRound], handSize: 2, hand: [{ slot: 1, card: 'year' }],
+      offer: { afterRound: 1, cards: ['three_choices', 'joker', 'hourglass'] }, nextDisc: { key: 'runs.discs.bronze', stars: 0 },
+      ...overrides,
+    });
+
+    it('reprendre une partie arrêtée au palier : l\'écran de palier revient, sans son', async () => {
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+      api.sessionResult = atPalier();
+      api.joinResult = { kind: 'ok', play: PLAY({ session: atPalier(), current: null, isResuming: true }) };
+      await store.init();
+
+      await store.begin();
+
+      expect(store.screen()).toBe('palier');
+      expect(audio.calls.filter(c => c.startsWith('load'))).toEqual([]);
+      // Ni extrait ni son d'interface : la manche n'a pas été passée maintenant.
+      expect(sounds).not.toHaveBeenCalledWith('roundPassed');
+    });
+
+    it('sans difficulté à choisir : « Suite » passe l\'offre puis demande le morceau, qui part', async () => {
+      api.joinResult = { kind: 'ok', play: PLAY({ session: atPalier(), current: null, isResuming: true }) };
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+      api.refreshResult = PLAY({
+        session: atPalier({ offer: null }),
+        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }),
+      });
+      await store.init();
+      await store.begin();
+
+      store.continueFromPalier();
+      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
+
+      expect(api.calls).toContain('passOffer:7:1');
+      expect(api.calls).toContain('refreshPreview:7');
+      expect(audio.calls).toContain('load https://cdn/preview-6.mp3');
+      expect(store.screen()).toBe('playing');
+    });
+
+    it('une carte déjà prise (offre fermée) : « Suite » demande seulement le morceau', async () => {
+      api.joinResult = { kind: 'ok', play: PLAY({ session: atPalier({ offer: null, difficultyChoice: null }), current: null, isResuming: true }) };
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+      api.refreshResult = PLAY({ session: atPalier({ offer: null }), current: CURRENT({ position: 6, round: 2, positionInRound: 1 }) });
+      await store.init();
+      await store.begin();
+
+      // Sans offre ni difficulté ouvertes, le serveur ne retient plus le joueur au palier : la manche part directement.
+      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
+
+      expect(api.calls.filter(c => c.startsWith('passOffer'))).toEqual([]);
+      expect(api.calls).toContain('refreshPreview:7');
+    });
+  });
+
+  describe('reprise d\'une partie qui attend sa difficulté', () => {
+    const waiting = (overrides = {}) => SESSION({
+      round: ROUND({ round: 4, score: 0, objective: 750, maxScore: 1000 }), roundsPassed: 3, roundTracks: [],
+      passedRounds: [1, 2, 3].map(round => ({ round, score: 600, objective: 300, disc: { key: 'runs.discs.wax', stars: 0 } })),
+      difficultyChoice: { round: 4, options: [
+        { difficulty: 'safe', objective: 750, maxScore: 1000, listenSeconds: 10 },
+        { difficulty: 'risky', objective: 1125, maxScore: 1330, listenSeconds: 5 },
+      ] },
+      ...overrides,
+    });
+
+    beforeEach(async () => {
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+      api.sessionResult = waiting();
+      api.joinResult = { kind: 'ok', play: PLAY({ session: waiting(), current: null, isResuming: true }) };
+      await store.init();
+      await store.begin();
+    });
+
+    it('sans coups de pouce : directement l\'écran « Difficulté ? », sans son ni choix', () => {
+      expect(store.screen()).toBe('difficulty');
+      expect(audio.calls.filter(c => c.startsWith('load'))).toEqual([]);
+      expect(api.calls.filter(c => c.startsWith('chooseDifficulty'))).toEqual([]);
+    });
+
+    it('la manche boss en Risquée : le morceau se joue sur l\'écoute courte que le serveur donne', async () => {
+      api.chooseResult = PLAY({
+        session: waiting({ difficultyChoice: null }),
+        current: CURRENT({ position: 16, round: 4, positionInRound: 1, previewUrl: 'https://cdn/preview-16.mp3', listenSeconds: 5 }),
+      });
+
+      await store.chooseDifficulty('risky');
+
+      expect(round.maxStep()).toBe(5);
+      expect(store.screen()).toBe('playing');
+    });
+  });
+
+  describe('série de bonnes réponses', () => {
+    it("rien sous deux morceaux trouvés d'affilée", async () => {
+      api.launchResult = { kind: 'ok', play: PLAY({ session: SESSION({ playedTracks: [TRACK({ position: 1 })] }) }) };
+      await startRun();
+      expect(store.combo()).toBeNull();
+    });
+
+    it('puis leur nombre', async () => {
+      api.launchResult = { kind: 'ok', play: PLAY({ session: SESSION({ playedTracks: [TRACK({ position: 1 }), TRACK({ position: 2 })] }) }) };
+      await startRun();
+      expect(store.combo()).toBe(2);
+    });
+  });
+
+  describe('cartes jouées sur le morceau', () => {
+    const withHand = (overrides = {}) => SESSION({ handSize: 2, hand: [{ slot: 1, card: 'year' }, { slot: 2, card: 'joker' }], ...overrides });
+
+    beforeEach(async () => {
+      api.launchResult = { kind: 'ok', play: PLAY({ session: withHand() }) };
+      await startRun();
+      audio.calls.length = 0;
+    });
+
+    it('les cartes de la main sont là, au-dessus de la saisie', () => {
+      expect(store.roundCards()?.hand.map(c => c.card)).toEqual(['year', 'joker']);
+    });
+
+    it('Année : la carte part au serveur, son effet s\'affiche, rien ne se relance', async () => {
+      api.playResult = PLAY({
+        session: withHand({ hand: [{ slot: 2, card: 'joker' }] }),
+        current: CURRENT({ effects: { cards: ['year'], year: 1995, artistInitials: null, titleInitials: null, choices: null, clockBonusSeconds: 0 } }),
+      });
+
+      await store.playCard(1);
+
+      expect(api.calls).toContain('playCard:7:1:1');
+      expect(store.roundCards()?.effects?.year).toBe(1995);
+      expect(store.roundCards()?.hand.map(c => c.card)).toEqual(['joker']);
+      expect(audio.calls.filter(c => c.startsWith('load'))).toEqual([]);
+    });
+
+    it('Joker : le son se déverrouille dans le toucher, le nouveau morceau part', async () => {
+      api.playResult = PLAY({ session: withHand({ hand: [{ slot: 1, card: 'year' }] }), current: CURRENT({ previewUrl: 'https://cdn/preview-reserve.mp3' }) });
+
+      await store.playCard(2);
+
+      expect(audio.calls[0]).toBe('unlock');
+      expect(audio.calls).toContain('load https://cdn/preview-reserve.mp3');
+      expect(store.screen()).toBe('playing');
+    });
+
+    it('Rallonge : l\'écoute repart sur la durée allongée', async () => {
+      api.launchResult = { kind: 'ok', play: PLAY({ session: withHand({ hand: [{ slot: 1, card: 'extend' }] }) }) };
+      await startRun();
+      api.playResult = PLAY({ session: withHand({ hand: [] }), current: CURRENT({ listenSeconds: 20, effects: {
+        cards: ['extend'], year: null, artistInitials: null, titleInitials: null, choices: null, clockBonusSeconds: 0 } }) });
+
+      await store.playCard(1);
+
+      expect(round.maxStep()).toBe(20);
+    });
+
+    it('une carte refusée laisse la manche telle quelle et relit la partie', async () => {
+      api.playResult = new Error('409');
+
+      await store.playCard(1);
+
+      expect(api.calls).toContain('session:7');
+      expect(store.screen()).toBe('playing');
+    });
+
+    it('Joker : le morceau de réserve, à la même place, est un autre morceau pour la manche (saisie et forme neuves)', async () => {
+      const before = round.trackKey();
+      api.playResult = PLAY({ session: withHand({ hand: [{ slot: 1, card: 'year' }] }), current: CURRENT({ previewUrl: 'https://cdn/preview-reserve.mp3' }) });
+
+      await store.playCard(2);
+
+      expect(round.trackId()).toBe(1);
+      expect(round.trackKey()).not.toBe(before);
+    });
+
+    it('deux touchers sur une carte ne la jouent qu\'une fois', async () => {
+      let answer: (play: ReturnType<typeof PLAY>) => void = () => undefined;
+      vi.spyOn(api, 'playCard').mockImplementation(() => new Promise(resolve => { answer = resolve; }));
+
+      const playing = store.playCard(1);
+      void store.playCard(1);
+      answer(PLAY({ session: withHand({ hand: [{ slot: 2, card: 'joker' }] }) }));
+      await playing;
+
+      expect(api.playCard).toHaveBeenCalledTimes(1);
+      expect(store.cardBusy()).toBe(false);
+    });
+
+    it('une réponse arrivée après un abandon ne change rien, refus compris', async () => {
+      let refuse: (error: Error) => void = () => undefined;
+      vi.spyOn(api, 'playCard').mockImplementation(() => new Promise((_, reject) => { refuse = reject; }));
+      const playing = store.playCard(1);
+      await store.abandon();
+      const afterAbandon = store.session();
+
+      refuse(new Error('409'));
+      await playing;
+      await new Promise<void>(resolve => setTimeout(resolve, 0));
+
+      expect(store.session()).toBe(afterAbandon);
+      expect(store.screen()).not.toBe('playing');
+    });
+
+    it('pendant l\'envoi d\'une réponse, les cartes ne se jouent plus', async () => {
+      let answered: (play: ReturnType<typeof PLAY>) => void = () => undefined;
+      vi.spyOn(api, 'submitAnswer').mockImplementation(() => new Promise(resolve => { answered = resolve; }));
+      const sent = round.submit({ artist: 'Daft Punk', title: 'One More Time' });
+      const sending = sent ? store.submit(sent) : Promise.resolve();
+
+      expect(store.roundCards()?.playable).toBe(false);
+      await store.playCard(1);
+      expect(api.calls.filter(c => c.startsWith('playCard'))).toEqual([]);
+
+      answered(PLAY());
+      await sending;
+    });
+  });
+
+  describe('Sablier et chrono', () => {
+    const hourglass = (clockBonusSeconds: number, clockRemainingSeconds: number | null) => PLAY({
+      session: SESSION({ handSize: 2, hand: [], clockRemainingSeconds }),
+      current: CURRENT({ effects: { cards: ['hourglass'], year: null, artistInitials: null, titleInitials: null, choices: null, clockBonusSeconds } }),
+    });
+
+    beforeEach(async () => {
+      vi.useFakeTimers();
+      api.launchResult = { kind: 'ok', play: PLAY({ session: SESSION({ handSize: 2, hand: [{ slot: 1, card: 'hourglass' }] }) }) };
+      await startRun();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('joué avant le premier son : le chrono part plein, Sablier compris', async () => {
+      api.playResult = hourglass(30, null);
+      await store.playCard(1);
+      expect(store.clockShown()).toBe(75);
+
+      audio.emit('playing');
+      TestBed.tick();
+      vi.advanceTimersByTime(50_000);
+
+      expect(store.timeUp()).toBe(false);
+      expect(store.clockShown()).toBeCloseTo(25, 0);
+    });
+
+    it('joué pendant le chrono : il repart sur ce que le serveur retient', async () => {
+      audio.emit('playing');
+      TestBed.tick();
+      vi.advanceTimersByTime(40_000);
+      api.playResult = hourglass(30, 35);
+
+      await store.playCard(1);
+      vi.advanceTimersByTime(10_000);
+
+      expect(store.timeUp()).toBe(false);
+      expect(store.clockShown()).toBeCloseTo(25, 0);
+    });
+  });
+
+  describe('retour de l\'onglet au premier plan', () => {
+    it('rien n\'a bougé ailleurs : la manche continue, sans rien relancer', async () => {
+      await startRun();
+      api.sessionResult = SESSION({ roundTracks: [], playedTracks: [] });
+      audio.calls.length = 0;
+
+      await store.refresh();
+
+      expect(api.calls).toContain('session:7');
+      expect(store.screen()).toBe('playing');
+      expect(audio.calls).toEqual([]);
+    });
+
+    it('la partie a été finie dans un autre onglet : l\'écran de fin', async () => {
+      await startRun();
+      api.sessionResult = SESSION({
+        status: 'lost', round: null, playedTracks: [1, 2, 3, 4, 5].map(position => TRACK({ position, artistCorrect: false, titleCorrect: false })),
+        finish: {
+          status: 'lost', disc: { key: 'runs.discs.scratched', stars: 0 }, totalScore: 0, roundsPassed: 0, foundCount: 0, trackCount: 20,
+          tracks: [], rounds: [], record: null, challengeCode: 'ABC234', shortfall: null,
+        },
+      });
+
+      await store.refresh();
+
+      expect(store.screen()).toBe('finished');
+      expect(store.finish()?.status).toBe('lost');
+    });
+
+    it('la partie a été abandonnée dans un autre onglet : pas d\'écran de fin, l\'accueil du mode', async () => {
+      await startRun();
+      api.sessionResult = SESSION({ status: 'abandoned', round: null });
+      api.meResult = ME();
+
+      await store.refresh();
+
+      expect(store.screen()).toBe('welcome');
+    });
+
+    it('la partie a avancé dans un autre onglet : l\'écran de reprise (le son repartira d\'un toucher)', async () => {
+      await startRun();
+      api.sessionResult = SESSION({ playedTracks: [TRACK({ position: 1 }), TRACK({ position: 2 })], roundTracks: [TRACK({ position: 1 }), TRACK({ position: 2 })] });
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+      audio.calls.length = 0;
+
+      await store.refresh();
+
+      expect(store.screen()).toBe('resume');
+      expect(audio.calls.filter(c => c.startsWith('load'))).toEqual([]);
+    });
+
+    it('une réponse en route pendant la relecture : c\'est cet onglet qui avance, la manche continue', async () => {
+      await startRun();
+      let answered: (play: ReturnType<typeof PLAY>) => void = () => undefined;
+      vi.spyOn(api, 'submitAnswer').mockImplementation(() => new Promise(resolve => { answered = resolve; }));
+      api.sessionResult = SESSION({ playedTracks: [TRACK({ position: 1 })], roundTracks: [TRACK({ position: 1 })] });
+      const sent = round.submit({ artist: 'Daft Punk', title: 'One More Time' });
+      const sending = sent ? store.submit(sent) : Promise.resolve();
+      const callsBefore = api.calls.length;
+
+      await store.refresh();
+      answered(PLAY({ revealed: TRACK({ position: 1 }), current: CURRENT({ position: 2, positionInRound: 2, previewUrl: 'https://cdn/preview-2.mp3' }) }));
+      await sending;
+
+      expect(store.screen()).toBe('playing');
+      // Ni relecture conclue ni reconstruction de l'écran (qui relirait `me`).
+      expect(api.calls.slice(callsBefore)).not.toContain('me');
+    });
+
+    it('sur l\'accueil du mode, le record et l\'étagère se relisent quand rien d\'autre n\'a bougé', async () => {
+      await store.init();
+      api.meResult = ME({ record: { bestScore: 1200, bestRoundsPassed: 2, isNew: false } });
+
+      await store.refresh();
+
+      expect(store.screen()).toBe('welcome');
+      expect(store.record()?.bestScore).toBe(1200);
+    });
+
+    it('sur l\'accueil du mode, une partie lancée dans un autre onglet propose de la reprendre', async () => {
+      await store.init();
+      expect(store.screen()).toBe('welcome');
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+
+      await store.refresh();
+
+      expect(store.screen()).toBe('resume');
+    });
+  });
+
+  describe('sons d\'interface', () => {
+    it('le bouton les coupe puis les remet ; le toucher réveille aussi le son', () => {
+      const unlock = vi.spyOn(TestBed.inject(RunSounds), 'unlock');
+      expect(store.soundsMuted()).toBe(false);
+
+      store.toggleSounds();
+      expect(store.soundsMuted()).toBe(true);
+      expect(unlock).toHaveBeenCalled();
+
+      store.toggleSounds();
+      expect(store.soundsMuted()).toBe(false);
+    });
+  });
+
   describe('fin de partie', () => {
     const finish = (status: 'won' | 'lost') => ({
       status, disc: { key: 'runs.discs.gold', stars: 0 }, totalScore: 2500, roundsPassed: 4, foundCount: 18, trackCount: 20,
-      tracks: [], rounds: [], record: { bestScore: 2500, bestRoundsPassed: 4, isNew: true }, challengeCode: 'ABC234',
+      tracks: [], rounds: [], record: { bestScore: 2500, bestRoundsPassed: 4, isNew: true }, challengeCode: 'ABC234', shortfall: null,
     });
 
     beforeEach(async () => {
@@ -294,9 +817,10 @@ describe('RunGameStore', () => {
       expect(store.screen()).toBe('finished');
       expect(store.finish()?.disc.key).toBe('runs.discs.gold');
       expect(store.revealed()).toBeNull();
+      expect(sounds).toHaveBeenCalledWith('won');
     });
 
-    it('une manche ratée mène directement à la fin, sans écran de bilan ni autre son', async () => {
+    it('une manche ratée mène directement à la fin, sans écran de bilan ni extrait ; le son du run perdu', async () => {
       api.answerResult = PLAY({
         session: SESSION({
           status: 'lost', round: null, finish: finish('lost'), playedTracks: [1, 2, 3, 4, 5].map(position => TRACK({ position })),
@@ -313,10 +837,12 @@ describe('RunGameStore', () => {
       store.next();
 
       expect(store.screen()).toBe('finished');
+      expect(sounds).toHaveBeenCalledWith('lost');
+      expect(sounds).not.toHaveBeenCalledWith('roundPassed');
       expect(audio.calls.filter(c => c.startsWith('load'))).toHaveLength(1);
     });
 
-    it('« Nouvelle partie » lance une playlist neuve, le premier son dans le clic', async () => {
+    it('« Rejouer » lance une playlist neuve, le premier son dans le clic', async () => {
       api.answerResult = PLAY({ session: SESSION({ status: 'won', round: null, finish: finish('won') }), revealed: TRACK(), current: null });
       await send();
       store.next();
@@ -333,7 +859,7 @@ describe('RunGameStore', () => {
       expect(audio.calls).toContain('load https://cdn/preview-neuf.mp3');
     });
 
-    it('« Nouvelle partie » seulement avec l\'accès', async () => {
+    it('« Rejouer » seulement avec l\'accès', async () => {
       expect(store.canPlayAgain()).toBe(true);
       api.meResult = ME({ hasAccess: false });
       api.answerResult = PLAY({ session: SESSION({ status: 'won', round: null, finish: finish('won') }), revealed: TRACK(), current: null });
@@ -548,6 +1074,18 @@ describe('RunGameStore', () => {
       expect(store.clockAlert()).toBe(false);
     });
 
+    it('un tic à chaque seconde des cinq dernières (le service se tait seul pendant un extrait)', async () => {
+      await startRun();
+      audio.emit('playing');
+      TestBed.tick();
+      audio.emit('finished');
+
+      vi.advanceTimersByTime(39_900);
+      expect(sounds.mock.calls.filter(([sound]) => sound === 'tick')).toHaveLength(0);
+      vi.advanceTimersByTime(5_000);
+      expect(sounds.mock.calls.filter(([sound]) => sound === 'tick')).toHaveLength(5);
+    });
+
     it('se recale sur le chrono retenu par le serveur quand il reste moins de temps, jamais pour en ajouter', async () => {
       api.clockResult = 20;
       await startRun();
@@ -717,7 +1255,7 @@ describe('RunGameStore', () => {
     it("sur /runs, la comparaison d'une partie finie se lit avec le code de la playlist de la fin", async () => {
       const finish = {
         status: 'won' as const, disc: { key: 'runs.discs.gold', stars: 0 }, totalScore: 2600, roundsPassed: 4, foundCount: 20, trackCount: 20, tracks: [],
-        rounds: [], record: null, challengeCode: 'XYZ789',
+        rounds: [], record: null, challengeCode: 'XYZ789', shortfall: null,
       };
       api.launchResult = { kind: 'ok', play: PLAY({ session: SESSION({ status: 'won', round: null, finish }), current: null }) };
       await store.init();

@@ -64,6 +64,12 @@
       "no_challenge": "Pas assez de morceaux pour une playlist, réessaie plus tard.",
       "challenge_not_found": "Cette playlist n'existe pas. Vérifie le lien.",
       "comparison_locked": "La comparaison s'ouvre une fois ta partie terminée.",
+      "difficulty_locked": "La difficulté de cette manche est déjà fixée.",
+      "card_not_found": "Cette carte n'est plus dans ta main.",
+      "offer_closed": "Cette offre n'est plus ouverte.",
+      "hand_full": "Ta main est pleine : lâche une carte pour en prendre une.",
+      "card_already_active": "Cette carte est déjà jouée sur ce morceau.",
+      "card_unavailable": "Cette carte ne peut pas se jouer ici.",
       "session_not_found": "Cette partie n'existe plus.",
       "already_played": "Tu as déjà joué cette playlist.",
       "abandoned": "Tu as abandonné cette playlist.",
@@ -126,7 +132,8 @@
       "skipConfirm": "Passer ce morceau ? Tu marqueras 0 points",
       "skipAnyway": "Passer",
       "submitFailed": "Ta réponse n'a pas pu être enregistrée. Vérifie ta connexion et réessaie.",
-      "retry": "Réessayer"
+      "retry": "Réessayer",
+      "choices": "Réponses proposées"
     },
     "hint": {
       "tooltip": "Indice : coûte des points",
@@ -851,7 +858,7 @@
   },
   "privacy": {
     "title": "Confidentialité",
-    "updated": "Dernière mise à jour : 28 octobre 2026",
+    "updated": "Dernière mise à jour : 6 novembre 2026",
     "intro": "InSeconds est un jeu de blind test musical gratuit, accessible à l'adresse https://inseconds.cc. Il reste intégralement jouable en mode invité, sans compte ni inscription ; la création d'un compte, par email uniquement, est optionnelle et sert à retrouver votre progression sur un autre appareil. Cette page décrit la politique de confidentialité du site, conformément au Règlement général sur la protection des données (RGPD, Règlement UE 2016/679) et à la loi Informatique et Libertés. L'éditeur et l'hébergeur sont présentés dans les mentions légales.",
     "legalLink": "Voir les mentions légales",
     "controller": {
@@ -860,7 +867,7 @@
     },
     "data": {
       "title": "Données collectées, finalités et base légale",
-      "body": "Aucune donnée n'est exigée pour jouer : le mode invité ne demande ni nom, ni email, ni inscription.\nSelon votre usage, l'application traite les catégories de données suivantes :\n· identifiant technique pseudonyme : généré aléatoirement et stocké dans un cookie, il permet de reconnaître votre navigateur d'une visite à l'autre (reprise de partie, limitation à une partie par jour, série de victoires). Finalité : fourniture du jeu. Base légale : exécution du service demandé (article 6.1.b du RGPD) ;\n· appareils connectés : pour chaque navigateur où vous jouez, l'application garde la date de première connexion, la date de dernière visite et un libellé grossier du navigateur et de l'appareil (par exemple « Safari · iPhone », jamais l'en-tête technique complet). Avec un compte, la liste de vos appareils s'affiche dans votre profil, où vous pouvez déconnecter chacun d'eux. Finalité : sécurité du compte et connexion multi-appareils. Base légale : exécution du service demandé (article 6.1.b) ;\n· email et pseudo, uniquement si vous créez un compte : un compte optionnel, activé par un lien de connexion envoyé par email (sans mot de passe), permet de retrouver votre historique et votre série sur n'importe quel appareil ; le pseudo est un nom d'affichage que vous choisissez librement. Finalité : gestion du compte et connexion multi-appareils. Base légale : votre consentement (article 6.1.a du RGPD), vous restez libre de jouer en invité sans jamais fournir ces informations ;\n· données de partie : le résultat de chaque réponse (artiste et titre trouvés ou non, sans le texte que vous tapez, qui n'est jamais conservé), durées d'écoute choisies, scores et dates de jeu. Finalité : faire fonctionner le jeu et calculer des statistiques globales anonymes (score médian, taux de réussite par morceau). Base légale : exécution du service demandé (article 6.1.b). Avec un compte, l'éditeur peut consulter dans l'espace d'administration votre pseudo, votre adresse email, votre série et l'historique de vos parties des 30 derniers jours, uniquement pour faire fonctionner le service et répondre à vos demandes ;\n· mode Platines (sur invitation) : pour chaque partie, le résultat de chaque morceau (artiste et titre trouvés ou non, jamais le texte que vous tapez), ses points, les manches passées, le score et les dates de jeu ; votre record (meilleur score et meilleur disque) ; les playlists que vous lancez et leur auteur ; l'autorisation d'accès que l'éditeur vous a donnée. Une playlist se partage par un lien : ceux qui l'ouvrent voient le pseudo de son auteur (« Invité » sans compte) et, une fois leur propre partie finie, le pseudo (ou « Invité »), le disque et le score de chacun de ceux qui l'ont jouée. Ce n'est pas un classement public : seuls ceux qui ont le lien les voient. Si vous supprimez votre compte, vos parties disparaissent ; les playlists que vous avez lancées restent jouables, sans auteur. Finalité : faire fonctionner ce mode et la comparaison entre ceux qui ont joué la même playlist. Base légale : exécution du service demandé (article 6.1.b) ;\n· adresse IP : traitée techniquement à chaque requête, comme pour tout site web, à des fins de sécurité (limitation du nombre de tentatives de connexion pour prévenir les abus). Finalité : sécurité du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· journaux techniques : à chaque requête, l'application enregistre l'identifiant technique pseudonyme décrit ci-dessus, la page ou l'action concernée, sa durée, son résultat, le type de navigateur et d'appareil (par exemple « Safari · iPhone ») et, en cas de bug, le message d'erreur, sa pile d'appels, la version de l'application et l'état de la connexion (en ligne ou non). Ces journaux ne contiennent jamais votre email, votre pseudo, vos réponses saisies ni votre cookie. Finalité : détecter et corriger les bugs, surveiller le bon fonctionnement du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· mesure d'audience : à chaque page affichée, un petit script de Cloudflare Web Analytics envoie à Cloudflare l'adresse de la page, le site d'où vous venez, le type de navigateur et d'appareil, et les temps de chargement de la page. Cloudflare en tire des statistiques agrégées (visites, pages vues, pays, sites d'origine, appareils, vitesse du site), sans cookie ni identifiant qui permette de vous reconnaître ; l'éditeur ne voit que ces statistiques. Finalité : connaître la fréquentation du site et sa vitesse. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· source d'arrivée : à la création de votre identifiant d'invité, l'application note d'où vous arrivez : le nom de campagne porté par le lien que vous avez suivi (par exemple « instagram », ou « share » pour un lien partagé par un joueur), sinon le seul nom de domaine du site d'où vous venez (par exemple « google.com », jamais l'adresse complète de la page), ou « direct ». Elle est gardée dans votre navigateur le temps de la visite, puis rattachée à votre identifiant pseudonyme ; elle figure dans la copie de vos données et disparaît avec elles. Finalité : savoir quels canaux amènent de nouveaux joueurs (mesure d'audience). Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· préférences locales : votre langue préférée et le souvenir des messages d'information déjà affichés sont stockés localement dans votre navigateur ; ils ne quittent jamais votre appareil et ne sont jamais transmis à nos serveurs."
+      "body": "Aucune donnée n'est exigée pour jouer : le mode invité ne demande ni nom, ni email, ni inscription.\nSelon votre usage, l'application traite les catégories de données suivantes :\n· identifiant technique pseudonyme : généré aléatoirement et stocké dans un cookie, il permet de reconnaître votre navigateur d'une visite à l'autre (reprise de partie, limitation à une partie par jour, série de victoires). Finalité : fourniture du jeu. Base légale : exécution du service demandé (article 6.1.b du RGPD) ;\n· appareils connectés : pour chaque navigateur où vous jouez, l'application garde la date de première connexion, la date de dernière visite et un libellé grossier du navigateur et de l'appareil (par exemple « Safari · iPhone », jamais l'en-tête technique complet). Avec un compte, la liste de vos appareils s'affiche dans votre profil, où vous pouvez déconnecter chacun d'eux. Finalité : sécurité du compte et connexion multi-appareils. Base légale : exécution du service demandé (article 6.1.b) ;\n· email et pseudo, uniquement si vous créez un compte : un compte optionnel, activé par un lien de connexion envoyé par email (sans mot de passe), permet de retrouver votre historique et votre série sur n'importe quel appareil ; le pseudo est un nom d'affichage que vous choisissez librement. Finalité : gestion du compte et connexion multi-appareils. Base légale : votre consentement (article 6.1.a du RGPD), vous restez libre de jouer en invité sans jamais fournir ces informations ;\n· données de partie : le résultat de chaque réponse (artiste et titre trouvés ou non, sans le texte que vous tapez, qui n'est jamais conservé), durées d'écoute choisies, scores et dates de jeu. Finalité : faire fonctionner le jeu et calculer des statistiques globales anonymes (score médian, taux de réussite par morceau). Base légale : exécution du service demandé (article 6.1.b). Avec un compte, l'éditeur peut consulter dans l'espace d'administration votre pseudo, votre adresse email, votre série et l'historique de vos parties des 30 derniers jours, uniquement pour faire fonctionner le service et répondre à vos demandes ;\n· mode Platines (sur invitation) : pour chaque partie, le résultat de chaque morceau (artiste et titre trouvés ou non, jamais le texte que vous tapez), ses points, la difficulté que vous avez choisie pour chaque manche et l'heure du choix, les coups de pouce reçus, lâchés ou joués (sur quel morceau, et à quelle heure), les manches passées, le score et les dates de jeu ; votre record (meilleur score et meilleur disque) ; les playlists que vous lancez et leur auteur ; l'autorisation d'accès que l'éditeur vous a donnée. Une playlist se partage par un lien : ceux qui l'ouvrent voient le pseudo de son auteur (« Invité » sans compte), pendant leur partie le total de l'auteur morceau par morceau (jusqu'au morceau où ils en sont) si l'auteur a fini la playlist et, une fois leur propre partie finie, le pseudo (ou « Invité »), le disque et le score de chacun de ceux qui l'ont jouée. Ce n'est pas un classement public : seuls ceux qui ont le lien les voient. Si vous supprimez votre compte, vos parties disparaissent ; les playlists que vous avez lancées restent jouables, sans auteur. Finalité : faire fonctionner ce mode et la comparaison entre ceux qui ont joué la même playlist. Base légale : exécution du service demandé (article 6.1.b) ;\n· adresse IP : traitée techniquement à chaque requête, comme pour tout site web, à des fins de sécurité (limitation du nombre de tentatives de connexion pour prévenir les abus). Finalité : sécurité du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· journaux techniques : à chaque requête, l'application enregistre l'identifiant technique pseudonyme décrit ci-dessus, la page ou l'action concernée, sa durée, son résultat, le type de navigateur et d'appareil (par exemple « Safari · iPhone ») et, en cas de bug, le message d'erreur, sa pile d'appels, la version de l'application et l'état de la connexion (en ligne ou non). Ces journaux ne contiennent jamais votre email, votre pseudo, vos réponses saisies ni votre cookie. Finalité : détecter et corriger les bugs, surveiller le bon fonctionnement du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· mesure d'audience : à chaque page affichée, un petit script de Cloudflare Web Analytics envoie à Cloudflare l'adresse de la page, le site d'où vous venez, le type de navigateur et d'appareil, et les temps de chargement de la page. Cloudflare en tire des statistiques agrégées (visites, pages vues, pays, sites d'origine, appareils, vitesse du site), sans cookie ni identifiant qui permette de vous reconnaître ; l'éditeur ne voit que ces statistiques. Finalité : connaître la fréquentation du site et sa vitesse. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· source d'arrivée : à la création de votre identifiant d'invité, l'application note d'où vous arrivez : le nom de campagne porté par le lien que vous avez suivi (par exemple « instagram », ou « share » pour un lien partagé par un joueur), sinon le seul nom de domaine du site d'où vous venez (par exemple « google.com », jamais l'adresse complète de la page), ou « direct ». Elle est gardée dans votre navigateur le temps de la visite, puis rattachée à votre identifiant pseudonyme ; elle figure dans la copie de vos données et disparaît avec elles. Finalité : savoir quels canaux amènent de nouveaux joueurs (mesure d'audience). Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· préférences locales : votre langue préférée, le choix de couper les sons du mode Platines et le souvenir des messages d'information déjà affichés sont stockés localement dans votre navigateur ; ils ne quittent jamais votre appareil et ne sont jamais transmis à nos serveurs."
     },
     "cookie": {
       "title": "Cookie",
@@ -897,7 +904,9 @@
       "toGoBefore": "encore",
       "points": "{{ points }} pts",
       "toGoAfter": "pour passer",
-      "reached": "objectif atteint"
+      "reached": "objectif atteint",
+      "soundsOff": "Couper les sons",
+      "soundsOn": "Remettre les sons"
     },
     "answer": {
       "next": "Morceau suivant",
@@ -916,7 +925,9 @@
       "title": "Platines",
       "tagline": "Vise le disque d’or.",
       "record": "Ton record : {{ score }} pts",
-      "launch": "Lancer une partie"
+      "launch": "Lancer une partie",
+      "shelf": "Tes disques",
+      "shelfEntry": "{{ disc }} : {{ count }}"
     },
     "status": {
       "no_challenge": {
@@ -947,20 +958,23 @@
     },
     "finished": {
       "found": "{{ found }} / {{ total }} morceaux trouvés",
-      "newGame": "Nouvelle partie",
       "won": "{{ disc }} !",
       "disc": "{{ disc }}",
       "newRecord": "Nouveau record",
       "record": "Record : {{ score }}",
       "round": "Manche {{ round }}",
       "notPlayed": "Manche non jouée",
-      "shareTitle": "Lance cette playlist à tes potes",
-      "shareBody": "Ils jouent exactement la même playlist que toi : les mêmes 20 morceaux, dans le même ordre. À la fin, vous comparez tous vos scores, manche par manche.",
-      "share": "Partager la playlist",
+      "shareTitle": "Défie tes potes sur cette playlist",
+      "shareBody": "Ils jouent les mêmes {{ tracks }} morceaux, dans le même ordre. Ton score part avec le message : à eux de faire mieux, puis vous comparez manche par manche.",
+      "share": "Partager mon score",
       "shareCopied": "Lien copié !",
       "shareFailed": "Copie impossible",
       "toDaily": "Jouer au défi du jour",
-      "compare": "Voir les autres joueurs"
+      "compare": "Voir les autres joueurs",
+      "playAgain": "Rejouer",
+      "shortfallBefore": "Il t’a manqué",
+      "shortfallPoints": "{{ points }} pts",
+      "shortfallAfter": "pour le {{ disc }}"
     },
     "link": {
       "guest": "Invité",
@@ -979,7 +993,8 @@
       "player": "Joueur",
       "roundShort": "M{{ round }}",
       "total": "Total",
-      "you": "Toi"
+      "you": "Toi",
+      "share": "Partager la playlist"
     },
     "discs": {
       "scratched": "Disque rayé",
@@ -993,7 +1008,78 @@
       "body": "Impossible de récupérer l’extrait. Le morceau a été retiré de la playlist et l’objectif abaissé à {{ objective }} pts."
     },
     "share": {
-      "text": "Je te lance une playlist sur InSeconds : 20 morceaux en 4 manches. Tu fais mieux que moi ?"
-    }
+      "text": "Je te lance une playlist sur InSeconds. Tu fais mieux que moi ?",
+      "header": "{{ score }} pts · {{ disc }} · InSeconds Platines",
+      "round": "Manche {{ round }}",
+      "beatMe": "Bats-moi sur la même playlist :"
+    },
+    "palier": {
+      "round": "Manche {{round}}",
+      "shelf": "Les disques de la playlist",
+      "points": "pts",
+      "scoreLabel": "{{score}} points pour un objectif de {{objective}}",
+      "nextRound": "Manche {{round}}",
+      "pointsFor": "pts pour",
+      "offer": "Un coup de pouce",
+      "pass": "Passer",
+      "hand": "En main",
+      "emptySlot": "Emplacement libre",
+      "dropHint": "Touche la carte à lâcher",
+      "next": "Suite"
+    },
+    "cards": {
+      "three_choices": {
+        "name": "Trois choix"
+      },
+      "joker": {
+        "name": "Joker"
+      },
+      "year": {
+        "name": "Année"
+      },
+      "initials": {
+        "name": "Initiales"
+      },
+      "extend": {
+        "name": "Rallonge"
+      },
+      "net": {
+        "name": "Filet"
+      },
+      "lower_target": {
+        "name": "Seuil abaissé"
+      },
+      "hourglass": {
+        "name": "Sablier"
+      }
+    },
+    "difficulty": {
+      "round": "Manche {{round}}",
+      "title": "Difficulté ?",
+      "yourScore": "Ton score",
+      "max": "max",
+      "listen": "écoute {{seconds}}",
+      "hand": "En main",
+      "easy": "Facile",
+      "safe": "Sûre",
+      "risky": "Risquée",
+      "columnLabel": "{{name}} : jusqu'à {{max}} points, objectif {{objective}}"
+    },
+    "roundCards": {
+      "play": "Jouer {{card}}",
+      "net": "Un raté compte à moitié",
+      "lowerTarget": "Objectif de la manche abaissé",
+      "hourglass": "+{{seconds}} au chrono",
+      "extend": "Écoute de {{seconds}}",
+      "choicesHint": "Une seule est juste",
+      "refused": "Cette carte n'a pas pu être jouée."
+    },
+    "ghost": {
+      "ahead": "{{ points }} pts d’avance",
+      "behind": "{{ points }} pts de retard",
+      "tied": "À égalité",
+      "stopped": "arrêt en manche {{ round }}"
+    },
+    "combo": "{{ count }} d’affilée"
   }
 }

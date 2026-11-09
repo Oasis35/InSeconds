@@ -25,6 +25,8 @@ export class RunPage {
   readonly answerCard: Locator;
   readonly withdrawnCard: Locator;
   readonly nextTrackButton: Locator;
+  readonly palier: Locator;
+  readonly palierNextButton: Locator;
   readonly finished: Locator;
   readonly disc: Locator;
   readonly record: Locator;
@@ -43,6 +45,9 @@ export class RunPage {
   readonly comparisonTitle: Locator;
   readonly comparisonRows: Locator;
   readonly statusScreen: Locator;
+  readonly roundCards: Locator;
+  readonly handCards: Locator;
+  readonly cardEffects: Locator;
 
   constructor(readonly page: Page) {
     this.homeCard            = page.getByTestId('run-home-card');
@@ -60,6 +65,8 @@ export class RunPage {
     this.answerCard          = page.getByTestId('run-answer');
     this.withdrawnCard       = page.getByTestId('run-withdrawn');
     this.nextTrackButton     = page.getByTestId('run-next-track');
+    this.palier              = page.getByTestId('run-palier-screen');
+    this.palierNextButton    = page.getByTestId('run-palier-next-button');
     this.finished            = page.getByTestId('run-finished');
     this.disc                = page.getByTestId('run-disc');
     this.record              = this.finished.getByTestId('run-record');
@@ -74,6 +81,9 @@ export class RunPage {
     this.compareButton       = page.getByTestId('run-compare');
     this.toDailyLink         = page.getByTestId('run-to-daily');
     this.comparison          = page.getByTestId('run-comparison');
+    this.roundCards          = page.getByTestId('run-round-cards');
+    this.handCards           = this.roundCards.locator('button[data-testid^="run-play-"]');
+    this.cardEffects         = page.getByTestId('run-card-effect');
     this.comparisonEyebrow   = page.getByTestId('run-comparison-eyebrow');
     this.comparisonTitle     = page.getByTestId('run-comparison-title');
     this.comparisonRows      = page.locator('[data-testid="run-comparison-table"] tbody tr');
@@ -121,6 +131,9 @@ export class RunPage {
       await this.submitButton.click();
       await this.confirmSubmitButton.click();
     } else {
+      // La souris reste où elle a cliqué (« Morceau suivant ») : si la liste des propositions s'ouvre dessous, le survol en surligne une, et
+      // Entrée la choisirait au lieu d'envoyer la saisie (« partie gagnée » ratait ainsi un morceau sur une machine lente). On l'écarte.
+      await this.page.mouse.move(0, 0);
       await this.answerInput.fill(text);
       // La liste de l'autocomplétion se ferme au blur (minuterie de 150 ms) ; Entrée envoie le formulaire sans viser le bouton.
       await this.answerInput.evaluate(el => (el as HTMLElement).blur());
@@ -146,18 +159,29 @@ export class RunPage {
   }
 
   /** Rate la première manche (5 réponses vides, 0 point, objectif manqué) : la dernière réponse mène à l'écran de fin d'une partie perdue. */
-  async loseFirstRound(): Promise<void> {
-    await inSequence([1, 2, 3, 4], () => this.answerEmpty());
+  async loseFirstRound(afterFirstAnswer?: () => Promise<void>): Promise<void> {
+    await this.answerEmpty();
+    await afterFirstAnswer?.();
+    await inSequence([2, 3, 4], () => this.answerEmpty());
     await this.answer(null);
     await expect(this.nextTrackButton).toHaveText(/Voir le résultat/i);
     await this.nextTrackButton.click();
     await expect(this.finished).toHaveAttribute('data-status', 'lost');
   }
 
-  /** Répond juste à tous les morceaux d'une manche ; la ligne de la manche se pose dans la pile (sauf à la dernière, qui mène à la fin). */
-  async winRound(tracks: RunTrack[], round: number): Promise<void> {
+  /**
+   * Répond juste à tous les morceaux d'une manche. Sauf à la dernière (qui mène à la fin) : l'écran de palier, ses trois cartes offertes,
+   * « Suite », l'écran « Difficulté ? » (Sûre par défaut, ou celle demandée pour la manche suivante), puis la ligne de la manche posée dans la pile.
+   */
+  async winRound(tracks: RunTrack[], round: number, difficulty: 'easy' | 'safe' | 'risky' = 'safe'): Promise<void> {
     await expect(this.roundTitle).toHaveText(`Manche ${round}`);
     await inSequence(tracks.filter(t => t.round === round), track => this.answerRight(track));
-    if (round < 4) await expect(this.paliers).toHaveCount(round);
+    if (round === 4) return;
+    await expect(this.palier).toBeVisible();
+    await expect(this.palier.locator('[data-card]')).toHaveCount(3);
+    await this.palierNextButton.click();
+    // « Sûre » : l'objectif et les points du proto 1 ; le toucher lance le premier morceau de la manche.
+    await this.page.getByTestId(`run-difficulty-${difficulty}`).click();
+    await expect(this.paliers).toHaveCount(round);
   }
 }

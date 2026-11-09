@@ -19,12 +19,15 @@ public static class RunsModule
         services.AddSingleton<RunsRules>();
         services.AddHostedService<RunsOptionsStartupCheck>();
         services.AddSingleton<IRunTrackSelector, RankBandSelector>();
+        services.AddSingleton<RunCardDealer>();
         services.AddScoped<IRunsStore, EfRunsStore>();
         services.AddScoped<IRunsQueries, EfRunsQueries>();
         services.AddScoped<IRunAccess, EfRunAccess>();
         services.AddScoped<RunChallengePlanner>();
+        services.AddScoped<RunChoiceDealer>();
         services.AddSingleton<IRunScoringPolicy, ArtistTitleScoring>();
         services.AddScoped<RunPlayer>();
+        services.AddScoped<RunGhosts>();
         // Compteurs des parties et des réponses, exportés en OpenTelemetry (tableau Grafana « Activité »).
         services.AddSingleton<RunsMetrics>();
         // L'usage des morceaux : **ajouté**, jamais remplacé (Catalogue réunit l'ITrackUsage de chaque mode).

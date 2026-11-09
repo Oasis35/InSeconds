@@ -1,0 +1,90 @@
+<section class="flex-1 flex flex-col" data-testid="run-difficulty">
+  <h1 class="text-[24px] font-extrabold leading-tight mt-3" style="font-family:var(--font-display);color:var(--text-hi)">
+    {{ 'runs.difficulty.round' | translate: { round: round() } }}
+  </h1>
+  <p class="text-[22px] font-extrabold leading-tight" style="font-family:var(--font-display);color:var(--color-accent)">
+    {{ 'runs.difficulty.title' | translate }}
+  </p>
+  <p class="flex items-baseline gap-3 mt-2">
+    <span class="text-[15px]" style="color:var(--text-light)">{{ 'runs.difficulty.yourScore' | translate }}</span>
+    <span class="text-[28px] font-extrabold leading-none" style="font-family:var(--font-score);color:var(--text-hi)" data-testid="run-difficulty-score">{{ totalScore() }}</span>
+  </p>
+
+  <!--
+    Trois colonnes à plat sur une base commune. Au-dessus de chaque corps : le plafond, « max », le total atteignable (et l'écoute de la manche
+    boss) ; le corps, à la hauteur du plafond, ne porte que l'objectif (le cadenas sur la frontière, la zone dessous assombrie) : rien ne se
+    chevauche, quel que soit l'objectif. La plus haute colonne suit la hauteur de l'écran (petit téléphone).
+  -->
+  <div class="flex-1 min-h-4"></div>
+  <div class="grid grid-cols-3 gap-2.5 items-end" style="--tallest:min(240px, 30dvh)">
+    @for (column of columns(); track column.option.difficulty) {
+      <button type="button" class="flex flex-col items-stretch touch-manipulation" [disabled]="busy()"
+        (click)="pick(column.option.difficulty)" [attr.data-testid]="'run-difficulty-' + column.option.difficulty"
+        [attr.aria-pressed]="chosen() === column.option.difficulty"
+        [attr.aria-label]="('runs.difficulty.columnLabel' | translate: {
+          name: ('runs.difficulty.' + column.option.difficulty | translate), max: column.option.maxScore, objective: column.option.objective })
+          + (column.option.listenSeconds < listenSeconds() ? ', ' + ('runs.difficulty.listen' | translate: { seconds: (column.option.listenSeconds | appSeconds) }) : '')">
+        <span class="flex flex-col items-center pt-2.5 pb-1.5"
+          style="background:var(--bg-surface);border-radius:var(--radius-card) var(--radius-card) 0 0;border-style:solid;border-width:1px 1px 0 1px"
+          [style.border-color]="chosen() === column.option.difficulty ? 'var(--color-accent)' : 'var(--border-strong)'">
+          <span class="text-[24px] font-extrabold leading-none" style="font-family:var(--font-score);color:var(--text-hi)">{{ column.option.maxScore }}</span>
+          <span class="text-[12px] leading-tight mt-1" style="font-family:var(--font-clock);color:var(--text-muted)">{{ 'runs.difficulty.max' | translate }}</span>
+          <span class="text-[13px] leading-tight mt-1" style="font-family:var(--font-clock);color:var(--text-light)" data-testid="run-difficulty-reach">
+            → {{ totalScore() + column.option.maxScore }}
+          </span>
+          @if (column.option.listenSeconds < listenSeconds()) {
+            <span class="text-[12px] leading-tight mt-1" style="color:var(--text-light)" data-testid="run-difficulty-boss">
+              {{ 'runs.difficulty.listen' | translate: { seconds: (column.option.listenSeconds | appSeconds) } }}
+            </span>
+          }
+        </span>
+        <span class="relative block" [style.height]="'calc(var(--tallest) * ' + column.heightRatio + ')'"
+          style="background:var(--bg-surface);border-style:solid;border-width:0 1px"
+          [style.border-color]="chosen() === column.option.difficulty ? 'var(--color-accent)' : 'var(--border-strong)'">
+          <span class="absolute inset-x-0 bottom-0" [style.height.%]="column.objectiveRatio * 100"
+            style="background:var(--shade-below);border-top:1.5px dashed var(--color-accent)"></span>
+          <span class="absolute left-1/2 -translate-x-1/2 translate-y-1/2 flex items-center gap-1 px-2.5 rounded-full"
+            [style.bottom.%]="column.objectiveRatio * 100"
+            style="height:28px;background:var(--bg-page);border:1.5px solid var(--color-accent);color:var(--color-accent)" data-testid="run-difficulty-objective">
+            <svg width="11" height="13" viewBox="0 0 10 12" aria-hidden="true">
+              <rect x="1" y="5" width="8" height="6" rx="1" fill="currentColor" />
+              <path d="M3 5 V3.5 a2 2 0 0 1 4 0 V5" stroke="currentColor" stroke-width="1.4" fill="none" />
+            </svg>
+            <span class="text-[14px] font-bold" style="font-family:var(--font-clock)">{{ column.option.objective }}</span>
+          </span>
+        </span>
+      </button>
+    }
+  </div>
+  <div style="height:1.5px;background:var(--border-strong)"></div>
+  <div class="grid grid-cols-3 gap-2.5 mt-2.5">
+    @for (column of columns(); track column.option.difficulty) {
+      <div class="flex flex-col items-center gap-1.5">
+        <span class="text-[16px] font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'runs.difficulty.' + column.option.difficulty | translate }}</span>
+        <span class="flex items-end gap-[3px]" aria-hidden="true">
+          @for (level of levels; track level) {
+            <span class="w-[5px] rounded-[1px]" [style.height.px]="6 + level * 4"
+              [style.background]="level <= column.level ? 'var(--text-hi)' : 'var(--border-strong)'"></span>
+          }
+        </span>
+      </div>
+    }
+  </div>
+
+  <!-- Les bonus en main, pour s'en souvenir avant de miser (la même main qu'au palier). -->
+  <div class="flex-1 min-h-4"></div>
+  @if (hand().length > 0) {
+    <div class="mt-4" data-testid="run-difficulty-hand">
+      <h2 class="text-[14px] mb-2" style="color:var(--text-muted)">{{ 'runs.difficulty.hand' | translate }}</h2>
+      <ul class="grid grid-cols-2 gap-2.5">
+        @for (card of hand(); track card.slot) {
+          <li class="flex items-center gap-2 px-3 py-1.5"
+            style="min-height:44px;background:var(--bg-surface);border:1px solid var(--border-neutral);border-radius:var(--radius-button)">
+            <span class="text-[13px] font-bold" style="font-family:var(--font-clock)" [style.color]="color(card.card).color" aria-hidden="true">{{ glyph(card.card, values()) }}</span>
+            <span class="text-[14px] font-semibold leading-tight" style="color:var(--text-hi)">{{ 'runs.cards.' + card.card + '.name' | translate }}</span>
+          </li>
+        }
+      </ul>
+    </div>
+  }
+</section>

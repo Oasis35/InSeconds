@@ -1,14 +1,18 @@
 import {
-  ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, effect, inject, input, untracked, viewChild,
+  ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, effect, inject, input, signal, untracked, viewChild,
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { tweenNumber, enterRow, settleLine } from '../../../ui/motion/motion';
-import { PileEntry } from '../../domain/run';
+import { motionReduced } from '../../../ui/motion/reduced-motion';
+import { pop, tweenNumber, enterRow, settleLine } from '../../../ui/motion/motion';
+import { PileEntry, RunGhostGap } from '../../domain/run';
 import { RunDiscComponent, discColor } from '../run-disc/run-disc.component';
 import { RunWaveComponent } from '../run-wave/run-wave.component';
 
 /** Le temps que les points de la réponse rejoignent le total avant qu'il compte, en secondes. */
 const COUNT_DELAY = 0.9;
+
+/** L'écart avec le fantôme change quand le total a fini de compter (le délai, puis le décompte de `tweenNumber`). */
+const GHOST_DELAY_MS = (COUNT_DELAY + 0.45) * 1000;
 
 /** La ligne d'une manche passée se pose après l'entrée du morceau qui la finit, en secondes. */
 const LINE_DELAY = 0.45;
@@ -28,10 +32,41 @@ const keyOf = (entry: PileEntry): string => (entry.kind === 'track' ? `t${entry.
   host: { class: 'block' },
   template: `
     <div class="flex items-baseline justify-between mt-4 px-0.5 pb-2" style="border-bottom:1px solid var(--border-medium)">
-      <span class="text-[13px]" style="color:var(--text-muted)">{{ 'runs.pile.total' | translate }}</span>
-      <b #total class="inline-block tabular-nums text-[26px] font-black leading-none origin-right" style="font-family:var(--font-score);color:var(--text-hi)"
+      <span class="flex items-baseline gap-2">
+        <span class="text-[13px]" style="color:var(--text-muted)">{{ 'runs.pile.total' | translate }}</span>
+        <!-- La série de bonnes réponses : à la couleur du joueur, c'est lui qui la fait ; elle ne rapporte rien. -->
+        @if (shownCombo(); as count) {
+          <span #comboChip class="inline-block shrink-0 whitespace-nowrap text-[13px] font-bold tabular-nums" style="color:var(--text-streak)"
+            data-testid="run-combo">
+            {{ 'runs.combo' | translate: { count } }}
+          </span>
+        }
+      </span>
+      <b #total class="inline-block shrink-0 tabular-nums text-[26px] font-black leading-none origin-right" style="font-family:var(--font-score);color:var(--text-hi)"
         data-testid="run-total-score"></b>
     </div>
+    @if (shownGhost(); as ghost) {
+      <!-- Le fantôme de l'ami : son total au même morceau, en violet (les autres joueurs), et l'écart du joueur. -->
+      <p class="flex items-baseline justify-between gap-3 px-0.5 pt-1.5 text-[13px]" data-testid="run-ghost">
+        <!-- Le pseudo se coupe sur un petit téléphone, jamais le total ni l'écart. -->
+        <span class="flex min-w-0 items-baseline gap-1" style="color:var(--color-violet)">
+          <span class="truncate">{{ ghost.pseudo ?? ('runs.link.guest' | translate) }}</span>&ngsp;
+          <b class="shrink-0 tabular-nums" style="font-family:var(--font-score)">{{ format(ghost.total) }}</b>&ngsp;
+          @if (ghost.stoppedAtRound !== null) {
+            <span class="shrink-0 whitespace-nowrap" data-testid="run-ghost-stopped">{{ 'runs.ghost.stopped' | translate: { round: ghost.stoppedAtRound } }}</span>
+          }
+        </span>
+        <span class="shrink-0 whitespace-nowrap font-semibold tabular-nums" style="color:var(--text-hi)" data-testid="run-ghost-gap">
+          @if (ghost.gap > 0) {
+            {{ 'runs.ghost.ahead' | translate: { points: format(ghost.gap) } }}
+          } @else if (ghost.gap < 0) {
+            {{ 'runs.ghost.behind' | translate: { points: format(-ghost.gap) } }}
+          } @else {
+            {{ 'runs.ghost.tied' | translate }}
+          }
+        </span>
+      </p>
+    }
 
     <div data-testid="run-pile">
       @for (entry of entries(); track key(entry)) {
@@ -93,6 +128,20 @@ export class RunPileComponent {
   readonly shapes = input<Readonly<Record<number, readonly number[]>>>({});
   /** Le total du run. */
   readonly total = input.required<number>();
+  /** L'écart avec le fantôme d'un ami sur la même playlist ; vide sans fantôme. */
+  readonly ghost = input<RunGhostGap | null>(null);
+  /** La série de bonnes réponses d'affilée, déjà assez longue pour s'afficher (le store en décide) ; `null` sinon. */
+  readonly combo = input<number | null>(null);
+  /** La série affichée : comme le fantôme, elle change quand le total a fini de compter, pas avant que la carte ait dit le verdict. */
+  protected readonly shownCombo = signal<number | null>(null);
+  private readonly comboChip = viewChild<ElementRef<HTMLElement>>('comboChip');
+  readonly lang = input<'fr' | 'en'>('fr');
+  /**
+   * Le fantôme affiché : il change en même temps que le total a fini de compter (les points s'envolent d'abord), sinon l'écart annoncerait le
+   * verdict avant l'animation et contredirait un instant le total affiché. Tout de suite au premier affichage et en mouvement réduit.
+   */
+  protected readonly shownGhost = signal<RunGhostGap | null>(null);
+  private readonly numbers = computed(() => new Intl.NumberFormat(this.lang()));
 
   /** Le total, que les points d'une réponse rejoignent. */
   readonly totalAnchor = viewChild.required<ElementRef<HTMLElement>>('total');
@@ -104,6 +153,41 @@ export class RunPileComponent {
   private readonly injector = inject(Injector);
 
   constructor() {
+    let ghostTimer: ReturnType<typeof setTimeout> | null = null;
+    inject(DestroyRef).onDestroy(() => { if (ghostTimer !== null) clearTimeout(ghostTimer); });
+    effect(() => {
+      const ghost = this.ghost();
+      untracked(() => {
+        if (ghostTimer !== null) clearTimeout(ghostTimer);
+        ghostTimer = null;
+        if (this.shownGhost() === null || ghost === null || motionReduced()) {
+          this.shownGhost.set(ghost);
+          return;
+        }
+        ghostTimer = setTimeout(() => { ghostTimer = null; this.shownGhost.set(ghost); }, GHOST_DELAY_MS);
+      });
+    });
+    // La série change avec le total ; quand elle grandit (à son apparition comprise), un petit temps fort (rien en mouvement réduit, rien au
+    // premier affichage).
+    let comboTimer: ReturnType<typeof setTimeout> | null = null;
+    let comboShown = false;
+    inject(DestroyRef).onDestroy(() => { if (comboTimer !== null) clearTimeout(comboTimer); });
+    effect(() => {
+      const combo = this.combo();
+      untracked(() => {
+        if (comboTimer !== null) clearTimeout(comboTimer);
+        comboTimer = null;
+        const show = (): void => {
+          const grew = comboShown && combo !== null && combo > (this.shownCombo() ?? 0);
+          comboShown = true;
+          this.shownCombo.set(combo);
+          // La puce n'existe qu'après le rendu (à son apparition) : elle se lit dans le rappel.
+          if (grew) afterNextRender(() => { const chip = this.comboChip()?.nativeElement; if (chip) pop(chip); }, { injector: this.injector });
+        };
+        if (!comboShown || motionReduced()) show();
+        else comboTimer = setTimeout(() => { comboTimer = null; show(); }, GHOST_DELAY_MS);
+      });
+    });
     // Le total compte jusqu'à sa nouvelle valeur, le temps que les points le rejoignent ; posé tel quel au premier affichage.
     let shownTotal: number | null = null;
     effect(() => {
@@ -137,5 +221,10 @@ export class RunPileComponent {
         }, { injector: this.injector });
       });
     });
+  }
+
+  /** « 1 240 » : les grands nombres au format de la langue. */
+  protected format(value: number): string {
+    return this.numbers().format(value);
   }
 }

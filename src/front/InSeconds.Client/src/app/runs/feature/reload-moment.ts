@@ -12,6 +12,8 @@ export function reloadMomentFor(screen: RunScreen): ReloadMoment {
       return 'navigation';
     case 'loading':
     case 'finished':
+    case 'palier':
+    case 'difficulty':
       return 'background';
     default:
       return 'now';

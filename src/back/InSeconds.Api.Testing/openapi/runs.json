@@ -842,6 +842,419 @@
           }
         }
       }
+    },
+    "/api/runs/sessions/{id}/difficulty": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "chooseRunDifficulty",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChooseRunDifficulty"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunPlayResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/sessions/{id}/cards": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "takeRunCard",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TakeRunCard"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunSessionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/sessions/{id}/cards/{slot}/drop": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "dropRunCard",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "slot",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunSessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/sessions/{id}/cards/{slot}/play": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "playRunCard",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "slot",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlayRunCard"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunPlayResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/sessions/{id}/cards/pass": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "passRunOffer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PassRunOffer"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunSessionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1058,7 +1471,8 @@
           "position",
           "round",
           "positionInRound",
-          "previewUrl"
+          "previewUrl",
+          "listenSeconds"
         ],
         "type": "object",
         "properties": {
@@ -1084,6 +1498,20 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "listenSeconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "effects": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunTrackEffectsResponse"
+              }
             ]
           }
         }
@@ -1115,7 +1543,8 @@
           "tracks",
           "rounds",
           "record",
-          "challengeCode"
+          "challengeCode",
+          "shortfall"
         ],
         "type": "object",
         "properties": {
@@ -1165,6 +1594,16 @@
           },
           "challengeCode": {
             "type": "string"
+          },
+          "shortfall": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunShortfallResponse"
+              }
+            ]
           }
         }
       },
@@ -1288,7 +1727,8 @@
           "round",
           "score",
           "objective",
-          "maxScore"
+          "maxScore",
+          "difficulty"
         ],
         "type": "object",
         "properties": {
@@ -1307,6 +1747,9 @@
           "maxScore": {
             "type": "integer",
             "format": "int32"
+          },
+          "difficulty": {
+            "type": "string"
           }
         }
       },
@@ -1315,7 +1758,8 @@
           "round",
           "score",
           "objective",
-          "passed"
+          "passed",
+          "difficulty"
         ],
         "type": "object",
         "properties": {
@@ -1339,6 +1783,12 @@
           },
           "passed": {
             "type": "boolean"
+          },
+          "difficulty": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -1478,6 +1928,70 @@
             "items": {
               "$ref": "#/components/schemas/RunPassedRoundResponse"
             }
+          },
+          "difficultyChoice": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunDifficultyChoiceResponse"
+              }
+            ]
+          },
+          "hand": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RunHandCardResponse"
+            }
+          },
+          "offer": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunCardOfferResponse"
+              }
+            ]
+          },
+          "handSize": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
+          },
+          "nextDisc": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunDiscResponse"
+              }
+            ]
+          },
+          "cardValues": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunCardValuesResponse"
+              }
+            ]
+          },
+          "ghost": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunGhostResponse"
+              }
+            ]
           }
         }
       },
@@ -1485,7 +1999,8 @@
         "required": [
           "hasAccess",
           "record",
-          "pending"
+          "pending",
+          "shelf"
         ],
         "type": "object",
         "properties": {
@@ -1511,6 +2026,12 @@
                 "$ref": "#/components/schemas/RunPendingResponse"
               }
             ]
+          },
+          "shelf": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunShelfDiscResponse"
+            }
           }
         }
       },
@@ -1629,7 +2150,8 @@
           "round",
           "score",
           "objective",
-          "disc"
+          "disc",
+          "difficulty"
         ],
         "type": "object",
         "properties": {
@@ -1647,6 +2169,9 @@
           },
           "disc": {
             "$ref": "#/components/schemas/RunDiscResponse"
+          },
+          "difficulty": {
+            "type": "string"
           }
         }
       },
@@ -1658,6 +2183,302 @@
         "properties": {
           "position": {
             "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ChooseRunDifficulty": {
+        "required": [
+          "round",
+          "difficulty"
+        ],
+        "type": "object",
+        "properties": {
+          "round": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "difficulty": {
+            "type": "string"
+          }
+        }
+      },
+      "RunDifficultyChoiceResponse": {
+        "required": [
+          "round",
+          "options"
+        ],
+        "type": "object",
+        "properties": {
+          "round": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunDifficultyOptionResponse"
+            }
+          }
+        }
+      },
+      "RunDifficultyOptionResponse": {
+        "required": [
+          "difficulty",
+          "objective",
+          "maxScore",
+          "listenSeconds"
+        ],
+        "type": "object",
+        "properties": {
+          "difficulty": {
+            "type": "string"
+          },
+          "objective": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "listenSeconds": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "PlayRunCard": {
+        "required": [
+          "position"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "RunCardOfferResponse": {
+        "required": [
+          "afterRound",
+          "cards"
+        ],
+        "type": "object",
+        "properties": {
+          "afterRound": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cards": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "RunChoiceResponse": {
+        "required": [
+          "artist",
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "artist": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "RunHandCardResponse": {
+        "required": [
+          "slot",
+          "card"
+        ],
+        "type": "object",
+        "properties": {
+          "slot": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "card": {
+            "type": "string"
+          }
+        }
+      },
+      "RunTrackEffectsResponse": {
+        "required": [
+          "cards",
+          "year",
+          "artistInitials",
+          "titleInitials",
+          "choices",
+          "clockBonusSeconds"
+        ],
+        "type": "object",
+        "properties": {
+          "cards": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "year": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "artistInitials": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "titleInitials": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "choices": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RunChoiceResponse"
+            }
+          },
+          "clockBonusSeconds": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "TakeRunCard": {
+        "required": [
+          "afterRound",
+          "card"
+        ],
+        "type": "object",
+        "properties": {
+          "afterRound": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "card": {
+            "type": "string"
+          },
+          "dropSlot": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "PassRunOffer": {
+        "required": [
+          "afterRound"
+        ],
+        "type": "object",
+        "properties": {
+          "afterRound": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "RunCardValuesResponse": {
+        "required": [
+          "extendListenSeconds",
+          "hourglassSeconds",
+          "lowerTargetPercent"
+        ],
+        "type": "object",
+        "properties": {
+          "extendListenSeconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "hourglassSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lowerTargetPercent": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "RunShelfDiscResponse": {
+        "required": [
+          "disc",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "disc": {
+            "$ref": "#/components/schemas/RunDiscResponse"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "RunShortfallResponse": {
+        "required": [
+          "points",
+          "disc"
+        ],
+        "type": "object",
+        "properties": {
+          "points": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "disc": {
+            "$ref": "#/components/schemas/RunDiscResponse"
+          }
+        }
+      },
+      "RunGhostResponse": {
+        "required": [
+          "pseudo",
+          "total",
+          "stoppedAtRound"
+        ],
+        "type": "object",
+        "properties": {
+          "pseudo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "stoppedAtRound": {
+            "type": [
+              "null",
+              "integer"
+            ],
             "format": "int32"
           }
         }
@@ -1673,6 +2494,18 @@
     },
     {
       "name": "InSeconds.Api.Modules.Runs.Application.RevokeRunAccessEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.TakeRunCardEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.DropRunCardEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.PassRunOfferEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.PlayRunCardEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Runs.Application.GetRunComparisonEndpoint"
@@ -1703,6 +2536,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Runs.Application.SubmitRunAnswerEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.ChooseRunDifficultyEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Runs.Application.AbandonRunEndpoint"

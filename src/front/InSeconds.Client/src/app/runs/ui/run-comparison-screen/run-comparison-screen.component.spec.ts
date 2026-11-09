@@ -75,7 +75,7 @@ describe('RunComparisonScreenComponent', () => {
     (element.querySelector('[data-testid="run-share"] button') as HTMLButtonElement).click();
 
     expect(share).toHaveBeenCalledTimes(1);
-    expect(element.querySelector('[data-testid="run-share"]')?.textContent).toContain('runs.finished.share');
+    expect(element.querySelector('[data-testid="run-share"]')?.textContent).toContain('runs.comparison.share');
   });
 
   it('le bouton dit « Lien copié ! » une fois copié', () => {

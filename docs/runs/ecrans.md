@@ -41,7 +41,7 @@ Clément, 03/11/2026 : l'écran de jeu a été refait (maquettes animées du fil
 - **En-tête** : ✕ (abandonner) à gauche, la barre du run en 4 segments (un par manche, rempli selon le score de la manche, vert une fois l'objectif atteint), puis « Manche 2 · encore 120 pts pour passer » (« objectif atteint » une fois passé). Ni score total ni mise en jeu dans l'en-tête.
 - **Carte du morceau en cours**, compacte : bouton membrane de relecture à gauche de la forme d'onde (écoute fixe de 10 s, aucun palier), la saisie « Artiste - Titre », Valider et Passer (0 pts). Confirmations en ligne comme au Daily.
 - **Chrono** : 45 s par morceau (`Runs:AnswerSeconds`), affiché « 0:45 » en gris en haut à droite de la carte. Il part au premier son et les réécoutes sont gratuites. Pendant les 5 dernières secondes, le chiffre passe en grand et en blanc, la carte prend un contour blanc translucide, et un tic sonne chaque seconde quand l'extrait ne joue pas. À 0, ce qui est tapé est envoyé. Le serveur fait foi : une réponse arrivée après le chrono (plus 5 s de marge) vaut 0 point, et le chrono continue de tourner quand le joueur s'absente (il le retrouve à la reprise).
-- **La pile** sous la carte : « Total du run » en haut, puis tous les morceaux joués, du plus récent au plus ancien. Chaque manche passée est fermée par une **ligne de palier** : le disque gagné, le nom de la manche en blanc, ses filets à la couleur du disque, score / objectif. Les morceaux sous un palier ne gardent que la pochette, la forme d'onde et les points, grisés. Toucher une ligne ne relance rien.
+- **La pile** sous la carte : « Total du run » en haut (à côté, la série de bonnes réponses d'affilée en orange, sans point ; dessous, pour qui joue la playlist d'un autre, le fantôme de son auteur : son pseudo et son total au même morceau en violet, puis l'avance, le retard ou « À égalité », qui changent quand le total a fini de compter), puis tous les morceaux joués, du plus récent au plus ancien. Chaque manche passée est fermée par une **ligne de palier** : le disque gagné, le nom de la manche en blanc, ses filets à la couleur du disque, score / objectif. Les morceaux sous un palier ne gardent que la pochette, la forme d'onde et les points, grisés. Toucher une ligne ne relance rien.
 
 ## 2. La réponse
 
@@ -75,7 +75,7 @@ Même mise en page dans les deux cas :
 - Surtitre **« PLAYLIST DE CLÉMENT »** (pseudo de l'auteur, sans le code du lien), titre **« 4 joueurs de cette playlist »**.
 - Tableau : Joueur (pseudo et disque dessous), M1 à M4, Total ; trié par total. **« Toi »** surligné en orange ; **✕** pour une manche non jouée ; « Invité » pour un joueur sans compte.
 - **« Partager la playlist »** en bas.
-- **Accès** : en ouvrant le lien (`/runs/<code>`) d'une playlist déjà jouée, et par « Voir les autres joueurs » (lien discret sous « Partager la playlist » de l'écran de fin). Une partie abandonnée y a accès aussi (la playlist ne se rejoue pas) ; elle n'est pas dans le tableau (seules les parties gagnées ou perdues y figurent). Égalité de total : plus de manches passées, puis la première terminée.
+- **Accès** : en ouvrant le lien (`/runs/<code>`) d'une playlist déjà jouée, et par « Voir les autres joueurs » (lien discret sous « Partager mon score » de l'écran de fin). Une partie abandonnée y a accès aussi (la playlist ne se rejoue pas) ; elle n'est pas dans le tableau (seules les parties gagnées ou perdues y figurent). Égalité de total : plus de manches passées, puis la première terminée.
 
 ## 6. L'entrée sur l'accueil
 
@@ -104,8 +104,22 @@ Partie déjà commencée sur ce lien : l'écran de reprise du Daily. Partie fini
 Les images de `maquettes/` sont la copie figée du 18/10/2026 ; l'app a évolué depuis. Ce qui diffère, pour ne pas intégrer une maquette périmée :
 - **Pochettes rondes** (décision UI du 21/10), comme la révélation du Daily, et badge officiel Deezer pour « Écouter sur Deezer » (conditions de l'API, piège 47), au lieu du lien maison.
 - **Écran de jeu** (§ 1 à 2b) : remplacé par l'écran en pile du 03/11 ; les maquettes de la manche, de la réponse, du morceau retiré et de la fin de manche ne font plus référence.
-- **Fin du run** : sans grandes cartes, dans le style du résultat du jour (le disque, le record, le score dans la police du score, les cases par manche, le bloc de partage sans cadre) ; bouton de partage commun avec le Daily. Un lien discret **« Voir les autres joueurs »** est ajouté sous « Partager la playlist » (la comparaison n'était sinon atteignable que par le lien).
+- **Fin du run** : sans grandes cartes, dans le style du résultat du jour (le disque, le record, le score dans la police du score, les cases par manche, le bloc de partage sans cadre) ; bouton de partage commun avec le Daily. Un lien discret **« Voir les autres joueurs »** est ajouté sous le partage (la comparaison n'était sinon atteignable que par le lien). Proto 2 (#503) : **« Rejouer »** devient le bouton principal, sous les manches, avec ce qui a manqué pour le disque suivant ; le bloc « Défie tes potes sur cette playlist » et **« Partager mon score »** (en contour neutre, la grille d'emojis et « Bats-moi ») viennent dessous ; l'accueil du mode montre l'étagère « Tes disques ».
 - **Comparaison** : le tableau est en pleine largeur, sans carte, filets en haut et en bas comme la liste des morceaux du résultat du jour ; les totaux sont dans la police du score ; sa propre ligne s'appelle « Toi » (et non son pseudo).
 - **Accès refusé** et **lien d'une playlist déjà jouée** : voir plus haut, sans écran ou directement la comparaison.
 
-Les captures réelles qui remplaceraient les maquettes restent à faire (cf. [`../taches.md`](../taches.md)).
+## Captures de l'app (06/11/2026)
+
+Prises sur un téléphone de 390 × 844 (`maquettes/app/`), proto 2 compris. Ce sont elles qui disent ce qui tourne ; les maquettes au-dessus gardent l'intention de départ.
+
+| Manche, carte en main | Carte jouée (« Trois choix » proposerait trois réponses) | Réponse dans la carte |
+|---|---|---|
+| ![Manche](maquettes/app/manche.png) | ![Carte jouée](maquettes/app/manche-carte-jouee.png) | ![Réponse](maquettes/app/reponse.png) |
+
+| Palier | « Difficulté ? » | Fin du run |
+|---|---|---|
+| ![Palier](maquettes/app/palier.png) | ![Difficulté](maquettes/app/difficulte.png) | ![Fin](maquettes/app/fin.png) |
+
+| Accueil du mode, étagère | Lien reçu | Fantôme de l'auteur et série | Comparaison |
+|---|---|---|---|
+| ![Accueil du mode](maquettes/app/accueil-mode.png) | ![Lien reçu](maquettes/app/lien-recu.png) | ![Fantôme](maquettes/app/fantome.png) | ![Comparaison](maquettes/app/comparaison.png) |

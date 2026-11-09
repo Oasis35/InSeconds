@@ -16,11 +16,14 @@ import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-bac
 import { ResumeScreenComponent } from '../../../gameplay/ui/resume-screen/resume-screen.component';
 import { RunGameStore } from '../../data-access/run-game.store';
 import { RunShare } from '../../data-access/run-share';
-import { RunTick } from '../../data-access/run-tick';
+import { RunSounds } from '../../data-access/run-sounds';
 import { RunComparisonScreenComponent } from '../../ui/run-comparison-screen/run-comparison-screen.component';
 import { RunFinishComponent } from '../../ui/run-finish/run-finish.component';
 import { RunHeaderComponent } from '../../ui/run-header/run-header.component';
 import { RunLinkScreenComponent } from '../../ui/run-link-screen/run-link-screen.component';
+import { RunPalierComponent } from '../../ui/run-palier/run-palier.component';
+import { RunDifficultyComponent } from '../../ui/run-difficulty/run-difficulty.component';
+import { RunRoundCardsComponent } from '../../ui/run-round-cards/run-round-cards.component';
 import { RunClockComponent } from '../../ui/run-clock/run-clock.component';
 import { RunPileComponent } from '../../ui/run-pile/run-pile.component';
 import { RunRevealComponent } from '../../ui/run-reveal/run-reveal.component';
@@ -39,12 +42,12 @@ import { reloadMomentFor } from '../reload-moment';
   imports: [
     TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, RunHeaderComponent, RunClockComponent, RunRevealComponent, RunPileComponent,
     RunWithdrawnCardComponent, RunFinishComponent, RunWelcomeScreenComponent, RunStatusScreenComponent, ResumeScreenComponent,
-    RunLinkScreenComponent, RunComparisonScreenComponent,
+    RunLinkScreenComponent, RunComparisonScreenComponent, RunPalierComponent, RunDifficultyComponent, RunRoundCardsComponent,
   ],
-  providers: [RunGameStore, TrackRoundStore, RunShare, RunTick],
+  providers: [RunGameStore, TrackRoundStore, RunShare, RunSounds],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './runs.page.html',
-  host: { '(window:beforeunload)': 'onBeforeUnload($event)' },
+  host: { '(window:beforeunload)': 'onBeforeUnload($event)', '(document:visibilitychange)': 'onVisibilityChange()' },
 })
 export class RunsPage implements OnInit {
   protected readonly store = inject(RunGameStore);
@@ -92,6 +95,10 @@ export class RunsPage implements OnInit {
     void this.store.init(this.code);
   }
 
+  /** Retour de l'onglet au premier plan : la partie a pu avancer ou finir dans un autre onglet (comme au Daily). */
+  protected onVisibilityChange(): void {
+    if (document.visibilityState === 'visible') void this.store.refresh();
+  }
   protected onBeforeUnload(event: BeforeUnloadEvent): void {
     if (this.store.screen() === 'playing') event.preventDefault();
   }

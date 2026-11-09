@@ -96,7 +96,7 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
 
 ## Passer un morceau
 
-Pendant l'écoute, un bouton **« Passer (0 pts) »** sous « Valider » permet d'abandonner le morceau en cours sans répondre. Il demande une confirmation (même encart que la confirmation d'une réponse vide), puis envoie une réponse vide au palier déjà écouté : **0 point**, le morceau compte comme « pas trouvé » dans les stats. Aucune règle serveur spécifique : c'est une réponse vide ordinaire. **[Front]**
+Pendant l'écoute, un lien **« Passer (0 pts) »** sous « Valider » (le même aux Platines) permet d'abandonner le morceau en cours sans répondre. Il demande une confirmation (même encart que la confirmation d'une réponse vide), puis envoie une réponse vide au palier déjà écouté : **0 point**, le morceau compte comme « pas trouvé » dans les stats. Aucune règle serveur spécifique : c'est une réponse vide ordinaire. **[Front]**
 
 ## Morceaux sans preview
 

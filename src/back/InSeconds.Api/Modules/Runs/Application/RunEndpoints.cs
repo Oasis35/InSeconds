@@ -16,31 +16,39 @@ namespace InSeconds.Api.Modules.Runs.Application;
 /// <param name="HasAccess">Le joueur peut lancer un run (admin, ou compte autorisé).</param>
 /// <param name="Record">Son record ; vide s'il n'en a pas.</param>
 /// <param name="Pending">Sa partie en cours la plus récente, à reprendre.</param>
-public sealed record RunsMeResponse(bool HasAccess, RunRecordResponse? Record, RunPendingResponse? Pending)
+/// <param name="Shelf">Les disques gagnés par ses parties finies, du moins bon au meilleur ; vide s'il n'en a pas.</param>
+public sealed record RunsMeResponse(bool HasAccess, RunRecordResponse? Record, RunPendingResponse? Pending, IReadOnlyList<RunShelfDiscResponse> Shelf)
 {
-    public static RunsMeResponse Nobody { get; } = new(false, null, null);
+    public static RunsMeResponse Nobody { get; } = new(false, null, null, []);
 }
+
+/// <param name="Disc">Le disque.</param>
+/// <param name="Count">Les parties qui l'ont donné.</param>
+public sealed record RunShelfDiscResponse(RunDiscResponse Disc, int Count);
 
 public sealed record RunPendingResponse(int SessionId, string ChallengeCode);
 
 public static class GetRunsMeEndpoint
 {
     /// <summary>
-    /// <c>GET /api/runs/me</c> : anonyme permis, lecture seule. L'accès du joueur (la carte de l'accueil), son record et sa partie en cours. Sans
-    /// identité : <c>hasAccess</c> à faux, rien n'est créé.
+    /// <c>GET /api/runs/me</c> : anonyme permis, lecture seule. L'accès du joueur (la carte de l'accueil), son record, sa partie en cours et l'étagère
+    /// de ses disques. Sans identité : <c>hasAccess</c> à faux, rien n'est créé.
     /// </summary>
     [WolverineGet("/api/runs/me", OperationId = "getRunsMe")]
-    public static async Task<RunsMeResponse> Get(ICurrentPlayer current, IRunAccess access, IRunsQueries queries, CancellationToken ct)
+    public static async Task<RunsMeResponse> Get(
+        ICurrentPlayer current, IRunAccess access, IRunsQueries queries, RunsRules rules, CancellationToken ct)
     {
         if (current.PlayerId is not { } playerId)
             return RunsMeResponse.Nobody;
 
         var record = await queries.FindRecordAsync(playerId, ct);
         var pending = await queries.FindPendingSessionAsync(playerId, ct);
+        var shelf = DiscShelf.Of(await queries.CountFinishedRunsAsync(playerId, ct), rules.Discs);
         return new RunsMeResponse(
             await access.CanPlayAsync(playerId, ct),
             record is null ? null : new RunRecordResponse(record.BestScore, record.BestRoundsPassed, IsNew: false),
-            pending is null ? null : new RunPendingResponse(pending.SessionId, pending.ChallengeCode));
+            pending is null ? null : new RunPendingResponse(pending.SessionId, pending.ChallengeCode),
+            shelf.Select(d => new RunShelfDiscResponse(new RunDiscResponse(d.Disc.Key, d.Disc.Stars), d.Count)).ToList());
     }
 }
 
@@ -88,7 +96,7 @@ public static class LaunchRunEndpoint
     {
         var challenge = launch.Plan!.Challenge!;
         store.AddChallenge(challenge);
-        var session = RunSession.Start(challenge.Id, launch.PlayerId, time.GetUtcNow());
+        var session = RunSession.Start(challenge.Id, launch.PlayerId, time.GetUtcNow(), challenge.Rules);
         await store.AddAsync(session, ct);
         RunsLog.RunLaunched(logger, session.Id, launch.PlayerId, challenge.Code);
         metrics.RunLaunched();
@@ -100,6 +108,7 @@ public static class LaunchRunEndpoint
 /// <summary>Ce que montre le lien d'une playlist (écran « lien reçu ») : jamais un morceau (piège 31), ni le nombre de joueurs.</summary>
 /// <param name="AuthorPseudo">Le pseudo de son auteur ; vide pour un invité ou un compte effacé (« Invité » à l'écran).</param>
 /// <param name="TrackCount">Ses morceaux (règles figées).</param>
+/// <param name="ListenSeconds">L'écoute normale d'un morceau ; la manche boss en Risquée est plus courte.</param>
 /// <param name="MyStatus">La partie du joueur sur cette playlist : <c>none</c> (pas jouée), <c>pending</c>, <c>won</c>, <c>lost</c> ou <c>abandoned</c>.</param>
 /// <param name="MySessionId">Sa partie sur cette playlist, s'il en a une.</param>
 /// <param name="AnswerSeconds">Le chrono de chaque morceau (règles figées) ; 0 : pas de chrono.</param>
@@ -177,7 +186,7 @@ public static class JoinRunEndpoint
     {
         var challenge = join.Challenge!;
         var resuming = join.Session is not null;
-        var session = join.Session ?? RunSession.Start(challenge.Id, join.PlayerId, time.GetUtcNow());
+        var session = join.Session ?? RunSession.Start(challenge.Id, join.PlayerId, time.GetUtcNow(), challenge.Rules);
         if (resuming)
         {
             RunsLog.SessionResumed(logger, session.Id, join.PlayerId, session.Answers.Count);
@@ -282,7 +291,7 @@ public static class UpdateRunListeningEndpoint
         var problem = RunSessionAccess.Check(loaded, request.Position);
         if (!ReferenceEquals(problem, WolverineContinue.NoProblems))
             return problem;
-        var listen = loaded!.Challenge.Rules.ListenSeconds;
+        var listen = loaded!.Session.ListenSecondsOf(loaded.Challenge);
         return request.ListenedSeconds > listen ? RunsProblems.ListenedTooLong(listen) : WolverineContinue.NoProblems;
     }
 
@@ -401,19 +410,81 @@ public static class SubmitRunAnswerEndpoint
         var run = await player.LoadAsync(loaded.Session, loaded.Challenge, ct);
         var session = run.Session;
         var track = run.TrackAt(request.Position)!;
-        var info = run.Tracks[track.TrackId];
+        var info = run.InfoAt(request.Position);
 
-        // L'écoute est fixe : la durée annoncée est toujours celle des règles, le plancher d'écoute ne peut pas la dépasser (PATCH …/listening).
+        // L'écoute est fixe : la durée annoncée est toujours celle de la difficulté de la manche, le plancher d'écoute ne peut pas la dépasser
+        // (PATCH …/listening).
         var outcome = session.RoundOfCurrentTrack()
-            .Answer(run.Challenge.Rules.ListenSeconds, request.Artist, request.Title, new TrackNames(info.Artist, info.Title), matcher)
+            .Answer(session.ListenSecondsOf(run.Challenge), request.Artist, request.Title, new TrackNames(info.Artist, info.Title), matcher)
             .Outcome!;
         var step = session.Answer(run.Challenge, outcome, player.Scoring, time.GetUtcNow());
         var revealed = RunViews.Revealed(run, request.Position);
         RunsLog.AnswerSubmitted(
-            logger, session.PlayerId, session.Id, track.TrackId, track.Position, track.Round, outcome.ArtistCorrect, outcome.TitleCorrect, revealed.Points);
+            logger, session.PlayerId, session.Id, run.TrackIdAt(track.Position), track.Position, track.Round, outcome.ArtistCorrect, outcome.TitleCorrect,
+            revealed.Points);
         metrics.AnswerSubmitted(outcome, track.Round);
 
         return await player.AdvanceAsync(run, step, revealed, isResuming: false, ct);
+    }
+}
+
+/// <summary>La difficulté choisie pour une manche : <c>easy</c>, <c>safe</c> ou <c>risky</c>.</summary>
+public sealed record ChooseRunDifficulty(int Round, string Difficulty);
+
+public sealed class ChooseRunDifficultyValidator : AbstractValidator<ChooseRunDifficulty>
+{
+    public ChooseRunDifficultyValidator()
+    {
+        RuleFor(x => x.Round).GreaterThan(0);
+        RuleFor(x => x.Difficulty).Must(d => RunDifficulties.Parse(d) is not null).WithMessage("Difficulté inconnue (easy, safe ou risky).");
+    }
+}
+
+public static class ChooseRunDifficultyEndpoint
+{
+    public static Task<PlayableRun?> LoadAsync(int id, ICurrentPlayer current, IRunsStore store, CancellationToken ct) =>
+        RunSessionAccess.LoadAsync(id, current, store, ct);
+
+    public static ProblemDetails Validate(ChooseRunDifficulty request, PlayableRun? loaded)
+    {
+        var problem = RunSessionAccess.Check(loaded, position: null);
+        if (!ReferenceEquals(problem, WolverineContinue.NoProblems))
+            return problem;
+        var (session, challenge) = loaded!;
+        if (!session.CanChooseDifficulty(challenge, request.Round))
+            return RunsProblems.DifficultyLocked();
+        return challenge.Rules.OptionOf(request.Round, RunDifficulties.Parse(request.Difficulty)!.Value) is null
+            ? RunsProblems.DifficultyNotOffered()
+            : WolverineContinue.NoProblems;
+    }
+
+    /// <summary>
+    /// <c>POST /api/runs/sessions/{id}/difficulty</c> : le joueur choisit la difficulté de la manche en cours, avant son premier son. Le premier
+    /// morceau de la manche n'a pas encore d'extrait (rien ne part avant le choix, pour qu'on ne mise pas en connaissant le morceau) : la réponse le
+    /// donne, avec la partie à jour (objectif et plafond de la manche). Le navigateur déverrouille le son dans le toucher de la colonne, avant
+    /// l'appel, puis le lance à la réponse (iPhone, comme « Commencer »). 409 <c>runs.difficulty_locked</c> si la manche n'est pas celle en cours,
+    /// ne propose pas de choix, est déjà choisie ou a commencé ; 400 pour une difficulté qu'elle ne propose pas.
+    /// </summary>
+    [Authorize]
+    [WolverinePost("/api/runs/sessions/{id}/difficulty", OperationId = "chooseRunDifficulty")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public static async Task<RunPlayResponse> Post(
+        ChooseRunDifficulty request, [NotBody] PlayableRun loaded, [NotBody] RunPlayer player, TimeProvider time, [NotBody] RunsMetrics metrics,
+        ILogger<ChooseRunDifficulty> logger, CancellationToken ct)
+    {
+        var (session, challenge) = loaded;
+        var difficulty = RunDifficulties.Parse(request.Difficulty)!.Value;
+        // Choisir la difficulté ferme l'offre encore ouverte du palier : une offre passée sans carte, comptée comme telle.
+        var offerOpen = session.OpenOffer(challenge) is not null;
+        session.ChooseDifficulty(challenge, request.Round, difficulty, time.GetUtcNow());
+        if (offerOpen)
+            metrics.OfferPassed();
+        RunsLog.DifficultyChosen(logger, session.Id, session.PlayerId, request.Round, RunDifficulties.KeyOf(difficulty));
+        metrics.DifficultyChosen(request.Round, RunDifficulties.KeyOf(difficulty));
+        return await player.AdvanceAsync(await player.LoadAsync(session, challenge, ct), answered: null, revealed: null, isResuming: false, ct);
     }
 }
 

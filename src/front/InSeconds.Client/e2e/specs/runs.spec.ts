@@ -64,7 +64,7 @@ test.describe('Mode Platines', () => {
     expect(tracks).toHaveLength(20);
 
     await expect(run.roundTitle).toHaveText('Manche 1');
-    await expect(run.toGo).toHaveText(/encore 200 pts pour passer/);
+    await expect(run.toGo).toHaveText(/encore 225 pts pour passer/);
     await expect(run.clock).toBeVisible();
     await expect(run.pileTracks).toHaveCount(0);
 
@@ -75,7 +75,7 @@ test.describe('Mode Platines', () => {
     await expect(run.answerCard.getByTestId('run-answer-title')).toHaveText(first.title);
     await expect(run.answerCard.getByTestId('run-answer-points')).toHaveText('+100');
     await expect(run.totalScore).toHaveText('100');
-    await expect(run.toGo).toHaveText(/encore 100 pts pour passer/);
+    await expect(run.toGo).toHaveText(/encore 125 pts pour passer/);
     await run.nextTrackButton.click();
     await expect(run.pileTracks).toHaveCount(1);
     await expect(run.pileTracks.first()).toContainText(first.artist);
@@ -84,6 +84,8 @@ test.describe('Mode Platines', () => {
     // La manche passée : sa ligne se pose dans la pile, ses morceaux ne gardent que pochette, forme et points.
     await expect(run.paliers.first()).toContainText('Disque de cire');
     await expect(page.locator('[data-testid="run-pile-track"][data-past]')).toHaveCount(5);
+    // Cinq bonnes réponses d'affilée : la série se voit à côté du total, sans aucun point.
+    await expect(page.getByTestId('run-combo')).toHaveText('5 d’affilée');
 
     await run.winRound(tracks, 2);
     await run.winRound(tracks, 3);
@@ -99,12 +101,49 @@ test.describe('Mode Platines', () => {
     await expect(run.disc).toHaveText('Disque d’or !');
     await expect(run.record).toHaveText('Nouveau record');
     await expect(run.found).toHaveText('20 / 20 morceaux trouvés');
-    await expect(run.page.getByTestId('run-share')).toBeVisible();
-    await expect(run.playAgainButton).toBeVisible();
+    await expect(run.page.getByTestId('run-share')).toContainText('Partager mon score');
+    // Gagnée : « Rejouer » en action principale, rien n'a manqué.
+    await expect(run.playAgainButton).toHaveText('Rejouer');
+    await expect(run.page.getByTestId('run-shortfall')).toHaveCount(0);
 
-    // Le record apparaît ensuite sur l'accueil du mode.
+    // Le record et le disque d'or apparaissent ensuite sur l'accueil du mode.
     await page.goto('/runs');
     await expect(run.welcome.getByTestId('run-record')).toBeVisible();
+    await expect(run.welcome.getByTestId('run-shelf').locator('[data-shelf-disc]')).toContainText(['×1']);
+    await expect(run.welcome.getByTestId('run-shelf').locator('[data-shelf-disc="runs.discs.gold"]')).toHaveCount(1);
+  });
+
+  test("« Risquée » avant la dernière manche : le boss annonce une écoute plus courte, et la partie se gagne jusqu'au bout", async ({ page, api }) => {
+    test.slow();
+    const run = new RunPage(page);
+    await run.loginAsAdmin();
+    await run.launch();
+    const tracks = await api.latestRunTracks();
+    const difficulty = page.getByTestId('run-difficulty');
+
+    await run.winRound(tracks, 1);
+    // Avant la manche 3 : « Risquée » ne change pas l'écoute, rien n'annonce de boss.
+    await inSequence(tracks.filter(t => t.round === 2), track => run.answerRight(track));
+    await run.palierNextButton.click();
+    await expect(difficulty).toBeVisible();
+    await expect(page.getByTestId('run-difficulty-boss')).toHaveCount(0);
+    await page.getByTestId('run-difficulty-safe').click();
+    await expect(run.roundTitle).toHaveText('Manche 3');
+
+    // Avant la dernière manche : seule la colonne « Risquée » annonce l'écoute du boss (5 s au lieu de 10 s).
+    await inSequence(tracks.filter(t => t.round === 3), track => run.answerRight(track));
+    await run.palierNextButton.click();
+    await expect(page.getByTestId('run-difficulty-boss')).toHaveCount(1);
+    await expect(page.getByTestId('run-difficulty-risky').getByTestId('run-difficulty-boss')).toContainText('5');
+    await page.getByTestId('run-difficulty-risky').click();
+    await expect(run.roundTitle).toHaveText('Manche 4');
+
+    // La manche boss se joue et se gagne comme les autres.
+    const last = tracks.filter(t => t.round === 4);
+    await inSequence(last.slice(0, 4), track => run.answerRight(track));
+    await run.answer(`${last[4].artist} - ${last[4].title}`);
+    await run.nextTrackButton.click();
+    await expect(run.finished).toHaveAttribute('data-status', 'won');
   });
 
   test('partie perdue : la première manche ratée mène directement à la fin, avec les manches non jouées', async ({ page }) => {
@@ -112,7 +151,7 @@ test.describe('Mode Platines', () => {
     await run.loginAsAdmin();
     await run.launch();
 
-    // 5 réponses vides : 0 point, l'objectif de 200 pts est manqué.
+    // 5 réponses vides : 0 point, l'objectif de 225 pts est manqué.
     await run.answerEmpty();
     await run.answerEmpty();
     await run.answerEmpty();
@@ -126,11 +165,55 @@ test.describe('Mode Platines', () => {
     await expect(run.disc).toHaveText('Disque rayé');
     await expect(run.found).toHaveText('0 / 20 morceaux trouvés');
     await expect(run.roundScores.getByText('✕')).toHaveCount(3);
+    // Ce qui a manqué pour le premier disque : tout l'objectif de la manche 1.
+    await expect(run.page.getByTestId('run-shortfall')).toHaveText('Il t’a manqué 225 pts pour le Disque de cire');
 
-    // « Nouvelle partie » tire une autre playlist, le premier morceau part dans le clic.
+    // « Rejouer » tire une autre playlist, le premier morceau part dans le clic.
     await run.playAgainButton.click();
     await expect(run.roundTitle).toHaveText('Manche 1');
     await expect(run.pileTracks).toHaveCount(0);
+  });
+
+  test("une playlist sans coups de pouce ni choix de difficulté se joue comme au proto 1 : ni palier, ni « Difficulté ? »", async ({ page, api }) => {
+    // Comme une playlist tirée avant le proto 2 : aucune carte, une seule difficulté (« Sûre »), donc rien à choisir.
+    await api.setRunSetting('Runs:CardsEnabled', 'false');
+    await api.setRunSetting('Runs:Difficulties', '[{"difficulty":"safe","pointsFactor":1,"objectiveFactor":1}]');
+    const run = new RunPage(page);
+    await run.loginAsAdmin();
+    await run.launch();
+    const tracks = await api.latestRunTracks();
+    await expect(run.handCards).toHaveCount(0);
+
+    await inSequence(tracks.filter(t => t.round === 1), track => run.answerRight(track));
+
+    // La manche passée enchaîne directement sur la suivante : le premier morceau de la manche 2 se joue.
+    await expect(run.roundTitle).toHaveText('Manche 2');
+    await expect(run.palier).toHaveCount(0);
+    await expect(page.getByTestId('run-difficulty')).toHaveCount(0);
+    await expect(run.answerInput).toBeVisible();
+  });
+
+  test('la carte de départ se joue pendant le morceau : elle quitte la main et son effet reste sur la manche', async ({ page }) => {
+    const run = new RunPage(page);
+    await run.loginAsAdmin();
+    await run.launch();
+
+    // La playlist tire une carte de départ au hasard (sa graine) : on joue celle qui est en main. Toutes se jouent sur le premier morceau du
+    // catalogue de test : chaque morceau y a son année, il reste assez d'autres artistes pour les leurres de « Trois choix », la réserve existe
+    // pour le Joker, et le chrono n'est pas écoulé.
+    await expect(run.handCards).toHaveCount(1);
+    const card = (await run.handCards.getAttribute('data-testid'))!.replace('run-play-', '');
+    await run.handCards.click();
+
+    await expect(run.handCards).toHaveCount(0);
+    if (card === 'joker') {
+      // Le Joker change de morceau : rien ne reste affiché, la manche continue sur le morceau de réserve.
+      await expect(run.cardEffects).toHaveCount(0);
+      await expect(page.getByTestId('round-timer')).not.toHaveText('…');
+    } else {
+      await expect(run.cardEffects.and(page.locator(`[data-card="${card}"]`))).toBeVisible();
+      if (card === 'three_choices') await expect(page.getByTestId('round-choice')).toHaveCount(3);
+    }
   });
 
   test('le chrono à zéro envoie ce qui est tapé, sans confirmation', async ({ page }) => {
@@ -162,9 +245,9 @@ test.describe('Mode Platines', () => {
 
     await expect(run.withdrawnCard).toBeVisible();
     await expect(run.withdrawnCard).toContainText('Morceau retiré de la manche');
-    // 40 % des 4 morceaux qui restent : 160 pts au lieu de 200, dont 100 déjà marqués.
-    await expect(run.withdrawnCard).toContainText('l’objectif abaissé à 160 pts');
-    await expect(run.toGo).toHaveText(/encore 60 pts pour passer/);
+    // 45 % des 4 morceaux qui restent : 180 pts au lieu de 225, dont 100 déjà marqués.
+    await expect(run.withdrawnCard).toContainText('l’objectif abaissé à 180 pts');
+    await expect(run.toGo).toHaveText(/encore 80 pts pour passer/);
     await expect(run.answerInput).toHaveCount(0);
 
     // Les animations coupées, rien ne part seul : « Morceau suivant » mène au 3e morceau ; le retrait rejoint la pile.
@@ -225,9 +308,14 @@ test.describe('Mode Platines', () => {
     await friend.linkPlayButton.click();
     await friend.answerInput.waitFor({ state: 'visible' });
     await expect(friend.roundTitle).toHaveText('Manche 1');
-    await friend.loseFirstRound();
+    // Le fantôme de l'auteur, qui a fini la playlist : son total au même morceau et l'écart, dès la première réponse.
+    await expect(friendPage.getByTestId('run-ghost')).toHaveCount(0);
+    await friend.loseFirstRound(async () => {
+      await expect(friendPage.getByTestId('run-ghost')).toContainText('AdminE2E 0');
+      await expect(friendPage.getByTestId('run-ghost-gap')).toHaveText('À égalité');
+    });
 
-    // Sans accès, pas de « Nouvelle partie » : le jeu du jour à la place.
+    // Sans accès, pas de « Rejouer » : le jeu du jour à la place.
     await expect(friend.playAgainButton).toHaveCount(0);
     await expect(friend.toDailyLink).toBeVisible();
 

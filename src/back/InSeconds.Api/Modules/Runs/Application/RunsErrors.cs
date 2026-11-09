@@ -1,6 +1,7 @@
 using InSeconds.Api.Infrastructure.Errors;
 using InSeconds.Api.Modules.Runs.Domain;
 using Microsoft.AspNetCore.Mvc;
+using Wolverine.Http;
 
 namespace InSeconds.Api.Modules.Runs.Application;
 
@@ -32,6 +33,24 @@ public static class RunsErrorCodes
     public const string AlreadyAnswered = "runs.already_answered";
 
     public const string ComparisonLocked = "runs.comparison_locked";
+
+    /// <summary>La difficulté d'une manche ne se choisit plus (pas la manche en cours, pas de choix, déjà choisie ou déjà commencée).</summary>
+    public const string DifficultyLocked = "runs.difficulty_locked";
+
+    /// <summary>Une carte qui n'est pas (ou plus) dans la main.</summary>
+    public const string CardNotFound = "runs.card_not_found";
+
+    /// <summary>Pas d'offre ouverte (la manche a commencé, une carte est déjà prise), ou une carte que l'offre ne propose pas.</summary>
+    public const string OfferClosed = "runs.offer_closed";
+
+    /// <summary>La main est pleine : prendre une carte demande d'en lâcher une.</summary>
+    public const string HandFull = "runs.hand_full";
+
+    /// <summary>La même carte est déjà active sur ce morceau (ou sur la manche, pour « Seuil abaissé »).</summary>
+    public const string CardAlreadyActive = "runs.card_already_active";
+
+    /// <summary>La carte n'a rien sur quoi jouer : plus de morceau en réserve pour le Joker, pas de chrono pour le Sablier.</summary>
+    public const string CardUnavailable = "runs.card_unavailable";
 }
 
 /// <summary>Problèmes du mode Run, en <c>ProblemDetails</c> avec leur code (<see cref="RunsErrorCodes"/>).</summary>
@@ -59,6 +78,38 @@ internal static class RunsProblems
     /// <summary>La comparaison demande d'avoir fini sa propre partie : un ami qui n'a pas joué n'y voit rien.</summary>
     public static ProblemDetails ComparisonLocked() =>
         ApiProblem.Of(StatusCodes.Status409Conflict, RunsErrorCodes.ComparisonLocked, "La comparaison s'ouvre une fois ta partie terminée.");
+
+    public static ProblemDetails DifficultyLocked() =>
+        ApiProblem.Of(StatusCodes.Status409Conflict, RunsErrorCodes.DifficultyLocked, "La difficulté de cette manche ne se choisit plus.");
+
+    public static ProblemDetails DifficultyNotOffered() =>
+        ApiProblem.Of(StatusCodes.Status400BadRequest, ErrorCodes.BadRequest, "Cette difficulté n'est pas proposée pour cette manche.");
+
+    public static ProblemDetails CardNotFound() =>
+        ApiProblem.Of(StatusCodes.Status404NotFound, RunsErrorCodes.CardNotFound, "Cette carte n'est pas dans ta main.");
+
+    public static ProblemDetails OfferClosed() =>
+        ApiProblem.Of(StatusCodes.Status409Conflict, RunsErrorCodes.OfferClosed, "Cette offre n'est plus ouverte.");
+
+    public static ProblemDetails HandFull() =>
+        ApiProblem.Of(StatusCodes.Status409Conflict, RunsErrorCodes.HandFull, "Ta main est pleine : lâche une carte pour en prendre une.");
+
+    public static ProblemDetails CardAlreadyActive() =>
+        ApiProblem.Of(StatusCodes.Status409Conflict, RunsErrorCodes.CardAlreadyActive, "Cette carte est déjà jouée sur ce morceau.");
+
+    public static ProblemDetails CardUnavailable() =>
+        ApiProblem.Of(StatusCodes.Status409Conflict, RunsErrorCodes.CardUnavailable, "Cette carte ne peut pas se jouer ici.");
+
+    /// <summary>Le refus d'une carte (prise, lâcher, jeu) en problème, ou rien.</summary>
+    public static ProblemDetails ForCard(RunCardRefusal? refusal) => refusal switch
+    {
+        null => WolverineContinue.NoProblems,
+        RunCardRefusal.NotInHand => CardNotFound(),
+        RunCardRefusal.AlreadyActive => CardAlreadyActive(),
+        RunCardRefusal.OfferClosed => OfferClosed(),
+        RunCardRefusal.HandFull => HandFull(),
+        _ => CardUnavailable(),
+    };
 
     public static ProblemDetails TrackNotFound() =>
         ApiProblem.Of(StatusCodes.Status404NotFound, RunsErrorCodes.TrackNotFound, "Morceau introuvable dans cette playlist.");
@@ -131,4 +182,16 @@ internal static partial class RunsLog
     [LoggerMessage(EventId = 1411, Level = LogLevel.Error,
         Message = "Pas assez de morceaux jouables pour une playlist : {EligibleCount} sur {Requested}")]
     public static partial void PoolInsufficient(ILogger logger, int eligibleCount, int requested);
+
+    [LoggerMessage(EventId = 1412, Level = LogLevel.Information,
+        Message = "Partie {SessionId} de {PlayerId} : manche {Round} en {Difficulty}")]
+    public static partial void DifficultyChosen(ILogger logger, int sessionId, Guid playerId, int round, string difficulty);
+
+    [LoggerMessage(EventId = 1413, Level = LogLevel.Information,
+        Message = "Partie {SessionId} de {PlayerId} : carte {Card} prise au palier de la manche {Round}")]
+    public static partial void CardTaken(ILogger logger, int sessionId, Guid playerId, int round, string card);
+
+    [LoggerMessage(EventId = 1414, Level = LogLevel.Information,
+        Message = "Partie {SessionId} de {PlayerId} : carte {Card} jouée sur le morceau n°{TrackPosition}")]
+    public static partial void CardPlayed(ILogger logger, int sessionId, Guid playerId, int trackPosition, string card);
 }
