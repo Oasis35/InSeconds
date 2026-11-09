@@ -445,13 +445,16 @@ export interface RunShareRound {
   readonly marks: readonly RunTrackMark[];
 }
 
-/** Les lignes du partage en grille : les manches jouées seulement, dans l'ordre, chaque morceau joué à sa place. */
+/**
+ * Les lignes du partage en grille : les manches jouées seulement, dans l'ordre, chaque morceau joué à sa place. La première manche n'a jamais de
+ * choix de difficulté : sa ligne ne porte pas de nom de difficulté.
+ */
 export function shareRounds(finish: Pick<RunFinish, 'tracks' | 'rounds'>): RunShareRound[] {
   return finish.rounds
     .filter(round => round.score !== null)
     .map(round => ({
       round: round.round,
-      difficulty: round.difficulty,
+      difficulty: round.round === 1 ? null : round.difficulty,
       marks: tracksOfRound(finish.tracks, round.round).map(trackMark),
     }));
 }

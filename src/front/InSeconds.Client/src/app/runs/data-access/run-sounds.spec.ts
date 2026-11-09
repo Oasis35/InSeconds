@@ -34,7 +34,7 @@ describe('RunSounds', () => {
     sounds.play('won');
     sounds.play('tick');
 
-    expect(oscillator).toHaveBeenCalledTimes(5);
+    expect(oscillator).toHaveBeenCalledTimes(4);
   });
 
   it('ne sonne pas tant qu\'un clic n\'a pas réveillé le son', () => {

@@ -32,6 +32,16 @@ export interface RunCardValues {
 }
 
 /**
+ * La couleur d'une carte (« une couleur = un sens ») : cyan pour ce qui touche au son et au temps (la Rallonge allonge l'écoute, le Sablier le
+ * chrono), à la couleur du joueur pour les autres. `rgb` : la même couleur pour un fond ou un contour transparent.
+ */
+export function cardColor(card: RunCardKey): { readonly color: string; readonly rgb: string } {
+  return card === 'extend' || card === 'hourglass'
+    ? { color: 'var(--color-accent-2)', rgb: 'var(--rgb-accent-2)' }
+    : { color: 'var(--color-accent)', rgb: 'var(--rgb-accent)' };
+}
+
+/**
  * Le signe d'une carte, dans son coin, à la couleur du joueur : un repère qui se lit d'un coup d'œil, à côté de son nom. Pas d'emoji ni d'icône décorative :
  * un chiffre ou un caractère qui dit l'effet. Sans les valeurs de la playlist, les cartes chiffrées n'ont que leur caractère.
  */

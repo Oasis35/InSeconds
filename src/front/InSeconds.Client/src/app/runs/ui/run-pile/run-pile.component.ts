@@ -36,7 +36,7 @@ const keyOf = (entry: PileEntry): string => (entry.kind === 'track' ? `t${entry.
         <span class="text-[13px]" style="color:var(--text-muted)">{{ 'runs.pile.total' | translate }}</span>
         <!-- La série de bonnes réponses : à la couleur du joueur, c'est lui qui la fait ; elle ne rapporte rien. -->
         @if (shownCombo(); as count) {
-          <span #comboChip class="inline-block shrink-0 whitespace-nowrap text-[13px] font-bold tabular-nums" style="color:var(--color-accent-3)"
+          <span #comboChip class="inline-block shrink-0 whitespace-nowrap text-[13px] font-bold tabular-nums" style="color:var(--text-streak)"
             data-testid="run-combo">
             {{ 'runs.combo' | translate: { count } }}
           </span>

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
 import { TranslatePipe } from '@ngx-translate/core';
 import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 import { RunDifficulty, RunDifficultyOption } from '../../domain/run';
-import { RunCardValues, RunHandCard, cardGlyph } from '../../domain/run-cards';
+import { RunCardValues, RunHandCard, cardColor, cardGlyph } from '../../domain/run-cards';
 
 /** La plus petite colonne, en part de la plus haute : de quoi poser son cadenas. */
 const SHORTEST = 0.3;
@@ -63,6 +63,7 @@ export class RunDifficultyComponent {
   private readonly touched = signal<RunDifficulty | null>(null);
   protected readonly chosen = computed(() => (this.busy() ? this.touched() : null));
   protected readonly glyph = cardGlyph;
+  protected readonly color = cardColor;
   protected readonly columns = computed(() => difficultyColumns(this.options()));
   protected readonly levels = [1, 2, 3];
 

@@ -32,7 +32,7 @@ describe('runShareText', () => {
     const lines = runShareText(finish, 'fr', t).split('\n');
 
     expect(lines[0]).toBe('runs.share.header{"score":"2\u202f410","disc":"runs.discs.wax"}');
-    expect(lines[1]).toBe('🟩🟨🟥⬜🟩 runs.share.round{"round":1} · runs.difficulty.safe');
+    expect(lines[1]).toBe('🟩🟨🟥⬜🟩 runs.share.round{"round":1}');
     expect(lines[2]).toBe('🟨🟩 runs.share.round{"round":2} · runs.difficulty.risky');
     expect(lines.slice(3)).toEqual(['runs.share.beatMe', playlistUrl('K7Q2M9')]);
   });

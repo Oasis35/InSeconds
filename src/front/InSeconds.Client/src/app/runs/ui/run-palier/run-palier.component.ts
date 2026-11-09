@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, computed, input, output, viewChild } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonComponent } from '../../../ui/button/button.component';
-import { enterCard, revealInTurn, tweenNumber } from '../../../ui/motion/motion';
+import { enterCard, fillBar, revealInTurn, tweenNumber } from '../../../ui/motion/motion';
 import { RunPassedRound } from '../../domain/run';
-import { RunCardKey, RunCardOffer, RunCardValues, RunHandCard, cardGlyph, handFull, handSlots } from '../../domain/run-cards';
+import { RunCardKey, RunCardOffer, RunCardValues, RunHandCard, cardColor, cardGlyph, handFull, handSlots } from '../../domain/run-cards';
 import { RunDiscComponent } from '../run-disc/run-disc.component';
 
 /**
@@ -52,6 +52,7 @@ export class RunPalierComponent {
   readonly next = output();
 
   protected readonly glyph = cardGlyph;
+  protected readonly color = cardColor;
   protected readonly slots = computed(() => handSlots(this.hand(), this.handSize()));
   protected readonly full = computed(() => handFull(this.hand(), this.handSize()));
   /** L'étagère : un disque par manche, gagné ou à venir (pointillé). */
@@ -64,15 +65,18 @@ export class RunPalierComponent {
 
   private readonly disc = viewChild<ElementRef<HTMLElement>>('disc');
   private readonly score = viewChild<ElementRef<HTMLElement>>('score');
+  private readonly fill = viewChild<ElementRef<HTMLElement>>('fill');
   private readonly cards = viewChild<ElementRef<HTMLElement>>('cards');
 
   constructor() {
-    // Le disque se pose, le score monte, les cartes arrivent une à une (rien en mouvement réduit : la façade s'en charge).
+    // Le disque se pose, le score monte avec sa jauge, les cartes arrivent une à une (rien en mouvement réduit : la façade s'en charge).
     afterNextRender(() => {
       const disc = this.disc()?.nativeElement;
       if (disc) enterCard(disc);
       const score = this.score()?.nativeElement;
       if (score) tweenNumber(score, 0, this.passed().score, 0.2);
+      const fill = this.fill()?.nativeElement;
+      if (fill) fillBar(fill, 0.2);
       const cards = this.cards()?.nativeElement;
       if (cards) revealInTurn([...cards.querySelectorAll<HTMLElement>('[data-card]')], 0.45);
     });

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input
 import { TranslatePipe } from '@ngx-translate/core';
 import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 import { riseCard } from '../../../ui/motion/motion';
-import { RunCardValues, RunHandCard, RunTrackEffects, cardGlyph, playedCards } from '../../domain/run-cards';
+import { RunCardValues, RunHandCard, RunTrackEffects, cardColor, cardGlyph, playedCards } from '../../domain/run-cards';
 
 /**
  * Les coups de pouce sur l'écran de manche, au-dessus du champ de saisie (docs/runs/proto2.md § Les coups de pouce) : d'abord ce que les cartes
@@ -14,15 +14,16 @@ import { RunCardValues, RunHandCard, RunTrackEffects, cardGlyph, playedCards } f
   imports: [TranslatePipe, SecondsPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (played().length > 0 || hand().length > 0) {
+    @if (played().length > 0 || hand().length > 0 || refused()) {
       <!-- Un écart avant le champ : le pouce qui vise la saisie ne joue pas une carte par erreur. -->
       <div class="grid grid-cols-2 gap-2 mb-2" data-testid="run-round-cards">
         <!-- Une carte jouée prend toute la largeur : les initiales « D. P. – O. M. T. » tiennent sur une ligne, même sur un petit téléphone. -->
         @for (chip of played(); track chip.card) {
           <div #chip class="col-span-2 flex items-center gap-2 px-3 py-1.5" data-testid="run-card-effect" [attr.data-card]="chip.card"
-            style="min-height:44px;border:1px solid var(--color-accent);border-radius:var(--radius-button);background:rgb(var(--rgb-accent) / 0.08)">
+            [style.border-color]="color(chip.card).color" [style.background]="'rgb(' + color(chip.card).rgb + ' / 0.08)'"
+            style="min-height:44px;border:1px solid;border-radius:var(--radius-button)">
             @if (chip.value) {
-              <span class="text-[15px] font-bold whitespace-nowrap" style="font-family:var(--font-clock);color:var(--color-accent)">{{ chip.value }}</span>
+              <span class="text-[15px] font-bold whitespace-nowrap" style="font-family:var(--font-clock)" [style.color]="color(chip.card).color">{{ chip.value }}</span>
             }
             <span class="text-[13px] font-semibold leading-tight" style="color:var(--text-hi)">
               @switch (chip.card) {
@@ -41,11 +42,14 @@ import { RunCardValues, RunHandCard, RunTrackEffects, cardGlyph, playedCards } f
             style="min-height:44px;background:var(--bg-surface-2);border:1px solid var(--border-neutral);border-radius:var(--radius-button)"
             (click)="play.emit(card.slot)" [attr.aria-label]="'runs.roundCards.play' | translate: { card: ('runs.cards.' + card.card + '.name' | translate) }"
             [attr.data-testid]="'run-play-' + card.card">
-            <span class="text-[13px] font-bold" style="font-family:var(--font-clock);color:var(--color-accent)" aria-hidden="true">{{ glyph(card.card, values()) }}</span>
+            <span class="text-[13px] font-bold" style="font-family:var(--font-clock)" [style.color]="color(card.card).color" aria-hidden="true">{{ glyph(card.card, values()) }}</span>
             <span class="text-[14px] font-semibold leading-tight" style="color:var(--text-hi)">{{ 'runs.cards.' + card.card + '.name' | translate }}</span>
           </button>
         }
       </div>
+      @if (refused()) {
+        <p class="text-[13px] mb-2" role="status" style="color:var(--text-muted)" data-testid="run-card-refused">{{ 'runs.roundCards.refused' | translate }}</p>
+      }
     }
   `,
 })
@@ -59,9 +63,12 @@ export class RunRoundCardsComponent {
   readonly busy = input(false);
   /** La manche accepte une carte (pendant la saisie seulement). */
   readonly playable = input(true);
+  /** Le serveur a refusé la dernière carte jouée. */
+  readonly refused = input(false);
   readonly play = output<number>();
 
   protected readonly glyph = cardGlyph;
+  protected readonly color = cardColor;
   protected readonly played = computed(() => playedCards(this.effects(), this.values()));
 
   private readonly playedChips = viewChildren<ElementRef<HTMLElement>>('chip');

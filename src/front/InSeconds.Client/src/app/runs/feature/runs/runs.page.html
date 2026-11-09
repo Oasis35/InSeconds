@@ -10,7 +10,7 @@
       }
 
       @case ('welcome') {
-        <app-run-welcome-screen [record]="store.record()" [shelf]="store.shelf()" (start)="store.begin()" />
+        <app-run-welcome-screen [record]="store.record()" [shelf]="store.shelf()" [lang]="language.current()" (start)="store.begin()" />
       }
 
       <!-- Le lien d'un ami : le logo seul, les règles de la playlist et « Jouer » (crée l'invité, lance le premier son dans ce clic). -->
@@ -50,7 +50,7 @@
                 }
                 @if (store.roundCards(); as cards) {
                   <app-run-round-cards roundAids [hand]="cards.hand" [effects]="cards.effects" [values]="cards.values" [listenSeconds]="cards.listenSeconds"
-                    [busy]="store.cardBusy()" [playable]="cards.playable" (play)="store.playCard($event)" />
+                    [busy]="store.cardBusy()" [playable]="cards.playable" [refused]="cards.refused" (play)="store.playCard($event)" />
                 }
                 @if (store.revealed(); as revealed) {
                   <app-run-reveal roundReveal [track]="revealed" [peaks]="round.waveform()?.peaks ?? store.shapes()[revealed.position] ?? null"

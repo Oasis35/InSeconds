@@ -1008,7 +1008,7 @@
       "body": "We couldn’t get the preview. The track was removed from the playlist and the target lowered to {{ objective }} pts."
     },
     "share": {
-      "text": "I’m sending you a playlist on InSeconds: 20 tracks in 4 rounds. Can you beat me?",
+      "text": "I’m sending you a playlist on InSeconds. Can you beat me?",
       "header": "{{ score }} pts · {{ disc }} · InSeconds Platines",
       "round": "Round {{ round }}",
       "beatMe": "Beat me on the same playlist:"
@@ -1059,7 +1059,7 @@
       "yourScore": "Your score",
       "max": "max",
       "listen": "{{seconds}} listen",
-      "hand": "Your boosts",
+      "hand": "In hand",
       "easy": "Easy",
       "safe": "Safe",
       "risky": "Risky",
@@ -1071,7 +1071,8 @@
       "lowerTarget": "Round target lowered",
       "hourglass": "+{{seconds}} on the clock",
       "extend": "{{seconds}} listen",
-      "choicesHint": "Only one is right"
+      "choicesHint": "Only one is right",
+      "refused": "That card couldn't be played."
     },
     "ghost": {
       "ahead": "{{ points }} pts ahead",
