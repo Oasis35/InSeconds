@@ -22,6 +22,26 @@ describe('AnswerInputComponent', () => {
     return { fixture, component: fixture.componentInstance, element, input, press };
   }
 
+  describe('focus automatique', () => {
+    const withPointer = (fine: boolean) =>
+      vi.spyOn(window, 'matchMedia').mockImplementation(query => ({ matches: fine && query === '(pointer: fine)' }) as MediaQueryList);
+    afterEach(() => vi.restoreAllMocks());
+
+    it('met le focus sur le champ avec une souris', async () => {
+      withPointer(true);
+      const { fixture, input } = render();
+      await fixture.whenStable();
+      expect(document.activeElement).toBe(input);
+    });
+
+    it('ne l\'ouvre pas sur un écran tactile (le clavier recouvrirait la manche)', async () => {
+      withPointer(false);
+      const { fixture, input } = render();
+      await fixture.whenStable();
+      expect(document.activeElement).not.toBe(input);
+    });
+  });
+
   it('annonce la saisie', () => {
     const { component, input } = render();
     const changed = vi.fn();
