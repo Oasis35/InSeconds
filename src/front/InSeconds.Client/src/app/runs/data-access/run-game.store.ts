@@ -550,6 +550,46 @@ export const RunGameStore = signalStore(
       applyOutcome(await call());
     };
 
+    /** Une action de cet onglet en route (réponse, carte, choix, extrait redemandé) : la relecture la prendrait pour un autre onglet. */
+    const settled = (): boolean =>
+      changing === 0 && round.phase() !== 'submitting' && !store.cardBusy() && !store.palierBusy() && !store.difficultyBusy();
+
+    /** En jeu : la partie se relit ; finie ailleurs, l'écran de fin ; avancée ailleurs, l'écran de reprise ; rien n'a bougé, rien ne change. */
+    const refreshGame = async (screen: ReturnType<typeof store.screen>, session: NonNullable<ReturnType<typeof store.session>>): Promise<void> => {
+      if (!settled()) return;
+      try {
+        const fresh = await api.session(session.sessionId);
+        // Comparée à l'état d'avant la lecture, et seulement si rien n'a bougé ici pendant : sinon, c'est cet onglet qui a avancé.
+        if (store.session() !== session || store.screen() !== screen || !settled() || progressKey(fresh) === progressKey(session)) return;
+        if (fresh.status === 'won' || fresh.status === 'lost') {
+          round.reset();
+          cancelAutoNext();
+          stopClock();
+          patchState(store, { session: fresh, current: null, steps: [], screen: 'finished' });
+          void refreshMe();
+        } else {
+          await init();
+        }
+      } catch {
+        // hors ligne : la partie continue telle quelle
+      }
+    };
+
+    /** Sur l'accueil ou la reprise du mode : la partie en cours (ou son absence), le record et l'étagère se relisent. */
+    const refreshHome = async (screen: ReturnType<typeof store.screen>): Promise<void> => {
+      try {
+        const before = store.me();
+        const me = await api.me();
+        // Le joueur a bougé pendant la lecture (une partie lancée, reprise) : rien à conclure.
+        if (store.screen() !== screen || store.me() !== before || changing > 0) return;
+        // Une autre partie en cours (ou plus aucune) : l'écran se reconstruit ; sinon le record et l'étagère se mettent à jour.
+        if ((me.pending?.sessionId ?? null) !== (before?.pending?.sessionId ?? null)) await init();
+        else patchState(store, { me });
+      } catch {
+        // hors ligne : l'écran reste tel quel
+      }
+    };
+
     return {
       init,
       /** « Lancer une partie » ou « Reprendre » (un clic) : une partie neuve sur une playlist neuve, ou celle qui était en cours. */
@@ -737,42 +777,8 @@ export const RunGameStore = signalStore(
       async refresh(): Promise<void> {
         const screen = store.screen();
         const session = store.session();
-        // Une action de cet onglet en route (réponse, carte, choix, extrait redemandé) : la relecture la prendrait pour un autre onglet.
-        const settled = (): boolean =>
-          changing === 0 && round.phase() !== 'submitting' && !store.cardBusy() && !store.palierBusy() && !store.difficultyBusy();
-        if ((screen === 'playing' || screen === 'palier' || screen === 'difficulty') && session) {
-          if (!settled()) return;
-          try {
-            const fresh = await api.session(session.sessionId);
-            // Comparée à l'état d'avant la lecture, et seulement si rien n'a bougé ici pendant : sinon, c'est cet onglet qui a avancé.
-            if (store.session() !== session || store.screen() !== screen || !settled() || progressKey(fresh) === progressKey(session)) return;
-            if (fresh.status === 'won' || fresh.status === 'lost') {
-              round.reset();
-              cancelAutoNext();
-              stopClock();
-              patchState(store, { session: fresh, current: null, steps: [], screen: 'finished' });
-              void refreshMe();
-            } else {
-              await init();
-            }
-          } catch {
-            // hors ligne : la partie continue telle quelle
-          }
-          return;
-        }
-        if ((screen === 'welcome' || screen === 'resume') && !store.code()) {
-          try {
-            const before = store.me();
-            const me = await api.me();
-            // Le joueur a bougé pendant la lecture (une partie lancée, reprise) : rien à conclure.
-            if (store.screen() !== screen || store.me() !== before || changing > 0) return;
-            // Une autre partie en cours (ou plus aucune) : l'écran se reconstruit ; sinon le record et l'étagère se mettent à jour.
-            if ((me.pending?.sessionId ?? null) !== (before?.pending?.sessionId ?? null)) await init();
-            else patchState(store, { me });
-          } catch {
-            // hors ligne : l'écran reste tel quel
-          }
-        }
+        if ((screen === 'playing' || screen === 'palier' || screen === 'difficulty') && session) return refreshGame(screen, session);
+        if ((screen === 'welcome' || screen === 'resume') && !store.code()) return refreshHome(screen);
       },
       /** Les sons d'interface sont coupés (le bouton de l'en-tête). */
       soundsMuted: sounds.muted,
