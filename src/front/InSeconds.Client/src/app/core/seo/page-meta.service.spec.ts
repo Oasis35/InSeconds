@@ -70,5 +70,7 @@ describe('PageMetaService', () => {
   it('normalise les adresses', () => {
     expect(normalize('')).toBe('/daily');
     expect(normalize('/daily/?a=1')).toBe('/daily');
+    expect(normalize('/privacy//#x')).toBe('/privacy');
+    expect(normalize('/?utm_source=share')).toBe('/daily');
   });
 });

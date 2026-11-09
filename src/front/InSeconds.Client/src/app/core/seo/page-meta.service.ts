@@ -82,6 +82,8 @@ export class PageMetaService {
 
 /** Chemin seul, sans query string ni fragment ni slash final ; la racine est le jeu du jour. */
 export function normalize(url: string): string {
-  const path = url.split(/[?#]/)[0].replace(/\/+$/, '');
-  return path === '' ? '/daily' : path;
+  let end = url.search(/[?#]/);
+  if (end < 0) end = url.length;
+  while (end > 0 && url[end - 1] === '/') end--;
+  return end === 0 ? '/daily' : url.slice(0, end);
 }
