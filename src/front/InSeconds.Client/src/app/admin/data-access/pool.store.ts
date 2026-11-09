@@ -205,8 +205,8 @@ export const PoolStore = signalStore(
 
       // --- actions ---
       add: (deezerTrackId: number) => mutate(() => api.addTrack(deezerTrackId)),
-      rename: (id: number, artist: string, title: string) =>
-        mutate(() => api.renameTrack(id, artist.trim(), title.trim())),
+      rename: (id: number, artist: string, title: string, genre?: string) =>
+        mutate(() => api.renameTrack(id, artist.trim(), title.trim(), genre?.trim())),
 
       /** Supprime ces morceaux (aucun n'a servi) ; s'arrête à la première erreur. */
       async remove(ids: readonly number[]): Promise<AppError | null> {

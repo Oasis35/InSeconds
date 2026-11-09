@@ -181,12 +181,15 @@ public static class RefreshPreviewsHandler
     /// ceux des morceaux (quota Deezer, piège 16). Une réponse indisponible ne change rien (l'album sera repris au prochain contrôle) ;
     /// un album supprimé chez Deezer (800) n'a pas de genre et n'est plus redemandé. Les genres de l'album vont à tous ses morceaux du pool.
     /// </summary>
+    /// <summary>Un genre saisi à la main est relu chez Deezer après ce délai (au cas où Deezer en donne un entre-temps).</summary>
+    private static readonly TimeSpan ManualGenreMaxAge = TimeSpan.FromDays(30);
+
     private static async Task RefreshGenresAsync(
         IReadOnlyList<Track> candidates, ICatalogueStore store, IAlbumSource albums, TimeProvider time, RefreshOptions settings,
         ILogger logger, CancellationToken ct)
     {
         var pending = candidates
-            .Where(t => t.AlbumId is not null && t.GenresCheckedAt is null)
+            .Where(t => t.AlbumId is not null && t.GenresNeedReading(time.GetUtcNow(), ManualGenreMaxAge))
             .Select(t => t.AlbumId!.Value)
             .Distinct()
             .ToList();

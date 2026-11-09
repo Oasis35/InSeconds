@@ -379,7 +379,8 @@
       },
       "colFound": "Found",
       "foundHint": "Over {{ count }} answers",
-      "hardestFirst": "Least found"
+      "hardestFirst": "Least found",
+      "noGenre": "No genre"
     },
     "deleteModal": {
       "title": "Confirm deletion",
@@ -398,7 +399,9 @@
       "todayWarning": "This track is in today's challenge: players who haven't answered yet will be graded against the new name.",
       "cancel": "Cancel",
       "save": "Save",
-      "saving": "Saving..."
+      "saving": "Saving...",
+      "genre": "Genre",
+      "genreHint": "Deezer is checked for the album genre every month: if it gives one, it replaces the one entered here. If Deezer has none, yours is kept."
     },
     "addPanel": {
       "title": "Add a track",

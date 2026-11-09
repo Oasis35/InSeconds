@@ -20,6 +20,12 @@ public interface ICatalogueStore
     /// <summary>Le morceau avec ses genres, suivi pour être modifié : ce qu'il faut pour remplacer ses genres.</summary>
     Task<Track?> FindWithGenresAsync(int id, CancellationToken ct);
 
+    /// <summary>
+    /// Le genre de ce nom (casse ignorée), celui de Deezer s'il existe déjà ; sinon un genre neuf, à l'identifiant négatif (jamais celui d'un
+    /// genre de Deezer), enregistré avec la transaction du handler.
+    /// </summary>
+    Task<Genre> FindOrAddGenreByNameAsync(string name, CancellationToken ct);
+
     /// <summary>Cet identifiant Deezer est déjà celui d'un morceau (hors <paramref name="exceptTrackId"/>).</summary>
     Task<bool> DeezerIdTakenAsync(long deezerTrackId, int? exceptTrackId, CancellationToken ct);
 

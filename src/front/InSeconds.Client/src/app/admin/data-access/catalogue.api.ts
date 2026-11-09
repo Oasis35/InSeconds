@@ -21,8 +21,9 @@ export class CatalogueApi {
     await firstValueFrom(this.client.addTrack({ deezerTrackId }));
   }
 
-  async renameTrack(id: number, artist: string, title: string): Promise<void> {
-    await firstValueFrom(this.client.renameTrack(id, { artist, title }));
+  /** `genre` : absent, les genres ne changent pas ; vide, le genre saisi est retiré ; sinon il remplace ceux du morceau. */
+  async renameTrack(id: number, artist: string, title: string, genre?: string): Promise<void> {
+    await firstValueFrom(this.client.renameTrack(id, { artist, title, genre }));
   }
 
   async setTrackDisabled(id: number, isDisabled: boolean): Promise<void> {

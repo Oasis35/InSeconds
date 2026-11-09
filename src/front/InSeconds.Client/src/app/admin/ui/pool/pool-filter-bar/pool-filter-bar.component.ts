@@ -38,6 +38,7 @@ const FIELD_STYLE = 'background:var(--bg-surface);color:var(--text-light)';
         <select id="pool-filter-genre" [value]="filters().genre" (change)="genreChange.emit($any($event.target).value)"
           class="text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer" [style]="fieldStyle">
           <option value="">{{ 'admin.pool.allGenres' | translate }}</option>
+          <option value="none">{{ 'admin.pool.noGenre' | translate }}</option>
           @for (genre of genres(); track genre) {
             <option [value]="genre">{{ genre }}</option>
           }

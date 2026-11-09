@@ -4,6 +4,9 @@ import { POOL_VIEW } from './pool-views';
 export type StatusFilter = 'all' | 'available' | 'used' | 'disabled';
 export type PreviewFilter = 'all' | 'ok' | 'missing';
 
+/** Le filtre « Sans genre » : les morceaux dont aucun genre n'est connu (jamais lus chez Deezer, ou album sans genre). */
+export const GENRE_NONE = 'none';
+
 /** « Joué par » : tous (`''`), aucun mode (`none`), ou un mode précis (son identifiant). */
 export const PLAYED_BY_NONE = 'none';
 
@@ -12,7 +15,7 @@ export interface PoolFilters {
   readonly status: StatusFilter;
   readonly preview: PreviewFilter;
   readonly playedBy: string;
-  /** Un genre (son nom exact), `''` pour tous. */
+  /** Un genre (son nom exact), `''` pour tous, `GENRE_NONE` pour les morceaux sans genre. */
   readonly genre: string;
   /** Bornes (incluses) sur le dernier jour d'utilisation par le mode de la vue, `yyyy-MM-dd` ; vide = pas de borne. */
   readonly lastUsedFrom: string;
@@ -85,7 +88,7 @@ function matchesPlayedBy(track: PoolTrack, playedBy: string): boolean {
 }
 
 function matchesGenre(track: PoolTrack, genre: string): boolean {
-  return genre === '' || track.genres.includes(genre);
+  return genre === '' || (genre === GENRE_NONE ? track.genres.length === 0 : track.genres.includes(genre));
 }
 
 function matchesPreview(track: PoolTrack, preview: PreviewFilter): boolean {

@@ -1,4 +1,5 @@
 import {
+  GENRE_NONE,
   HARDEST_FIRST, NO_FILTERS, PoolFilters, activeFieldFilterCount, clampPage, filterTracks, hasActiveFilters, nextSort, pageOf,
   sortTracks, totalPages,
 } from './pool-filters';
@@ -210,6 +211,10 @@ describe('genres', () => {
 
   it('un morceau sans genre lu n\'apparaît sous aucun genre', () => {
     expect(filterTracks([none], filters({ genre: 'Pop' }))).toEqual([]);
+  });
+
+  it('« Sans genre » ne garde que les morceaux dont aucun genre n\'est connu', () => {
+    expect(filterTracks([pop, hiphop, none], filters({ genre: GENRE_NONE })).map(t => t.id)).toEqual([3]);
   });
 
   it('a un filtre actif dès qu\'un genre est choisi', () => {

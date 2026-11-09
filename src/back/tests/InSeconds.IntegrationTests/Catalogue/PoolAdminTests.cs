@@ -226,6 +226,39 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Renommage_GenreSaisi_RemplaceLesGenres_ReutiliseUnGenreExistant_EtVideLeGenreSaisi()
+    {
+        var track = await _app.AddAsync(1001);
+        await _app.Api.ExecuteAsync($"DELETE FROM catalogue.track_genres WHERE track_id = {track.Id}");
+
+        // Un genre neuf : identifiant négatif, jamais celui d'un genre de Deezer.
+        Assert.Equal(HttpStatusCode.OK, (await _app.Admin().PatchAsJsonAsync($"{Tracks}/{track.Id}", new RenameTrack("A", "T", " Blues "), Ct)).StatusCode);
+        Assert.Equal(["Blues"], (await _app.ListAsync()).Single(t => t.Id == track.Id).Genres);
+        Assert.Equal(1L, await _app.Api.ScalarAsync<long>("SELECT count(*) FROM catalogue.genres WHERE name = 'Blues' AND id < 0"));
+        Assert.Equal(1L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.tracks WHERE id = {track.Id} AND genres_manual"));
+
+        // Le même nom (casse ignorée) reprend la ligne existante ; absent, le genre ne change pas.
+        await _app.Admin().PatchAsJsonAsync($"{Tracks}/{track.Id}", new RenameTrack("A", "T", "blues"), Ct);
+        await _app.Admin().PatchAsJsonAsync($"{Tracks}/{track.Id}", new RenameTrack("A2", "T"), Ct);
+        Assert.Equal(["Blues"], (await _app.ListAsync()).Single(t => t.Id == track.Id).Genres);
+        Assert.Equal(1L, await _app.Api.ScalarAsync<long>("SELECT count(*) FROM catalogue.genres WHERE lower(name) = 'blues'"));
+
+        // Vide : le genre saisi est retiré.
+        await _app.Admin().PatchAsJsonAsync($"{Tracks}/{track.Id}", new RenameTrack("A", "T", ""), Ct);
+        Assert.Empty((await _app.ListAsync()).Single(t => t.Id == track.Id).Genres);
+    }
+
+    [Fact]
+    public async Task Renommage_GenreTropLong_400()
+    {
+        var track = await _app.AddAsync(1001);
+
+        var response = await _app.Admin().PatchAsJsonAsync($"{Tracks}/{track.Id}", new RenameTrack("A", "T", new string('g', 61)), Ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Renommage_MorceauDuDefiDuJourEnCours_Reussit_AucunVerrou_LeNouveauNomEstServi()
     {
         // Renommer un morceau du défi du jour en cours : aucun verrou (#246).

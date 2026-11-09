@@ -540,6 +540,8 @@ public class RefreshPreviewsHandlerTests
         public Task<IReadOnlyList<Track>> ListRefreshCandidatesAsync(CancellationToken ct) =>
             Task.FromResult<IReadOnlyList<Track>>([.. _tracks.Where(t => !t.IsDisabled)]);
 
+        public Task<Genre> FindOrAddGenreByNameAsync(string name, CancellationToken ct) => throw new NotSupportedException();
+
         public Task<IReadOnlyList<Genre>> EnsureGenresAsync(IReadOnlyCollection<GenreRef> genres, CancellationToken ct) =>
             throw new NotSupportedException();
 
