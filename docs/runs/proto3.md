@@ -40,6 +40,15 @@ Ce que vaut au plus un morceau (`perTrack`) se calcule dans le front : le plafon
 - **Partage en défi** : le texte partagé à la fin d'un run gagné en duel raconte la victoire juste sous le score (« J'ai battu Léa de 126 pts. », jamais une défaite ni une égalité) et invite à faire mieux sur la même playlist (« Fais mieux sur la même playlist : » puis le lien `utm_source=share`). La mesure de la viralité est celle d'avant : les invités arrivés par ce lien comptent dans `inseconds.players.guests_created` (`source` = `share`).
 - Reste du ticket #535, en PR à part : la création de playlists ouverte à tous les comptes puis aux invités, l'aperçu de lien par playlist, la mention « X a joué ta playlist ».
 
+## Le pseudo d'un invité
+
+Pour que la comparaison d'une playlist montre des noms et non des « Invité », un invité donne un **pseudo** à la fin de sa première partie sur la playlist d'un ami, avant la comparaison.
+
+- **Obligatoire, sans générateur ni « Passer »** ; rattaché au joueur invité (donc à son navigateur par le cookie), retrouvé à chaque visite, modifiable par un crayon à côté de sa ligne (un compte passe par son profil et garde son pseudo de compte).
+- **Jamais celui d'un compte** (sans tenir compte de la casse) ; **aucune unicité entre invités**. Deux joueurs d'une même comparaison au même pseudo se distinguent par une petite marque grise (au moins deux caractères hexadécimaux, affichés « #a3 », dérivés de l'identifiant du joueur et jamais du cookie).
+- **Limite assumée** : la priorité des comptes vaut à l'écriture du pseudo d'invité ; un compte créé ensuite au même pseudo ne le déloge pas (la marque distingue les deux dans la comparaison, pas pour l'auteur ni le fantôme). Le pseudo d'un invité est vidé 91 jours après sa dernière visite.
+- **RGPD** : donnée personnelle rattachée à l'identifiant pseudonyme, visible des autres joueurs de la playlist, dans l'export et l'effacement du joueur, dite dans `/privacy` et `docs/conformite/rgpd.md`.
+
 ## Les thèmes ([#536](https://github.com/Oasis35/InSeconds/issues/536))
 
 Un **thème** est une notion à part, ni un genre (celui de l'album chez Deezer, ou saisi par l'admin) ni une époque : une étiquette que l'admin range comme il l'entend (« Années 80 », « Films », « Rap français »…).

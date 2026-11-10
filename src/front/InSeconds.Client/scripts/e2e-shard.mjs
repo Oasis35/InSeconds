@@ -17,7 +17,7 @@ const WEIGHTS = {
   'streak-freeze.spec.ts': 52,
   'already-played.spec.ts': 49,
   'login-nudges.spec.ts': 49,
-  'runs.spec.ts': 100,
+  'runs.spec.ts': 130,
   'share-button.spec.ts': 44,
   'score-distribution.spec.ts': 30,
   'resume-game.spec.ts': 21,

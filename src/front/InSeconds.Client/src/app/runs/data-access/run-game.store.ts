@@ -1,6 +1,10 @@
 import { DestroyRef, computed, effect, inject, untracked } from '@angular/core';
 import { patchState, signalStore, withComputed, withHooks, withMethods, withState } from '@ngrx/signals';
 import { SessionLoader } from '../../account/data-access/session-loader';
+import { normalizePseudo, pseudoIssue } from '../../account/domain/pseudo';
+import { toAppError } from '../../core/errors/app-error';
+import { errorMessageKey } from '../../core/errors/error-messages';
+import { SessionStore } from '../../core/session/session.store';
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RoundConfig, RoundSubmission } from '../../gameplay/domain/track-round';
 import { waveformFromBlob } from '../../gameplay/domain/waveform';
@@ -21,7 +25,7 @@ const CLOCK_TICK_MS = 200;
  * invitation, que la page traduit en retour au jeu du jour ; pas de playlist ; playlist inconnue ; erreur).
  */
 export type RunScreen =
-  | 'loading' | 'welcome' | 'theme' | 'link' | 'resume' | 'playing' | 'palier' | 'difficulty' | 'finished' | 'comparison' | 'access_denied' | 'no_challenge'
+  | 'loading' | 'welcome' | 'theme' | 'link' | 'resume' | 'playing' | 'palier' | 'difficulty' | 'finished' | 'pseudo' | 'comparison' | 'access_denied' | 'no_challenge'
   | 'not_found' | 'error';
 
 interface RunState {
@@ -61,6 +65,10 @@ interface RunState {
   themeOffer: readonly RunThemeOffer[];
   /** Le choix de la manche à thème : l'identifiant d'un thème proposé, `null` pour « Surprise ». */
   themeChoice: number | null;
+  /** Le pseudo de l'invité est en route vers le serveur (écran `pseudo`). */
+  pseudoBusy: boolean;
+  /** La clé de traduction du refus de la dernière saisie du pseudo, `null` sans refus. */
+  pseudoError: string | null;
   /** Le choix de la difficulté part au serveur. */
   difficultyBusy: boolean;
   /** Un échange de morceau part au serveur. */
@@ -90,6 +98,8 @@ const initialState: RunState = {
   palierBusy: false,
   themeOffer: [],
   themeChoice: null,
+  pseudoBusy: false,
+  pseudoError: null,
   difficultyBusy: false,
   cardBusy: false,
   cardRefused: false,
@@ -225,7 +235,7 @@ export const RunGameStore = signalStore(
       }),
     };
   }),
-  withMethods((store, rawApi = inject(RunsApi), round = inject(TrackRoundStore), sessionLoader = inject(SessionLoader), sounds = inject(RunSounds)) => {
+  withMethods((store, rawApi = inject(RunsApi), round = inject(TrackRoundStore), sessionLoader = inject(SessionLoader), sounds = inject(RunSounds), session = inject(SessionStore)) => {
     /** Les requêtes en route qui changent la partie côté serveur : tant qu'il y en a une, une relecture d'un autre onglet ne conclut rien. */
     let changing = 0;
     const api = trackChanges(rawApi, delta => { changing += delta; });
@@ -486,6 +496,21 @@ export const RunGameStore = signalStore(
       }
     };
 
+    /** Un invité qui n'a pas encore de pseudo le donne avant de voir la comparaison (il y figurera, à côté de son score). */
+    const needsPseudo = (): boolean => session.player()?.isGuest === true && !session.player()?.pseudo;
+
+    /** La comparaison de la playlist, ou l'écran du pseudo d'abord pour un invité qui n'en a pas. */
+    const loadComparison = async (code: string): Promise<void> => {
+      patchState(store, { comparison: await api.comparison(code), screen: 'comparison' });
+    };
+    const openComparison = async (code: string): Promise<void> => {
+      if (needsPseudo()) {
+        patchState(store, { code, screen: 'pseudo', pseudoError: null });
+        return;
+      }
+      await loadComparison(code);
+    };
+
     /** L'écran d'un lien d'ami (`/runs/<code>`) : « lien reçu » si la playlist n'est pas jouée, la reprise si elle est en cours, la comparaison si elle est finie. */
     const openLink = async (code: string): Promise<void> => {
       const outcome = await api.challenge(code);
@@ -501,7 +526,7 @@ export const RunGameStore = signalStore(
         const pending = await api.session(link.mySessionId);
         patchState(store, { screen: 'resume', resumeCount: playedCount(pending), resumeTotal: pending.rounds * pending.tracksPerRound });
       } else {
-        patchState(store, { comparison: await api.comparison(link.code), screen: 'comparison' });
+        await openComparison(link.code);
       }
     };
 
@@ -709,7 +734,39 @@ export const RunGameStore = signalStore(
         const code = store.finish()?.challengeCode ?? store.code();
         if (!code) return;
         try {
-          patchState(store, { comparison: await api.comparison(code), screen: 'comparison' });
+          await openComparison(code);
+        } catch {
+          patchState(store, { screen: 'error' });
+        }
+      },
+      /** Le crayon de la comparaison : l'invité change son pseudo (le compte le change dans son profil). */
+      editPseudo(): void {
+        if (session.player()?.isGuest === true) patchState(store, { screen: 'pseudo', pseudoError: null });
+      },
+      /** Retour de l'écran du pseudo à la comparaison, sans rien changer (un pseudo existe déjà). */
+      cancelPseudo(): void {
+        patchState(store, { screen: 'comparison', pseudoError: null });
+      },
+      /** Enregistre le pseudo de l'invité puis ouvre la comparaison ; un refus (déjà pris par un compte, saisie invalide) reste sur l'écran. */
+      async savePseudo(raw: string): Promise<void> {
+        const issue = pseudoIssue(raw);
+        if (issue) {
+          patchState(store, { pseudoError: `runs.pseudo.${issue}` });
+          return;
+        }
+        patchState(store, { pseudoBusy: true, pseudoError: null });
+        try {
+          await sessionLoader.setGuestPseudo(normalizePseudo(raw));
+        } catch (error) {
+          const { code } = await toAppError(error);
+          patchState(store, { pseudoBusy: false, pseudoError: code === 'players.pseudo_taken' ? 'runs.pseudo.taken' : errorMessageKey(code) });
+          return;
+        }
+        patchState(store, { pseudoBusy: false });
+        const code = store.code();
+        if (!code) return;
+        try {
+          await loadComparison(code);
         } catch {
           patchState(store, { screen: 'error' });
         }

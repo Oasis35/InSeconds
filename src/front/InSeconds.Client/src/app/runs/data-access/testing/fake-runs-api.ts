@@ -35,8 +35,8 @@ export const COMPARISON = (overrides: Partial<RunComparison> = {}): RunCompariso
   playerCount: 2,
   roundCount: 4,
   rows: [
-    { pseudo: 'Clément', disc: { key: 'runs.discs.gold', stars: 0 }, rounds: [500, 600, 700, 800], totalScore: 2600, isMe: false },
-    { pseudo: null, disc: { key: 'runs.discs.wax', stars: 0 }, rounds: [480, 0, null, null], totalScore: 480, isMe: true },
+    { pseudo: 'Clément', disc: { key: 'runs.discs.gold', stars: 0 }, rounds: [500, 600, 700, 800], totalScore: 2600, isMe: false, tag: null },
+    { pseudo: null, disc: { key: 'runs.discs.wax', stars: 0 }, rounds: [480, 0, null, null], totalScore: 480, isMe: true, tag: null },
   ],
   ...overrides,
 });

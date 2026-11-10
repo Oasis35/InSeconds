@@ -43,6 +43,11 @@ export class PlayersApi {
     return (await firstValueFrom(this.client.createGuest({ source: source ?? undefined }))).playerId;
   }
 
+  /** Un invité se donne un pseudo (jamais celui d'un compte : 409 `players.pseudo_taken`) ; rend le pseudo enregistré. */
+  async setGuestPseudo(pseudo: string): Promise<string> {
+    return (await firstValueFrom(this.client.setGuestPseudo({ pseudo }))).pseudo;
+  }
+
   async requestMagicLink(email: string): Promise<void> {
     await firstValueFrom(this.client.requestMagicLink({ email }));
   }

@@ -183,6 +183,7 @@ function toComparison(comparison: RunComparisonResponse): RunComparison {
       rounds: row.rounds.map(score => score ?? null),
       totalScore: row.totalScore,
       isMe: row.isMe,
+      tag: row.tag ?? null,
     })),
   };
 }

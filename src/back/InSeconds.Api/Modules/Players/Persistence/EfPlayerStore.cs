@@ -77,6 +77,11 @@ public sealed class EfPlayerStore(InSecondsDbContext db) : IPlayerStore
     public Task<int> DeleteStaleDeviceSessionsAsync(DateTimeOffset cutoff, CancellationToken ct) =>
         db.Set<DeviceSession>().Where(s => s.LastSeenAt < cutoff || s.RevokedAt < cutoff).ExecuteDeleteAsync(ct);
 
+    public Task<int> ClearStaleGuestPseudosAsync(DateTimeOffset cutoff, CancellationToken ct) =>
+        db.Set<Player>()
+            .Where(p => p.GuestPseudo != null && (p.LastSeenAt ?? p.CreatedAt) < cutoff && !db.Set<Account>().Any(a => a.PlayerId == p.Id))
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.GuestPseudo, (string?)null), ct);
+
     public async Task<IReadOnlyList<Guid>> ListInactiveAccountsAsync(DateTimeOffset cutoff, CancellationToken ct) =>
         await InactiveAccounts(cutoff).OrderBy(id => id).ToListAsync(ct);
 

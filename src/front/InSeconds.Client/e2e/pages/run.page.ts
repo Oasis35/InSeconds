@@ -39,6 +39,12 @@ export class RunPage {
   readonly linkRules: Locator;
   readonly linkPlayButton: Locator;
   readonly compareButton: Locator;
+  readonly pseudoScreen: Locator;
+  readonly pseudoInput: Locator;
+  readonly pseudoSave: Locator;
+  readonly pseudoCancel: Locator;
+  readonly pseudoError: Locator;
+  readonly pseudoEdit: Locator;
   readonly toDailyLink: Locator;
   readonly comparison: Locator;
   readonly comparisonEyebrow: Locator;
@@ -79,6 +85,12 @@ export class RunPage {
     this.linkRules           = page.getByTestId('run-link-rules');
     this.linkPlayButton      = page.getByTestId('run-link-play');
     this.compareButton       = page.getByTestId('run-compare');
+    this.pseudoScreen        = page.getByTestId('run-pseudo');
+    this.pseudoInput         = page.getByTestId('run-pseudo-input');
+    this.pseudoSave          = page.getByTestId('run-pseudo-save');
+    this.pseudoCancel        = page.getByTestId('run-pseudo-cancel');
+    this.pseudoError         = page.getByTestId('run-pseudo-error');
+    this.pseudoEdit          = page.getByTestId('run-comparison-edit-pseudo');
     this.toDailyLink         = page.getByTestId('run-to-daily');
     this.comparison          = page.getByTestId('run-comparison');
     this.roundCards          = page.getByTestId('run-round-cards');

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, effect, inject, viewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { SessionStore } from '../../../core/session/session.store';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
 import { LanguageService } from '../../../core/i18n/language.service';
@@ -17,6 +18,7 @@ import { ResumeScreenComponent } from '../../../gameplay/ui/resume-screen/resume
 import { RunGameStore } from '../../data-access/run-game.store';
 import { RunShare } from '../../data-access/run-share';
 import { RunSounds } from '../../data-access/run-sounds';
+import { RunPseudoScreenComponent } from '../../ui/run-pseudo-screen/run-pseudo-screen.component';
 import { RunComparisonScreenComponent } from '../../ui/run-comparison-screen/run-comparison-screen.component';
 import { RunFinishComponent } from '../../ui/run-finish/run-finish.component';
 import { RunHeaderComponent } from '../../ui/run-header/run-header.component';
@@ -43,7 +45,7 @@ import { reloadMomentFor } from '../reload-moment';
   imports: [
     TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, RunHeaderComponent, RunClockComponent, RunRevealComponent, RunPileComponent,
     RunWithdrawnCardComponent, RunFinishComponent, RunWelcomeScreenComponent, RunStatusScreenComponent, ResumeScreenComponent,
-    RunLinkScreenComponent, RunThemeScreenComponent, RunComparisonScreenComponent, RunPalierComponent, RunDifficultyComponent, RunRoundCardsComponent,
+    RunLinkScreenComponent, RunThemeScreenComponent, RunPseudoScreenComponent, RunComparisonScreenComponent, RunPalierComponent, RunDifficultyComponent, RunRoundCardsComponent,
   ],
   providers: [RunGameStore, TrackRoundStore, RunShare, RunSounds],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -55,6 +57,8 @@ export class RunsPage implements OnInit {
   /** La manche du morceau : sa forme et ses basses pour la réponse dans la carte. */
   protected readonly round = inject(TrackRoundStore);
   protected readonly share = inject(RunShare);
+  protected readonly session = inject(SessionStore);
+  private readonly router = inject(Router);
   protected readonly language = inject(LanguageService);
   /** Le code de la dernière erreur serveur (`traceId`), affiché sur l'écran d'erreur comme au Daily. */
   protected readonly errorReporting = inject(ErrorReportingService);
@@ -92,14 +96,19 @@ export class RunsPage implements OnInit {
       }, { injector });
     });
     // Sans accès sur invitation, le mode n'a pas d'écran : retour au jeu du jour, sans laisser `/runs` dans l'historique.
-    const router = inject(Router);
     effect(() => {
-      if (this.store.screen() === 'access_denied') void router.navigateByUrl('/daily', { replaceUrl: true });
+      if (this.store.screen() === 'access_denied') void this.router.navigateByUrl('/daily', { replaceUrl: true });
     });
   }
 
   ngOnInit(): void {
     void this.store.init(this.code);
+  }
+
+  /** Le crayon de la comparaison : un invité change son pseudo ici, un compte le change dans son profil. */
+  protected editPseudo(): void {
+    if (this.session.player()?.isGuest) this.store.editPseudo();
+    else void this.router.navigateByUrl('/account/profile');
   }
 
   /** Retour de l'onglet au premier plan : la partie a pu avancer ou finir dans un autre onglet (comme au Daily). */

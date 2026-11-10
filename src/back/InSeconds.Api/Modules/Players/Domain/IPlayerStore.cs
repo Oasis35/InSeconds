@@ -66,6 +66,9 @@ public interface IPlayerStore
     /// </summary>
     Task<int> DeleteStaleDeviceSessionsAsync(DateTimeOffset cutoff, CancellationToken ct);
 
+    /// <summary>Vide le pseudo des invités (jamais d'un compte) sans visite depuis <paramref name="cutoff"/> ; rend leur nombre.</summary>
+    Task<int> ClearStaleGuestPseudosAsync(DateTimeOffset cutoff, CancellationToken ct);
+
     /// <summary>
     /// Les joueurs dont le compte n'a eu aucune visite depuis <paramref name="cutoff"/> (date de création, à défaut de visite connue),
     /// admins exceptés.

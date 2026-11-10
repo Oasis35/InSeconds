@@ -118,10 +118,15 @@
         }
       }
 
+      @case ('pseudo') {
+        <app-run-pseudo-screen [initial]="session.player()?.pseudo ?? ''" [busy]="store.pseudoBusy()" [error]="store.pseudoError()"
+          (save)="store.savePseudo($event)" (cancel)="store.cancelPseudo()" />
+      }
+
       @case ('comparison') {
         @if (store.comparison(); as comparison) {
           <app-run-comparison-screen [comparison]="comparison" [shareCopied]="share.copied()" [shareFailed]="share.failed()"
-            (share)="share.share(comparison.code)" />
+            [canEditPseudo]="session.isKnown()" (editPseudo)="editPseudo()" (share)="share.share(comparison.code)" />
         }
       }
 

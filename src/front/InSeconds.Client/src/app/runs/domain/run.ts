@@ -238,6 +238,8 @@ export interface RunComparisonRow {
   readonly totalScore: number;
   /** C'est la partie du joueur qui regarde (« Toi »). */
   readonly isMe: boolean;
+  /** Le repère grisé qui distingue deux joueurs de même pseudo dans ce tableau ; `null` sans homonyme. */
+  readonly tag: string | null;
 }
 
 /** Les joueurs d'une playlist, triés par total, après la fin de sa propre partie. */

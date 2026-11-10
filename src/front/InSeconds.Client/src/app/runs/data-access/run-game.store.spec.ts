@@ -1,6 +1,8 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import type { MockInstance } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { SessionLoader } from '../../account/data-access/session-loader';
+import { SessionStore } from '../../core/session/session.store';
 import { FakeAudioPort, provideFakeAudio } from '../../gameplay/data-access/testing/fake-audio.port';
 import { FakeWaveformPort, provideFakeWaveform } from '../../gameplay/data-access/testing/fake-waveform.port';
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
@@ -14,6 +16,7 @@ import { COMPARISON, CURRENT, FakeRunsApi, LINK, ME, PLAY, ROUND, SESSION, TRACK
 describe('RunGameStore', () => {
   let api: FakeRunsApi;
   const ensureGuest = vi.fn<() => Promise<void>>();
+  const setGuestPseudo = vi.fn<(pseudo: string) => Promise<void>>();
   let audio: FakeAudioPort;
   let store: InstanceType<typeof RunGameStore>;
   let round: InstanceType<typeof TrackRoundStore>;
@@ -23,10 +26,12 @@ describe('RunGameStore', () => {
     api = new FakeRunsApi();
     audio = new FakeAudioPort();
     TestBed.configureTestingModule({
-      providers: [provideFakeRunsApi(api), provideFakeAudio(audio), provideFakeWaveform(new FakeWaveformPort()), { provide: SessionLoader, useValue: { ensureGuest } }, TrackRoundStore, RunSounds, RunGameStore, { provide: StoragePort, useValue: new MemoryStoragePort() }],
+      providers: [provideFakeRunsApi(api), provideFakeAudio(audio), provideFakeWaveform(new FakeWaveformPort()), { provide: SessionLoader, useValue: { ensureGuest, setGuestPseudo } }, TrackRoundStore, RunSounds, RunGameStore, { provide: StoragePort, useValue: new MemoryStoragePort() }],
     });
     ensureGuest.mockReset();
     ensureGuest.mockResolvedValue(undefined);
+    setGuestPseudo.mockReset();
+    setGuestPseudo.mockResolvedValue(undefined);
     store = TestBed.inject(RunGameStore);
     round = TestBed.inject(TrackRoundStore);
     sounds = vi.spyOn(TestBed.inject(RunSounds), 'play');
@@ -1265,6 +1270,87 @@ describe('RunGameStore', () => {
       await store.showComparison();
 
       expect(api.calls.at(-1)).toBe('comparison:XYZ789');
+      expect(store.screen()).toBe('comparison');
+    });
+  });
+
+  describe("le pseudo de l'invité", () => {
+    const finishedGuest = (pseudo: string | null): void => {
+      TestBed.inject(SessionStore).signedIn({ id: 'g1', pseudo, email: null, isGuest: true, isAdmin: false });
+      api.challengeResult = { kind: 'ok', link: LINK({ myStatus: 'won', mySessionId: 7 }) };
+    };
+
+    it("un invité sans pseudo qui a fini la playlist d'un ami le donne avant la comparaison", async () => {
+      finishedGuest(null);
+
+      await store.init('ABC234');
+
+      expect(store.screen()).toBe('pseudo');
+      expect(api.calls).not.toContain('comparison:ABC234');
+    });
+
+    it('un invité qui a déjà un pseudo, ou un compte, va droit à la comparaison', async () => {
+      finishedGuest('Léa');
+      await store.init('ABC234');
+      expect(store.screen()).toBe('comparison');
+
+      TestBed.inject(SessionStore).signedIn({ id: 'a1', pseudo: 'Clem', email: 'c@example.com', isGuest: false, isAdmin: false });
+      await store.init('ABC234');
+      expect(store.screen()).toBe('comparison');
+    });
+
+    it('enregistre le pseudo (espaces retirés) puis ouvre la comparaison', async () => {
+      finishedGuest(null);
+      await store.init('ABC234');
+
+      await store.savePseudo('  Léa ');
+
+      expect(setGuestPseudo).toHaveBeenCalledWith('Léa');
+      expect(store.screen()).toBe('comparison');
+      expect(store.pseudoError()).toBeNull();
+    });
+
+    it('un pseudo invalide reste sur l\'écran sans appeler le serveur', async () => {
+      finishedGuest(null);
+      await store.init('ABC234');
+
+      await store.savePseudo(' ');
+
+      expect(setGuestPseudo).not.toHaveBeenCalled();
+      expect(store.screen()).toBe('pseudo');
+      expect(store.pseudoError()).toMatch(/^runs\.pseudo\./);
+    });
+
+    it("un pseudo déjà pris par un compte reste sur l'écran avec son message", async () => {
+      finishedGuest(null);
+      await store.init('ABC234');
+      setGuestPseudo.mockRejectedValue(new HttpErrorResponse({ status: 409, error: { code: 'players.pseudo_taken' } }));
+
+      await store.savePseudo('Clem');
+
+      expect(store.screen()).toBe('pseudo');
+      expect(store.pseudoError()).toBe('runs.pseudo.taken');
+      expect(store.pseudoBusy()).toBe(false);
+    });
+
+    it("le crayon rouvre l'écran pour un invité, et « Annuler » revient à la comparaison", async () => {
+      finishedGuest('Léa');
+      await store.init('ABC234');
+
+      store.editPseudo();
+      expect(store.screen()).toBe('pseudo');
+
+      store.cancelPseudo();
+      expect(store.screen()).toBe('comparison');
+    });
+
+    it('le crayon ne fait rien pour un compte (il passe par son profil)', async () => {
+      TestBed.inject(SessionStore).signedIn({ id: 'a1', pseudo: 'Clem', email: 'c@example.com', isGuest: false, isAdmin: false });
+      api.challengeResult = { kind: 'ok', link: LINK({ myStatus: 'won', mySessionId: 7 }) };
+      await store.init('ABC234');
+
+      store.editPseudo();
+
       expect(store.screen()).toBe('comparison');
     });
   });

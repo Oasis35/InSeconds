@@ -39,8 +39,17 @@ import { RunComparison } from '../../domain/run';
             @for (row of comparison().rows; track $index) {
               <tr [attr.data-me]="row.isMe" [style.background]="row.isMe ? 'rgb(var(--rgb-accent) / 0.14)' : null" style="border-top:1px solid var(--border-subtle)">
                 <th scope="row" class="text-left font-normal px-3 py-2">
-                  <span class="block font-bold truncate max-w-[9rem]" [style.color]="row.isMe ? 'var(--color-accent)' : 'var(--text-hi)'" data-testid="run-comparison-name">
-                    {{ row.isMe ? ('runs.comparison.you' | translate) : (row.pseudo ?? ('runs.link.guest' | translate)) }}
+                  <span class="flex items-baseline gap-1 max-w-[11rem]">
+                    <span class="font-bold truncate" [style.color]="row.isMe ? 'var(--color-accent)' : 'var(--text-hi)'" data-testid="run-comparison-name">
+                      {{ row.isMe ? ('runs.comparison.you' | translate) : (row.pseudo ?? ('runs.link.guest' | translate)) }}
+                    </span>
+                    @if (row.tag) {
+                      <span class="shrink-0 text-xs" style="color:var(--text-muted)" data-testid="run-comparison-tag">#{{ row.tag }}</span>
+                    }
+                    @if (row.isMe && canEditPseudo()) {
+                      <button type="button" class="relative shrink-0 text-sm hover:text-(--text-hi) before:absolute before:-inset-3 before:content-['']" style="color:var(--text-muted)"
+                        data-testid="run-comparison-edit-pseudo" [attr.aria-label]="'runs.comparison.editPseudo' | translate" (click)="editPseudo.emit()">✎</button>
+                    }
                   </span>
                   <span class="block text-xs" style="color:var(--text-faint)">
                     {{ row.disc.key | translate }}@if (row.disc.stars > 0) { ★{{ row.disc.stars }} }
@@ -72,6 +81,9 @@ export class RunComparisonScreenComponent {
   readonly shareCopied = input(false);
   readonly shareFailed = input(false);
   readonly share = output();
+  /** Le joueur peut changer son pseudo d'ici (crayon à côté de « Toi ») : un invité l'édite, un compte passe par son profil. */
+  readonly canEditPseudo = input(false);
+  readonly editPseudo = output();
 
   /** Les colonnes M1 à Mn, d'après les manches de la playlist. */
   protected readonly roundNumbers = computed(() => Array.from({ length: this.comparison().roundCount }, (_, index) => index + 1));

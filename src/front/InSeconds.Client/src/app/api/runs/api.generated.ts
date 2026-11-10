@@ -1329,6 +1329,7 @@ export interface RunComparisonRowResponse {
     rounds: (number | undefined)[];
     totalScore: number;
     isMe: boolean;
+    tag?: string | undefined;
 
     [key: string]: any;
 }
