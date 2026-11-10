@@ -26,6 +26,9 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'catalogue.duplicate_deezer_id': 'errors.catalogue.duplicate_deezer_id',
   'catalogue.not_found_on_deezer': 'errors.catalogue.not_found_on_deezer',
   'catalogue.track_in_today_challenge': 'errors.catalogue.track_in_today_challenge',
+  'catalogue.theme_in_use': 'errors.catalogue.theme_in_use',
+  'catalogue.theme_name_taken': 'errors.catalogue.theme_name_taken',
+  'catalogue.theme_not_found': 'errors.catalogue.theme_not_found',
   'catalogue.track_in_use': 'errors.catalogue.track_in_use',
 
   // Daily

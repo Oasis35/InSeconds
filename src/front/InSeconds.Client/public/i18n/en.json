@@ -45,6 +45,9 @@
       "not_found_on_deezer": "This track could not be found on Deezer.",
       "concurrent_add": "Another add is writing the same genres right now, try again in a moment.",
       "deezer_unavailable": "Deezer is unavailable right now, try again in a moment.",
+      "theme_in_use": "This theme is still linked to tracks: remove it from those tracks first.",
+      "theme_name_taken": "A theme already has this name.",
+      "theme_not_found": "This theme no longer exists: reload the list.",
       "track_in_use": "This track has already been used in a challenge: it cannot be deleted (disable it instead).",
       "track_in_today_challenge": "This track is in today’s challenge: it can be disabled from tomorrow."
     },
@@ -360,6 +363,15 @@
       },
       "filters": "Filters",
       "filtersActive": "Filters ({{ count }})",
+      "themes": {
+        "label": "Themes:",
+        "name": "Theme name",
+        "tracks": "{{count}} tracks",
+        "delete": "Delete",
+        "empty": "No theme yet.",
+        "newName": "New theme",
+        "add": "Add"
+      },
       "cooldownSetting": {
         "label": "Cooldown",
         "days": "{{ days }} d",
@@ -388,6 +400,8 @@
       "deleting": "Deleting..."
     },
     "editModal": {
+      "themes": "Themes",
+      "themesNone": "No theme in the list: add some from the Tracks tab.",
       "title": "Edit track",
       "artist": "Artist",
       "titleField": "Title",

@@ -43,6 +43,20 @@ import { ARTIST_MAX_LENGTH, GENRE_MAX_LENGTH, PoolTrack, TITLE_MAX_LENGTH, track
           <p class="text-[11px]" style="color:var(--text-faint)" data-testid="edit-track-genre-hint">{{ 'admin.editModal.genreHint' | translate }}</p>
         </div>
 
+        <fieldset class="flex flex-col gap-1.5">
+          <legend class="text-xs mb-1" style="color:var(--text-muted)">{{ 'admin.editModal.themes' | translate }}</legend>
+          <div class="flex flex-wrap gap-2" data-testid="edit-track-themes">
+            @for (theme of pool.themes(); track theme.id) {
+              <button type="button" role="checkbox" class="px-3 py-1 rounded-full text-xs font-bold" [attr.aria-checked]="isThemeSelected(theme.id)"
+                [attr.data-theme-id]="theme.id" (click)="toggleTheme(theme.id)"
+                [style.border]="isThemeSelected(theme.id) ? '1px solid var(--color-accent)' : '1px solid var(--border-neutral)'"
+                [style.color]="isThemeSelected(theme.id) ? 'var(--color-accent)' : 'var(--text-light)'">{{ theme.name }}</button>
+            } @empty {
+              <span class="text-xs" style="color:var(--text-faint)">{{ 'admin.editModal.themesNone' | translate }}</span>
+            }
+          </div>
+        </fieldset>
+
         <p class="text-xs" style="color:var(--text-muted)">{{ 'admin.editModal.hint' | translate }}</p>
 
         @if (errorMessage(); as key) {
@@ -65,7 +79,7 @@ export class EditTrackDialog {
   protected readonly track = inject<PoolTrack>(DIALOG_DATA);
   protected readonly label = trackLabel(this.track);
   private readonly originalGenre = this.track.genres.join(', ');
-  private readonly pool = inject(PoolStore);
+  protected readonly pool = inject(PoolStore);
   private readonly dialog = inject<DialogRef<boolean>>(DialogRef);
 
   /** Deux champs non vides une fois les espaces retirés, longueurs de l'API. */
@@ -78,6 +92,22 @@ export class EditTrackDialog {
     validate(path.genre, ({ value }) => (value().trim() === this.originalGenre || value().trim().length <= GENRE_MAX_LENGTH ? null : { kind: 'maxLength' }));
   });
 
+  /** Les thèmes cochés ; l'état d'origine sert à ne rien envoyer quand rien ne change. */
+  private readonly originalThemes = [...this.track.themeIds].sort((a, b) => a - b);
+  protected readonly themeIds = signal<readonly number[]>(this.originalThemes);
+  private readonly themesChanged = computed(() => {
+    const now = [...this.themeIds()].sort((a, b) => a - b);
+    return now.length !== this.originalThemes.length || now.some((id, i) => id !== this.originalThemes[i]);
+  });
+
+  protected isThemeSelected(id: number): boolean {
+    return this.themeIds().includes(id);
+  }
+
+  protected toggleTheme(id: number): void {
+    this.themeIds.update(ids => (ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]));
+  }
+
   protected readonly saving = signal(false);
   private readonly error = signal<AppError | null>(null);
   protected readonly errorMessage = computed(() => {
@@ -89,7 +119,7 @@ export class EditTrackDialog {
   protected readonly saveDisabled = computed(() => {
     const { artist, title, genre } = this.nameForm().value();
     return this.nameForm().invalid() || this.saving()
-      || (artist.trim() === this.track.artist && title.trim() === this.track.title && genre.trim() === this.originalGenre);
+      || (artist.trim() === this.track.artist && title.trim() === this.track.title && genre.trim() === this.originalGenre && !this.themesChanged());
   });
 
   protected async save(): Promise<void> {
@@ -97,8 +127,12 @@ export class EditTrackDialog {
     this.saving.set(true);
     this.error.set(null);
     const { artist, title, genre } = this.nameForm().value();
-    // Le genre n'est envoyé que s'il a changé : enregistrer l'artiste seul ne remplace jamais les genres de Deezer.
-    const error = await this.pool.rename(this.track.id, artist, title, genre.trim() === this.originalGenre ? undefined : genre);
+    // Le genre n'est envoyé que s'il a changé : enregistrer l'artiste seul ne remplace jamais les genres de Deezer. Les thèmes aussi seulement s'ils changent.
+    const namesChanged = artist.trim() !== this.track.artist || title.trim() !== this.track.title || genre.trim() !== this.originalGenre;
+    let error = namesChanged
+      ? await this.pool.rename(this.track.id, artist, title, genre.trim() === this.originalGenre ? undefined : genre)
+      : null;
+    if (!error && this.themesChanged()) error = await this.pool.setTrackThemes(this.track.id, this.themeIds());
     this.saving.set(false);
     if (error) this.error.set(error);
     else this.dialog.close(true);

@@ -27,6 +27,46 @@ describe('PoolStore', () => {
     await store.load();
   }
 
+  describe('thèmes', () => {
+    const themes = [{ id: 1, name: 'Années 80', trackCount: 2 }];
+
+    it('lit la liste des thèmes avec le pool', async () => {
+      await setup([eminem], { listThemes: vi.fn(async () => themes) });
+
+      expect(store.themes()).toEqual(themes);
+    });
+
+    it('ajoute, renomme, supprime et pose les thèmes d\'un morceau, puis relit', async () => {
+      await setup([eminem], { listThemes: vi.fn(async () => themes) });
+
+      expect(await store.addTheme(' Films ')).toBeNull();
+      expect(await store.renameTheme(1, ' Eighties ')).toBeNull();
+      expect(await store.deleteTheme(1)).toBeNull();
+      expect(await store.setTrackThemes(1, [1, 2])).toBeNull();
+
+      expect(api.addTheme).toHaveBeenCalledWith('Films');
+      expect(api.renameTheme).toHaveBeenCalledWith(1, 'Eighties');
+      expect(api.deleteTheme).toHaveBeenCalledWith(1);
+      expect(api.setTrackThemes).toHaveBeenCalledWith(1, [1, 2]);
+      expect(api.listThemes).toHaveBeenCalledTimes(5);
+    });
+
+    it('rend l\'erreur (nom déjà pris) sans rien relire', async () => {
+      await setup([eminem], { addTheme: vi.fn(() => Promise.reject(problem(409, 'catalogue.theme_name_taken'))) });
+
+      const error = await store.addTheme('Films');
+
+      expect(error?.code).toBe('catalogue.theme_name_taken');
+    });
+
+    it('une liste de thèmes illisible n\'empêche pas le pool', async () => {
+      await setup([eminem], { listThemes: vi.fn(() => Promise.reject(new Error('réseau'))) });
+
+      expect(store.isFulfilled()).toBe(true);
+      expect(store.themes()).toEqual([]);
+    });
+  });
+
   describe('chargement', () => {
     it('charge le pool et compte disponibles, utilisés et désactivés', async () => {
       await setup([eminem, coldplay, sabrina, poolTrack({ id: 9, isDisabled: true })]);

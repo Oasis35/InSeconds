@@ -45,6 +45,9 @@
       "not_found_on_deezer": "Ce morceau est introuvable chez Deezer.",
       "concurrent_add": "Un autre ajout écrit les mêmes genres au même moment : réessaie dans un instant.",
       "deezer_unavailable": "Deezer est indisponible pour le moment, réessaie dans un instant.",
+      "theme_in_use": "Ce thème est encore associé à des morceaux : retire-le d'abord de ces morceaux.",
+      "theme_name_taken": "Un thème porte déjà ce nom.",
+      "theme_not_found": "Ce thème n'existe plus : recharge la liste.",
       "track_in_use": "Ce morceau a déjà servi dans un défi : il ne peut pas être supprimé (désactive-le).",
       "track_in_today_challenge": "Ce morceau est dans le défi du jour : désactivable à partir de demain."
     },
@@ -360,6 +363,15 @@
       },
       "filters": "Filtres",
       "filtersActive": "Filtres ({{ count }})",
+      "themes": {
+        "label": "Thèmes :",
+        "name": "Nom du thème",
+        "tracks": "{{count}} morceaux",
+        "delete": "Supprimer",
+        "empty": "Aucun thème pour l'instant.",
+        "newName": "Nouveau thème",
+        "add": "Ajouter"
+      },
       "cooldownSetting": {
         "label": "Cooldown",
         "days": "{{ days }} j",
@@ -388,6 +400,8 @@
       "deleting": "Suppression..."
     },
     "editModal": {
+      "themes": "Thèmes",
+      "themesNone": "Aucun thème dans la liste : ajoute-en depuis l'onglet Morceaux.",
       "title": "Modifier le morceau",
       "artist": "Artiste",
       "titleField": "Titre",

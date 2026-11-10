@@ -7,7 +7,7 @@ import {
   HARDEST_FIRST, NO_FILTERS, PoolFilters, PoolSort, PreviewFilter, SortColumn,
   StatusFilter, clampPage, filterTracks, nextSort, pageOf, sortTracks, statusOf, totalPages,
 } from '../domain/pool-filters';
-import { PoolTrack, isUsed, trackLabel } from '../domain/pool-track';
+import { PoolTheme, PoolTrack, isUsed, trackLabel } from '../domain/pool-track';
 import { POOL_VIEW } from '../domain/pool-views';
 import { CooldownApi } from './cooldown.api';
 import { AdminCounts } from './admin-counts';
@@ -48,6 +48,8 @@ interface PoolState {
    */
   cooldown: CooldownSettings | null;
   cooldownSave: CooldownSaveStatus;
+  /** La liste des thèmes de l'admin ; vide tant qu'elle n'est pas lue. */
+  themes: readonly PoolTheme[];
 }
 
 /**
@@ -61,7 +63,7 @@ export const PoolStore = signalStore(
   withRequestStatus(),
   withState<PoolState>({
     tracks: [], view: POOL_VIEW, filters: NO_FILTERS, sort: null, requestedPage: 0, selectedIds: [], togglingIds: [], toggleError: null,
-    cooldown: null, cooldownSave: 'idle',
+    cooldown: null, cooldownSave: 'idle', themes: [],
   }),
   withComputed(({ tracks, view, filters, sort, requestedPage, selectedIds }) => {
     const filtered = computed(() => filterTracks(tracks(), filters(), view()));
@@ -118,10 +120,21 @@ export const PoolStore = signalStore(
       }
     }
 
+    /** Les thèmes sont relus avec la liste (leur nombre de morceaux change avec elle) ; un échec ne bloque pas le pool. */
+    async function loadThemes(mine: number): Promise<void> {
+      try {
+        const themes = await api.listThemes();
+        if (mine === latestLoad) patchState(store, { themes });
+      } catch {
+        // la liste reste telle quelle
+      }
+    }
+
     async function load(): Promise<void> {
       const mine = ++latestLoad;
       patchState(store, setPending());
       const settingRead = loadCooldown(mine);
+      const themesRead = loadThemes(mine);
       try {
         const tracks = await api.listTracks();
         if (mine !== latestLoad) return;
@@ -137,6 +150,7 @@ export const PoolStore = signalStore(
         if (mine === latestLoad) patchState(store, setError(appError));
       }
       await settingRead;
+      await themesRead;
     }
 
     /** Supprime un morceau ; déjà supprimé (une première tentative a abouti avant l'échec d'un autre) : rien à refaire. */
@@ -205,6 +219,10 @@ export const PoolStore = signalStore(
 
       // --- actions ---
       add: (deezerTrackId: number) => mutate(() => api.addTrack(deezerTrackId)),
+      addTheme: (name: string) => mutate(() => api.addTheme(name.trim())),
+      renameTheme: (id: number, name: string) => mutate(() => api.renameTheme(id, name.trim())),
+      deleteTheme: (id: number) => mutate(() => api.deleteTheme(id)),
+      setTrackThemes: (id: number, themeIds: readonly number[]) => mutate(() => api.setTrackThemes(id, themeIds)),
       rename: (id: number, artist: string, title: string, genre?: string) =>
         mutate(() => api.renameTrack(id, artist.trim(), title.trim(), genre?.trim())),
 

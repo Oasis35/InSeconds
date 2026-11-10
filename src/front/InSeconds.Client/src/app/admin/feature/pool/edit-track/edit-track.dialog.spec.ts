@@ -87,6 +87,28 @@ describe('EditTrackDialog', () => {
     expect(dialog.close).toHaveBeenCalledWith(true);
   });
 
+  it('coche les thèmes du morceau et ne les envoie que s\'ils changent, sans renommer', async () => {
+    const themes = [{ id: 1, name: 'Années 80', trackCount: 1 }, { id: 2, name: 'Films', trackCount: 0 }];
+    const { fixture, element, save } = open(poolTrack({ id: 9, themeIds: [1] }), { listThemes: vi.fn(async () => themes) });
+    await TestBed.inject(PoolStore).load();
+    await settle(fixture);
+    const chip = (id: number) => element.querySelector<HTMLButtonElement>(`[data-theme-id="${id}"]`)!;
+
+    expect(chip(1).getAttribute('aria-checked')).toBe('true');
+    expect(chip(2).getAttribute('aria-checked')).toBe('false');
+    expect(save.disabled).toBe(true);
+
+    chip(2).click();
+    await settle(fixture);
+    expect(save.disabled).toBe(false);
+    save.click();
+    await settle(fixture);
+
+    expect(api.renameTrack).not.toHaveBeenCalled();
+    expect(api.setTrackThemes).toHaveBeenCalledWith(9, [1, 2]);
+    expect(dialog.close).toHaveBeenCalledWith(true);
+  });
+
   it('préremplit le genre de Deezer, avertit que Deezer l\'emporte, et n\'envoie le genre que s\'il change', async () => {
     const { fixture, element, artist, save } = open(poolTrack({ id: 9, artist: 'Eminem', genres: ['Rap/Hip Hop'] }));
     const genre = element.querySelector<HTMLInputElement>('#edit-track-genre')!;
