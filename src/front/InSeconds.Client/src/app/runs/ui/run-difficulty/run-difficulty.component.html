@@ -14,22 +14,7 @@
   <app-run-difficulty-columns [options]="options()" [tracksPerRound]="tracksPerRound()" [listenSeconds]="listenSeconds()"
     [selected]="effective()" (selectedChange)="selected.set($event)" [busy]="busy()" />
 
-  <!-- Les bonus en main, pour s'en souvenir avant de jouer (la même main qu'au palier). -->
   <div class="flex-1 min-h-4"></div>
-  @if (hand().length > 0) {
-    <div class="mt-4" data-testid="run-difficulty-hand">
-      <h2 class="text-[14px] mb-2" style="color:var(--text-muted)">{{ 'runs.difficulty.hand' | translate }}</h2>
-      <ul class="grid grid-cols-2 gap-2.5">
-        @for (card of hand(); track card.slot) {
-          <li class="flex items-center gap-2 px-3 py-1.5"
-            style="min-height:44px;background:var(--bg-surface);border:1px solid var(--border-neutral);border-radius:var(--radius-button)">
-            <span class="text-[13px] font-bold" style="font-family:var(--font-clock)" [style.color]="color(card.card).color" aria-hidden="true">{{ glyph(card.card, values()) }}</span>
-            <span class="text-[14px] font-semibold leading-tight" style="color:var(--text-hi)">{{ 'runs.cards.' + card.card + '.name' | translate }}</span>
-          </li>
-        }
-      </ul>
-    </div>
-  }
 
   <!-- « Jouer » reste à portée du pouce : collé en bas de l'écran. -->
   <div class="sticky bottom-0 -mx-5 px-5 pt-3 pb-5 -mb-5 mt-4" style="background:linear-gradient(to bottom, transparent, var(--bg-page) 30%)">

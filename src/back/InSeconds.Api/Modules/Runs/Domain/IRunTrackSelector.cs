@@ -9,7 +9,7 @@ public sealed record RankedTrack(int Id, int? DeezerRank);
 /// <param name="Tracks">Les morceaux tirés dans l'ordre du jeu (manche par manche) ; vide si le pool est insuffisant.</param>
 /// <param name="EligibleCount">Combien de morceaux pouvaient être tirés.</param>
 /// <param name="Requested">Combien le défi en demande.</param>
-/// <param name="Reserve">Les morceaux de réserve de chaque manche (Joker), tirés après ceux de la manche dans sa tranche, autant que la tranche le permet.</param>
+/// <param name="Reserve">Les morceaux de réserve de chaque manche (Échange), tirés après ceux de la manche dans sa tranche, autant que la tranche le permet.</param>
 public sealed record RunSelection(IReadOnlyList<PlannedTrack> Tracks, int EligibleCount, int Requested, IReadOnlyList<PlannedTrack>? Reserve = null)
 {
     public bool IsSufficient => EligibleCount >= Requested;

@@ -108,12 +108,6 @@ public sealed class RunSession
 
     public short RoundsPassed { get; private set; }
 
-    /// <summary>
-    /// Le dernier palier dont l'offre est réglée (une carte prise, l'offre passée, ou la difficulté de la manche suivante choisie) : elle ne se
-    /// rouvre pas. 0 au départ.
-    /// </summary>
-    public short OffersClosedThrough { get; private set; }
-
     public int TotalScore { get; private set; }
 
     public DateTimeOffset StartedAt { get; private set; }
@@ -136,14 +130,8 @@ public sealed class RunSession
     /// <summary>La main : les cartes reçues, ni lâchées ni jouées.</summary>
     public IReadOnlyList<RunSessionCard> Hand => _cards.Where(c => c.InHand).OrderBy(c => c.Slot).ToList();
 
-    /// <param name="rules">Les règles du défi : la carte offerte au départ du run, s'il y en a une, est mise en main.</param>
-    public static RunSession Start(int challengeId, Guid playerId, DateTimeOffset now, RunRules? rules = null)
-    {
-        var session = new RunSession { ChallengeId = challengeId, PlayerId = playerId, Status = RunSessionStatus.Pending, CurrentPosition = 1, StartedAt = now };
-        if (rules?.Cards?.StartCard is { } start)
-            session._cards.Add(RunSessionCard.Create(1, start, 0, now));
-        return session;
-    }
+    public static RunSession Start(int challengeId, Guid playerId, DateTimeOffset now) =>
+        new() { ChallengeId = challengeId, PlayerId = playerId, Status = RunSessionStatus.Pending, CurrentPosition = 1, StartedAt = now };
 
     /// <summary>Ce morceau est-il celui qu'on peut jouer maintenant ? <paramref name="trackCount"/> est le nombre **réel** de morceaux du défi.</summary>
     public RunTrackTurn TurnOf(int position, int trackCount)
@@ -197,171 +185,57 @@ public sealed class RunSession
     private static int RoundAt(RunChallenge challenge, int position) => challenge.Tracks.First(t => t.Position == position).Round;
 
     /// <summary>
-    /// L'offre du palier, tant qu'elle est ouverte : la manche précédente est passée, la manche en cours n'a pas commencé, et l'offre n'est pas
-    /// réglée (aucune carte prise, ni l'offre passée, ni la difficulté de la manche choisie). Tant qu'elle est ouverte, rien du premier morceau de
-    /// la manche ne part (<c>RunPlayer.AdvanceAsync</c>) : on ne prend pas une carte en connaissant le morceau. Vide sinon.
+    /// Le joueur peut changer le morceau en cours (« Échange »), ou rien : la playlist a une réserve, la manche n'en a pas encore fait usage
+    /// (un Échange par manche, qui ne se garde pas) et il reste un morceau de réserve dans cette manche. Jamais tant que la difficulté de la manche
+    /// reste à choisir : son premier morceau n'est pas encore parti.
     /// </summary>
-    public RunCardOffer? OpenOffer(RunChallenge challenge)
+    public bool CanSwap(RunChallenge challenge)
     {
         ArgumentNullException.ThrowIfNull(challenge);
-        if (challenge.Rules.Cards is not { } cards || CurrentRound(challenge) is not { } round || round < 2)
-            return null;
-        var after = round - 1;
-        var offer = cards.OfferAfter(after);
-        // Une carte durable déjà en main ne se propose pas une seconde fois.
-        if (cards.Durable)
-            offer = offer.Where(c => !Hand.Any(h => h.Card == c)).ToList();
-        if (offer.Count == 0 || after <= OffersClosedThrough || RoundStarted(challenge, round) || _cards.Exists(c => c.AcquiredRound == after))
-            return null;
-        return new RunCardOffer(after, offer);
+        if (!IsPending || !challenge.Rules.HasSwap || CurrentRound(challenge) is not { } round || CanChooseDifficulty(challenge, round))
+            return false;
+        // Jamais une fois le morceau écouté ou son chrono parti : le joueur le connaîtrait déjà.
+        if (RoundOfCurrentTrack().ListenedSeconds > 0 || CurrentClockAt is not null)
+            return false;
+        return SwapsIn(round) < RunRules.SwapsPerRound && NextReserveTrack(challenge, round) is not null;
     }
 
-    /// <summary>« Passer » l'offre de ce palier : elle se ferme sans carte prise.</summary>
-    public RunCardRefusal? CanPass(RunChallenge challenge, int afterRound) =>
-        IsPending && OpenOffer(challenge) is { } offer && offer.AfterRound == afterRound ? null : RunCardRefusal.OfferClosed;
-
-    public void PassOffer(RunChallenge challenge, int afterRound)
-    {
-        RequirePending();
-        if (CanPass(challenge, afterRound) is not null)
-            throw new InvalidOperationException("Aucune offre ouverte pour ce palier.");
-        OffersClosedThrough = (short)afterRound;
-    }
+    /// <summary>Les Échanges déjà faits dans cette manche.</summary>
+    public int SwapsIn(int round) => _cards.Count(c => c.Card == RunCard.Swap && c.PlayedRound == round);
 
     /// <summary>
-    /// Pourquoi cette carte de l'offre ne se prend pas, ou rien si elle le peut : l'offre de ce palier est ouverte et la propose, et, main pleine,
-    /// <paramref name="dropSlot"/> désigne une carte de la main à lâcher en échange.
+    /// Change le morceau en cours pour le suivant de la réserve de sa manche : tout repart à zéro (écoute, envoi de l'extrait, chrono). Les cartes
+    /// actives agissent sur le nouveau morceau (elles sont celles de la manche).
     /// </summary>
-    public RunCardRefusal? CanTake(RunChallenge challenge, int afterRound, RunCard card, int? dropSlot)
-    {
-        ArgumentNullException.ThrowIfNull(challenge);
-        if (!IsPending || OpenOffer(challenge) is not { } offer || offer.AfterRound != afterRound || !offer.Cards.Contains(card))
-            return RunCardRefusal.OfferClosed;
-        var hand = Hand;
-        if (hand.Count < challenge.Rules.Cards!.HandSize)
-            return null;
-        if (dropSlot is null)
-            return RunCardRefusal.HandFull;
-        return hand.Any(c => c.Slot == dropSlot) ? null : RunCardRefusal.NotInHand;
-    }
-
-    /// <summary>Prend une carte de l'offre du palier (<see cref="CanTake"/>) ; main pleine, la carte de <paramref name="dropSlot"/> est lâchée.</summary>
-    public RunSessionCard TakeCard(RunChallenge challenge, int afterRound, RunCard card, int? dropSlot, DateTimeOffset now)
+    public RunSessionCard Swap(RunChallenge challenge, DateTimeOffset now)
     {
         RequirePending();
-        if (CanTake(challenge, afterRound, card, dropSlot) is { } refusal)
-            throw new InvalidOperationException($"Cette carte ne se prend pas : {refusal}.");
-        if (Hand.Count >= challenge.Rules.Cards!.HandSize)
-            Hand.First(c => c.Slot == dropSlot).Drop(now, afterRound);
-
-        var taken = RunSessionCard.Create((short)(_cards.Count + 1), card, (short)afterRound, now);
-        _cards.Add(taken);
-        OffersClosedThrough = (short)afterRound;
-        return taken;
-    }
-
-    /// <summary>
-    /// Pourquoi cette carte ne se lâche pas (elle n'est pas en main, ou, dans une playlist durable, aucun palier n'est ouvert : une carte durable
-    /// ne se lâche qu'au palier, où ses effets sur les manches passées restent comptés), ou rien.
-    /// </summary>
-    public RunCardRefusal? CanDrop(RunChallenge challenge, int slot)
-    {
-        ArgumentNullException.ThrowIfNull(challenge);
-        if (!IsPending || Hand.All(c => c.Slot != slot))
-            return RunCardRefusal.NotInHand;
-        return challenge.Rules.Cards?.Durable == true && OpenOffer(challenge) is null ? RunCardRefusal.OfferClosed : null;
-    }
-
-    /// <summary>Lâche une carte de la main (elle ne revient pas dans cette partie, mais peut être offerte de nouveau à un palier suivant).</summary>
-    public void DropCard(RunChallenge challenge, int slot, DateTimeOffset now)
-    {
-        RequirePending();
-        if (CanDrop(challenge, slot) is { } refusal)
-            throw new InvalidOperationException($"Cette carte ne se lâche pas : {refusal}.");
-        Hand.First(c => c.Slot == slot).Drop(now, OpenOffer(challenge)?.AfterRound);
-    }
-
-    /// <summary>
-    /// Pourquoi une carte de la main ne se joue pas maintenant sur le morceau en cours, ou rien si elle le peut. Une carte qui n'aurait rien à
-    /// changer ne se gâche pas : Année sur un morceau sans année connue (<paramref name="yearKnown"/>), Délai sans chrono ou une fois le chrono
-    /// écoulé (il ne rachète pas une réponse en retard), Joker sans morceau en réserve dans la manche.
-    /// </summary>
-    /// <param name="choicesAvailable">« QCM » : le catalogue a deux leurres à proposer (sinon la carte ne montrerait que la réponse).</param>
-    public RunCardRefusal? CanPlay(RunChallenge challenge, int slot, DateTimeOffset now, bool yearKnown = true, bool choicesAvailable = true)
-    {
-        ArgumentNullException.ThrowIfNull(challenge);
-        if (!IsPending || Hand.FirstOrDefault(c => c.Slot == slot) is not { } card)
-            return RunCardRefusal.NotInHand;
-        // Une carte durable agit toute seule : seule le Joker se joue.
-        if (challenge.Rules.Cards?.Durable == true && card.Card != RunCard.Joker)
-            return RunCardRefusal.Unavailable;
+        if (!CanSwap(challenge))
+            throw new InvalidOperationException("Le morceau ne se change pas.");
         var round = CurrentRound(challenge)!.Value;
-        var active = card.Card == RunCard.LowerTarget
-            ? _cards.Exists(c => c.Card == RunCard.LowerTarget && c.PlayedRound == round)
-            : ActiveCardsAt(NextPosition).Contains(card.Card);
-        if (active)
-            return RunCardRefusal.AlreadyActive;
-        return card.Card switch
-        {
-            RunCard.Joker when NextReserveTrack(challenge, round) is null => RunCardRefusal.Unavailable,
-            RunCard.Year when !yearKnown => RunCardRefusal.Unavailable,
-            RunCard.ThreeChoices when !choicesAvailable => RunCardRefusal.Unavailable,
-            RunCard.Hourglass when !challenge.Rules.HasClock || IsLate(challenge.Rules, now) || ClockRemaining(challenge.Rules, now) == 0 =>
-                RunCardRefusal.Unavailable,
-            _ => null,
-        };
+        var replacement = NextReserveTrack(challenge, round);
+        CurrentPosition = (short)NextPosition;
+        CurrentListenedSeconds = null;
+        CurrentServedAt = null;
+        CurrentClockAt = null;
+        var swap = RunSessionCard.Create((short)(_cards.Count + 1), RunCard.Swap, (short)round, now);
+        swap.Play((short)(_cards.Count(c => c.PlayOrder is not null) + 1), (short)NextPosition, (short)round, replacement, now);
+        _cards.Add(swap);
+        return swap;
     }
 
     /// <summary>
-    /// Joue une carte de la main sur le morceau en cours. Le Joker remplace le morceau par le suivant de la réserve de sa manche : tout repart à zéro
-    /// (écoute, envoi de l'extrait, chrono), les cartes déjà jouées sur l'ancien morceau sont perdues. « QCM » garde ses deux leurres
-    /// (<paramref name="decoys"/>, tirés par l'application) : les mêmes à la reprise.
+    /// Les cartes qui agissent sur le morceau de cette position : celle que la manche précédente a offerte (une seule en main, elle sert pour toute
+    /// la manche suivante).
     /// </summary>
-    public RunSessionCard PlayCard(
-        RunChallenge challenge, int slot, DateTimeOffset now, bool yearKnown = true, IReadOnlyList<int>? decoys = null)
+    public IReadOnlyList<RunCard> ActiveCardsAt(RunChallenge challenge, int position)
     {
-        RequirePending();
-        if (CanPlay(challenge, slot, now, yearKnown, decoys is null || decoys.Count == RunChoices.DecoyCount) is { } refusal)
-            throw new InvalidOperationException($"Cette carte ne se joue pas : {refusal}.");
-        var card = Hand.First(c => c.Slot == slot);
-        var round = CurrentRound(challenge)!.Value;
-        int? replacement = null;
-        if (card.Card == RunCard.Joker)
-        {
-            replacement = NextReserveTrack(challenge, round);
-            CurrentPosition = (short)NextPosition;
-            CurrentListenedSeconds = null;
-            CurrentServedAt = null;
-            CurrentClockAt = null;
-        }
-
-        card.Play(
-            (short)(_cards.Count(c => c.PlayOrder is not null) + 1), (short)NextPosition, (short)round, replacement,
-            card.Card == RunCard.ThreeChoices ? [.. decoys ?? []] : null, now);
-        return card;
+        ArgumentNullException.ThrowIfNull(challenge);
+        var round = RoundAt(challenge, position);
+        return Hand.Where(c => c.IsEarned && c.AcquiredRound < round).Select(c => c.Card).ToList();
     }
 
-    /// <summary>
-    /// Les cartes qui agissent sur le morceau en cours : dans une playlist durable, celles de la main (le Joker se joue une fois, il n'agit pas
-    /// ensuite) ; sinon celles jouées sur ce morceau (<see cref="ActiveCardsAt(int)"/>).
-    /// </summary>
-    public IReadOnlyList<RunCard> ActiveCardsAt(RunRules rules, int position)
-    {
-        ArgumentNullException.ThrowIfNull(rules);
-        return rules.Cards?.Durable == true
-            ? Hand.Where(c => c.Card != RunCard.Joker).Select(c => c.Card).ToList()
-            : ActiveCardsAt(position);
-    }
-
-    /// <summary>Les cartes jouées sur le morceau de cette position et toujours actives (celles d'avant un Joker sur ce morceau ne comptent plus).</summary>
-    public IReadOnlyList<RunCard> ActiveCardsAt(int position)
-    {
-        var played = _cards.Where(c => c.PlayedPosition == position).OrderBy(c => c.PlayOrder).ToList();
-        var lastJoker = played.FindLastIndex(c => c.Card == RunCard.Joker);
-        return played.Skip(lastJoker + 1).Select(c => c.Card).ToList();
-    }
-
-    /// <summary>Le morceau joué à cette position : celui du défi, ou celui de la réserve qu'un Joker y a mis.</summary>
+    /// <summary>Le morceau joué à cette position : celui du défi, ou celui de la réserve qu'un Échange y a mis.</summary>
     public int TrackIdAt(RunChallenge challenge, int position)
     {
         ArgumentNullException.ThrowIfNull(challenge);
@@ -377,10 +251,6 @@ public sealed class RunSession
         return challenge.ReserveOf(round).Select(r => (int?)r.TrackId).FirstOrDefault(id => !used.Contains(id!.Value));
     }
 
-    /// <summary>Les secondes que « Délai » ajoute au chrono du morceau en cours (0 sans).</summary>
-    public int ClockBonus(RunRules rules) =>
-        rules.Cards is { } cards && ActiveCardsAt(rules, NextPosition).Contains(RunCard.Hourglass) ? cards.HourglassSeconds : 0;
-
     /// <summary>
     /// Le joueur choisit la difficulté de la manche en cours, avant son premier son. L'extrait du premier morceau de la manche part avec la réponse
     /// au choix : le chrono ne court qu'à partir de là, les écrans de palier et de difficulté ne mangent pas son temps.
@@ -393,8 +263,6 @@ public sealed class RunSession
         if (challenge.Rules.OptionOf(round, difficulty) is null)
             throw new ArgumentException("Cette difficulté n'est pas proposée pour cette manche.", nameof(difficulty));
         _rounds.Add(RunSessionRound.Create((short)round, difficulty, now));
-        // Le choix fait partir l'extrait du premier morceau : l'offre du palier se ferme avec lui.
-        OffersClosedThrough = (short)Math.Max(OffersClosedThrough, round - 1);
     }
 
     /// <summary>
@@ -405,9 +273,7 @@ public sealed class RunSession
         if (CurrentRound(challenge) is not { } round)
             return challenge.Rules.ListenSeconds;
         var listen = OptionOf(challenge, round).ListenSeconds;
-        if (challenge.Rules.Cards is not { } cards || !ActiveCardsAt(challenge.Rules, NextPosition).Contains(RunCard.Extend))
-            return listen;
-        return cards.Durable ? listen + cards.ExtendBonusSeconds : Math.Max(listen, cards.ExtendListenSeconds);
+        return challenge.Rules.Cards is { } cards && ActiveCardsAt(challenge, NextPosition).Contains(RunCard.Extend) ? listen + cards.ExtendBonusSeconds : listen;
     }
 
     /// <summary>La manche Gameplay du morceau en cours, reconstituée de la partie (pas d'indice au proto 1).</summary>
@@ -453,13 +319,13 @@ public sealed class RunSession
         ArgumentNullException.ThrowIfNull(rules);
         if (ClockStart(rules) is not { } start || (CurrentClockAt is null && now < start))
             return null;
-        var left = (decimal)(start.AddSeconds(rules.AnswerSeconds + ClockBonus(rules)) - now).TotalSeconds;
+        var left = (decimal)(start.AddSeconds(rules.AnswerSeconds) - now).TotalSeconds;
         return Math.Max(0m, decimal.Round(left, 1));
     }
 
     /// <summary>La réponse arrive après le chrono (« Délai » compris, marge réseau comprise) : elle ne rapporte rien.</summary>
     public bool IsLate(RunRules rules, DateTimeOffset now) =>
-        ClockStart(rules) is { } start && now > start.AddSeconds(rules.AnswerSeconds + ClockBonus(rules)) + ClockGrace;
+        ClockStart(rules) is { } start && now > start.AddSeconds(rules.AnswerSeconds) + ClockGrace;
 
     /// <summary>Enregistre la manche du morceau en cours (ce que <see cref="TrackRound.Listen"/> a rendu).</summary>
     public void KeepRound(TrackRound round)
@@ -485,26 +351,7 @@ public sealed class RunSession
             outcome = outcome with { ArtistCorrect = false, TitleCorrect = false };
         // Une manche à choix jouée sans choix (navigateur d'avant le proto 2) se joue en « Sûre », sans ligne : seul un vrai choix est noté.
         var option = OptionOf(challenge, track.Round);
-        IReadOnlyList<RunCard> active = late ? [] : ActiveCardsAt(challenge.Rules, track.Position);
-        var scale = option.Scale(track.Multiplier);
-        var found = outcome.ArtistCorrect || outcome.TitleCorrect;
-        int points;
-        if (challenge.Rules.Cards?.Durable == true)
-        {
-            // « L'un ou l'autre » : un seul des deux suffit pour les points du morceau entier. « Repêchage » : un raté rapporte un quart (la moitié
-            // de l'artiste seul). Les verdicts restent ceux de la réponse. Jamais une réponse en retard.
-            points = found && active.Contains(RunCard.EitherOr)
-                ? scoring.Points(outcome with { ArtistCorrect = true, TitleCorrect = true }, scale)
-                : !found && active.Contains(RunCard.Net)
-                    ? scoring.Points(outcome with { ArtistCorrect = true }, scale / 2)
-                    : scoring.Points(outcome, scale);
-        }
-        else
-        {
-            // « Repêchage » (playlist d'avant) : un morceau raté rapporte comme à moitié trouvé.
-            var scored = !found && active.Contains(RunCard.Net) ? outcome with { ArtistCorrect = true } : outcome;
-            points = scoring.Points(scored, scale);
-        }
+        var points = scoring.Points(outcome, option.Scale(track.Multiplier));
 
         return Record(challenge, RunAnswer.Create(track.Position, outcome.ArtistCorrect, outcome.TitleCorrect, points, neutralized: false, now), scoring, now);
     }
@@ -548,20 +395,7 @@ public sealed class RunSession
     /// passe par la partie, qui sait ce qui la modifie.
     /// </summary>
     public RoundProgress RoundProgressAt(RunChallenge challenge, int round, RunDifficultyOption option, IRunScoringPolicy scoring) =>
-        RunGauge.Of(challenge, _answers, round, scoring, option, LoweredBy(challenge, round));
-
-    /// <summary>La baisse de l'objectif de cette manche en pourcentage (« Rabais » joué dans la manche), 0 sinon.</summary>
-    public int LoweredBy(RunChallenge challenge, int round)
-    {
-        ArgumentNullException.ThrowIfNull(challenge);
-        if (challenge.Rules.Cards is not { } cards)
-            return 0;
-        // Durable : « Rabais » compte pour toutes les manches après sa prise, jusqu'au palier où il est lâché (les manches passées gardent leur objectif).
-        var lowered = cards.Durable
-            ? _cards.Exists(c => c.Card == RunCard.LowerTarget && c.AcquiredRound < round && (c.DroppedAfterRound is null || c.DroppedAfterRound >= round))
-            : _cards.Exists(c => c.Card == RunCard.LowerTarget && c.PlayedRound == round);
-        return lowered ? cards.LowerTargetPercent : 0;
-    }
+        RunGauge.Of(challenge, _answers, round, scoring, option);
 
     private RunStep Record(RunChallenge challenge, RunAnswer answer, IRunScoringPolicy scoring, DateTimeOffset now)
     {
@@ -577,6 +411,10 @@ public sealed class RunSession
         if (!progress.Complete)
             return new RunStep(track.Round, RunStepOutcome.Continue);
 
+        // La carte de cette manche a servi : elle ne se garde pas pour la suivante.
+        foreach (var used in Hand.Where(c => c.AcquiredRound < track.Round))
+            used.Drop(now, track.Round);
+
         if (!progress.Reached)
         {
             Status = RunSessionStatus.Lost;
@@ -586,7 +424,12 @@ public sealed class RunSession
 
         RoundsPassed++;
         if (_answers.Count < challenge.Tracks.Count)
+        {
+            // Une manche franchie bien au-dessus de son objectif offre une carte pour la suivante.
+            if (challenge.Rules.Cards is { } cards && cards.RewardAfter(track.Round) is { } reward && cards.Earns(progress.Score, progress.Objective))
+                _cards.Add(RunSessionCard.Create((short)(_cards.Count + 1), reward, (short)track.Round, now));
             return new RunStep(track.Round, RunStepOutcome.RoundPassed);
+        }
 
         Status = RunSessionStatus.Won;
         End(now);
@@ -645,28 +488,9 @@ public sealed class RunAnswer
         new() { Position = position, ArtistCorrect = artistCorrect, TitleCorrect = titleCorrect, Points = points, Neutralized = neutralized, AnsweredAt = now };
 }
 
-/// <summary>Pourquoi une carte ne se joue pas sur le morceau en cours.</summary>
-public enum RunCardRefusal
-{
-    /// <summary>Elle n'est pas (ou plus) dans la main.</summary>
-    NotInHand,
-
-    /// <summary>La même carte est déjà active sur ce morceau (ou sur la manche, pour « Rabais »).</summary>
-    AlreadyActive,
-
-    /// <summary>Son effet n'a rien à changer : plus de morceau en réserve pour le Joker, pas d'année, pas ou plus de chrono pour le Délai.</summary>
-    Unavailable,
-
-    /// <summary>Pas d'offre ouverte pour ce palier, ou une carte qu'elle ne propose pas.</summary>
-    OfferClosed,
-
-    /// <summary>La main est pleine : prendre une carte demande d'en lâcher une.</summary>
-    HandFull,
-}
-
 /// <summary>
-/// Un coup de pouce reçu dans une partie : la carte de départ (manche 0) ou celle prise au palier d'une manche, puis lâchée ou jouée sur un morceau.
-/// Une carte jouée par Joker garde le morceau de la réserve qu'elle a mis à la place.
+/// Un coup de pouce d'une partie : la carte gagnée en franchissant une manche (en main pour la suivante, puis usée), ou un Échange fait (jamais en
+/// main : il garde le morceau de la réserve mis à la place).
 /// </summary>
 public sealed class RunSessionCard
 {
@@ -681,34 +505,35 @@ public sealed class RunSessionCard
 
     public RunCard Card { get; private set; }
 
-    /// <summary>La manche après laquelle elle a été prise (0 : la carte offerte au départ).</summary>
+    /// <summary>La manche qui l'a offerte (la carte agit sur la suivante) ; pour un Échange, la manche où il a été fait.</summary>
     public short AcquiredRound { get; private set; }
 
     public DateTimeOffset AcquiredAt { get; private set; }
 
+    /// <summary>Quand la carte a servi (la manche qu'elle aidait est finie) : elle n'est plus en main.</summary>
     public DateTimeOffset? DroppedAt { get; private set; }
 
     public DateTimeOffset? PlayedAt { get; private set; }
 
-    /// <summary>Le morceau (sa position) sur lequel elle a été jouée.</summary>
+    /// <summary>Échange : la position du morceau changé.</summary>
     public short? PlayedPosition { get; private set; }
 
-    /// <summary>La manche où elle a été jouée.</summary>
+    /// <summary>Échange : la manche où il a été fait.</summary>
     public short? PlayedRound { get; private set; }
 
-    /// <summary>Joker : le morceau de la réserve joué à la place.</summary>
+    /// <summary>Échange : le morceau de la réserve joué à la place.</summary>
     public int? ReplacementTrackId { get; private set; }
 
     /// <summary>Son rang parmi les cartes jouées de la partie (1, 2…) : l'ordre de jeu, sans dépendre de l'heure.</summary>
     public short? PlayOrder { get; private set; }
 
-    /// <summary>« QCM » : les deux morceaux proposés à côté de la bonne réponse, figés quand la carte est jouée.</summary>
-    public int[]? DecoyTrackIds { get; private set; }
-
-    /// <summary>La carte durable lâchée à un palier : la dernière manche où elle agissait (celle qui précède l'offre où elle a été lâchée).</summary>
+    /// <summary>La dernière manche où la carte a agi (celle qui l'a usée).</summary>
     public short? DroppedAfterRound { get; private set; }
 
     public bool InHand => DroppedAt is null && PlayedAt is null;
+
+    /// <summary>Une carte qui se gagne (QCM, Indice, Prolongation) : ni l'Échange, ni une carte d'avant le proto 3.</summary>
+    public bool IsEarned => RunCards.Earnable.Contains(Card);
 
     public static RunSessionCard Create(short slot, RunCard card, short acquiredRound, DateTimeOffset now) =>
         new() { Slot = slot, Card = card, AcquiredRound = acquiredRound, AcquiredAt = now };
@@ -719,10 +544,9 @@ public sealed class RunSessionCard
         DroppedAfterRound = (short?)afterRound;
     }
 
-    internal void Play(short order, short position, short round, int? replacementTrackId, int[]? decoyTrackIds, DateTimeOffset now)
+    internal void Play(short order, short position, short round, int? replacementTrackId, DateTimeOffset now)
     {
         PlayOrder = order;
-        DecoyTrackIds = decoyTrackIds;
         PlayedAt = now;
         PlayedPosition = position;
         PlayedRound = round;

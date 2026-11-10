@@ -32,7 +32,7 @@ public sealed class RunChallengePlanner(
             return new PlanResult(null, selection.EligibleCount, selection.Requested);
         // Les coups de pouce : la carte de départ et les offres de chaque palier, les mêmes pour tous les joueurs de la playlist.
         if (current.Cards is { } cards)
-            current = current with { Cards = dealer.Deal(cards, current, seed, (selection.Reserve ?? []).Select(r => r.Round).ToHashSet()) };
+            current = current with { Cards = dealer.Deal(cards, current, seed) };
 
         for (var attempt = 0; attempt < MaxCodeAttempts; attempt++)
         {

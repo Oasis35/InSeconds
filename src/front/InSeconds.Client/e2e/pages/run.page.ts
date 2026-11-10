@@ -46,7 +46,7 @@ export class RunPage {
   readonly comparisonRows: Locator;
   readonly statusScreen: Locator;
   readonly roundCards: Locator;
-  readonly handCards: Locator;
+  readonly swapLink: Locator;
   readonly cardEffects: Locator;
 
   constructor(readonly page: Page) {
@@ -82,7 +82,7 @@ export class RunPage {
     this.toDailyLink         = page.getByTestId('run-to-daily');
     this.comparison          = page.getByTestId('run-comparison');
     this.roundCards          = page.getByTestId('run-round-cards');
-    this.handCards           = this.roundCards.locator('button[data-testid^="run-play-"]');
+    this.swapLink            = page.getByTestId('run-swap');
     this.cardEffects         = page.getByTestId('run-card-effect');
     this.comparisonEyebrow   = page.getByTestId('run-comparison-eyebrow');
     this.comparisonTitle     = page.getByTestId('run-comparison-title');
@@ -170,15 +170,13 @@ export class RunPage {
   }
 
   /**
-   * Répond juste à tous les morceaux d'une manche. Sauf à la dernière (qui mène à la fin) : l'écran de palier, ses trois cartes offertes,
-   * les trois difficultés sur le même écran (Normal d'abord, ou celle demandée pour la manche suivante), « Jouer », puis la ligne de la manche posée dans la pile.
+   * Répond juste à tous les morceaux d'une manche. Sauf à la dernière (qui mène à la fin) : l'écran de palier, les trois difficultés sur le même écran (Normal d'abord, ou celle demandée pour la manche suivante), « Jouer », puis la ligne de la manche posée dans la pile.
    */
   async winRound(tracks: RunTrack[], round: number, difficulty: 'easy' | 'safe' | 'risky' = 'safe'): Promise<void> {
     await expect(this.roundTitle).toHaveText(`Manche ${round}`);
     await inSequence(tracks.filter(t => t.round === round), track => this.answerRight(track));
     if (round === 4) return;
     await expect(this.palier).toBeVisible();
-    await expect(this.palier.locator('[data-card]')).toHaveCount(3);
     // « Normal » : l'objectif et les points du proto 1 ; « Jouer » lance le premier morceau de la manche.
     await this.page.getByTestId(`run-difficulty-${difficulty}`).click();
     await this.palierNextButton.click();

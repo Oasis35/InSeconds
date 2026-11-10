@@ -16,7 +16,7 @@ public sealed record RunGameExport(
 
 /// <summary>
 /// Un coup de pouce reçu : la carte, le palier où il a été pris (0 : au départ), puis lâché ou joué (sur quel morceau, dans quelle manche, à quel
-/// rang parmi les cartes jouées) ; pour un Joker, le morceau joué à la place (identifiant Deezer). Une carte durable lâchée garde la dernière manche
+/// rang parmi les cartes jouées) ; pour un Échange, le morceau joué à la place (identifiant Deezer). Une carte durable lâchée garde la dernière manche
 /// où elle agissait.
 /// </summary>
 public sealed record RunCardExport(

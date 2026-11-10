@@ -22,10 +22,8 @@ public static class RunGauge
         (int)decimal.Round(objectivePercent * (decimal)baseMaxScore / 100m, 0, MidpointRounding.AwayFromZero);
 
     /// <summary>La manche <paramref name="round"/> de cette partie, à cette difficulté, d'après ses réponses et les morceaux du défi.</summary>
-    /// <param name="loweredPercent">La baisse de l'objectif en pourcentage (« Rabais »), 0 sans carte.</param>
     public static RoundProgress Of(
-        RunChallenge challenge, IReadOnlyCollection<RunAnswer> answers, int round, IRunScoringPolicy scoring, RunDifficultyOption option,
-        int loweredPercent = 0)
+        RunChallenge challenge, IReadOnlyCollection<RunAnswer> answers, int round, IRunScoringPolicy scoring, RunDifficultyOption option)
     {
         ArgumentNullException.ThrowIfNull(challenge);
         ArgumentNullException.ThrowIfNull(answers);
@@ -48,8 +46,6 @@ public static class RunGauge
         }
 
         var objective = Objective(option.ObjectivePercent, baseMax);
-        if (loweredPercent > 0)
-            objective = (int)decimal.Round(objective * (100m - loweredPercent) / 100m, 0, MidpointRounding.AwayFromZero);
         return new RoundProgress(
             round, score, objective, max, tracks.All(t => byPosition.ContainsKey(t.Position)), option.Difficulty);
     }

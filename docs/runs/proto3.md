@@ -8,8 +8,8 @@ Le proto 3 ([#531](https://github.com/Oasis35/InSeconds/issues/531)) simplifie l
 - **Difficultés Facile, Normal, Mélomane** (anciennement Facile, Sûre, Risquée : seuls les libellés changent, le code garde `easy`, `safe`, `risky`). Chaque colonne montre l'objectif en points et **ce qu'un morceau rapporte au plus** ; plus de plafond de manche, de « max » ni de total atteignable à l'écran. Mélomane rapporte plus de points au total (le facteur de points reste dans les règles figées, il ne s'affiche plus en multiplicateur). **Normal est présélectionné**, « Jouer » lance la manche.
 - **Le palier et la difficulté tiennent sur un seul écran** (la manche suivante en trois colonnes, puis « Jouer »).
 - **Retour « objectif atteint »** pendant la manche : un ✓ et un petit temps fort quand l'objectif est franchi.
-- **Le Joker disparaît**, remplacé par l'Échange offert (« Changer de morceau », un par manche, non cumulable) : PR 2.
-- **Cartes réduites à 3** (QCM, Prolongation, Indice), **gagnées** quand une manche dépasse l'objectif de 25 % (au lieu d'une offre 1 parmi 3) ; anciennes playlists purgées : PR 2.
+- **Le Joker disparaît**, remplacé par l'Échange offert (« Changer de morceau », un par manche, non cumulable) : PR 2, livrée.
+- **Cartes réduites à 3** (QCM, Prolongation, Indice), **gagnées** quand une manche dépasse l'objectif de 25 % (au lieu d'une offre 1 parmi 3) : PR 2, livrée. Les anciennes playlists (Joker, offres, cartes durables) sont à purger à la fin du proto, après validation au staging : le code ne tolère plus leurs règles.
 - **Fin de run** : duel avec l'ami en tête, fantôme dès le premier morceau, Revanche : PR 3.
 - Plus tard, à part : ouverture de la création de playlists et aperçu de lien ([#535](https://github.com/Oasis35/InSeconds/issues/535)), genre saisi par l'admin puis thèmes ([#536](https://github.com/Oasis35/InSeconds/issues/536)), idées virales ([#537](https://github.com/Oasis35/InSeconds/issues/537)).
 
@@ -22,3 +22,10 @@ Le proto 3 ([#531](https://github.com/Oasis35/InSeconds/issues/531)) simplifie l
 - Les cartes (offre de 3, main de 2) restent telles quelles jusqu'à la PR 2.
 
 Ce que vaut au plus un morceau (`perTrack`) se calcule dans le front : le plafond de la manche (`maxScore`) divisé par les morceaux de la manche (`tracksPerRound`).
+
+## PR 2 ([#533](https://github.com/Oasis35/InSeconds/issues/533) et [#534](https://github.com/Oasis35/InSeconds/issues/534)) : l'Échange et les cartes gagnées
+
+- **Échange** : lien « Changer de morceau » à côté de « Passer » (même style, souligné, neutre). Un par manche, non cumulable, tant que le morceau en cours n'a pas été écouté ni répondu et que la manche n'attend plus sa difficulté ; le morceau de réserve prend la même place, écoute et chrono remis à zéro. Route `POST /api/runs/sessions/{id}/swap` (`swapRunTrack`), 409 `runs.swap_unavailable`.
+- **Cartes gagnées** : QCM, Indice (année, initiales et genre sur une ligne) et Prolongation. Une manche passée à objectif + 25 % (`Runs:RewardMarginPercent`) donne la carte tirée à l'avance pour cette manche (graine de la playlist) ; une seule carte à la fois, à usage unique, qui agit toute seule sur la manche suivante. L'écran de palier l'annonce (« Carte gagnée »), un second son la souligne. Plus de route pour les cartes (prendre, passer, lâcher, jouer), plus de main de 2, plus d'offre.
+- **Réglages** : `Runs:Cards` (`three_choices`, `hint`, `extend`), `Runs:RewardMarginPercent`, `Runs:ExtendBonusSeconds` ; supprimés : `HandSize`, `DurableCards`, `HourglassSeconds`, `LowerTargetPercent`. Migration `RunCardsEarned` : retire `offers_closed_through` de `runs.sessions` et `decoy_track_ids` de `runs.session_cards` (les leurres du QCM sont retirés à chaque envoi, plus figés).
+- **Mesure** : `inseconds.runs.cards` avec les actions `earned` et `swapped`.

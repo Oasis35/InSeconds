@@ -2,11 +2,11 @@ import { TestBed } from '@angular/core/testing';
 import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import fr from '../../../../../public/i18n/fr.json';
 import { RunDifficulty, RunDifficultyOption } from '../../domain/run';
-import { RunCardKey, RunCardOffer, RunHandCard } from '../../domain/run-cards';
+import { RunCardKey } from '../../domain/run-cards';
 import { RunPalierComponent } from './run-palier.component';
 
 describe('RunPalierComponent', () => {
-  function render(overrides: { offer?: RunCardOffer | null; hand?: RunHandCard[]; pending?: RunCardKey | null; options?: RunDifficultyOption[] } = {}) {
+  function render(overrides: { earned?: RunCardKey | null; options?: RunDifficultyOption[] } = {}) {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     TestBed.inject(TranslateService).setTranslation('fr', fr);
     TestBed.inject(TranslateService).use('fr');
@@ -18,11 +18,8 @@ describe('RunPalierComponent', () => {
     set('nextRound', 2);
     set('nextObjective', 366);
     set('nextDisc', 'runs.discs.bronze');
-    set('offer', overrides.offer === undefined ? { afterRound: 1, cards: ['three_choices', 'joker', 'hourglass'] } : overrides.offer);
-    set('hand', overrides.hand ?? [{ slot: 1, card: 'year' }]);
-    set('handSize', 2);
-    set('values', { extendListenSeconds: 20, hourglassSeconds: 30, lowerTargetPercent: 20 });
-    set('pending', overrides.pending ?? null);
+    set('earnedCard', overrides.earned === undefined ? 'hint' : overrides.earned);
+    set('values', { extendBonusSeconds: 5, rewardMarginPercent: 25 });
     if (overrides.options) set('options', overrides.options);
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;
@@ -42,56 +39,26 @@ describe('RunPalierComponent', () => {
     expect(element.querySelectorAll('ul[aria-label] > li')).toHaveLength(4);
   });
 
-  it('les trois cartes de l\'offre, leur signe et leur nom ; la main et son emplacement libre', () => {
-    const { element, text } = render();
+  it('la carte gagnée : son signe, son nom et la mention « Carte gagnée »', () => {
+    const { text } = render({ earned: 'extend' });
 
-    // Le signe dans le coin, puis le nom : deux éléments.
-    expect(text('run-offer-three_choices')).toBe('3QCM');
-    expect(text('run-offer-joker')).toBe('↻Joker');
-    expect(text('run-offer-hourglass')).toBe('+30Délai');
-    expect(text('run-hand-year')).toBe('’95Année');
-    expect(element.querySelectorAll('[data-testid="run-hand"] > li')).toHaveLength(2);
-    expect(element.querySelector('[data-testid="run-hand-drop-hint"]')).toBeNull();
+    expect(text('run-palier-earned')).toBe('+5 sCarte gagnéeProlongation');
   });
 
-  it('toucher une carte, passer, suite : la page reçoit chaque geste', () => {
+  it('une manche qui n\'a rien rapporté : pas de carte', () => {
+    const { element } = render({ earned: null });
+
+    expect(element.querySelector('[data-testid="run-palier-earned"]')).toBeNull();
+  });
+
+  it('« Suite » : la page reçoit le geste (aucune carte à toucher, aucune offre à passer)', () => {
     const { fixture, element } = render();
-    const picked: RunCardKey[] = [];
-    let passed = 0;
     let next = 0;
-    fixture.componentInstance.pick.subscribe(card => picked.push(card));
-    fixture.componentInstance.pass.subscribe(() => passed++);
     fixture.componentInstance.next.subscribe(() => next++);
 
-    element.querySelector<HTMLButtonElement>('[data-testid="run-offer-joker"]')!.click();
-    element.querySelector<HTMLButtonElement>('[data-testid="run-palier-pass"]')!.click();
     element.querySelector<HTMLButtonElement>('[data-testid="run-palier-next-button"]')!.click();
 
-    expect(picked).toEqual(['joker']);
-    expect([passed, next]).toEqual([1, 1]);
-  });
-
-  it('main pleine avec une carte en attente : « Touche la carte à lâcher », la carte de la main s\'échange', () => {
-    const { fixture, element } = render({ hand: [{ slot: 1, card: 'year' }, { slot: 2, card: 'net' }], pending: 'joker' });
-    const dropped: number[] = [];
-    fixture.componentInstance.dropCard.subscribe(slot => dropped.push(slot));
-
-    expect(element.querySelector('[data-testid="run-hand-drop-hint"]')?.textContent?.trim()).toBe('Touche la carte à lâcher');
-    expect(element.querySelector('[data-testid="run-offer-joker"]')?.getAttribute('aria-pressed')).toBe('true');
-    element.querySelector<HTMLButtonElement>('[data-testid="run-hand-net"]')!.click();
-
-    expect(dropped).toEqual([2]);
-  });
-
-  it('sans carte en attente, les cartes de la main ne se touchent pas', () => {
-    const { element } = render();
-
-    expect(element.querySelector<HTMLButtonElement>('[data-testid="run-hand-year"]')!.disabled).toBe(true);
-  });
-
-  it('l\'offre prise ou passée disparaît', () => {
-    const { element } = render({ offer: null });
-
+    expect(next).toBe(1);
     expect(element.querySelector('[data-testid="run-palier-pass"]')).toBeNull();
     expect(element.querySelector('[data-card]')).toBeNull();
   });

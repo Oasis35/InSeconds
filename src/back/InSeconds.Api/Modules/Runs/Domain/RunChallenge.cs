@@ -32,8 +32,8 @@ public sealed class RunChallenge
     public IReadOnlyList<RunChallengeTrack> Tracks => _tracks;
 
     /// <summary>
-    /// Les morceaux de réserve de chaque manche, dans l'ordre où le coup de pouce « Joker » les sort : tirés avec la playlist, les mêmes pour tous ses
-    /// joueurs. Ils ne comptent pas dans les morceaux du défi (<see cref="Tracks"/>) tant qu'aucun Joker ne les fait jouer.
+    /// Les morceaux de réserve de chaque manche, dans l'ordre où le coup de pouce « Échange » les sort : tirés avec la playlist, les mêmes pour tous ses
+    /// joueurs. Ils ne comptent pas dans les morceaux du défi (<see cref="Tracks"/>) tant qu'aucun Échange ne les fait jouer.
     /// </summary>
     public IReadOnlyList<RunChallengeReserveTrack> Reserve => _reserve;
 
@@ -46,7 +46,7 @@ public sealed class RunChallenge
     /// <param name="tracks">Les morceaux dans l'ordre du jeu, avec leur manche et leur multiplicateur.</param>
     /// <param name="reserve">
     /// Les morceaux de réserve, manche par manche (aucun pour une playlist du proto 1). Leur multiplicateur n'est pas gardé : un morceau sorti par
-    /// un Joker prend la place, et donc le multiplicateur, du morceau qu'il remplace (le même : celui de la manche).
+    /// un Échange prend la place, et donc le multiplicateur, du morceau qu'il remplace (le même : celui de la manche).
     /// </param>
     public static RunChallenge Create(
         string code, int seed, RunRules rules, IReadOnlyList<PlannedTrack> tracks, Guid? createdBy, DateTimeOffset now,
@@ -106,7 +106,7 @@ public sealed class RunChallengeTrack
 
 /// <summary>
 /// Un morceau de réserve d'un défi : sa manche et son rang dans la réserve de la manche (de 1 à N). Sans multiplicateur : celui de la position
-/// qu'un Joker lui fait prendre.
+/// qu'un Échange lui fait prendre.
 /// </summary>
 public sealed class RunChallengeReserveTrack
 {
@@ -126,7 +126,7 @@ public sealed class RunChallengeReserveTrack
     /// <summary>La manche, à partir de 1.</summary>
     public short Round { get; private set; }
 
-    /// <summary>Son rang dans la réserve de la manche, à partir de 1 : le premier Joker sort le rang 1.</summary>
+    /// <summary>Son rang dans la réserve de la manche, à partir de 1 : le premier Échange sort le rang 1.</summary>
     public short Rank { get; private set; }
 
     public int TrackId { get; private set; }

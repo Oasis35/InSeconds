@@ -4,7 +4,7 @@ namespace InSeconds.Api.Modules.Runs.Application;
 
 /// <summary>
 /// Réglages du mode, relus à chaud depuis <c>infra.settings</c> (<c>Runs:…</c>). Aucune ligne en base n'est nécessaire : les valeurs par défaut
-/// sont celles du proto 2 (difficultés par manche, réserve pour le Joker). **Les listes n'ont pas de valeur initiale** (le binder ajouterait les éléments lus à ceux de la valeur initiale) : les
+/// sont celles du proto 2 (difficultés par manche, réserve pour l'Échange). **Les listes n'ont pas de valeur initiale** (le binder ajouterait les éléments lus à ceux de la valeur initiale) : les
 /// défauts sont dans les propriétés <c>Effective…</c>, seules lues par le code. Ces réglages ne touchent jamais un défi déjà créé : ses règles sont figées
 /// (<see cref="RunRules"/>).
 /// </summary>
@@ -45,19 +45,16 @@ public sealed class RunsOptions
         new() { Difficulty = "risky", PointsFactor = 1.33m, ObjectiveFactor = 1.5m },
     ];
 
-    public const int DefaultHandSize = 2;
     public const decimal DefaultExtendBonusSeconds = 5m;
 
-    /// <summary>L'écoute d'une « Prolongation » des playlists d'avant (cartes non durables).</summary>
-    public const decimal LegacyExtendListenSeconds = 20m;
-    public const int DefaultHourglassSeconds = 15;
-    public const int DefaultLowerTargetPercent = 10;
+    /// <summary>De combien l'objectif d'une manche doit être dépassé pour gagner une carte (25 : à 125 % de l'objectif), à régler aux parties de test.</summary>
+    public const int DefaultRewardMarginPercent = 25;
 
     /// <summary>L'écoute la plus longue avec « Prolongation » : un extrait Deezer dure 30 s.</summary>
     public const decimal MaxExtendListenSeconds = 30m;
 
-    /// <summary>Les coups de pouce du proto 2 (tous, provisoire) : leurs noms d'API.</summary>
-    public static string[] DefaultCards => [.. RunCards.All.Select(RunCards.KeyOf)];
+    /// <summary>Les cartes qui se gagnent : leurs noms d'API.</summary>
+    public static string[] DefaultCards => [.. RunCards.Earnable.Select(RunCards.KeyOf)];
 
     public static readonly string[] DefaultDiscs =
         ["runs.discs.scratched", "runs.discs.wax", "runs.discs.bronze", "runs.discs.silver", "runs.discs.gold"];
@@ -90,32 +87,20 @@ public sealed class RunsOptions
     /// <summary>L'écoute de la manche boss (la dernière, en « Risquée ») ; 0 : pas de manche boss.</summary>
     public decimal BossListenSeconds { get; set; } = DefaultBossListenSeconds;
 
-    /// <summary>Les morceaux de réserve tirés pour chaque manche (Joker).</summary>
+    /// <summary>Les morceaux de réserve tirés pour chaque manche (« Échange » : 0, pas d'Échange).</summary>
     public int ReservePerRound { get; set; } = DefaultReservePerRound;
 
     /// <summary>Les coups de pouce : faux, aucune carte dans les nouvelles playlists (une liste vide ne s'écrit pas dans les réglages).</summary>
     public bool CardsEnabled { get; set; } = true;
 
-    /// <summary>Les coups de pouce que les playlists peuvent offrir (noms d'API : <c>three_choices</c>, <c>joker</c>…) ; sans valeur, tous.</summary>
+    /// <summary>Les coups de pouce que les playlists peuvent offrir (noms d'API : <c>three_choices</c>, <c>hint</c>, <c>extend</c>) ; sans valeur, toutes.</summary>
     public string[]? Cards { get; set; }
-
-    /// <summary>Les emplacements de la main.</summary>
-    public int HandSize { get; set; } = DefaultHandSize;
-
-    /// <summary>
-    /// Les cartes des nouvelles playlists agissent tant qu'elles sont en main, sans clic (sauf le Joker), et aucune n'est offerte au départ. Faux : le
-    /// comportement des playlists d'avant (une carte jouée une fois sur un morceau), gardé pour les parties qui l'ont encore et pour les tests.
-    /// </summary>
-    public bool DurableCards { get; set; } = true;
 
     /// <summary>Les secondes que « Prolongation » ajoute à l'écoute de chaque morceau (10 s deviennent 15 s ; la manche boss, de 5 s à 10 s).</summary>
     public decimal ExtendBonusSeconds { get; set; } = DefaultExtendBonusSeconds;
 
-    /// <summary>Les secondes que « Délai » ajoute au chrono de chaque morceau.</summary>
-    public int HourglassSeconds { get; set; } = DefaultHourglassSeconds;
-
-    /// <summary>La baisse de l'objectif de chaque manche sous « Rabais », en pourcentage.</summary>
-    public int LowerTargetPercent { get; set; } = DefaultLowerTargetPercent;
+    /// <summary>De combien l'objectif d'une manche doit être dépassé pour qu'elle offre une carte (en pourcentage de l'objectif).</summary>
+    public int RewardMarginPercent { get; set; } = DefaultRewardMarginPercent;
 
     public IReadOnlyList<string> EffectiveCards => Cards ?? DefaultCards;
 
@@ -131,12 +116,8 @@ public sealed class RunsOptions
         var thresholds = EffectiveThresholdPercents.ToArray();
         var roundRules = RunRoundPlan.Plan(Rounds, thresholds, EffectiveProfiles(), ListenSeconds, BossListenSeconds);
         var pool = EffectiveCards.Select(key => RunCards.Parse(key)!.Value).Distinct().Order().ToList();
-        // Les offres et la carte de départ se tirent avec la playlist (RunCardDealer, graine de la playlist).
-        var cards = !CardsEnabled || pool.Count == 0
-            ? null
-            : new RunCardRules(
-                HandSize, null, [], DurableCards ? ListenSeconds + ExtendBonusSeconds : LegacyExtendListenSeconds, HourglassSeconds, LowerTargetPercent, pool,
-                DurableCards, DurableCards ? ExtendBonusSeconds : 0m);
+        // La carte que chaque manche offre se tire avec la playlist (RunCardDealer, graine de la playlist).
+        var cards = !CardsEnabled || pool.Count == 0 ? null : new RunCardRules(pool, null, RewardMarginPercent, ExtendBonusSeconds);
         return new RunRules(
             Rounds, TracksPerRound, ListenSeconds, thresholds, MinMultiplier, MaxMultiplier, AnswerSeconds, roundRules, ReservePerRound, cards);
     }
@@ -213,18 +194,13 @@ public static class RunsOptionsChecks
 
         var cardKeys = options.EffectiveCards.Select(RunCards.Parse).ToList();
         if (cardKeys.Contains(null) || cardKeys.Distinct().Count() != cardKeys.Count)
-            problems.Add("Runs:Cards : des noms de cartes connus (three_choices, joker, year, initials, extend, net, lower_target, hourglass, genre, either_or), sans doublon.");
-        if (options.HandSize is < 1 or > 5)
-            problems.Add("Runs:HandSize : de 1 à 5 emplacements.");
+            problems.Add("Runs:Cards : des noms de cartes connus (three_choices, hint, extend), sans doublon.");
+        if (options.RewardMarginPercent is < 1 or > 200)
+            problems.Add("Runs:RewardMarginPercent : de 1 à 200 %.");
         var extended = options.ListenSeconds + options.ExtendBonusSeconds;
         if (options.ExtendBonusSeconds <= 0 || extended > RunsOptions.MaxExtendListenSeconds || decimal.Round(options.ExtendBonusSeconds, 2) != options.ExtendBonusSeconds
             || (options.AnswerSeconds != 0 && options.AnswerSeconds <= extended))
             problems.Add($"Runs:ExtendBonusSeconds : plus de 0 s, deux décimales au plus, l'écoute prolongée ({RunsOptions.MaxExtendListenSeconds} s au plus) sous le chrono.");
-        if (options.HourglassSeconds is < 1 or > RunsOptions.MaxAnswerSeconds)
-            problems.Add($"Runs:HourglassSeconds : de 1 à {RunsOptions.MaxAnswerSeconds} s.");
-        if (options.LowerTargetPercent is < 1 or > 90)
-            problems.Add("Runs:LowerTargetPercent : de 1 à 90 %.");
-
         var discs = options.EffectiveDiscs;
         if (discs.Count == 0 || discs.Any(string.IsNullOrWhiteSpace))
             problems.Add("Runs:Discs : au moins une clé de traduction, aucune vide.");

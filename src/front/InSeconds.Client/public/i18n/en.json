@@ -65,17 +65,13 @@
       "challenge_not_found": "This playlist doesn't exist. Check the link.",
       "comparison_locked": "The comparison opens once your game is over.",
       "difficulty_locked": "This round's difficulty is already set.",
-      "card_not_found": "This card is no longer in your hand.",
-      "offer_closed": "This offer is no longer open.",
-      "hand_full": "Your hand is full: drop a card to take one.",
-      "card_already_active": "This card is already played on this track.",
-      "card_unavailable": "This card can't be played here.",
       "session_not_found": "This game no longer exists.",
       "already_played": "You've already played this playlist.",
       "abandoned": "You abandoned this playlist.",
       "track_not_found": "This track isn't in this playlist.",
       "track_lock_not_released": "Answer the current track first.",
-      "already_answered": "You've already answered this track."
+      "already_answered": "You've already answered this track.",
+      "swap_unavailable": "Swapping the track is no longer possible."
     }
   },
   "shell": {
@@ -1025,43 +1021,18 @@
       "scoreLabel": "{{score}} points for a target of {{objective}}",
       "nextRound": "Round {{round}}",
       "pointsFor": "pts for",
-      "offer": "A boost",
-      "pass": "Skip",
-      "hand": "In hand",
-      "emptySlot": "Empty slot",
-      "dropHint": "Tap the card to drop",
-      "next": "Next"
+      "next": "Next",
+      "earned": "Card earned"
     },
     "cards": {
       "three_choices": {
         "name": "Multiple choice"
       },
-      "joker": {
-        "name": "Joker"
-      },
-      "year": {
-        "name": "Year"
-      },
-      "initials": {
-        "name": "Initials"
+      "hint": {
+        "name": "Hint"
       },
       "extend": {
         "name": "Extension"
-      },
-      "net": {
-        "name": "Second chance"
-      },
-      "lower_target": {
-        "name": "Discount"
-      },
-      "hourglass": {
-        "name": "Grace"
-      },
-      "genre": {
-        "name": "Genre"
-      },
-      "either_or": {
-        "name": "Either or"
       }
     },
     "difficulty": {
@@ -1071,22 +1042,16 @@
       "perTrack": "up to {{points}} pts\nper track",
       "play": "Play",
       "listen": "{{seconds}} listen",
-      "hand": "In hand",
       "easy": "Easy",
       "safe": "Normal",
       "risky": "Music buff",
       "columnLabel": "{{name}}: target {{objective}} points, up to {{perTrack}} points per track"
     },
     "roundCards": {
-      "play": "Play {{card}}",
-      "net": "A miss counts as half",
-      "lowerTarget": "Round target lowered",
-      "hourglass": "+{{seconds}} on the clock",
       "extend": "{{seconds}} listen",
       "choicesHint": "Only one is right",
-      "refused": "That card couldn't be played.",
-      "netQuarter": "A miss counts a quarter",
-      "eitherOr": "Artist or title: one is enough"
+      "swap": "Swap track",
+      "refused": "This track couldn't be swapped."
     },
     "ghost": {
       "ahead": "{{ points }} pts ahead",

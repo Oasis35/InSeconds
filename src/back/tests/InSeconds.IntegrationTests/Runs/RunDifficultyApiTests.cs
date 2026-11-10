@@ -11,7 +11,7 @@ namespace InSeconds.IntegrationTests.Runs;
 
 /// <summary>
 /// Le proto 2 par HTTP : le choix de la difficulté d'une manche (<c>POST …/difficulty</c>), ce que l'état de la partie en dit, les points et
-/// l'objectif qui suivent la difficulté, la manche boss, la réserve du Joker tirée avec la playlist, et une playlist du proto 1 qui se joue comme avant.
+/// l'objectif qui suivent la difficulté, la manche boss, la réserve de l'Échange tirée avec la playlist, et une playlist du proto 1 qui se joue comme avant.
 /// </summary>
 public class RunDifficultyApiTests(PostgresFixture postgres) : IAsyncLifetime
 {
@@ -39,6 +39,8 @@ public class RunDifficultyApiTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task ApresLaManche1_LEtatProposeLesTroisDifficultes_EtLExtraitEstDejaLa()
     {
+        // Sans la Prolongation (la carte gagnée à la manche 1 ajouterait 5 s d'écoute) : l'écoute reste celle des règles.
+        await _run.Game.SetSettingAsync("Runs:Cards", "[\"hint\"]");
         var alice = await _run.NewInvitedAsync("Alice");
         var start = (await alice.LaunchAsync()).Session;
 
@@ -68,14 +70,13 @@ public class RunDifficultyApiTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task Mesure_LaDifficulteChoisie_ParManche()
     {
         using var difficulties = Collect(RunsMetrics.DifficultiesName);
-        using var cards = Collect(RunsMetrics.CardsName);
         var (alice, id, _) = await InRoundTwoAsync();
+        using var cards = Collect(RunsMetrics.CardsName);
 
         await alice.ChooseAsync(id, 2, "risky");
 
-        // L'offre du palier, encore ouverte, se ferme avec le choix : une offre passée sans carte.
-        var passed = Assert.Single(cards.GetMeasurementSnapshot());
-        Assert.Equal((RunsMetrics.OfferPassedAction, null), (Tag(passed, "action"), Tag(passed, "card")));
+        // Choisir la difficulté ne touche à aucune carte.
+        Assert.Empty(cards.GetMeasurementSnapshot());
 
         var chosen = Assert.Single(difficulties.GetMeasurementSnapshot());
         Assert.Equal(("2", "risky"), (Tag(chosen, "round"), Tag(chosen, "difficulty")));
