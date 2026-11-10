@@ -1,12 +1,12 @@
 using InSeconds.Api.Modules.Runs.Application;
 using InSeconds.IntegrationTests.Daily;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace InSeconds.IntegrationTests.Runs;
 
 /// <summary>
 /// Le fantôme d'un ami (<c>session.ghost</c>) : celui qui a lancé la playlist, quand un autre joueur la joue par son lien et qu'il l'a finie. Son
-/// total sur les morceaux que le joueur a joués, jusqu'au dernier qu'il a répondu ; jamais de fantôme de soi-même (décision du 05/11/2026), rien
-/// une fois sa partie finie.
+/// total sur les morceaux que le joueur a joués, jusqu'au dernier qu'il a répondu ; jamais de fantôme de soi-même (décision du 05/11/2026), il reste à la fin de la partie, pour le duel de l'écran de fin.
 /// </summary>
 public class RunGhostTests(PostgresFixture postgres) : IAsyncLifetime
 {
@@ -117,7 +117,7 @@ public class RunGhostTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task LeJoueurDepasseLAuteur_LaMancheOuSaPartieSestArretee_PuisRienALaFin()
+    public async Task LeJoueurDepasseLAuteur_LaMancheOuSaPartieSestArretee_EtLeFantomeRestePourLeDuelDeFin()
     {
         var (_, code) = await AliceLosesAtRoundTwoAsync();
         var bob = await _run.NewPlayerAsync("Bob");
@@ -128,9 +128,30 @@ public class RunGhostTests(PostgresFixture postgres) : IAsyncLifetime
         var eleventh = await bob.AnswerAsync(id, code, 11);
         Assert.Equal(new RunGhostResponse("Alice", 300, 2), eleventh.Session.Ghost);
 
-        // Partie finie : plus de fantôme (la comparaison prend le relais).
+        // Partie finie : le fantôme reste, c'est le duel de l'écran de fin (même total d'Alice : rien de plus qu'au dernier morceau joué).
         var end = await bob.PlayAsync(id, code, 12, false, false, false, false);
         Assert.Equal("lost", end.Session.Status);
-        Assert.Null(end.Session.Ghost);
+        Assert.Equal(new RunGhostResponse("Alice", 300, 2), end.Session.Ghost);
+        Assert.Equal(new RunGhostResponse("Alice", 300, 2), (await bob.SessionAsync(id)).Ghost);
+    }
+
+    [Fact]
+    public async Task LeDuelSeCompte_UneFoisALaFin_DevantDerriereOuAEgalite()
+    {
+        var (_, code) = await AliceLosesAtRoundTwoAsync();
+        var bob = await _run.NewPlayerAsync("Bob");
+        var id = (await bob.JoinAsync(code)).Session.SessionId;
+        using var duels = new Microsoft.Extensions.Diagnostics.Metrics.Testing.MetricCollector<long>(
+            _run.Api.Services.GetRequiredService<System.Diagnostics.Metrics.IMeterFactory>(), RunsMetrics.MeterName, RunsMetrics.DuelsName);
+
+        await bob.PlayAsync(id, code, 1, AllFound);
+        await bob.PlayAsync(id, code, 6, AllFound);
+        Assert.Empty(duels.GetMeasurementSnapshot());
+
+        var end = await bob.PlayAsync(id, code, 11, false, false, false, false, false);
+        var gap = end.Session.TotalScore - end.Session.Ghost!.Total;
+        var expected = gap > 0 ? RunsMetrics.DuelAhead : gap < 0 ? RunsMetrics.DuelBehind : RunsMetrics.DuelTied;
+        var measurement = Assert.Single(duels.GetMeasurementSnapshot());
+        Assert.Equal(expected, measurement.Tags["result"]);
     }
 }

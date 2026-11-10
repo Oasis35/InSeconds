@@ -142,7 +142,7 @@ public sealed record RunShortfallResponse(int Points, RunDiscResponse Disc);
 /// <param name="SwapAvailable">Le joueur peut changer le morceau en cours (un Échange par manche, qui ne se garde pas).</param>
 /// <param name="NextDisc">Le disque que la manche en cours fait gagner si elle est passée (l'écran de palier : « 366 pts pour … ») ; vide une fois finie.</param>
 /// <param name="CardValues">Ce que valent les coups de pouce de cette playlist (règles figées) ; vide sans coups de pouce.</param>
-/// <param name="Ghost">Le fantôme de l'ami qui a lancé la playlist, s'il l'a finie ; vide sinon (sa propre playlist, un ami pas encore arrivé au bout).</param>
+/// <param name="Ghost">Le fantôme de l'ami qui a lancé la playlist, s'il l'a finie ; vide sinon (sa propre playlist, un ami pas encore arrivé au bout). Gardé à la fin de la partie du joueur : c'est le duel de l'écran de fin.</param>
 public sealed record RunSessionResponse(
     int SessionId, string ChallengeCode, string Status, int Rounds, int TracksPerRound, decimal ListenSeconds, int TotalScore, int RoundsPassed,
     RunRoundResponse? Round, IReadOnlyList<RunTrackResponse> RoundTracks, RunFinishResponse? Finish,

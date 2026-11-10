@@ -205,6 +205,8 @@ public class RunDifficultyApiTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task LaMancheBoss_EcouteDeCinqSecondes_EtPasPlus()
     {
+        // Sans la Prolongation (une carte gagnée tirée au hasard ajouterait 5 s à la manche boss).
+        await _run.Game.SetSettingAsync("Runs:Cards", "[\"hint\"]");
         var (alice, id, code) = await InRoundTwoAsync();
         await alice.PlayAsync(id, code, 6, AllFound);
         var end = await alice.PlayAsync(id, code, 11, AllFound);

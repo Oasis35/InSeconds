@@ -95,3 +95,36 @@ export function revealInTurn(elements: readonly HTMLElement[], delay = 0.25): vo
   if (motionReduced() || elements.length === 0) return;
   gsap.from(elements, { opacity: 0, y: 4, duration: 0.25, stagger: 0.28, delay, ease: SETTLE, clearProps: MOVED });
 }
+
+/**
+ * La séquence de fin d'un run, 2,2 s au plus : le disque se pose, le score compte (`data-value` : sa valeur, écrite par `format`), le badge de
+ * record se pose, les carrés se remplissent un à un, les cases des manches puis le reste arrivent. Les éléments sont marqués
+ * `data-motion="finish-disc"`, `"finish-score"`, `"finish-record"`, `"finish-square"`, `"finish-round"` et `"finish-late"`. Les boutons ne
+ * s'animent pas : ils restent actifs dès le début. Rend la fonction qui saute la séquence (un toucher), ou ne fait rien en mouvement réduit.
+ */
+export function finishSequence(root: HTMLElement, format: (value: number) => string): () => void {
+  if (motionReduced()) return () => undefined;
+  const part = (name: string) => Array.from(root.querySelectorAll<HTMLElement>(`[data-motion="${name}"]`));
+  const [score] = part('finish-score');
+  const target = Number(score?.dataset['value'] ?? 0);
+  const count = { n: 0 };
+  const timeline = gsap.timeline({ defaults: { ease: SETTLE } });
+  timeline.from(part('finish-disc'), { opacity: 0, rotation: -90, duration: 0.5, clearProps: MOVED + ',rotation' }, 0);
+  if (score) {
+    score.textContent = format(0);
+    timeline.to(count, {
+      n: target, duration: 0.9, ease: 'power1.out',
+      onUpdate: () => { score.textContent = format(Math.round(count.n)); },
+      onComplete: () => { score.textContent = format(target); },
+    }, 0.15);
+  }
+  timeline
+    .from(part('finish-record'), { opacity: 0, scale: 0.6, duration: 0.3, clearProps: 'opacity,transform' }, 1)
+    .from(part('finish-square'), { opacity: 0, duration: 0.2, stagger: 0.04, clearProps: 'opacity' }, 0.5)
+    .from(part('finish-round'), { opacity: 0, y: 6, duration: 0.35, stagger: 0.1, clearProps: MOVED }, 1.2)
+    .from(part('finish-late'), { opacity: 0, duration: 0.4, clearProps: 'opacity' }, 1.7);
+  return () => {
+    timeline.progress(1);
+    if (score) score.textContent = format(target);
+  };
+}

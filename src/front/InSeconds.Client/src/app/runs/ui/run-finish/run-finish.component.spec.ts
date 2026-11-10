@@ -1,11 +1,16 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
-import { RunFinish } from '../../domain/run';
+import { RunDuel, RunFinish } from '../../domain/run';
 import { TRACK } from '../../data-access/testing/fake-runs-api';
 import { RunFinishComponent } from './run-finish.component';
 
 describe('RunFinishComponent', () => {
+  // La séquence de fin (GSAP) a ses propres tests dans motion.spec.ts : ici, tout est posé d'emblée.
+  const flag = globalThis.window as { __disableAnimations?: boolean };
+  beforeEach(() => { flag.__disableAnimations = true; });
+  afterEach(() => { delete flag.__disableAnimations; });
+
   const finish = (overrides: Partial<RunFinish> = {}): RunFinish => ({
     status: 'lost', disc: { key: 'runs.discs.bronze', stars: 0 }, totalScore: 1284, roundsPassed: 2, foundCount: 2, trackCount: 20,
     tracks: [TRACK({ position: 1 }), TRACK({ position: 2 }), TRACK({ position: 6, round: 2, titleCorrect: false })],
@@ -19,10 +24,11 @@ describe('RunFinishComponent', () => {
     shortfall: { points: 83, disc: { key: 'runs.discs.silver', stars: 0 } }, ...overrides,
   });
 
-  function render(value: RunFinish, canPlayAgain = true) {
+  function render(value: RunFinish, canPlayAgain = true, duel: RunDuel | null = null) {
     TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
     const fixture = TestBed.createComponent(RunFinishComponent);
     fixture.componentRef.setInput('finish', value);
+    fixture.componentRef.setInput('duel', duel);
     fixture.componentRef.setInput('canPlayAgain', canPlayAgain);
     fixture.componentRef.setInput('lang', 'fr');
     fixture.detectChanges();
@@ -115,5 +121,31 @@ describe('RunFinishComponent', () => {
     expect(element.querySelector('[data-testid="run-play-again"]')).toBeNull();
     expect(element.querySelector('[data-testid="run-shortfall"]')).toBeNull();
     expect(element.querySelector('[data-testid="run-to-daily"]')?.getAttribute('href')).toBe('/daily');
+  });
+  it('un duel ouvre l\'écran, sur un ton neutre : avance, retard ou égalité, et « Revanche » à la place de « Rejouer »', () => {
+    for (const gap of [126, -40, 0]) {
+      TestBed.resetTestingModule();
+      const { element } = render(finish(), true, { pseudo: 'Léa', gap });
+
+      const duel = element.querySelector('[data-testid="run-duel"]');
+      expect(duel?.getAttribute('data-gap')).toBe(String(gap));
+      expect(duel?.textContent?.trim()).toBe(gap > 0 ? 'runs.finished.duelAhead' : gap < 0 ? 'runs.finished.duelBehind' : 'runs.finished.duelTied');
+      expect(text(element, 'run-play-again')).toBe('runs.finished.rematch');
+    }
+  });
+
+  it('sans ami, ni duel ni revanche : « Rejouer »', () => {
+    const { element } = render(finish());
+
+    expect(element.querySelector('[data-testid="run-duel"]')).toBeNull();
+    expect(text(element, 'run-play-again')).toBe('runs.finished.playAgain');
+  });
+
+  it('la séquence de fin marque ses éléments, et rien n\'attend : « Rejouer » est actif dès le début', () => {
+    const { element } = render(finish({ record: { bestScore: 1284, bestRoundsPassed: 2, isNew: true } }));
+
+    for (const [part, count] of [['finish-disc', 1], ['finish-score', 1], ['finish-record', 1], ['finish-square', 20], ['finish-round', 4]] as const)
+      expect(element.querySelectorAll(`[data-motion="${part}"]`), part).toHaveLength(count);
+    expect(element.querySelector<HTMLButtonElement>('[data-testid="run-play-again"]')?.disabled).toBe(false);
   });
 });
