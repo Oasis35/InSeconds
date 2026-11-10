@@ -342,6 +342,18 @@ export const RunGameStore = signalStore(
       void refreshMe();
     };
 
+    /** L'écran de palier. Les sons seulement pour une manche qui vient d'être passée, pas pour un palier retrouvé à la reprise ou à une relecture. */
+    const showPalier = (session: RunSession): void => {
+      const justPassed = store.screen() === 'playing';
+      round.reset();
+      stopClock();
+      patchState(store, { screen: 'palier' });
+      if (!justPassed) return;
+      sounds.play('roundPassed');
+      // La manche a rapporté une carte : un second son, plus doux, le dit.
+      if (session.hand.length > 0) sounds.play('cardTaken');
+    };
+
     /**
      * Montre la première étape qui reste ; sans étape, la fin de la partie ou le morceau à jouer. `play` : le morceau démarre (seulement dans
      * le clic du joueur ; une redemande d'extrait rend toujours une étape à montrer quand le morceau change).
@@ -359,16 +371,7 @@ export const RunGameStore = signalStore(
       }
       // Une manche passée (playlist à coups de pouce) : l'écran de palier, jusqu'à « Suite ».
       if (palierDue(session, store.palierDismissedFor())) {
-        // Le son d'une manche qui vient d'être passée, pas d'un palier retrouvé à la reprise ou à une relecture.
-        const justPassed = store.screen() === 'playing';
-        round.reset();
-        stopClock();
-        patchState(store, { screen: 'palier' });
-        if (justPassed) {
-          sounds.play('roundPassed');
-          // La manche a rapporté une carte : un second son, plus doux, le dit.
-          if (session.hand.length > 0) sounds.play('cardTaken');
-        }
+        showPalier(session);
         return;
       }
       const current = store.current();
