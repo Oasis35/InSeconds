@@ -1,4 +1,5 @@
 using FluentValidation;
+using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Gameplay.Contracts;
 using InSeconds.Api.Modules.Players.Contracts;
 using InSeconds.Api.Modules.Runs.Domain;
@@ -112,9 +113,10 @@ public static class LaunchRunEndpoint
 /// <param name="MyStatus">La partie du joueur sur cette playlist : <c>none</c> (pas jouée), <c>pending</c>, <c>won</c>, <c>lost</c> ou <c>abandoned</c>.</param>
 /// <param name="MySessionId">Sa partie sur cette playlist, s'il en a une.</param>
 /// <param name="AnswerSeconds">Le chrono de chaque morceau (règles figées) ; 0 : pas de chrono.</param>
+/// <param name="Themes">Les manches à thème de la playlist (jamais la première) avec le nom du thème tel qu'il était à sa création ; vide : aucune.</param>
 public sealed record RunChallengeResponse(
     string Code, string? AuthorPseudo, int TrackCount, int Rounds, int TracksPerRound, decimal ListenSeconds, string MyStatus, int? MySessionId,
-    int AnswerSeconds);
+    int AnswerSeconds, IReadOnlyList<RunRoundThemeResponse>? Themes = null);
 
 public static class GetRunChallengeEndpoint
 {
@@ -142,7 +144,7 @@ public static class GetRunChallengeEndpoint
         var rules = challenge.Rules;
         return new RunChallengeResponse(
             challenge.Code, author, challenge.Tracks.Count, challenge.Tracks.Select(t => t.Round).Distinct().Count(), rules.TracksPerRound,
-            rules.ListenSeconds, mine is null ? "none" : RunViews.StatusOf(mine.Status), mine?.SessionId, rules.AnswerSeconds);
+            rules.ListenSeconds, mine is null ? "none" : RunViews.StatusOf(mine.Status), mine?.SessionId, rules.AnswerSeconds, RunViews.ThemesOf(rules));
     }
 }
 

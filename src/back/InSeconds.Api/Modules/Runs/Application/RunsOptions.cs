@@ -54,6 +54,8 @@ public sealed class RunsOptions
     public const decimal MaxExtendListenSeconds = 30m;
 
     /// <summary>Les cartes qui se gagnent : leurs noms d'API.</summary>
+    public static int[] DefaultThemedRounds => [3];
+
     public static string[] DefaultCards => [.. RunCards.Earnable.Select(RunCards.KeyOf)];
 
     public static readonly string[] DefaultDiscs =
@@ -101,6 +103,11 @@ public sealed class RunsOptions
 
     /// <summary>De combien l'objectif d'une manche doit être dépassé pour qu'elle offre une carte (en pourcentage de l'objectif).</summary>
     public int RewardMarginPercent { get; set; } = DefaultRewardMarginPercent;
+
+    /// <summary>Les manches à thème (de la 2e à la dernière : jamais la première) ; sans valeur, la 3e seule.</summary>
+    public int[]? ThemedRounds { get; set; }
+
+    public IReadOnlyList<int> EffectiveThemedRounds => ThemedRounds ?? [.. DefaultThemedRounds.Where(r => r <= Rounds)];
 
     public IReadOnlyList<string> EffectiveCards => Cards ?? DefaultCards;
 
@@ -191,6 +198,10 @@ public static class RunsOptionsChecks
 
         if (options.ReservePerRound is < 0 or > RunsOptions.MaxReservePerRound)
             problems.Add($"Runs:ReservePerRound : de 0 à {RunsOptions.MaxReservePerRound} morceaux de réserve par manche.");
+
+        var themed = options.EffectiveThemedRounds;
+        if (themed.Any(r => r < 2 || r > options.Rounds) || themed.Distinct().Count() != themed.Count)
+            problems.Add("Runs:ThemedRounds : des manches distinctes de la 2e à la dernière (jamais la première).");
 
         var cardKeys = options.EffectiveCards.Select(RunCards.Parse).ToList();
         if (cardKeys.Contains(null) || cardKeys.Distinct().Count() != cardKeys.Count)

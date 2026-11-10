@@ -1,3 +1,4 @@
+using InSeconds.Api.Modules.Gameplay.Contracts;
 using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Runs.Domain;
 
@@ -14,7 +15,8 @@ public sealed record PlanResult(RunChallenge? Challenge, int EligibleCount, int 
 /// reste le garde-fou.
 /// </summary>
 public sealed class RunChallengePlanner(
-    ITrackDirectory tracks, IRunTrackSelector selector, RunCardDealer dealer, IRunsStore store, RunsRules rules, TimeProvider time)
+    ITrackDirectory tracks, IRunTrackSelector selector, ISeededShuffle shuffle, RunCardDealer dealer, IRunsStore store, RunsRules rules,
+    TimeProvider time)
 {
     /// <summary>Combien de codes essayer avant de renoncer (une collision répétée n'est plus de la malchance).</summary>
     private const int MaxCodeAttempts = 5;
@@ -24,9 +26,12 @@ public sealed class RunChallengePlanner(
         var current = rules.Current();
         var playable = await tracks.ListPlayableIdsAsync(ct);
         var infos = playable.Count == 0 ? new Dictionary<int, TrackInfo>() : await tracks.GetAsync(playable, ct);
-        var candidates = playable.Select(id => new RankedTrack(id, infos.TryGetValue(id, out var info) ? info.DeezerRank : null)).ToList();
+        var candidates = playable.Select(id => new RankedTrack(id, infos.GetValueOrDefault(id)?.DeezerRank, infos.GetValueOrDefault(id)?.ThemeIds)).ToList();
 
         var seed = System.Security.Cryptography.RandomNumberGenerator.GetInt32(int.MaxValue);
+        // Les manches à thème : un thème de la liste de l'admin par manche, tiré avec la graine parmi ceux qui ont assez de morceaux.
+        var names = await tracks.ListThemesAsync(ct);
+        current = current with { Themes = await DrawThemesAsync(current, candidates, names, seed) };
         var selection = selector.Select(candidates, current, seed);
         if (!selection.IsSufficient)
             return new PlanResult(null, selection.EligibleCount, selection.Requested);
@@ -45,5 +50,19 @@ public sealed class RunChallengePlanner(
         }
 
         throw new InvalidOperationException("Impossible de trouver un code de défi libre.");
+    }
+
+    // Les thèmes, un par manche à thème, tirés au hasard (graine de la playlist) parmi ceux qui ont assez de morceaux (la manche et sa réserve) ;
+    // quand il y en a moins que de manches à thème, les dernières manches suivent leur tranche.
+    private Task<IReadOnlyList<RunRoundTheme>?> DrawThemesAsync(
+        RunRules current, IReadOnlyList<RankedTrack> candidates, IReadOnlyDictionary<int, string> names, int seed)
+    {
+        var themedRounds = rules.ThemedRounds().Where(r => r >= 2 && r <= current.Rounds).Order().ToList();
+        var eligible = RunThemes.Eligible(candidates.Select(c => c.ThemeIds), current).Where(names.ContainsKey).ToList();
+        var drawn = shuffle.Shuffle(eligible, seed).Take(themedRounds.Count).ToList();
+        IReadOnlyList<RunRoundTheme>? result = drawn.Count == 0
+            ? null
+            : [.. drawn.Select((id, i) => new RunRoundTheme(themedRounds[i], id, names[id]))];
+        return Task.FromResult(result);
     }
 }

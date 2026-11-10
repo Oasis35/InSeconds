@@ -568,6 +568,22 @@ public class RefreshPreviewsHandlerTests
 
         public Task<bool> DeezerIdTakenAsync(long deezerTrackId, int? exceptTrackId, CancellationToken ct) => throw new NotSupportedException();
 
+        public Task<Track?> FindWithThemesAsync(int id, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<Theme>> FindThemesAsync(IReadOnlyCollection<int> ids, CancellationToken ct) => throw new NotSupportedException();
+
+        public ValueTask AddThemeAsync(Theme theme, CancellationToken ct) => throw new NotSupportedException();
+
+        public void RemoveTheme(Theme theme) => throw new NotSupportedException();
+
+        public Task<Theme?> FindThemeAsync(int id, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task<bool> ThemeNameTakenAsync(string name, int? exceptThemeId, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task<bool> ThemeInUseAsync(int themeId, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task<int> CountThemeTracksAsync(int themeId, CancellationToken ct) => throw new NotSupportedException();
+
         // La forme : le faux garde le morceau, qui porte déjà ce que RecordWaveform y a écrit.
         public Task<bool> SaveWaveformAsync(Track track, CancellationToken ct) => Task.FromResult(!Vanished.Contains(track.Id));
 
