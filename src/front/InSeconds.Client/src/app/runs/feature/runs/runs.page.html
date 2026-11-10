@@ -120,7 +120,7 @@
 
       @case ('pseudo') {
         <app-run-pseudo-screen [initial]="session.player()?.pseudo ?? ''" [busy]="store.pseudoBusy()" [error]="store.pseudoError()"
-          (save)="store.savePseudo($event)" (cancel)="store.cancelPseudo()" />
+          (save)="store.savePseudo($event)" (dismiss)="store.cancelPseudo()" />
       }
 
       @case ('comparison') {

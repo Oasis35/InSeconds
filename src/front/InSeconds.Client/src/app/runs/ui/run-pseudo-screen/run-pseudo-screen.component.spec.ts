@@ -6,7 +6,7 @@ import { RunPseudoScreenComponent } from './run-pseudo-screen.component';
 
 @Component({
   imports: [RunPseudoScreenComponent],
-  template: `<app-run-pseudo-screen [initial]="initial()" [busy]="busy()" [error]="error()" (save)="saved.push($event)" (cancel)="cancelled = cancelled + 1" />`,
+  template: `<app-run-pseudo-screen [initial]="initial()" [busy]="busy()" [error]="error()" (save)="saved.push($event)" (dismiss)="cancelled = cancelled + 1" />`,
 })
 class HostComponent {
   initial = signal('');

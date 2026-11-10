@@ -39,7 +39,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
         {{ 'runs.pseudo.save' | translate }}
       </button>
       @if (editing()) {
-        <button type="button" class="text-sm underline self-center py-3 px-4" style="color:var(--text-muted)" data-testid="run-pseudo-cancel" (click)="cancel.emit()">
+        <button type="button" class="text-sm underline self-center py-3 px-4" style="color:var(--text-muted)" data-testid="run-pseudo-cancel" (click)="dismiss.emit()">
           {{ 'runs.pseudo.cancel' | translate }}
         </button>
       }
@@ -53,7 +53,7 @@ export class RunPseudoScreenComponent {
   /** La clé de traduction du refus de la dernière saisie, `null` sans refus. */
   readonly error = input<string | null>(null);
   readonly save = output<string>();
-  readonly cancel = output();
+  readonly dismiss = output();
 
   protected readonly typed = signal<string | null>(null);
   protected readonly editing = computed(() => this.initial() !== '');
