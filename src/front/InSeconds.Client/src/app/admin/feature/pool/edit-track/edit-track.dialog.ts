@@ -129,9 +129,8 @@ export class EditTrackDialog {
     const { artist, title, genre } = this.nameForm().value();
     // Le genre n'est envoyé que s'il a changé : enregistrer l'artiste seul ne remplace jamais les genres de Deezer. Les thèmes aussi seulement s'ils changent.
     const namesChanged = artist.trim() !== this.track.artist || title.trim() !== this.track.title || genre.trim() !== this.originalGenre;
-    let error = namesChanged
-      ? await this.pool.rename(this.track.id, artist, title, genre.trim() === this.originalGenre ? undefined : genre)
-      : null;
+    const genreToSend = genre.trim() === this.originalGenre ? undefined : genre;
+    let error = namesChanged ? await this.pool.rename(this.track.id, artist, title, genreToSend) : null;
     if (!error && this.themesChanged()) error = await this.pool.setTrackThemes(this.track.id, this.themeIds());
     this.saving.set(false);
     if (error) this.error.set(error);

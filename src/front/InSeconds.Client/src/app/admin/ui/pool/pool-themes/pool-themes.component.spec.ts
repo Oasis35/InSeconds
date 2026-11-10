@@ -14,7 +14,7 @@ describe('PoolThemesComponent', () => {
   it('compte les thèmes et liste chacun avec son nombre de morceaux', () => {
     const { el } = render();
     expect(el.querySelector('[data-testid="themes-count"]')?.textContent).toBe('2');
-    expect(el.querySelectorAll('[data-testid="theme-row"]').length).toBe(2);
+    expect(el.querySelectorAll('[data-testid="theme-row"]')).toHaveLength(2);
   });
 
   it("n'autorise la suppression que d'un thème sans morceau", () => {

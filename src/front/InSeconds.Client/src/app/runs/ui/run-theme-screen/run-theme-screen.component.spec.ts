@@ -17,7 +17,7 @@ describe('RunThemeScreenComponent', () => {
 
   it('montre les deux thèmes et « Surprise », celui qui est choisi est coché', () => {
     const tiles = el().querySelectorAll('[role="radio"]');
-    expect(tiles.length).toBe(3);
+    expect(tiles).toHaveLength(3);
     expect(el().textContent).toContain('Années 80');
     expect(el().textContent).toContain('Rap français');
     expect(Array.from(tiles).map(t => t.getAttribute('aria-checked'))).toEqual(['true', 'false', 'false']);
