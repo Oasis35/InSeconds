@@ -1044,7 +1044,6 @@
       "title": "Difficulty?",
       "yourScore": "Your score",
       "perTrack": "up to {{points}} pts\nper track",
-      "play": "Play",
       "listen": "{{seconds}} listen",
       "easy": "Easy",
       "safe": "Normal",
@@ -1052,6 +1051,12 @@
       "columnLabel": "{{name}}: target {{objective}} points, up to {{perTrack}} points per track"
     },
     "roundCards": {
+      "hint": {
+        "year": "Year",
+        "artist": "Artist initials",
+        "title": "Title initials",
+        "genre": "Genre"
+      },
       "extend": "{{seconds}} listen",
       "choicesHint": "Only one is right",
       "swap": "Swap track",

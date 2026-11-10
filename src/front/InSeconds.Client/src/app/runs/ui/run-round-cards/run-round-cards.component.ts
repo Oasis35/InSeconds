@@ -6,7 +6,7 @@ import { RunCardValues, RunTrackEffects, cardColor, playedCards } from '../../do
 
 /**
  * Ce que les cartes gagnées font sur le morceau en cours, au-dessus du champ de saisie (docs/runs/proto3.md § Les cartes) : une tuile par carte
- * active (l'Indice montre l'année, les initiales et le genre ; le QCM dit que les réponses sont proposées ; la Prolongation, l'écoute plus
+ * active (l'Indice montre l'année, les initiales de l'artiste et du titre, et le genre, en puces étiquetées ; le QCM dit que les réponses sont proposées ; la Prolongation, l'écoute plus
  * longue). Aucun toucher : une carte gagnée agit toute seule sur la manche suivante. Présentation seule, le serveur calcule chaque effet.
  */
 @Component({
@@ -14,24 +14,38 @@ import { RunCardValues, RunTrackEffects, cardColor, playedCards } from '../../do
   imports: [TranslatePipe, SecondsPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (played().length > 0 || refused()) {
+    @if (playedList().length > 0 || refused()) {
       <div class="grid gap-2 mb-2" data-testid="run-round-cards">
-        <!-- Une tuile prend toute la largeur : « 1995 · D. P. – O. M. T. · Pop » tient sur une ligne, même sur un petit téléphone. -->
-        @for (chip of played(); track chip.card) {
-          <div #chip class="flex items-center gap-2 px-3 py-1.5" data-testid="run-card-effect" [attr.data-card]="chip.card"
-            [style.border-color]="color(chip.card).color" [style.background]="'rgb(' + color(chip.card).rgb + ' / 0.08)'"
-            style="min-height:44px;border:1px solid;border-radius:var(--radius-button)">
-            @if (chip.value) {
-              <span class="text-[15px] font-bold" style="font-family:var(--font-clock)" [style.color]="color(chip.card).color">{{ chip.value }}</span>
-            }
-            <span class="text-[13px] font-semibold leading-tight" style="color:var(--text-hi)">
-              @switch (chip.card) {
-                @case ('three_choices') { {{ 'runs.roundCards.choicesHint' | translate }} }
-                @case ('extend') { {{ 'runs.roundCards.extend' | translate: { seconds: (listenSeconds() | appSeconds) } }} }
-                @default { {{ 'runs.cards.' + chip.card + '.name' | translate }} }
-              }
-            </span>
-          </div>
+        @for (played of playedList(); track played.card) {
+          @if (played.card === 'hint') {
+            <!-- L'Indice : une puce étiquetée par info (année, initiales de l'artiste et du titre, genre), qui passent à la ligne. -->
+            <div #cardEl class="px-3 py-2.5" data-testid="run-card-effect" data-card="hint"
+              [style.border-color]="color('hint').color" [style.background]="'rgb(' + color('hint').rgb + ' / 0.08)'"
+              style="border:1px solid;border-radius:var(--radius-card)">
+              <p class="text-[13px] font-bold leading-tight" [style.color]="color('hint').color">{{ 'runs.cards.hint.name' | translate }}</p>
+              <ul class="flex flex-wrap gap-2 mt-2">
+                @for (fact of played.facts; track fact.kind) {
+                  <li class="flex flex-col px-3 py-1.5" data-testid="run-hint-fact" [attr.data-kind]="fact.kind"
+                    style="background:var(--bg-page);border:1px solid var(--border-strong);border-radius:12px">
+                    <span class="text-[11px] leading-tight" style="color:var(--text-muted)">{{ 'runs.roundCards.hint.' + fact.kind | translate }}</span>
+                    <span class="text-[16px] font-bold leading-tight" style="color:var(--text-hi)">{{ fact.value }}</span>
+                  </li>
+                }
+              </ul>
+            </div>
+          } @else {
+            <div #cardEl class="flex items-center gap-2 px-3 py-1.5" data-testid="run-card-effect" [attr.data-card]="played.card"
+              [style.border-color]="color(played.card).color" [style.background]="'rgb(' + color(played.card).rgb + ' / 0.08)'"
+              style="min-height:44px;border:1px solid;border-radius:var(--radius-button)">
+              <span class="text-[13px] font-semibold leading-tight" style="color:var(--text-hi)">
+                @switch (played.card) {
+                  @case ('three_choices') { {{ 'runs.roundCards.choicesHint' | translate }} }
+                  @case ('extend') { {{ 'runs.roundCards.extend' | translate: { seconds: (listenSeconds() | appSeconds) } }} }
+                  @default { {{ 'runs.cards.' + played.card + '.name' | translate }} }
+                }
+              </span>
+            </div>
+          }
         }
       </div>
       @if (refused()) {
@@ -50,9 +64,9 @@ export class RunRoundCardsComponent {
   readonly refused = input(false);
 
   protected readonly color = cardColor;
-  protected readonly played = computed(() => playedCards(this.effects()));
+  protected readonly playedList = computed(() => playedCards(this.effects()));
 
-  private readonly playedChips = viewChildren<ElementRef<HTMLElement>>('chip');
+  private readonly playedChips = viewChildren<ElementRef<HTMLElement>>('cardEl');
   /** Les tuiles déjà affichées ; `null` avant le premier affichage (une reprise montre les siennes sans les animer). */
   private shown: number | null = null;
 

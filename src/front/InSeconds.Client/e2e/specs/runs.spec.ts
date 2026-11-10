@@ -128,7 +128,7 @@ test.describe('Mode Platines', () => {
     await inSequence(tracks.filter(t => t.round === 2), track => run.answerRight(track));
     await expect(run.palier.getByTestId('run-difficulty-safe')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByTestId('run-difficulty-boss')).toHaveCount(0);
-    await run.palierNextButton.click();
+    await run.palier.getByTestId('run-difficulty-safe').click();
     await expect(run.roundTitle).toHaveText('Manche 3');
 
     // Avant la dernière manche : seule la colonne « Mélomane » annonce l'écoute du boss (5 s au lieu de 10 s).
@@ -136,7 +136,6 @@ test.describe('Mode Platines', () => {
     await expect(page.getByTestId('run-difficulty-boss')).toHaveCount(1);
     await expect(page.getByTestId('run-difficulty-boss')).toContainText('5');
     await page.getByTestId('run-difficulty-risky').click();
-    await run.palierNextButton.click();
     await expect(run.roundTitle).toHaveText('Manche 4');
 
     // La manche boss se joue et se gagne comme les autres.
@@ -203,10 +202,10 @@ test.describe('Mode Platines', () => {
     await expect(run.cardEffects).toHaveCount(0);
     await inSequence(tracks.filter(t => t.round === 1), track => run.answerRight(track));
 
-    // Au palier : la carte gagnée est annoncée, sans rien à toucher ; « Jouer » (Normal d'abord).
+    // Au palier : la carte gagnée est annoncée, sans rien à toucher ; un toucher sur « Normal » lance la manche.
     await expect(run.palier).toBeVisible();
     await expect(page.getByTestId('run-palier-earned')).toContainText('Indice');
-    await run.palierNextButton.click();
+    await run.palier.getByTestId('run-difficulty-safe').click();
 
     // L'indice s'affiche de lui-même sur le morceau (l'année) ; la carte n'est pas un bouton.
     await expect(run.roundTitle).toHaveText('Manche 2');

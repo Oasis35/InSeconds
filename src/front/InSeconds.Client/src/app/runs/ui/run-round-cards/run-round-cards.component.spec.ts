@@ -26,12 +26,13 @@ describe('RunRoundCardsComponent', () => {
     return { fixture, element, texts };
   }
 
-  it('l\'Indice montre l\'année, les initiales et le genre sur une seule tuile', () => {
+  it('l\'Indice montre l\'année, les initiales et le genre en puces étiquetées', () => {
     const { texts } = render(EFFECTS({
       cards: ['hint'], year: 1995, artistInitials: ['D', 'P'], titleInitials: ['O', 'M', 'T'], genre: 'Électro',
     }));
 
-    expect(texts('[data-testid="run-card-effect"]')).toEqual(['1995 · D. P. – O. M. T. · Électro Indice']);
+    expect(texts('[data-testid="run-hint-fact"]')).toEqual([
+      'Année1995', 'Initiales de l’artisteD. P.', 'Initiales du titreO. M. T.', 'GenreÉlectro']);
   });
 
   it('le QCM dit qu\'une seule réponse est juste, la Prolongation l\'écoute du morceau', () => {

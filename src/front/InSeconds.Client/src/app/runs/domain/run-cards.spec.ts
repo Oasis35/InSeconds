@@ -22,13 +22,14 @@ describe('les cartes', () => {
     const effects = {
       cards: ['hint'] as const, year: 1995, artistInitials: ['D', 'P'], titleInitials: ['G', 'L'], choices: null, genre: 'Électro',
     };
-    expect(playedCards(effects)).toEqual([{ card: 'hint', value: '1995 · D. P. – G. L. · Électro' }]);
-    expect(playedCards({ ...effects, genre: null, artistInitials: null })).toEqual([{ card: 'hint', value: '1995' }]);
+    expect(playedCards(effects)).toEqual([{ card: 'hint', facts: [
+      { kind: 'year', value: '1995' }, { kind: 'artist', value: 'D. P.' }, { kind: 'title', value: 'G. L.' }, { kind: 'genre', value: 'Électro' }] }]);
+    expect(playedCards({ ...effects, genre: null, artistInitials: null })).toEqual([{ card: 'hint', facts: [{ kind: 'year', value: '1995' }, { kind: 'title', value: 'G. L.' }] }]);
   });
 
   it('les autres cartes actives n\'ont pas de valeur à lire ; sans effets, rien', () => {
     const effects = { cards: ['three_choices', 'extend'] as const, year: null, artistInitials: null, titleInitials: null, choices: null, genre: null };
-    expect(playedCards(effects)).toEqual([{ card: 'three_choices', value: null }, { card: 'extend', value: null }]);
+    expect(playedCards(effects)).toEqual([{ card: 'three_choices', facts: [] }, { card: 'extend', facts: [] }]);
     expect(playedCards(null)).toEqual([]);
   });
 });

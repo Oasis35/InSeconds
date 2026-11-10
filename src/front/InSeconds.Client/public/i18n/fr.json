@@ -1044,7 +1044,6 @@
       "title": "Difficulté ?",
       "yourScore": "Ton score",
       "perTrack": "{{points}} pts max\npar morceau",
-      "play": "Jouer",
       "listen": "écoute {{seconds}}",
       "easy": "Facile",
       "safe": "Normal",
@@ -1052,6 +1051,12 @@
       "columnLabel": "{{name}} : objectif {{objective}} points, jusqu'à {{perTrack}} points par morceau"
     },
     "roundCards": {
+      "hint": {
+        "year": "Année",
+        "artist": "Initiales de l’artiste",
+        "title": "Initiales du titre",
+        "genre": "Genre"
+      },
       "extend": "Écoute de {{seconds}}",
       "choicesHint": "Une seule est juste",
       "swap": "Changer de morceau",

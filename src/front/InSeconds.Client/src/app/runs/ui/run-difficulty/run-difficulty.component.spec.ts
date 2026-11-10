@@ -33,44 +33,28 @@ describe('RunDifficultyComponent', () => {
     expect(element.querySelector('[data-testid="run-difficulty-hand"]')).toBeNull();
   });
 
-  it('« Jouer » envoie Normal sans rien toucher', () => {
+  it('toucher une colonne envoie sa difficulté tout de suite, sans bouton « Jouer »', () => {
     const { fixture, element } = render();
     const chosen: RunDifficulty[] = [];
     fixture.componentInstance.choose.subscribe(d => chosen.push(d));
 
-    element.querySelector<HTMLButtonElement>('[data-testid="run-difficulty-play"]')!.click();
-
-    expect(chosen).toEqual(['safe']);
-  });
-
-  it('toucher une colonne la choisit, « Jouer » envoie ce choix', () => {
-    const { fixture, element } = render();
-    const chosen: RunDifficulty[] = [];
-    fixture.componentInstance.choose.subscribe(d => chosen.push(d));
-
+    expect(element.querySelector('[data-testid="run-difficulty-play"]')).toBeNull();
     element.querySelector<HTMLButtonElement>('[data-testid="run-difficulty-risky"]')!.click();
-    fixture.detectChanges();
-    expect(chosen).toEqual([]);
-    element.querySelector<HTMLButtonElement>('[data-testid="run-difficulty-play"]')!.click();
 
     expect(chosen).toEqual(['risky']);
   });
 
-  it('sans Normal dans la manche, la première difficulté offerte est choisie', () => {
-    const { fixture, element } = render([OPTIONS[0], OPTIONS[2]]);
-    const chosen: RunDifficulty[] = [];
-    fixture.componentInstance.choose.subscribe(d => chosen.push(d));
+  it('Normal est présélectionné (aria-pressed), même sans toucher', () => {
+    const { element } = render();
 
-    element.querySelector<HTMLButtonElement>('[data-testid="run-difficulty-play"]')!.click();
-
-    expect(chosen).toEqual(['easy']);
+    expect(element.querySelector('[data-testid="run-difficulty-safe"]')?.getAttribute('aria-pressed')).toBe('true');
   });
 
-  it('« Jouer » ne part pas pendant l\'envoi du choix', () => {
+  it('les colonnes ne se touchent plus pendant l\'envoi du choix', () => {
     const { fixture, element } = render();
     fixture.componentRef.setInput('busy', true);
     fixture.detectChanges();
 
-    expect(element.querySelector<HTMLButtonElement>('[data-testid="run-difficulty-play"]')!.disabled).toBe(true);
+    expect(element.querySelector<HTMLButtonElement>('[data-testid="run-difficulty-risky"]')!.disabled).toBe(true);
   });
 });
