@@ -23,6 +23,9 @@ public interface IPlayerStore
 
     Task<bool> HasAccountAsync(Guid playerId, CancellationToken ct);
 
+    /// <summary>Le joueur, suivi pour être modifié ; rien s'il n'existe pas ou a été supprimé.</summary>
+    Task<Player?> FindPlayerAsync(Guid playerId, CancellationToken ct);
+
     /// <summary>
     /// Le jeton de cet usage (S2) qui a ce hash, encore utilisable à cet instant ; suivi, pour être
     /// consommé par la transaction en cours, et verrouillé jusqu'à sa fin : une vérification simultanée

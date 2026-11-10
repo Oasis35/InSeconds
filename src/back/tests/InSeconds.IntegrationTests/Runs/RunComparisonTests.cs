@@ -100,5 +100,35 @@ public class RunComparisonTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.All(rows, row => Assert.Equal((0, "runs.discs.scratched"), (row.TotalScore, row.Disc.Key)));
     }
 
+    [Fact]
+    public async Task DeuxJoueursDeMemePseudo_ReçoiventUnRepereDistinct_LesAutresAucun()
+    {
+        var alice = await _run.NewInvitedAsync("Alice");
+        var start = await alice.LaunchAsync();
+        var code = start.Session.ChallengeCode;
+        await alice.PlayAsync(start.Session.SessionId, code, 1, NoneFound);
+
+        // Deux invités se sont donné le même pseudo (aucune unicité entre invités, sans tenir compte de la casse).
+        var lea1 = await _run.NewPlayerAsync();
+        var lea2 = await _run.NewPlayerAsync();
+        await _run.Api.ExecuteAsync($"UPDATE players.players SET guest_pseudo = 'Léa' WHERE id = '{lea1.Id}'");
+        await _run.Api.ExecuteAsync($"UPDATE players.players SET guest_pseudo = 'léa' WHERE id = '{lea2.Id}'");
+        foreach (var lea in new[] { lea1, lea2 })
+        {
+            var joined = await lea.JoinAsync(code);
+            await lea.PlayAsync(joined.Session.SessionId, code, 1, NoneFound);
+        }
+
+        var rows = (await alice.ComparisonAsync(code)).Rows;
+
+        var leas = rows.Where(r => r.Pseudo is "Léa" or "léa").ToList();
+        Assert.Equal(2, leas.Count);
+        Assert.All(leas, row => Assert.False(string.IsNullOrEmpty(row.Tag)));
+        Assert.NotEqual(leas[0].Tag, leas[1].Tag);
+        // Le repère ne dépend que de l'identifiant du joueur : le même à chaque lecture, et absent pour qui n'a pas d'homonyme.
+        Assert.Equal(leas.Select(r => r.Tag), (await lea1.ComparisonAsync(code)).Rows.Where(r => r.Pseudo is "Léa" or "léa").Select(r => r.Tag));
+        Assert.Null(rows.Single(r => r.Pseudo == "Alice").Tag);
+    }
+
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 }

@@ -25,6 +25,9 @@ public sealed class EfPlayerStore(InSecondsDbContext db) : IPlayerStore
     public Task<bool> IsPseudoTakenAsync(string pseudo, CancellationToken ct) =>
         db.Set<Account>().AnyAsync(a => a.Pseudo == pseudo, ct);
 
+    public Task<Player?> FindPlayerAsync(Guid playerId, CancellationToken ct) =>
+        db.Set<Player>().FirstOrDefaultAsync(p => p.Id == playerId, ct);
+
     public Task<bool> HasAccountAsync(Guid playerId, CancellationToken ct) =>
         db.Set<Account>().AnyAsync(a => a.PlayerId == playerId, ct);
 

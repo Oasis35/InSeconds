@@ -24,6 +24,14 @@ public sealed class Player
     /// </summary>
     public string? AcquisitionSource { get; private set; }
 
+    /// <summary>
+    /// Le pseudo qu'un invité s'est donné (jamais celui d'un compte : <see cref="Account.Pseudo"/> a la priorité), retrouvé à chaque visite
+    /// par son navigateur. Aucune unicité entre invités. Vide tant qu'il n'en a pas choisi.
+    /// </summary>
+    public string? GuestPseudo { get; private set; }
+
+    public void SetGuestPseudo(string? pseudo) => GuestPseudo = pseudo;
+
     public static Player CreateGuest(Guid id, DateTimeOffset now, string? acquisitionSource = null) =>
         new() { Id = id, CreatedAt = now, LastSeenAt = now, AcquisitionSource = acquisitionSource };
 }

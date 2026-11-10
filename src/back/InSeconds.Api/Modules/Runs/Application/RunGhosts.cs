@@ -24,7 +24,7 @@ public sealed class RunGhosts(IRunsQueries queries, IPlayerDirectory players)
 
         var stopped = RunGhost.StoppedAt(points, session.Answers.Max(a => (int)a.Position));
         var stoppedRound = stopped is { } position ? challenge.Tracks.FirstOrDefault(t => t.Position == position)?.Round : null;
-        var pseudos = await players.GetPseudosAsync([author], ct);
+        var pseudos = await players.GetDisplayNamesAsync([author], ct);
         return new RunGhostResponse(pseudos.GetValueOrDefault(author), RunGhost.TotalOver(points, played), stoppedRound);
     }
 }

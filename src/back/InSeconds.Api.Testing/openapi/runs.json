@@ -1312,6 +1312,12 @@
           },
           "isMe": {
             "type": "boolean"
+          },
+          "tag": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

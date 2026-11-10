@@ -12,7 +12,9 @@ namespace InSeconds.Api.Modules.Runs.Application;
 /// <param name="Pseudo">Le pseudo du joueur ; vide pour un invité (« Invité » à l'écran).</param>
 /// <param name="Rounds">Le score de chaque manche de la playlist, dans l'ordre ; vide pour une manche non jouée (✕ à l'écran).</param>
 /// <param name="IsMe">C'est la partie du joueur qui regarde (« Toi »).</param>
-public sealed record RunComparisonRowResponse(string? Pseudo, RunDiscResponse Disc, IReadOnlyList<int?> Rounds, int TotalScore, bool IsMe);
+/// <param name="Tag">Un repère court, affiché en gris à côté du pseudo, seulement quand deux joueurs de la comparaison ont le même pseudo (jamais sinon) ;
+/// calculé à partir de l'identifiant du joueur, stable pour lui, jamais de son cookie.</param>
+public sealed record RunComparisonRowResponse(string? Pseudo, RunDiscResponse Disc, IReadOnlyList<int?> Rounds, int TotalScore, bool IsMe, string? Tag = null);
 
 /// <summary>La comparaison des joueurs d'une playlist (écran de comparaison).</summary>
 /// <param name="AuthorPseudo">Le pseudo de son auteur ; vide pour un invité ou un compte effacé (« Invité » à l'écran).</param>
@@ -63,8 +65,9 @@ public static class GetRunComparisonEndpoint
         var ids = sessions.Select(s => s.PlayerId).ToList();
         if (challenge.CreatedBy is { } createdBy)
             ids.Add(createdBy);
-        var pseudos = await players.GetPseudosAsync(ids.Distinct().ToList(), ct);
+        var pseudos = await players.GetDisplayNamesAsync(ids.Distinct().ToList(), ct);
 
+        var tags = PlayerTags.ForHomonyms(sessions.Select(s => s.PlayerId).Distinct().ToList(), pseudos);
         var rows = sessions
             .OrderByDescending(s => s.TotalScore)
             .ThenByDescending(s => s.RoundsPassed)
@@ -75,7 +78,8 @@ public static class GetRunComparisonEndpoint
                 Disc(s, rules.Discs),
                 rounds.Select(r => RoundScore(s, challenge, r, scoring)).ToList(),
                 s.TotalScore,
-                s.PlayerId == current.PlayerId))
+                s.PlayerId == current.PlayerId,
+                tags.GetValueOrDefault(s.PlayerId)))
             .ToList();
 
         return new RunComparisonResponse(

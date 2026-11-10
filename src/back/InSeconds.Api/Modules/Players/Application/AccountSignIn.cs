@@ -83,6 +83,8 @@ public sealed class AccountSignIn(
             if (plan.GuestToConvert is { } guest)
             {
                 playerId = guest;
+                // Le compte a son pseudo : celui que l'invité s'était donné ne sert plus (rien n'est gardé en double).
+                (await store.FindPlayerAsync(guest, ct))?.SetGuestPseudo(null);
             }
             else
             {

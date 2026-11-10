@@ -14,7 +14,7 @@ public class OpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(postg
         Assert.Equal(
             [
                 "confirmEmailChange", "createGuest", "deleteMyAccount", "exportMyData", "getMe", "listDevices", "logout",
-                "requestEmailChange", "requestMagicLink", "revokeDevice", "revokeOtherDevices", "updatePseudo", "verifyMagicLink",
+                "requestEmailChange", "requestMagicLink", "revokeDevice", "revokeOtherDevices", "setGuestPseudo", "updatePseudo", "verifyMagicLink",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));
         // Rien d'autre que le module : ni /api/e2e, ni /api/admin, ni dev-login.

@@ -155,7 +155,7 @@ public static class GetRunChallengeEndpoint
     {
         string? author = null;
         if (challenge.CreatedBy is { } createdBy)
-            author = (await players.GetPseudosAsync([createdBy], ct)).GetValueOrDefault(createdBy);
+            author = (await players.GetDisplayNamesAsync([createdBy], ct)).GetValueOrDefault(createdBy);
 
         var mine = current.PlayerId is { } playerId ? await queries.FindSessionAsync(challenge.Id, playerId, ct) : null;
         var rules = challenge.Rules;
