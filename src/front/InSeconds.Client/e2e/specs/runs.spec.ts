@@ -131,7 +131,7 @@ test.describe('Mode Platines', () => {
     // Avant la dernière manche : seule la colonne « Mélomane » annonce l'écoute du boss (5 s au lieu de 10 s).
     await inSequence(tracks.filter(t => t.round === 3), track => run.answerRight(track));
     await expect(page.getByTestId('run-difficulty-boss')).toHaveCount(1);
-    await expect(page.getByTestId('run-difficulty-risky').getByTestId('run-difficulty-boss')).toContainText('5');
+    await expect(page.getByTestId('run-difficulty-boss')).toContainText('5');
     await page.getByTestId('run-difficulty-risky').click();
     await run.palierNextButton.click();
     await expect(run.roundTitle).toHaveText('Manche 4');
