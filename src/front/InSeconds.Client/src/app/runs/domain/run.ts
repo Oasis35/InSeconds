@@ -486,6 +486,24 @@ export function ghostGap(session: Pick<RunSession, 'ghost' | 'totalScore'> | nul
   return { pseudo: ghost.pseudo, total: ghost.total, gap: session.totalScore - ghost.total, stoppedAtRound: ghost.stoppedAtRound };
 }
 
+/** Le duel de l'écran de fin : le joueur face à l'ami qui a lancé la playlist (sur les morceaux que le joueur a joués). */
+export interface RunDuel {
+  /** Le pseudo de l'ami ; `null` pour un invité (« Invité » à l'écran). */
+  readonly pseudo: string | null;
+  /** L'avance (positive) ou le retard (négatif) du joueur, en points ; 0 : égalité. */
+  readonly gap: number;
+}
+
+/**
+ * Le duel d'une partie finie (gagnée ou perdue) sur la playlist d'un ami qui l'a finie ; `null` sans ami (sa propre playlist, un ami qui n'est pas
+ * arrivé au bout) et pour une partie abandonnée.
+ */
+export function duelOf(session: Pick<RunSession, 'ghost' | 'totalScore' | 'status'> | null): RunDuel | null {
+  if (!session || (session.status !== 'won' && session.status !== 'lost')) return null;
+  const gap = ghostGap(session);
+  return gap ? { pseudo: gap.pseudo, gap: gap.gap } : null;
+}
+
 /** À partir de combien de bonnes réponses d'affilée la série s'affiche. */
 export const COMBO_MIN = 2;
 

@@ -296,6 +296,8 @@ test.describe('Mode Platines', () => {
     await author.loginAsAdmin();
     await author.launch();
     await author.loseFirstRound();
+    // Sa propre playlist : pas de duel.
+    await expect(page.getByTestId('run-duel')).toHaveCount(0);
     const code = await api.latestRunCode();
 
     // Un ami, dans son propre navigateur, sans identité ni accès : le lien reçu, ses règles, « Jouer ».
@@ -324,6 +326,9 @@ test.describe('Mode Platines', () => {
       await expect(friendPage.getByTestId('run-ghost')).toContainText('AdminE2E 0');
       await expect(friendPage.getByTestId('run-ghost-gap')).toHaveText('À égalité');
     });
+
+    // Le duel ouvre l'écran de fin (les deux à 0 : égalité), sur un ton neutre.
+    await expect(friendPage.getByTestId('run-duel')).toHaveText('Égalité avec AdminE2E');
 
     // Sans accès, pas de « Rejouer » : le jeu du jour à la place.
     await expect(friend.playAgainButton).toHaveCount(0);

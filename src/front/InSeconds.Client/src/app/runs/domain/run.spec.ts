@@ -1,6 +1,6 @@
 import {
   RunPassedRound, RunPlay, RunRound, RunRoundSummary, RunSession, RunTrack, clockLabel, finishSquares, gainLabel, isFinished, objectiveBar,
-  comboOf, ghostGap, playSteps, playedCount, pointsToGo, runPile, runSegments, stepPosition,
+  comboOf, duelOf, ghostGap, playSteps, playedCount, pointsToGo, runPile, runSegments, stepPosition,
 } from './run';
 
 describe('objectiveBar', () => {
@@ -213,6 +213,27 @@ describe('ghostGap', () => {
   it('rien sans fantôme', () => {
     expect(ghostGap(null)).toBeNull();
     expect(ghostGap({ ghost: null, totalScore: 100 })).toBeNull();
+  });
+});
+
+describe('duelOf', () => {
+  const ghost = { pseudo: 'Alice', total: 250, stoppedAtRound: null };
+
+  it('le duel d\'une partie finie : l\'avance (positive), le retard (négatif) ou l\'égalité', () => {
+    expect(duelOf({ ghost, totalScore: 376, status: 'won' })).toEqual({ pseudo: 'Alice', gap: 126 });
+    expect(duelOf({ ghost, totalScore: 210, status: 'lost' })).toEqual({ pseudo: 'Alice', gap: -40 });
+    expect(duelOf({ ghost, totalScore: 250, status: 'lost' })?.gap).toBe(0);
+  });
+
+  it('un invité garde son pseudo vide', () => {
+    expect(duelOf({ ghost: { ...ghost, pseudo: null }, totalScore: 300, status: 'won' })?.pseudo).toBeNull();
+  });
+
+  it('rien sans ami, ni pour une partie en cours ou abandonnée', () => {
+    expect(duelOf(null)).toBeNull();
+    expect(duelOf({ ghost: null, totalScore: 300, status: 'won' })).toBeNull();
+    expect(duelOf({ ghost, totalScore: 300, status: 'pending' })).toBeNull();
+    expect(duelOf({ ghost, totalScore: 300, status: 'abandoned' })).toBeNull();
   });
 });
 

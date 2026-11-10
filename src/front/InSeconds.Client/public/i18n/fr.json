@@ -973,6 +973,10 @@
       "toDaily": "Jouer au défi du jour",
       "compare": "Voir les autres joueurs",
       "playAgain": "Rejouer",
+      "duelAhead": "Tu bats {{ name }} de {{ points }} pts",
+      "duelBehind": "{{ name }} gagne de {{ points }} pts",
+      "duelTied": "Égalité avec {{ name }}",
+      "rematch": "Revanche",
       "shortfallBefore": "Il t’a manqué",
       "shortfallPoints": "{{ points }} pts",
       "shortfallAfter": "pour le {{ disc }}"

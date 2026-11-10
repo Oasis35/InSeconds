@@ -722,9 +722,9 @@ describe('RunGameStore', () => {
   });
 
   describe('fin de partie', () => {
-    const finish = (status: 'won' | 'lost') => ({
+    const finish = (status: 'won' | 'lost', isNew = false) => ({
       status, disc: { key: 'runs.discs.gold', stars: 0 }, totalScore: 2500, roundsPassed: 4, foundCount: 18, trackCount: 20,
-      tracks: [], rounds: [], record: { bestScore: 2500, bestRoundsPassed: 4, isNew: true }, challengeCode: 'ABC234', shortfall: null,
+      tracks: [], rounds: [], record: { bestScore: 2500, bestRoundsPassed: 4, isNew }, challengeCode: 'ABC234', shortfall: null,
     });
 
     beforeEach(async () => {
@@ -750,6 +750,36 @@ describe('RunGameStore', () => {
       expect(store.finish()?.disc.key).toBe('runs.discs.gold');
       expect(store.revealed()).toBeNull();
       expect(sounds).toHaveBeenCalledWith('won');
+    });
+
+    it('un nouveau record sonne à la fin, à la place du son de victoire ou de défaite', async () => {
+      api.answerResult = PLAY({
+        session: SESSION({ status: 'won', totalScore: 2500, round: null, finish: finish('won', true) }),
+        revealed: TRACK({ position: 20, round: 4 }),
+        roundSummaries: [summary({ round: 4 })],
+        current: null,
+      });
+      await send();
+      store.next();
+
+      expect(store.screen()).toBe('finished');
+      expect(sounds).toHaveBeenCalledWith('record');
+      expect(sounds).not.toHaveBeenCalledWith('won');
+    });
+
+    it('le duel de la fin : l\'avance sur l\'ami qui a lancé la playlist, rien pour une partie abandonnée', async () => {
+      api.answerResult = PLAY({
+        session: SESSION({
+          status: 'won', totalScore: 2500, round: null, finish: finish('won'), ghost: { pseudo: 'Alice', total: 2374, stoppedAtRound: null },
+        }),
+        revealed: TRACK({ position: 20, round: 4 }),
+        roundSummaries: [summary({ round: 4 })],
+        current: null,
+      });
+      await send();
+      store.next();
+
+      expect(store.duel()).toEqual({ pseudo: 'Alice', gap: 126 });
     });
 
     it('une manche ratée mène directement à la fin, sans écran de bilan ni extrait ; le son du run perdu', async () => {

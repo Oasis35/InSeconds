@@ -7,7 +7,7 @@ import { waveformFromBlob } from '../../gameplay/domain/waveform';
 import {
   AUTO_NEXT_MS, CLOCK_ALERT_SECONDS, COMBO_MIN, PileEntry, RunComparison, RunCurrentTrack, RunDifficulty, RunLink, RunPlay, RunRound, RunSession, RunStep, RunsMe,
   isFinished,
-  comboOf, ghostGap, nextObjective, progressKey, palierDue, playSteps, playedCount, runPile, stepPosition,
+  comboOf, duelOf, ghostGap, nextObjective, progressKey, palierDue, playSteps, playedCount, runPile, stepPosition,
 } from '../domain/run';
 import { RunSounds } from './run-sounds';
 import { RunsApi, StartOutcome } from './runs.api';
@@ -168,6 +168,7 @@ export const RunGameStore = signalStore(
       /** « Rejouer » : seulement avec l'accès (retiré en cours de partie, la partie se finit, mais pas d'autre). */
       canPlayAgain: computed(() => store.me()?.hasAccess === true),
       finish: computed(() => store.session()?.finish ?? null),
+      duel: computed(() => duelOf(store.session())),
       /** Ce que les cartes actives révèlent sur le morceau en cours, et l'Échange offert ; rien tant qu'une étape reste à montrer. */
       roundCards: computed(() => {
         const session = store.session();
@@ -338,7 +339,7 @@ export const RunGameStore = signalStore(
       round.reset();
       stopClock();
       patchState(store, { screen: 'finished' });
-      if (justEnded && (session.status === 'won' || session.status === 'lost')) sounds.play(session.status);
+      if (justEnded && (session.status === 'won' || session.status === 'lost')) sounds.play(session.finish?.record?.isNew ? 'record' : session.status);
       void refreshMe();
     };
 

@@ -20,6 +20,12 @@ public sealed class RunsMetrics
     public const string DiscsName = "inseconds.runs.discs";
     public const string DifficultiesName = "inseconds.runs.difficulties";
     public const string CardsName = "inseconds.runs.cards";
+    public const string DuelsName = "inseconds.runs.duels";
+
+    /// <summary>Étiquette <c>result</c> d'un duel : le joueur devant l'ami (<c>ahead</c>), derrière (<c>behind</c>) ou à égalité (<c>tied</c>).</summary>
+    public const string DuelAhead = "ahead";
+    public const string DuelBehind = "behind";
+    public const string DuelTied = "tied";
 
     /// <summary>Étiquette <c>action</c> des coups de pouce : carte gagnée en franchissant une manche, ou morceau changé (Échange).</summary>
     public const string CardEarnedAction = "earned";
@@ -38,6 +44,7 @@ public sealed class RunsMetrics
     private readonly Counter<long> _discs;
     private readonly Counter<long> _difficulties;
     private readonly Counter<long> _cards;
+    private readonly Counter<long> _duels;
 
     public RunsMetrics(IMeterFactory meterFactory)
     {
@@ -48,6 +55,7 @@ public sealed class RunsMetrics
         _discs = meter.CreateCounter<long>(DiscsName, description: "Disques obtenus à la fin d'une partie gagnée ou perdue, par clé (disc).");
         _difficulties = meter.CreateCounter<long>(DifficultiesName, description: "Difficultés choisies, par manche (round) et difficulté (difficulty).");
         _cards = meter.CreateCounter<long>(CardsName, description: "Coups de pouce, par action (action : carte gagnée, morceau changé) et carte (card).");
+        _duels = meter.CreateCounter<long>(DuelsName, description: "Duels finis contre l'ami qui a lancé la playlist, par résultat (result : devant, derrière, égalité).");
     }
 
     public void RunLaunched() => Session(Launched);
@@ -68,6 +76,10 @@ public sealed class RunsMetrics
             _sessions.Add(1, new KeyValuePair<string, object?>("event", Lost), new KeyValuePair<string, object?>("round", roundsPassed + 1));
         _discs.Add(1, new KeyValuePair<string, object?>("disc", disc));
     }
+
+    /// <summary>La fin d'une partie jouée sur la playlist d'un ami qui l'a finie : le joueur est devant, derrière ou à égalité.</summary>
+    public void DuelEnded(int gap) =>
+        _duels.Add(1, new KeyValuePair<string, object?>("result", gap > 0 ? DuelAhead : gap < 0 ? DuelBehind : DuelTied));
 
     public void DifficultyChosen(int round, string difficulty) =>
         _difficulties.Add(1, new KeyValuePair<string, object?>("round", round), new KeyValuePair<string, object?>("difficulty", difficulty));

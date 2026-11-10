@@ -37,6 +37,15 @@ describe('RunSounds', () => {
     expect(oscillator).toHaveBeenCalledTimes(4);
   });
 
+  it('le son du record est un arpège de quatre notes', async () => {
+    const sounds = await awake();
+    const oscillator = vi.spyOn(AudioContext.prototype, 'createOscillator');
+
+    sounds.play('record');
+
+    expect(oscillator).toHaveBeenCalledTimes(4);
+  });
+
   it('ne sonne pas tant qu\'un clic n\'a pas réveillé le son', () => {
     const sounds = create();
     const oscillator = vi.spyOn(AudioContext.prototype, 'createOscillator');

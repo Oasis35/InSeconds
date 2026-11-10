@@ -15,7 +15,7 @@ interface Note {
 }
 
 /** Les sons d'interface du mode Platines, tous synthétisés ici (Web Audio, aucun fichier, aucun droit à céder). */
-export type RunSound = 'tick' | 'roundPassed' | 'cardTaken' | 'won' | 'lost';
+export type RunSound = 'tick' | 'roundPassed' | 'cardTaken' | 'won' | 'record' | 'lost';
 
 /** Une famille de sons doux (triangle et sinusoïde, aucune onde carrée), brefs, sous le niveau d'un extrait, en do majeur. */
 const SOUNDS: Readonly<Record<RunSound, readonly Note[]>> = {
@@ -33,6 +33,13 @@ const SOUNDS: Readonly<Record<RunSound, readonly Note[]>> = {
     { hz: 523.25, at: 0, seconds: 0.14, type: 'triangle', gain: 0.18 },
     { hz: 783.99, at: 0.12, seconds: 0.14, type: 'triangle', gain: 0.18 },
     { hz: 1046.5, at: 0.24, seconds: 0.32, type: 'triangle', gain: 0.18 },
+  ],
+  // Un nouveau record (gagné ou perdu) : le même arpège que la victoire, une tierce plus haut et plus long, plus brillant.
+  record: [
+    { hz: 523.25, at: 0, seconds: 0.12, type: 'triangle', gain: 0.18 },
+    { hz: 659.25, at: 0.1, seconds: 0.12, type: 'triangle', gain: 0.18 },
+    { hz: 783.99, at: 0.2, seconds: 0.12, type: 'triangle', gain: 0.18 },
+    { hz: 1046.5, at: 0.3, seconds: 0.4, type: 'triangle', gain: 0.18 },
   ],
   // Le run perdu : deux notes qui descendent, sans dramatiser.
   lost: [

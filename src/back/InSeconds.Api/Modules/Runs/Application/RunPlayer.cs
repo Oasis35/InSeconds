@@ -95,7 +95,7 @@ public sealed class RunPlayer(
         }
 
         if (ended)
-            await EndAsync(session, ct);
+            await EndAsync(session, run.Challenge, ct);
 
         // Les formes des morceaux déjà joués ne partent qu'au démarrage ou à la reprise : après une réponse, le navigateur les a déjà.
         return new RunPlayResponse(await StateAsync(run, ct, withWaveforms: answered is null), revealed, neutralized, summaries, current, isResuming);
@@ -164,7 +164,7 @@ public sealed class RunPlayer(
     }
 
     // Le record (partie gagnée ou perdue), dans la transaction de fin : une partie abandonnée ne compte pas.
-    private async Task EndAsync(RunSession session, CancellationToken ct)
+    private async Task EndAsync(RunSession session, RunChallenge challenge, CancellationToken ct)
     {
         await store.LockRecordAsync(session.PlayerId, ct);
         var record = await store.FindRecordAsync(session.PlayerId, ct);
@@ -175,6 +175,9 @@ public sealed class RunPlayer(
 
         RunsLog.SessionEnded(logger, session.Id, session.PlayerId, session.Status, session.RoundsPassed, session.TotalScore);
         metrics.SessionEnded(session.Status == RunSessionStatus.Won, DiscLadder.Of(session.RoundsPassed, rules.Discs).Key, session.RoundsPassed);
+        // Un duel contre l'ami qui a lancé la playlist (s'il l'a finie) : devant, derrière ou à égalité.
+        if (await ghosts.OfAsync(session, challenge, ct) is { } ghost)
+            metrics.DuelEnded(session.TotalScore - ghost.Total);
     }
 }
 
