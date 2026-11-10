@@ -159,7 +159,6 @@ public class RunSwapAndRewardTests
     {
         var challenge = Challenge(RunCard.Hint);
         var session = Start();
-        session.KeepRound(TrackRound.Start.Listen(5m));
         session.ServeCurrent(Now);
 
         Assert.True(session.CanSwap(challenge));
@@ -170,6 +169,17 @@ public class RunSwapAndRewardTests
         Assert.Null(session.CurrentServedAt);
         Assert.Empty(session.Hand);
         Assert.Equal(1, session.SwapsIn(1));
+    }
+
+    [Fact]
+    public void LEchange_NeSePropose_PlusUneFoisLeMorceauEcoute()
+    {
+        var challenge = Challenge(RunCard.Hint);
+        var session = Start();
+        session.ServeCurrent(Now);
+        session.KeepRound(TrackRound.Start.Listen(5m));
+
+        Assert.False(session.CanSwap(challenge));
     }
 
     [Fact]

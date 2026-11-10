@@ -22,13 +22,13 @@ export interface RunCardValues {
 }
 
 /**
- * La couleur d'une carte (« une couleur = un sens ») : cyan pour ce qui touche au son (la Prolongation allonge l'écoute), à la couleur du joueur
- * pour les autres. `rgb` : la même couleur pour un fond ou un contour transparent.
+ * La couleur d'une carte (« une couleur = un sens ») : cyan pour ce qui touche au son (la Prolongation allonge l'écoute), contour neutre pour les
+ * autres (le serveur les active seul : ce n'est pas une action du joueur, donc pas d'orange). `rgb` : la même couleur pour un fond transparent.
  */
 export function cardColor(card: RunCardKey): { readonly color: string; readonly rgb: string } {
   return card === 'extend'
     ? { color: 'var(--color-accent-2)', rgb: 'var(--rgb-accent-2)' }
-    : { color: 'var(--color-accent)', rgb: 'var(--rgb-accent)' };
+    : { color: 'var(--border-neutral)', rgb: 'var(--rgb-text)' };
 }
 
 /** Le signe d'une carte, dans son coin : un chiffre ou un caractère qui dit l'effet, pas d'emoji ni d'icône décorative. */

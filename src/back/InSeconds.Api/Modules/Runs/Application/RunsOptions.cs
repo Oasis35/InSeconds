@@ -4,7 +4,7 @@ namespace InSeconds.Api.Modules.Runs.Application;
 
 /// <summary>
 /// Réglages du mode, relus à chaud depuis <c>infra.settings</c> (<c>Runs:…</c>). Aucune ligne en base n'est nécessaire : les valeurs par défaut
-/// sont celles du proto 2 (difficultés par manche, réserve pour le Joker). **Les listes n'ont pas de valeur initiale** (le binder ajouterait les éléments lus à ceux de la valeur initiale) : les
+/// sont celles du proto 2 (difficultés par manche, réserve pour l'Échange). **Les listes n'ont pas de valeur initiale** (le binder ajouterait les éléments lus à ceux de la valeur initiale) : les
 /// défauts sont dans les propriétés <c>Effective…</c>, seules lues par le code. Ces réglages ne touchent jamais un défi déjà créé : ses règles sont figées
 /// (<see cref="RunRules"/>).
 /// </summary>

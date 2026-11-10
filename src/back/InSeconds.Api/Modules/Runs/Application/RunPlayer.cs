@@ -220,7 +220,7 @@ internal static class RunViews
     public static RunRoundSummaryResponse Summary(LoadedRun run, RunStep step, IRunScoringPolicy scoring)
     {
         var progress = run.Session.RoundProgressOf(run.Challenge, step.Round, scoring);
-        var reward = run.Session.Cards.FirstOrDefault(c => c.Card != RunCard.Swap && c.AcquiredRound == step.Round);
+        var reward = run.Session.Cards.FirstOrDefault(c => c.IsEarned && c.AcquiredRound == step.Round);
         return new RunRoundSummaryResponse(
             step.Round, step.Outcome != RunStepOutcome.Lost, progress.Score, progress.Objective, PlayedTracks(run, step.Round), run.Session.TotalScore,
             reward is null ? null : RunCards.KeyOf(reward.Card));
@@ -266,7 +266,7 @@ internal static class RunViews
             session.Id, challenge.Code, StatusOf(session.Status), RoundsOf(challenge).Count, rules.TracksPerRound, rules.ListenSeconds,
             session.TotalScore, session.RoundsPassed, round, roundTracks, finish,
             rules.AnswerSeconds, session.IsPending ? session.ClockRemaining(rules, now) : null, playedTracks, passedRounds, choice,
-            session.Hand.Select(c => new RunHandCardResponse(c.Slot, RunCards.KeyOf(c.Card))).ToList(),
+            session.Hand.Where(c => c.IsEarned).Select(c => new RunHandCardResponse(c.Slot, RunCards.KeyOf(c.Card))).ToList(),
             session.IsPending && session.CanSwap(challenge),
             session.IsPending ? DiscOf(DiscLadder.Of(session.RoundsPassed + 1, discs)) : null,
             rules.Cards is { } cards ? new RunCardValuesResponse(cards.ExtendBonusSeconds, cards.RewardMarginPercent) : null,

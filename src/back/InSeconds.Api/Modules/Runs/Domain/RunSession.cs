@@ -194,6 +194,9 @@ public sealed class RunSession
         ArgumentNullException.ThrowIfNull(challenge);
         if (!IsPending || !challenge.Rules.HasSwap || CurrentRound(challenge) is not { } round || CanChooseDifficulty(challenge, round))
             return false;
+        // Jamais une fois le morceau écouté ou son chrono parti : le joueur le connaîtrait déjà.
+        if (RoundOfCurrentTrack().ListenedSeconds > 0 || CurrentClockAt is not null)
+            return false;
         return SwapsIn(round) < RunRules.SwapsPerRound && NextReserveTrack(challenge, round) is not null;
     }
 
@@ -229,7 +232,7 @@ public sealed class RunSession
     {
         ArgumentNullException.ThrowIfNull(challenge);
         var round = RoundAt(challenge, position);
-        return Hand.Where(c => c.AcquiredRound < round && c.Card != RunCard.Swap).Select(c => c.Card).ToList();
+        return Hand.Where(c => c.IsEarned && c.AcquiredRound < round).Select(c => c.Card).ToList();
     }
 
     /// <summary>Le morceau joué à cette position : celui du défi, ou celui de la réserve qu'un Échange y a mis.</summary>
@@ -528,6 +531,9 @@ public sealed class RunSessionCard
     public short? DroppedAfterRound { get; private set; }
 
     public bool InHand => DroppedAt is null && PlayedAt is null;
+
+    /// <summary>Une carte qui se gagne (QCM, Indice, Prolongation) : ni l'Échange, ni une carte d'avant le proto 3.</summary>
+    public bool IsEarned => RunCards.Earnable.Contains(Card);
 
     public static RunSessionCard Create(short slot, RunCard card, short acquiredRound, DateTimeOffset now) =>
         new() { Slot = slot, Card = card, AcquiredRound = acquiredRound, AcquiredAt = now };

@@ -105,7 +105,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
                 </button>
               }
               <!-- « Passer » est un lien discret, le même dans tous les modes (une action sans sens propre ne prend pas la place du bouton principal). -->
-              <div class="flex justify-center gap-4">
+              <div class="flex flex-wrap justify-center gap-x-4">
                 <button type="button" class="inline-flex items-center min-h-11 px-2 text-[15px] underline underline-offset-4 touch-manipulation disabled:opacity-50"
                   style="color:var(--text-light)" [disabled]="phase === 'submitting' || locked()" (click)="round.askSkip()" data-testid="round-skip">
                   {{ 'gameplay.round.skip' | translate }}
