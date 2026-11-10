@@ -39,6 +39,8 @@ public class RunDifficultyApiTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task ApresLaManche1_LEtatProposeLesTroisDifficultes_EtLExtraitEstDejaLa()
     {
+        // Sans la Prolongation (la carte gagnée à la manche 1 ajouterait 5 s d'écoute) : l'écoute reste celle des règles.
+        await _run.Game.SetSettingAsync("Runs:Cards", "[\"hint\"]");
         var alice = await _run.NewInvitedAsync("Alice");
         var start = (await alice.LaunchAsync()).Session;
 
