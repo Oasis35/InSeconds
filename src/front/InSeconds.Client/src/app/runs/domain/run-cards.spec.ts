@@ -68,7 +68,7 @@ describe('l\'écran de palier', () => {
       artist: 'A', title: 'T', coverUrl: null, deezerTrackId: 1, waveform: null }] }), null)).toBe(false);
   });
 
-  it('l\'objectif montré : celui de « Sûre », sinon celui de la manche', () => {
+  it('l\'objectif montré : celui de « Normal », sinon celui de la manche', () => {
     expect(nextObjective(session())).toBe(366);
     expect(nextObjective(session({ difficultyChoice: null, round: { round: 2, score: 0, objective: 400, maxScore: 665 } }))).toBe(400);
   });

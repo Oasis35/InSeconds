@@ -37,6 +37,27 @@ describe('RunHeaderComponent', () => {
     const { element } = render({ round: 1, score: 260, objective: 200, maxScore: 500 });
 
     expect(element.querySelector('[data-testid="run-to-go"]')?.textContent?.trim()).toBe('objectif atteint');
+    expect(element.querySelector('[data-testid="run-reached"] svg')).not.toBeNull();
+  });
+
+  it('l\'objectif franchi pendant la manche joue le petit temps fort, une seule fois', () => {
+    const { fixture, element } = render({ round: 1, score: 150, objective: 200, maxScore: 500 });
+    expect(element.querySelector('[data-testid="run-reached"]')).toBeNull();
+
+    fixture.componentRef.setInput('round', { round: 1, score: 230, objective: 200, maxScore: 500 });
+    fixture.detectChanges();
+    fixture.detectChanges();
+
+    const reached = element.querySelector<HTMLElement>('[data-testid="run-reached"]');
+    expect(reached).not.toBeNull();
+    // Le petit temps fort (gsap pose tout de suite l'échelle de départ ; rien en mouvement réduit).
+    expect(reached!.style.transform === '' ? matchMedia('(prefers-reduced-motion: reduce)').matches : reached!.style.transform.includes('scale')).toBe(true);
+  });
+
+  it('une manche déjà atteinte à l\'arrivée ne rejoue rien', () => {
+    const { element } = render({ round: 1, score: 260, objective: 200, maxScore: 500 });
+
+    expect(element.querySelector<HTMLElement>('[data-testid="run-reached"]')!.style.transform).toBe('');
   });
 
   it('✕ est un bouton nommé qui demande l\'abandon à la page', () => {

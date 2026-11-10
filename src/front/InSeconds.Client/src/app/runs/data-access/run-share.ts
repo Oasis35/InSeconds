@@ -43,7 +43,7 @@ export class RunShare {
 }
 
 /**
- * Le texte du partage d'une partie finie : « 2 410 pts · Disque d'argent · InSeconds Platines », puis « 🟩🟩🟨🟩🟥 Manche 1 · Sûre » pour chaque
+ * Le texte du partage d'une partie finie : « 2 410 pts · Disque d'argent · InSeconds Platines », puis « 🟩🟩🟨🟩🟥 Manche 1 · Normal » pour chaque
  * manche jouée, puis l'invitation et le lien de la playlist (`utm_source=share`). Rien d'un morceau n'y figure : ni artiste ni titre.
  */
 export function runShareText(finish: RunFinish, lang: string, t: (key: string, params?: Record<string, unknown>) => string): string {

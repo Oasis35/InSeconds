@@ -1,20 +1,21 @@
-import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, computed, input, output, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, computed, input, output, signal, viewChild } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { enterCard, fillBar, revealInTurn, tweenNumber } from '../../../ui/motion/motion';
-import { RunPassedRound } from '../../domain/run';
+import { RunDifficulty, RunDifficultyOption, RunPassedRound } from '../../domain/run';
 import { RunCardKey, RunCardOffer, RunCardValues, RunHandCard, cardColor, cardGlyph, handFull, handSlots } from '../../domain/run-cards';
+import { RunDifficultyColumnsComponent } from '../run-difficulty-columns/run-difficulty-columns.component';
 import { RunDiscComponent } from '../run-disc/run-disc.component';
 
 /**
  * L'écran de palier, après une manche passée (docs/runs/proto2.md § L'écran de palier), du haut vers le bas, sans phrase d'explication : le
  * disque gagné et l'étagère des disques de l'échelle (les suivants en pointillé), le score de la manche avec le repère de l'objectif franchi,
- * l'objectif de la manche suivante, les trois cartes de l'offre et « Passer », la main, puis « Suite ». Présentation seule : la page relaie les
+ * la manche suivante (ses trois difficultés, Facile / Normal / Mélomane, quand la playlist en propose, sinon son objectif), les trois cartes de l'offre et « Passer », la main, puis « Jouer » (la difficulté choisie, Normal d'abord) ou « Suite ». Présentation seule : la page relaie les
  * gestes au store. Main pleine, toucher une carte de l'offre la met en attente : toucher ensuite une carte de la main l'échange.
  */
 @Component({
   selector: 'app-run-palier',
-  imports: [TranslatePipe, ButtonComponent, RunDiscComponent],
+  imports: [TranslatePipe, ButtonComponent, RunDiscComponent, RunDifficultyColumnsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './run-palier.component.html',
   styles: `
@@ -29,10 +30,15 @@ export class RunPalierComponent {
   readonly rounds = input.required<number>();
   /** Les disques déjà gagnés, dans l'ordre des manches. */
   readonly wonDiscs = input.required<readonly string[]>();
-  /** La manche suivante, son objectif (celui de « Sûre » : la difficulté se choisit ensuite) et le disque qu'elle fait gagner. */
+  /** La manche suivante, son objectif (celui de « Normal » quand la difficulté ne se choisit pas ici) et le disque qu'elle fait gagner. */
   readonly nextRound = input.required<number>();
   readonly nextObjective = input.required<number>();
   readonly nextDisc = input<string | null>(null);
+  /** Les difficultés de la manche suivante, quand elles se choisissent sur cet écran ; `null` : rien à choisir, « Suite » lance la manche. */
+  readonly options = input<readonly RunDifficultyOption[] | null>(null);
+  readonly tracksPerRound = input(5);
+  /** L'écoute normale d'un morceau : une colonne plus courte (manche boss) le dit. */
+  readonly listenSeconds = input(10);
   /** L'offre du palier ; vide une fois une carte prise, ou passée. */
   readonly offer = input<RunCardOffer | null>(null);
   readonly hand = input.required<readonly RunHandCard[]>();
@@ -50,6 +56,15 @@ export class RunPalierComponent {
   readonly dropCard = output<number>();
   readonly pass = output();
   readonly next = output();
+  /** « Jouer » : la difficulté choisie (quand les colonnes sont là). */
+  readonly choose = output<RunDifficulty>();
+
+  protected readonly selected = signal<RunDifficulty>('safe');
+  /** Normal quand la manche le propose, sinon la première difficulté offerte. */
+  protected readonly effective = computed(() => {
+    const options = this.options() ?? [];
+    return options.some(o => o.difficulty === this.selected()) ? this.selected() : (options[0]?.difficulty ?? 'safe');
+  });
 
   readonly lang = input('fr');
   protected readonly glyph = (card: RunCardKey, values: RunCardValues | null): string => cardGlyph(card, values, this.lang());
@@ -63,6 +78,12 @@ export class RunPalierComponent {
     const { score, objective } = this.passed();
     return score <= 0 ? 0 : Math.min(1, objective / score);
   });
+
+  /** Le bouton du bas : « Jouer » avec la difficulté choisie, ou « Suite ». */
+  protected advance(): void {
+    if (this.options()) this.choose.emit(this.effective());
+    else this.next.emit();
+  }
 
   private readonly disc = viewChild<ElementRef<HTMLElement>>('disc');
   private readonly score = viewChild<ElementRef<HTMLElement>>('score');

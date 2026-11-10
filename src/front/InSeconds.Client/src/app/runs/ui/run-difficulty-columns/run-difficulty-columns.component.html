@@ -1,0 +1,52 @@
+<!--
+  Trois colonnes à plat sur une base commune. Le corps, à la hauteur du plafond, ne porte que l'objectif (le cadenas sur la frontière, la zone
+  dessous assombrie) : rien ne se chevauche, quel que soit l'objectif. La plus haute colonne suit la hauteur de l'écran (petit téléphone).
+-->
+<div class="grid grid-cols-3 gap-2.5 items-end" style="--tallest:min(240px, 30dvh)">
+  @for (column of columns(); track column.option.difficulty) {
+    <button type="button" class="flex flex-col items-stretch touch-manipulation" [disabled]="busy()"
+      (click)="selected.set(column.option.difficulty)" [attr.data-testid]="'run-difficulty-' + column.option.difficulty"
+      [attr.aria-pressed]="selected() === column.option.difficulty"
+      [attr.aria-label]="('runs.difficulty.columnLabel' | translate: {
+        name: ('runs.difficulty.' + column.option.difficulty | translate), perTrack: column.perTrack, objective: column.option.objective })
+        + (column.option.listenSeconds < listenSeconds() ? ', ' + ('runs.difficulty.listen' | translate: { seconds: (column.option.listenSeconds | appSeconds) }) : '')">
+      <span class="relative block" [style.height]="'calc(var(--tallest) * ' + column.heightRatio + ')'"
+        style="background:var(--bg-surface);border-style:solid;border-width:1px 1px 0 1px;border-radius:var(--radius-card) var(--radius-card) 0 0"
+        [style.border-color]="selected() === column.option.difficulty ? 'var(--color-accent)' : 'var(--border-strong)'">
+        <span class="absolute inset-x-0 bottom-0" [style.height.%]="column.objectiveRatio * 100"
+          style="background:var(--shade-below);border-top:1.5px dashed var(--color-accent)"></span>
+        <span class="absolute left-1/2 -translate-x-1/2 translate-y-1/2 flex items-center gap-1 px-2.5 rounded-full"
+          [style.bottom.%]="column.objectiveRatio * 100"
+          style="height:28px;background:var(--bg-page);border:1.5px solid var(--color-accent);color:var(--color-accent)" data-testid="run-difficulty-objective">
+          <svg width="11" height="13" viewBox="0 0 10 12" aria-hidden="true">
+            <rect x="1" y="5" width="8" height="6" rx="1" fill="currentColor" />
+            <path d="M3 5 V3.5 a2 2 0 0 1 4 0 V5" stroke="currentColor" stroke-width="1.4" fill="none" />
+          </svg>
+          <span class="text-[14px] font-bold" style="font-family:var(--font-clock)">{{ column.option.objective }}</span>
+        </span>
+      </span>
+    </button>
+  }
+</div>
+<div style="height:1.5px;background:var(--border-strong)"></div>
+<div class="grid grid-cols-3 gap-2.5 mt-2.5">
+  @for (column of columns(); track column.option.difficulty) {
+    <div class="flex flex-col items-center gap-1.5">
+      <span class="text-[16px] font-bold" style="font-family:var(--font-display)"
+        [style.color]="selected() === column.option.difficulty ? 'var(--color-accent)' : 'var(--text-hi)'">{{ 'runs.difficulty.' + column.option.difficulty | translate }}</span>
+      <span class="flex items-end gap-[3px]" aria-hidden="true">
+        @for (level of levels; track level) {
+          <span class="w-[5px] rounded-[1px]" [style.height.px]="6 + level * 4"
+            [style.background]="level <= column.level ? 'var(--text-hi)' : 'var(--border-strong)'"></span>
+        }
+      </span>
+      <span class="text-[12px] leading-tight text-center whitespace-pre-line" style="font-family:var(--font-clock);color:var(--text-light)"
+        data-testid="run-difficulty-per-track">{{ 'runs.difficulty.perTrack' | translate: { points: column.perTrack } }}</span>
+      @if (column.option.listenSeconds < listenSeconds()) {
+        <span class="text-[12px] leading-tight text-center" style="color:var(--text-light)" data-testid="run-difficulty-boss">
+          {{ 'runs.difficulty.listen' | translate: { seconds: (column.option.listenSeconds | appSeconds) } }}
+        </span>
+      }
+    </div>
+  }
+</div>

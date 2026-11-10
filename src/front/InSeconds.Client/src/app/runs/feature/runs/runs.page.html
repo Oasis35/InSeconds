@@ -73,8 +73,11 @@
               (toggleSounds)="store.toggleSounds()" (abandon)="confirmAbandon()" />
             <app-run-palier class="flex-1 flex flex-col" [passed]="palier.passed" [rounds]="store.rounds()" [wonDiscs]="palier.wonDiscs"
               [nextRound]="palier.nextRound" [nextObjective]="palier.nextObjective" [nextDisc]="palier.nextDisc" [offer]="palier.offer"
-              [hand]="palier.hand" [handSize]="palier.handSize" [values]="store.session()?.cardValues ?? null" [pending]="store.pendingCard()" [busy]="store.palierBusy()" [lang]="language.current()"
-              (pick)="store.pickCard($event)" (dropCard)="store.dropForPending($event)" (pass)="store.passOffer()" (next)="store.continueFromPalier()" />
+              [options]="palier.options" [tracksPerRound]="palier.tracksPerRound" [listenSeconds]="palier.listenSeconds"
+              [hand]="palier.hand" [handSize]="palier.handSize" [values]="store.session()?.cardValues ?? null" [pending]="store.pendingCard()"
+              [busy]="store.palierBusy() || store.difficultyBusy()" [lang]="language.current()"
+              (pick)="store.pickCard($event)" (dropCard)="store.dropForPending($event)" (pass)="store.passOffer()" (next)="store.continueFromPalier()"
+              (choose)="store.chooseDifficulty($event)" />
           </div>
         }
       }
@@ -85,7 +88,7 @@
           <div class="screen-enter flex-1 flex flex-col pt-1">
             <app-run-header [round]="difficulty.headerRound" [rounds]="store.rounds()" [showStatus]="false" [muted]="store.soundsMuted()" (toggleSounds)="store.toggleSounds()" (abandon)="confirmAbandon()" />
             <app-run-difficulty class="flex-1 flex flex-col" [round]="difficulty.round" [totalScore]="difficulty.totalScore"
-              [options]="difficulty.options" [hand]="difficulty.hand" [listenSeconds]="difficulty.listenSeconds" [values]="store.session()?.cardValues ?? null" [busy]="store.difficultyBusy()" [lang]="language.current()"
+              [options]="difficulty.options" [tracksPerRound]="difficulty.tracksPerRound" [hand]="difficulty.hand" [listenSeconds]="difficulty.listenSeconds" [values]="store.session()?.cardValues ?? null" [busy]="store.difficultyBusy()" [lang]="language.current()"
               (choose)="store.chooseDifficulty($event)" />
           </div>
         }

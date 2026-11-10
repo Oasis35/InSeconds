@@ -1068,13 +1068,14 @@
       "round": "Manche {{round}}",
       "title": "Difficulté ?",
       "yourScore": "Ton score",
-      "max": "max",
+      "perTrack": "{{points}} pts max\npar morceau",
+      "play": "Jouer",
       "listen": "écoute {{seconds}}",
       "hand": "En main",
       "easy": "Facile",
-      "safe": "Sûre",
-      "risky": "Risquée",
-      "columnLabel": "{{name}} : jusqu'à {{max}} points, objectif {{objective}}"
+      "safe": "Normal",
+      "risky": "Mélomane",
+      "columnLabel": "{{name}} : objectif {{objective}} points, jusqu'à {{perTrack}} points par morceau"
     },
     "roundCards": {
       "play": "Jouer {{card}}",

@@ -1,11 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import fr from '../../../../../public/i18n/fr.json';
+import { RunDifficulty, RunDifficultyOption } from '../../domain/run';
 import { RunCardKey, RunCardOffer, RunHandCard } from '../../domain/run-cards';
 import { RunPalierComponent } from './run-palier.component';
 
 describe('RunPalierComponent', () => {
-  function render(overrides: { offer?: RunCardOffer | null; hand?: RunHandCard[]; pending?: RunCardKey | null } = {}) {
+  function render(overrides: { offer?: RunCardOffer | null; hand?: RunHandCard[]; pending?: RunCardKey | null; options?: RunDifficultyOption[] } = {}) {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     TestBed.inject(TranslateService).setTranslation('fr', fr);
     TestBed.inject(TranslateService).use('fr');
@@ -22,6 +23,7 @@ describe('RunPalierComponent', () => {
     set('handSize', 2);
     set('values', { extendListenSeconds: 20, hourglassSeconds: 30, lowerTargetPercent: 20 });
     set('pending', overrides.pending ?? null);
+    if (overrides.options) set('options', overrides.options);
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;
     const text = (testId: string) => element.querySelector(`[data-testid="${testId}"]`)?.textContent?.replace(/\s+/g, ' ').trim();
@@ -92,5 +94,37 @@ describe('RunPalierComponent', () => {
 
     expect(element.querySelector('[data-testid="run-palier-pass"]')).toBeNull();
     expect(element.querySelector('[data-card]')).toBeNull();
+  });
+
+  describe('avec les difficultés de la manche suivante (un seul écran)', () => {
+    const OPTIONS: RunDifficultyOption[] = [
+      { difficulty: 'easy', objective: 219, maxScore: 445, listenSeconds: 10 },
+      { difficulty: 'safe', objective: 366, maxScore: 665, listenSeconds: 10 },
+      { difficulty: 'risky', objective: 552, maxScore: 885, listenSeconds: 10 },
+    ];
+
+    it('les trois colonnes remplacent l\'objectif seul, et le bouton du bas dit « Jouer »', () => {
+      const { element, text } = render({ options: OPTIONS });
+
+      expect(element.querySelectorAll('[data-testid="run-difficulty-objective"]')).toHaveLength(3);
+      expect(element.querySelector('[data-testid="run-palier-next"]')).toBeNull();
+      expect(text('run-palier-next-button')).toBe('Jouer');
+    });
+
+    it('« Jouer » envoie Normal, ou la colonne touchée ; « Suite » n\'est pas émis', () => {
+      const { fixture, element } = render({ options: OPTIONS });
+      const chosen: RunDifficulty[] = [];
+      let next = 0;
+      fixture.componentInstance.choose.subscribe(d => chosen.push(d));
+      fixture.componentInstance.next.subscribe(() => next++);
+
+      element.querySelector<HTMLButtonElement>('[data-testid="run-palier-next-button"]')!.click();
+      element.querySelector<HTMLButtonElement>('[data-testid="run-difficulty-risky"]')!.click();
+      fixture.detectChanges();
+      element.querySelector<HTMLButtonElement>('[data-testid="run-palier-next-button"]')!.click();
+
+      expect(chosen).toEqual(['safe', 'risky']);
+      expect(next).toBe(0);
+    });
   });
 });
