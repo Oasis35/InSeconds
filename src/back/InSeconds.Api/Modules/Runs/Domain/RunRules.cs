@@ -19,12 +19,18 @@ namespace InSeconds.Api.Modules.Runs.Domain;
 /// Les difficultés proposées pour chaque manche (proto 2) ; vide pour une playlist du proto 1, dont chaque manche se joue en « Sûre » aux seuils
 /// <paramref name="ThresholdPercents"/> et à l'écoute <paramref name="ListenSeconds"/>.
 /// </param>
-/// <param name="ReservePerRound">Les morceaux de réserve tirés pour chaque manche (le coup de pouce « Joker » change de morceau) ; 0 au proto 1.</param>
-/// <param name="Cards">Les coups de pouce de la playlist (proto 2) : carte de départ, offres de chaque palier, effets ; vide : aucune carte.</param>
+/// <param name="ReservePerRound">Les morceaux de réserve tirés pour chaque manche (« Échange » change de morceau) ; 0 au proto 1 : pas d'Échange.</param>
+/// <param name="Cards">Les coups de pouce de la playlist : la carte que gagne chaque manche, ses effets ; vide : aucune carte.</param>
 public sealed record RunRules(
     int Rounds, int TracksPerRound, decimal ListenSeconds, IReadOnlyList<int> ThresholdPercents, decimal MinMultiplier, decimal MaxMultiplier,
     int AnswerSeconds = 0, IReadOnlyList<RunRoundRules>? RoundRules = null, int ReservePerRound = 0, RunCardRules? Cards = null)
 {
+    /// <summary>Les Échanges d'une manche : un seul, qui ne se garde pas pour la suivante.</summary>
+    public const int SwapsPerRound = 1;
+
+    /// <summary>La playlist a une réserve : le joueur peut changer de morceau (« Échange »).</summary>
+    public bool HasSwap => ReservePerRound > 0;
+
     /// <summary>Le morceau a un chrono.</summary>
     public bool HasClock => AnswerSeconds > 0;
 

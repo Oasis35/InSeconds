@@ -3,25 +3,22 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { enterCard, fillBar, revealInTurn, tweenNumber } from '../../../ui/motion/motion';
 import { RunDifficulty, RunDifficultyOption, RunPassedRound } from '../../domain/run';
-import { RunCardKey, RunCardOffer, RunCardValues, RunHandCard, cardColor, cardGlyph, handFull, handSlots } from '../../domain/run-cards';
+import { RunCardKey, RunCardValues, cardColor, cardGlyph } from '../../domain/run-cards';
 import { RunDifficultyColumnsComponent } from '../run-difficulty-columns/run-difficulty-columns.component';
 import { RunDiscComponent } from '../run-disc/run-disc.component';
 
 /**
- * L'écran de palier, après une manche passée (docs/runs/proto2.md § L'écran de palier), du haut vers le bas, sans phrase d'explication : le
+ * L'écran de palier, après une manche passée (docs/runs/proto3.md § L'écran de palier), du haut vers le bas, sans phrase d'explication : le
  * disque gagné et l'étagère des disques de l'échelle (les suivants en pointillé), le score de la manche avec le repère de l'objectif franchi,
- * la manche suivante (ses trois difficultés, Facile / Normal / Mélomane, quand la playlist en propose, sinon son objectif), les trois cartes de l'offre et « Passer », la main, puis « Jouer » (la difficulté choisie, Normal d'abord) ou « Suite ». Présentation seule : la page relaie les
- * gestes au store. Main pleine, toucher une carte de l'offre la met en attente : toucher ensuite une carte de la main l'échange.
+ * la carte gagnée s'il y en a une (elle agira sur la manche suivante), la manche suivante (ses trois difficultés, Facile / Normal / Mélomane,
+ * quand la playlist en propose, sinon son objectif), puis « Jouer » (la difficulté choisie, Normal d'abord) ou « Suite ». Présentation seule :
+ * la page relaie les gestes au store.
  */
 @Component({
   selector: 'app-run-palier',
   imports: [TranslatePipe, ButtonComponent, RunDiscComponent, RunDifficultyColumnsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './run-palier.component.html',
-  styles: `
-    .offer-card { transition: border-color 160ms, transform 160ms; }
-    @media (prefers-reduced-motion: reduce) { .offer-card { transition: none; } }
-  `,
 })
 export class RunPalierComponent {
   /** La manche qui vient d'être passée : son score, son objectif, son disque. */
@@ -39,22 +36,13 @@ export class RunPalierComponent {
   readonly tracksPerRound = input(5);
   /** L'écoute normale d'un morceau : une colonne plus courte (manche boss) le dit. */
   readonly listenSeconds = input(10);
-  /** L'offre du palier ; vide une fois une carte prise, ou passée. */
-  readonly offer = input<RunCardOffer | null>(null);
-  readonly hand = input.required<readonly RunHandCard[]>();
-  readonly handSize = input.required<number>();
+  /** La carte gagnée à la manche qui vient d'être passée (elle agit sur la suivante) ; `null` si elle n'a rien rapporté. */
+  readonly earnedCard = input<RunCardKey | null>(null);
   /** Ce que valent les cartes de la playlist (le signe des cartes chiffrées). */
   readonly values = input<RunCardValues | null>(null);
-  /** La carte de l'offre en attente d'échange (main pleine). */
-  readonly pending = input<RunCardKey | null>(null);
-  /** Une prise est en cours d'envoi : rien d'autre ne se touche. */
+  /** Un choix part au serveur : rien d'autre ne se touche. */
   readonly busy = input(false);
 
-  /** Toucher une carte de l'offre. */
-  readonly pick = output<RunCardKey>();
-  /** Toucher une carte de la main (pour l'échanger contre la carte en attente). */
-  readonly dropCard = output<number>();
-  readonly pass = output();
   readonly next = output();
   /** « Jouer » : la difficulté choisie (quand les colonnes sont là). */
   readonly choose = output<RunDifficulty>();
@@ -66,11 +54,8 @@ export class RunPalierComponent {
     return options.some(o => o.difficulty === this.selected()) ? this.selected() : (options[0]?.difficulty ?? 'safe');
   });
 
-  readonly lang = input('fr');
-  protected readonly glyph = (card: RunCardKey, values: RunCardValues | null): string => cardGlyph(card, values, this.lang());
+  protected readonly glyph = cardGlyph;
   protected readonly color = cardColor;
-  protected readonly slots = computed(() => handSlots(this.hand(), this.handSize()));
-  protected readonly full = computed(() => handFull(this.hand(), this.handSize()));
   /** L'étagère : un disque par manche, gagné ou à venir (pointillé). */
   protected readonly shelf = computed(() => Array.from({ length: this.rounds() }, (_, i) => this.wonDiscs()[i] ?? null));
   /** Le repère de l'objectif sur la jauge du score : la jauge est le score de la manche, le repère là où l'objectif a été franchi. */
@@ -88,10 +73,10 @@ export class RunPalierComponent {
   private readonly disc = viewChild<ElementRef<HTMLElement>>('disc');
   private readonly score = viewChild<ElementRef<HTMLElement>>('score');
   private readonly fill = viewChild<ElementRef<HTMLElement>>('fill');
-  private readonly cards = viewChild<ElementRef<HTMLElement>>('cards');
+  private readonly earned = viewChild<ElementRef<HTMLElement>>('earned');
 
   constructor() {
-    // Le disque se pose, le score monte avec sa jauge, les cartes arrivent une à une (rien en mouvement réduit : la façade s'en charge).
+    // Le disque se pose, le score monte avec sa jauge, la carte gagnée arrive (rien en mouvement réduit : la façade s'en charge).
     afterNextRender(() => {
       const disc = this.disc()?.nativeElement;
       if (disc) enterCard(disc);
@@ -99,8 +84,8 @@ export class RunPalierComponent {
       if (score) tweenNumber(score, 0, this.passed().score, 0.2);
       const fill = this.fill()?.nativeElement;
       if (fill) fillBar(fill, 0.2);
-      const cards = this.cards()?.nativeElement;
-      if (cards) revealInTurn([...cards.querySelectorAll<HTMLElement>('[data-card]')], 0.45);
+      const earned = this.earned()?.nativeElement;
+      if (earned) revealInTurn([earned], 0.45);
     });
   }
 }

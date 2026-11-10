@@ -106,11 +106,11 @@ internal sealed class RunSessionCardConfiguration : IEntityTypeConfiguration<Run
 {
     public void Configure(EntityTypeBuilder<RunSessionCard> builder)
     {
-        // card : 1 QCM, 2 Joker, 3 année, 4 initiales, 5 prolongation, 6 repêchage, 7 rabais, 8 délai, 9 genre, 10 l'un ou l'autre.
+        // card : 1 QCM, 2 Échange (jamais en main : une ligne par échange fait), 3 indice, 5 prolongation ; 4 et 6 à 10 : anciennes cartes, sans effet.
         builder.ToTable("session_cards", DbSchemas.Runs, table => table.HasCheckConstraint("ck_session_cards_card", "card BETWEEN 1 AND 10"));
         builder.HasKey(c => new { c.SessionId, c.Slot });
         builder.Property(c => c.Card).HasConversion<short>();
-        // Joker : le morceau de la réserve joué à la place, qui ne se supprime pas tant qu'une partie l'a joué.
+        // Échange : le morceau de la réserve joué à la place, qui ne se supprime pas tant qu'une partie l'a joué.
         builder.HasOne("InSeconds.Api.Modules.Catalogue.Domain.Track", navigationName: null).WithMany()
             .HasForeignKey(nameof(RunSessionCard.ReplacementTrackId)).OnDelete(DeleteBehavior.Restrict);
     }

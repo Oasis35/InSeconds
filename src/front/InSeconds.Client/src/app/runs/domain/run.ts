@@ -3,7 +3,7 @@
  * les écrans en tirent (barre d'objectif, pastilles, libellés). Le serveur décide de tout (points, jauge, neutralisation, fin) : le front affiche.
  */
 
-import { RunCardOffer, RunHandCard, RunTrackEffects, RunCardValues } from './run-cards';
+import { RunCardKey, RunTrackEffects, RunCardValues } from './run-cards';
 
 export type RunStatus = 'pending' | 'won' | 'lost' | 'abandoned';
 
@@ -109,18 +109,22 @@ export interface RunSession {
    * qu'avec le choix.
    */
   readonly difficultyChoice: RunDifficultyChoice | null;
-  /** Les cartes en main (vide sans coups de pouce). */
+  /** La carte gagnée à la manche passée, qui agit sur la manche en cours (au plus une ; vide sinon). */
   readonly hand: readonly RunHandCard[];
-  /** L'offre du palier, tant qu'elle est ouverte. */
-  readonly offer: RunCardOffer | null;
-  /** Les emplacements de la main ; 0 : une playlist sans coups de pouce (pas d'écran de palier). */
-  readonly handSize: number;
+  /** « Changer de morceau » est offert : l'Échange de la manche n'a pas servi et le morceau en cours n'a pas encore été écouté. */
+  readonly swapAvailable: boolean;
   /** Le disque que la manche en cours fait gagner si elle est passée ; `null` une fois la partie finie. */
   readonly nextDisc: RunDisc | null;
-  /** Ce que valent les cartes de la playlist (règles figées) ; `null` sans coups de pouce. */
+  /** Ce que valent les cartes de la playlist (règles figées). */
   readonly cardValues: RunCardValues | null;
   /** Le fantôme de l'ami qui a lancé la playlist, s'il l'a finie ; `null` sinon (sa propre playlist, rien encore répondu). */
   readonly ghost: RunGhost | null;
+}
+
+/** La carte tenue : son numéro dans la partie et la carte. */
+export interface RunHandCard {
+  readonly slot: number;
+  readonly card: RunCardKey;
 }
 
 /** Une difficulté de manche : objectif et plafond plus ou moins hauts. */
@@ -338,14 +342,13 @@ export function runSegments(rounds: number, shown: Pick<RunRound, 'round' | 'sco
 }
 
 /**
- * L'écran de palier est dû : la playlist a des coups de pouce, la manche précédente vient d'être passée, et le serveur dit que la manche en cours
- * attend encore le joueur (son offre est ouverte ou sa difficulté reste à choisir : rien n'y a commencé), sauf si le joueur l'a déjà quitté par
- * « Suite » (`dismissedFor`, la manche qu'il a ouverte).
+ * L'écran de palier est dû : la manche précédente vient d'être passée et la manche en cours attend encore sa difficulté (rien n'y a commencé),
+ * sauf si le joueur l'a déjà quitté (`dismissedFor`, la manche qu'il a ouverte).
  */
 export function palierDue(session: RunSession, dismissedFor: number | null): boolean {
   const round = session.round;
-  if (session.status !== 'pending' || session.handSize <= 0 || !round || round.round < 2 || dismissedFor === round.round) return false;
-  return (session.offer !== null || session.difficultyChoice !== null) && session.roundTracks.length === 0
+  if (session.status !== 'pending' || !round || round.round < 2 || dismissedFor === round.round) return false;
+  return session.difficultyChoice !== null && session.roundTracks.length === 0
     && session.passedRounds.some(p => p.round === round.round - 1);
 }
 
@@ -503,9 +506,9 @@ export function comboOf(tracks: readonly Pick<RunTrack, 'position' | 'neutralize
 }
 
 /**
- * Où en est une partie, vu du serveur : son statut, ses morceaux joués, l'offre et le choix de difficulté en attente, sa main. Deux relectures
+ * Où en est une partie, vu du serveur : son statut, ses morceaux joués, le choix de difficulté en attente, sa main. Deux relectures
  * différentes disent qu'elle a avancé ailleurs (un autre onglet) ; la même relecture, que rien n'a bougé.
  */
-export const progressKey = (session: Pick<RunSession, 'status' | 'playedTracks' | 'offer' | 'difficultyChoice' | 'hand'>): string =>
-  [session.status, session.playedTracks.length, session.offer?.afterRound ?? '', session.difficultyChoice?.round ?? '',
+export const progressKey = (session: Pick<RunSession, 'status' | 'playedTracks' | 'difficultyChoice' | 'hand'>): string =>
+  [session.status, session.playedTracks.length, session.difficultyChoice?.round ?? '',
     session.hand.map(c => `${c.slot}:${c.card}`).join(',')].join('|');

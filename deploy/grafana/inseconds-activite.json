@@ -1376,7 +1376,7 @@
     },
     {
       "type": "barchart",
-      "title": "Coups de pouce : pris, lâchés, joués, offres passées",
+      "title": "Cartes gagnées et Échanges de morceau",
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROM}"

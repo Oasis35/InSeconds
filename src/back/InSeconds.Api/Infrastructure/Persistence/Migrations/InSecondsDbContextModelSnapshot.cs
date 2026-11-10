@@ -907,10 +907,6 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ended_at");
 
-                    b.Property<short>("OffersClosedThrough")
-                        .HasColumnType("smallint")
-                        .HasColumnName("offers_closed_through");
-
                     b.Property<Guid>("PlayerId")
                         .HasColumnType("uuid")
                         .HasColumnName("player_id");
@@ -968,10 +964,6 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     b.Property<short>("Card")
                         .HasColumnType("smallint")
                         .HasColumnName("card");
-
-                    b.PrimitiveCollection<int[]>("DecoyTrackIds")
-                        .HasColumnType("integer[]")
-                        .HasColumnName("decoy_track_ids");
 
                     b.Property<short?>("DroppedAfterRound")
                         .HasColumnType("smallint")

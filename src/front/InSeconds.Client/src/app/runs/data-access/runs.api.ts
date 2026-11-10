@@ -93,19 +93,9 @@ export class RunsApi {
     return toPlay(await firstValueFrom(this.client.refreshRunPreview(sessionId)));
   }
 
-  /** Prend une carte de l'offre du palier ; main pleine, `dropSlot` est la carte lâchée en échange. Rend la partie (main à jour). */
-  async takeCard(sessionId: number, afterRound: number, card: RunCardKey, dropSlot: number | null): Promise<RunSession> {
-    return toSession(await firstValueFrom(this.client.takeRunCard(sessionId, { afterRound, card, dropSlot: dropSlot ?? undefined })));
-  }
-
-  /** Joue une carte de la main sur le morceau en cours ; rend la partie et le morceau avec ses effets (le Joker : un nouveau morceau). */
-  async playCard(sessionId: number, slot: number, position: number): Promise<RunPlay> {
-    return toPlay(await firstValueFrom(this.client.playRunCard(sessionId, slot, { position })));
-  }
-
-  /** Passe l'offre du palier ; rend l'état, sans rien servir (le premier morceau ne se demande qu'à « Suite »). */
-  async passOffer(sessionId: number, afterRound: number): Promise<RunSession> {
-    return toSession(await firstValueFrom(this.client.passRunOffer(sessionId, { afterRound })));
+  /** « Changer de morceau » : l'Échange offert de la manche ; rend la partie et le morceau de réserve, à la même place. */
+  async swap(sessionId: number, position: number): Promise<RunPlay> {
+    return toPlay(await firstValueFrom(this.client.swapRunTrack(sessionId, { position })));
   }
 
   /** Choisit la difficulté de la manche en cours ; la réponse porte son premier morceau (son extrait ne part qu'avec le choix). */
@@ -283,21 +273,12 @@ function toSession(session: RunSessionResponse): RunSession {
         }
       : null,
     hand: (session.hand ?? []).filter(c => isRunCard(c.card)).map(c => ({ slot: c.slot, card: c.card as RunCardKey })),
-    offer: session.offer
-      ? { afterRound: session.offer.afterRound, cards: session.offer.cards.filter(isRunCard) }
-      : null,
-    handSize: session.handSize ?? 0,
+    swapAvailable: session.swapAvailable ?? false,
     ghost: session.ghost
       ? { pseudo: session.ghost.pseudo ?? null, total: session.ghost.total, stoppedAtRound: session.ghost.stoppedAtRound ?? null }
       : null,
     cardValues: session.cardValues
-      ? {
-          extendListenSeconds: session.cardValues.extendListenSeconds,
-          hourglassSeconds: session.cardValues.hourglassSeconds,
-          lowerTargetPercent: session.cardValues.lowerTargetPercent,
-          durable: session.cardValues.durable ?? false,
-          extendBonusSeconds: session.cardValues.extendBonusSeconds ?? 0,
-        }
+      ? { extendBonusSeconds: session.cardValues.extendBonusSeconds, rewardMarginPercent: session.cardValues.rewardMarginPercent }
       : null,
     nextDisc: session.nextDisc ? { key: session.nextDisc.key, stars: session.nextDisc.stars } : null,
   };
@@ -311,7 +292,6 @@ function toEffects(effects: RunTrackEffectsResponse | undefined): RunTrackEffect
     artistInitials: effects.artistInitials ?? null,
     titleInitials: effects.titleInitials ?? null,
     choices: effects.choices?.map(c => ({ artist: c.artist, title: c.title })) ?? null,
-    clockBonusSeconds: effects.clockBonusSeconds ?? 0,
     genre: effects.genre ?? null,
   };
 }

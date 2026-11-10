@@ -1,71 +1,55 @@
 import { TestBed } from '@angular/core/testing';
 import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import fr from '../../../../../public/i18n/fr.json';
-import { RunHandCard, RunTrackEffects } from '../../domain/run-cards';
+import { RunTrackEffects } from '../../domain/run-cards';
 import { RunRoundCardsComponent } from './run-round-cards.component';
 
-const VALUES = { extendListenSeconds: 20, hourglassSeconds: 30, lowerTargetPercent: 25, durable: false, extendBonusSeconds: 0 };
+const VALUES = { extendBonusSeconds: 5, rewardMarginPercent: 25 };
 
 const EFFECTS = (overrides: Partial<RunTrackEffects> = {}): RunTrackEffects => ({
-  cards: [], year: null, artistInitials: null, titleInitials: null, choices: null, clockBonusSeconds: 0, genre: null, ...overrides,
+  cards: [], year: null, artistInitials: null, titleInitials: null, choices: null, genre: null, ...overrides,
 });
 
 describe('RunRoundCardsComponent', () => {
-  function render(hand: RunHandCard[], effects: RunTrackEffects | null = null, playable = true) {
+  function render(effects: RunTrackEffects | null = null, refused = false) {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     TestBed.inject(TranslateService).setTranslation('fr', fr);
     TestBed.inject(TranslateService).use('fr');
     const fixture = TestBed.createComponent(RunRoundCardsComponent);
-    fixture.componentRef.setInput('hand', hand);
     fixture.componentRef.setInput('effects', effects);
     fixture.componentRef.setInput('values', VALUES);
-    fixture.componentRef.setInput('listenSeconds', 20);
-    fixture.componentRef.setInput('playable', playable);
+    fixture.componentRef.setInput('listenSeconds', 15);
+    fixture.componentRef.setInput('refused', refused);
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;
     const texts = (selector: string) => [...element.querySelectorAll(selector)].map(e => e.textContent?.replace(/\s+/g, ' ').trim());
     return { fixture, element, texts };
   }
 
-  it('les cartes de la main se jouent d\'un toucher', () => {
-    const { fixture, element } = render([{ slot: 1, card: 'year' }, { slot: 3, card: 'joker' }]);
-    const played: number[] = [];
-    fixture.componentInstance.playCard.subscribe(slot => played.push(slot));
-
-    element.querySelector<HTMLButtonElement>('[data-testid="run-play-joker"]')!.click();
-
-    expect(played).toEqual([3]);
-    expect(element.querySelector('[data-testid="run-play-year"]')?.getAttribute('aria-label')).toBe('Jouer Année');
-  });
-
-  it('les cartes jouées montent dans la carte du morceau avec ce qu\'elles révèlent', () => {
-    const { texts } = render([], EFFECTS({
-      cards: ['year', 'initials', 'net'], year: 1995, artistInitials: ['D', 'P'], titleInitials: ['O', 'M', 'T'],
+  it('l\'Indice montre l\'année, les initiales et le genre sur une seule tuile', () => {
+    const { texts } = render(EFFECTS({
+      cards: ['hint'], year: 1995, artistInitials: ['D', 'P'], titleInitials: ['O', 'M', 'T'], genre: 'Électro',
     }));
 
-    expect(texts('[data-testid="run-card-effect"]')).toEqual(['1995 Année', 'D. P. – O. M. T. Initiales', 'Un raté compte à moitié']);
+    expect(texts('[data-testid="run-card-effect"]')).toEqual(['1995 · D. P. – O. M. T. · Électro Indice']);
   });
 
-  it('le Joker ne laisse rien sur le nouveau morceau ; sans carte ni effet, rien ne s\'affiche', () => {
-    expect(render([], EFFECTS({ cards: ['joker'] })).element.querySelector('[data-testid="run-round-cards"]')).toBeNull();
+  it('le QCM dit qu\'une seule réponse est juste, la Prolongation l\'écoute du morceau', () => {
+    const { texts } = render(EFFECTS({ cards: ['three_choices', 'extend'] }));
+
+    expect(texts('[data-testid="run-card-effect"]')).toEqual(['Une seule est juste', 'Écoute de 15 s']);
   });
 
-  it('Seuil abaissé dit la baisse de la playlist, Prolongation l\'écoute du morceau ; une carte jouée prend toute la largeur', () => {
-    const { element, texts } = render([], EFFECTS({ cards: ['lower_target', 'extend'] }));
+  it('sans carte active, rien ne s\'affiche ; il ne reste là aucun bouton à toucher', () => {
+    const { element } = render(EFFECTS());
 
-    expect(texts('[data-testid="run-card-effect"]')).toEqual(['−25 % Objectif de la manche abaissé', 'Écoute de 20 s']);
-    expect(element.querySelector('[data-testid="run-card-effect"]')?.className).toContain('col-span-2');
+    expect(element.querySelector('[data-testid="run-round-cards"]')).toBeNull();
+    expect(element.querySelector('button')).toBeNull();
   });
 
-  it('hors de la saisie (réponse en route), les cartes de la main ne se touchent pas', () => {
-    const { element } = render([{ slot: 1, card: 'year' }], null, false);
+  it('un échange refusé le dit', () => {
+    const { element } = render(null, true);
 
-    expect(element.querySelector<HTMLButtonElement>('[data-testid="run-play-year"]')!.disabled).toBe(true);
-  });
-
-  it('le Sablier dit le temps ajouté', () => {
-    const { texts } = render([], EFFECTS({ cards: ['hourglass'], clockBonusSeconds: 30 }));
-
-    expect(texts('[data-testid="run-card-effect"]')[0]).toMatch(/^\+30\ss au chrono$/u);
+    expect(element.querySelector('[data-testid="run-card-refused"]')?.textContent?.trim()).toBe('Ce morceau n\'a pas pu être changé.');
   });
 });

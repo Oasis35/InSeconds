@@ -26,7 +26,7 @@ public sealed class RunsPlayerData(InSecondsDbContext db, Catalogue.Contracts.IT
                 orderby session.StartedAt
                 select new { Session = session, challenge.Code })
             .ToListAsync(ct);
-        // Le morceau qu'un Joker a mis à la place, désigné par son identifiant Deezer (l'identifiant interne ne dit rien au joueur).
+        // Le morceau qu'un Échange a mis à la place, désigné par son identifiant Deezer (l'identifiant interne ne dit rien au joueur).
         var replacements = sessions.SelectMany(row => row.Session.Cards).Where(c => c.ReplacementTrackId is not null)
             .Select(c => c.ReplacementTrackId!.Value).Distinct().ToList();
         var deezerIds = replacements.Count == 0 ? new Dictionary<int, Catalogue.Contracts.TrackInfo>() : await directory.GetAsync(replacements, ct);

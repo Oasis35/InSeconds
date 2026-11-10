@@ -21,7 +21,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
  * `[roundBadge]` (à gauche de la pochette), `[roundScore]` (ses points) et `[roundNext]` (sa suite). En ligne
  * (`layout="inline"`, un mode à écoute fixe) : `[roundCorner]` (en haut à droite de la carte, son chrono), `[roundAids]` (au-dessus de la
  * saisie, dans les deux dispositions : les coups de pouce du mode) et `[roundReveal]` (sa révélation, dans la carte, à la place de la carte de révélation) ; « Passer »
- * y est un simple lien souligné sous « Valider ». Avec `choices`, la saisie devient autant de réponses à toucher (une seule est juste,
+ * y est un simple lien souligné sous « Valider », et `[roundLinks]` y met son propre lien à côté (même style). Avec `choices`, la saisie devient autant de réponses à toucher (une seule est juste,
  * le serveur corrige comme une saisie).
  */
 @Component({
@@ -105,11 +105,13 @@ import { ButtonComponent } from '../../../ui/button/button.component';
                 </button>
               }
               <!-- « Passer » est un lien discret, le même dans tous les modes (une action sans sens propre ne prend pas la place du bouton principal). -->
-              <div class="flex justify-center">
+              <div class="flex justify-center gap-4">
                 <button type="button" class="inline-flex items-center min-h-11 px-2 text-[15px] underline underline-offset-4 touch-manipulation disabled:opacity-50"
                   style="color:var(--text-light)" [disabled]="phase === 'submitting' || locked()" (click)="round.askSkip()" data-testid="round-skip">
                   {{ 'gameplay.round.skip' | translate }}
                 </button>
+                <!-- Le lien du mode à côté de « Passer » (le mode Run : « Changer de morceau »). -->
+                <ng-content select="[roundLinks]" />
               </div>
             }
           </form>

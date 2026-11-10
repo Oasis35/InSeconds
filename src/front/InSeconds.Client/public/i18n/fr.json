@@ -65,17 +65,13 @@
       "challenge_not_found": "Cette playlist n'existe pas. Vérifie le lien.",
       "comparison_locked": "La comparaison s'ouvre une fois ta partie terminée.",
       "difficulty_locked": "La difficulté de cette manche est déjà fixée.",
-      "card_not_found": "Cette carte n'est plus dans ta main.",
-      "offer_closed": "Cette offre n'est plus ouverte.",
-      "hand_full": "Ta main est pleine : lâche une carte pour en prendre une.",
-      "card_already_active": "Cette carte est déjà jouée sur ce morceau.",
-      "card_unavailable": "Cette carte ne peut pas se jouer ici.",
       "session_not_found": "Cette partie n'existe plus.",
       "already_played": "Tu as déjà joué cette playlist.",
       "abandoned": "Tu as abandonné cette playlist.",
       "track_not_found": "Ce morceau n'existe pas dans cette playlist.",
       "track_lock_not_released": "Réponds d'abord au morceau en cours.",
-      "already_answered": "Tu as déjà répondu à ce morceau."
+      "already_answered": "Tu as déjà répondu à ce morceau.",
+      "swap_unavailable": "Le changement de morceau n'est plus possible."
     }
   },
   "shell": {
@@ -1025,43 +1021,18 @@
       "scoreLabel": "{{score}} points pour un objectif de {{objective}}",
       "nextRound": "Manche {{round}}",
       "pointsFor": "pts pour",
-      "offer": "Un coup de pouce",
-      "pass": "Passer",
-      "hand": "En main",
-      "emptySlot": "Emplacement libre",
-      "dropHint": "Touche la carte à lâcher",
-      "next": "Suite"
+      "next": "Suite",
+      "earned": "Carte gagnée"
     },
     "cards": {
       "three_choices": {
         "name": "QCM"
       },
-      "joker": {
-        "name": "Joker"
-      },
-      "year": {
-        "name": "Année"
-      },
-      "initials": {
-        "name": "Initiales"
+      "hint": {
+        "name": "Indice"
       },
       "extend": {
         "name": "Prolongation"
-      },
-      "net": {
-        "name": "Repêchage"
-      },
-      "lower_target": {
-        "name": "Rabais"
-      },
-      "hourglass": {
-        "name": "Délai"
-      },
-      "genre": {
-        "name": "Genre"
-      },
-      "either_or": {
-        "name": "L’un ou l’autre"
       }
     },
     "difficulty": {
@@ -1071,22 +1042,16 @@
       "perTrack": "{{points}} pts max\npar morceau",
       "play": "Jouer",
       "listen": "écoute {{seconds}}",
-      "hand": "En main",
       "easy": "Facile",
       "safe": "Normal",
       "risky": "Mélomane",
       "columnLabel": "{{name}} : objectif {{objective}} points, jusqu'à {{perTrack}} points par morceau"
     },
     "roundCards": {
-      "play": "Jouer {{card}}",
-      "net": "Un raté compte à moitié",
-      "lowerTarget": "Objectif de la manche abaissé",
-      "hourglass": "+{{seconds}} au chrono",
       "extend": "Écoute de {{seconds}}",
       "choicesHint": "Une seule est juste",
-      "refused": "Cette carte n'a pas pu être jouée.",
-      "netQuarter": "Un raté compte un quart",
-      "eitherOr": "Artiste ou titre : un seul suffit"
+      "swap": "Changer de morceau",
+      "refused": "Ce morceau n'a pas pu être changé."
     },
     "ghost": {
       "ahead": "{{ points }} pts d’avance",

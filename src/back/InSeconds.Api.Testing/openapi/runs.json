@@ -924,12 +924,12 @@
         }
       }
     },
-    "/api/runs/sessions/{id}/cards": {
+    "/api/runs/sessions/{id}/swap": {
       "post": {
         "tags": [
           "Runs"
         ],
-        "operationId": "takeRunCard",
+        "operationId": "swapRunTrack",
         "parameters": [
           {
             "name": "id",
@@ -945,177 +945,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TakeRunCard"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RunSessionResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/runs/sessions/{id}/cards/{slot}/drop": {
-      "post": {
-        "tags": [
-          "Runs"
-        ],
-        "operationId": "dropRunCard",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "slot",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RunSessionResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/runs/sessions/{id}/cards/{slot}/play": {
-      "post": {
-        "tags": [
-          "Runs"
-        ],
-        "operationId": "playRunCard",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "slot",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PlayRunCard"
+                "$ref": "#/components/schemas/SwapRunTrack"
               }
             }
           },
@@ -1168,87 +998,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RunPlayResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/runs/sessions/{id}/cards/pass": {
-      "post": {
-        "tags": [
-          "Runs"
-        ],
-        "operationId": "passRunOffer",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PassRunOffer"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RunSessionResponse"
                 }
               }
             }
@@ -1827,6 +1576,12 @@
           "totalScore": {
             "type": "integer",
             "format": "int32"
+          },
+          "rewardCard": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -1948,21 +1703,6 @@
               "$ref": "#/components/schemas/RunHandCardResponse"
             }
           },
-          "offer": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/RunCardOfferResponse"
-              }
-            ]
-          },
-          "handSize": {
-            "type": "integer",
-            "format": "int32",
-            "default": 0
-          },
           "nextDisc": {
             "oneOf": [
               {
@@ -1992,6 +1732,10 @@
                 "$ref": "#/components/schemas/RunGhostResponse"
               }
             ]
+          },
+          "swapAvailable": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -2248,37 +1992,6 @@
           }
         }
       },
-      "PlayRunCard": {
-        "required": [
-          "position"
-        ],
-        "type": "object",
-        "properties": {
-          "position": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "RunCardOfferResponse": {
-        "required": [
-          "afterRound",
-          "cards"
-        ],
-        "type": "object",
-        "properties": {
-          "afterRound": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "cards": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      },
       "RunChoiceResponse": {
         "required": [
           "artist",
@@ -2316,8 +2029,7 @@
           "year",
           "artistInitials",
           "titleInitials",
-          "choices",
-          "clockBonusSeconds"
+          "choices"
         ],
         "type": "object",
         "properties": {
@@ -2361,10 +2073,6 @@
               "$ref": "#/components/schemas/RunChoiceResponse"
             }
           },
-          "clockBonusSeconds": {
-            "type": "integer",
-            "format": "int32"
-          },
           "genre": {
             "type": [
               "null",
@@ -2373,69 +2081,20 @@
           }
         }
       },
-      "TakeRunCard": {
-        "required": [
-          "afterRound",
-          "card"
-        ],
-        "type": "object",
-        "properties": {
-          "afterRound": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "card": {
-            "type": "string"
-          },
-          "dropSlot": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          }
-        }
-      },
-      "PassRunOffer": {
-        "required": [
-          "afterRound"
-        ],
-        "type": "object",
-        "properties": {
-          "afterRound": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
       "RunCardValuesResponse": {
         "required": [
-          "extendListenSeconds",
-          "hourglassSeconds",
-          "lowerTargetPercent"
+          "extendBonusSeconds",
+          "rewardMarginPercent"
         ],
         "type": "object",
         "properties": {
-          "extendListenSeconds": {
+          "extendBonusSeconds": {
             "type": "number",
             "format": "double"
           },
-          "hourglassSeconds": {
+          "rewardMarginPercent": {
             "type": "integer",
             "format": "int32"
-          },
-          "lowerTargetPercent": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "durable": {
-            "type": "boolean",
-            "default": false
-          },
-          "extendBonusSeconds": {
-            "type": "number",
-            "format": "double",
-            "default": 0
           }
         }
       },
@@ -2497,6 +2156,18 @@
             "format": "int32"
           }
         }
+      },
+      "SwapRunTrack": {
+        "required": [
+          "position"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       }
     }
   },
@@ -2509,18 +2180,6 @@
     },
     {
       "name": "InSeconds.Api.Modules.Runs.Application.RevokeRunAccessEndpoint"
-    },
-    {
-      "name": "InSeconds.Api.Modules.Runs.Application.TakeRunCardEndpoint"
-    },
-    {
-      "name": "InSeconds.Api.Modules.Runs.Application.DropRunCardEndpoint"
-    },
-    {
-      "name": "InSeconds.Api.Modules.Runs.Application.PassRunOfferEndpoint"
-    },
-    {
-      "name": "InSeconds.Api.Modules.Runs.Application.PlayRunCardEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Runs.Application.GetRunComparisonEndpoint"
@@ -2557,6 +2216,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Runs.Application.AbandonRunEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.SwapRunTrackEndpoint"
     }
   ]
 }

@@ -14,7 +14,7 @@ export const TRACK = (overrides: Partial<RunTrack> = {}): RunTrack => ({
 export const SESSION = (overrides: Partial<RunSession> = {}): RunSession => ({
   sessionId: 7, challengeCode: 'ABC234', status: 'pending', rounds: 4, tracksPerRound: 5, listenSeconds: 10, totalScore: 0, roundsPassed: 0,
   round: ROUND(), roundTracks: [], finish: null, answerSeconds: 45, clockRemainingSeconds: null, playedTracks: [], passedRounds: [],
-  difficultyChoice: null, hand: [], offer: null, handSize: 0, nextDisc: null, cardValues: null, ghost: null, ...overrides,
+  difficultyChoice: null, hand: [], swapAvailable: false, nextDisc: null, cardValues: null, ghost: null, ...overrides,
 });
 
 export const CURRENT = (overrides: Partial<RunCurrentTrack> = {}): RunCurrentTrack => ({
@@ -42,7 +42,7 @@ export const COMPARISON = (overrides: Partial<RunComparison> = {}): RunCompariso
 });
 
 /** Un faux adaptateur : chaque réponse se règle par une propriété, chaque appel est noté. */
-export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge' | 'comparison' | 'launch' | 'join' | 'refreshPreview' | 'submitAnswer' | 'startClock' | 'abandon' | 'chooseDifficulty' | 'takeCard' | 'passOffer' | 'playCard'> {
+export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge' | 'comparison' | 'launch' | 'join' | 'refreshPreview' | 'submitAnswer' | 'startClock' | 'abandon' | 'chooseDifficulty' | 'swap'> {
   readonly calls: string[] = [];
   readonly answers: RunAnswerToSend[] = [];
 
@@ -55,9 +55,7 @@ export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge'
   refreshResult: RunPlay | Error = PLAY();
   answerResult: RunPlay | Error = PLAY();
   chooseResult: RunPlay | Error = PLAY();
-  takeResult: RunSession | Error = SESSION();
-  passResult: RunSession | Error = SESSION();
-  playResult: RunPlay | Error = PLAY();
+  swapResult: RunPlay | Error = PLAY();
   abandonError: Error | null = null;
 
   me(): Promise<RunsMe> {
@@ -109,19 +107,9 @@ export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge'
     return this.chooseResult instanceof Error ? Promise.reject(this.chooseResult) : Promise.resolve(this.chooseResult);
   }
 
-  takeCard(sessionId: number, afterRound: number, card: string, dropSlot: number | null): Promise<RunSession> {
-    this.calls.push(`takeCard:${sessionId}:${afterRound}:${card}:${dropSlot ?? ''}`);
-    return this.takeResult instanceof Error ? Promise.reject(this.takeResult) : Promise.resolve(this.takeResult);
-  }
-
-  playCard(sessionId: number, slot: number, position: number): Promise<RunPlay> {
-    this.calls.push(`playCard:${sessionId}:${slot}:${position}`);
-    return this.playResult instanceof Error ? Promise.reject(this.playResult) : Promise.resolve(this.playResult);
-  }
-
-  passOffer(sessionId: number, afterRound: number): Promise<RunSession> {
-    this.calls.push(`passOffer:${sessionId}:${afterRound}`);
-    return this.passResult instanceof Error ? Promise.reject(this.passResult) : Promise.resolve(this.passResult);
+  swap(sessionId: number, position: number): Promise<RunPlay> {
+    this.calls.push(`swap:${sessionId}:${position}`);
+    return this.swapResult instanceof Error ? Promise.reject(this.swapResult) : Promise.resolve(this.swapResult);
   }
 
   startClock(sessionId: number, position: number): Promise<number | null> {

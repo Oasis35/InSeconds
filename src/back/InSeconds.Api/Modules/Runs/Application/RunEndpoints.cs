@@ -96,7 +96,7 @@ public static class LaunchRunEndpoint
     {
         var challenge = launch.Plan!.Challenge!;
         store.AddChallenge(challenge);
-        var session = RunSession.Start(challenge.Id, launch.PlayerId, time.GetUtcNow(), challenge.Rules);
+        var session = RunSession.Start(challenge.Id, launch.PlayerId, time.GetUtcNow());
         await store.AddAsync(session, ct);
         RunsLog.RunLaunched(logger, session.Id, launch.PlayerId, challenge.Code);
         metrics.RunLaunched();
@@ -186,7 +186,7 @@ public static class JoinRunEndpoint
     {
         var challenge = join.Challenge!;
         var resuming = join.Session is not null;
-        var session = join.Session ?? RunSession.Start(challenge.Id, join.PlayerId, time.GetUtcNow(), challenge.Rules);
+        var session = join.Session ?? RunSession.Start(challenge.Id, join.PlayerId, time.GetUtcNow());
         if (resuming)
         {
             RunsLog.SessionResumed(logger, session.Id, join.PlayerId, session.Answers.Count);
@@ -477,11 +477,7 @@ public static class ChooseRunDifficultyEndpoint
     {
         var (session, challenge) = loaded;
         var difficulty = RunDifficulties.Parse(request.Difficulty)!.Value;
-        // Choisir la difficulté ferme l'offre encore ouverte du palier : une offre passée sans carte, comptée comme telle.
-        var offerOpen = session.OpenOffer(challenge) is not null;
         session.ChooseDifficulty(challenge, request.Round, difficulty, time.GetUtcNow());
-        if (offerOpen)
-            metrics.OfferPassed();
         RunsLog.DifficultyChosen(logger, session.Id, session.PlayerId, request.Round, RunDifficulties.KeyOf(difficulty));
         metrics.DifficultyChosen(request.Round, RunDifficulties.KeyOf(difficulty));
         return await player.AdvanceAsync(await player.LoadAsync(session, challenge, ct), answered: null, revealed: null, isResuming: false, ct);

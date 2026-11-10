@@ -8,7 +8,7 @@ public sealed record LoadedRun(RunSession Session, RunChallenge Challenge, IRead
 {
     public RunChallengeTrack? TrackAt(int position) => Challenge.Tracks.FirstOrDefault(t => t.Position == position);
 
-    /// <summary>Le morceau joué à cette position (celui de la réserve qu'un Joker y a mis, sinon celui du défi).</summary>
+    /// <summary>Le morceau joué à cette position (celui de la réserve qu'un Échange y a mis, sinon celui du défi).</summary>
     public int TrackIdAt(int position) => Session.TrackIdAt(Challenge, position);
 
     public TrackInfo InfoAt(int position) => Tracks[TrackIdAt(position)];
@@ -35,10 +35,9 @@ public sealed class RunPlayer(
 {
     public IRunScoringPolicy Scoring => scoring;
 
-    /// <summary>Les morceaux du défi de cette partie, réserve du Joker comprise (noms, pochette, identifiant Deezer), en une lecture.</summary>
+    /// <summary>Les morceaux du défi de cette partie, réserve de l'Échange comprise (noms, pochette, identifiant Deezer), en une lecture.</summary>
     public async Task<LoadedRun> LoadAsync(RunSession session, RunChallenge challenge, CancellationToken ct) =>
-        new(session, challenge, await directory.GetAsync(
-            challenge.AllTrackIds().Concat(session.Cards.SelectMany(c => c.DecoyTrackIds ?? [])).Distinct().ToList(), ct));
+        new(session, challenge, await directory.GetAsync(challenge.AllTrackIds().Distinct().ToList(), ct));
 
     /// <summary>
     /// Fait avancer la partie jusqu'au morceau à jouer : <paramref name="answered"/> est ce que la réponse du joueur vient de faire (vide pour un
@@ -54,7 +53,7 @@ public sealed class RunPlayer(
         var ended = false;
         if (answered is { EndsRound: true })
         {
-            summaries.Add(RunViews.Summary(run, answered, scoring));
+            AddSummary(run, answered, summaries);
             ended = !session.IsPending;
         }
 
@@ -64,7 +63,7 @@ public sealed class RunPlayer(
             var track = run.TrackAt(session.NextPosition)!;
             // Une manche dont la difficulté reste à choisir : rien de son premier morceau ne part (ni extrait, ni neutralisation) avant le choix,
             // sinon le joueur miserait en connaissant le morceau. Le choix (POST …/difficulty) reprend ici.
-            if (session.CanChooseDifficulty(challenge, track.Round) || session.OpenOffer(challenge) is not null)
+            if (session.CanChooseDifficulty(challenge, track.Round))
                 break;
             var trackId = run.TrackIdAt(track.Position);
             var info = run.Tracks[trackId];
@@ -91,7 +90,7 @@ public sealed class RunPlayer(
             RunsLog.TrackNeutralized(logger, trackId, session.Id, track.Position, track.Round);
             metrics.TrackNeutralized();
             if (step.EndsRound)
-                summaries.Add(RunViews.Summary(run, step, scoring));
+                AddSummary(run, step, summaries);
             ended = !session.IsPending;
         }
 
@@ -122,15 +121,25 @@ public sealed class RunPlayer(
         return RunViews.Session(run, scoring, rules.Discs, record, shapes, time.GetUtcNow(), await ghosts.OfAsync(run.Session, run.Challenge, ct));
     }
 
+    // Le bilan d'une manche terminée ; la carte qu'elle fait gagner se journalise et se compte ici, une seule fois (la manche ne se termine qu'une fois).
+    private void AddSummary(LoadedRun run, RunStep step, List<RunRoundSummaryResponse> summaries)
+    {
+        var summary = RunViews.Summary(run, step, scoring);
+        summaries.Add(summary);
+        if (summary.RewardCard is not { } card)
+            return;
+        RunsLog.CardEarned(logger, run.Session.Id, run.Session.PlayerId, step.Round, card);
+        metrics.CardEarned(card);
+    }
+
     /// <summary>
-    /// Ce que les cartes actives sur le morceau de cette position révèlent ou changent, pour lui seul (piège 31) ; vide sans carte. Playlist durable :
-    /// les cartes de la main, recalculées à chaque envoi (les leurres du QCM se retirent de la même graine, avec des morceaux proches de la bonne
-    /// réponse). Playlist d'avant : les cartes jouées sur ce morceau, « QCM » avec les deux leurres figés quand la carte a été jouée.
+    /// Ce que la carte active sur le morceau de cette position révèle ou change, pour lui seul (piège 31) ; vide sans carte. La carte est celle que
+    /// la manche d'avant a offerte : elle aide les cinq morceaux de la manche, recalculée à chaque envoi (les leurres du QCM se retirent de la même
+    /// graine, avec des morceaux proches de la bonne réponse).
     /// </summary>
     private async Task<RunTrackEffectsResponse?> EffectsAsync(LoadedRun run, int position, CancellationToken ct)
     {
-        var rules = run.Challenge.Rules;
-        var active = run.Session.ActiveCardsAt(rules, position);
+        var active = run.Session.ActiveCardsAt(run.Challenge, position);
         if (active.Count == 0)
             return null;
         var info = run.InfoAt(position);
@@ -138,30 +147,20 @@ public sealed class RunPlayer(
         if (active.Contains(RunCard.ThreeChoices))
         {
             var options = new List<RunChoiceResponse> { new(info.Artist, info.DisplayTitle) };
-            if (rules.Cards?.Durable == true)
-            {
-                var decoyIds = await choiceDealer.DecoysAsync(run.Challenge, position, info, ct);
-                var decoys = decoyIds.Count == 0 ? new Dictionary<int, TrackInfo>() : await directory.GetAsync(decoyIds, ct);
-                options.AddRange(decoyIds.Where(decoys.ContainsKey).Select(id => new RunChoiceResponse(decoys[id].Artist, decoys[id].DisplayTitle)));
-            }
-            else
-            {
-                var decoyIds = run.Session.Cards.Where(c => c.PlayedPosition == position && c.DecoyTrackIds is not null)
-                    .OrderBy(c => c.PlayOrder).LastOrDefault()?.DecoyTrackIds ?? [];
-                options.AddRange(decoyIds.Where(run.Tracks.ContainsKey).Select(id => new RunChoiceResponse(run.Tracks[id].Artist, run.Tracks[id].DisplayTitle)));
-            }
+            var decoyIds = await choiceDealer.DecoysAsync(run.Challenge, position, info, ct);
+            var decoys = decoyIds.Count == 0 ? new Dictionary<int, TrackInfo>() : await directory.GetAsync(decoyIds, ct);
+            options.AddRange(decoyIds.Where(decoys.ContainsKey).Select(id => new RunChoiceResponse(decoys[id].Artist, decoys[id].DisplayTitle)));
 
             // Sans deux leurres, la carte ne montrerait que la réponse : elle ne montre rien.
             if (options.Count == RunChoices.DecoyCount + 1)
                 choices = shuffle.Shuffle(options, unchecked((run.Challenge.Seed * 31) + position + 1));
         }
 
-        var initials = active.Contains(RunCard.Initials);
+        var hint = active.Contains(RunCard.Hint);
         return new RunTrackEffectsResponse(
-            active.Select(RunCards.KeyOf).ToList(), active.Contains(RunCard.Year) ? info.ReleaseYear : null,
-            initials ? RunInitials.Of(info.Artist) : null, initials ? RunInitials.Of(info.DisplayTitle) : null, choices,
-            position == run.Session.NextPosition ? run.Session.ClockBonus(rules) : 0,
-            active.Contains(RunCard.Genre) ? info.Genres.FirstOrDefault() : null);
+            active.Select(RunCards.KeyOf).ToList(), hint ? info.ReleaseYear : null,
+            hint ? RunInitials.Of(info.Artist) : null, hint ? RunInitials.Of(info.DisplayTitle) : null, choices,
+            hint ? info.Genres.FirstOrDefault() : null);
     }
 
     // Le record (partie gagnée ou perdue), dans la transaction de fin : une partie abandonnée ne compte pas.
@@ -190,7 +189,7 @@ internal static class RunViews
         _ => "abandoned",
     };
 
-    /// <summary>Un morceau joué : révélé (noms, pochette, lien Deezer), sauf s'il a été neutralisé. Après un Joker, le morceau joué à sa place.</summary>
+    /// <summary>Un morceau joué : révélé (noms, pochette, lien Deezer), sauf s'il a été neutralisé. Après un Échange, le morceau joué à sa place.</summary>
     public static RunTrackResponse Track(LoadedRun run, RunChallengeTrack track, RunAnswer answer, IReadOnlyDictionary<int, byte[]>? shapes = null)
     {
         if (answer.Neutralized)
@@ -221,8 +220,10 @@ internal static class RunViews
     public static RunRoundSummaryResponse Summary(LoadedRun run, RunStep step, IRunScoringPolicy scoring)
     {
         var progress = run.Session.RoundProgressOf(run.Challenge, step.Round, scoring);
+        var reward = run.Session.Cards.FirstOrDefault(c => c.Card != RunCard.Swap && c.AcquiredRound == step.Round);
         return new RunRoundSummaryResponse(
-            step.Round, step.Outcome != RunStepOutcome.Lost, progress.Score, progress.Objective, PlayedTracks(run, step.Round), run.Session.TotalScore);
+            step.Round, step.Outcome != RunStepOutcome.Lost, progress.Score, progress.Objective, PlayedTracks(run, step.Round), run.Session.TotalScore,
+            reward is null ? null : RunCards.KeyOf(reward.Card));
     }
 
     public static RunSessionResponse Session(
@@ -266,11 +267,9 @@ internal static class RunViews
             session.TotalScore, session.RoundsPassed, round, roundTracks, finish,
             rules.AnswerSeconds, session.IsPending ? session.ClockRemaining(rules, now) : null, playedTracks, passedRounds, choice,
             session.Hand.Select(c => new RunHandCardResponse(c.Slot, RunCards.KeyOf(c.Card))).ToList(),
-            session.OpenOffer(challenge) is { } offer ? new RunCardOfferResponse(offer.AfterRound, offer.Cards.Select(RunCards.KeyOf).ToList()) : null,
-            rules.Cards?.HandSize ?? 0,
+            session.IsPending && session.CanSwap(challenge),
             session.IsPending ? DiscOf(DiscLadder.Of(session.RoundsPassed + 1, discs)) : null,
-            rules.Cards is { } cards ? new RunCardValuesResponse(
-                cards.ExtendListenSeconds, cards.HourglassSeconds, cards.LowerTargetPercent, cards.Durable, cards.ExtendBonusSeconds) : null,
+            rules.Cards is { } cards ? new RunCardValuesResponse(cards.ExtendBonusSeconds, cards.RewardMarginPercent) : null,
             ghost);
     }
 

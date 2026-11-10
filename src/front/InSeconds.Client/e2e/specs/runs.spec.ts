@@ -57,6 +57,8 @@ test.describe('Mode Platines', () => {
   test("partie gagnée : 20 bonnes réponses, les 4 manches débloquées, le disque d'or et un nouveau record", async ({ page, api }) => {
     // 20 morceaux répondus un à un, chacun avec sa réponse : plus long qu'une partie du jour.
     test.slow();
+    // Seul l'Indice se gagne ici : le QCM remplace la saisie, que ce parcours tape (couvert par les tests du store).
+    await api.setRunSetting('Runs:Cards', '["hint"]');
     const run = new RunPage(page);
     await run.loginAsAdmin();
     await run.launch();
@@ -115,6 +117,7 @@ test.describe('Mode Platines', () => {
 
   test("« Mélomane » avant la dernière manche : le boss annonce une écoute plus courte, et la partie se gagne jusqu'au bout", async ({ page, api }) => {
     test.slow();
+    await api.setRunSetting('Runs:Cards', '["hint"]');
     const run = new RunPage(page);
     await run.loginAsAdmin();
     await run.launch();
@@ -180,8 +183,6 @@ test.describe('Mode Platines', () => {
     await run.loginAsAdmin();
     await run.launch();
     const tracks = await api.latestRunTracks();
-    await expect(run.handCards).toHaveCount(0);
-
     await inSequence(tracks.filter(t => t.round === 1), track => run.answerRight(track));
 
     // La manche passée enchaîne directement sur la suivante : le premier morceau de la manche 2 se joue.
@@ -191,27 +192,38 @@ test.describe('Mode Platines', () => {
     await expect(run.answerInput).toBeVisible();
   });
 
-  test('une carte prise au palier agit toute seule sur la manche suivante, sans clic', async ({ page, api }) => {
-    await api.setRunSetting('Runs:Cards', '["year"]');
+  test('une manche passée bien au-delà de l\'objectif donne une carte, qui agit toute seule sur la manche suivante', async ({ page, api }) => {
+    await api.setRunSetting('Runs:Cards', '["hint"]');
     const run = new RunPage(page);
     await run.loginAsAdmin();
     await run.launch();
     const tracks = await api.latestRunTracks();
 
-    // Première manche sans aucune carte : rien en main, rien à jouer.
-    await expect(run.handCards).toHaveCount(0);
+    // Première manche sans aucune carte : rien à afficher sur le morceau.
     await expect(run.cardEffects).toHaveCount(0);
     await inSequence(tracks.filter(t => t.round === 1), track => run.answerRight(track));
 
-    // Au palier : on prend l'Année, puis « Jouer » (Normal d'abord).
+    // Au palier : la carte gagnée est annoncée, sans rien à toucher ; « Jouer » (Normal d'abord).
     await expect(run.palier).toBeVisible();
-    await page.getByTestId('run-offer-year').click();
+    await expect(page.getByTestId('run-palier-earned')).toContainText('Indice');
     await run.palierNextButton.click();
 
-    // L'année s'affiche d'elle-même sur le morceau ; la carte n'est pas un bouton.
+    // L'indice s'affiche de lui-même sur le morceau (l'année) ; la carte n'est pas un bouton.
     await expect(run.roundTitle).toHaveText('Manche 2');
-    await expect(run.cardEffects.and(page.locator('[data-card="year"]'))).toBeVisible();
-    await expect(run.handCards).toHaveCount(0);
+    await expect(run.cardEffects.and(page.locator('[data-card="hint"]'))).toBeVisible();
+  });
+
+  test('« Changer de morceau » : un seul échange par manche, rendu à la manche suivante', async ({ page }) => {
+    const run = new RunPage(page);
+    await run.loginAsAdmin();
+    await run.launch();
+
+    await expect(run.swapLink).toHaveText('Changer de morceau');
+    await run.swapLink.click();
+
+    // Le morceau de réserve prend la place : l'échange a servi, le lien disparaît jusqu'à la manche suivante.
+    await expect(run.swapLink).toHaveCount(0);
+    await expect(run.answerInput).toBeVisible();
   });
 
   test('le chrono à zéro envoie ce qui est tapé, sans confirmation', async ({ page }) => {

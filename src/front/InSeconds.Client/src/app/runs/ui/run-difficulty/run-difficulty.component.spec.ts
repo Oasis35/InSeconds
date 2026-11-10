@@ -19,19 +19,18 @@ describe('RunDifficultyComponent', () => {
     fixture.componentRef.setInput('round', 2);
     fixture.componentRef.setInput('totalScore', 250);
     fixture.componentRef.setInput('options', options);
-    fixture.componentRef.setInput('hand', [{ slot: 1, card: 'year' }, { slot: 2, card: 'three_choices' }]);
     fixture.detectChanges();
     return { fixture, element: fixture.nativeElement as HTMLElement };
   }
 
-  it('« Manche 2 », « Difficulté ? », le score, les trois difficultés et la main', () => {
+  it('« Manche 2 », « Difficulté ? », le score et les trois difficultés', () => {
     const { element } = render();
 
     expect(element.textContent).toContain('Manche 2');
     expect(element.textContent).toContain('Difficulté ?');
     expect(element.querySelector('[data-testid="run-difficulty-score"]')?.textContent?.trim()).toBe('250');
     expect(element.querySelectorAll('[data-testid="run-difficulty-objective"]')).toHaveLength(3);
-    expect(element.querySelector('[data-testid="run-difficulty-hand"]')?.textContent).toContain('Année');
+    expect(element.querySelector('[data-testid="run-difficulty-hand"]')).toBeNull();
   });
 
   it('« Jouer » envoie Normal sans rien toucher', () => {
