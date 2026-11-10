@@ -981,11 +981,21 @@
       "shortfallPoints": "{{ points }} pts",
       "shortfallAfter": "short of the {{ disc }}"
     },
+    "theme": {
+      "title": "Your playlist",
+      "subtitle": "Round {{round}}: pick the theme",
+      "tracks": "5 tracks from this theme",
+      "surprise": "Surprise",
+      "surpriseHint": "We pick one at random",
+      "friends": "Your friends play the same playlist.",
+      "launch": "Launch"
+    },
     "link": {
       "guest": "Guest",
       "title": "{{ pseudo }} sent you a playlist",
       "tracks": "{{ tracks }} tracks, the same for all its players: compare your scores at the end",
       "rounds": "{{ rounds }} rounds, getting harder",
+      "theme": "Round {{ round }}: {{ name }} theme",
       "listen": "{{ seconds }} to find the artist and the title",
       "listenAndAnswer": "{{ seconds }} of listening, {{ answer }} to find the artist and the title",
       "goal": "Clear all {{ rounds }} rounds and earn the gold disc",
@@ -1019,6 +1029,7 @@
       "beatMe": "Beat me on the same playlist:"
     },
     "palier": {
+      "theme": "Round {{round}} · theme",
       "round": "Round {{round}}",
       "shelf": "The playlist's discs",
       "points": "pts",

@@ -29,6 +29,22 @@ public sealed record RunShelfDiscResponse(RunDiscResponse Disc, int Count);
 
 public sealed record RunPendingResponse(int SessionId, string ChallengeCode);
 
+/// <summary>Un thème proposé au lancement : identifiant, nom et manche qu'il concernera (la première manche à thème).</summary>
+public sealed record RunThemeOfferItem(int Id, string Name, int Round);
+
+public static class GetRunThemeOfferEndpoint
+{
+    /// <summary>
+    /// <c>GET /api/runs/theme-offer</c> : les deux thèmes proposés au créateur d'une playlist (tirés au hasard), vides quand aucune manche n'a de
+    /// thème. Le choix part avec <c>POST /api/runs/challenges?themeId=</c> ; sans thème c'est « Surprise ». Ne crée rien.
+    /// </summary>
+    [Authorize]
+    [WolverineGet("/api/runs/theme-offer", OperationId = "getRunThemeOffer")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    public static async Task<IReadOnlyList<RunThemeOfferItem>> Get(RunChallengePlanner planner, CancellationToken ct) =>
+        [.. (await planner.OfferThemesAsync(ct)).Select(t => new RunThemeOfferItem(t.ThemeId, t.Name, t.Round))];
+}
+
 public static class GetRunsMeEndpoint
 {
     /// <summary>
@@ -59,14 +75,15 @@ public sealed record RunLaunch(Guid PlayerId, bool HasAccess, PlanResult? Plan);
 public static class LaunchRunEndpoint
 {
     public static async Task<RunLaunch> LoadAsync(
-        ICurrentPlayer current, IRunAccess access, IRunsStore store, RunChallengePlanner planner, ILogger<RunLaunch> logger, CancellationToken ct)
+        ICurrentPlayer current, IRunAccess access, IRunsStore store, RunChallengePlanner planner, ILogger<RunLaunch> logger,
+        CancellationToken ct, int? themeId = null)
     {
         var playerId = current.PlayerId!.Value;
         if (!await access.CanPlayAsync(playerId, ct))
             return new RunLaunch(playerId, false, null);
 
         await store.LockPlayerStartAsync(playerId, ct);
-        var plan = await planner.PlanAsync(playerId, ct);
+        var plan = await planner.PlanAsync(playerId, themeId, ct);
         if (plan.Challenge is null)
             RunsLog.PoolInsufficient(logger, plan.EligibleCount, plan.Requested);
         return new RunLaunch(playerId, true, plan);

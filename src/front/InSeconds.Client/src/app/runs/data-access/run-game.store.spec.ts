@@ -127,7 +127,7 @@ describe('RunGameStore', () => {
       expect(audio.calls).toContain('unlock');
       await begin;
 
-      expect(api.calls).toEqual(['me', 'launch']);
+      expect(api.calls).toEqual(['me', 'themeOffer', 'launch']);
       expect(store.screen()).toBe('playing');
       expect(audio.calls).toEqual(expect.arrayContaining(['unlock', 'load https://cdn/preview-1.mp3', 'playUntil 10']));
       expect(round.steps()).toEqual([10]);
@@ -164,6 +164,45 @@ describe('RunGameStore', () => {
       expect(round.maxStep()).toBe(10);
       expect(round.nextStep()).toBeNull();
       expect(round.availableHintLevels()).toEqual([]);
+    });
+  });
+
+  describe('le choix du thème au lancement', () => {
+    it("propose les thèmes au créateur d'une playlist neuve, « Lancer » la tire avec le thème choisi", async () => {
+      api.offerResult = [{ id: 1, name: 'Années 80', round: 3 }, { id: 2, name: 'Rap français', round: 3 }];
+      await store.init();
+
+      await store.begin();
+      expect(store.screen()).toBe('theme');
+      expect(store.themeChoice()).toBe(1);
+      expect(api.calls).not.toContain('launch');
+
+      store.chooseTheme(2);
+      await store.launchWithTheme();
+
+      expect(api.calls).toContain('launch:2');
+      expect(store.screen()).toBe('playing');
+    });
+
+    it('« Surprise » tire sans thème', async () => {
+      api.offerResult = [{ id: 1, name: 'Années 80', round: 3 }];
+      await store.init();
+      await store.begin();
+
+      store.chooseTheme(null);
+      await store.launchWithTheme();
+
+      expect(api.calls).toContain('launch');
+    });
+
+    it("sans thème à proposer, ou si l'offre échoue, la playlist se lance tout de suite", async () => {
+      api.offerResult = new Error('réseau');
+      await store.init();
+
+      await store.begin();
+
+      expect(api.calls).toContain('launch');
+      expect(store.screen()).toBe('playing');
     });
   });
 

@@ -981,11 +981,21 @@
       "shortfallPoints": "{{ points }} pts",
       "shortfallAfter": "pour le {{ disc }}"
     },
+    "theme": {
+      "title": "Ta playlist",
+      "subtitle": "Manche {{round}} : choisis le thème",
+      "tracks": "5 morceaux de ce thème",
+      "surprise": "Surprise",
+      "surpriseHint": "On tire au hasard",
+      "friends": "Tes amis jouent la même playlist.",
+      "launch": "Lancer"
+    },
     "link": {
       "guest": "Invité",
       "title": "{{ pseudo }} te lance une playlist",
       "tracks": "{{ tracks }} morceaux, les mêmes pour tous ses joueurs : comparez vos scores à la fin",
       "rounds": "{{ rounds }} manches, de plus en plus dures",
+      "theme": "Manche {{ round }} : thème {{ name }}",
       "listen": "{{ seconds }} pour trouver l’artiste et le titre",
       "listenAndAnswer": "{{ seconds }} d’écoute, {{ answer }} pour trouver l’artiste et le titre",
       "goal": "Passe les {{ rounds }} manches et deviens disque d’or",
@@ -1019,6 +1029,7 @@
       "beatMe": "Bats-moi sur la même playlist :"
     },
     "palier": {
+      "theme": "Manche {{round}} · thème",
       "round": "Manche {{round}}",
       "shelf": "Les disques de la playlist",
       "points": "pts",

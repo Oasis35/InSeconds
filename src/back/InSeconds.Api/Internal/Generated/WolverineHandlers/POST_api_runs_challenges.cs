@@ -98,7 +98,15 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                var runLaunch = await InSeconds.Api.Modules.Runs.Application.LaunchRunEndpoint.LoadAsync(claimsCurrentPlayer, efRunAccess, efRunsStore, runChallengePlanner, _loggerOfRunLaunch, httpContext.RequestAborted).ConfigureAwait(false);
+                string themeId_rawValue = httpContext.Request.Query["themeId"];
+                System.Nullable<int> themeId = default;
+
+                if (themeId_rawValue != null && int.TryParse(themeId_rawValue, System.Globalization.CultureInfo.InvariantCulture, out var themeId_parsed))
+                {
+                    themeId = themeId_parsed;
+                }
+
+                var runLaunch = await InSeconds.Api.Modules.Runs.Application.LaunchRunEndpoint.LoadAsync(claimsCurrentPlayer, efRunAccess, efRunsStore, runChallengePlanner, _loggerOfRunLaunch, httpContext.RequestAborted, themeId).ConfigureAwait(false);
                 var problemDetails1 = InSeconds.Api.Modules.Runs.Application.LaunchRunEndpoint.Validate(runLaunch);
                 // Evaluate whether the processing should stop if there are any problems
                 if (!(ReferenceEquals(problemDetails1, Wolverine.Http.WolverineContinue.NoProblems)))

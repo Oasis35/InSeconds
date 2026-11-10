@@ -72,4 +72,27 @@ public class RunThemeApiTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Null(play.Session.Themes);
         Assert.Equal(HttpStatusCode.OK, (await _gamer.Client.GetAsync($"/api/runs/challenges/{play.Session.ChallengeCode}", Ct)).StatusCode);
     }
+
+    [Fact]
+    public async Task LeCreateurSeVoitProposerLesThemesAssezFournis()
+    {
+        var offer = await _gamer.Client.GetFromJsonAsync<List<RunThemeOfferItem>>("/api/runs/theme-offer", Ct);
+
+        Assert.Equal([new RunThemeOfferItem(1, "Années 80", 3)], offer);
+    }
+
+    [Fact]
+    public async Task LeThemeChoisiAuLancement_PrendLaManche3_UnThemeInvalideEstIgnore()
+    {
+        await _game.Api.ExecuteAsync("INSERT INTO catalogue.track_themes (track_id, theme_id) SELECT id, 3 FROM catalogue.tracks WHERE id BETWEEN 40 AND 49");
+
+        var chosen = await _gamer.Client.PostAsync("/api/runs/challenges?themeId=3", null, Ct);
+        var play = await chosen.Content.ReadFromJsonAsync<RunPlayResponse>(Ct);
+        Assert.Equal("Jazz", Assert.Single(play!.Session.Themes!).Name);
+
+        var invalid = await _gamer.Client.PostAsync("/api/runs/challenges?themeId=2", null, Ct);
+        Assert.Equal(HttpStatusCode.OK, invalid.StatusCode);
+        var other = await invalid.Content.ReadFromJsonAsync<RunPlayResponse>(Ct);
+        Assert.NotEqual("Films", Assert.Single(other!.Session.Themes!).Name);
+    }
 }

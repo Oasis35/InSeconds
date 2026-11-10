@@ -68,7 +68,7 @@ const round = (overrides: Partial<RunRound> = {}): RunRound => ({ round: 1, scor
 const session = (overrides: Partial<RunSession> = {}): RunSession => ({
   sessionId: 1, challengeCode: 'ABC234', status: 'pending', rounds: 4, tracksPerRound: 5, listenSeconds: 10, totalScore: 0, roundsPassed: 0,
   round: round(), roundTracks: [], finish: null, answerSeconds: 45, clockRemainingSeconds: null, playedTracks: [], passedRounds: [],
-  difficultyChoice: null, hand: [], swapAvailable: false, nextDisc: null, cardValues: null, ghost: null, ...overrides,
+  difficultyChoice: null, hand: [], swapAvailable: false, nextDisc: null, cardValues: null, ghost: null, themes: [], ...overrides,
 });
 const summary = (overrides: Partial<RunRoundSummary> = {}): RunRoundSummary => ({
   round: 1, passed: true, score: 400, objective: 200, totalScore: 400, ...overrides,

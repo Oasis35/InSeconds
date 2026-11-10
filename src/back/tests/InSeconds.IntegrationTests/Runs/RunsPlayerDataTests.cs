@@ -24,7 +24,7 @@ public class RunsPlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
         _game = await GameApi.CreateAsync(await postgres.CreateDatabaseAsync(), tracks: 40);
         await _game.Api.ExecuteAsync("UPDATE catalogue.tracks SET deezer_rank = 1000000 - id * 1000");
         using var scope = _game.Api.Services.CreateScope();
-        var plan = await scope.ServiceProvider.GetRequiredService<RunChallengePlanner>().PlanAsync(null, TestContext.Current.CancellationToken);
+        var plan = await scope.ServiceProvider.GetRequiredService<RunChallengePlanner>().PlanAsync(null, null, TestContext.Current.CancellationToken);
         scope.ServiceProvider.GetRequiredService<IRunsStore>().AddChallenge(plan.Challenge!);
         await scope.ServiceProvider.GetRequiredService<InSecondsDbContext>().SaveChangesAsync(TestContext.Current.CancellationToken);
         (_challengeId, _code) = (plan.Challenge!.Id, plan.Challenge.Code);

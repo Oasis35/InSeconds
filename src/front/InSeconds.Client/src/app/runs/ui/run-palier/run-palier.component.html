@@ -51,6 +51,18 @@
 
   <div class="my-2"></div>
 
+  <!-- Le thème de la manche suivante, annoncé avant de jouer. -->
+  @if (theme(); as name) {
+    <div class="mb-3 flex items-center gap-3 px-3.5 py-2.5" data-testid="run-palier-theme"
+      style="border:1px solid var(--color-accent);background:rgb(var(--rgb-accent) / 0.08);border-radius:var(--radius-card)">
+      <span class="text-[22px] leading-none" style="color:var(--color-accent)" aria-hidden="true">&#9835;</span>
+      <span class="flex flex-col">
+        <span class="text-xs" style="color:var(--text-muted)">{{ 'runs.palier.theme' | translate: { round: nextRound() } }}</span>
+        <span class="text-[18px] font-extrabold leading-tight" style="color:var(--text-hi)">{{ name }}</span>
+      </span>
+    </div>
+  }
+
   <!-- La manche suivante : ses trois difficultés (le choix est ici, un seul écran), sinon son objectif et le disque qu'elle fait gagner. -->
   @if (options(); as options) {
     <p class="text-[15px]" style="color:var(--text-light)">{{ 'runs.palier.nextRound' | translate: { round: nextRound() } }}</p>

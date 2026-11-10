@@ -20,6 +20,7 @@ import { RunSounds } from '../../data-access/run-sounds';
 import { RunComparisonScreenComponent } from '../../ui/run-comparison-screen/run-comparison-screen.component';
 import { RunFinishComponent } from '../../ui/run-finish/run-finish.component';
 import { RunHeaderComponent } from '../../ui/run-header/run-header.component';
+import { RunThemeScreenComponent } from '../../ui/run-theme-screen/run-theme-screen.component';
 import { RunLinkScreenComponent } from '../../ui/run-link-screen/run-link-screen.component';
 import { RunPalierComponent } from '../../ui/run-palier/run-palier.component';
 import { RunDifficultyComponent } from '../../ui/run-difficulty/run-difficulty.component';
@@ -42,7 +43,7 @@ import { reloadMomentFor } from '../reload-moment';
   imports: [
     TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, RunHeaderComponent, RunClockComponent, RunRevealComponent, RunPileComponent,
     RunWithdrawnCardComponent, RunFinishComponent, RunWelcomeScreenComponent, RunStatusScreenComponent, ResumeScreenComponent,
-    RunLinkScreenComponent, RunComparisonScreenComponent, RunPalierComponent, RunDifficultyComponent, RunRoundCardsComponent,
+    RunLinkScreenComponent, RunThemeScreenComponent, RunComparisonScreenComponent, RunPalierComponent, RunDifficultyComponent, RunRoundCardsComponent,
   ],
   providers: [RunGameStore, TrackRoundStore, RunShare, RunSounds],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -59,6 +60,12 @@ export class RunsPage implements OnInit {
   protected readonly errorReporting = inject(ErrorReportingService);
   private readonly modal = inject(ModalService);
   private readonly translate = inject(TranslateService);
+
+  /** Le thème d'une manche de la playlist en cours, `null` pour une manche sans thème. */
+  protected themeOf(round: number): string | null {
+    return this.store.session()?.themes.find(t => t.round === round)?.name ?? null;
+  }
+
   private readonly leaveGuard = new LeaveGuard(inject(ModalService));
   /** La manche en cours, dont la carte arrive à chaque nouveau morceau. */
   private readonly card = viewChild(TrackRoundComponent, { read: ElementRef<HTMLElement> });

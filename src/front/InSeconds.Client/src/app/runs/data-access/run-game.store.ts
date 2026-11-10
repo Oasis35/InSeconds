@@ -5,7 +5,7 @@ import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RoundConfig, RoundSubmission } from '../../gameplay/domain/track-round';
 import { waveformFromBlob } from '../../gameplay/domain/waveform';
 import {
-  AUTO_NEXT_MS, CLOCK_ALERT_SECONDS, COMBO_MIN, PileEntry, RunComparison, RunCurrentTrack, RunDifficulty, RunLink, RunPlay, RunRound, RunSession, RunStep, RunsMe,
+  AUTO_NEXT_MS, CLOCK_ALERT_SECONDS, COMBO_MIN, PileEntry, RunComparison, RunCurrentTrack, RunDifficulty, RunLink, RunPlay, RunRound, RunSession, RunStep, RunThemeOffer, RunsMe,
   isFinished,
   comboOf, duelOf, ghostGap, nextObjective, progressKey, palierDue, playSteps, playedCount, runPile, stepPosition,
 } from '../domain/run';
@@ -21,7 +21,7 @@ const CLOCK_TICK_MS = 200;
  * invitation, que la page traduit en retour au jeu du jour ; pas de playlist ; playlist inconnue ; erreur).
  */
 export type RunScreen =
-  | 'loading' | 'welcome' | 'link' | 'resume' | 'playing' | 'palier' | 'difficulty' | 'finished' | 'comparison' | 'access_denied' | 'no_challenge'
+  | 'loading' | 'welcome' | 'theme' | 'link' | 'resume' | 'playing' | 'palier' | 'difficulty' | 'finished' | 'comparison' | 'access_denied' | 'no_challenge'
   | 'not_found' | 'error';
 
 interface RunState {
@@ -57,6 +57,10 @@ interface RunState {
   palierDismissedFor: number | null;
   /** « Suite » du palier part (un second toucher ne relance rien). */
   palierBusy: boolean;
+  /** Les thèmes proposés au créateur au lancement (écran `theme`) ; vide hors de cet écran. */
+  themeOffer: readonly RunThemeOffer[];
+  /** Le choix de la manche à thème : l'identifiant d'un thème proposé, `null` pour « Surprise ». */
+  themeChoice: number | null;
   /** Le choix de la difficulté part au serveur. */
   difficultyBusy: boolean;
   /** Un échange de morceau part au serveur. */
@@ -84,6 +88,8 @@ const initialState: RunState = {
   abandonLoading: false,
   palierDismissedFor: null,
   palierBusy: false,
+  themeOffer: [],
+  themeChoice: null,
   difficultyBusy: false,
   cardBusy: false,
   cardRefused: false,
@@ -541,6 +547,21 @@ export const RunGameStore = signalStore(
       applyOutcome(await call());
     };
 
+    /**
+     * Le créateur d'une playlist neuve : deux thèmes lui sont proposés (écran `theme`, « Surprise » choisi d'office) ; sans manche à thème, ou si
+     * les thèmes ne se lisent pas, la playlist se lance tout de suite.
+     */
+    const offerThemes = async (): Promise<void> => {
+      let offer: readonly RunThemeOffer[] = [];
+      try {
+        offer = await api.themeOffer();
+      } catch {
+        // pas de thème : la playlist se tire quand même
+      }
+      if (offer.length === 0) return launch(() => api.launch());
+      patchState(store, { screen: 'theme', themeOffer: offer, themeChoice: offer[0].id });
+    };
+
     /** Une action de cet onglet en route (réponse, carte, choix, extrait redemandé) : la relecture la prendrait pour un autre onglet. */
     const settled = (): boolean =>
       changing === 0 && round.phase() !== 'submitting' && !store.cardBusy() && !store.palierBusy() && !store.difficultyBusy();
@@ -588,7 +609,19 @@ export const RunGameStore = signalStore(
         round.unlockAudio();
         sounds.unlock();
         const code = store.link()?.code ?? store.me()?.pending?.challengeCode ?? null;
-        await launch(() => (code ? api.join(code) : api.launch()));
+        if (code) await launch(() => api.join(code));
+        else await offerThemes();
+      },
+      /** Le thème de la manche à thème : un des thèmes proposés, ou `null` pour « Surprise ». */
+      chooseTheme(themeId: number | null): void {
+        patchState(store, { themeChoice: themeId });
+      },
+      /** « Lancer » depuis le choix du thème (un clic) : la playlist se tire avec ce thème, le premier morceau part dans ce clic. */
+      async launchWithTheme(): Promise<void> {
+        round.unlockAudio();
+        sounds.unlock();
+        const themeId = store.themeChoice();
+        await launch(() => api.launch(themeId));
       },
       /**
        * « Jouer » depuis le lien reçu d'un ami (un clic) : crée l'invité si ce navigateur n'a pas d'identité, relève la playlist et lance le premier
@@ -772,7 +805,7 @@ export const RunGameStore = signalStore(
         round.unlockAudio();
         sounds.unlock();
         patchState(store, { me: store.me() ? { ...store.me()!, pending: null } : null });
-        await launch(() => api.launch());
+        await offerThemes();
       },
     };
   }),

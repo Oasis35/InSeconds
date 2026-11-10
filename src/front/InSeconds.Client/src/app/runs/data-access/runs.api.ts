@@ -7,7 +7,7 @@ import {
 import { toAppError } from '../../core/errors/app-error';
 import {
   RunComparison, RunCurrentTrack, RunDifficulty, RunFinish, RunLink, RunNeutralized, RunPassedRound, RunPlay, RunRecord, RunRound, RunRoundScore,
-  RunRoundSummary, RunSession, RunStatus, RunTrack, RunsMe,
+  RunRoundSummary, RunSession, RunStatus, RunThemeOffer, RunTrack, RunsMe,
 } from '../domain/run';
 import { RunCardKey, RunTrackEffects, isRunCard } from '../domain/run-cards';
 
@@ -75,9 +75,14 @@ export class RunsApi {
     return toComparison(await firstValueFrom(this.client.getRunComparison(code)));
   }
 
-  /** Lance une playlist neuve et la partie de son auteur. */
-  launch(): Promise<StartOutcome> {
-    return this.start(() => this.client.launchRun());
+  /** Les thèmes proposés au créateur d'une playlist (deux, tirés au hasard) ; vide : aucune manche à thème. */
+  async themeOffer(): Promise<readonly RunThemeOffer[]> {
+    return (await firstValueFrom(this.client.getRunThemeOffer())).map(t => ({ id: t.id, name: t.name, round: t.round }));
+  }
+
+  /** Lance une playlist neuve et la partie de son auteur ; `themeId` : le thème choisi pour la manche à thème, vide pour « Surprise ». */
+  launch(themeId: number | null = null): Promise<StartOutcome> {
+    return this.start(() => this.client.launchRun(themeId ?? undefined));
   }
 
   /** Reprend la partie d'une playlist (ou la relève, pour un ami qui a reçu le lien). */
@@ -162,6 +167,7 @@ function toLink(link: RunChallengeResponse): RunLink {
     answerSeconds: link.answerSeconds,
     myStatus: link.myStatus === 'none' ? 'none' : toStatus(link.myStatus),
     mySessionId: link.mySessionId ?? null,
+    themes: (link.themes ?? []).map(t => ({ round: t.round, name: t.name })),
   };
 }
 
@@ -281,6 +287,7 @@ function toSession(session: RunSessionResponse): RunSession {
       ? { extendBonusSeconds: session.cardValues.extendBonusSeconds, rewardMarginPercent: session.cardValues.rewardMarginPercent }
       : null,
     nextDisc: session.nextDisc ? { key: session.nextDisc.key, stars: session.nextDisc.stars } : null,
+    themes: (session.themes ?? []).map(t => ({ round: t.round, name: t.name })),
   };
 }
 

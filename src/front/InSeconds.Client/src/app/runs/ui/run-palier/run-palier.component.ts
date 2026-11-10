@@ -29,6 +29,8 @@ export class RunPalierComponent {
   readonly wonDiscs = input.required<readonly string[]>();
   /** La manche suivante, son objectif (celui de « Normal » quand la difficulté ne se choisit pas ici) et le disque qu'elle fait gagner. */
   readonly nextRound = input.required<number>();
+  /** Le thème de la manche suivante, s'il y en a un : annoncé avant de jouer. */
+  readonly theme = input<string | null>(null);
   readonly nextObjective = input.required<number>();
   readonly nextDisc = input<string | null>(null);
   /** Les difficultés de la manche suivante, quand elles se choisissent sur cet écran ; `null` : rien à choisir, « Suite » lance la manche. */

@@ -55,8 +55,11 @@ import { RunRound, pointsToGo, runSegments } from '../../domain/run';
     </div>
     @if (showStatus()) {
     <div class="flex justify-between items-baseline mt-2.5" style="min-height:22px">
-      <h1 class="text-[15px] font-bold" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="run-round-title">
+      <h1 class="flex items-center gap-2 text-[15px] font-bold" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="run-round-title">
         {{ 'runs.header.roundShort' | translate: { round: round().round } }}
+        @if (theme(); as name) {
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-bold" style="border:1px solid var(--color-accent);color:var(--color-accent)" data-testid="run-theme-pill">{{ name }}</span>
+        }
       </h1>
       <p class="text-[13px]" style="color:var(--text-light)" data-testid="run-to-go">
         @if (toGo() > 0) {
@@ -79,6 +82,8 @@ import { RunRound, pointsToGo, runSegments } from '../../domain/run';
   `,
 })
 export class RunHeaderComponent {
+  /** Le thème de la manche, s'il y en a un : une pastille à côté du titre. */
+  readonly theme = input<string | null>(null);
   /** La manche affichée : son score, son objectif, son maximum. */
   readonly round = input.required<RunRound>();
   /** Le nombre de manches de la playlist. */

@@ -191,6 +191,39 @@
         }
       }
     },
+    "/api/runs/theme-offer": {
+      "get": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "getRunThemeOffer",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RunThemeOfferItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/runs/me": {
       "get": {
         "tags": [
@@ -217,6 +250,16 @@
           "Runs"
         ],
         "operationId": "launchRun",
+        "parameters": [
+          {
+            "name": "themeId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
         "responses": {
           "401": {
             "description": "Unauthorized",
@@ -2011,6 +2054,27 @@
           }
         }
       },
+      "RunThemeOfferItem": {
+        "required": [
+          "id",
+          "name",
+          "round"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "round": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "RunTrackEffectsResponse": {
         "required": [
           "cards",
@@ -2217,6 +2281,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Runs.Application.GetRunComparisonEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.GetRunThemeOfferEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Runs.Application.GetRunsMeEndpoint"
