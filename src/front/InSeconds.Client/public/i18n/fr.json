@@ -1040,7 +1040,8 @@
       "text": "Je te lance une playlist sur InSeconds. Tu fais mieux que moi ?",
       "header": "{{ score }} pts · {{ disc }} · InSeconds Platines",
       "round": "Manche {{ round }}",
-      "beatMe": "Bats-moi sur la même playlist :"
+      "duelWon": "J’ai battu {{ name }} de {{ points }} pts.",
+      "beatMe": "Fais mieux sur la même playlist :"
     },
     "palier": {
       "theme": "Manche {{round}} · thème",

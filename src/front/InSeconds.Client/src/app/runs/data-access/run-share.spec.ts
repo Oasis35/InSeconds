@@ -37,6 +37,17 @@ describe('runShareText', () => {
     expect(lines.slice(3)).toEqual(['runs.share.beatMe', playlistUrl('K7Q2M9')]);
   });
 
+  it("un duel gagné se raconte juste sous le score ; une défaite ou une égalité ne se partage pas", () => {
+    const won = runShareText(finish, 'fr', t, { pseudo: 'Léa', gap: 126 }).split('\n');
+    expect(won[1]).toBe('runs.share.duelWon{"name":"Léa","points":"126"}');
+
+    const guest = runShareText(finish, 'fr', t, { pseudo: null, gap: 126 }).split('\n')[1];
+    expect(guest).toContain('"name":"runs.link.guest"');
+
+    expect(runShareText(finish, 'fr', t, { pseudo: 'Léa', gap: -5 })).not.toContain('duelWon');
+    expect(runShareText(finish, 'fr', t, { pseudo: 'Léa', gap: 0 })).not.toContain('duelWon');
+  });
+
   it('rien qui identifie un morceau : ni artiste ni titre', () => {
     const text = runShareText(finish, 'fr', t);
 

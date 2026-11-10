@@ -114,7 +114,7 @@
       @case ('finished') {
         @if (store.finish(); as finish) {
           <app-run-finish [finish]="finish" [duel]="store.duel()" [canPlayAgain]="store.canPlayAgain()" [shareCopied]="share.copied()" [shareFailed]="share.failed()"
-            [lang]="language.current()" (share)="share.shareScore(finish, language.current())" (compare)="store.showComparison()" (playAgain)="store.playAgain()" />
+            [lang]="language.current()" (share)="share.shareScore(finish, language.current(), store.duel())" (compare)="store.showComparison()" (playAgain)="store.playAgain()" />
         }
       }
 

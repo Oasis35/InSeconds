@@ -1040,7 +1040,8 @@
       "text": "I’m sending you a playlist on InSeconds. Can you beat me?",
       "header": "{{ score }} pts · {{ disc }} · InSeconds Platines",
       "round": "Round {{ round }}",
-      "beatMe": "Beat me on the same playlist:"
+      "duelWon": "I beat {{ name }} by {{ points }} pts.",
+      "beatMe": "Do better on the same playlist:"
     },
     "palier": {
       "theme": "Round {{round}} · theme",
