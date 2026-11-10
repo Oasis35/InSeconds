@@ -998,7 +998,7 @@
     "theme": {
       "title": "Ta playlist",
       "subtitle": "Manche {{round}} : choisis le thème",
-      "tracks": "5 morceaux de ce thème",
+      "tracks": "Tous les morceaux de la manche, de ce thème",
       "surprise": "Surprise",
       "surpriseHint": "On tire au hasard",
       "friends": "Tes amis jouent la même playlist.",

@@ -28,7 +28,7 @@ describe('runShareText', () => {
     expect(header).toContain('"disc":"runs.discs.gold ★2"');
   });
 
-  it('le score et le disque d\'abord, une ligne par manche jouée (un carré par morceau, dans l\'ordre), puis « Bats-moi » et le lien', () => {
+  it('le score et le disque d\'abord, une ligne par manche jouée (un carré par morceau, dans l\'ordre), puis « Fais mieux » et le lien', () => {
     const lines = runShareText(finish, 'fr', t).split('\n');
 
     expect(lines[0]).toBe('runs.share.header{"score":"2\u202f410","disc":"runs.discs.wax"}');

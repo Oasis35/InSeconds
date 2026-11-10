@@ -998,7 +998,7 @@
     "theme": {
       "title": "Your playlist",
       "subtitle": "Round {{round}}: pick the theme",
-      "tracks": "5 tracks from this theme",
+      "tracks": "Every track of the round, from this theme",
       "surprise": "Surprise",
       "surpriseHint": "We pick one at random",
       "friends": "Your friends play the same playlist.",

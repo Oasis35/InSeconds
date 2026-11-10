@@ -11,7 +11,7 @@ export const playlistUrl = (code: string): string => `${environment.appUrl}/runs
  * Le partage d'un run, par le menu de partage du téléphone ou sinon dans le presse-papier, et l'état du bouton (copié, échec) pour quelques secondes,
  * comme au Daily (un partage natif ou un menu fermé ne change rien au bouton) :
  * - à la fin d'une partie, le score en grille : le score et le disque d'abord (ils se lisent dans l'aperçu d'une conversation), une ligne par manche
- *   jouée (un carré par morceau, la difficulté), puis « Bats-moi » et le lien de la même playlist ;
+ *   jouée (un carré par morceau, la difficulté), puis « Fais mieux » et le lien de la même playlist ;
  * - ailleurs (la comparaison), une phrase et le lien de la playlist.
  */
 @Injectable()

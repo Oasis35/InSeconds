@@ -74,6 +74,10 @@ public class CatalogueSupportTests
     }
 
     [Fact]
+    public void DeuxThemesQuiPrennentLeMemeNom_NomDejaPris() =>
+        Assert.Equal(CatalogueErrorCodes.ThemeNameTaken, Code(UniqueViolation(ThemeConfiguration.NameIndex)));
+
+    [Fact]
     public void AutreIndexUnique_PasPourCeGestionnaire() =>
         Assert.Null(TrackConflictExceptionHandler.ProblemFor(UniqueViolation("ix_accounts_pseudo")));
 
