@@ -61,12 +61,12 @@ describe('RunDifficultyColumnsComponent', () => {
     const chosen: RunDifficulty[] = [];
     fixture.componentInstance.selected.subscribe(d => chosen.push(d));
 
-    expect(element.querySelector('[aria-checked="true"]')?.getAttribute('data-testid')).toBe('run-difficulty-safe');
+    expect(element.querySelector('[aria-pressed="true"]')?.getAttribute('data-testid')).toBe('run-difficulty-safe');
     element.querySelector<HTMLButtonElement>('[data-testid="run-difficulty-risky"]')!.click();
     fixture.detectChanges();
 
     expect(chosen).toEqual(['risky']);
-    expect(element.querySelector('[aria-checked="true"]')?.getAttribute('data-testid')).toBe('run-difficulty-risky');
+    expect(element.querySelector('[aria-pressed="true"]')?.getAttribute('data-testid')).toBe('run-difficulty-risky');
   });
 
   it('la manche boss dit son écoute plus courte', () => {

@@ -123,7 +123,7 @@ test.describe('Mode Platines', () => {
     await run.winRound(tracks, 1);
     // Avant la manche 3 : « Mélomane » ne change pas l'écoute, rien n'annonce de boss.
     await inSequence(tracks.filter(t => t.round === 2), track => run.answerRight(track));
-    await expect(run.palier.getByTestId('run-difficulty-safe')).toHaveAttribute('aria-checked', 'true');
+    await expect(run.palier.getByTestId('run-difficulty-safe')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByTestId('run-difficulty-boss')).toHaveCount(0);
     await run.palierNextButton.click();
     await expect(run.roundTitle).toHaveText('Manche 3');

@@ -2,11 +2,11 @@
   Trois colonnes à plat sur une base commune. Le corps, à la hauteur du plafond, ne porte que l'objectif (le cadenas sur la frontière, la zone
   dessous assombrie) : rien ne se chevauche, quel que soit l'objectif. La plus haute colonne suit la hauteur de l'écran (petit téléphone).
 -->
-<div class="grid grid-cols-3 gap-2.5 items-end" style="--tallest:min(240px, 30dvh)" role="radiogroup" [attr.aria-label]="'runs.difficulty.title' | translate">
+<div class="grid grid-cols-3 gap-2.5 items-end" style="--tallest:min(240px, 30dvh)" role="group" [attr.aria-label]="'runs.difficulty.title' | translate">
   @for (column of columns(); track column.option.difficulty) {
-    <button type="button" role="radio" class="flex flex-col items-stretch touch-manipulation" [disabled]="busy()"
+    <button type="button" class="flex flex-col items-stretch touch-manipulation" [disabled]="busy()"
       (click)="selected.set(column.option.difficulty)" [attr.data-testid]="'run-difficulty-' + column.option.difficulty"
-      [attr.aria-checked]="selected() === column.option.difficulty"
+      [attr.aria-pressed]="selected() === column.option.difficulty"
       [attr.aria-label]="('runs.difficulty.columnLabel' | translate: {
         name: ('runs.difficulty.' + column.option.difficulty | translate), perTrack: column.perTrack, objective: column.option.objective })
         + (column.option.listenSeconds < listenSeconds() ? ', ' + ('runs.difficulty.listen' | translate: { seconds: (column.option.listenSeconds | appSeconds) }) : '')">
