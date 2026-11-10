@@ -369,6 +369,45 @@ describe('RunGameStore', () => {
       expect(api.calls).toContain('session:7');
     });
 
+    it('les difficultés de la manche sont sur l\'écran de palier : un seul écran, la difficulté se choisit avec « Jouer »', async () => {
+      api.chooseResult = PLAY({
+        session: palierSession({ offer: null, difficultyChoice: null }),
+        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }),
+      });
+      expect(store.palier()?.options?.map(o => o.difficulty)).toEqual(['safe']);
+      expect(store.palier()?.tracksPerRound).toBe(5);
+      audio.calls.length = 0;
+
+      void store.chooseDifficulty('safe');
+      expect(audio.calls[0]).toBe('unlock');
+      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
+
+      expect(api.calls).toContain('chooseDifficulty:7:2:safe');
+      expect(audio.calls).toContain('load https://cdn/preview-6.mp3');
+      expect(store.screen()).toBe('playing');
+    });
+
+    it('sans difficulté à choisir, le palier n\'a pas de colonnes : « Suite » lance la manche', async () => {
+      api.takeResult = palierSession({ offer: null, difficultyChoice: null });
+      store.pickCard('joker');
+      await vi.waitFor(() => expect(store.palier()?.offer).toBeNull());
+
+      expect(store.palier()?.options).toBeNull();
+    });
+
+    it('deux « Jouer » de suite sur le palier ne choisissent qu\'une fois', async () => {
+      api.chooseResult = PLAY({
+        session: palierSession({ offer: null, difficultyChoice: null }),
+        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }),
+      });
+
+      void store.chooseDifficulty('safe');
+      void store.chooseDifficulty('safe');
+      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
+
+      expect(api.calls.filter(c => c.startsWith('chooseDifficulty'))).toEqual(['chooseDifficulty:7:2:safe']);
+    });
+
     it('« Suite » déverrouille le son dans le clic et mène à l\'écran « Difficulté ? »', () => {
       store.continueFromPalier();
 

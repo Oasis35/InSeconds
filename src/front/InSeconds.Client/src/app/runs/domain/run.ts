@@ -349,7 +349,7 @@ export function palierDue(session: RunSession, dismissedFor: number | null): boo
     && session.passedRounds.some(p => p.round === round.round - 1);
 }
 
-/** L'objectif de la manche à venir montré au palier : celui de « Sûre » (la difficulté se choisit ensuite), sinon celui de la manche. */
+/** L'objectif de la manche à venir montré au palier : celui de « Normal » (quand la difficulté ne se choisit pas sur l'écran), sinon celui de la manche. */
 export function nextObjective(session: RunSession): number {
   return session.difficultyChoice?.options.find(o => o.difficulty === 'safe')?.objective ?? session.round?.objective ?? 0;
 }

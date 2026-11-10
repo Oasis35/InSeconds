@@ -113,29 +113,27 @@ test.describe('Mode Platines', () => {
     await expect(run.welcome.getByTestId('run-shelf').locator('[data-shelf-disc="runs.discs.gold"]')).toHaveCount(1);
   });
 
-  test("« Risquée » avant la dernière manche : le boss annonce une écoute plus courte, et la partie se gagne jusqu'au bout", async ({ page, api }) => {
+  test("« Mélomane » avant la dernière manche : le boss annonce une écoute plus courte, et la partie se gagne jusqu'au bout", async ({ page, api }) => {
     test.slow();
     const run = new RunPage(page);
     await run.loginAsAdmin();
     await run.launch();
     const tracks = await api.latestRunTracks();
-    const difficulty = page.getByTestId('run-difficulty');
 
     await run.winRound(tracks, 1);
-    // Avant la manche 3 : « Risquée » ne change pas l'écoute, rien n'annonce de boss.
+    // Avant la manche 3 : « Mélomane » ne change pas l'écoute, rien n'annonce de boss.
     await inSequence(tracks.filter(t => t.round === 2), track => run.answerRight(track));
-    await run.palierNextButton.click();
-    await expect(difficulty).toBeVisible();
+    await expect(run.palier.getByTestId('run-difficulty-safe')).toHaveAttribute('aria-checked', 'true');
     await expect(page.getByTestId('run-difficulty-boss')).toHaveCount(0);
-    await page.getByTestId('run-difficulty-safe').click();
+    await run.palierNextButton.click();
     await expect(run.roundTitle).toHaveText('Manche 3');
 
-    // Avant la dernière manche : seule la colonne « Risquée » annonce l'écoute du boss (5 s au lieu de 10 s).
+    // Avant la dernière manche : seule la colonne « Mélomane » annonce l'écoute du boss (5 s au lieu de 10 s).
     await inSequence(tracks.filter(t => t.round === 3), track => run.answerRight(track));
-    await run.palierNextButton.click();
     await expect(page.getByTestId('run-difficulty-boss')).toHaveCount(1);
     await expect(page.getByTestId('run-difficulty-risky').getByTestId('run-difficulty-boss')).toContainText('5');
     await page.getByTestId('run-difficulty-risky').click();
+    await run.palierNextButton.click();
     await expect(run.roundTitle).toHaveText('Manche 4');
 
     // La manche boss se joue et se gagne comme les autres.
@@ -175,7 +173,7 @@ test.describe('Mode Platines', () => {
   });
 
   test("une playlist sans coups de pouce ni choix de difficulté se joue comme au proto 1 : ni palier, ni « Difficulté ? »", async ({ page, api }) => {
-    // Comme une playlist tirée avant le proto 2 : aucune carte, une seule difficulté (« Sûre »), donc rien à choisir.
+    // Comme une playlist tirée avant le proto 2 : aucune carte, une seule difficulté (« Normal »), donc rien à choisir.
     await api.setRunSetting('Runs:CardsEnabled', 'false');
     await api.setRunSetting('Runs:Difficulties', '[{"difficulty":"safe","pointsFactor":1,"objectiveFactor":1}]');
     const run = new RunPage(page);
@@ -205,11 +203,10 @@ test.describe('Mode Platines', () => {
     await expect(run.cardEffects).toHaveCount(0);
     await inSequence(tracks.filter(t => t.round === 1), track => run.answerRight(track));
 
-    // Au palier : on prend l'Année, puis « Sûre ».
+    // Au palier : on prend l'Année, puis « Jouer » (Normal d'abord).
     await expect(run.palier).toBeVisible();
     await page.getByTestId('run-offer-year').click();
     await run.palierNextButton.click();
-    await page.getByTestId('run-difficulty-safe').click();
 
     // L'année s'affiche d'elle-même sur le morceau ; la carte n'est pas un bouton.
     await expect(run.roundTitle).toHaveText('Manche 2');

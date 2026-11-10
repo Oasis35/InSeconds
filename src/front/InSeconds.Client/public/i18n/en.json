@@ -1068,13 +1068,14 @@
       "round": "Round {{round}}",
       "title": "Difficulty?",
       "yourScore": "Your score",
-      "max": "max",
+      "perTrack": "up to {{points}} pts\nper track",
+      "play": "Play",
       "listen": "{{seconds}} listen",
       "hand": "In hand",
       "easy": "Easy",
-      "safe": "Safe",
-      "risky": "Risky",
-      "columnLabel": "{{name}}: up to {{max}} points, target {{objective}}"
+      "safe": "Normal",
+      "risky": "Music buff",
+      "columnLabel": "{{name}}: target {{objective}} points, up to {{perTrack}} points per track"
     },
     "roundCards": {
       "play": "Play {{card}}",

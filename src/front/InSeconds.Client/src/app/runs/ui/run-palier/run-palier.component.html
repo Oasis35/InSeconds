@@ -35,16 +35,23 @@
 
   <hr class="my-4" style="border:0;border-top:1px solid var(--border-subtle)" />
 
-  <!-- L'objectif de la manche suivante et le disque qu'elle fait gagner. -->
-  <p class="text-[15px]" style="color:var(--text-light)">{{ 'runs.palier.nextRound' | translate: { round: nextRound() } }}</p>
-  <p class="flex items-center gap-2.5 mt-1" data-testid="run-palier-next">
-    <span class="text-[38px] font-extrabold leading-none" style="font-family:var(--font-score);color:var(--color-accent)">{{ nextObjective() }}</span>
-    <span class="text-[15px]" style="color:var(--text-light)">{{ 'runs.palier.pointsFor' | translate }}</span>
-    @if (nextDisc(); as disc) {
-      <app-run-disc [disc]="disc" [size]="30" [shine]="false" />
-      <span class="sr-only">{{ disc | translate }}</span>
-    }
-  </p>
+  <!-- La manche suivante : ses trois difficultés (le choix est ici, un seul écran), sinon son objectif et le disque qu'elle fait gagner. -->
+  @if (options(); as options) {
+    <p class="text-[15px]" style="color:var(--text-light)">{{ 'runs.palier.nextRound' | translate: { round: nextRound() } }}</p>
+    <p class="text-[22px] font-extrabold leading-tight mb-3" style="font-family:var(--font-display);color:var(--color-accent)">{{ 'runs.difficulty.title' | translate }}</p>
+    <app-run-difficulty-columns [options]="options" [tracksPerRound]="tracksPerRound()" [listenSeconds]="listenSeconds()"
+      [selected]="effective()" (selectedChange)="selected.set($event)" [busy]="busy()" />
+  } @else {
+    <p class="text-[15px]" style="color:var(--text-light)">{{ 'runs.palier.nextRound' | translate: { round: nextRound() } }}</p>
+    <p class="flex items-center gap-2.5 mt-1" data-testid="run-palier-next">
+      <span class="text-[38px] font-extrabold leading-none" style="font-family:var(--font-score);color:var(--color-accent)">{{ nextObjective() }}</span>
+      <span class="text-[15px]" style="color:var(--text-light)">{{ 'runs.palier.pointsFor' | translate }}</span>
+      @if (nextDisc(); as disc) {
+        <app-run-disc [disc]="disc" [size]="30" [shine]="false" />
+        <span class="sr-only">{{ disc | translate }}</span>
+      }
+    </p>
+  }
 
   <!-- L'offre : trois cartes à toucher (une à prendre), ou « Passer ». -->
   @if (offer(); as offer) {
@@ -99,8 +106,8 @@
   <!-- « Suite » reste toujours à portée du pouce, même sur un petit téléphone : collé en bas de l'écran pendant le défilement. -->
   <div class="flex-1 min-h-4"></div>
   <div class="sticky bottom-0 -mx-5 px-5 pt-3 pb-5 -mb-5" style="background:linear-gradient(to bottom, transparent, var(--bg-page) 30%)">
-    <button appButton type="button" size="lg" [block]="true" [disabled]="busy()" (click)="next.emit()" data-testid="run-palier-next-button">
-      {{ 'runs.palier.next' | translate }}
+    <button appButton type="button" size="lg" [block]="true" [disabled]="busy()" (click)="advance()" data-testid="run-palier-next-button">
+      {{ (options() ? 'runs.difficulty.play' : 'runs.palier.next') | translate }}
     </button>
   </div>
 </section>
