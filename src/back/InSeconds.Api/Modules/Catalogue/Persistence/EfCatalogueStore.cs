@@ -189,4 +189,7 @@ public sealed class EfCatalogueStore(InSecondsDbContext db) : ICatalogueStore
         await db.Set<Track>()
             .Where(t => t.DisabledAt == null && t.PreviewStatus == PreviewStatus.Available && t.Waveform == null)
             .MaxAsync(t => (DateTimeOffset?)t.CreatedAt, ct);
+
+    public async Task<IReadOnlySet<long>> DeezerIdsInPoolAsync(IReadOnlyCollection<long> deezerTrackIds, CancellationToken ct) =>
+        (await db.Set<Track>().AsNoTracking().Where(t => deezerTrackIds.Contains(t.DeezerTrackId)).Select(t => t.DeezerTrackId).ToListAsync(ct)).ToHashSet();
 }

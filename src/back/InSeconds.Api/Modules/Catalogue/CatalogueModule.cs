@@ -20,6 +20,7 @@ public static class CatalogueModule
         services.AddOptions<RefreshOptions>().BindConfiguration(RefreshOptions.Section);
         services.AddOptions<WaveformOptions>().BindConfiguration(WaveformOptions.Section);
         services.AddScoped<ICatalogueStore, EfCatalogueStore>();
+        services.AddScoped<ICandidateStore, EfCandidateStore>();
         services.AddScoped<ICatalogueQueries, EfCatalogueQueries>();
         services.AddScoped<ITrackDirectory, EfTrackDirectory>();
         services.AddScoped<ITrackPreviews, DeezerTrackPreviews>();

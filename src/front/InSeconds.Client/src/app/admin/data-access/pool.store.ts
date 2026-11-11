@@ -10,7 +10,6 @@ import {
 import { PoolTheme, PoolTrack, ThemeAssignment, isUsed, trackLabel } from '../domain/pool-track';
 import { POOL_VIEW } from '../domain/pool-views';
 import { CooldownApi } from './cooldown.api';
-import { AdminCounts } from './admin-counts';
 import { CatalogueApi } from './catalogue.api';
 
 /** Le message « enregistré » ou « erreur » du cooldown disparaît au bout de ce délai. */
@@ -100,7 +99,7 @@ export const PoolStore = signalStore(
     }),
     hasMultiplePages: computed(() => pages() > 1),
   })),
-  withMethods((store, api = inject(CatalogueApi), counts = inject(AdminCounts), settings = inject(CooldownApi)) => {
+  withMethods((store, api = inject(CatalogueApi), settings = inject(CooldownApi)) => {
     const resetPage = () => patchState(store, { requestedPage: 0 });
     const setFilter = (change: Partial<PoolFilters>) => {
       patchState(store, { filters: { ...store.filters(), ...change }, requestedPage: 0 });
@@ -139,7 +138,6 @@ export const PoolStore = signalStore(
         const tracks = await api.listTracks();
         if (mine !== latestLoad) return;
         const known = new Set(tracks.map(t => t.id));
-        counts.setPool(tracks.length);
         patchState(
           store,
           { tracks, selectedIds: store.selectedIds().filter(id => known.has(id)) },

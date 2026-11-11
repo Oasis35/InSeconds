@@ -88,7 +88,7 @@ function monthParam(value: string | null): string | null {
                   (selectChallenge)="picked.set($event)" />
               </div>
               @if (selected(); as c) {
-                <div class="rounded-lg px-4 pb-3 sticky top-4" style="background:var(--bg-inactive)" data-testid="challenge-detail">
+                <div class="rounded-lg px-4 pb-3" style="background:var(--bg-inactive)" data-testid="challenge-detail">
                   <app-challenge-card
                     [challenge]="c" [expanded]="true" [collapsible]="false" [youId]="youId()"
                     [highlightedId]="store.highlightedPlayerId()" [copiedId]="store.copiedPlayerId()"

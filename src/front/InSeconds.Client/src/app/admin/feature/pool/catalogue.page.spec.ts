@@ -10,6 +10,7 @@ import {
 } from '../../data-access/testing/fake-catalogue-api';
 import { PoolTrack } from '../../domain/pool-track';
 import { CataloguePage } from './catalogue.page';
+import { stubContentTabs } from '../../ui/content-tabs/testing/content-tabs.stub';
 import { EditTrackDialog } from './edit-track/edit-track.dialog';
 import { DeleteTrackDialog } from './delete-track/delete-track.dialog';
 import { PreviewTrackDialog } from '../../../core/audio-preview/preview-track.dialog';
@@ -45,6 +46,7 @@ describe('CataloguePage', () => {
         { provide: PREVIEW_AUDIO_FACTORY, useValue: () => new FakeAudio() },
       ],
     });
+    stubContentTabs(CataloguePage);
     const fixture = TestBed.createComponent(CataloguePage);
     fixture.detectChanges();
     await fixture.whenStable();

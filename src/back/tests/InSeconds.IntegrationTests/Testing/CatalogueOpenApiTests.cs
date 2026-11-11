@@ -13,8 +13,9 @@ public class CatalogueOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTe
 
         Assert.Equal(
             [
-                "addTheme", "addTrack", "assignTracksToThemes", "deleteTheme", "deleteTrack", "getCatalogueHealth", "listThemes", "listTracks", "renameTheme",
-                "renameTrack", "searchDeezer", "searchTracks", "setThemeIcon", "setTrackDisabled", "setTrackThemes", "updateTrack",
+                "addCandidates", "addTheme", "addTrack", "assignTracksToThemes", "deleteTheme", "deleteTrack", "dismissCandidates", "getCandidatePreview",
+                "getCatalogueHealth", "importCandidates", "listCandidates", "listThemes", "listTracks", "renameTheme", "renameTrack", "rereadCandidates",
+                "searchDeezer", "searchTracks", "setThemeIcon", "setTrackDisabled", "setTrackThemes", "updateTrack",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));
         // Rien d'autre que le module : ni Players, ni /api/e2e, ni les routes de tâches.
@@ -37,6 +38,15 @@ public class CatalogueOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTe
         Assert.Equal("/api/admin/catalogue/tracks/{id}/disabled", PathOf(document, "setTrackDisabled"));
         Assert.Equal("delete", MethodOf(document, "deleteTrack"));
         Assert.Equal("/api/admin/catalogue/deezer-search", PathOf(document, "searchDeezer"));
+        // Le sas « À valider ».
+        Assert.Equal("post", MethodOf(document, "importCandidates"));
+        Assert.Equal("/api/admin/catalogue/candidates", PathOf(document, "importCandidates"));
+        Assert.Equal("/api/admin/catalogue/candidates", PathOf(document, "listCandidates"));
+        Assert.Equal("put", MethodOf(document, "dismissCandidates"));
+        Assert.Equal("/api/admin/catalogue/candidates/dismissed", PathOf(document, "dismissCandidates"));
+        Assert.Equal("/api/admin/catalogue/candidates/add", PathOf(document, "addCandidates"));
+        Assert.Equal("/api/admin/catalogue/candidates/reread", PathOf(document, "rereadCandidates"));
+        Assert.Equal("/api/admin/catalogue/candidates/{id}/preview", PathOf(document, "getCandidatePreview"));
     }
 
     [Fact]
@@ -48,7 +58,8 @@ public class CatalogueOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTe
         foreach (var name in new[]
                  {
                      "AddTrack", "RenameTrack", "UpdateTrack", "SetTrackDisabled", "TrackSummary", "TrackListItem", "TrackDisabledResponse",
-                     "TrackSuggestion", "DeezerTrackResult", "ProblemDetails",
+                     "TrackSuggestion", "DeezerTrackResult", "ProblemDetails", "ImportCandidates", "ImportCandidateItem", "ImportCandidatesResult", "CandidateItem",
+                     "DismissCandidates", "AddCandidates", "AddCandidatesResult", "CandidatePreview",
                  })
             Assert.Contains(name, schemas);
 
@@ -80,6 +91,7 @@ public class CatalogueOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTe
         Assert.Contains("409", Codes(document, "setTrackDisabled"));
         Assert.Contains("404", Codes(document, "renameTrack"));
         Assert.Contains("429", Codes(document, "searchTracks"));
+        Assert.Equal(["200", "400", "404", "422", "503"], Codes(document, "getCandidatePreview"));
         // Wolverine déclare un 404 sans schéma partout : seul un vrai 404 reste.
         Assert.DoesNotContain("404", Codes(document, "addTrack"));
         Assert.DoesNotContain("404", Codes(document, "listTracks"));

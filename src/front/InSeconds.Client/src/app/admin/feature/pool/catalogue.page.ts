@@ -9,9 +9,11 @@ import { ErrorMessageComponent } from '../../../ui/error-message/error-message.c
 import { ModalService } from '../../../ui/modal/modal.service';
 import { CatalogueApi } from '../../data-access/catalogue.api';
 import { DeezerSearchStore } from '../../data-access/deezer-search.store';
+import { AdminCounts } from '../../data-access/admin-counts';
 import { PoolStore } from '../../data-access/pool.store';
 import { DeezerResult, PoolTrack } from '../../domain/pool-track';
 import { MODE_VIEWS, POOL_VIEW } from '../../domain/pool-views';
+import { ContentTabsComponent } from '../../ui/content-tabs/content-tabs.component';
 import { PoolCooldownComponent } from '../../ui/pool/pool-cooldown/pool-cooldown.component';
 import { PoolFilterBarComponent } from '../../ui/pool/pool-filter-bar/pool-filter-bar.component';
 import { PoolTableComponent } from '../../ui/pool/pool-table/pool-table.component';
@@ -36,7 +38,7 @@ const DIALOG_MAX_WIDTH = '26rem';
   selector: 'app-catalogue-page',
   imports: [
     TranslatePipe, ErrorMessageComponent, PoolToolbarComponent, PoolFilterBarComponent, PoolTableComponent,
-    SearchPanelComponent, PoolViewSelectorComponent, PoolCooldownComponent,
+    SearchPanelComponent, PoolViewSelectorComponent, PoolCooldownComponent, ContentTabsComponent,
   ],
   providers: [PoolStore, DeezerSearchStore, AudioPreviewPlayer],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -45,6 +47,8 @@ const DIALOG_MAX_WIDTH = '26rem';
   host: { class: 'flex w-full min-w-0 justify-center' },
   template: `
     <div class="flex flex-col gap-4 w-full max-w-2xl lg:max-w-none">
+      <app-content-tabs [candidates]="candidateCount()" />
+
       <app-pool-cooldown [cooldown]="pool.cooldown()" [status]="pool.cooldownSave()" (savePercent)="pool.saveCooldown($event)" />
 
       <app-pool-view-selector [view]="pool.view()" (viewChange)="setView($event)" />
@@ -138,6 +142,8 @@ export class CataloguePage {
   private readonly player = inject(AudioPreviewPlayer);
   private readonly catalogue = inject(CatalogueApi);
   protected readonly errorMessageKey = errorMessageKey;
+  /** Les candidats du sas à traiter, connus une fois le sas ouvert ; `null` avant. */
+  protected readonly candidateCount = inject(AdminCounts).candidates;
   protected readonly isPool = computed(() => this.pool.view() === POOL_VIEW);
   private readonly modal = inject(ModalService);
   private readonly injector = inject(Injector);

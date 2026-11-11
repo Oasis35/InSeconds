@@ -13,6 +13,7 @@ const DEFAULT_WEIGHT = 10;
 // Durées mesurées en CI le 19/10/2026 (run 1557) ; runs.spec.ts estimé le 09/11/2026 (test « Risquée » ajouté) et admin-themes.spec.ts estimé le 11/11/2026, à mesurer au prochain réglage.
 const WEIGHTS = {
   'admin-themes.spec.ts': 75,
+  'admin-candidates.spec.ts': 40, // estimé le 11/11/2026, à mesurer
   'admin.spec.ts': 97,
   'scoring.spec.ts': 65,
   'streak-freeze.spec.ts': 52,

@@ -57,6 +57,11 @@ describe('ADMIN_ROUTES', () => {
     expect(await landOn('/admin/actions')).toBe('/admin/catalogue');
   });
 
+  it('garde les Thèmes et le sas À valider à leur adresse', async () => {
+    expect(await landOn('/admin/themes?theme=3')).toBe('/admin/themes?theme=3');
+    expect(await landOn('/admin/a-valider')).toBe('/admin/a-valider');
+  });
+
   it('un onglet inconnu mène au tableau de bord', async () => {
     expect(await landOn('/admin?tab=nimporte-quoi')).toBe('/admin/dashboard');
     expect(await landOn('/admin/nimporte-quoi')).toBe('/admin/dashboard');

@@ -148,6 +148,231 @@
         }
       }
     },
+    "/api/admin/catalogue/candidates": {
+      "post": {
+        "tags": [
+          "Catalogue"
+        ],
+        "operationId": "importCandidates",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportCandidates"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportCandidatesResult"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Catalogue"
+        ],
+        "operationId": "listCandidates",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CandidateItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/catalogue/candidates/reread": {
+      "post": {
+        "tags": [
+          "Catalogue"
+        ],
+        "operationId": "rereadCandidates",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RereadCandidatesResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/catalogue/candidates/dismissed": {
+      "put": {
+        "tags": [
+          "Catalogue"
+        ],
+        "operationId": "dismissCandidates",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DismissCandidates"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/catalogue/candidates/add": {
+      "post": {
+        "tags": [
+          "Catalogue"
+        ],
+        "operationId": "addCandidates",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCandidates"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddCandidatesResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/catalogue/candidates/{id}/preview": {
+      "get": {
+        "tags": [
+          "Catalogue"
+        ],
+        "operationId": "getCandidatePreview",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidatePreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/catalogue/tracks/{id}": {
       "delete": {
         "tags": [
@@ -838,6 +1063,38 @@
   },
   "components": {
     "schemas": {
+      "AddCandidates": {
+        "required": [
+          "candidateIds"
+        ],
+        "type": "object",
+        "properties": {
+          "candidateIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
+      "AddCandidatesResult": {
+        "required": [
+          "queued",
+          "skipped"
+        ],
+        "type": "object",
+        "properties": {
+          "queued": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "skipped": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "AddTrack": {
         "required": [
           "deezerTrackId"
@@ -873,6 +1130,91 @@
           "added": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "CandidateItem": {
+        "required": [
+          "id",
+          "deezerTrackId",
+          "priority",
+          "status",
+          "artist",
+          "title",
+          "releaseYear",
+          "rank",
+          "previewStatus",
+          "inCatalogue",
+          "isDismissed",
+          "isAdding"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "deezerTrackId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "priority": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "artist": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "releaseYear": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "rank": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "previewStatus": {
+            "type": "string"
+          },
+          "inCatalogue": {
+            "type": "boolean"
+          },
+          "isDismissed": {
+            "type": "boolean"
+          },
+          "isAdding": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CandidatePreview": {
+        "required": [
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
           }
         }
       },
@@ -943,6 +1285,25 @@
           }
         }
       },
+      "DismissCandidates": {
+        "required": [
+          "candidateIds",
+          "dismissed"
+        ],
+        "type": "object",
+        "properties": {
+          "candidateIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "dismissed": {
+            "type": "boolean"
+          }
+        }
+      },
       "HttpValidationProblemDetails": {
         "type": "object",
         "properties": {
@@ -982,6 +1343,60 @@
                 "type": "string"
               }
             }
+          }
+        }
+      },
+      "ImportCandidateItem": {
+        "required": [
+          "deezerTrackId"
+        ],
+        "type": "object",
+        "properties": {
+          "deezerTrackId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "priority": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ImportCandidates": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportCandidateItem"
+            }
+          }
+        }
+      },
+      "ImportCandidatesResult": {
+        "required": [
+          "created",
+          "alreadyCandidates",
+          "alreadyInCatalogue"
+        ],
+        "type": "object",
+        "properties": {
+          "created": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "alreadyCandidates": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "alreadyInCatalogue": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -1045,6 +1460,18 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "RereadCandidatesResult": {
+        "required": [
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -1409,6 +1836,24 @@
     },
     {
       "name": "InSeconds.Api.Modules.Catalogue.Application.AdminDeezerSearchEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Catalogue.Application.ImportCandidatesEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Catalogue.Application.ListCandidatesEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Catalogue.Application.RereadCandidatesEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Catalogue.Application.DismissCandidatesEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Catalogue.Application.AddCandidatesEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Catalogue.Application.GetCandidatePreviewEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Catalogue.Application.DeleteTrackEndpoint"

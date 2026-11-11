@@ -223,6 +223,360 @@ export class CatalogueClient {
     }
 
     /**
+     * @return OK
+     */
+    importCandidates(body: ImportCandidates): Observable<ImportCandidatesResult> {
+        let url_ = this.baseUrl + "/api/admin/catalogue/candidates";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processImportCandidates(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processImportCandidates(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ImportCandidatesResult>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ImportCandidatesResult>;
+        }));
+    }
+
+    protected processImportCandidates(response: HttpResponseBase): Observable<ImportCandidatesResult> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ImportCandidatesResult;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as HttpValidationProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    listCandidates(): Observable<CandidateItem[]> {
+        let url_ = this.baseUrl + "/api/admin/catalogue/candidates";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListCandidates(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListCandidates(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<CandidateItem[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<CandidateItem[]>;
+        }));
+    }
+
+    protected processListCandidates(response: HttpResponseBase): Observable<CandidateItem[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as CandidateItem[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    rereadCandidates(): Observable<RereadCandidatesResult> {
+        let url_ = this.baseUrl + "/api/admin/catalogue/candidates/reread";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processRereadCandidates(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processRereadCandidates(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<RereadCandidatesResult>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<RereadCandidatesResult>;
+        }));
+    }
+
+    protected processRereadCandidates(response: HttpResponseBase): Observable<RereadCandidatesResult> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RereadCandidatesResult;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    dismissCandidates(body: DismissCandidates): Observable<void> {
+        let url_ = this.baseUrl + "/api/admin/catalogue/candidates/dismissed";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDismissCandidates(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDismissCandidates(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDismissCandidates(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as HttpValidationProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    addCandidates(body: AddCandidates): Observable<AddCandidatesResult> {
+        let url_ = this.baseUrl + "/api/admin/catalogue/candidates/add";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAddCandidates(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAddCandidates(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AddCandidatesResult>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AddCandidatesResult>;
+        }));
+    }
+
+    protected processAddCandidates(response: HttpResponseBase): Observable<AddCandidatesResult> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AddCandidatesResult;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as HttpValidationProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getCandidatePreview(id: number): Observable<CandidatePreview> {
+        let url_ = this.baseUrl + "/api/admin/catalogue/candidates/{id}/preview";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetCandidatePreview(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetCandidatePreview(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<CandidatePreview>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<CandidatePreview>;
+        }));
+    }
+
+    protected processGetCandidatePreview(response: HttpResponseBase): Observable<CandidatePreview> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as CandidatePreview;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            }));
+        } else if (status === 422) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result422: any = null;
+            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unprocessable Entity", status, _responseText, _headers, result422);
+            }));
+        } else if (status === 503) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result503: any = null;
+            result503 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Service Unavailable", status, _responseText, _headers, result503);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
      * @return No Content
      */
     deleteTrack(id: number): Observable<void> {
@@ -1090,6 +1444,19 @@ export class CatalogueClient {
     }
 }
 
+export interface AddCandidates {
+    candidateIds: number[];
+
+    [key: string]: any;
+}
+
+export interface AddCandidatesResult {
+    queued: number;
+    skipped: number;
+
+    [key: string]: any;
+}
+
 export interface AddTrack {
     deezerTrackId: number;
 
@@ -1104,6 +1471,29 @@ export interface AssignTracksToThemes {
 
 export interface AssignTracksToThemesResult {
     added: number;
+
+    [key: string]: any;
+}
+
+export interface CandidateItem {
+    id: number;
+    deezerTrackId: number;
+    priority: string | undefined;
+    status: string;
+    artist: string | undefined;
+    title: string | undefined;
+    releaseYear: number | undefined;
+    rank: number | undefined;
+    previewStatus: string;
+    inCatalogue: boolean;
+    isDismissed: boolean;
+    isAdding: boolean;
+
+    [key: string]: any;
+}
+
+export interface CandidatePreview {
+    url: string;
 
     [key: string]: any;
 }
@@ -1127,6 +1517,13 @@ export interface DeezerTrackResult {
     [key: string]: any;
 }
 
+export interface DismissCandidates {
+    candidateIds: number[];
+    dismissed: boolean;
+
+    [key: string]: any;
+}
+
 export interface HttpValidationProblemDetails {
     type?: string | undefined;
     title?: string | undefined;
@@ -1134,6 +1531,27 @@ export interface HttpValidationProblemDetails {
     detail?: string | undefined;
     instance?: string | undefined;
     errors?: { [key: string]: string[]; };
+
+    [key: string]: any;
+}
+
+export interface ImportCandidateItem {
+    deezerTrackId: number;
+    priority?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface ImportCandidates {
+    items: ImportCandidateItem[];
+
+    [key: string]: any;
+}
+
+export interface ImportCandidatesResult {
+    created: number;
+    alreadyCandidates: number;
+    alreadyInCatalogue: number;
 
     [key: string]: any;
 }
@@ -1153,6 +1571,12 @@ export interface RenameTrack {
     title: string;
     genre?: string | undefined;
     altTitles?: string[] | undefined;
+
+    [key: string]: any;
+}
+
+export interface RereadCandidatesResult {
+    count: number;
 
     [key: string]: any;
 }

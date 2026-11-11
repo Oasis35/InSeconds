@@ -1,6 +1,7 @@
 import { Provider } from '@angular/core';
 import { DeezerResult, PoolTheme, PoolTrack, ThemeAssignment } from '../../domain/pool-track';
-import { CatalogueApi } from '../catalogue.api';
+import { Candidate, CandidatePriority } from '../../domain/candidates';
+import { CatalogueApi, ImportResult } from '../catalogue.api';
 
 /** Erreur telle que la lève le client NSwag quand l'API répond par un `ProblemDetails` (cf. `toAppError`). */
 export function problem(status: number, code: string, traceId = '0123456789abcdef0123456789abcdef') {
@@ -12,6 +13,14 @@ export { poolTrack } from '../../domain/testing/pool-track.fixture';
 
 export function deezerResult(overrides: Partial<DeezerResult> = {}): DeezerResult {
   return { deezerTrackId: 42, artist: 'E2E Artist', title: 'E2E Track', previewUrl: 'https://preview/42.mp3', ...overrides };
+}
+
+/** Un candidat du sas pour les tests : lu, avec un extrait, à traiter. */
+export function candidate(overrides: Partial<Candidate> = {}): Candidate {
+  return {
+    id: 1, deezerTrackId: 1001, priority: null, status: 'ready', artist: 'Artiste', title: 'Titre', releaseYear: 2024, rank: 500_000,
+    preview: 'available', inCatalogue: false, isDismissed: false, isAdding: false, ...overrides,
+  };
 }
 
 function defaults() {
@@ -28,6 +37,16 @@ function defaults() {
     deleteTheme: vi.fn<(id: number) => Promise<void>>(() => Promise.resolve()),
     setTrackThemes: vi.fn<(id: number, themeIds: readonly number[]) => Promise<void>>(() => Promise.resolve()),
     assignTracksToThemes: vi.fn<(assignments: readonly ThemeAssignment[]) => Promise<number>>(a => Promise.resolve(a.reduce((n, x) => n + x.trackIds.length, 0))),
+    listCandidates: vi.fn<() => Promise<Candidate[]>>(() => Promise.resolve([])),
+    importCandidates: vi.fn<(items: readonly { deezerTrackId: number; priority: CandidatePriority | null }[]) => Promise<ImportResult>>(
+      items => Promise.resolve({ created: items.length, alreadyCandidates: 0, alreadyInCatalogue: 0 }),
+    ),
+    rereadCandidates: vi.fn<() => Promise<number>>(() => Promise.resolve(0)),
+    dismissCandidates: vi.fn<(ids: readonly number[], dismissed: boolean) => Promise<void>>(() => Promise.resolve()),
+    addCandidates: vi.fn<(ids: readonly number[]) => Promise<{ queued: number; skipped: number }>>(
+      ids => Promise.resolve({ queued: ids.length, skipped: 0 }),
+    ),
+    candidatePreviewUrl: vi.fn<(id: number) => Promise<string>>(() => Promise.resolve('https://preview/candidate.mp3')),
     searchDeezer: vi.fn<(query: string) => Promise<DeezerResult[]>>(() => Promise.resolve([])),
     findPreviewUrl: vi.fn<(track: Pick<PoolTrack, 'artist' | 'title' | 'deezerTrackId'>) => Promise<string | null>>(
       () => Promise.resolve(null),

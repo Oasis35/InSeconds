@@ -45,7 +45,13 @@ export class AdminPage {
     return this.page.getByRole('link', { name, exact: true });
   }
 
+  /** Les pages de l'onglet Contenu : on ouvre l'onglet, puis la page dans sa barre de puces (Morceaux est celle d'arrivée). */
   async clickTab(name: string): Promise<void> {
+    if (name === 'Morceaux' || name === 'Thèmes' || name === 'À valider') {
+      await this.tab('Contenu').click();
+      if (name !== 'Morceaux') await this.page.getByTestId('content-tabs').getByRole('link', { name: new RegExp(`^${name}`) }).click();
+      return;
+    }
     await this.tab(name).click();
   }
 
