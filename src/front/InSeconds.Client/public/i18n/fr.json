@@ -675,6 +675,7 @@
       "searchPool": "Chercher dans le pool",
       "searchDeezer": "Chercher sur Deezer",
       "noCandidate": "Aucun morceau à ajouter.",
+      "showMore": "Voir plus ({{count}} restants)",
       "addPicked": "Ajouter {{count}} morceaux au thème",
       "addDeezer": "Ajouter au pool et au thème",
       "alreadyInTheme": "Déjà dans ce thème"

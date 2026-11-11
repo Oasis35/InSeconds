@@ -12,6 +12,15 @@ describe('ThemeAddComponent', () => {
   ];
   const result: DeezerResult = { deezerTrackId: 99, artist: 'Cyndi Lauper', title: 'Time After Time', previewUrl: 'https://p/99.mp3' };
 
+  function renderWith(tracks: ReturnType<typeof poolTrack>[]) {
+    TestBed.configureTestingModule({ providers: [provideTranslateService()] });
+    const fixture = TestBed.createComponent(ThemeAddComponent);
+    fixture.componentRef.setInput('poolTracks', tracks);
+    fixture.componentRef.setInput('themeId', 1);
+    fixture.detectChanges();
+    return { fixture, el: fixture.nativeElement as HTMLElement };
+  }
+
   function render(inputs: Partial<{ deezerResults: DeezerResult[]; statuses: Record<number, 'loading' | 'success' | 'error'> }> = {}) {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     const fixture = TestBed.createComponent(ThemeAddComponent);
@@ -32,6 +41,27 @@ describe('ThemeAddComponent', () => {
     expect(rows).toHaveLength(2);
     expect(rows[0].textContent).toContain('Take On Me');
     expect(rows[1].textContent).toContain('Africa');
+  });
+
+  it('affiche tout le pool par tranches avec « Voir plus », et la recherche filtre tout le pool', () => {
+    const many = Array.from({ length: 120 }, (_, i) => poolTrack({ id: i + 1, deezerTrackId: 1000 + i, artist: `Artiste ${i}`, title: `Titre ${i}` }));
+    const { el, fixture } = renderWith(many);
+    const more = () => el.querySelector<HTMLButtonElement>('[data-testid="theme-show-more"]');
+
+    expect(candidates(el)).toHaveLength(50);
+    more()!.click();
+    fixture.detectChanges();
+    expect(candidates(el)).toHaveLength(100);
+    more()!.click();
+    fixture.detectChanges();
+    expect(candidates(el)).toHaveLength(120);
+    expect(more()).toBeNull();
+
+    const input = el.querySelector<HTMLInputElement>('[data-testid="theme-pool-search"]')!;
+    input.value = 'Titre 119';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(candidates(el)).toHaveLength(1);
   });
 
   it('coche plusieurs morceaux et les ajoute d\'un coup', () => {
