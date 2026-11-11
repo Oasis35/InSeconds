@@ -1,6 +1,5 @@
-import { Component, input } from '@angular/core';
+import { Component, Type, input } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Type } from '@angular/core';
 import { ContentTabsComponent } from '../content-tabs.component';
 
 /** Remplace la barre des pages du contenu : les pages dont le test fournit un faux `Router` ne peuvent pas rendre de vrais liens. */

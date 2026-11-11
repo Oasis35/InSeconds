@@ -34,6 +34,21 @@ public class CandidateTests(PostgresFixture postgres) : IAsyncLifetime
         return (await response.Content.ReadFromJsonAsync<ImportCandidatesResult>(Ct))!;
     }
 
+    [Fact]
+    public async Task Import_DuMemeIdentifiantEnMemeTemps_UnSeulCandidat_JamaisUneErreur500()
+    {
+        // Les imports passent tous la vérification préalable puis s'enregistrent ensemble : l'index unique refuse les autres (409 « réessaie »)
+        // ou ils trouvent déjà le candidat (200) ; jamais une 500, et une seule ligne.
+        var admin = _app.Admin();
+
+        var responses = await Task.WhenAll(Enumerable.Range(0, 6)
+            .Select(_ => admin.PostAsJsonAsync(Candidates, new ImportCandidates([Item(6000777)]), Ct)));
+
+        Assert.Contains(responses, r => r.StatusCode == HttpStatusCode.OK);
+        Assert.All(responses.Where(r => r.StatusCode != HttpStatusCode.OK), r => Assert.Equal(HttpStatusCode.Conflict, r.StatusCode));
+        Assert.Equal(1L, await _app.Api.ScalarAsync<long>("SELECT count(*) FROM catalogue.candidates"));
+    }
+
     private async Task<IReadOnlyList<CandidateItem>> ListAsync() =>
         (await _app.Admin().GetFromJsonAsync<List<CandidateItem>>(Candidates, Ct))!;
 

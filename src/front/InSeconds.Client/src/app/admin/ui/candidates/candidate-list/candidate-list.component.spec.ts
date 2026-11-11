@@ -15,7 +15,7 @@ describe('CandidateListComponent', () => {
     const el = fixture.nativeElement as HTMLElement;
     const toggled: number[] = [];
     const listened: number[] = [];
-    fixture.componentInstance.toggle.subscribe(id => toggled.push(id));
+    fixture.componentInstance.selectionToggle.subscribe(id => toggled.push(id));
     fixture.componentInstance.listen.subscribe(c => listened.push(c.id));
     const rows = () => Array.from(el.querySelectorAll('[data-testid="candidate"]'));
     return { el, rows, toggled, listened };

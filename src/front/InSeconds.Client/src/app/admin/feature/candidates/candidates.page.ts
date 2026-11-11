@@ -91,7 +91,7 @@ const DIALOG_MAX_WIDTH = '26rem';
       }
 
       <app-candidate-list [candidates]="store.shown()" [selectedIds]="store.selectedIds()" [dismissedView]="store.view() === 'dismissed'"
-        (toggle)="store.toggleSelection($event)" (listen)="listen($event)" />
+        (selectionToggle)="store.toggleSelection($event)" (listen)="listen($event)" />
       @if (store.isFulfilled() && store.shown().length === 0) {
         <p class="text-sm" style="color:var(--text-muted)" data-testid="candidates-empty">
           {{ (store.view() === 'todo' ? 'admin.candidates.empty' : 'admin.candidates.emptyDismissed') | translate }}

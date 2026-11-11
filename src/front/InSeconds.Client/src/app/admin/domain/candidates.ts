@@ -82,7 +82,7 @@ export function parseCandidateImport(text: string, defaultPriority: CandidatePri
     const line = index + 1;
     const trimmed = raw.trim();
     if (!trimmed || trimmed.startsWith('#')) return;
-    const words = trimmed.replace(/https?:\/\/\S*?\/track\/(\d+)\S*/gi, '$1').split(/[\s,;\t]+/).filter(Boolean);
+    const words = trimmed.replace(/https?:\/\/\S*?\/track\/(\d+)\S*/gi, '$1').split(/[\s,;]+/).filter(Boolean);
     const ids = words.filter(w => /^\d+$/.test(w));
     const rest = words.filter(w => !/^\d+$/.test(w));
     const priority = rest.length === 1 && /^[abc]$/i.test(rest[0]) ? (rest[0].toUpperCase() as CandidatePriority) : null;

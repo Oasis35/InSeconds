@@ -76,7 +76,7 @@ export class CatalogueApi {
   }
 
   /** Importe des identifiants Deezer dans le sas ; leur lecture chez Deezer part en arrière-plan. */
-  async importCandidates(items: readonly { deezerTrackId: number; priority: CandidatePriority | null }[]): Promise<ImportResult> {
+  importCandidates(items: readonly { deezerTrackId: number; priority: CandidatePriority | null }[]): Promise<ImportResult> {
     return firstValueFrom(this.client.importCandidates({ items: items.map(i => ({ deezerTrackId: i.deezerTrackId, priority: i.priority ?? undefined })) }));
   }
 

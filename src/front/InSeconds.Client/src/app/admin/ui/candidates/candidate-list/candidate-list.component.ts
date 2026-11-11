@@ -35,7 +35,7 @@ import { Candidate, isAddable } from '../../../domain/candidates';
           }
           <label class="shrink-0 min-h-11 min-w-11 inline-flex items-center justify-center cursor-pointer">
             <input type="checkbox" class="w-6 h-6 cursor-pointer disabled:opacity-30" [disabled]="!addable(c) && !dismissedView()"
-              [checked]="selectedIds().includes(c.id)" (change)="toggle.emit(c.id)" [attr.aria-label]="label(c)" data-testid="candidate-check" />
+              [checked]="selectedIds().includes(c.id)" (change)="selectionToggle.emit(c.id)" [attr.aria-label]="label(c)" data-testid="candidate-check" />
           </label>
         </li>
       }
@@ -47,7 +47,7 @@ export class CandidateListComponent {
   readonly selectedIds = input<readonly number[]>([]);
   /** La vue « Écartés » : tout se coche (pour les remettre), même ce qui n'est pas ajoutable. */
   readonly dismissedView = input(false);
-  readonly toggle = output<number>();
+  readonly selectionToggle = output<number>();
   readonly listen = output<Candidate>();
 
   protected addable = isAddable;
