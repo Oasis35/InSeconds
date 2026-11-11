@@ -11,10 +11,10 @@ import { TranslatePipe } from '@ngx-translate/core';
   imports: [RouterLink, RouterLinkActive, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <nav class="flex flex-wrap gap-2" [attr.aria-label]="'admin.content.label' | translate" data-testid="content-tabs">
+    <nav class="flex flex-wrap gap-1.5" [attr.aria-label]="'admin.content.label' | translate" data-testid="content-tabs">
       @for (item of items; track item.path) {
         <a [routerLink]="['/admin', item.path]" routerLinkActive="is-active" ariaCurrentWhenActive="page" [replaceUrl]="true"
-          class="content-tab text-sm px-3 min-h-11 inline-flex items-center rounded-full" style="border:1px solid var(--border-neutral)">
+          class="content-tab text-[13px] px-3 min-h-9 lg:min-h-8 inline-flex items-center rounded-full" style="border:1px solid var(--border-neutral)">
           {{ item.label | translate }}@if (item.path === 'a-valider' && candidates() !== null && candidates()! > 0) { · {{ candidates() }}}
         </a>
       }

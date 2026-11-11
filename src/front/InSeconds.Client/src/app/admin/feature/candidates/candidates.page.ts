@@ -28,7 +28,7 @@ const DIALOG_MAX_WIDTH = '26rem';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full min-w-0' },
   template: `
-    <div class="w-full max-w-2xl mx-auto flex flex-col gap-4">
+    <div class="flex flex-col gap-4 w-full max-w-2xl lg:max-w-none">
       <app-content-tabs [candidates]="store.isFulfilled() ? store.todoCount() : null" />
 
       <p class="text-sm" style="color:var(--text-muted)">{{ 'admin.candidates.help' | translate }}</p>
