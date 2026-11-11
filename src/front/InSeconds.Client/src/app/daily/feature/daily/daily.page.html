@@ -8,7 +8,10 @@
         <!-- En pleine manche, rien à la place des accès du compte : un toucher par erreur ouvrirait la confirmation de sortie. Le total
              de la partie se lit à la révélation de chaque morceau. -->
         @if (store.screen() !== 'playing') {
-          <app-account-link brandRight />
+          <div brandRight class="flex items-center gap-2">
+            @if (chrome.v4()) { <app-instagram-link /> }
+            <app-account-link />
+          </div>
         }
       </app-brand>
       @if (store.screen() === 'playing') {
@@ -135,7 +138,10 @@
     }
 
   </main>
-  <app-daily-footer class="mt-auto" [lang]="language.current()" (toggleLanguage)="toggleLanguage()" />
+  <!-- Sous la V4, les liens légaux sont dans la barre du bas et la langue dans le profil. -->
+  @if (!chrome.v4()) {
+    <app-daily-footer class="mt-auto" [lang]="language.current()" (toggleLanguage)="toggleLanguage()" />
+  }
 
   <!-- Toasts de fin de partie et d'accueil (série, gels) -->
   @if (store.toasts().guestStreak) {

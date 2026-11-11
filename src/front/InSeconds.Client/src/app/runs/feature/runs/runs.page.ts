@@ -1,3 +1,4 @@
+import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, effect, inject, viewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SessionStore } from '../../../core/session/session.store';
@@ -77,6 +78,9 @@ export class RunsPage implements OnInit {
   private readonly code = inject(ActivatedRoute).snapshot.paramMap.get('code');
 
   constructor() {
+    const chrome = inject(ShellChromeStore);
+    effect(() => chrome.setImmersive(this.store.screen() === 'playing'));
+    inject(DestroyRef).onDestroy(() => chrome.setImmersive(false));
     // Une nouvelle version du site ne recharge jamais la page en pleine manche (cf. `reloadMomentFor`).
     inject(VersionService).allowReload(() => reloadMomentFor(this.store.screen()), inject(DestroyRef));
     // Si la partie quitte « playing » pendant qu'une confirmation de sortie est ouverte, il n'y a plus de manche à protéger : la navigation continue.

@@ -110,6 +110,21 @@
       </button>
     </div>
 
+    <!-- Langue : sous la V4, le pied de page n'est plus là, la bascule vit ici -->
+    @if (chrome.v4()) {
+      <section class="flex items-center justify-between gap-3" data-testid="profile-language">
+        <span class="text-sm" style="color:var(--text-body)">{{ 'account.profile.language' | translate }}</span>
+        <div class="flex gap-2">
+          @for (code of ['fr', 'en']; track code) {
+            <button type="button" (click)="setLanguage($any(code))" [attr.aria-pressed]="locale() === code" [attr.data-testid]="'language-' + code"
+                    class="rounded-(--radius-button) px-3 py-2 text-sm cursor-pointer touch-manipulation"
+                    [style.border]="locale() === code ? '1px solid var(--accent-orange)' : '1px solid var(--border-neutral)'"
+                    [style.color]="locale() === code ? 'var(--text-hi)' : 'var(--text-muted)'">{{ code.toUpperCase() }}</button>
+          }
+        </div>
+      </section>
+    }
+
     <!-- Tes données (RGPD) -->
     <section class="flex flex-col gap-3" aria-labelledby="data-title">
       <h2 id="data-title" class="text-sm font-semibold" style="font-family:var(--font-display);color:var(--text-muted)">

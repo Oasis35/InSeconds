@@ -1,6 +1,7 @@
 import { EnvironmentInjector, InjectionToken, createEnvironmentInjector, effect, inject, untracked } from '@angular/core';
 import { patchState, signalStore, withHooks, withMethods, withState } from '@ngrx/signals';
 import { SessionStore } from '../../core/session/session.store';
+import { ShellChromeStore } from '../../core/shell/shell-chrome.store';
 
 /**
  * Lit l'accès au mode Setlist (`GET /api/runs/me`). Le client de l'API du mode n'est jamais dans le bundle initial : il se charge ici à la
@@ -59,6 +60,9 @@ export const SetlistAccessStore = signalStore(
   withHooks({
     onInit(store) {
       const session = inject(SessionStore);
+      const chrome = inject(ShellChromeStore);
+      // Le flag est lu par la coque (barre du bas...), qui ne connaît pas ce domaine.
+      effect(() => chrome.setV4(store.hasAccess()));
       effect(() => {
         // L'identité se lit au démarrage de l'app : tant qu'elle n'est pas connue, on ne conclut rien.
         if (!session.loaded()) return;
