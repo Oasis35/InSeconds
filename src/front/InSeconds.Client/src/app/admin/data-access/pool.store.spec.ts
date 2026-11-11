@@ -91,6 +91,20 @@ describe('PoolStore', () => {
       expect(api.setTrackThemes).toHaveBeenCalledWith(9, [1]);
     });
 
+    it('relit le pool même si un ajout en lot échoue au milieu', async () => {
+      const first = poolTrack({ id: 5, deezerTrackId: 15 });
+      const second = poolTrack({ id: 6, deezerTrackId: 16 });
+      const setTrackThemes = vi.fn<(id: number, themeIds: readonly number[]) => Promise<void>>()
+        .mockResolvedValueOnce().mockRejectedValueOnce(problem(500, 'server.error'));
+      await setup([first, second], { listThemes: vi.fn(async () => themes), setTrackThemes });
+      const reads = api.listTracks.mock.calls.length;
+
+      const error = await store.addTracksToTheme(1, [5, 6]);
+
+      expect(error).not.toBeNull();
+      expect(api.listTracks.mock.calls.length).toBe(reads + 1);
+    });
+
     it('un morceau de Deezer déjà dans le pool n\'est pas ajouté une seconde fois', async () => {
       await setup([poolTrack({ id: 9, deezerTrackId: 99 })], { listThemes: vi.fn(async () => themes) });
 

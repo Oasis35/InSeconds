@@ -84,4 +84,21 @@ describe('ThemeDetailComponent', () => {
 
     expect(renamed).toEqual(['Eighties']);
   });
+
+  it('n\'envoie pas un nom vide ou inchangé', () => {
+    const { el, fixture, cmp } = render();
+    const renamed: string[] = [];
+    cmp.rename.subscribe(v => renamed.push(v));
+
+    for (const value of ['   ', 'Années 80']) {
+      el.querySelector<HTMLButtonElement>('[data-testid="theme-rename"]')!.click();
+      fixture.detectChanges();
+      const input = el.querySelector<HTMLInputElement>('[data-testid="theme-name-input"]')!;
+      input.value = value;
+      input.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+    }
+
+    expect(renamed).toEqual([]);
+  });
 });

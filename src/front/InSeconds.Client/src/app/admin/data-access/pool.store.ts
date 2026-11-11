@@ -173,6 +173,18 @@ export const PoolStore = signalStore(
       return null;
     }
 
+    /** Comme `mutate`, pour une action en plusieurs appels : une partie a pu aboutir avant l'échec, le pool est donc relu dans tous les cas. */
+    async function mutateAndReload(action: () => Promise<void>): Promise<AppError | null> {
+      let error: AppError | null = null;
+      try {
+        await action();
+      } catch (error_) {
+        error = await toAppError(error_);
+      }
+      await load();
+      return error;
+    }
+
     return {
       load,
 
@@ -224,7 +236,7 @@ export const PoolStore = signalStore(
       deleteTheme: (id: number) => mutate(() => api.deleteTheme(id)),
       setTrackThemes: (id: number, themeIds: readonly number[]) => mutate(() => api.setTrackThemes(id, themeIds)),
       /** Met ces morceaux du pool dans le thème (un par un, ceux qui l'ont déjà sont laissés), puis relit. */
-      addTracksToTheme: (themeId: number, trackIds: readonly number[]) => mutate(async () => {
+      addTracksToTheme: (themeId: number, trackIds: readonly number[]) => mutateAndReload(async () => {
         for (const id of trackIds) {
           const track = store.tracks().find(t => t.id === id);
           if (track && !track.themeIds.includes(themeId)) await api.setTrackThemes(id, [...track.themeIds, themeId]);
@@ -236,7 +248,7 @@ export const PoolStore = signalStore(
         if (track?.themeIds.includes(themeId)) await api.setTrackThemes(trackId, track.themeIds.filter(x => x !== themeId));
       }),
       /** Ajoute au pool le morceau de Deezer s'il n'y est pas encore, puis le met dans le thème. */
-      addDeezerTrackToTheme: (themeId: number, deezerTrackId: number) => mutate(async () => {
+      addDeezerTrackToTheme: (themeId: number, deezerTrackId: number) => mutateAndReload(async () => {
         let track = store.tracks().find(t => t.deezerTrackId === deezerTrackId);
         if (!track) {
           await api.addTrack(deezerTrackId);

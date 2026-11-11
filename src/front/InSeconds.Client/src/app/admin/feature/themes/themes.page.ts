@@ -45,8 +45,8 @@ type DeezerStatus = 'loading' | 'success' | 'error';
           <app-theme-list [rows]="rows()" [selectedId]="selectedId()" [errorKey]="listErrorKey()" (select)="open($event)" (add)="createTheme($event)" />
         </section>
 
-        <section class="lg:block lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:rounded-2xl lg:p-5"
-          [class.hidden]="!selected()" style="--theme-panel:var(--bg-surface)" data-testid="theme-panel">
+        <section class="lg:block lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:rounded-(--radius-card) lg:p-5"
+          [class.hidden]="!selected()" data-testid="theme-panel">
           @if (selected(); as theme) {
             @if (adding()) {
               <app-theme-add [poolTracks]="pool.tracks()" [themeId]="theme.id" [deezerQuery]="search.query()" [deezerResults]="search.results()"

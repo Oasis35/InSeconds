@@ -3,6 +3,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { THEME_MAX_LENGTH } from '../../../domain/pool-track';
 import { MIN_PLAYABLE_TRACKS, ThemeFilter, ThemeRow, VARIED_FROM_TRACKS, filterThemes, missingTracks } from '../../../domain/themes';
 import { HEALTH_COLOR } from '../health-style';
+import { ButtonComponent } from '../../../../ui/button/button.component';
 
 /**
  * La liste des thèmes : une recherche par nom, des puces par état (tous, pas jouables, peu variés, variés), un formulaire pour en créer un,
@@ -10,7 +11,7 @@ import { HEALTH_COLOR } from '../health-style';
  */
 @Component({
   selector: 'app-theme-list',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, ButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-3">
@@ -31,8 +32,7 @@ import { HEALTH_COLOR } from '../health-style';
       <form class="flex items-center gap-2" (submit)="submit($event)">
         <input type="text" class="app-input flex-1" [value]="draft()" [attr.maxlength]="maxLength" (input)="draft.set(valueOf($event))"
           [attr.aria-label]="'admin.themes.newName' | translate" [placeholder]="'admin.themes.newName' | translate" data-testid="theme-new" />
-        <button type="submit" class="text-sm py-2 px-4 rounded-lg disabled:opacity-40" style="border:1px solid var(--border-neutral);color:var(--text-hi)"
-          [disabled]="!draft().trim()">{{ 'admin.themes.create' | translate }}</button>
+        <button type="submit" appButton variant="neutral" size="sm" [disabled]="!draft().trim()">{{ 'admin.themes.create' | translate }}</button>
       </form>
 
       @if (errorKey(); as key) {
@@ -42,7 +42,7 @@ import { HEALTH_COLOR } from '../health-style';
       <ul class="flex flex-col gap-2.5">
         @for (row of shown(); track row.id) {
           <li>
-            <button type="button" (click)="select.emit(row.id)" class="w-full text-left rounded-2xl p-4 flex flex-col gap-2" data-testid="theme-card"
+            <button type="button" (click)="select.emit(row.id)" class="w-full text-left rounded-(--radius-card) p-4 flex flex-col gap-2" data-testid="theme-card"
               style="background:var(--bg-surface-2);border:1px solid var(--border-strong)"
               [style.border-color]="row.id === selectedId() ? 'var(--border-neutral)' : null" [attr.aria-current]="row.id === selectedId() ? 'true' : null">
               <span class="flex items-center justify-between gap-3">
@@ -66,7 +66,7 @@ import { HEALTH_COLOR } from '../health-style';
           <li class="text-sm" style="color:var(--text-muted)" data-testid="themes-empty">{{ 'admin.themes.empty' | translate }}</li>
         }
       </ul>
-      <p class="text-xs" style="color:var(--text-faint)">{{ 'admin.themes.legend' | translate: { min: minPlayable, varied: variedFrom } }}</p>
+      <p class="text-xs" style="color:var(--text-muted)">{{ 'admin.themes.legend' | translate: { min: minPlayable, varied: variedFrom } }}</p>
     </div>
   `,
 })
