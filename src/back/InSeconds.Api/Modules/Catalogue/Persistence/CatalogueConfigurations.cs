@@ -32,6 +32,19 @@ internal sealed class TrackConfiguration : IEntityTypeConfiguration<Track>
         builder.Property(t => t.GenresCheckedAt);
         // genres_manual : le genre a été saisi par l'admin (relu chez Deezer chaque mois).
         builder.Property(t => t.GenresManual).HasDefaultValue(false);
+        // Les thèmes que l'admin a associés au morceau (Runs en tire les playlists à thème) : table de jonction track_themes, supprimée avec le morceau ;
+        // un thème que des morceaux ont ne se supprime pas (Restrict).
+        builder.HasMany(t => t.Themes).WithMany().UsingEntity<Dictionary<string, object>>(
+            TrackThemesTable,
+            right => right.HasOne<Theme>().WithMany().HasForeignKey(ThemeIdColumn).OnDelete(DeleteBehavior.Restrict),
+            left => left.HasOne<Track>().WithMany().HasForeignKey(TrackIdColumn).OnDelete(DeleteBehavior.Cascade),
+            join =>
+            {
+                join.ToTable(TrackThemesTable, DbSchemas.Catalogue);
+                join.HasKey(TrackIdColumn, ThemeIdColumn);
+                // Les morceaux d'un thème se lisent par l'index suivant (les thèmes d'un morceau, par la clé).
+                join.HasIndex(ThemeIdColumn);
+            });
         // La forme de l'extrait : un blob de quelques Ko (bytea), le nom du fichier dont elle vient et sa date. Les requêtes du pool et des modes
         // ne lisent jamais l'entité entière (projections) : ce blob ne voyage qu'avec le contrôle nocturne et la réponse de démarrage.
         builder.Property(t => t.Waveform);
@@ -54,6 +67,11 @@ internal sealed class TrackConfiguration : IEntityTypeConfiguration<Track>
     /// <summary>Table de jonction morceau ↔ genre.</summary>
     public const string TrackGenresTable = "track_genres";
 
+    /// <summary>Table de jonction morceau ↔ thème.</summary>
+    public const string TrackThemesTable = "track_themes";
+
+    public const string ThemeIdColumn = "theme_id";
+
     public const string TrackIdColumn = "track_id";
 
     public const string GenreIdColumn = "genre_id";
@@ -71,5 +89,22 @@ internal sealed class GenreConfiguration : IEntityTypeConfiguration<Genre>
         // L'identifiant est celui de Deezer : jamais généré par la base.
         builder.Property(g => g.Id).ValueGeneratedNever();
         builder.Property(g => g.Name).IsRequired();
+    }
+}
+
+internal sealed class ThemeConfiguration : IEntityTypeConfiguration<Theme>
+{
+    /// <summary>Index unique du nom, reconnu dans l'erreur d'unicité (deux ajouts du même nom en même temps).</summary>
+    public const string NameIndex = "ix_themes_name";
+
+    public void Configure(EntityTypeBuilder<Theme> builder)
+    {
+        builder.ToTable("themes", DbSchemas.Catalogue);
+        builder.HasKey(t => t.Id);
+        builder.Property(t => t.Id).UseHiLo("themes_hilo", DbSchemas.Catalogue);
+        // citext : « Films » et « films » sont le même thème (le schéma extensions est dans le search_path).
+        builder.Property(t => t.Name).IsRequired().HasMaxLength(Theme.MaxNameLength).HasColumnType("citext");
+        builder.HasIndex(t => t.Name).IsUnique().HasDatabaseName(NameIndex);
+        builder.Property(t => t.CreatedAt).IsRequired();
     }
 }

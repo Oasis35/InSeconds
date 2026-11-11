@@ -32,6 +32,28 @@ public sealed class EfCatalogueStore(InSecondsDbContext db) : ICatalogueStore
         return created;
     }
 
+    public Task<Track?> FindWithThemesAsync(int id, CancellationToken ct) =>
+        db.Set<Track>().Include(t => t.Themes).FirstOrDefaultAsync(t => t.Id == id, ct);
+
+    public async Task<IReadOnlyList<Theme>> FindThemesAsync(IReadOnlyCollection<int> ids, CancellationToken ct) =>
+        await db.Set<Theme>().Where(t => ids.Contains(t.Id)).ToListAsync(ct);
+
+    public async ValueTask AddThemeAsync(Theme theme, CancellationToken ct) => await db.AddAsync(theme, ct);
+
+    public void RemoveTheme(Theme theme) => db.Remove(theme);
+
+    public Task<Theme?> FindThemeAsync(int id, CancellationToken ct) => db.Set<Theme>().FirstOrDefaultAsync(t => t.Id == id, ct);
+
+    public Task<bool> ThemeNameTakenAsync(string name, int? exceptThemeId, CancellationToken ct)
+    {
+        var lower = name.Trim().ToLowerInvariant();
+        return db.Set<Theme>().AnyAsync(t => t.Name.ToLower() == lower && t.Id != exceptThemeId, ct);
+    }
+
+    public Task<bool> ThemeInUseAsync(int themeId, CancellationToken ct) => db.Set<Track>().AnyAsync(t => t.Themes.Any(x => x.Id == themeId), ct);
+
+    public Task<int> CountThemeTracksAsync(int themeId, CancellationToken ct) => db.Set<Track>().CountAsync(t => t.Themes.Any(x => x.Id == themeId), ct);
+
     public Task<bool> DeezerIdTakenAsync(long deezerTrackId, int? exceptTrackId, CancellationToken ct) =>
         db.Set<Track>().AnyAsync(t => t.DeezerTrackId == deezerTrackId && t.Id != exceptTrackId, ct);
 

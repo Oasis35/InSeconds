@@ -26,6 +26,9 @@ public sealed class RunsRules(IOptionsMonitor<RunsOptions> options, ILogger<Runs
         return problems.Count == 0 ? current.ToRules() : RunsOptions.DefaultRules();
     }
 
+    /// <summary>Les manches à thème (2e à dernière), ou celles par défaut si les réglages sont incohérents.</summary>
+    public IReadOnlyList<int> ThemedRounds() => RunsOptionsChecks.Problems(Options).Count == 0 ? Options.EffectiveThemedRounds : RunsOptions.DefaultThemedRounds;
+
     /// <summary>Les clés de traduction des disques, ou celles par défaut si les réglages sont incohérents.</summary>
     public IReadOnlyList<string> Discs => RunsOptionsChecks.Problems(Options).Count == 0 ? Options.EffectiveDiscs : RunsOptions.DefaultDiscs;
 }

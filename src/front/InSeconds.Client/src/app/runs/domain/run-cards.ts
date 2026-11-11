@@ -54,26 +54,32 @@ export interface RunTrackEffects {
   readonly genre: string | null;
 }
 
-/** Ce qu'une carte active affiche dans la carte du morceau : ce qu'elle révèle, sinon son effet en clair. */
+/** Une info de l'Indice : « Année 1995 », « Initiales de l'artiste D. P. », « Initiales du titre O. M. T. », « Genre Pop ». */
+export interface RunHintFact {
+  readonly kind: 'year' | 'artist' | 'title' | 'genre';
+  readonly value: string;
+}
+
+/** Ce qu'une carte active affiche dans la carte du morceau : les infos qu'elle révèle (l'Indice), sinon son effet en clair. */
 export interface RunPlayedCard {
   readonly card: RunCardKey;
-  readonly value: string | null;
+  readonly facts: readonly RunHintFact[];
 }
 
-/** Les cartes actives sur le morceau, dans l'ordre ; l'Indice donne l'année, les initiales et le genre en une seule tuile. */
+/** Les cartes actives sur le morceau, dans l'ordre ; l'Indice donne l'année, les initiales et le genre, une info par puce étiquetée. */
 export function playedCards(effects: RunTrackEffects | null): readonly RunPlayedCard[] {
   if (!effects) return [];
-  return effects.cards.map(card => ({ card, value: card === 'hint' ? hintLabel(effects) : null }));
+  return effects.cards.map(card => ({ card, facts: card === 'hint' ? hintFacts(effects) : [] }));
 }
 
-/** Ce que l'Indice révèle, sur une ligne : « 1995 · D. P. – O. M. T. · Pop ». */
-function hintLabel(effects: RunTrackEffects): string | null {
-  const parts = [
-    effects.year === null ? null : String(effects.year),
-    effects.artistInitials && effects.titleInitials ? `${initialsLabel(effects.artistInitials)} – ${initialsLabel(effects.titleInitials)}` : null,
-    effects.genre,
-  ].filter((part): part is string => part !== null);
-  return parts.length > 0 ? parts.join(' · ') : null;
+/** Ce que l'Indice révèle, dans l'ordre : l'année, les initiales de l'artiste et du titre, le genre. */
+function hintFacts(effects: RunTrackEffects): readonly RunHintFact[] {
+  const facts: RunHintFact[] = [];
+  if (effects.year !== null) facts.push({ kind: 'year', value: String(effects.year) });
+  if (effects.artistInitials) facts.push({ kind: 'artist', value: initialsLabel(effects.artistInitials) });
+  if (effects.titleInitials) facts.push({ kind: 'title', value: initialsLabel(effects.titleInitials) });
+  if (effects.genre) facts.push({ kind: 'genre', value: effects.genre });
+  return facts;
 }
 
 /** Les initiales d'un nom, à lire : « D. P. ». */

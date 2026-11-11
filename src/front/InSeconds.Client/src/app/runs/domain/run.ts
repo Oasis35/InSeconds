@@ -119,6 +119,8 @@ export interface RunSession {
   readonly cardValues: RunCardValues | null;
   /** Le fantôme de l'ami qui a lancé la playlist, s'il l'a finie ; `null` sinon (sa propre playlist, rien encore répondu). */
   readonly ghost: RunGhost | null;
+  /** Les manches à thème de la playlist (jamais la première) ; vide : aucune. */
+  readonly themes: readonly RunTheme[];
 }
 
 /** La carte tenue : son numéro dans la partie et la carte. */
@@ -195,6 +197,20 @@ export interface RunPlay {
 }
 
 /** Ce que montre le lien d'une playlist (écran « lien reçu ») : jamais un morceau (piège 31), ni le nombre de joueurs. */
+/** La manche à thème d'une playlist (jamais la première) : son numéro et le nom du thème tel qu'il était à la création de la playlist. */
+export interface RunTheme {
+  readonly round: number;
+  readonly name: string;
+}
+
+/** Un thème proposé au créateur d'une playlist, au lancement. */
+export interface RunThemeOffer {
+  readonly id: number;
+  readonly name: string;
+  /** La manche qui aura ce thème. */
+  readonly round: number;
+}
+
 export interface RunLink {
   readonly code: string;
   /** Le pseudo de son auteur ; `null` pour un invité (« Invité » à l'écran). */
@@ -208,6 +224,8 @@ export interface RunLink {
   /** La partie de ce joueur sur la playlist : pas jouée, en cours, ou finie. */
   readonly myStatus: 'none' | RunStatus;
   readonly mySessionId: number | null;
+  /** Les manches à thème de la playlist ; vide : aucune. */
+  readonly themes: readonly RunTheme[];
 }
 
 /** Une partie terminée d'une playlist, dans le tableau de comparaison. */
@@ -220,6 +238,8 @@ export interface RunComparisonRow {
   readonly totalScore: number;
   /** C'est la partie du joueur qui regarde (« Toi »). */
   readonly isMe: boolean;
+  /** Le repère grisé qui distingue deux joueurs de même pseudo dans ce tableau ; `null` sans homonyme. */
+  readonly tag: string | null;
 }
 
 /** Les joueurs d'une playlist, triés par total, après la fin de sa propre partie. */

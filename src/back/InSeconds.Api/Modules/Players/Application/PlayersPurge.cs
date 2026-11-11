@@ -28,6 +28,9 @@ public sealed record PurgeExpiredAuthTokens;
 /// <summary>Supprime les appareils qui ne peuvent plus servir (<see cref="PlayerRetention.StaleDevice"/>) ; rend leur nombre.</summary>
 public sealed record PurgeStaleDevices;
 
+/// <summary>Vide le pseudo des invités sans visite depuis la durée des appareils (<see cref="PlayerRetention.StaleDevice"/>) : ensuite plus rien ne les identifie ; rend leur nombre.</summary>
+public sealed record PurgeStaleGuestPseudos;
+
 /// <summary>Les joueurs dont le compte est inactif depuis <see cref="PlayerRetention.InactiveAccount"/>.</summary>
 public sealed record ListInactiveAccounts;
 
@@ -44,6 +47,9 @@ public static class PlayersPurgeHandler
 
     public static async Task<int> Handle(PurgeStaleDevices command, IPlayerStore store, TimeProvider time, CancellationToken ct) =>
         await store.DeleteStaleDeviceSessionsAsync(time.GetUtcNow() - PlayerRetention.StaleDevice, ct);
+
+    public static async Task<int> Handle(PurgeStaleGuestPseudos command, IPlayerStore store, TimeProvider time, CancellationToken ct) =>
+        await store.ClearStaleGuestPseudosAsync(time.GetUtcNow() - PlayerRetention.StaleDevice, ct);
 
     public static async Task<InactiveAccounts> Handle(ListInactiveAccounts query, IPlayerStore store, TimeProvider time, CancellationToken ct) =>
         new(await store.ListInactiveAccountsAsync(time.GetUtcNow() - PlayerRetention.InactiveAccount, ct));
@@ -63,8 +69,8 @@ public static class PlayersPurgeHandler
 
 /// <summary>
 /// Tâche <c>players-purge-expired-tokens</c>, chaque nuit à 3 h 30 UTC : les durées de conservation des données des
-/// joueurs. Trois étapes, chacune dans sa propre transaction (un compte effacé = une transaction) : jetons expirés, appareils qui ne
-/// peuvent plus servir, comptes inactifs depuis 3 ans. Une étape en échec n'empêche pas les suivantes ; la tâche échoue à la fin. Son
+/// joueurs. Quatre étapes, chacune dans sa propre transaction (un compte effacé = une transaction) : jetons expirés, appareils qui ne
+/// peuvent plus servir, pseudos des invités qui ne reviennent plus, comptes inactifs depuis 3 ans. Une étape en échec n'empêche pas les suivantes ; la tâche échoue à la fin. Son
 /// identifiant n'a pas changé quand elle a reçu les deux dernières (contrôle healthchecks.io et historique de <c>/jobs</c> gardés).
 /// </summary>
 public sealed class PlayersPurgeJob(IMessageBus bus, ILogger<PlayersPurgeJob> logger) : IScheduledJob
@@ -95,6 +101,7 @@ public sealed class PlayersPurgeJob(IMessageBus bus, ILogger<PlayersPurgeJob> lo
 
         var tokens = await StepAsync("tokens", () => bus.InvokeAsync<int>(new PurgeExpiredAuthTokens(), cancellationToken), 0);
         var devices = await StepAsync("devices", () => bus.InvokeAsync<int>(new PurgeStaleDevices(), cancellationToken), 0);
+        var guestPseudos = await StepAsync("guest-pseudos", () => bus.InvokeAsync<int>(new PurgeStaleGuestPseudos(), cancellationToken), 0);
         var inactive = await StepAsync(
             "accounts", () => bus.InvokeAsync<InactiveAccounts>(new ListInactiveAccounts(), cancellationToken), new InactiveAccounts([]));
         var accounts = 0;
@@ -105,6 +112,6 @@ public sealed class PlayersPurgeJob(IMessageBus bus, ILogger<PlayersPurgeJob> lo
         return failed
             ? throw new JobFailedException(FailedCode)
             // Un dictionnaire : Hangfire n'écrit pas les propriétés à zéro d'un objet.
-            : new Dictionary<string, object?> { ["tokens"] = tokens, ["devices"] = devices, ["accounts"] = accounts };
+            : new Dictionary<string, object?> { ["tokens"] = tokens, ["devices"] = devices, ["guestPseudos"] = guestPseudos, ["accounts"] = accounts };
     }
 }

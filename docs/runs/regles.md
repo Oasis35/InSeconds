@@ -57,7 +57,7 @@ La suite de l'échelle est prévue pour quand un run aura plus de 4 manches : pl
 
 ## La playlist partagée
 
-- Chaque run a un lien : **`inseconds.cc/runs/K7Q2M9`** (code de 6 caractères sans caractère ambigu, saisie insensible à la casse). Il se partage depuis l'écran de fin (« Partager mon score » : le score en grille et « Bats-moi » avec le lien) et depuis la comparaison (« Partager la playlist »).
+- Chaque run a un lien : **`inseconds.cc/runs/K7Q2M9`** (code de 6 caractères sans caractère ambigu, saisie insensible à la casse). Il se partage depuis l'écran de fin (« Partager mon score » : le score en grille et « Fais mieux » avec le lien) et depuis la comparaison (« Partager la playlist »).
 - Tous ceux qui ouvrent le lien jouent **les mêmes 20 morceaux, dans le même ordre**, **une seule fois** chacun, sans compte obligatoire (un invité est créé comme au Daily).
 - Les 20 morceaux sont tirés dès le départ : un ami peut aller plus loin que l'auteur de la playlist si celui-ci a perdu avant la fin.
 - **Comparaison** : après avoir fini sa partie (une partie abandonnée est finie), chacun voit toutes les parties **gagnées ou perdues** sur cette playlist, manche par manche (une manche non jouée est vide), avec le pseudo de chacun (« Invité » pour un invité), son disque et son total, triées par total. Rouvrir le lien d'une playlist déjà jouée mène directement à la comparaison : une playlist se joue une seule fois. **Ce n'est pas un classement général** : seuls ceux qui ont le lien la voient, et la page de confidentialité le dit.

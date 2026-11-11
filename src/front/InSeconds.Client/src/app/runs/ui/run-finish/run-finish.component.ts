@@ -11,7 +11,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
  * La fin du run, victoire comme défaite : la carte du disque (le disque, son nom, « Nouveau record » ou le record, le score final, « 16 / 20
  * morceaux trouvés » et un carré par morceau groupé par manche), une case par manche (« score / objectif », l'objectif manqué en ambre, ✕ pour une
  * manche non jouée), puis « Rejouer » (« Revanche » en duel) en action principale, avec ce qui a manqué pour le disque suivant (« Il t'a manqué 12 pts pour le Disque de
- * bronze »), et le bloc « Bats-moi » avec « Partager mon score » (la grille et le lien de la même playlist). Un joueur sans accès (venu par un lien)
+ * bronze »), et le bloc « Fais mieux » avec « Partager mon score » (la grille et le lien de la même playlist). Un joueur sans accès (venu par un lien)
  * ne peut pas lancer de playlist : le lien vers le jeu du jour remplace « Rejouer », en bas. Quand l'ami qui a lancé la playlist l'a finie, le duel
  * ouvre l'écran (« Tu bats Léa de 126 pts », « Léa gagne de 40 pts »), sur un ton neutre, jamais « perdu ». La fin se joue en 2,2 s au plus, un
  * toucher la saute, et rien n'attend la fin : les boutons sont actifs dès le début (`finishSequence`).

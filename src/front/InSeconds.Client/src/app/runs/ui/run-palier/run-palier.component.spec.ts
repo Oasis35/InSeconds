@@ -70,27 +70,25 @@ describe('RunPalierComponent', () => {
       { difficulty: 'risky', objective: 552, maxScore: 885, listenSeconds: 10 },
     ];
 
-    it('les trois colonnes remplacent l\'objectif seul, et le bouton du bas dit « Jouer »', () => {
-      const { element, text } = render({ options: OPTIONS });
+    it('les trois colonnes remplacent l\'objectif seul, sans bouton : un toucher lance la manche', () => {
+      const { element } = render({ options: OPTIONS });
 
       expect(element.querySelectorAll('[data-testid="run-difficulty-objective"]')).toHaveLength(3);
       expect(element.querySelector('[data-testid="run-palier-next"]')).toBeNull();
-      expect(text('run-palier-next-button')).toBe('Jouer');
+      expect(element.querySelector('[data-testid="run-palier-next-button"]')).toBeNull();
     });
 
-    it('« Jouer » envoie Normal, ou la colonne touchée ; « Suite » n\'est pas émis', () => {
+    it('toucher une colonne envoie sa difficulté tout de suite ; « Suite » n\'est pas émis', () => {
       const { fixture, element } = render({ options: OPTIONS });
       const chosen: RunDifficulty[] = [];
       let next = 0;
       fixture.componentInstance.choose.subscribe(d => chosen.push(d));
       fixture.componentInstance.next.subscribe(() => next++);
 
-      element.querySelector<HTMLButtonElement>('[data-testid="run-palier-next-button"]')!.click();
       element.querySelector<HTMLButtonElement>('[data-testid="run-difficulty-risky"]')!.click();
-      fixture.detectChanges();
-      element.querySelector<HTMLButtonElement>('[data-testid="run-palier-next-button"]')!.click();
+      element.querySelector<HTMLButtonElement>('[data-testid="run-difficulty-safe"]')!.click();
 
-      expect(chosen).toEqual(['safe', 'risky']);
+      expect(chosen).toEqual(['risky', 'safe']);
       expect(next).toBe(0);
     });
   });

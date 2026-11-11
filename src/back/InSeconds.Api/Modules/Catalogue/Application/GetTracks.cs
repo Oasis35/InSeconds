@@ -29,7 +29,7 @@ public static class GetTracksEndpoint
                     perMode.Any(m => m.Usage.IsUsed),
                     [.. perMode.Select(m => new TrackModeUsage(
                         m.Mode, m.Usage.UsageCount, m.Usage.LastUsedDate, m.Usage.UnlockDate, m.Usage.InTodayChallenge, m.Usage.AnswerCount, m.Usage.FoundCount))],
-                    row.Genres);
+                    row.Genres, row.ThemeIds ?? []);
             }),
         ];
     }

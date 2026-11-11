@@ -1,17 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { ButtonComponent } from '../../../ui/button/button.component';
 import { RunDifficulty, RunDifficultyOption } from '../../domain/run';
 import { RunDifficultyColumnsComponent } from '../run-difficulty-columns/run-difficulty-columns.component';
 
 /**
  * L'écran « Difficulté ? » de la première manche (ensuite, le choix est sur l'écran de palier, qui reprend les mêmes colonnes) : Facile, Normal ou Mélomane, avec l'objectif en points et ce que vaut au mieux un morceau (docs/runs/proto3.md). Normal est
- * présélectionné ; toucher une colonne la choisit, « Jouer » lance le premier morceau (la page relaie le geste ; rien ne s'anime entre le toucher
- * et le son, pièges 44 et 46).
+ * présélectionné ; toucher une ligne lance le premier morceau (la page relaie le geste ; rien ne s'anime entre le toucher et le son, pièges 44 et 46).
  */
 @Component({
   selector: 'app-run-difficulty',
-  imports: [TranslatePipe, ButtonComponent, RunDifficultyColumnsComponent],
+  imports: [TranslatePipe, RunDifficultyColumnsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './run-difficulty.component.html',
 })

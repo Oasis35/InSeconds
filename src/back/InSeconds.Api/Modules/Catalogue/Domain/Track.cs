@@ -16,6 +16,7 @@ public sealed record TrackMetadata(
 public sealed class Track
 {
     private readonly List<Genre> _genres = [];
+    private readonly List<Theme> _themes = [];
 
     private Track()
     {
@@ -53,6 +54,12 @@ public sealed class Track
     /// vide les laisse, et le contrôle nocturne les relit chaque mois (<see cref="GenresNeedReading"/>).
     /// </summary>
     public bool GenresManual { get; private set; }
+
+    /// <summary>
+    /// Les thèmes que l'admin a associés au morceau (des <see cref="Theme"/> de sa liste, plusieurs possibles), vides : aucun. À part des genres :
+    /// ni Deezer ni le contrôle nocturne n'y touchent. Runs en tire les playlists à thème.
+    /// </summary>
+    public IReadOnlyCollection<Theme> Themes => _themes;
 
     /// <summary>Les genres de l'album du morceau, vides tant qu'ils n'ont pas été lus ou si l'album n'en a pas.</summary>
     public IReadOnlyCollection<Genre> Genres => _genres;
@@ -203,6 +210,15 @@ public sealed class Track
     /// <summary>Les genres sont à lire chez Deezer : jamais lus, ou saisis à la main depuis plus de <paramref name="manualMaxAge"/>.</summary>
     public bool GenresNeedReading(DateTimeOffset now, TimeSpan manualMaxAge) =>
         GenresCheckedAt is null || (GenresManual && now - GenresCheckedAt.Value >= manualMaxAge);
+
+    /// <summary>Remplace les thèmes du morceau par ceux-ci (des thèmes de la liste de l'admin, chacun une fois) ; aucun : le morceau n'en a plus.</summary>
+    public void SetThemes(IEnumerable<Theme> themes, DateTimeOffset now)
+    {
+        var wanted = themes.DistinctBy(t => t.Id).ToList();
+        _themes.RemoveAll(t => wanted.All(w => w.Id != t.Id));
+        _themes.AddRange(wanted.Where(w => _themes.All(t => t.Id != w.Id)));
+        UpdatedAt = now;
+    }
 
     /// <summary>
     /// Le genre saisi par l'admin : il remplace ceux du morceau. Sans genre (<c>null</c>), les genres saisis à la main sont retirés et ceux de

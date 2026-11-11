@@ -38,6 +38,7 @@
       "invalid_or_expired_token": "This link is invalid or has expired.",
       "pseudo_mismatch": "That's not your pseudo.",
       "pseudo_taken": "This pseudo is already taken.",
+      "not_a_guest": "This account is no longer a guest: change your pseudo from your profile.",
       "same_email": "That's already your current address."
     },
     "catalogue": {
@@ -45,6 +46,9 @@
       "not_found_on_deezer": "This track could not be found on Deezer.",
       "concurrent_add": "Another add is writing the same genres right now, try again in a moment.",
       "deezer_unavailable": "Deezer is unavailable right now, try again in a moment.",
+      "theme_in_use": "This theme is still linked to tracks: remove it from those tracks first.",
+      "theme_name_taken": "A theme already has this name.",
+      "theme_not_found": "This theme no longer exists: reload the list.",
       "track_in_use": "This track has already been used in a challenge: it cannot be deleted (disable it instead).",
       "track_in_today_challenge": "This track is in today’s challenge: it can be disabled from tomorrow."
     },
@@ -360,6 +364,15 @@
       },
       "filters": "Filters",
       "filtersActive": "Filters ({{ count }})",
+      "themes": {
+        "label": "Themes:",
+        "name": "Theme name",
+        "tracks": "{{count}} tracks",
+        "delete": "Delete",
+        "empty": "No theme yet.",
+        "newName": "New theme",
+        "add": "Add"
+      },
       "cooldownSetting": {
         "label": "Cooldown",
         "days": "{{ days }} d",
@@ -388,6 +401,8 @@
       "deleting": "Deleting..."
     },
     "editModal": {
+      "themes": "Themes",
+      "themesNone": "No theme in the list: add some from the Tracks tab.",
       "title": "Edit track",
       "artist": "Artist",
       "titleField": "Title",
@@ -868,7 +883,7 @@
     },
     "data": {
       "title": "Data collected, purposes and legal basis",
-      "body": "No data is required to play: guest mode asks for no name, no email, no registration.\nDepending on how you use the app, the following categories of data may be processed:\n· pseudonymous technical identifier: randomly generated and stored in a cookie, used to recognize your browser from one visit to the next (resuming a game, one game per day, win streak). Purpose: providing the game. Legal basis: performance of the requested service (Article 6.1.b GDPR);\n· connected devices: for each browser you play on, the app keeps the date of first login, the date of the last visit and a rough label of the browser and device (for example \"Safari · iPhone\", never the full technical header). With an account, the list of your devices is shown in your profile, where you can log out each one. Purpose: account security and cross-device login. Legal basis: performance of the requested service (Article 6.1.b);\n· email and pseudo, only if you create an account: an optional account, activated via a login link sent by email (no password), lets you find your history and streak again on any device; the pseudo is a display name you choose freely. Purpose: account management and cross-device login. Legal basis: your consent (Article 6.1.a GDPR), you remain free to play as a guest without ever providing this information;\n· game data: the result of each answer (whether the artist and title were found, without the text you type, which is never kept), chosen listening durations, scores and play dates. Purpose: running the game and computing anonymous global statistics (median score, success rate per track). Legal basis: performance of the requested service (Article 6.1.b). With an account, the publisher can view in the administration area your username, email address, streak and the history of your games over the last 30 days, solely to run the service and answer your requests;\n· Platines mode (invitation only): for each game, the result of each track (whether the artist and title were found, never the text you type), its points, the difficulty you chose for each round and when you chose it, the boosts you received, dropped or played (on which track, and when), the rounds passed, the score and the dates played; your record (best score and best disc); the playlists you launch and their author; the access the publisher granted you. A playlist is shared through a link: whoever opens it sees its author's pseudo (\"Guest\" without an account), during their game the author's running total track by track (up to the track they have reached) if the author finished the playlist, and, once their own game is over, the pseudo (or \"Guest\"), disc and score of everyone who played it. This is not a public leaderboard: only people with the link can see them. If you delete your account, your games are deleted; the playlists you launched stay playable, without an author. Purpose: running this mode and the comparison between people who played the same playlist. Legal basis: performance of the requested service (Article 6.1.b);\n· IP address: technically processed on every request, as with any website, for security purposes (limiting the number of login attempts to prevent abuse). Purpose: service security. Legal basis: the controller's legitimate interest (Article 6.1.f);\n· technical logs: for each request, the application records the pseudonymous technical identifier described above, the page or action involved, its duration, its outcome, the browser and device type (for example \"Safari · iPhone\") and, when a bug occurs, the error message, its stack trace, the app version and the connection status (online or not). These logs never contain your email, your pseudo, your submitted answers or your cookie. Purpose: detecting and fixing bugs, monitoring that the service runs properly. Legal basis: the controller's legitimate interest (Article 6.1.f);\n· audience measurement: on each page you view, a small Cloudflare Web Analytics script sends Cloudflare the page address, the site you came from, your browser and device type, and the page load times. Cloudflare turns this into aggregate statistics (visits, page views, countries, referring sites, devices, site speed), without any cookie or identifier that could recognise you; the publisher only sees these statistics. Purpose: knowing how much the site is visited and how fast it is. Legal basis: the controller's legitimate interest (Article 6(1)(f));\n· arrival source: when your guest identifier is created, the app records where you came from: the campaign name carried by the link you followed (for example \"instagram\", or \"share\" for a link shared by a player), otherwise only the domain name of the site you came from (for example \"google.com\", never the full page address), or \"direct\". It is kept in your browser for the duration of the visit, then attached to your pseudonymous identifier; it is included in the copy of your data and deleted with it. Purpose: knowing which channels bring new players (audience measurement). Legal basis: the controller's legitimate interest (Article 6(1)(f));\n· local preferences: your preferred language, whether you muted the Platines sounds, and a record of the information messages already shown are stored locally in your browser; they never leave your device and are never sent to our servers."
+      "body": "No data is required to play: guest mode asks for no name, no email, no registration.\nDepending on how you use the app, the following categories of data may be processed:\n· pseudonymous technical identifier: randomly generated and stored in a cookie, used to recognize your browser from one visit to the next (resuming a game, one game per day, win streak). Purpose: providing the game. Legal basis: performance of the requested service (Article 6.1.b GDPR);\n· connected devices: for each browser you play on, the app keeps the date of first login, the date of the last visit and a rough label of the browser and device (for example \"Safari · iPhone\", never the full technical header). With an account, the list of your devices is shown in your profile, where you can log out each one. Purpose: account security and cross-device login. Legal basis: performance of the requested service (Article 6.1.b);\n· email and pseudo, only if you create an account: an optional account, activated via a login link sent by email (no password), lets you find your history and streak again on any device; the pseudo is a display name you choose freely. Purpose: account management and cross-device login. Legal basis: your consent (Article 6.1.a GDPR), you remain free to play as a guest without ever providing this information;\n· game data: the result of each answer (whether the artist and title were found, without the text you type, which is never kept), chosen listening durations, scores and play dates. Purpose: running the game and computing anonymous global statistics (median score, success rate per track). Legal basis: performance of the requested service (Article 6.1.b). With an account, the publisher can view in the administration area your username, email address, streak and the history of your games over the last 30 days, solely to run the service and answer your requests;\n· Platines mode (invitation only): for each game, the result of each track (whether the artist and title were found, never the text you type), its points, the difficulty you chose for each round and when you chose it, the boosts you received, dropped or played (on which track, and when), the rounds passed, the score and the dates played; your record (best score and best disc); the playlists you launch and their author; the access the publisher granted you. A playlist is shared through a link: whoever opens it sees its author's pseudo (their account pseudo, otherwise their guest pseudo, otherwise \"Guest\"), during their game the author's running total track by track (up to the track they have reached) if the author finished the playlist, and, once their own game is over, the pseudo (account pseudo, otherwise guest pseudo, otherwise \"Guest\"), disc and score of everyone who played it. This is not a public leaderboard: only people with the link can see them. Without an account, you give a guest pseudo at the end of your first game on a friend's playlist: it is required to see the comparison, tied to your technical identifier (so to your browser) so that you find it again on each visit, editable at any time, and never the same as an account's pseudo; if two players of the same comparison share a pseudo, a short mark derived from their identifier tells them apart. It appears in the copy of your data and is erased automatically 91 days after your last visit (and if you create an account, the account's pseudo is the one that counts). If you delete your account, your games are deleted; the playlists you launched stay playable, without an author. Purpose: running this mode and the comparison between people who played the same playlist. Legal basis: performance of the requested service (Article 6.1.b);\n· IP address: technically processed on every request, as with any website, for security purposes (limiting the number of login attempts to prevent abuse). Purpose: service security. Legal basis: the controller's legitimate interest (Article 6.1.f);\n· technical logs: for each request, the application records the pseudonymous technical identifier described above, the page or action involved, its duration, its outcome, the browser and device type (for example \"Safari · iPhone\") and, when a bug occurs, the error message, its stack trace, the app version and the connection status (online or not). These logs never contain your email, your pseudo, your submitted answers or your cookie. Purpose: detecting and fixing bugs, monitoring that the service runs properly. Legal basis: the controller's legitimate interest (Article 6.1.f);\n· audience measurement: on each page you view, a small Cloudflare Web Analytics script sends Cloudflare the page address, the site you came from, your browser and device type, and the page load times. Cloudflare turns this into aggregate statistics (visits, page views, countries, referring sites, devices, site speed), without any cookie or identifier that could recognise you; the publisher only sees these statistics. Purpose: knowing how much the site is visited and how fast it is. Legal basis: the controller's legitimate interest (Article 6(1)(f));\n· arrival source: when your guest identifier is created, the app records where you came from: the campaign name carried by the link you followed (for example \"instagram\", or \"share\" for a link shared by a player), otherwise only the domain name of the site you came from (for example \"google.com\", never the full page address), or \"direct\". It is kept in your browser for the duration of the visit, then attached to your pseudonymous identifier; it is included in the copy of your data and deleted with it. Purpose: knowing which channels bring new players (audience measurement). Legal basis: the controller's legitimate interest (Article 6(1)(f));\n· local preferences: your preferred language, whether you muted the Platines sounds, and a record of the information messages already shown are stored locally in your browser; they never leave your device and are never sent to our servers."
     },
     "cookie": {
       "title": "Cookie",
@@ -876,7 +891,7 @@
     },
     "retention": {
       "title": "Data retention",
-      "body": "Game data (answers, scores, win streak) is kept for as long as your identifier or account exists in the database, to feed your history and the anonymous global statistics shown to players. An account with no visit for 3 years is deleted automatically, along with its history, streak and devices (the period recommended by the CNIL), without a warning email. A guest player is not deleted: once their devices are erased (see below), nothing can link them to their games any more, which then only feed the anonymous statistics.\nFor a guest player, this data is never linked to a real identity: only a random technical identifier connects you to your games.\nIf you create an account, your history is linked to your email address: that is precisely what lets you find it again on another device. You can delete it yourself from your profile, or upon simple request (see \"Your rights\").\nA connected device (including a logged-out one) is deleted automatically 91 days after its last visit, one day after its cookie expires; a logged-out device can never be used again.\nTechnical logs (see \"Data collected\") are kept for 14 days at most, then deleted automatically.\nThe login link and the link confirming an email change are valid for only 15 minutes and can be used only once; after that time, or once used, they become permanently invalid, and expired links are erased from the database every night.\nTo carry over players from the previous version of the game without logging them out, a cryptographic fingerprint of their old cookie is kept temporarily; it will be deleted no later than 90 days after the new version went live (October 16, 2026).\nBackups: the database is backed up every night. Copies are encrypted and kept for 7 days on the server, and off the server for 30 days (daily copies) and 12 months (one monthly copy) (see \"Recipients\"). Data deleted from the database may therefore remain in these copies until they expire; it is never restored from them, except after a serious incident."
+      "body": "Game data (answers, scores, win streak) is kept for as long as your identifier or account exists in the database, to feed your history and the anonymous global statistics shown to players. An account with no visit for 3 years is deleted automatically, along with its history, streak and devices (the period recommended by the CNIL), without a warning email. A guest player is not deleted: the pseudo they chose is erased automatically 91 days after their last visit; after that, with their devices erased (see below), nothing can link them to their games any more, which then only feed the anonymous statistics.\nFor a guest player, this data is never linked to a real identity: only a random technical identifier connects you to your games.\nIf you create an account, your history is linked to your email address: that is precisely what lets you find it again on another device. You can delete it yourself from your profile, or upon simple request (see \"Your rights\").\nA connected device (including a logged-out one) is deleted automatically 91 days after its last visit, one day after its cookie expires; a logged-out device can never be used again.\nTechnical logs (see \"Data collected\") are kept for 14 days at most, then deleted automatically.\nThe login link and the link confirming an email change are valid for only 15 minutes and can be used only once; after that time, or once used, they become permanently invalid, and expired links are erased from the database every night.\nTo carry over players from the previous version of the game without logging them out, a cryptographic fingerprint of their old cookie is kept temporarily; it will be deleted no later than 90 days after the new version went live (October 16, 2026).\nBackups: the database is backed up every night. Copies are encrypted and kept for 7 days on the server, and off the server for 30 days (daily copies) and 12 months (one monthly copy) (see \"Recipients\"). Data deleted from the database may therefore remain in these copies until they expire; it is never restored from them, except after a serious incident."
     },
     "thirdParties": {
       "title": "Recipients, hosting and transfers outside the EU",
@@ -981,11 +996,35 @@
       "shortfallPoints": "{{ points }} pts",
       "shortfallAfter": "short of the {{ disc }}"
     },
+    "pseudo": {
+      "title": "Your nickname",
+      "titleEdit": "Change your nickname",
+      "subtitle": "It shows next to your score in the playlist comparison.",
+      "label": "Nickname",
+      "hint": "3 to 20 characters.",
+      "save": "Confirm",
+      "cancel": "Cancel",
+      "required": "Pick a nickname.",
+      "tooShort": "Three characters minimum.",
+      "tooLong": "Twenty characters maximum.",
+      "invalid": "Letters, digits, space, _, . or - only.",
+      "taken": "That nickname is already taken."
+    },
+    "theme": {
+      "title": "Your playlist",
+      "subtitle": "Round {{round}}: pick the theme",
+      "tracks": "Every track of the round, from this theme",
+      "surprise": "Surprise",
+      "surpriseHint": "We pick one at random",
+      "friends": "Your friends play the same playlist.",
+      "launch": "Launch"
+    },
     "link": {
       "guest": "Guest",
       "title": "{{ pseudo }} sent you a playlist",
       "tracks": "{{ tracks }} tracks, the same for all its players: compare your scores at the end",
       "rounds": "{{ rounds }} rounds, getting harder",
+      "theme": "Round {{ round }}: {{ name }} theme",
       "listen": "{{ seconds }} to find the artist and the title",
       "listenAndAnswer": "{{ seconds }} of listening, {{ answer }} to find the artist and the title",
       "goal": "Clear all {{ rounds }} rounds and earn the gold disc",
@@ -999,6 +1038,7 @@
       "roundShort": "R{{ round }}",
       "total": "Total",
       "you": "You",
+      "editPseudo": "Change my nickname",
       "share": "Share the playlist"
     },
     "discs": {
@@ -1016,9 +1056,11 @@
       "text": "I’m sending you a playlist on InSeconds. Can you beat me?",
       "header": "{{ score }} pts · {{ disc }} · InSeconds Platines",
       "round": "Round {{ round }}",
-      "beatMe": "Beat me on the same playlist:"
+      "duelWon": "I beat {{ name }} by {{ points }} pts.",
+      "beatMe": "Do better on the same playlist:"
     },
     "palier": {
+      "theme": "Round {{round}} · theme",
       "round": "Round {{round}}",
       "shelf": "The playlist's discs",
       "points": "pts",
@@ -1044,7 +1086,6 @@
       "title": "Difficulty?",
       "yourScore": "Your score",
       "perTrack": "up to {{points}} pts\nper track",
-      "play": "Play",
       "listen": "{{seconds}} listen",
       "easy": "Easy",
       "safe": "Normal",
@@ -1052,6 +1093,12 @@
       "columnLabel": "{{name}}: target {{objective}} points, up to {{perTrack}} points per track"
     },
     "roundCards": {
+      "hint": {
+        "year": "Year",
+        "artist": "Artist initials",
+        "title": "Title initials",
+        "genre": "Genre"
+      },
       "extend": "{{seconds}} listen",
       "choicesHint": "Only one is right",
       "swap": "Swap track",

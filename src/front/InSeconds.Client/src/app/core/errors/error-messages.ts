@@ -26,6 +26,9 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'catalogue.duplicate_deezer_id': 'errors.catalogue.duplicate_deezer_id',
   'catalogue.not_found_on_deezer': 'errors.catalogue.not_found_on_deezer',
   'catalogue.track_in_today_challenge': 'errors.catalogue.track_in_today_challenge',
+  'catalogue.theme_in_use': 'errors.catalogue.theme_in_use',
+  'catalogue.theme_name_taken': 'errors.catalogue.theme_name_taken',
+  'catalogue.theme_not_found': 'errors.catalogue.theme_not_found',
   'catalogue.track_in_use': 'errors.catalogue.track_in_use',
 
   // Daily
@@ -45,6 +48,7 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'players.invalid_or_expired_token': 'errors.players.invalid_or_expired_token',
   'players.pseudo_mismatch': 'errors.players.pseudo_mismatch',
   'players.pseudo_taken': 'errors.players.pseudo_taken',
+  'players.not_a_guest': 'errors.players.not_a_guest',
   'players.same_email': 'errors.players.same_email',
 
   // Runs

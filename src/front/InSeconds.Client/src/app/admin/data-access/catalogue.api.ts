@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { CatalogueClient, DeezerTrackResult, TrackListItem, TrackModeUsage } from '../../api/catalogue/api.generated';
-import { DeezerResult, ModeUsage, PoolTrack, PreviewState } from '../domain/pool-track';
+import { DeezerResult, ModeUsage, PoolTheme, PoolTrack, PreviewState } from '../domain/pool-track';
 
 /**
  * Adaptateur de l'API du module Catalogue : seule porte d'entrée vers le client généré
@@ -34,6 +34,28 @@ export class CatalogueApi {
     await firstValueFrom(this.client.deleteTrack(id));
   }
 
+  /** La liste des thèmes de l'admin, avec le nombre de morceaux de chacun. */
+  async listThemes(): Promise<PoolTheme[]> {
+    return (await firstValueFrom(this.client.listThemes())).map(t => ({ id: t.id, name: t.name, trackCount: t.trackCount }));
+  }
+
+  async addTheme(name: string): Promise<void> {
+    await firstValueFrom(this.client.addTheme({ name }));
+  }
+
+  async renameTheme(id: number, name: string): Promise<void> {
+    await firstValueFrom(this.client.renameTheme(id, { name }));
+  }
+
+  async deleteTheme(id: number): Promise<void> {
+    await firstValueFrom(this.client.deleteTheme(id));
+  }
+
+  /** Remplace les thèmes d'un morceau (jamais de saisie libre : des thèmes de la liste). */
+  async setTrackThemes(id: number, themeIds: readonly number[]): Promise<void> {
+    await firstValueFrom(this.client.setTrackThemes(id, { themeIds: [...themeIds] }));
+  }
+
   /** Recherche chez Deezer, titres bruts (ce qui deviendra le titre du morceau). */
   async searchDeezer(query: string): Promise<DeezerResult[]> {
     return (await firstValueFrom(this.client.searchDeezer(query))).map(toDeezerResult);
@@ -62,6 +84,7 @@ function toPoolTrack(item: TrackListItem): PoolTrack {
     isUsed: item.isUsed,
     usages: item.usages.map(toModeUsage),
     genres: item.genres,
+    themeIds: item.themeIds ?? [],
     inTodayChallenge: item.usages.some(usage => usage.inTodayChallenge),
   };
 }

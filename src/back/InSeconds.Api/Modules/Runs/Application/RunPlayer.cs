@@ -184,6 +184,10 @@ public sealed class RunPlayer(
 /// <summary>La forme des réponses, à partir de la partie, du défi et des morceaux.</summary>
 internal static class RunViews
 {
+    /// <summary>Les manches à thème d'une playlist, par manche ; rien quand elle n'en a pas.</summary>
+    public static IReadOnlyList<RunRoundThemeResponse>? ThemesOf(RunRules rules) =>
+        rules.Themes is { Count: > 0 } themes ? [.. themes.OrderBy(t => t.Round).Select(t => new RunRoundThemeResponse(t.Round, t.Name))] : null;
+
     public static string StatusOf(RunSessionStatus status) => status switch
     {
         RunSessionStatus.Pending => "pending",
@@ -273,7 +277,7 @@ internal static class RunViews
             session.IsPending && session.CanSwap(challenge),
             session.IsPending ? DiscOf(DiscLadder.Of(session.RoundsPassed + 1, discs)) : null,
             rules.Cards is { } cards ? new RunCardValuesResponse(cards.ExtendBonusSeconds, cards.RewardMarginPercent) : null,
-            ghost);
+            ghost, RunViews.ThemesOf(rules));
     }
 
     // Chaque difficulté proposée, calculée sur les morceaux de la manche (un morceau déjà neutralisé en est retiré, comme pour la jauge).

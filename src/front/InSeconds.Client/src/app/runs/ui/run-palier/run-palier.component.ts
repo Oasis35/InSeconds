@@ -11,7 +11,7 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
  * L'écran de palier, après une manche passée (docs/runs/proto3.md § L'écran de palier), du haut vers le bas, sans phrase d'explication : le
  * disque gagné et l'étagère des disques de l'échelle (les suivants en pointillé), le score de la manche avec le repère de l'objectif franchi,
  * la carte gagnée s'il y en a une (elle agira sur la manche suivante), la manche suivante (ses trois difficultés, Facile / Normal / Mélomane,
- * quand la playlist en propose, sinon son objectif), puis « Jouer » (la difficulté choisie, Normal d'abord) ou « Suite ». Présentation seule :
+ * quand la playlist en propose, sinon son objectif), puis, sans difficulté à choisir, « Suite » (un toucher sur une colonne lance la manche : pas de bouton « Jouer »). Présentation seule :
  * la page relaie les gestes au store.
  */
 @Component({
@@ -29,6 +29,8 @@ export class RunPalierComponent {
   readonly wonDiscs = input.required<readonly string[]>();
   /** La manche suivante, son objectif (celui de « Normal » quand la difficulté ne se choisit pas ici) et le disque qu'elle fait gagner. */
   readonly nextRound = input.required<number>();
+  /** Le thème de la manche suivante, s'il y en a un : annoncé avant de jouer. */
+  readonly theme = input<string | null>(null);
   readonly nextObjective = input.required<number>();
   readonly nextDisc = input<string | null>(null);
   /** Les difficultés de la manche suivante, quand elles se choisissent sur cet écran ; `null` : rien à choisir, « Suite » lance la manche. */
@@ -44,7 +46,7 @@ export class RunPalierComponent {
   readonly busy = input(false);
 
   readonly next = output();
-  /** « Jouer » : la difficulté choisie (quand les colonnes sont là). */
+  /** La colonne touchée : la manche part avec cette difficulté (quand les colonnes sont là). */
   readonly choose = output<RunDifficulty>();
 
   protected readonly selected = signal<RunDifficulty>('safe');
@@ -64,10 +66,9 @@ export class RunPalierComponent {
     return score <= 0 ? 0 : Math.min(1, objective / score);
   });
 
-  /** Le bouton du bas : « Jouer » avec la difficulté choisie, ou « Suite ». */
+  /** « Suite » (le bouton n'existe que sans difficulté à choisir) : la manche suivante part. */
   protected advance(): void {
-    if (this.options()) this.choose.emit(this.effective());
-    else this.next.emit();
+    this.next.emit();
   }
 
   private readonly disc = viewChild<ElementRef<HTMLElement>>('disc');

@@ -142,13 +142,20 @@ public sealed record RunShortfallResponse(int Points, RunDiscResponse Disc);
 /// <param name="SwapAvailable">Le joueur peut changer le morceau en cours (un Échange par manche, qui ne se garde pas).</param>
 /// <param name="NextDisc">Le disque que la manche en cours fait gagner si elle est passée (l'écran de palier : « 366 pts pour … ») ; vide une fois finie.</param>
 /// <param name="CardValues">Ce que valent les coups de pouce de cette playlist (règles figées) ; vide sans coups de pouce.</param>
+/// <param name="Themes">Les manches à thème de la playlist (jamais la première), pour annoncer le thème au palier et sur l'écran de la manche ; vide : aucune.</param>
 /// <param name="Ghost">Le fantôme de l'ami qui a lancé la playlist, s'il l'a finie ; vide sinon (sa propre playlist, un ami pas encore arrivé au bout). Gardé à la fin de la partie du joueur : c'est le duel de l'écran de fin.</param>
 public sealed record RunSessionResponse(
     int SessionId, string ChallengeCode, string Status, int Rounds, int TracksPerRound, decimal ListenSeconds, int TotalScore, int RoundsPassed,
     RunRoundResponse? Round, IReadOnlyList<RunTrackResponse> RoundTracks, RunFinishResponse? Finish,
     int AnswerSeconds, decimal? ClockRemainingSeconds, IReadOnlyList<RunTrackResponse> PlayedTracks, IReadOnlyList<RunPassedRoundResponse> PassedRounds,
     RunDifficultyChoiceResponse? DifficultyChoice = null, IReadOnlyList<RunHandCardResponse>? Hand = null, bool SwapAvailable = false,
-    RunDiscResponse? NextDisc = null, RunCardValuesResponse? CardValues = null, RunGhostResponse? Ghost = null);
+    RunDiscResponse? NextDisc = null, RunCardValuesResponse? CardValues = null, RunGhostResponse? Ghost = null,
+    IReadOnlyList<RunRoundThemeResponse>? Themes = null);
+
+/// <summary>Le thème d'une manche à thème.</summary>
+/// <param name="Round">La manche (jamais la première).</param>
+/// <param name="Name">Le nom du thème (« Années 80 »), tel qu'il était à la création de la playlist.</param>
+public sealed record RunRoundThemeResponse(int Round, string Name);
 
 /// <summary>
 /// Le fantôme d'un ami sur la même playlist (l'auteur de la playlist, même pour un joueur qui l'a reçue d'un autre joueur) : son total sur les morceaux que le joueur a joués, jusqu'au dernier

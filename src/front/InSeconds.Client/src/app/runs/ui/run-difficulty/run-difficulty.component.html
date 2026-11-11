@@ -12,14 +12,7 @@
 
   <div class="flex-1 min-h-4"></div>
   <app-run-difficulty-columns [options]="options()" [tracksPerRound]="tracksPerRound()" [listenSeconds]="listenSeconds()"
-    [selected]="effective()" (selectedChange)="selected.set($event)" [busy]="busy()" />
+    [selected]="effective()" (selectedChange)="selected.set($event)" (picked)="choose.emit($event)" [busy]="busy()" />
 
   <div class="flex-1 min-h-4"></div>
-
-  <!-- « Jouer » reste à portée du pouce : collé en bas de l'écran. -->
-  <div class="sticky bottom-0 -mx-5 px-5 pt-3 pb-5 -mb-5 mt-4" style="background:linear-gradient(to bottom, transparent, var(--bg-page) 30%)">
-    <button appButton type="button" size="lg" [block]="true" [disabled]="busy()" (click)="choose.emit(effective())" data-testid="run-difficulty-play">
-      {{ 'runs.difficulty.play' | translate }}
-    </button>
-  </div>
 </section>

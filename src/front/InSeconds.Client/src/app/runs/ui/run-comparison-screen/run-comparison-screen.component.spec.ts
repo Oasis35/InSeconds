@@ -5,12 +5,13 @@ import { COMPARISON } from '../../data-access/testing/fake-runs-api';
 import { RunComparisonScreenComponent } from './run-comparison-screen.component';
 
 describe('RunComparisonScreenComponent', () => {
-  function render(comparison: RunComparison = COMPARISON(), inputs: { copied?: boolean; failed?: boolean } = {}) {
+  function render(comparison: RunComparison = COMPARISON(), inputs: { copied?: boolean; failed?: boolean; canEdit?: boolean } = {}) {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     const fixture = TestBed.createComponent(RunComparisonScreenComponent);
     fixture.componentRef.setInput('comparison', comparison);
     fixture.componentRef.setInput('shareCopied', inputs.copied ?? false);
     fixture.componentRef.setInput('shareFailed', inputs.failed ?? false);
+    fixture.componentRef.setInput('canEditPseudo', inputs.canEdit ?? false);
     fixture.detectChanges();
     return { fixture, element: fixture.nativeElement as HTMLElement };
   }
@@ -80,5 +81,31 @@ describe('RunComparisonScreenComponent', () => {
 
   it('le bouton dit « Lien copié ! » une fois copié', () => {
     expect(render(COMPARISON(), { copied: true }).element.querySelector('[data-testid="run-share"]')?.textContent).toContain('runs.finished.shareCopied');
+  });
+
+  it("une étiquette grise suit le nom quand deux joueurs ont le même pseudo", () => {
+    const base = COMPARISON().rows;
+    const { element } = render(COMPARISON({ rows: [{ ...base[0], tag: 'a3' }, { ...base[1], pseudo: 'Clément', tag: '7f' }] }));
+
+    expect(Array.from(element.querySelectorAll('[data-testid="run-comparison-tag"]')).map(tag => tag.textContent?.trim())).toEqual(['#a3', '#7f']);
+  });
+
+  it("sans homonyme, aucune étiquette", () => {
+    const { element } = render();
+
+    expect(element.querySelector('[data-testid="run-comparison-tag"]')).toBeNull();
+  });
+
+  it("le crayon n'apparaît que si le joueur peut changer son pseudo, et le demande au clic", () => {
+    const hidden = render();
+    expect(hidden.element.querySelector('[data-testid="run-comparison-edit-pseudo"]')).toBeNull();
+    TestBed.resetTestingModule();
+
+    const { fixture, element } = render(COMPARISON(), { canEdit: true });
+    let asked = 0;
+    fixture.componentInstance.editPseudo.subscribe(() => asked++);
+    element.querySelector<HTMLButtonElement>('[data-testid="run-comparison-edit-pseudo"]')!.click();
+
+    expect(asked).toBe(1);
   });
 });

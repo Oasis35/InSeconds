@@ -22,13 +22,14 @@ describe('les cartes', () => {
     const effects = {
       cards: ['hint'] as const, year: 1995, artistInitials: ['D', 'P'], titleInitials: ['G', 'L'], choices: null, genre: 'Électro',
     };
-    expect(playedCards(effects)).toEqual([{ card: 'hint', value: '1995 · D. P. – G. L. · Électro' }]);
-    expect(playedCards({ ...effects, genre: null, artistInitials: null })).toEqual([{ card: 'hint', value: '1995' }]);
+    expect(playedCards(effects)).toEqual([{ card: 'hint', facts: [
+      { kind: 'year', value: '1995' }, { kind: 'artist', value: 'D. P.' }, { kind: 'title', value: 'G. L.' }, { kind: 'genre', value: 'Électro' }] }]);
+    expect(playedCards({ ...effects, genre: null, artistInitials: null })).toEqual([{ card: 'hint', facts: [{ kind: 'year', value: '1995' }, { kind: 'title', value: 'G. L.' }] }]);
   });
 
   it('les autres cartes actives n\'ont pas de valeur à lire ; sans effets, rien', () => {
     const effects = { cards: ['three_choices', 'extend'] as const, year: null, artistInitials: null, titleInitials: null, choices: null, genre: null };
-    expect(playedCards(effects)).toEqual([{ card: 'three_choices', value: null }, { card: 'extend', value: null }]);
+    expect(playedCards(effects)).toEqual([{ card: 'three_choices', facts: [] }, { card: 'extend', facts: [] }]);
     expect(playedCards(null)).toEqual([]);
   });
 });
@@ -39,7 +40,7 @@ describe('l\'écran de palier', () => {
     round: { round: 2, score: 0, objective: 366, maxScore: 665 }, roundTracks: [], finish: null, answerSeconds: 45, clockRemainingSeconds: null,
     playedTracks: [], passedRounds: [{ round: 1, score: 500, objective: 225, disc: { key: 'runs.discs.wax', stars: 0 } }],
     difficultyChoice: { round: 2, options: [{ difficulty: 'safe', objective: 366, maxScore: 665, listenSeconds: 10 }] },
-    hand: [], swapAvailable: false, nextDisc: { key: 'runs.discs.bronze', stars: 0 }, cardValues: null, ghost: null,
+    hand: [], swapAvailable: false, nextDisc: { key: 'runs.discs.bronze', stars: 0 }, cardValues: null, ghost: null, themes: [],
     ...overrides,
   });
 

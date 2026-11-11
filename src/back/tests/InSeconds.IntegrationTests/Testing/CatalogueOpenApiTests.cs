@@ -13,8 +13,8 @@ public class CatalogueOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTe
 
         Assert.Equal(
             [
-                "addTrack", "deleteTrack", "getCatalogueHealth", "listTracks", "renameTrack", "searchDeezer", "searchTracks",
-                "setTrackDisabled", "updateTrack",
+                "addTheme", "addTrack", "deleteTheme", "deleteTrack", "getCatalogueHealth", "listThemes", "listTracks", "renameTheme",
+                "renameTrack", "searchDeezer", "searchTracks", "setTrackDisabled", "setTrackThemes", "updateTrack",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));
         // Rien d'autre que le module : ni Players, ni /api/e2e, ni les routes de tâches.

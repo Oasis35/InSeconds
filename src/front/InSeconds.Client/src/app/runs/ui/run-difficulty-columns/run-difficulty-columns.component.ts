@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, model, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 import { RunDifficulty, RunDifficultyOption } from '../../domain/run';
@@ -37,10 +37,10 @@ export function difficultyColumns(options: readonly RunDifficultyOption[], track
 }
 
 /**
- * Les trois difficultés d'une manche (Facile, Normal, Mélomane), à plat sur une base commune : la hauteur selon le plafond, l'objectif en
- * points sur son cadenas (la zone dessous assombrie), le niveau en barres, ce que vaut au mieux un morceau et, pour la manche boss, son écoute
- * plus courte. Aucun multiplicateur ni plafond à l'écran. Une colonne se touche pour la choisir (`selected`) ; lancer la manche est un autre geste
- * (« Jouer »), pour que le son se déverrouille dans ce clic (iPhone). Présentation seule.
+ * Les trois difficultés d'une manche (Facile, Normal, Mélomane), en trois lignes pleine largeur : le nom et ce que vaut au mieux un morceau (et,
+ * pour la manche boss, son écoute plus courte) à gauche, le niveau en barres, l'objectif en points à droite. Aucun multiplicateur ni plafond à
+ * l'écran. Un toucher sur une ligne la choisit et lance la manche (`picked`) ; la page déverrouille le son dans ce toucher (iPhone).
+ * Présentation seule (le nom du composant et ses `heightRatio` datent des colonnes).
  */
 @Component({
   selector: 'app-run-difficulty-columns',
@@ -57,6 +57,8 @@ export class RunDifficultyColumnsComponent {
   readonly selected = model<RunDifficulty>('safe');
   /** Le choix part au serveur : les colonnes ne se touchent plus. */
   readonly busy = input(false);
+  /** Un toucher sur une colonne : elle est choisie et la manche part tout de suite (pas de bouton « Jouer »). */
+  readonly picked = output<RunDifficulty>();
 
   protected readonly columns = computed(() => difficultyColumns(this.options(), this.tracksPerRound()));
   protected readonly levels = [1, 2, 3];

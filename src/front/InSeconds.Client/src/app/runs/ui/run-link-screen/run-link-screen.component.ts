@@ -33,6 +33,9 @@ import { ButtonComponent } from '../../../ui/button/button.component';
         } @else {
           <li>{{ 'runs.link.listen' | translate: { seconds: link().listenSeconds | appSeconds } }}</li>
         }
+        @for (theme of link().themes; track theme.round) {
+          <li data-testid="run-link-theme">{{ 'runs.link.theme' | translate: { round: theme.round, name: theme.name } }}</li>
+        }
         <li class="flex items-start gap-2">
           <app-run-disc class="shrink-0 mt-0.5" disc="runs.discs.gold" [size]="18" />
           <span>{{ 'runs.link.goal' | translate: { rounds: link().rounds } }}</span>

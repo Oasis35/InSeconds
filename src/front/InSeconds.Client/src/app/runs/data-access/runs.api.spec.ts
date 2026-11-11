@@ -158,7 +158,7 @@ describe('RunsApi', () => {
 
       expect(await api.challenge('abc234')).toEqual({
         kind: 'ok',
-        link: { code: 'ABC234', authorPseudo: null, trackCount: 20, rounds: 4, tracksPerRound: 5, listenSeconds: 10, answerSeconds: 45, myStatus: 'none', mySessionId: null },
+        link: { code: 'ABC234', authorPseudo: null, trackCount: 20, rounds: 4, tracksPerRound: 5, listenSeconds: 10, answerSeconds: 45, myStatus: 'none', mySessionId: null, themes: [] },
       });
       expect(client['getRunChallenge']).toHaveBeenCalledWith('abc234');
     });
@@ -192,7 +192,7 @@ describe('RunsApi', () => {
 
       const comparison = await api.comparison('ABC234');
 
-      expect(comparison.rows[1]).toEqual({ pseudo: null, disc: { key: 'runs.discs.wax', stars: 0 }, rounds: [480, 0, null, null], totalScore: 480, isMe: true });
+      expect(comparison.rows[1]).toEqual({ pseudo: null, disc: { key: 'runs.discs.wax', stars: 0 }, rounds: [480, 0, null, null], totalScore: 480, isMe: true, tag: null });
       expect(comparison).toMatchObject({ code: 'ABC234', authorPseudo: 'Clément', playerCount: 2, roundCount: 4 });
     });
 
