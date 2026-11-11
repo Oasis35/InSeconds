@@ -22,7 +22,7 @@ const DESCRIPTION_SELECTORS = ['name="description"', 'property="og:description"'
 /**
  * Dit à Google quelle est l'adresse de chaque page : `index.html` est le même pour toutes les routes, donc sans balise
  * canonique propre à la page Google les prend pour des doublons. Une canonique auto-référencée sans query string
- * (`?utm_source=…`) pour les pages à indexer ; `noindex` (et pas de canonique) pour tout le reste : compte, admin, Platines,
+ * (`?utm_source=…`) pour les pages à indexer ; `noindex` (et pas de canonique) pour tout le reste : compte, admin, Setlist,
  * page introuvable. Les pages qui ont leur titre et leur description (légales ici, réponses d'un jour passé) les posent par
  * `setPageText`, qui met à jour d'un coup le titre, la description, Open Graph et X ; `resetPageText` revient à ceux du site.
  * Pas de `hreflang` : les deux langues partagent les mêmes adresses (la langue se choisit dans l'appli), il n'y a donc pas

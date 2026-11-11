@@ -5,7 +5,7 @@ import type { RunTrack } from '../fixtures/api-client';
 const BASE = process.env['CI'] ? 'http://localhost:5175' : 'http://localhost:5177';
 
 /**
- * Le mode Run (« Platines », `/runs`) : l'accueil du mode, la partie (la carte du morceau avec son chrono, sa réponse ou le morceau retiré,
+ * Le mode Run (« Setlist », `/setlist`) : l'accueil du mode, la partie (la carte du morceau avec son chrono, sa réponse ou le morceau retiré,
  * puis la pile des morceaux joués et des manches passées) et la fin. L'écoute est fixe (10 s) et la saisie est là dès que le son se charge :
  * on répond sans attendre la fin de l'extrait. Les animations coupées, la partie ne s'enchaîne pas seule : « Morceau suivant » à chaque fois.
  */
@@ -116,17 +116,17 @@ export class RunPage {
     return ((await me.json()) as { playerId: string }).playerId;
   }
 
-  /** Ouvre `/runs` et attend l'accueil du mode (horloge simulée, comme au jeu du jour : la saisie a des minuteries). */
+  /** Ouvre `/setlist` et attend l'accueil du mode (horloge simulée, comme au jeu du jour : la saisie a des minuteries). */
   async open(): Promise<void> {
     await this.page.clock.install({ time: Date.now() });
-    await this.page.goto('/runs');
+    await this.page.goto('/setlist');
     await this.welcome.waitFor({ state: 'visible' });
   }
 
-  /** Ouvre le lien d'une playlist (`/runs/<code>`), horloge simulée comme `open`. */
+  /** Ouvre le lien d'une playlist (`/setlist/<code>`), horloge simulée comme `open`. */
   async openLink(code: string): Promise<void> {
     await this.page.clock.install({ time: Date.now() });
-    await this.page.goto(`/runs/${code}`);
+    await this.page.goto(`/setlist/${code}`);
   }
 
   /** `open` puis « Lancer une partie » : le premier morceau part. */

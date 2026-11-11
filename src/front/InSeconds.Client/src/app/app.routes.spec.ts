@@ -4,7 +4,7 @@ import { SwUpdate } from '@angular/service-worker';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideTranslateService } from '@ngx-translate/core';
 import { PlayersApi } from './account/data-access/players.api';
-import { routes } from './app.routes';
+import { redirectKeepingQuery, redirectRunsLink, routes } from './app.routes';
 
 describe('routes', () => {
   let harness: RouterTestingHarness;
@@ -88,5 +88,17 @@ describe('routes', () => {
     await harness.navigateByUrl('/nimporte-quoi');
 
     expect(harness.routeNativeElement?.textContent).toContain('404');
+  });
+
+  // Le mode Run s'appelle Setlist : on vérifie les redirections sans charger la page du mode (qui voudrait son client d'API).
+  it('route /runs vers /setlist, et /runs/<code> vers /setlist/<code>, query string et fragment gardés', () => {
+    expect(routes.find(r => r.path === 'runs')?.redirectTo).toBeDefined();
+    expect(routes.find(r => r.path === 'runs/:code')?.redirectTo).toBe(redirectRunsLink);
+    const toTree = (fn: unknown, snapshot: object) =>
+      TestBed.runInInjectionContext(() => (fn as (s: object) => ReturnType<Router['parseUrl']>)(snapshot)).toString();
+    expect(toTree(redirectKeepingQuery('/setlist'), { queryParams: { x: '1' }, fragment: null })).toBe('/setlist?x=1');
+    expect(toTree(redirectRunsLink, { params: { code: 'K7Q2M9' }, queryParams: { utm_source: 'share' }, fragment: 'top' }))
+      .toBe('/setlist/K7Q2M9?utm_source=share#top');
+    expect(routes.find(r => r.path === 'setlist')?.loadChildren).toBeDefined();
   });
 });

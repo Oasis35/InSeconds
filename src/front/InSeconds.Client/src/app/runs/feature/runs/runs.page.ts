@@ -36,7 +36,7 @@ import { RunWithdrawnCardComponent } from '../../ui/run-withdrawn-card/run-withd
 import { reloadMomentFor } from '../reload-moment';
 
 /**
- * La page du mode Run (`/runs`, et `/runs/<code>` pour le lien d'un ami) : elle affiche l'écran que le `RunGameStore` indique et branche ce qui est propre au navigateur : les fenêtres
+ * La page du mode Run (`/setlist`, et `/setlist/<code>` pour le lien d'un ami) : elle affiche l'écran que le `RunGameStore` indique et branche ce qui est propre au navigateur : les fenêtres
  * (abandon, sortie de partie), la fermeture de l'onglet, la nouvelle version du site, le renvoi au jeu du jour sans accès sur invitation. Les stores `RunGameStore` et `TrackRoundStore` sont ceux de
  * cette page ; l'adaptateur de l'API et le lecteur sont fournis par la route.
  */
@@ -73,7 +73,7 @@ export class RunsPage implements OnInit {
   private readonly leaveGuard = new LeaveGuard(inject(ModalService));
   /** La manche en cours, dont la carte arrive à chaque nouveau morceau. */
   private readonly card = viewChild(TrackRoundComponent, { read: ElementRef<HTMLElement> });
-  /** Le code du lien ouvert (`/runs/<code>`), vide sur `/runs`. */
+  /** Le code du lien ouvert (`/setlist/<code>`), vide sur `/setlist`. */
   private readonly code = inject(ActivatedRoute).snapshot.paramMap.get('code');
 
   constructor() {
@@ -95,7 +95,7 @@ export class RunsPage implements OnInit {
         if (card instanceof HTMLElement) enterCard(card);
       }, { injector });
     });
-    // Sans accès sur invitation, le mode n'a pas d'écran : retour au jeu du jour, sans laisser `/runs` dans l'historique.
+    // Sans accès sur invitation, le mode n'a pas d'écran : retour au jeu du jour, sans laisser `/setlist` dans l'historique.
     effect(() => {
       if (this.store.screen() === 'access_denied') void this.router.navigateByUrl('/daily', { replaceUrl: true });
     });

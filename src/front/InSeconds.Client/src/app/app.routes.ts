@@ -11,6 +11,10 @@ export function redirectKeepingQuery(target: string): RedirectFunction {
     inject(Router).createUrlTree([target], { queryParams, fragment: fragment ?? undefined });
 }
 
+/** `/runs/<code>` devient `/setlist/<code>` : les liens d'ami déjà envoyés restent valables, query string et fragment gardés. */
+export const redirectRunsLink: RedirectFunction = ({ params, queryParams, fragment }) =>
+  inject(Router).createUrlTree(['/setlist', params['code']], { queryParams, fragment: fragment ?? undefined });
+
 export const routes: Routes = [
   // Tant que le mode Runs n'est pas public, l'accueil est le défi du jour.
   { path: '', pathMatch: 'full', redirectTo: redirectKeepingQuery('/daily') },
@@ -24,10 +28,13 @@ export const routes: Routes = [
   { path: 'confidentialite', pathMatch: 'full', redirectTo: redirectKeepingQuery('/privacy') },
   { path: 'mentions-legales', pathMatch: 'full', redirectTo: redirectKeepingQuery('/legal') },
   { path: 'legal-notice', pathMatch: 'full', redirectTo: redirectKeepingQuery('/legal') },
+  // Le mode Run s'appelle Setlist à l'écran (ex-Platines) : l'ancienne adresse et les liens déjà partagés suivent.
+  { path: 'runs', pathMatch: 'full', redirectTo: redirectKeepingQuery('/setlist') },
+  { path: 'runs/:code', pathMatch: 'full', redirectTo: redirectRunsLink },
 
   // Domaines : chacun remplace sa page d'attente par ses routes (chargées à la demande, avec leurs stores).
   { path: 'daily', loadChildren: () => import('./daily/feature/daily.routes').then(m => m.DAILY_ROUTES) },
-  { path: 'runs', loadChildren: () => import('./runs/feature/runs.routes').then(m => m.RUNS_ROUTES) },
+  { path: 'setlist', loadChildren: () => import('./runs/feature/runs.routes').then(m => m.RUNS_ROUTES) },
   { path: 'account', loadChildren: () => import('./account/feature/account.routes').then(m => m.ACCOUNT_ROUTES) },
   { path: 'admin', loadChildren: () => import('./admin/feature/admin.routes').then(m => m.ADMIN_ROUTES) },
   { path: 'legal', loadComponent: () => import('./core/shell/legal/legal.page').then(m => m.LegalPage) },

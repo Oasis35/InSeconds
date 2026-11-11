@@ -349,7 +349,7 @@ test.describe('Admin - icônes des thèmes', () => {
     expect((await page.request.put('/api/admin/catalogue/themes/999999/icon', { data: { icon: 'guitar' } })).status()).toBe(404);
   });
 
-  test('l\'icône du thème s\'affiche dans le choix de thème d\'une playlist de Platines', async ({ page, api }) => {
+  test('l\'icône du thème s\'affiche dans le choix de thème d\'une playlist de Setlist', async ({ page, api }) => {
     test.slow();
     // Sans réserve et avec de grands thèmes : assez de morceaux restent à chaque thème une fois ceux de la playlist écartés.
     await api.setRunSetting('Runs:ReservePerRound', '0');

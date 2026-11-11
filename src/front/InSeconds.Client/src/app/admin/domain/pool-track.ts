@@ -40,7 +40,7 @@ export interface PoolTrack {
   readonly inTodayChallenge: boolean;
 }
 
-/** Un thème de la liste de l'admin : un morceau peut en avoir plusieurs, une manche de Platines en tire ses morceaux. */
+/** Un thème de la liste de l'admin : un morceau peut en avoir plusieurs, une manche de Setlist en tire ses morceaux. */
 export interface PoolTheme {
   readonly id: number;
   readonly name: string;

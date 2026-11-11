@@ -14,7 +14,7 @@ interface Note {
   readonly gain: number;
 }
 
-/** Les sons d'interface du mode Platines, tous synthétisés ici (Web Audio, aucun fichier, aucun droit à céder). */
+/** Les sons d'interface du mode Setlist, tous synthétisés ici (Web Audio, aucun fichier, aucun droit à céder). */
 export type RunSound = 'tick' | 'roundPassed' | 'cardTaken' | 'won' | 'record' | 'lost';
 
 /** Une famille de sons doux (triangle et sinusoïde, aucune onde carrée), brefs, sous le niveau d'un extrait, en do majeur. */
@@ -52,7 +52,7 @@ const SOUNDS: Readonly<Record<RunSound, readonly Note[]>> = {
 export const SOUNDS_MUTED_KEY = 'runs.sounds.muted';
 
 /**
- * Les sons d'interface du mode Platines (le tic du chrono, une manche passée, une carte prise, la fin du run), synthétisés : aucun fichier, des
+ * Les sons d'interface du mode Setlist (le tic du chrono, une manche passée, une carte prise, la fin du run), synthétisés : aucun fichier, des
  * sons à nous. Ils ne sonnent **jamais pendant un extrait** : le service lit lui-même l'état du lecteur (`AudioPort`), aucun appelant n'a à y
  * penser. Le joueur peut les couper (`toggleMuted`, retenu dans ce navigateur). Le contexte audio se crée et se réveille dans un clic du joueur
  * (`unlock`, iPhone : un contexte créé hors d'un geste reste muet, et Safari l'interrompt après un appel ou un passage par une autre appli) ;

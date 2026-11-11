@@ -5,7 +5,7 @@ import { RunsApi } from '../../data-access/runs.api';
 import { RunHomeCardComponent } from '../../ui/run-home-card/run-home-card.component';
 
 /**
- * L'entrée de Platines sur l'accueil du jeu du jour, chargée à la demande (avec le client de l'API du mode, jamais dans le bundle initial) :
+ * L'entrée de Setlist sur l'accueil du jeu du jour, chargée à la demande (avec le client de l'API du mode, jamais dans le bundle initial) :
  * la carte n'apparaît que pour un compte connecté qui a l'accès (`GET /api/runs/me`, jamais appelé pour un invité). Sans accès ou sur une
  * erreur, rien n'est affiché.
  */

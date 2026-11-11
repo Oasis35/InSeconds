@@ -6,7 +6,7 @@ import { PlayerIconComponent } from '../player-icon/player-icon.component';
 
 /**
  * Un compte inscrit en carte (onglet Joueurs, téléphone) : le pseudo (qui déplie l'historique, rendu par la page sous la carte), la
- * série et les gels, puis les parties, la dernière visite et l'interrupteur d'accès à Platines (posé d'office pour un admin). L'email
+ * série et les gels, puis les parties, la dernière visite et l'interrupteur d'accès à Setlist (posé d'office pour un admin). L'email
  * n'y est pas : il reste dans le tableau du PC, masqué tant qu'on ne clique pas dessus (minimisation, RGPD).
  */
 @Component({

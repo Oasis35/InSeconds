@@ -170,7 +170,7 @@ export class ApiTestClient {
     return ((await res.json()) as { tracks: RunTrack[] }).tracks;
   }
 
-  /** Le code (le lien `/runs/<code>`) de la dernière playlist de Run tirée. */
+  /** Le code (le lien `/setlist/<code>`) de la dernière playlist de Run tirée. */
   async latestRunCode(): Promise<string> {
     const res = await fetch(`${BASE}/api/e2e/runs/latest-tracks`);
     if (!res.ok) throw new Error(`runs/latest-tracks failed: ${res.status}`);
