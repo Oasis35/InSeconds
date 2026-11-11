@@ -1,6 +1,6 @@
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, effect, inject, viewChild } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { SessionStore } from '../../../core/session/session.store';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
@@ -44,7 +44,7 @@ import { reloadMomentFor } from '../reload-moment';
 @Component({
   selector: 'app-runs-page',
   imports: [
-    TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, RunHeaderComponent, RunClockComponent, RunRevealComponent, RunPileComponent,
+    TranslatePipe, RouterLink, DecorBackgroundComponent, TrackRoundComponent, RunHeaderComponent, RunClockComponent, RunRevealComponent, RunPileComponent,
     RunWithdrawnCardComponent, RunFinishComponent, RunWelcomeScreenComponent, RunStatusScreenComponent, ResumeScreenComponent,
     RunLinkScreenComponent, RunThemeScreenComponent, RunPseudoScreenComponent, RunComparisonScreenComponent, RunPalierComponent, RunDifficultyComponent, RunRoundCardsComponent,
   ],
@@ -77,8 +77,10 @@ export class RunsPage implements OnInit {
   /** Le code du lien ouvert (`/setlist/<code>`), vide sur `/setlist`. */
   private readonly code = inject(ActivatedRoute).snapshot.paramMap.get('code');
 
+  protected readonly chrome = inject(ShellChromeStore);
+
   constructor() {
-    const chrome = inject(ShellChromeStore);
+    const chrome = this.chrome;
     effect(() => chrome.setImmersive(this.store.screen() === 'playing'));
     inject(DestroyRef).onDestroy(() => chrome.setImmersive(false));
     // Une nouvelle version du site ne recharge jamais la page en pleine manche (cf. `reloadMomentFor`).

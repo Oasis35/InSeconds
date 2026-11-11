@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { SetlistAccessStore } from '../../data-access/setlist-access.store';
 import { RunHomeCardComponent } from '../../ui/run-home-card/run-home-card.component';
 
@@ -13,10 +14,11 @@ import { RunHomeCardComponent } from '../../ui/run-home-card/run-home-card.compo
   host: { class: 'block' },
   template: `
     @if (access.hasAccess()) {
-      <div class="pt-6"><app-run-home-card /></div>
+      <div class="pt-6"><app-run-home-card [compact]="chrome.dailyDone() === false" /></div>
     }
   `,
 })
 export class RunsHomeEntryComponent {
   protected readonly access = inject(SetlistAccessStore);
+  protected readonly chrome = inject(ShellChromeStore);
 }

@@ -1249,7 +1249,8 @@
         "label": "Navigation",
         "daily": "Today",
         "setlist": "Setlist"
-      }
+      },
+      "dailyLeft": "Today's challenge is still waiting"
     }
   }
 }

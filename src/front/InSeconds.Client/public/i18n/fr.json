@@ -1249,7 +1249,8 @@
         "label": "Navigation",
         "daily": "Aujourd'hui",
         "setlist": "Setlist"
-      }
+      },
+      "dailyLeft": "Il te reste le défi du jour"
     }
   }
 }
