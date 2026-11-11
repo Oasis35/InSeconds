@@ -28,7 +28,7 @@ describe('PoolStore', () => {
   }
 
   describe('thèmes', () => {
-    const themes = [{ id: 1, name: 'Années 80', trackCount: 2 }];
+    const themes = [{ id: 1, name: 'Années 80', trackCount: 2, icon: null }];
 
     it('lit la liste des thèmes avec le pool', async () => {
       await setup([eminem], { listThemes: vi.fn(async () => themes) });
@@ -57,6 +57,71 @@ describe('PoolStore', () => {
       const error = await store.addTheme('Films');
 
       expect(error?.code).toBe('catalogue.theme_name_taken');
+    });
+
+    it('met des morceaux dans un thème sans toucher à ceux qui l\'ont déjà, puis relit', async () => {
+      const inTheme = poolTrack({ id: 5, deezerTrackId: 15, themeIds: [1] });
+      const other = poolTrack({ id: 6, deezerTrackId: 16, themeIds: [2] });
+      const free = poolTrack({ id: 7, deezerTrackId: 17 });
+      await setup([inTheme, other, free], { listThemes: vi.fn(async () => themes) });
+
+      expect(await store.addTracksToTheme(1, [5, 6, 7])).toBeNull();
+
+      expect(api.setTrackThemes).toHaveBeenCalledTimes(2);
+      expect(api.setTrackThemes).toHaveBeenCalledWith(6, [2, 1]);
+      expect(api.setTrackThemes).toHaveBeenCalledWith(7, [1]);
+    });
+
+    it('retire un morceau d\'un thème en gardant ses autres thèmes', async () => {
+      await setup([poolTrack({ id: 5, themeIds: [1, 2] })], { listThemes: vi.fn(async () => themes) });
+
+      expect(await store.removeTrackFromTheme(1, 5)).toBeNull();
+
+      expect(api.setTrackThemes).toHaveBeenCalledWith(5, [2]);
+    });
+
+    it('donne ou retire l\'icône d\'un thème', async () => {
+      await setup([], { listThemes: vi.fn(async () => themes) });
+
+      expect(await store.setThemeIcon(1, 'music')).toBeNull();
+      expect(await store.setThemeIcon(1, null)).toBeNull();
+
+      expect(api.setThemeIcon).toHaveBeenNthCalledWith(1, 1, 'music');
+      expect(api.setThemeIcon).toHaveBeenNthCalledWith(2, 1, null);
+    });
+
+    it('un morceau de Deezer absent du pool y est ajouté, puis mis dans le thème', async () => {
+      const added = poolTrack({ id: 9, deezerTrackId: 99 });
+      const listTracks = vi.fn<() => Promise<PoolTrack[]>>().mockResolvedValueOnce([]).mockResolvedValueOnce([added]).mockResolvedValue([added]);
+      await setup([], { listTracks, listThemes: vi.fn(async () => themes) });
+
+      expect(await store.addDeezerTrackToTheme(1, 99)).toBeNull();
+
+      expect(api.addTrack).toHaveBeenCalledWith(99);
+      expect(api.setTrackThemes).toHaveBeenCalledWith(9, [1]);
+    });
+
+    it('relit le pool même si un ajout en lot échoue au milieu', async () => {
+      const first = poolTrack({ id: 5, deezerTrackId: 15 });
+      const second = poolTrack({ id: 6, deezerTrackId: 16 });
+      const setTrackThemes = vi.fn<(id: number, themeIds: readonly number[]) => Promise<void>>()
+        .mockResolvedValueOnce().mockRejectedValueOnce(problem(500, 'server.error'));
+      await setup([first, second], { listThemes: vi.fn(async () => themes), setTrackThemes });
+      const reads = api.listTracks.mock.calls.length;
+
+      const error = await store.addTracksToTheme(1, [5, 6]);
+
+      expect(error).not.toBeNull();
+      expect(api.listTracks.mock.calls).toHaveLength(reads + 1);
+    });
+
+    it('un morceau de Deezer déjà dans le pool n\'est pas ajouté une seconde fois', async () => {
+      await setup([poolTrack({ id: 9, deezerTrackId: 99 })], { listThemes: vi.fn(async () => themes) });
+
+      expect(await store.addDeezerTrackToTheme(1, 99)).toBeNull();
+
+      expect(api.addTrack).not.toHaveBeenCalled();
+      expect(api.setTrackThemes).toHaveBeenCalledWith(9, [1]);
     });
 
     it('une liste de thèmes illisible n\'empêche pas le pool', async () => {

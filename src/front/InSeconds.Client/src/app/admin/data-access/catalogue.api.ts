@@ -36,7 +36,7 @@ export class CatalogueApi {
 
   /** La liste des thèmes de l'admin, avec le nombre de morceaux de chacun. */
   async listThemes(): Promise<PoolTheme[]> {
-    return (await firstValueFrom(this.client.listThemes())).map(t => ({ id: t.id, name: t.name, trackCount: t.trackCount }));
+    return (await firstValueFrom(this.client.listThemes())).map(t => ({ id: t.id, name: t.name, trackCount: t.trackCount, icon: t.icon ?? null }));
   }
 
   async addTheme(name: string): Promise<void> {
@@ -45,6 +45,11 @@ export class CatalogueApi {
 
   async renameTheme(id: number, name: string): Promise<void> {
     await firstValueFrom(this.client.renameTheme(id, { name }));
+  }
+
+  /** Donne une icône au thème ; `null` la retire. */
+  async setThemeIcon(id: number, icon: string | null): Promise<void> {
+    await firstValueFrom(this.client.setThemeIcon(id, { icon: icon ?? undefined }));
   }
 
   async deleteTheme(id: number): Promise<void> {

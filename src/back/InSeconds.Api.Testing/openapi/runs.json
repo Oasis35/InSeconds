@@ -2078,6 +2078,12 @@
           "round": {
             "type": "integer",
             "format": "int32"
+          },
+          "icon": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

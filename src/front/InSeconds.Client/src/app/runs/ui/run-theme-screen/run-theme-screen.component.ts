@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { BrandComponent } from '../../../gameplay/ui/brand/brand.component';
 import { ButtonComponent } from '../../../ui/button/button.component';
+import { ThemeIconComponent } from '../../../ui/theme-icon/theme-icon.component';
 import { RunThemeOffer } from '../../domain/run';
 
 /**
@@ -10,7 +11,7 @@ import { RunThemeOffer } from '../../domain/run';
  */
 @Component({
   selector: 'app-run-theme-screen',
-  imports: [TranslatePipe, BrandComponent, ButtonComponent],
+  imports: [TranslatePipe, BrandComponent, ButtonComponent, ThemeIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex-1 flex flex-col' },
   template: `
@@ -24,6 +25,9 @@ import { RunThemeOffer } from '../../domain/run';
         @for (theme of offer(); track theme.id) {
           <button type="button" role="radio" class="theme-tile" [attr.aria-checked]="choice() === theme.id" [attr.data-theme-id]="theme.id"
             (click)="choose.emit(theme.id)">
+            @if (hasIcons()) {
+              <span class="theme-icon">@if (theme.icon) { <app-theme-icon [name]="theme.icon" [size]="26" /> }</span>
+            }
             <span class="flex-1 text-left">
               <span class="block text-[1.0625rem] font-bold" style="color:var(--text-hi)">{{ theme.name }}</span>
               <span class="block text-xs mt-0.5" style="color:var(--text-muted)">{{ 'runs.theme.tracks' | translate }}</span>
@@ -32,6 +36,9 @@ import { RunThemeOffer } from '../../domain/run';
           </button>
         }
         <button type="button" role="radio" class="theme-tile" [attr.aria-checked]="choice() === null" data-theme-id="surprise" (click)="choose.emit(null)">
+          @if (hasIcons()) {
+            <span class="theme-icon"></span>
+          }
           <span class="flex-1 text-left">
             <span class="block text-[1.0625rem] font-bold" style="color:var(--text-hi)">{{ 'runs.theme.surprise' | translate }}</span>
             <span class="block text-xs mt-0.5" style="color:var(--text-muted)">{{ 'runs.theme.surpriseHint' | translate }}</span>
@@ -51,6 +58,8 @@ import { RunThemeOffer } from '../../domain/run';
       border: 1px solid var(--border-neutral); background: rgb(var(--rgb-surface) / 0.55);
     }
     .theme-tile[aria-checked='true'] { border-color: var(--color-accent); background: rgb(var(--rgb-accent) / 0.08); }
+    .theme-icon { width: 26px; flex: none; display: inline-flex; color: var(--text-light); }
+    .theme-tile[aria-checked='true'] .theme-icon { color: var(--color-accent); }
     .theme-radio {
       width: 1.25rem; height: 1.25rem; border-radius: 50%; border: 1.5px solid var(--border-neutral); flex: none;
       display: grid; place-items: center;
@@ -66,6 +75,7 @@ export class RunThemeScreenComponent {
   readonly choice = input<number | null>(null);
   /** La manche qui aura ce thème. */
   readonly round = input(3);
+  protected readonly hasIcons = computed(() => this.offer().some(theme => theme.icon));
   readonly choose = output<number | null>();
   readonly start = output();
 }

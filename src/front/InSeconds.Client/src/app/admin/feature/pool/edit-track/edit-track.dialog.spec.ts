@@ -88,7 +88,7 @@ describe('EditTrackDialog', () => {
   });
 
   it('coche les thèmes du morceau et ne les envoie que s\'ils changent, sans renommer', async () => {
-    const themes = [{ id: 1, name: 'Années 80', trackCount: 1 }, { id: 2, name: 'Films', trackCount: 0 }];
+    const themes = [{ id: 1, name: 'Années 80', trackCount: 1, icon: null }, { id: 2, name: 'Films', trackCount: 0, icon: null }];
     const { fixture, element, save } = open(poolTrack({ id: 9, themeIds: [1] }), { listThemes: vi.fn(async () => themes) });
     await TestBed.inject(PoolStore).load();
     await settle(fixture);

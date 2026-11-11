@@ -14,6 +14,7 @@ export const ADMIN_TABS: readonly AdminTab[] = [
   { path: 'dashboard', label: 'admin.tabs.dashboard' },
   { path: 'defis', label: 'admin.tabs.challengesPlain', counted: { label: 'admin.tabs.challenges', source: 'challenges' } },
   { path: 'catalogue', label: 'admin.tabs.poolPlain', counted: { label: 'admin.tabs.pool', source: 'pool' } },
+  { path: 'themes', label: 'admin.tabs.themes' },
   { path: 'joueurs', label: 'admin.tabs.playersPlain', counted: { label: 'admin.tabs.players', source: 'players' } },
 ];
 

@@ -26,4 +26,7 @@ public interface ITrackDirectory
 
     /// <summary>Les thèmes de la liste de l'admin : identifiant et nom.</summary>
     Task<IReadOnlyDictionary<int, string>> ListThemesAsync(CancellationToken ct);
+
+    /// <summary>Les icônes des thèmes (le nom d'une icône Lucide), par identifiant de thème ; un thème sans icône est absent.</summary>
+    Task<IReadOnlyDictionary<int, string>> ListThemeIconsAsync(CancellationToken ct);
 }

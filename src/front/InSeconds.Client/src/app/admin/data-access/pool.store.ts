@@ -173,6 +173,18 @@ export const PoolStore = signalStore(
       return null;
     }
 
+    /** Comme `mutate`, pour une action en plusieurs appels : une partie a pu aboutir avant l'échec, le pool est donc relu dans tous les cas. */
+    async function mutateAndReload(action: () => Promise<void>): Promise<AppError | null> {
+      let error: AppError | null = null;
+      try {
+        await action();
+      } catch (error_) {
+        error = await toAppError(error_);
+      }
+      await load();
+      return error;
+    }
+
     return {
       load,
 
@@ -221,8 +233,35 @@ export const PoolStore = signalStore(
       add: (deezerTrackId: number) => mutate(() => api.addTrack(deezerTrackId)),
       addTheme: (name: string) => mutate(() => api.addTheme(name.trim())),
       renameTheme: (id: number, name: string) => mutate(() => api.renameTheme(id, name.trim())),
+      setThemeIcon: (id: number, icon: string | null) => mutate(() => api.setThemeIcon(id, icon)),
       deleteTheme: (id: number) => mutate(() => api.deleteTheme(id)),
       setTrackThemes: (id: number, themeIds: readonly number[]) => mutate(() => api.setTrackThemes(id, themeIds)),
+      /** Met ces morceaux du pool dans le thème (un par un, ceux qui l'ont déjà sont laissés), puis relit. */
+      addTracksToTheme: (themeId: number, trackIds: readonly number[]) => mutateAndReload(async () => {
+        const pending = trackIds.flatMap(id => {
+          const track = store.tracks().find(t => t.id === id);
+          return track && !track.themeIds.includes(themeId) ? [track] : [];
+        });
+        // Un par un, dans l'ordre : le serveur n'est pas chargé de plusieurs écritures à la fois sur le même thème.
+        await pending.reduce(async (previous, track) => {
+          await previous;
+          await api.setTrackThemes(track.id, [...track.themeIds, themeId]);
+        }, Promise.resolve());
+      }),
+      /** Retire le morceau du thème : il reste dans le pool et garde ses autres thèmes. */
+      removeTrackFromTheme: (themeId: number, trackId: number) => mutate(async () => {
+        const track = store.tracks().find(t => t.id === trackId);
+        if (track?.themeIds.includes(themeId)) await api.setTrackThemes(trackId, track.themeIds.filter(x => x !== themeId));
+      }),
+      /** Ajoute au pool le morceau de Deezer s'il n'y est pas encore, puis le met dans le thème. */
+      addDeezerTrackToTheme: (themeId: number, deezerTrackId: number) => mutateAndReload(async () => {
+        let track = store.tracks().find(t => t.deezerTrackId === deezerTrackId);
+        if (!track) {
+          await api.addTrack(deezerTrackId);
+          track = (await api.listTracks()).find(t => t.deezerTrackId === deezerTrackId);
+        }
+        if (track && !track.themeIds.includes(themeId)) await api.setTrackThemes(track.id, [...track.themeIds, themeId]);
+      }),
       rename: (id: number, artist: string, title: string, genre?: string) =>
         mutate(() => api.renameTrack(id, artist.trim(), title.trim(), genre?.trim())),
 

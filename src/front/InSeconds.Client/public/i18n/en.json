@@ -298,7 +298,8 @@
       "playersPlain": "Players",
       "pool": "Tracks ({{ count }})",
       "challenges": "Challenges ({{ count }})",
-      "players": "Players ({{ count }})"
+      "players": "Players ({{ count }})",
+      "themes": "Themes"
     },
     "pool": {
       "cooldown": "cooldown {{ days }} d",
@@ -364,15 +365,6 @@
       },
       "filters": "Filters",
       "filtersActive": "Filters ({{ count }})",
-      "themes": {
-        "label": "Themes:",
-        "name": "Theme name",
-        "tracks": "{{count}} tracks",
-        "delete": "Delete",
-        "empty": "No theme yet.",
-        "newName": "New theme",
-        "add": "Add"
-      },
       "cooldownSetting": {
         "label": "Cooldown",
         "days": "{{ days }} d",
@@ -621,6 +613,71 @@
       "direct": "Direct",
       "other": "Other sites",
       "rest": "Others"
+    },
+    "themes": {
+      "title": "Themes",
+      "changeIcon": "Change icon",
+      "iconTitle": "Icon for \"{{name}}\"",
+      "iconSearch": "Search an icon",
+      "iconCategories": "Icon categories",
+      "iconAll": "All",
+      "iconCat": {
+        "music": "Music",
+        "cinema": "Screens and games",
+        "fete": "Party and love",
+        "voyage": "Travel and places",
+        "nature": "Nature and weather",
+        "animaux": "Animals",
+        "sport": "Sport",
+        "table": "Food and drink",
+        "objets": "Objects and eras"
+      },
+      "iconGrid": "Icons",
+      "iconNone": "No icon matches.",
+      "iconClear": "No icon",
+      "iconChoose": "Choose",
+      "search": "Search a theme",
+      "filters": "Filter by state",
+      "newName": "New theme",
+      "create": "Create",
+      "chip": {
+        "all": "All",
+        "unplayable": "Not playable",
+        "thin": "Limited variety",
+        "varied": "Varied"
+      },
+      "health": {
+        "unplayable": "Not playable",
+        "thin": "Limited variety",
+        "varied": "Varied"
+      },
+      "counts": "{{total}} tracks · {{playable}} playable",
+      "missing": "{{count}} playable tracks missing.",
+      "legend": "Red: under {{min}} playable · yellow: up to {{varied}} · green: {{varied}} and more.",
+      "empty": "No theme.",
+      "pick": "Pick a theme from the list.",
+      "back": "Themes",
+      "rename": "Rename",
+      "delete": "Delete",
+      "deleteBlocked": "Remove its tracks first",
+      "name": "Theme name",
+      "addTracks": "Add tracks",
+      "searchInTheme": "Search in this theme",
+      "noTracks": "No track in this theme.",
+      "removeTrack": "Remove from theme",
+      "disabled": "disabled",
+      "noPreview": "no preview",
+      "close": "Close",
+      "source": {
+        "pool": "In the pool",
+        "deezer": "On Deezer"
+      },
+      "searchPool": "Search the pool",
+      "searchDeezer": "Search Deezer",
+      "noCandidate": "No track to add.",
+      "addPicked": "Add {{count}} tracks to the theme",
+      "addDeezer": "Add to pool and theme",
+      "alreadyInTheme": "Already in this theme"
     }
   },
   "daily": {

@@ -298,7 +298,8 @@
       "playersPlain": "Joueurs",
       "pool": "Morceaux ({{ count }})",
       "challenges": "Défis ({{ count }})",
-      "players": "Joueurs ({{ count }})"
+      "players": "Joueurs ({{ count }})",
+      "themes": "Thèmes"
     },
     "pool": {
       "cooldown": "cooldown {{ days }} j",
@@ -364,15 +365,6 @@
       },
       "filters": "Filtres",
       "filtersActive": "Filtres ({{ count }})",
-      "themes": {
-        "label": "Thèmes :",
-        "name": "Nom du thème",
-        "tracks": "{{count}} morceaux",
-        "delete": "Supprimer",
-        "empty": "Aucun thème pour l'instant.",
-        "newName": "Nouveau thème",
-        "add": "Ajouter"
-      },
       "cooldownSetting": {
         "label": "Cooldown",
         "days": "{{ days }} j",
@@ -621,6 +613,71 @@
       "direct": "Direct",
       "other": "Autres sites",
       "rest": "Autres"
+    },
+    "themes": {
+      "title": "Thèmes",
+      "changeIcon": "Changer l'icône",
+      "iconTitle": "Icône de « {{name}} »",
+      "iconSearch": "Rechercher une icône",
+      "iconCategories": "Catégories d'icônes",
+      "iconAll": "Toutes",
+      "iconCat": {
+        "music": "Musique",
+        "cinema": "Écrans et jeux",
+        "fete": "Fête et cœur",
+        "voyage": "Voyage et lieux",
+        "nature": "Nature et météo",
+        "animaux": "Animaux",
+        "sport": "Sport",
+        "table": "Table et sorties",
+        "objets": "Objets et époques"
+      },
+      "iconGrid": "Icônes",
+      "iconNone": "Aucune icône ne correspond.",
+      "iconClear": "Sans icône",
+      "iconChoose": "Choisir",
+      "search": "Rechercher un thème",
+      "filters": "Filtrer par état",
+      "newName": "Nouveau thème",
+      "create": "Créer",
+      "chip": {
+        "all": "Tous",
+        "unplayable": "Pas jouables",
+        "thin": "Peu variés",
+        "varied": "Variés"
+      },
+      "health": {
+        "unplayable": "Pas jouable",
+        "thin": "Peu varié",
+        "varied": "Varié"
+      },
+      "counts": "{{total}} morceaux · {{playable}} jouables",
+      "missing": "Il manque {{count}} morceaux jouables.",
+      "legend": "Rouge : moins de {{min}} jouables · jaune : jusqu'à {{varied}} · vert : {{varied}} et plus.",
+      "empty": "Aucun thème.",
+      "pick": "Choisis un thème dans la liste.",
+      "back": "Thèmes",
+      "rename": "Renommer",
+      "delete": "Supprimer",
+      "deleteBlocked": "Retire d'abord ses morceaux",
+      "name": "Nom du thème",
+      "addTracks": "Ajouter des morceaux",
+      "searchInTheme": "Chercher dans ce thème",
+      "noTracks": "Aucun morceau dans ce thème.",
+      "removeTrack": "Retirer du thème",
+      "disabled": "désactivé",
+      "noPreview": "sans extrait",
+      "close": "Fermer",
+      "source": {
+        "pool": "Dans le pool",
+        "deezer": "Sur Deezer"
+      },
+      "searchPool": "Chercher dans le pool",
+      "searchDeezer": "Chercher sur Deezer",
+      "noCandidate": "Aucun morceau à ajouter.",
+      "addPicked": "Ajouter {{count}} morceaux au thème",
+      "addDeezer": "Ajouter au pool et au thème",
+      "alreadyInTheme": "Déjà dans ce thème"
     }
   },
   "daily": {

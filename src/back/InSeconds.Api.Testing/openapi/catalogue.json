@@ -677,6 +677,60 @@
         }
       }
     },
+    "/api/admin/catalogue/themes/{id}/icon": {
+      "put": {
+        "tags": [
+          "Catalogue"
+        ],
+        "operationId": "setThemeIcon",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThemeIcon"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/catalogue/tracks/{id}/themes": {
       "put": {
         "tags": [
@@ -935,6 +989,17 @@
           }
         }
       },
+      "ThemeIcon": {
+        "type": "object",
+        "properties": {
+          "icon": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "ThemeItem": {
         "required": [
           "id",
@@ -953,6 +1018,12 @@
           "trackCount": {
             "type": "integer",
             "format": "int32"
+          },
+          "icon": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -1245,6 +1316,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Catalogue.Application.DeleteThemeEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Catalogue.Application.SetThemeIconEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Catalogue.Application.SetTrackThemesEndpoint"

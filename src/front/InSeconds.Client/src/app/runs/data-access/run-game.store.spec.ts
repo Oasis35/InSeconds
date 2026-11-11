@@ -174,7 +174,7 @@ describe('RunGameStore', () => {
 
   describe('le choix du thème au lancement', () => {
     it("propose les thèmes au créateur d'une playlist neuve, « Lancer » la tire avec le thème choisi", async () => {
-      api.offerResult = [{ id: 1, name: 'Années 80', round: 3 }, { id: 2, name: 'Rap français', round: 3 }];
+      api.offerResult = [{ id: 1, name: 'Années 80', round: 3, icon: null }, { id: 2, name: 'Rap français', round: 3, icon: null }];
       await store.init();
 
       await store.begin();
@@ -190,7 +190,7 @@ describe('RunGameStore', () => {
     });
 
     it('« Surprise » tire sans thème', async () => {
-      api.offerResult = [{ id: 1, name: 'Années 80', round: 3 }];
+      api.offerResult = [{ id: 1, name: 'Années 80', round: 3, icon: null }];
       await store.init();
       await store.begin();
 

@@ -21,7 +21,7 @@ public sealed class EfCatalogueQueries(InSecondsDbContext db) : ICatalogueQuerie
     public async Task<IReadOnlyList<ThemeItem>> ListThemesAsync(CancellationToken ct) =>
         await db.Set<Theme>().AsNoTracking()
             .OrderBy(t => t.Name)
-            .Select(t => new ThemeItem(t.Id, t.Name, db.Set<Track>().Count(track => track.Themes.Any(x => x.Id == t.Id))))
+            .Select(t => new ThemeItem(t.Id, t.Name, db.Set<Track>().Count(track => track.Themes.Any(x => x.Id == t.Id)), t.Icon))
             .ToListAsync(ct);
 
     public async Task<CatalogueHealthResponse> GetHealthAsync(CancellationToken ct)
@@ -44,6 +44,9 @@ public sealed class EfTrackDirectory(InSecondsDbContext db, IOptionsMonitor<Cata
 
     public async Task<IReadOnlyDictionary<int, string>> ListThemesAsync(CancellationToken ct) =>
         await db.Set<Theme>().AsNoTracking().ToDictionaryAsync(t => t.Id, t => t.Name, ct);
+
+    public async Task<IReadOnlyDictionary<int, string>> ListThemeIconsAsync(CancellationToken ct) =>
+        await db.Set<Theme>().AsNoTracking().Where(t => t.Icon != null).ToDictionaryAsync(t => t.Id, t => t.Icon!, ct);
 
     public async Task<IReadOnlyDictionary<int, TrackInfo>> GetAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct)
     {

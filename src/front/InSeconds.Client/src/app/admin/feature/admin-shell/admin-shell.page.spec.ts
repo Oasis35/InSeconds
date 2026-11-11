@@ -95,11 +95,11 @@ describe('AdminShellPage', () => {
   const sideTabs = (element: HTMLElement) => Array.from(element.querySelectorAll<HTMLAnchorElement>('[data-testid="admin-top-nav"] a'));
   const bottomTabs = (element: HTMLElement) => Array.from(element.querySelectorAll<HTMLAnchorElement>('[data-testid="admin-bottom-nav"] a'));
 
-  it('montre les quatre onglets dans leur ordre, en haut sur PC et en bas sur téléphone, les Morceaux actifs', async () => {
+  it('montre les cinq onglets dans leur ordre, en haut sur PC et en bas sur téléphone, les Morceaux actifs', async () => {
     const { element } = await open(admin, '/admin/catalogue');
 
     for (const links of [sideTabs(element), bottomTabs(element)]) {
-      expect(links.map(a => a.getAttribute('href'))).toEqual(['/admin/dashboard', '/admin/defis', '/admin/catalogue', '/admin/joueurs']);
+      expect(links.map(a => a.getAttribute('href'))).toEqual(['/admin/dashboard', '/admin/defis', '/admin/catalogue', '/admin/themes', '/admin/joueurs']);
       expect(links.filter(a => a.getAttribute('aria-current') === 'page').map(a => a.getAttribute('href'))).toEqual(['/admin/catalogue']);
     }
   });
@@ -176,11 +176,11 @@ describe('AdminShellPage', () => {
     expect(Array.from(panel.querySelectorAll('button')).some(b => b.textContent?.includes('admin.logout'))).toBe(true);
   });
 
-  it('montre le libellé nu de Morceaux, Défis et Joueurs avant leur première ouverture', async () => {
+  it('montre le libellé nu de Morceaux, Défis, Thèmes et Joueurs avant leur première ouverture', async () => {
     const { element } = await open(admin, '/admin/catalogue');
 
     expect(sideTabs(element).map(a => a.textContent?.trim())).toEqual([
-      'admin.tabs.dashboard', 'admin.tabs.challengesPlain', 'admin.tabs.poolPlain', 'admin.tabs.playersPlain',
+      'admin.tabs.dashboard', 'admin.tabs.challengesPlain', 'admin.tabs.poolPlain', 'admin.tabs.themes', 'admin.tabs.playersPlain',
     ]);
   });
 
@@ -194,10 +194,10 @@ describe('AdminShellPage', () => {
     harness.detectChanges();
 
     expect(sideTabs(element).map(a => a.textContent?.trim()))
-      .toEqual(['admin.tabs.dashboard', 'admin.tabs.challenges', 'admin.tabs.pool', 'admin.tabs.players']);
+      .toEqual(['admin.tabs.dashboard', 'admin.tabs.challenges', 'admin.tabs.pool', 'admin.tabs.themes', 'admin.tabs.players']);
     // La barre du bas, étroite, garde les libellés nus.
     expect(bottomTabs(element).map(a => a.textContent?.trim()))
-      .toEqual(['admin.tabs.dashboard', 'admin.tabs.challengesPlain', 'admin.tabs.poolPlain', 'admin.tabs.playersPlain']);
+      .toEqual(['admin.tabs.dashboard', 'admin.tabs.challengesPlain', 'admin.tabs.poolPlain', 'admin.tabs.themes', 'admin.tabs.playersPlain']);
   });
 
   it('ne montre pas l\'heure de déploiement quand le build ne la connaît pas', async () => {

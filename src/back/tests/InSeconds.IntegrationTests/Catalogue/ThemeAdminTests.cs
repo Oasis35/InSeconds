@@ -121,6 +121,48 @@ public class ThemeAdminTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Icone_SeDonneSeLitEtSeRetire()
+    {
+        var films = await AddAsync("Films");
+        Assert.Null(films.Icon);
+
+        var set = await _app.Admin().PutAsJsonAsync($"{Themes}/{films.Id}/icon", new ThemeIcon(" clapperboard "), Ct);
+        var listed = (await _app.Admin().GetFromJsonAsync<IReadOnlyList<ThemeItem>>(Themes, Ct))!.Single();
+        var cleared = await _app.Admin().PutAsJsonAsync($"{Themes}/{films.Id}/icon", new ThemeIcon(null), Ct);
+        var listedAgain = (await _app.Admin().GetFromJsonAsync<IReadOnlyList<ThemeItem>>(Themes, Ct))!.Single();
+
+        Assert.Equal(HttpStatusCode.NoContent, set.StatusCode);
+        Assert.Equal("clapperboard", listed.Icon);
+        Assert.Equal(HttpStatusCode.NoContent, cleared.StatusCode);
+        Assert.Null(listedAgain.Icon);
+    }
+
+    [Theory]
+    [InlineData("Clapperboard")]
+    [InlineData("clap board")]
+    [InlineData("-film")]
+    [InlineData("film--roll")]
+    [InlineData("<svg>")]
+    public async Task Icone_UnNomInvalide_400(string icon)
+    {
+        var films = await AddAsync("Films");
+
+        var response = await _app.Admin().PutAsJsonAsync($"{Themes}/{films.Id}/icon", new ThemeIcon(icon), Ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Null((await _app.Admin().GetFromJsonAsync<IReadOnlyList<ThemeItem>>(Themes, Ct))!.Single().Icon);
+    }
+
+    [Fact]
+    public async Task Icone_UnThemeInconnu_404()
+    {
+        var response = await _app.Admin().PutAsJsonAsync($"{Themes}/999/icon", new ThemeIcon("film"), Ct);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("catalogue.theme_not_found", await CodeOfAsync(response));
+    }
+
+    [Fact]
     public async Task Supprimer_SeulementSiAucunMorceauNeL_A()
     {
         var films = await AddAsync("Films");

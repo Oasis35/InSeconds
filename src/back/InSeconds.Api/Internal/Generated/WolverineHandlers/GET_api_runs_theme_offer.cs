@@ -68,7 +68,7 @@ namespace Internal.Generated.WolverineHandlers
             {
                 
                 // The actual HTTP request handler execution
-                var runThemeOfferItemIReadOnlyList_response = await InSeconds.Api.Modules.Runs.Application.GetRunThemeOfferEndpoint.Get(runChallengePlanner, httpContext.RequestAborted).ConfigureAwait(false);
+                var runThemeOfferItemIReadOnlyList_response = await InSeconds.Api.Modules.Runs.Application.GetRunThemeOfferEndpoint.Get(runChallengePlanner, efTrackDirectory, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware
