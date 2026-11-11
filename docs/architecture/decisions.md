@@ -35,8 +35,8 @@ Les choix déjà faits, avec leur raison, pour ne pas les rediscuter ni les réi
 - **NgRx SignalStore** (30/09/2026) ; NgRx Store classique écarté.
 - **Domaines calqués sur les modules du back**, frontières vérifiées par Sheriff.
 - **Son sur un simple élément audio HTML** : Howler.js essayé puis retiré après la recette sur iPhone (#309).
-- **GSAP pour les animations des écrans de jeu** (Clément, 27/10/2026, codé le 03/11 pour Platines) : version épinglée, importé par la seule façade `ui/motion/motion.ts`, coupé en mouvement réduit ; les animations simples restent en CSS.
-- **Platines s'enchaîne seul** (Clément, 03/11/2026) : 2 s après une réponse, le morceau suivant démarre sans clic (exception à « le son ne démarre que sur un clic », l'élément audio ayant déjà joué dans un geste du joueur) ; coupé en mouvement réduit, où « Morceau suivant » attend le clic. À recetter sur iPhone, avec le tic du chrono (Web Audio) qui joue à côté de l'élément audio.
+- **GSAP pour les animations des écrans de jeu** (Clément, 27/10/2026, codé le 03/11 pour Setlist) : version épinglée, importé par la seule façade `ui/motion/motion.ts`, coupé en mouvement réduit ; les animations simples restent en CSS.
+- **Setlist s'enchaîne seul** (Clément, 03/11/2026) : 2 s après une réponse, le morceau suivant démarre sans clic (exception à « le son ne démarre que sur un clic », l'élément audio ayant déjà joué dans un geste du joueur) ; coupé en mouvement réduit, où « Morceau suivant » attend le clic. À recetter sur iPhone, avec le tic du chrono (Web Audio) qui joue à côté de l'élément audio.
 
 ## Principes
 
@@ -46,4 +46,4 @@ Les choix déjà faits, avec leur raison, pour ne pas les rediscuter ni les réi
 
 ## Mode Runs (livré, sur invitation)
 
-Le module `Runs` (schéma `runs`) et le domaine front `runs/` sont livrés (proto 1, 27/10/2026) : un mode s'adapte à l'architecture, pas l'inverse. Un mode n'importe jamais l'autre (Daily et Runs ne se voient pas), Players et Catalogue ne connaissent d'un mode que ses contrats (`IPlayerDataContributor`, `ITrackUsage`), et l'accès est sur invitation (`runs.access`, distinct du rôle admin). Conçu le 17/10/2026 (nom affiché provisoire « Platines ») : règles, écrans, conception et plan dans [`runs/`](../runs/README.md).
+Le module `Runs` (schéma `runs`) et le domaine front `runs/` sont livrés (proto 1, 27/10/2026) : un mode s'adapte à l'architecture, pas l'inverse. Un mode n'importe jamais l'autre (Daily et Runs ne se voient pas), Players et Catalogue ne connaissent d'un mode que ses contrats (`IPlayerDataContributor`, `ITrackUsage`), et l'accès est sur invitation (`runs.access`, distinct du rôle admin). Conçu le 17/10/2026 (nom affiché provisoire « Setlist ») : règles, écrans, conception et plan dans [`runs/`](../runs/README.md).

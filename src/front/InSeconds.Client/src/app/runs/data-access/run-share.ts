@@ -4,8 +4,8 @@ import { ShareService } from '../../core/share/share.service';
 import { environment } from '../../../environments/environment';
 import { RUN_SHARE_EMOJI, RunDuel, RunFinish, discStars, shareRounds } from '../domain/run';
 
-/** L'adresse d'une playlist (`/runs/<code>`), celle que les amis ouvrent, marquée `utm_source=share` comme le partage du score. */
-export const playlistUrl = (code: string): string => `${environment.appUrl}/runs/${code}?utm_source=share`;
+/** L'adresse d'une playlist (`/setlist/<code>`), celle que les amis ouvrent, marquée `utm_source=share` comme le partage du score. */
+export const playlistUrl = (code: string): string => `${environment.appUrl}/setlist/${code}?utm_source=share`;
 
 /**
  * Le partage d'un run, par le menu de partage du téléphone ou sinon dans le presse-papier, et l'état du bouton (copié, échec) pour quelques secondes,
@@ -43,7 +43,7 @@ export class RunShare {
 }
 
 /**
- * Le texte du partage d'une partie finie : « 2 410 pts · Disque d'argent · InSeconds Platines », puis « 🟩🟩🟨🟩🟥 Manche 1 · Normal » pour chaque
+ * Le texte du partage d'une partie finie : « 2 410 pts · Disque d'argent · InSeconds Setlist », puis « 🟩🟩🟨🟩🟥 Manche 1 · Normal » pour chaque
  * manche jouée, puis l'invitation et le lien de la playlist (`utm_source=share`). Rien d'un morceau n'y figure : ni artiste ni titre.
  */
 export function runShareText(

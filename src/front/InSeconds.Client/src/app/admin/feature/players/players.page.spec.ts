@@ -181,7 +181,7 @@ describe('PlayersPage', () => {
       expect(rows()[0].querySelector('[data-testid="player-history"]')?.textContent).toContain('3200');
     });
 
-    it('bascule l\'accès à Platines depuis la carte', async () => {
+    it('bascule l\'accès à Setlist depuis la carte', async () => {
       const { settle, rows } = await render({ wide: false });
       (rows()[1].querySelector('[data-testid="run-access"]') as HTMLButtonElement).click();
       await settle();

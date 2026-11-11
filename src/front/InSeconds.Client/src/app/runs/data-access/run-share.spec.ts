@@ -80,7 +80,7 @@ describe('RunShare', () => {
     await share.share('K7Q2M9');
 
     expect(shared).toEqual([`Une playlist !\n${playlistUrl('K7Q2M9')}`]);
-    expect(playlistUrl('K7Q2M9')).toMatch(/\/runs\/K7Q2M9\?utm_source=share$/);
+    expect(playlistUrl('K7Q2M9')).toMatch(/\/setlist\/K7Q2M9\?utm_source=share$/);
   });
 
   it('le score d\'une partie finie : la grille, envoyée telle que runShareText l\'écrit, et le bouton qui dit « copié »', async () => {
