@@ -24,8 +24,8 @@ import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
         <nav class="flex" style="padding-bottom:env(safe-area-inset-bottom)" [attr.aria-label]="'runs.v4.bar.label' | translate">
           @for (tab of tabs(); track tab.link) {
             <a [routerLink]="tab.link" [attr.data-testid]="'tab-' + tab.id" [attr.aria-current]="tab.active ? 'page' : null"
-               class="flex-1 flex flex-col items-center gap-0.5 py-2 text-xs touch-manipulation"
-               [style.color]="tab.active ? 'var(--accent-orange)' : 'var(--text-muted)'">
+               class="flex-1 flex flex-col items-center gap-0.5 py-2 text-xs touch-manipulation min-h-11"
+               [style.color]="tab.active ? 'var(--text-hi)' : 'var(--text-muted)'">
               <span class="relative" aria-hidden="true">
                 @if (tab.id === 'daily') {
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>

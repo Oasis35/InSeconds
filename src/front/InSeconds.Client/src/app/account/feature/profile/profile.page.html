@@ -123,6 +123,11 @@
           }
         </div>
       </section>
+      <nav class="flex flex-wrap justify-center gap-x-4 text-xs" style="color:var(--text-muted)" data-testid="profile-legal">
+        <a routerLink="/legal" class="py-3 hover:underline" style="color:inherit">{{ 'daily.footer.legal' | translate }}</a>
+        <a routerLink="/privacy" class="py-3 hover:underline" style="color:inherit">{{ 'daily.footer.privacy' | translate }}</a>
+        <a href="mailto:contact@inseconds.cc" class="py-3 hover:underline" style="color:inherit">{{ 'daily.footer.contact' | translate }}</a>
+      </nav>
     }
 
     <!-- Tes données (RGPD) -->

@@ -81,7 +81,11 @@ export class RunsPage implements OnInit {
 
   constructor() {
     const chrome = this.chrome;
-    effect(() => chrome.setImmersive(this.store.screen() === 'playing'));
+    effect(() => {
+      // La barre ne reste que sur l'accueil, le lien, la fin et la comparaison : jamais au milieu d'un run.
+      const screen = this.store.screen();
+      chrome.setImmersive(screen === 'playing' || screen === 'theme' || screen === 'palier' || screen === 'difficulty' || screen === 'pseudo' || screen === 'resume');
+    });
     inject(DestroyRef).onDestroy(() => chrome.setImmersive(false));
     // Une nouvelle version du site ne recharge jamais la page en pleine manche (cf. `reloadMomentFor`).
     inject(VersionService).allowReload(() => reloadMomentFor(this.store.screen()), inject(DestroyRef));

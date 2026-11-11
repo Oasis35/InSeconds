@@ -309,5 +309,5 @@ summary {
 
 /* V4 : la barre du bas (fixe, liens légaux + onglets, ~88px) ; les pages en tiennent compte pour que rien ne passe dessous. */
 html.has-bottom-bar .da-bg {
-  padding-bottom: 5.5rem;
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
 }
