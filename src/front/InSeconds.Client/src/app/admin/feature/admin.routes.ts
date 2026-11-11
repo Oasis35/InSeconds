@@ -43,6 +43,7 @@ export const ADMIN_ROUTES: Routes = [
       { path: 'dashboard', loadComponent: () => import('./dashboard/dashboard.page').then(m => m.DashboardPage) },
       { path: 'defis', loadComponent: () => import('./challenges/challenges.page').then(m => m.ChallengesPage) },
       { path: 'catalogue', loadComponent: () => import('./pool/catalogue.page').then(m => m.CataloguePage) },
+      { path: 'themes', loadComponent: () => import('./themes/themes.page').then(m => m.ThemesPage) },
       { path: 'joueurs', loadComponent: () => import('./players/players.page').then(m => m.PlayersPage) },
       { path: 'actions', pathMatch: 'full', redirectTo: actionsToCatalogue },
       { path: '**', redirectTo: unknownTab },

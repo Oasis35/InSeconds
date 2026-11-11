@@ -13,7 +13,6 @@ import { PoolStore } from '../../data-access/pool.store';
 import { DeezerResult, PoolTrack } from '../../domain/pool-track';
 import { MODE_VIEWS, POOL_VIEW } from '../../domain/pool-views';
 import { PoolCooldownComponent } from '../../ui/pool/pool-cooldown/pool-cooldown.component';
-import { PoolThemesComponent } from '../../ui/pool/pool-themes/pool-themes.component';
 import { PoolFilterBarComponent } from '../../ui/pool/pool-filter-bar/pool-filter-bar.component';
 import { PoolTableComponent } from '../../ui/pool/pool-table/pool-table.component';
 import { PoolToolbarComponent } from '../../ui/pool/pool-toolbar/pool-toolbar.component';
@@ -37,7 +36,7 @@ const DIALOG_MAX_WIDTH = '26rem';
   selector: 'app-catalogue-page',
   imports: [
     TranslatePipe, ErrorMessageComponent, PoolToolbarComponent, PoolFilterBarComponent, PoolTableComponent,
-    SearchPanelComponent, PoolViewSelectorComponent, PoolCooldownComponent, PoolThemesComponent,
+    SearchPanelComponent, PoolViewSelectorComponent, PoolCooldownComponent,
   ],
   providers: [PoolStore, DeezerSearchStore, AudioPreviewPlayer],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -47,11 +46,6 @@ const DIALOG_MAX_WIDTH = '26rem';
   template: `
     <div class="flex flex-col gap-4 w-full max-w-2xl lg:max-w-none">
       <app-pool-cooldown [cooldown]="pool.cooldown()" [status]="pool.cooldownSave()" (savePercent)="pool.saveCooldown($event)" />
-
-      @if (isPool()) {
-        <app-pool-themes [themes]="pool.themes()" [errorKey]="themeErrorKey()" (add)="themeAction(pool.addTheme($event))"
-          (rename)="themeAction(pool.renameTheme($event.id, $event.name))" (remove)="themeAction(pool.deleteTheme($event))" />
-      }
 
       <app-pool-view-selector [view]="pool.view()" (viewChange)="setView($event)" />
 
@@ -144,7 +138,6 @@ export class CataloguePage {
   private readonly player = inject(AudioPreviewPlayer);
   private readonly catalogue = inject(CatalogueApi);
   protected readonly errorMessageKey = errorMessageKey;
-  protected readonly themeErrorKey = signal<string | null>(null);
   protected readonly isPool = computed(() => this.pool.view() === POOL_VIEW);
   private readonly modal = inject(ModalService);
   private readonly injector = inject(Injector);
@@ -196,12 +189,6 @@ export class CataloguePage {
   // --- panneau de recherche : liaison avec le filtre du tableau ---
 
   /** Change de vue ; le panneau d'ajout (propre au pool général) se ferme et son lecteur s'arrête. */
-  /** Une action sur la liste des thèmes : l'erreur (nom déjà pris, thème utilisé) s'affiche sous la liste. */
-  protected async themeAction(action: Promise<AppError | null>): Promise<void> {
-    const error = await action;
-    this.themeErrorKey.set(error ? errorMessageKey(error.code) : null);
-  }
-
   protected setView(view: string): void {
     if (view !== POOL_VIEW && this.search.open()) this.togglePanel();
     this.pool.setView(view);

@@ -149,7 +149,7 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
           </div>
 
           <!-- Téléphone : les onglets en bas, fond opaque (rien ne passe dessous en transparence). -->
-          <nav class="lg:hidden fixed bottom-0 inset-x-0 z-10 grid grid-cols-4 gap-1 px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+          <nav class="lg:hidden fixed bottom-0 inset-x-0 z-10 grid grid-cols-5 gap-1 px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
             style="background:var(--bg-page);border-top:1px solid var(--border-medium)" [attr.aria-label]="'admin.tabsLabel' | translate"
             data-testid="admin-bottom-nav">
             @for (tab of tabs; track tab.path) {
