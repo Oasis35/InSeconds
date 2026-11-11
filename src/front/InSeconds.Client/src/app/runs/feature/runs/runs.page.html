@@ -13,15 +13,15 @@
         <app-run-welcome-screen [record]="store.record()" [shelf]="store.shelf()" [lang]="language.current()" (start)="store.begin()" />
       }
 
-      <!-- Le créateur d'une playlist neuve choisit le thème de la manche à thème (ou « Surprise ») : « Lancer » lance le premier son. -->
+      <!-- Juste avant la manche à thème, le créateur choisit son thème (ou « Thème mystère », tiré au sort) ; le thème se révèle, puis la manche suit. -->
       @case ('theme') {
-        <app-run-theme-screen
-          [offer]="store.themeOffer()"
-          [choice]="store.themeChoice()"
-          [round]="store.themeOffer()[0]?.round ?? 3"
-          (choose)="store.chooseTheme($event)"
-          (start)="store.launchWithTheme()"
-        />
+        @if (store.themeScreen(); as theme) {
+          <div class="screen-enter flex-1 flex flex-col pt-1">
+            <app-run-header [round]="theme.headerRound" [rounds]="store.rounds()" [showStatus]="false" [muted]="store.soundsMuted()" (toggleSounds)="store.toggleSounds()" (abandon)="confirmAbandon()" />
+            <app-run-theme-screen class="flex-1 flex flex-col" [choice]="theme.choice" [picked]="theme.picked" [result]="theme.result"
+              (choose)="store.chooseTheme($event)" (revealed)="store.continueFromTheme()" />
+          </div>
+        }
       }
 
       <!-- Le lien d'un ami : le logo seul, les règles de la playlist et « Jouer » (crée l'invité, lance le premier son dans ce clic). -->

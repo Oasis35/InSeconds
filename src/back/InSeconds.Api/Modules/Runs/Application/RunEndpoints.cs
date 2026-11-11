@@ -29,25 +29,8 @@ public sealed record RunShelfDiscResponse(RunDiscResponse Disc, int Count);
 
 public sealed record RunPendingResponse(int SessionId, string ChallengeCode);
 
-/// <summary>Un thème proposé au lancement : identifiant, nom, manche qu'il concernera (la première manche à thème) et icône (Lucide), vide s'il n'en a pas.</summary>
+/// <summary>Un thème proposé avant sa manche : identifiant, nom, manche qu'il concernera et icône (Lucide), vide s'il n'en a pas.</summary>
 public sealed record RunThemeOfferItem(int Id, string Name, int Round, string? Icon = null);
-
-public static class GetRunThemeOfferEndpoint
-{
-    /// <summary>
-    /// <c>GET /api/runs/theme-offer</c> : les deux thèmes proposés au créateur d'une playlist (tirés au hasard), vides quand aucune manche n'a de
-    /// thème. Le choix part avec <c>POST /api/runs/challenges?themeId=</c> ; sans thème c'est « Surprise ». Ne crée rien.
-    /// </summary>
-    [Authorize]
-    [WolverineGet("/api/runs/theme-offer", OperationId = "getRunThemeOffer")]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
-    public static async Task<IReadOnlyList<RunThemeOfferItem>> Get(RunChallengePlanner planner, ITrackDirectory tracks, CancellationToken ct)
-    {
-        var offer = await planner.OfferThemesAsync(ct);
-        var icons = offer.Count == 0 ? new Dictionary<int, string>() : await tracks.ListThemeIconsAsync(ct);
-        return [.. offer.Select(t => new RunThemeOfferItem(t.ThemeId, t.Name, t.Round, icons.GetValueOrDefault(t.ThemeId)))];
-    }
-}
 
 public static class GetRunsMeEndpoint
 {
@@ -80,14 +63,14 @@ public static class LaunchRunEndpoint
 {
     public static async Task<RunLaunch> LoadAsync(
         ICurrentPlayer current, IRunAccess access, IRunsStore store, RunChallengePlanner planner, ILogger<RunLaunch> logger,
-        CancellationToken ct, int? themeId = null)
+        CancellationToken ct)
     {
         var playerId = current.PlayerId!.Value;
         if (!await access.CanPlayAsync(playerId, ct))
             return new RunLaunch(playerId, false, null);
 
         await store.LockPlayerStartAsync(playerId, ct);
-        var plan = await planner.PlanAsync(playerId, themeId, ct);
+        var plan = await planner.PlanAsync(playerId, ct);
         if (plan.Challenge is null)
             RunsLog.PoolInsufficient(logger, plan.EligibleCount, plan.Requested);
         return new RunLaunch(playerId, true, plan);
@@ -503,6 +486,61 @@ public static class ChooseRunDifficultyEndpoint
         session.ChooseDifficulty(challenge, request.Round, difficulty, time.GetUtcNow());
         RunsLog.DifficultyChosen(logger, session.Id, session.PlayerId, request.Round, RunDifficulties.KeyOf(difficulty));
         metrics.DifficultyChosen(request.Round, RunDifficulties.KeyOf(difficulty));
+        return await player.AdvanceAsync(await player.LoadAsync(session, challenge, ct), answered: null, revealed: null, isResuming: false, ct);
+    }
+}
+
+/// <summary>Le thème choisi pour la manche en cours ; <c>themeId</c> vide : le thème mystère.</summary>
+public sealed record ChooseRunTheme(int Round, int? ThemeId);
+
+public sealed class ChooseRunThemeValidator : AbstractValidator<ChooseRunTheme>
+{
+    public ChooseRunThemeValidator() => RuleFor(x => x.Round).GreaterThan(0);
+}
+
+/// <summary>La partie, et l'offre de thèmes qu'elle peut encore voir (vide quand le choix est fermé).</summary>
+public sealed record RunThemeChoiceLoad(PlayableRun? Loaded, RunThemeOffer? Offer);
+
+public static class ChooseRunThemeEndpoint
+{
+    public static async Task<RunThemeChoiceLoad> LoadAsync(
+        int id, ICurrentPlayer current, IRunsStore store, RunThemeDealer dealer, CancellationToken ct)
+    {
+        var loaded = await RunSessionAccess.LoadAsync(id, current, store, ct);
+        var offer = loaded is not null && loaded.Session.CanChooseTheme(loaded.Challenge) ? await dealer.OfferAsync(loaded.Challenge, ct) : null;
+        return new RunThemeChoiceLoad(loaded, offer);
+    }
+
+    public static ProblemDetails Validate(ChooseRunTheme request, RunThemeChoiceLoad load)
+    {
+        var problem = RunSessionAccess.Check(load.Loaded, position: null);
+        if (!ReferenceEquals(problem, WolverineContinue.NoProblems))
+            return problem;
+        if (load.Offer is null || load.Offer.Round != request.Round)
+            return RunsProblems.ThemeLocked();
+        return request.ThemeId is { } themeId && load.Offer.Themes.All(t => t.Id != themeId) ? RunsProblems.ThemeNotOffered() : WolverineContinue.NoProblems;
+    }
+
+    /// <summary>
+    /// <c>POST /api/runs/sessions/{id}/theme</c> : le créateur de la playlist choisit le thème de la manche en cours, juste avant son premier son. Les
+    /// morceaux de la manche sont alors tirés dans ce thème (le thème mystère quand <c>themeId</c> est vide : un autre thème que les deux proposés),
+    /// puis figés pour tous les joueurs de la playlist. La réponse est celle d'un démarrage : l'état à jour, où la difficulté reste à choisir. 409
+    /// <c>runs.theme_locked</c> si la manche n'attend pas de thème, n'est pas la manche en cours, a commencé, ou si le joueur n'est pas le créateur ;
+    /// 400 pour un thème qui n'est pas proposé.
+    /// </summary>
+    [Authorize]
+    [WolverinePost("/api/runs/sessions/{id}/theme", OperationId = "chooseRunTheme")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public static async Task<RunPlayResponse> Post(
+        ChooseRunTheme request, [NotBody] RunThemeChoiceLoad load, [NotBody] RunThemeDealer dealer, [NotBody] RunPlayer player,
+        ILogger<ChooseRunTheme> logger, CancellationToken ct)
+    {
+        var (session, challenge) = load.Loaded!;
+        await dealer.ApplyAsync(challenge, request.ThemeId, ct);
+        RunsLog.ThemeChosen(logger, session.Id, session.PlayerId, request.Round, request.ThemeId is null);
         return await player.AdvanceAsync(await player.LoadAsync(session, challenge, ct), answered: null, revealed: null, isResuming: false, ct);
     }
 }

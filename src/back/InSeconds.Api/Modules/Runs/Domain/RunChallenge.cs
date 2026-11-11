@@ -43,6 +43,37 @@ public sealed class RunChallenge
     /// <summary>La réserve d'une manche, dans l'ordre du tirage.</summary>
     public IEnumerable<RunChallengeReserveTrack> ReserveOf(int round) => _reserve.Where(r => r.Round == round).OrderBy(r => r.Rank);
 
+    /// <summary>
+    /// Le créateur a choisi le thème de la manche en attente (<see cref="RunRules.PendingThemeRound"/>) : ses morceaux et sa réserve sont tirés dans ce
+    /// thème, à la place de ceux de sa tranche de rang, et le thème est figé avec la playlist. Rien n'a été joué dans cette manche (le choix précède
+    /// son premier son), donc aucune réponse ne désigne ces morceaux.
+    /// </summary>
+    /// <param name="trackIds">Les morceaux de la manche, dans l'ordre du jeu (autant que de morceaux par manche).</param>
+    /// <param name="reserveIds">Les morceaux de réserve de la manche, dans l'ordre de l'Échange (autant que la réserve actuelle de la manche).</param>
+    public void ApplyTheme(RunRoundTheme theme, IReadOnlyList<int> trackIds, IReadOnlyList<int> reserveIds)
+    {
+        ArgumentNullException.ThrowIfNull(theme);
+        ArgumentNullException.ThrowIfNull(trackIds);
+        ArgumentNullException.ThrowIfNull(reserveIds);
+        if (Rules.PendingThemeRound != theme.Round)
+            throw new InvalidOperationException("Cette manche n'attend pas de thème.");
+        var slots = _tracks.Where(t => t.Round == theme.Round).OrderBy(t => t.Position).ToList();
+        var reserve = _reserve.Where(r => r.Round == theme.Round).OrderBy(r => r.Rank).ToList();
+        if (trackIds.Count != slots.Count || reserveIds.Count != reserve.Count)
+            throw new ArgumentException("Le thème doit donner autant de morceaux que la manche en a, réserve comprise.");
+        var others = _tracks.Where(t => t.Round != theme.Round).Select(t => t.TrackId).Concat(_reserve.Where(r => r.Round != theme.Round).Select(r => r.TrackId));
+        if (trackIds.Concat(reserveIds).Distinct().Count() != trackIds.Count + reserveIds.Count || trackIds.Concat(reserveIds).Intersect(others).Any())
+            throw new ArgumentException("Un morceau ne figure qu'une fois dans un défi, réserve comprise.");
+        for (var i = 0; i < slots.Count; i++)
+            slots[i].ReplaceTrack(trackIds[i]);
+        for (var i = 0; i < reserve.Count; i++)
+            reserve[i].ReplaceTrack(reserveIds[i]);
+        Rules = Rules with { Themes = [.. (Rules.Themes ?? []), theme], PendingThemeRound = null };
+    }
+
+    /// <summary>La manche en attente de thème se joue sans thème (pas assez de thèmes fournis au moment du choix) : ses morceaux de rang restent.</summary>
+    public void DropPendingTheme() => Rules = Rules with { PendingThemeRound = null };
+
     /// <param name="tracks">Les morceaux dans l'ordre du jeu, avec leur manche et leur multiplicateur.</param>
     /// <param name="reserve">
     /// Les morceaux de réserve, manche par manche (aucun pour une playlist du proto 1). Leur multiplicateur n'est pas gardé : un morceau sorti par
@@ -102,6 +133,8 @@ public sealed class RunChallengeTrack
     public short Round { get; private set; }
 
     public decimal Multiplier { get; private set; }
+
+    internal void ReplaceTrack(int trackId) => TrackId = trackId;
 }
 
 /// <summary>
@@ -130,6 +163,8 @@ public sealed class RunChallengeReserveTrack
     public short Rank { get; private set; }
 
     public int TrackId { get; private set; }
+
+    internal void ReplaceTrack(int trackId) => TrackId = trackId;
 }
 
 /// <summary>Un morceau tiré, avant que le défi n'existe.</summary>

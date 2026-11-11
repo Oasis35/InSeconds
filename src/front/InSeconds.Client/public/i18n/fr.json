@@ -69,6 +69,7 @@
       "challenge_not_found": "Cette playlist n'existe pas. Vérifie le lien.",
       "comparison_locked": "La comparaison s'ouvre une fois ta partie terminée.",
       "difficulty_locked": "La difficulté de cette manche est déjà fixée.",
+      "theme_locked": "Le thème de cette manche est déjà choisi.",
       "session_not_found": "Cette partie n'existe plus.",
       "already_played": "Tu as déjà joué cette playlist.",
       "abandoned": "Tu as abandonné cette playlist.",
@@ -675,6 +676,7 @@
       "searchPool": "Chercher dans le pool",
       "searchDeezer": "Chercher sur Deezer",
       "noCandidate": "Aucun morceau à ajouter.",
+      "showMore": "Voir plus ({{count}} restants)",
       "addPicked": "Ajouter {{count}} morceaux au thème",
       "addDeezer": "Ajouter au pool et au thème",
       "alreadyInTheme": "Déjà dans ce thème"
@@ -1068,13 +1070,12 @@
       "taken": "Ce pseudo est déjà pris."
     },
     "theme": {
-      "title": "Ta playlist",
-      "subtitle": "Manche {{round}} : choisis le thème",
+      "title": "Choisis ton thème",
+      "subtitle": "Manche {{round}}",
       "tracks": "Tous les morceaux de la manche, de ce thème",
-      "surprise": "Surprise",
-      "surpriseHint": "On tire au hasard",
-      "friends": "Tes amis jouent la même playlist.",
-      "launch": "Lancer"
+      "mystery": "Thème mystère",
+      "mysteryHint": "Un autre thème, tiré au sort",
+      "drawing": "Tirage en cours"
     },
     "link": {
       "guest": "Invité",

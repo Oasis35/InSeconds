@@ -6,6 +6,12 @@ namespace InSeconds.Api.Modules.Runs.Domain;
 /// </summary>
 public static class RunThemes
 {
+    /// <summary>
+    /// Le moins de thèmes assez fournis pour proposer un choix : deux à choisir et au moins un autre pour le thème mystère. En dessous, la playlist n'a
+    /// pas de manche à thème (un choix entre un seul thème et « mystère » qui le désignerait aussi serait ridicule).
+    /// </summary>
+    public const int MinEligibleThemes = 3;
+
     /// <summary>Le morceau est dans le thème : tout morceau sans thème demandé, seulement ceux qui l'ont (parmi leurs thèmes) sinon.</summary>
     public static bool Matches(int? themeId, IReadOnlyList<int>? trackThemeIds) => themeId is null || trackThemeIds?.Contains(themeId.Value) == true;
 

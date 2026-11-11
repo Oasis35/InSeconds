@@ -69,6 +69,7 @@
       "challenge_not_found": "This playlist doesn't exist. Check the link.",
       "comparison_locked": "The comparison opens once your game is over.",
       "difficulty_locked": "This round's difficulty is already set.",
+      "theme_locked": "This round's theme is already chosen.",
       "session_not_found": "This game no longer exists.",
       "already_played": "You've already played this playlist.",
       "abandoned": "You abandoned this playlist.",
@@ -675,6 +676,7 @@
       "searchPool": "Search the pool",
       "searchDeezer": "Search Deezer",
       "noCandidate": "No track to add.",
+      "showMore": "Show more ({{count}} left)",
       "addPicked": "Add {{count}} tracks to the theme",
       "addDeezer": "Add to pool and theme",
       "alreadyInTheme": "Already in this theme"
@@ -1068,13 +1070,12 @@
       "taken": "That nickname is already taken."
     },
     "theme": {
-      "title": "Your playlist",
-      "subtitle": "Round {{round}}: pick the theme",
+      "title": "Pick your theme",
+      "subtitle": "Round {{round}}",
       "tracks": "Every track of the round, from this theme",
-      "surprise": "Surprise",
-      "surpriseHint": "We pick one at random",
-      "friends": "Your friends play the same playlist.",
-      "launch": "Launch"
+      "mystery": "Mystery theme",
+      "mysteryHint": "Another theme, drawn at random",
+      "drawing": "Drawing…"
     },
     "link": {
       "guest": "Guest",

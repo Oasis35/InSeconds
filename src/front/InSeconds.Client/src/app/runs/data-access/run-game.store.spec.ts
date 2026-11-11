@@ -132,7 +132,7 @@ describe('RunGameStore', () => {
       expect(audio.calls).toContain('unlock');
       await begin;
 
-      expect(api.calls).toEqual(['me', 'themeOffer', 'launch']);
+      expect(api.calls).toEqual(['me', 'launch']);
       expect(store.screen()).toBe('playing');
       expect(audio.calls).toEqual(expect.arrayContaining(['unlock', 'load https://cdn/preview-1.mp3', 'playUntil 10']));
       expect(round.steps()).toEqual([10]);
@@ -172,42 +172,76 @@ describe('RunGameStore', () => {
     });
   });
 
-  describe('le choix du thème au lancement', () => {
-    it("propose les thèmes au créateur d'une playlist neuve, « Lancer » la tire avec le thème choisi", async () => {
-      api.offerResult = [{ id: 1, name: 'Années 80', round: 3, icon: null }, { id: 2, name: 'Rap français', round: 3, icon: null }];
-      await store.init();
+  describe('le choix du thème avant la manche', () => {
+    const themeChoice = { round: 2, themes: [{ id: 1, name: 'Années 80', round: 2, icon: null }, { id: 2, name: 'Rap français', round: 2, icon: null }] };
+    const waitingTheme = (overrides = {}) => SESSION({
+      round: ROUND({ round: 2, score: 0, objective: 366, maxScore: 665 }), roundsPassed: 1, roundTracks: [], themeChoice,
+      passedRounds: [{ round: 1, score: 320, objective: 225, disc: { key: 'runs.discs.wax', stars: 0 } }], ...overrides,
+    });
+    const afterTheme = () => PLAY({
+      current: null,
+      session: waitingTheme({
+        themeChoice: null, themes: [{ round: 2, name: 'Rap français' }],
+        difficultyChoice: { round: 2, options: [{ difficulty: 'safe', objective: 366, maxScore: 665, listenSeconds: 10 }] },
+      }),
+    });
 
+    beforeEach(async () => {
+      api.joinResult = { kind: 'ok', play: PLAY({ session: waitingTheme(), current: null, isResuming: true }) };
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+      api.sessionResult = waitingTheme();
+      await store.init();
       await store.begin();
+    });
+
+    it("une manche à thème en attente montre l'écran du choix, sans aucun extrait", () => {
       expect(store.screen()).toBe('theme');
-      expect(store.themeChoice()).toBe(1);
-      expect(api.calls).not.toContain('launch');
-
-      store.chooseTheme(2);
-      await store.launchWithTheme();
-
-      expect(api.calls).toContain('launch:2');
-      expect(store.screen()).toBe('playing');
+      expect(store.themeScreen()!.choice.themes.map(t => t.name)).toEqual(['Années 80', 'Rap français']);
+      expect(audio.calls.filter(c => c.startsWith('load') || c.startsWith('play'))).toEqual([]);
     });
 
-    it('« Surprise » tire sans thème', async () => {
-      api.offerResult = [{ id: 1, name: 'Années 80', round: 3, icon: null }];
-      await store.init();
-      await store.begin();
+    it("le choix part au serveur, l'écran garde la partie le temps de révéler le thème, puis la manche suit sans son", async () => {
+      api.chooseThemeResult = afterTheme();
 
-      store.chooseTheme(null);
-      await store.launchWithTheme();
+      await store.chooseTheme(2);
 
-      expect(api.calls).toContain('launch');
+      expect(api.calls).toContain('chooseTheme:7:2:2');
+      expect(store.screen()).toBe('theme');
+      expect(store.themeScreen()!.picked).toBe(2);
+      expect(store.themeScreen()!.result).toBe('Rap français');
+
+      store.continueFromTheme();
+
+      expect(store.screen()).toBe('palier');
+      expect(store.session()!.themes).toEqual([{ round: 2, name: 'Rap français' }]);
+      expect(audio.calls.filter(c => c.startsWith('load') || c.startsWith('playUntil'))).toEqual([]);
     });
 
-    it("sans thème à proposer, ou si l'offre échoue, la playlist se lance tout de suite", async () => {
-      api.offerResult = new Error('réseau');
-      await store.init();
+    it('« Thème mystère » envoie un choix vide, que le serveur tire', async () => {
+      api.chooseThemeResult = afterTheme();
 
-      await store.begin();
+      await store.chooseTheme(null);
 
-      expect(api.calls).toContain('launch');
-      expect(store.screen()).toBe('playing');
+      expect(api.calls).toContain('chooseTheme:7:2:mystery');
+      expect(store.themeScreen()!.picked).toBe('mystery');
+    });
+
+    it('un second toucher ne renvoie rien', async () => {
+      api.chooseThemeResult = afterTheme();
+      const first = store.chooseTheme(1);
+      await store.chooseTheme(2);
+      await first;
+
+      expect(api.calls.filter(c => c.startsWith('chooseTheme'))).toEqual(['chooseTheme:7:2:1']);
+    });
+
+    it('un choix refusé relit la partie', async () => {
+      api.chooseThemeResult = new Error('refusé');
+
+      await store.chooseTheme(1);
+
+      expect(api.calls).toContain('me');
+      expect(store.themeScreen()?.picked ?? null).toBeNull();
     });
   });
 

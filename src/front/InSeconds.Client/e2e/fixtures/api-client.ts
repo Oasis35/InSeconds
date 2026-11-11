@@ -177,6 +177,12 @@ export class ApiTestClient {
     return ((await res.json()) as { code: string }).code;
   }
 
+  /** La dernière playlist de Run tirée a sa manche à thème à `round` (le tirage est aléatoire : sans cela, le choix du thème serait imprévisible). */
+  async forceThemedRound(round: number): Promise<void> {
+    const res = await fetch(`${BASE}/api/e2e/runs/force-themed-round?round=${round}`, { method: 'POST' });
+    if (!res.ok) throw new Error(`runs/force-themed-round failed: ${res.status}`);
+  }
+
   /** Le faux Deezer ne donne plus d'extrait pour ces morceaux : un Run les retire de la manche quand il y arrive. */
   async removePreviews(deezerTrackIds: number[]): Promise<void> {
     const res = await fetch(`${BASE}/api/e2e/deezer/without-preview`, {

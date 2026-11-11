@@ -1,4 +1,6 @@
+import type { Page } from '@playwright/test';
 import { test, expect } from '../fixtures/test';
+import type { RunTrack } from '../fixtures/api-client';
 import { GamePage } from '../pages/game.page';
 import { RunPage } from '../pages/run.page';
 import { inSequence } from '../fixtures/sequence';
@@ -6,6 +8,22 @@ import { inSequence } from '../fixtures/sequence';
 // Le mode Run (« Platines ») : 4 manches de 5 morceaux, écoute fixe de 10 s, 45 s pour répondre, (50 + 50) points par morceau × le multiplicateur
 // de la manche, et une jauge par manche (40, 50, 60 puis 70 % du maximum). Le tirage est aléatoire : l'hôte de test donne les morceaux de la
 // playlist tirée. L'écran : la carte du morceau (chrono dans son coin), puis le total du run et la pile des morceaux joués.
+
+/** Trois thèmes de 10 morceaux chacun, pris hors de la playlist lancée (de quoi proposer deux thèmes et en tirer un troisième, sans réserve). */
+async function seedThemes(page: Page, tracks: RunTrack[]): Promise<void> {
+  const post = async (url: string, data: unknown, method: 'post' | 'put' = 'post'): Promise<{ id: number }> => {
+    const res = await page.request[method](url, { data });
+    expect(res.ok(), `${method} ${url}`).toBe(true);
+    return res.status() === 204 ? { id: 0 } : ((await res.json()) as { id: number });
+  };
+  const list = await page.request.get('/api/admin/catalogue/tracks');
+  const inRun = new Set(tracks.map(t => t.deezerTrackId));
+  const free = ((await list.json()) as { id: number; deezerTrackId: number; previewStatus: string; isDisabled: boolean }[])
+    .filter(t => !t.isDisabled && t.previewStatus === 'available' && !inRun.has(t.deezerTrackId));
+  const themes = [await post('/api/admin/catalogue/themes', { name: 'Années 80' }), await post('/api/admin/catalogue/themes', { name: 'Films' }),
+    await post('/api/admin/catalogue/themes', { name: 'Rap' })];
+  await inSequence(free.slice(0, 30), (track, index) => post(`/api/admin/catalogue/tracks/${track.id}/themes`, { themeIds: [themes[Math.floor(index / 10)].id] }, 'put'));
+}
 
 test.describe('Mode Platines', () => {
   test.beforeEach(async ({ api }) => {
@@ -115,41 +133,55 @@ test.describe('Mode Platines', () => {
     await expect(run.welcome.getByTestId('run-shelf').locator('[data-shelf-disc="runs.discs.gold"]')).toHaveCount(1);
   });
 
-  test("playlist à thème : le créateur choisit son thème au lancement (deux thèmes et « Surprise »), il est figé dans les règles de la playlist", async ({ page, api }) => {
+  test("playlist à thème : le créateur choisit son thème juste avant la manche (deux thèmes et « Thème mystère »), il est figé dans les règles de la playlist", async ({ page, api }) => {
+    test.slow();
+    // Sans morceaux de réserve : trois thèmes de 10 morceaux, pris hors de la playlist, suffisent (5 morceaux jouables chacun).
+    await api.setRunSetting('Runs:ReservePerRound', '0');
     const run = new RunPage(page);
     await run.loginAsAdmin();
+    await run.launch();
+    const tracks = await api.latestRunTracks();
 
-    // La liste de l'admin : deux thèmes de 8 morceaux chacun (de quoi remplir une manche et sa réserve), sans morceau en commun.
-    const post = async <T>(url: string, data: unknown, method: 'post' | 'put' = 'post'): Promise<T | null> => {
-      const res = await page.request[method](url, { data });
-      expect(res.ok(), `${method} ${url}`).toBe(true);
-      return res.status() === 204 ? null : ((await res.json()) as T);
-    };
-    const list = await page.request.get('/api/admin/catalogue/tracks');
-    const tracks = ((await list.json()) as { id: number; previewStatus: string; isDisabled: boolean }[]).filter(t => !t.isDisabled && t.previewStatus === 'available');
-    const eighties = await post<{ id: number }>('/api/admin/catalogue/themes', { name: 'Années 80' });
-    const movies = await post<{ id: number }>('/api/admin/catalogue/themes', { name: 'Films' });
-    for (const [index, track] of tracks.slice(0, 16).entries()) {
-      await post(`/api/admin/catalogue/tracks/${track.id}/themes`, { themeIds: [(index < 8 ? eighties : movies)!.id] }, 'put');
-    }
+    await seedThemes(page, tracks);
+    // Le tirage de la manche à thème est aléatoire : on la place à la manche 2.
+    await api.forceThemedRound(2);
 
-    await run.open();
-    await run.startButton.click();
-
-    // L'écran de choix : les deux thèmes offerts et « Surprise », un seul coché ; « Lancer » est le clic qui lance le son.
+    // Rien n'est proposé au lancement ni pendant la manche 1 : le choix arrive juste avant la manche à thème.
+    await expect(page.getByTestId('run-theme')).toHaveCount(0);
+    await inSequence(tracks.filter(t => t.round === 1), track => run.answerRight(track));
     await expect(page.getByTestId('run-theme')).toBeVisible();
     await expect(page.locator('[data-theme-id]')).toHaveCount(3);
-    await expect(page.locator('[data-theme-id][aria-checked="true"]')).toHaveCount(1);
-    const tile = page.locator('[data-theme-id]:not([data-theme-id="surprise"])').first();
+    await expect(page.locator('[data-theme-id="mystery"]')).toContainText('Thème mystère');
+    await expect(run.answerInput).toHaveCount(0);
+
+    // Un thème proposé : les autres lignes s'éteignent, puis l'écran de la manche (palier) suit.
+    const tile = page.locator('[data-theme-id]:not([data-theme-id="mystery"])').first();
     const chosenName = (await tile.locator('span.font-bold').innerText()).trim();
     await tile.click();
-    await expect(tile).toHaveAttribute('aria-checked', 'true');
-    await page.getByTestId('run-theme-start').click();
-    await run.answerInput.waitFor({ state: 'visible' });
+    await expect(run.palier).toBeVisible();
+    await expect(page.getByTestId('run-palier-theme')).toContainText(chosenName);
 
-    // Le thème choisi est figé dans les règles de la playlist, sur sa première manche à thème (la 3e).
+    // Le thème choisi est figé dans les règles de la playlist, sur la manche 2.
     const link = await page.request.get(`/api/runs/challenges/${await api.latestRunCode()}`);
-    expect(((await link.json()) as { themes: { round: number; name: string }[] }).themes).toEqual([{ round: 3, name: chosenName }]);
+    expect(((await link.json()) as { themes: { round: number; name: string }[] }).themes).toEqual([{ round: 2, name: chosenName }]);
+  });
+
+  test("« Thème mystère » : le tirage mouline puis annonce un thème qui n'était pas proposé", async ({ page, api }) => {
+    test.slow();
+    await api.setRunSetting('Runs:ReservePerRound', '0');
+    const run = new RunPage(page);
+    await run.loginAsAdmin();
+    await run.launch();
+    const tracks = await api.latestRunTracks();
+    await seedThemes(page, tracks);
+    await api.forceThemedRound(2);
+    await inSequence(tracks.filter(t => t.round === 1), track => run.answerRight(track));
+
+    const offered = (await page.locator('[data-theme-id]:not([data-theme-id="mystery"]) span.font-bold').allInnerTexts()).map(t => t.trim());
+    await page.locator('[data-theme-id="mystery"]').click();
+    await expect(run.palier).toBeVisible();
+    const announced = (await page.getByTestId('run-palier-theme').innerText());
+    expect(['Années 80', 'Films', 'Rap'].filter(name => !offered.includes(name)).some(name => announced.includes(name))).toBe(true);
   });
 
   test("« Mélomane » avant la dernière manche : le boss annonce une écoute plus courte, et la partie se gagne jusqu'au bout", async ({ page, api }) => {
