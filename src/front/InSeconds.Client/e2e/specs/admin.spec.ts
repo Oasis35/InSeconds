@@ -296,12 +296,13 @@ test.describe('Admin - pool', () => {
   });
 
   test('la fenêtre de modification défile quand elle dépasse l\'écran', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 420 });
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
     await page.getByRole('link', { name: /^Morceaux/ }).click();
     await admin.poolSearchInput().fill('Coldplay');
+    // Petit écran seulement une fois connecté : en mobile, « Se déconnecter » est replié dans le panneau technique.
+    await page.setViewportSize({ width: 375, height: 420 });
     await admin.poolRow('Coldplay').getByRole('button', { name: '✎' }).click();
     await expect(admin.editModalTitle()).toBeVisible();
 
