@@ -16,7 +16,7 @@ import { THEME_ICON_CATEGORIES, filterThemeIcons } from '../../../../ui/theme-ic
     <div class="flex flex-col gap-3" data-testid="theme-icon-picker">
       <div class="flex items-center justify-between gap-3">
         <h3 class="text-base font-semibold" style="color:var(--text-hi)">{{ 'admin.themes.iconTitle' | translate: { name: themeName() } }}</h3>
-        <button type="button" class="text-sm underline min-h-11 px-2" style="color:var(--text-muted)" (click)="close.emit()" data-testid="theme-icon-close">{{ 'admin.themes.close' | translate }}</button>
+        <button type="button" class="text-sm underline min-h-11 px-2" style="color:var(--text-muted)" (click)="closed.emit()" data-testid="theme-icon-close">{{ 'admin.themes.close' | translate }}</button>
       </div>
 
       <input type="search" class="app-input" [value]="query()" (input)="query.set(valueOf($event))" [placeholder]="'admin.themes.iconSearch' | translate"
@@ -77,7 +77,7 @@ export class ThemeIconPickerComponent {
   readonly errorKey = input<string | null>(null);
   /** L'icône choisie, `null` : « Sans icône ». */
   readonly choose = output<string | null>();
-  readonly close = output();
+  readonly closed = output();
 
   protected readonly categories = THEME_ICON_CATEGORIES;
   protected readonly query = signal('');

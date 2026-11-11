@@ -22,7 +22,7 @@ const MAX_LISTED = 50;
     <div class="flex flex-col gap-3">
       <div class="flex items-center justify-between gap-3">
         <h3 class="text-base font-semibold" style="color:var(--text-hi)">{{ 'admin.themes.addTracks' | translate }}</h3>
-        <button type="button" class="text-sm underline min-h-11 px-2" style="color:var(--text-muted)" (click)="close.emit()" data-testid="theme-add-close">{{ 'admin.themes.close' | translate }}</button>
+        <button type="button" class="text-sm underline min-h-11 px-2" style="color:var(--text-muted)" (click)="closed.emit()" data-testid="theme-add-close">{{ 'admin.themes.close' | translate }}</button>
       </div>
 
       <div class="flex gap-2" role="group">
@@ -109,7 +109,7 @@ export class ThemeAddComponent {
   readonly searchErrorKey = input<string | null>(null);
   readonly statuses = input<Readonly<Record<number, AddStatus>>>({});
 
-  readonly close = output();
+  readonly closed = output();
   readonly listen = output<PoolTrack>();
   readonly previewResult = output<DeezerResult>();
   readonly deezerQueryChange = output<string>();

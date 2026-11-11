@@ -43,7 +43,7 @@ import { ThemeIconComponent } from '../../../../ui/theme-icon/theme-icon.compone
       <ul class="flex flex-col gap-2.5">
         @for (row of shown(); track row.id) {
           <li>
-            <button type="button" (click)="select.emit(row.id)" class="w-full text-left rounded-(--radius-card) p-4 flex flex-col gap-2" data-testid="theme-card"
+            <button type="button" (click)="opened.emit(row.id)" class="w-full text-left rounded-(--radius-card) p-4 flex flex-col gap-2" data-testid="theme-card"
               style="background:var(--bg-surface-2);border:1px solid var(--border-strong)"
               [style.border-color]="row.id === selectedId() ? 'var(--border-neutral)' : null" [attr.aria-current]="row.id === selectedId() ? 'true' : null">
               <span class="flex items-center justify-between gap-3">
@@ -79,7 +79,7 @@ export class ThemeListComponent {
   readonly selectedId = input<number | null>(null);
   /** La clé de traduction de la dernière erreur (nom pris), vide sinon. */
   readonly errorKey = input<string | null>(null);
-  readonly select = output<number>();
+  readonly opened = output<number>();
   readonly add = output<string>();
 
   protected readonly color = HEALTH_COLOR;

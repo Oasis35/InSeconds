@@ -67,7 +67,7 @@ describe('ThemeListComponent', () => {
     const { el, fixture, cmp } = render();
     const selected: number[] = [];
     const added: string[] = [];
-    cmp.select.subscribe(v => selected.push(v));
+    cmp.opened.subscribe(v => selected.push(v));
     cmp.add.subscribe(v => added.push(v));
 
     el.querySelectorAll<HTMLButtonElement>('[data-testid="theme-card"]')[1].click();

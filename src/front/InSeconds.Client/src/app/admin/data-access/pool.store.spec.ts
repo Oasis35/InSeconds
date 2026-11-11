@@ -112,7 +112,7 @@ describe('PoolStore', () => {
       const error = await store.addTracksToTheme(1, [5, 6]);
 
       expect(error).not.toBeNull();
-      expect(api.listTracks.mock.calls.length).toBe(reads + 1);
+      expect(api.listTracks.mock.calls).toHaveLength(reads + 1);
     });
 
     it('un morceau de Deezer déjà dans le pool n\'est pas ajouté une seconde fois', async () => {

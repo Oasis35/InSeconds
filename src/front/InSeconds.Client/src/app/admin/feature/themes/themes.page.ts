@@ -43,18 +43,18 @@ type DeezerStatus = 'loading' | 'success' | 'error';
 
       <div class="lg:grid lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:gap-6 lg:items-start">
         <section class="lg:block" [class.hidden]="selected()">
-          <app-theme-list [rows]="rows()" [selectedId]="selectedId()" [errorKey]="listErrorKey()" (select)="open($event)" (add)="createTheme($event)" />
+          <app-theme-list [rows]="rows()" [selectedId]="selectedId()" [errorKey]="listErrorKey()" (opened)="open($event)" (add)="createTheme($event)" />
         </section>
 
         <section class="lg:block lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:rounded-(--radius-card) lg:p-5"
           [class.hidden]="!selected()" data-testid="theme-panel">
           @if (selected(); as theme) {
             @if (pickingIcon()) {
-              <app-theme-icon-picker [themeName]="theme.name" [current]="theme.icon" [errorKey]="detailErrorKey()" (close)="pickingIcon.set(false)" (choose)="setIcon(theme.id, $event)" />
+              <app-theme-icon-picker [themeName]="theme.name" [current]="theme.icon" [errorKey]="detailErrorKey()" (closed)="pickingIcon.set(false)" (choose)="setIcon(theme.id, $event)" />
             } @else if (adding()) {
               <app-theme-add [poolTracks]="pool.tracks()" [themeId]="theme.id" [deezerQuery]="search.query()" [deezerResults]="search.results()"
                 [searching]="search.searching()" [searchErrorKey]="searchErrorKey()" [statuses]="deezerStatuses()"
-                (close)="adding.set(false)" (listen)="listen($event)" (previewResult)="previewResult($event)"
+                (closed)="adding.set(false)" (listen)="listen($event)" (previewResult)="previewResult($event)"
                 (deezerQueryChange)="search.setQuery($event)" (addPicked)="addPicked(theme.id, $event)" (addDeezer)="addDeezer(theme.id, $event)" />
             } @else {
               <app-theme-detail [theme]="theme" [tracks]="themeTracks()" [errorKey]="detailErrorKey()" (back)="selectedId.set(null)"

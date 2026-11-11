@@ -238,10 +238,15 @@ export const PoolStore = signalStore(
       setTrackThemes: (id: number, themeIds: readonly number[]) => mutate(() => api.setTrackThemes(id, themeIds)),
       /** Met ces morceaux du pool dans le thème (un par un, ceux qui l'ont déjà sont laissés), puis relit. */
       addTracksToTheme: (themeId: number, trackIds: readonly number[]) => mutateAndReload(async () => {
-        for (const id of trackIds) {
+        const pending = trackIds.flatMap(id => {
           const track = store.tracks().find(t => t.id === id);
-          if (track && !track.themeIds.includes(themeId)) await api.setTrackThemes(id, [...track.themeIds, themeId]);
-        }
+          return track && !track.themeIds.includes(themeId) ? [track] : [];
+        });
+        // Un par un, dans l'ordre : le serveur n'est pas chargé de plusieurs écritures à la fois sur le même thème.
+        await pending.reduce(async (previous, track) => {
+          await previous;
+          await api.setTrackThemes(track.id, [...track.themeIds, themeId]);
+        }, Promise.resolve());
       }),
       /** Retire le morceau du thème : il reste dans le pool et garde ses autres thèmes. */
       removeTrackFromTheme: (themeId: number, trackId: number) => mutate(async () => {

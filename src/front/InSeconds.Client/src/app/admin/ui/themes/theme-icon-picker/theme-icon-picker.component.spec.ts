@@ -84,7 +84,7 @@ describe('ThemeIconPickerComponent', () => {
     const chosen: (string | null)[] = [];
     let closed = 0;
     cmp.choose.subscribe(name => chosen.push(name));
-    cmp.close.subscribe(() => closed++);
+    cmp.closed.subscribe(() => closed++);
 
     q('theme-icon-clear')!.click();
     q('theme-icon-close')!.click();
