@@ -43,7 +43,7 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
 
 ## Scoring partiel
 
-- L'artiste et le titre sont évalués séparément (`FuzzyAnswerMatcher`, module Gameplay) : casse, accents, parenthèses et crochets, ponctuation et mots vides (`the le la les un une de du des and et feat ft vs`) ignorés, puis distance de Levenshtein ≤ **min(2, longueur de la référence ÷ 3)** - moins de 3 caractères : égalité stricte ; 3 à 5 : une faute. Seuil calculé sur la référence, pas sur la saisie. Une saisie de plus de 600 caractères est refusée. **[Back]**
+- L'artiste et le titre sont évalués séparément (`FuzzyAnswerMatcher`, module Gameplay) : casse, accents, parenthèses et crochets, ponctuation et mots vides (`the le la les un une de du des and et feat ft vs`) ignorés, puis distance de Levenshtein ≤ **min(2, longueur de la référence ÷ 3)** - moins de 3 caractères : égalité stricte ; 3 à 5 : une faute. Seuil calculé sur la référence, pas sur la saisie. Une saisie de plus de 600 caractères est refusée. **Titres alternatifs** : un morceau peut avoir d'autres titres acceptés comme bonne réponse (saisis par l'admin, jamais montrés), pour les cas où Deezer propose plusieurs versions d'un titre (« 22h31 - Fais les backs » et « Fais les backs »). **[Back]**
 - Aucun des deux correct → **score = 0**.
 - Un seul des deux correct (artiste OU titre) → **score de base × 0,5** (du palier finalement écouté).
 - Les deux corrects → score de base plein (du palier finalement écouté).

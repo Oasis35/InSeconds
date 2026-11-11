@@ -348,7 +348,7 @@ describe('PoolStore', () => {
 
       expect(await store.rename(1, '  Eminem ', ' Titre corrigé  ')).toBeNull();
 
-      expect(api.renameTrack).toHaveBeenCalledWith(1, 'Eminem', 'Titre corrigé', undefined);
+      expect(api.renameTrack).toHaveBeenCalledWith(1, 'Eminem', 'Titre corrigé', undefined, undefined);
       expect(api.listTracks).toHaveBeenCalledTimes(2);
     });
 

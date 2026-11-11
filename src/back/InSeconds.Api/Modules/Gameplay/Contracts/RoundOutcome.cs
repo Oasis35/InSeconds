@@ -16,5 +16,8 @@ public sealed record RoundOutcome(bool ArtistCorrect, bool TitleCorrect, decimal
     public bool FoundAny => ArtistCorrect || TitleCorrect;
 }
 
-/// <summary>Les noms de référence d'un morceau, ceux de <c>Track</c> : la bonne réponse (parenthèses comprises).</summary>
-public sealed record TrackNames(string Artist, string Title);
+/// <summary>
+/// Les noms de référence d'un morceau, ceux de <c>Track</c> : la bonne réponse (parenthèses comprises).
+/// <paramref name="AltTitles"/> : d'autres titres que l'admin accepte aussi (vide ou absent : aucun).
+/// </summary>
+public sealed record TrackNames(string Artist, string Title, IReadOnlyList<string>? AltTitles = null);

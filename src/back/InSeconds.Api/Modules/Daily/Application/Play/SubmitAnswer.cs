@@ -151,5 +151,5 @@ public static class SubmitAnswerEndpoint
 
     private static AnswerResult Answer(SubmitAnswer request, AnswerAttempt attempt, DailyRules rules, IAnswerMatcher matcher) =>
         attempt.Loaded.Session.RoundOfCurrentTrack(rules.Hints).Answer(
-            request.ListenedSeconds, request.Artist, request.Title, new TrackNames(attempt.Track!.Artist, attempt.Track.Title), matcher);
+            request.ListenedSeconds, request.Artist, request.Title, new TrackNames(attempt.Track!.Artist, attempt.Track.Title, attempt.Track.AltTitles), matcher);
 }

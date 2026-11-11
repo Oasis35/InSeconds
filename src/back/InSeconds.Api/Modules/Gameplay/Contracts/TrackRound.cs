@@ -84,7 +84,7 @@ public sealed record TrackRound
 
         return AnswerResult.Accepted(new RoundOutcome(
             matcher.IsMatch(artist, expected.Artist),
-            matcher.IsMatch(title, expected.Title),
+            matcher.IsMatch(title, expected.Title) || (expected.AltTitles?.Any(alt => matcher.IsMatch(title, alt)) ?? false),
             claimedSeconds,
             HintLevel));
     }

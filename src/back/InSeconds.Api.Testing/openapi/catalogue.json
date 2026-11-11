@@ -960,6 +960,15 @@
               "null",
               "string"
             ]
+          },
+          "altTitles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -1143,6 +1152,15 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          "altTitles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -1260,6 +1278,15 @@
           },
           "isDisabled": {
             "type": "boolean"
+          },
+          "altTitles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

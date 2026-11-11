@@ -22,8 +22,8 @@ export class CatalogueApi {
   }
 
   /** `genre` : absent, les genres ne changent pas ; vide, le genre saisi est retiré ; sinon il remplace ceux du morceau. */
-  async renameTrack(id: number, artist: string, title: string, genre?: string): Promise<void> {
-    await firstValueFrom(this.client.renameTrack(id, { artist, title, genre }));
+  async renameTrack(id: number, artist: string, title: string, genre?: string, altTitles?: readonly string[]): Promise<void> {
+    await firstValueFrom(this.client.renameTrack(id, { artist, title, genre, altTitles: altTitles ? [...altTitles] : undefined }));
   }
 
   async setTrackDisabled(id: number, isDisabled: boolean): Promise<void> {
@@ -90,6 +90,7 @@ function toPoolTrack(item: TrackListItem): PoolTrack {
     usages: item.usages.map(toModeUsage),
     genres: item.genres,
     themeIds: item.themeIds ?? [],
+    altTitles: item.altTitles ?? [],
     inTodayChallenge: item.usages.some(usage => usage.inTodayChallenge),
   };
 }

@@ -262,8 +262,8 @@ export const PoolStore = signalStore(
         }
         if (track && !track.themeIds.includes(themeId)) await api.setTrackThemes(track.id, [...track.themeIds, themeId]);
       }),
-      rename: (id: number, artist: string, title: string, genre?: string) =>
-        mutate(() => api.renameTrack(id, artist.trim(), title.trim(), genre?.trim())),
+      rename: (id: number, artist: string, title: string, genre?: string, altTitles?: readonly string[]) =>
+        mutate(() => api.renameTrack(id, artist.trim(), title.trim(), genre?.trim(), altTitles)),
 
       /** Supprime ces morceaux (aucun n'a servi) ; s'arrête à la première erreur. */
       async remove(ids: readonly number[]): Promise<AppError | null> {

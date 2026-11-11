@@ -51,6 +51,28 @@ public class TrackTests
         Assert.False(track.HasPreview);
     }
 
+    [Fact]
+    public void TitresAlternatifs_Nettoyes_SansDoublonNiCopieDuTitre()
+    {
+        var track = NewTrack();
+
+        track.SetAltTitles([" 22h31 - Around ", "22H31 - AROUND", "", track.Title.ToUpperInvariant(), "Autre"], T1);
+
+        Assert.Equal(["22h31 - Around", "Autre"], track.AltTitles);
+        Assert.Equal(T1, track.UpdatedAt);
+    }
+
+    [Fact]
+    public void TitresAlternatifs_TropNombreux_Refuses_EtRienNeChange()
+    {
+        var track = NewTrack();
+        track.SetAltTitles(["a"], T1);
+
+        Assert.Throws<ArgumentException>(() => track.SetAltTitles(["1", "2", "3", "4", "5", "6"], T1));
+
+        Assert.Equal(["a"], track.AltTitles);
+    }
+
     [Theory]
     [InlineData("", "Titre")]
     [InlineData("Artiste", "  ")]

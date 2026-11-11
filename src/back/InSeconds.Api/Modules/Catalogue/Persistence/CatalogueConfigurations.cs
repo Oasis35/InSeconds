@@ -25,6 +25,8 @@ internal sealed class TrackConfiguration : IEntityTypeConfiguration<Track>
         builder.HasIndex(t => t.DeezerTrackId).IsUnique().HasDatabaseName(DeezerIdIndex);
         builder.Property(t => t.Artist).IsRequired();
         builder.Property(t => t.Title).IsRequired();
+        // alt_titles : text[], les autres titres acceptés comme bonne réponse (vide par défaut).
+        builder.Property(t => t.AltTitles).HasColumnType("text[]").HasDefaultValueSql("'{}'::text[]");
         // preview_status : 0 inconnu, 1 disponible, 2 absent.
         builder.Property(t => t.PreviewStatus).HasConversion<short>();
         // album_id : l'album chez Deezer (les genres se lisent sur lui) ; genres_checked_at : vide tant que ses genres n'ont pas été lus.
