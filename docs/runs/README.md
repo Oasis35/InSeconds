@@ -15,6 +15,7 @@ Noms : **« Run »** dans les tickets GitHub (étiquette `Mode Run`), **`Runs`**
 | [`conception.md`](conception.md) | La conception technique : module `Runs`, données, routes, codes d'erreur, front, ce qui change dans Players et Catalogue |
 | [`proto2.md`](proto2.md) | Le proto 2, pas encore livré : écran de palier, choix de la difficulté de la manche, coups de pouce, partage en grille, fantôme d'un ami, découpage en tickets |
 | [`proto3.md`](proto3.md) | Le proto 3 : mode plus simple (une seule difficulté à choisir, un seul écran de palier), cartes gagnées, Échange offert, fin de run ; découpage en 3 PR |
+| [`proto4.md`](proto4.md) | Le proto 4 : la V4 (barre du bas, accueil, historique), le nom Setlist, niveau et disques, groupes et classement ; découpage en 8 PR, avec les 16 écrans de référence dans [`maquettes/proto4/`](maquettes/proto4/) |
 | [`plan.md`](plan.md) | La feuille de route (proto 1, proto 2, plus tard), les idées de bonus, l'historique des décisions |
 
 ## Où suivre

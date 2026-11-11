@@ -47,6 +47,7 @@ Chaque information n'est écrite qu'à un seul endroit, pour éviter que des cop
 | Règles du proto 1 | [`runs/regles.md`](runs/regles.md) |
 | Écrans (maquettes de référence) | [`runs/ecrans.md`](runs/ecrans.md) |
 | Conception technique | [`runs/conception.md`](runs/conception.md) |
+| Proto 4 (V4, Setlist, groupes), plan en 8 PR | [`runs/proto4.md`](runs/proto4.md) |
 | Feuille de route, idées de bonus | [`runs/plan.md`](runs/plan.md) |
 | **Architecture** | |
 | Décisions déjà prises, et pourquoi | [`architecture/decisions.md`](architecture/decisions.md) |

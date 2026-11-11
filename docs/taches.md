@@ -11,7 +11,7 @@
 
 ## Mode Platines
 
-> Le proto 1 est livré sur invitation ([`runs/`](runs/README.md)), le proto 2 ([`runs/proto2.md`](runs/proto2.md), ticket [#497](https://github.com/Oasis35/InSeconds/issues/497)) sur le staging. Reste :
+> Le proto 1 est livré sur invitation ([`runs/`](runs/README.md)), le proto 2 ([`runs/proto2.md`](runs/proto2.md), ticket [#497](https://github.com/Oasis35/InSeconds/issues/497)) sur le staging. Le proto 4 (V4 de l'interface, Setlist, niveaux et groupes, [`runs/proto4.md`](runs/proto4.md), epic [#555](https://github.com/Oasis35/InSeconds/issues/555)) est planifié en 8 PR, rien n'est codé. Reste :
 
 - [ ] **Parties de test et réglage** - Clément joue sur le staging puis en prod avec quelques comptes, règle les seuils (`Runs:ThresholdPercents`, multiplicateurs, écoute) et la difficulté (tranches de rang Deezer) ; si les parties montrent des abus, un chrono `Runs:AnswerSeconds` (cf. `runs/conception.md` § 9)
 

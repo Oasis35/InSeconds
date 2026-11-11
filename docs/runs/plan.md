@@ -14,13 +14,14 @@ La feuille de route décidée le 17/10/2026 peut encore changer.
 
    Le code prévoit la place des bonus sans en livrer aucun. Le but est de savoir si c'est amusant et de régler les seuils et la difficulté.
 3. **Proto 2, palier, difficulté et coups de pouce** ([#497](https://github.com/Oasis35/InSeconds/issues/497), règles et écrans dans [`proto2.md`](proto2.md)) : un écran de palier après chaque manche passée, le choix de la difficulté de la manche suivante (Facile, Normal, Mélomane, ex Sûre et Risquée : objectif et plafond de points), des cartes gagnées à la performance (proto 3 : trois cartes, une à la fois, à usage unique) et un Échange de morceau offert à chaque manche, puis « Rejouer » en principal, le partage en grille, le fantôme d'un ami, le combo visuel et les sons d'interface. En cours sur le staging : difficultés et coups de pouce côté serveur (#498, #499).
-4. **Proto 3 et suivants** : les autres familles de bonus, une par une. D'abord les atouts, le choix de la manche suivante, les contraintes et la manche boss, les pactes. Ensuite la rareté et les déblocages.
-5. **Ouverture** :
+4. **Proto 4, la V4 de l'interface** ([#555](https://github.com/Oasis35/InSeconds/issues/555), plan en 8 PR et écrans dans [`proto4.md`](proto4.md)) : mode renommé Setlist (`/setlist`), barre du bas, accueil Daily et Setlist côte à côte, historique, niveau et disques, groupes entre amis, classement et Hits, le tout sous l'accès existant. Planifié, rien n'est codé.
+5. **Suite** (proto 5 et au-delà) : les autres familles de bonus, une par une. D'abord les atouts, le choix de la manche suivante, les contraintes et la manche boss, les pactes. Ensuite la rareté et les déblocages.
+6. **Ouverture** :
    - accès pour tous ;
    - partage du résultat sur les réseaux ;
    - statistiques dans l'admin ;
    - un accueil qui laisse choisir le mode.
-6. **Plus tard** :
+7. **Plus tard** :
    - genre (depuis l'album Deezer) et étiquettes de thème dans le catalogue ;
    - thèmes de run ;
    - difficulté mixte : rang Deezer, puis taux de réussite réel dès qu'un morceau a assez de réponses (environ 30) ;
