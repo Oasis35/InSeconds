@@ -36,6 +36,9 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
             modelBuilder.HasSequence("device_sessions_hilo", "players")
                 .IncrementsBy(10);
 
+            modelBuilder.HasSequence("groups_hilo", "social")
+                .IncrementsBy(10);
+
             modelBuilder.HasSequence("sessions_hilo", "daily")
                 .IncrementsBy(10);
 
@@ -1167,6 +1170,70 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("InSeconds.Api.Modules.Social.Domain.Group", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<int>("Id"), "groups_hilo", "social");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("InviteCode")
+                        .IsRequired()
+                        .HasColumnType("char(8)")
+                        .HasColumnName("invite_code");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_groups");
+
+                    b.HasIndex("InviteCode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_groups_invite_code");
+
+                    b.HasIndex("OwnerId")
+                        .HasDatabaseName("ix_groups_owner_id");
+
+                    b.ToTable("groups", "social");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Social.Domain.GroupMember", b =>
+                {
+                    b.Property<int>("GroupId")
+                        .HasColumnType("integer")
+                        .HasColumnName("group_id");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<DateTimeOffset>("JoinedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("joined_at");
+
+                    b.HasKey("GroupId", "PlayerId")
+                        .HasName("pk_group_members");
+
+                    b.HasIndex("PlayerId")
+                        .HasDatabaseName("ix_group_members_player_id");
+
+                    b.ToTable("group_members", "social");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
                 {
                     b.Property<int>("Id")
@@ -1547,6 +1614,33 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_session_rounds_sessions_session_id");
                 });
 
+            modelBuilder.Entity("InSeconds.Api.Modules.Social.Domain.Group", b =>
+                {
+                    b.HasOne("InSeconds.Api.Modules.Players.Domain.Player", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_groups_players_owner_id");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Social.Domain.GroupMember", b =>
+                {
+                    b.HasOne("InSeconds.Api.Modules.Social.Domain.Group", null)
+                        .WithMany("Members")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_group_members_groups_group_id");
+
+                    b.HasOne("InSeconds.Api.Modules.Players.Domain.Player", null)
+                        .WithMany()
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_group_members_players_player_id");
+                });
+
             modelBuilder.Entity("track_genres", b =>
                 {
                     b.HasOne("InSeconds.Api.Modules.Catalogue.Domain.Genre", null)
@@ -1605,6 +1699,11 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     b.Navigation("Cards");
 
                     b.Navigation("Rounds");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Social.Domain.Group", b =>
+                {
+                    b.Navigation("Members");
                 });
 #pragma warning restore 612, 618
         }

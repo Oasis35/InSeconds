@@ -11,6 +11,14 @@ UPDATE players.accounts
  WHERE lower(email::text) <> lower(:'keep');
 -- Le pseudo qu'un invité donne dans le mode Run est un texte libre : effacé (l'invité le redonnera).
 UPDATE players.players SET guest_pseudo = NULL WHERE guest_pseudo IS NOT NULL;
+-- Le nom d'un groupe d'amis est un texte libre choisi par un joueur : remplacé, et le code d'invitation (un secret de lien) renouvelé.
+-- La table vient d'une migration de l'API : absente d'une copie d'une prod qui ne l'a pas encore.
+DO $$
+BEGIN
+    IF to_regclass('social.groups') IS NOT NULL THEN
+        UPDATE social.groups SET name = 'groupe-' || id, invite_code = upper(substr(md5(id::text || 'staging'), 1, 8));
+    END IF;
+END $$;
 -- TRUNCATE plutôt que DELETE sans WHERE : même effet ici (aucune table ne les référence), et l'intention « tout vider » est explicite.
 TRUNCATE players.auth_tokens, players.device_sessions, players.legacy_tokens, infra.data_protection_keys;
 
