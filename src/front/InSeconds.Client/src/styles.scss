@@ -225,6 +225,7 @@ h1, h2, h3, .font-display {
 
 .app-modal-panel > .cdk-dialog-container,
 .app-sheet-panel > .cdk-dialog-container {
+  max-height: calc(100dvh - 2rem);
   overflow-y: auto;
   overscroll-behavior: contain;
   display: block;
