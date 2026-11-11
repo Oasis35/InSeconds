@@ -295,6 +295,29 @@ test.describe('Admin - pool', () => {
     await api.reseed();
   });
 
+  test('la fenêtre de modification défile quand elle dépasse l\'écran', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 420 });
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await admin.poolSearchInput().fill('Coldplay');
+    await admin.poolRow('Coldplay').getByRole('button', { name: '✎' }).click();
+    await expect(admin.editModalTitle()).toBeVisible();
+
+    // Le conteneur de la fenêtre défile : sa hauteur visible tient dans l'écran, son contenu est plus haut.
+    const container = page.locator('.app-modal-panel > .cdk-dialog-container');
+    const box = await container.boundingBox();
+    expect(box!.height).toBeLessThanOrEqual(420);
+    expect(await container.evaluate(el => el.scrollHeight > el.clientHeight)).toBe(true);
+
+    // Les boutons du bas restent atteignables par le défilement.
+    const cancel = page.getByRole('button', { name: 'Annuler' });
+    await cancel.scrollIntoViewIfNeeded();
+    await cancel.click();
+    await expect(admin.editModalTitle()).not.toBeVisible();
+  });
+
   test('vue Daily : affiche les colonnes cooldown avec les bonnes valeurs', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
