@@ -156,7 +156,8 @@ public interface ICatalogueQueries
 
 /// <summary>Un thème de la liste de l'admin.</summary>
 /// <param name="TrackCount">Les morceaux du pool qui ont ce thème (désactivés compris) ; la suppression n'est permise qu'à zéro.</param>
-public sealed record ThemeItem(int Id, string Name, int TrackCount);
+/// <param name="Icon">Le nom de l'icône du thème (Lucide), vide : aucune.</param>
+public sealed record ThemeItem(int Id, string Name, int TrackCount, string? Icon = null);
 
 /// <summary>Un morceau tel que la base le lit, avant d'y joindre son usage.</summary>
 public sealed record TrackRow(

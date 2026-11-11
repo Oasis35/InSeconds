@@ -175,6 +175,11 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("Icon")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("icon");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(60)

@@ -105,6 +105,7 @@ internal sealed class ThemeConfiguration : IEntityTypeConfiguration<Theme>
         // citext : « Films » et « films » sont le même thème (le schéma extensions est dans le search_path).
         builder.Property(t => t.Name).IsRequired().HasMaxLength(Theme.MaxNameLength).HasColumnType("citext");
         builder.HasIndex(t => t.Name).IsUnique().HasDatabaseName(NameIndex);
+        builder.Property(t => t.Icon).HasMaxLength(Theme.MaxIconLength);
         builder.Property(t => t.CreatedAt).IsRequired();
     }
 }

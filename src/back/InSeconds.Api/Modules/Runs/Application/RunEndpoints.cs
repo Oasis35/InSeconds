@@ -29,8 +29,8 @@ public sealed record RunShelfDiscResponse(RunDiscResponse Disc, int Count);
 
 public sealed record RunPendingResponse(int SessionId, string ChallengeCode);
 
-/// <summary>Un thème proposé au lancement : identifiant, nom et manche qu'il concernera (la première manche à thème).</summary>
-public sealed record RunThemeOfferItem(int Id, string Name, int Round);
+/// <summary>Un thème proposé au lancement : identifiant, nom, manche qu'il concernera (la première manche à thème) et icône (Lucide), vide s'il n'en a pas.</summary>
+public sealed record RunThemeOfferItem(int Id, string Name, int Round, string? Icon = null);
 
 public static class GetRunThemeOfferEndpoint
 {
@@ -41,8 +41,12 @@ public static class GetRunThemeOfferEndpoint
     [Authorize]
     [WolverineGet("/api/runs/theme-offer", OperationId = "getRunThemeOffer")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
-    public static async Task<IReadOnlyList<RunThemeOfferItem>> Get(RunChallengePlanner planner, CancellationToken ct) =>
-        [.. (await planner.OfferThemesAsync(ct)).Select(t => new RunThemeOfferItem(t.ThemeId, t.Name, t.Round))];
+    public static async Task<IReadOnlyList<RunThemeOfferItem>> Get(RunChallengePlanner planner, ITrackDirectory tracks, CancellationToken ct)
+    {
+        var offer = await planner.OfferThemesAsync(ct);
+        var icons = offer.Count == 0 ? new Dictionary<int, string>() : await tracks.ListThemeIconsAsync(ct);
+        return [.. offer.Select(t => new RunThemeOfferItem(t.ThemeId, t.Name, t.Round, icons.GetValueOrDefault(t.ThemeId)))];
+    }
 }
 
 public static class GetRunsMeEndpoint

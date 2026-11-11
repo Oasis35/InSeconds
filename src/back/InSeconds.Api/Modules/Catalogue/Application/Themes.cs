@@ -105,6 +105,34 @@ public static class DeleteThemeEndpoint
     public static void Delete([NotBody] ThemeDeletion plan, ICatalogueStore store) => store.RemoveTheme(plan.Theme!);
 }
 
+/// <param name="Icon">Le nom de l'icône (Lucide, minuscules et tirets), vide ou absent : le thème n'a plus d'icône.</param>
+public sealed record ThemeIcon(string? Icon);
+
+public sealed class ThemeIconValidator : AbstractValidator<ThemeIcon>
+{
+    public ThemeIconValidator() => RuleFor(x => x.Icon).Must(i => string.IsNullOrWhiteSpace(i) || Theme.IsValidIcon(i.Trim())).WithMessage("Nom d'icône invalide.");
+}
+
+/// <summary>Le thème dont on change l'icône ; vide s'il n'existe pas.</summary>
+public sealed record ThemeIconChange(Theme? Theme);
+
+public static class SetThemeIconEndpoint
+{
+    public static async Task<ThemeIconChange> LoadAsync(int id, ICatalogueStore store, CancellationToken ct) => new(await store.FindThemeAsync(id, ct));
+
+    public static ProblemDetails Validate(ThemeIconChange change) => change.Theme is null ? CatalogueProblems.ThemeNotFound() : WolverineContinue.NoProblems;
+
+    /// <summary>
+    /// <c>PUT /api/admin/catalogue/themes/{id}/icon</c> <c>{ icon }</c> : donne une icône au thème (une icône Lucide : « clapperboard »), 204 ;
+    /// <c>icon</c> vide ou absent : le thème n'en a plus. 404 si le thème n'existe pas, 400 si le nom n'est pas un nom d'icône (minuscules, chiffres,
+    /// tirets, 40 caractères au plus).
+    /// </summary>
+    [WolverinePut("/api/admin/catalogue/themes/{id}/icon", OperationId = "setThemeIcon")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [EmptyResponse]
+    public static void Put(ThemeIcon request, [NotBody] ThemeIconChange change) => change.Theme!.SetIcon(request.Icon);
+}
+
 /// <param name="ThemeIds">Les thèmes de la liste qu'a le morceau, tous d'un coup (remplace les précédents) ; vide : le morceau n'en a plus.</param>
 public sealed record SetTrackThemes(IReadOnlyList<int> ThemeIds);
 

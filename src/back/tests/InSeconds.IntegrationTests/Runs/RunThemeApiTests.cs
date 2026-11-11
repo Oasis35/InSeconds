@@ -82,6 +82,16 @@ public class RunThemeApiTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task LOffreMontreLIconeDuTheme_QuandIlEnA()
+    {
+        await _game.Api.ExecuteAsync("UPDATE catalogue.themes SET icon = 'disc-3' WHERE id = 1");
+
+        var offer = await _gamer.Client.GetFromJsonAsync<List<RunThemeOfferItem>>("/api/runs/theme-offer", Ct);
+
+        Assert.Equal([new RunThemeOfferItem(1, "Années 80", 3, "disc-3")], offer);
+    }
+
+    [Fact]
     public async Task LeThemeChoisiAuLancement_PrendLaManche3_UnThemeInvalideEstIgnore()
     {
         await _game.Api.ExecuteAsync("INSERT INTO catalogue.track_themes (track_id, theme_id) SELECT id, 3 FROM catalogue.tracks WHERE id BETWEEN 40 AND 49");

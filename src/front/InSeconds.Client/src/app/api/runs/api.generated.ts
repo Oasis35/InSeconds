@@ -1538,6 +1538,7 @@ export interface RunThemeOfferItem {
     id: number;
     name: string;
     round: number;
+    icon?: string | undefined;
 
     [key: string]: any;
 }
