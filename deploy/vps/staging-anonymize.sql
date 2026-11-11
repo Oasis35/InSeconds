@@ -16,7 +16,7 @@ UPDATE players.players SET guest_pseudo = NULL WHERE guest_pseudo IS NOT NULL;
 DO $$
 BEGIN
     IF to_regclass('social.groups') IS NOT NULL THEN
-        UPDATE social.groups SET name = 'groupe-' || id, invite_code = upper(substr(md5(id::text || 'staging'), 1, 8));
+        UPDATE social.groups SET name = 'groupe-' || id, invite_code = upper(substr(md5(id::text || 'staging'), 1, 8)) WHERE id IS NOT NULL;
     END IF;
 END $$;
 -- TRUNCATE plutôt que DELETE sans WHERE : même effet ici (aucune table ne les référence), et l'intention « tout vider » est explicite.
