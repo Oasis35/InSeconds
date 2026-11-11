@@ -15,6 +15,9 @@ public sealed class EfRunsStore(InSecondsDbContext db) : IRunsStore
     /// <summary>Premier entier du verrou du record d'un joueur.</summary>
     private const int RecordLockNamespace = 0x52_52_45_43; // « RREC »
 
+    /// <summary>Premier entier du verrou d'un défi (le second est son identifiant).</summary>
+    private const int ChallengeLockNamespace = 0x52_43_48_41; // « RCHA »
+
     public Task<bool> CodeExistsAsync(string code, CancellationToken ct) => db.Set<RunChallenge>().AnyAsync(c => c.Code == code, ct);
 
     public void AddChallenge(RunChallenge challenge) => db.Set<RunChallenge>().Add(challenge);
@@ -24,6 +27,25 @@ public sealed class EfRunsStore(InSecondsDbContext db) : IRunsStore
     public Task LockPlayerStartAsync(Guid playerId, CancellationToken ct) => LockAsync(StartLockNamespace, playerId, "Le démarrage d'une partie", ct);
 
     public Task LockRecordAsync(Guid playerId, CancellationToken ct) => LockAsync(RecordLockNamespace, playerId, "La mise à jour d'un record", ct);
+
+    public async Task LockChallengeAsync(RunChallenge challenge, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(challenge);
+        RequireTransaction("Le thème d'une manche");
+        await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock({ChallengeLockNamespace}, {challenge.Id})", ct);
+        var entry = db.Entry(challenge);
+        if (entry.State != EntityState.Unchanged)
+            return;
+        // Un autre joueur a pu écrire le thème pendant l'attente du verrou : le défi se relit, et ses morceaux seulement s'ils ont changé.
+        var pending = challenge.Rules.PendingThemeRound;
+        await entry.ReloadAsync(ct);
+        if (challenge.Rules.PendingThemeRound == pending)
+            return;
+        foreach (var track in challenge.Tracks)
+            await db.Entry(track).ReloadAsync(ct);
+        foreach (var track in challenge.Reserve)
+            await db.Entry(track).ReloadAsync(ct);
+    }
 
     // Un défi ajouté dans cette transaction (le lancement d'un run) n'est pas encore en base : on le trouve d'abord dans le contexte.
     public async Task<RunChallenge?> FindChallengeAsync(string code, CancellationToken ct) =>

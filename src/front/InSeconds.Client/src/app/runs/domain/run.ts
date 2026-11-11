@@ -109,6 +109,8 @@ export interface RunSession {
    * qu'avec le choix.
    */
   readonly difficultyChoice: RunDifficultyChoice | null;
+  /** Le thème de la manche en cours, tant qu'il reste à choisir (le créateur seulement, avant la difficulté) ; `null` sinon. */
+  readonly themeChoice: RunThemeChoice | null;
   /** La carte gagnée à la manche passée, qui agit sur la manche en cours (au plus une ; vide sinon). */
   readonly hand: readonly RunHandCard[];
   /** « Changer de morceau » est offert : l'Échange de la manche n'a pas servi et le morceau en cours n'a pas encore été écouté. */
@@ -203,7 +205,7 @@ export interface RunTheme {
   readonly name: string;
 }
 
-/** Un thème proposé au créateur d'une playlist, au lancement. */
+/** Un thème proposé au créateur d'une playlist, juste avant la manche à thème. */
 export interface RunThemeOffer {
   readonly id: number;
   readonly name: string;
@@ -211,6 +213,12 @@ export interface RunThemeOffer {
   readonly round: number;
   /** Le nom Lucide de son icône (stock de `ui/theme-icon`) ; `null` : aucune. */
   readonly icon: string | null;
+}
+
+/** Le choix du thème de la manche, en attente avant son premier morceau : deux thèmes, le troisième choix (« Thème mystère ») se tire côté serveur. */
+export interface RunThemeChoice {
+  readonly round: number;
+  readonly themes: readonly RunThemeOffer[];
 }
 
 export interface RunLink {
@@ -549,6 +557,6 @@ export function comboOf(tracks: readonly Pick<RunTrack, 'position' | 'neutralize
  * Où en est une partie, vu du serveur : son statut, ses morceaux joués, le choix de difficulté en attente, sa main. Deux relectures
  * différentes disent qu'elle a avancé ailleurs (un autre onglet) ; la même relecture, que rien n'a bougé.
  */
-export const progressKey = (session: Pick<RunSession, 'status' | 'playedTracks' | 'difficultyChoice' | 'hand'>): string =>
-  [session.status, session.playedTracks.length, session.difficultyChoice?.round ?? '',
+export const progressKey = (session: Pick<RunSession, 'status' | 'playedTracks' | 'difficultyChoice' | 'themeChoice' | 'hand'>): string =>
+  [session.status, session.playedTracks.length, session.difficultyChoice?.round ?? '', session.themeChoice?.round ?? '',
     session.hand.map(c => `${c.slot}:${c.card}`).join(',')].join('|');

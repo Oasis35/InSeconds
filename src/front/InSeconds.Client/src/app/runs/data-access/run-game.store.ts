@@ -9,7 +9,7 @@ import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RoundConfig, RoundSubmission } from '../../gameplay/domain/track-round';
 import { waveformFromBlob } from '../../gameplay/domain/waveform';
 import {
-  AUTO_NEXT_MS, CLOCK_ALERT_SECONDS, COMBO_MIN, PileEntry, RunComparison, RunCurrentTrack, RunDifficulty, RunLink, RunPlay, RunRound, RunSession, RunStep, RunThemeOffer, RunsMe,
+  AUTO_NEXT_MS, CLOCK_ALERT_SECONDS, COMBO_MIN, PileEntry, RunComparison, RunCurrentTrack, RunDifficulty, RunLink, RunPlay, RunRound, RunSession, RunStep, RunsMe,
   isFinished,
   comboOf, duelOf, ghostGap, nextObjective, progressKey, palierDue, playSteps, playedCount, runPile, stepPosition,
 } from '../domain/run';
@@ -61,10 +61,10 @@ interface RunState {
   palierDismissedFor: number | null;
   /** « Suite » du palier part (un second toucher ne relance rien). */
   palierBusy: boolean;
-  /** Les thèmes proposés au créateur au lancement (écran `theme`) ; vide hors de cet écran. */
-  themeOffer: readonly RunThemeOffer[];
-  /** Le choix de la manche à thème : l'identifiant d'un thème proposé, `null` pour « Surprise ». */
-  themeChoice: number | null;
+  /** Le choix du thème envoyé au serveur (écran `theme`) : l'identifiant d'un thème proposé, `'mystery'` pour « Thème mystère » ; `null` : rien choisi. */
+  themePicked: number | 'mystery' | null;
+  /** Le nom du thème que le serveur a retenu pour ce choix, dès qu'il a répondu (l'écran le révèle, puis laisse la manche suivre) ; `null` d'ici là. */
+  themeResult: string | null;
   /** Le pseudo de l'invité est en route vers le serveur (écran `pseudo`). */
   pseudoBusy: boolean;
   /** La clé de traduction du refus de la dernière saisie du pseudo, `null` sans refus. */
@@ -96,8 +96,8 @@ const initialState: RunState = {
   abandonLoading: false,
   palierDismissedFor: null,
   palierBusy: false,
-  themeOffer: [],
-  themeChoice: null,
+  themePicked: null,
+  themeResult: null,
   pseudoBusy: false,
   pseudoError: null,
   difficultyBusy: false,
@@ -110,7 +110,7 @@ const canSwapTrack = (phase: string | null): boolean => phase === 'loading' || p
 
 /** Les appels qui changent la partie côté serveur. */
 const CHANGING_CALLS: ReadonlySet<string> = new Set([
-  'launch', 'join', 'refreshPreview', 'submitAnswer', 'swap', 'chooseDifficulty', 'abandon',
+  'launch', 'join', 'refreshPreview', 'submitAnswer', 'swap', 'chooseTheme', 'chooseDifficulty', 'abandon',
 ]);
 
 /** L'adaptateur, dont les appels qui changent la partie comptent leurs requêtes en route (`+1` au départ, `-1` à l'arrivée ou à l'échec). */
@@ -198,6 +198,18 @@ export const RunGameStore = signalStore(
           refused: store.cardRefused(),
         };
       }),
+      /** Ce que montre l'écran « Choisis ton thème » : la manche, les deux thèmes, le choix envoyé et le thème retenu. */
+      themeScreen: computed(() => {
+        const session = store.session();
+        const choice = session?.themeChoice;
+        if (store.screen() !== 'theme' || !session?.round || !choice) return null;
+        return {
+          choice,
+          picked: store.themePicked(),
+          result: store.themeResult(),
+          headerRound: { round: session.round.round, score: 0, objective: session.round.objective, maxScore: session.round.maxScore },
+        };
+      }),
       /** Ce que montre l'écran « Difficulté ? » : la manche, le score du run, les difficultés proposées. */
       difficulty: computed(() => {
         const session = store.session();
@@ -238,6 +250,8 @@ export const RunGameStore = signalStore(
   withMethods((store, rawApi = inject(RunsApi), round = inject(TrackRoundStore), sessionLoader = inject(SessionLoader), sounds = inject(RunSounds), session = inject(SessionStore)) => {
     /** Les requêtes en route qui changent la partie côté serveur : tant qu'il y en a une, une relecture d'un autre onglet ne conclut rien. */
     let changing = 0;
+    /** La partie rendue au choix du thème, appliquée quand l'écran a fini de révéler le thème. */
+    let themePlay: RunPlay | null = null;
     const api = trackChanges(rawApi, delta => { changing += delta; });
     /** L'enchaînement automatique en attente. */
     let autoNextTimer: ReturnType<typeof setTimeout> | null = null;
@@ -392,6 +406,13 @@ export const RunGameStore = signalStore(
         return;
       }
       const current = store.current();
+      // La manche à thème attend le choix du créateur : rien n'est servi avant (écran « Choisis ton thème »).
+      if (!current && !isFinished(session) && session.themeChoice) {
+        round.reset();
+        stopClock();
+        patchState(store, { screen: 'theme' });
+        return;
+      }
       // La manche attend sa difficulté : son premier morceau n'arrive qu'avec le choix (écran « Difficulté ? »).
       if (!current && !isFinished(session) && session.difficultyChoice) {
         round.reset();
@@ -542,7 +563,7 @@ export const RunGameStore = signalStore(
       const target = code === undefined ? store.code() : code;
       patchState(store, {
         screen: 'loading', code: target, link: null, comparison: null, session: null, current: null, steps: [], shapes: {}, resumeCount: 0,
-        resumeTotal: 0, abandonLoading: false, palierDismissedFor: null, palierBusy: false, difficultyBusy: false,
+        resumeTotal: 0, abandonLoading: false, palierDismissedFor: null, palierBusy: false, difficultyBusy: false, themePicked: null, themeResult: null,
         cardBusy: false, cardRefused: false,
       });
       try {
@@ -572,24 +593,9 @@ export const RunGameStore = signalStore(
       applyOutcome(await call());
     };
 
-    /**
-     * Le créateur d'une playlist neuve : deux thèmes lui sont proposés (écran `theme`, « Surprise » choisi d'office) ; sans manche à thème, ou si
-     * les thèmes ne se lisent pas, la playlist se lance tout de suite.
-     */
-    const offerThemes = async (): Promise<void> => {
-      let offer: readonly RunThemeOffer[] = [];
-      try {
-        offer = await api.themeOffer();
-      } catch {
-        // pas de thème : la playlist se tire quand même
-      }
-      if (offer.length === 0) return launch(() => api.launch());
-      patchState(store, { screen: 'theme', themeOffer: offer, themeChoice: offer[0].id });
-    };
-
     /** Une action de cet onglet en route (réponse, carte, choix, extrait redemandé) : la relecture la prendrait pour un autre onglet. */
     const settled = (): boolean =>
-      changing === 0 && round.phase() !== 'submitting' && !store.cardBusy() && !store.palierBusy() && !store.difficultyBusy();
+      changing === 0 && round.phase() !== 'submitting' && !store.cardBusy() && !store.palierBusy() && !store.difficultyBusy() && store.themePicked() === null;
 
     /** En jeu : la partie se relit ; finie ailleurs, l'écran de fin ; avancée ailleurs, l'écran de reprise ; rien n'a bougé, rien ne change. */
     const refreshGame = async (screen: ReturnType<typeof store.screen>, session: NonNullable<ReturnType<typeof store.session>>): Promise<void> => {
@@ -635,18 +641,36 @@ export const RunGameStore = signalStore(
         sounds.unlock();
         const code = store.link()?.code ?? store.me()?.pending?.challengeCode ?? null;
         if (code) await launch(() => api.join(code));
-        else await offerThemes();
+        else await launch(() => api.launch());
       },
-      /** Le thème de la manche à thème : un des thèmes proposés, ou `null` pour « Surprise ». */
-      chooseTheme(themeId: number | null): void {
-        patchState(store, { themeChoice: themeId });
+      /**
+       * Le thème de la manche, juste avant elle (le créateur seulement) : un des deux thèmes, ou `null` pour « Thème mystère », que le serveur tire.
+       * La réponse porte la partie telle qu'elle sera ; l'écran la garde le temps de révéler le thème (`continueFromTheme()`), sans rien jouer.
+       */
+      async chooseTheme(themeId: number | null): Promise<void> {
+        const session = store.session();
+        const choice = session?.themeChoice;
+        if (!session || !choice || store.screen() !== 'theme' || store.themePicked() !== null) return;
+        patchState(store, { themePicked: themeId ?? 'mystery', themeResult: null });
+        try {
+          const play = await api.chooseTheme(session.sessionId, choice.round, themeId);
+          // La partie a pu être abandonnée ou rouverte pendant l'aller-retour : une réponse périmée ne montre rien.
+          if (store.session()?.sessionId !== session.sessionId || store.screen() !== 'theme') return;
+          themePlay = play;
+          patchState(store, { themeResult: play.session.themes.find(t => t.round === choice.round)?.name ?? '' });
+        } catch {
+          // Refusé (choisi dans un autre onglet) ou réseau : la partie se relit et l'écran montre ce qui est vrai.
+          themePlay = null;
+          patchState(store, { themePicked: null, themeResult: null });
+          await init();
+        }
       },
-      /** « Lancer » depuis le choix du thème (un clic) : la playlist se tire avec ce thème, le premier morceau part dans ce clic. */
-      async launchWithTheme(): Promise<void> {
-        round.unlockAudio();
-        sounds.unlock();
-        const themeId = store.themeChoice();
-        await launch(() => api.launch(themeId));
+      /** Le thème est révélé : la manche suit (l'écran de palier ou de difficulté), sans son. */
+      continueFromTheme(): void {
+        const play = themePlay;
+        themePlay = null;
+        patchState(store, { themePicked: null, themeResult: null });
+        if (play && store.screen() === 'theme') applyPlay(play, false);
       },
       /**
        * « Jouer » depuis le lien reçu d'un ami (un clic) : crée l'invité si ce navigateur n'a pas d'identité, relève la playlist et lance le premier
@@ -823,7 +847,7 @@ export const RunGameStore = signalStore(
       async refresh(): Promise<void> {
         const screen = store.screen();
         const session = store.session();
-        if ((screen === 'playing' || screen === 'palier' || screen === 'difficulty') && session) return refreshGame(screen, session);
+        if ((screen === 'playing' || screen === 'palier' || screen === 'difficulty' || screen === 'theme') && session) return refreshGame(screen, session);
         if ((screen === 'welcome' || screen === 'resume') && !store.code()) return refreshHome(screen);
       },
       /** Les sons d'interface sont coupés (le bouton de l'en-tête). */
@@ -862,7 +886,7 @@ export const RunGameStore = signalStore(
         round.unlockAudio();
         sounds.unlock();
         patchState(store, { me: store.me() ? { ...store.me()!, pending: null } : null });
-        await offerThemes();
+        await launch(() => api.launch());
       },
     };
   }),

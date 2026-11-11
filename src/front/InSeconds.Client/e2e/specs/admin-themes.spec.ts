@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures/test';
 import { AdminPage } from '../pages/admin.page';
 import { RunPage } from '../pages/run.page';
+import { inSequence } from '../fixtures/sequence';
 import type { Page } from '@playwright/test';
 
 // L'onglet « Thèmes » de l'admin : la liste de thèmes (recherche, puces d'état), le détail (morceaux, retrait, ajout depuis le pool ou Deezer, écoute),
@@ -326,22 +327,29 @@ test.describe('Admin - icônes des thèmes', () => {
     expect((await page.request.put('/api/admin/catalogue/themes/999999/icon', { data: { icon: 'guitar' } })).status()).toBe(404);
   });
 
-  test('l\'icône du thème s\'affiche dans le choix de thème d\'une playlist de Platines', async ({ page }) => {
+  test('l\'icône du thème s\'affiche dans le choix de thème d\'une playlist de Platines', async ({ page, api }) => {
+    test.slow();
+    // Sans réserve et avec de grands thèmes : assez de morceaux restent à chaque thème une fois ceux de la playlist écartés.
+    await api.setRunSetting('Runs:ReservePerRound', '0');
     const run = new RunPage(page);
     await run.loginAsAdmin();
-    const eighties = await createTheme(page, 'Années 80', 8);
-    const movies = await createTheme(page, 'Films', 8, 8);
+    const eighties = await createTheme(page, 'Années 80', 16);
+    const movies = await createTheme(page, 'Films', 16, 16);
+    await createTheme(page, 'Rap', 16, 32);
     expect((await page.request.put(`/api/admin/catalogue/themes/${eighties}/icon`, { data: { icon: 'music' } })).status()).toBe(204);
     expect((await page.request.put(`/api/admin/catalogue/themes/${movies}/icon`, { data: { icon: 'clapperboard' } })).status()).toBe(204);
 
-    await run.open();
-    await run.startButton.click();
+    await run.launch();
+    const tracks = await api.latestRunTracks();
+    // Le tirage de la manche à thème est aléatoire : on la place à la manche 2, et le choix arrive après la manche 1.
+    await api.forceThemedRound(2);
+    await inSequence(tracks.filter(t => t.round === 1), track => run.answerRight(track));
 
     await expect(page.getByTestId('run-theme')).toBeVisible();
-    const tiles = page.locator('[data-theme-id]:not([data-theme-id="surprise"])');
+    const tiles = page.locator('[data-theme-id]:not([data-theme-id="mystery"])');
     await expect(tiles).toHaveCount(2);
-    await expect(tiles.first().locator('svg')).toHaveCount(1);
-    await expect(tiles.nth(1).locator('svg')).toHaveCount(1);
-    await expect(page.locator('[data-theme-id="surprise"] svg')).toHaveCount(0);
+    // Une icône pour les thèmes qui en ont une, aucune pour la ligne « Thème mystère ».
+    await expect(page.locator('[data-theme-id="mystery"] svg')).toHaveCount(0);
+    await expect(page.locator('[data-theme-id] svg')).not.toHaveCount(0);
   });
 });

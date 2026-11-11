@@ -30,7 +30,7 @@ public class RunChallengeTests(PostgresFixture postgres) : IAsyncLifetime
     private async Task<(PlanResult Plan, int Id)> CreateAsync(Guid? createdBy = null)
     {
         using var scope = _game.Api.Services.CreateScope();
-        var plan = await scope.ServiceProvider.GetRequiredService<RunChallengePlanner>().PlanAsync(createdBy, null, Ct);
+        var plan = await scope.ServiceProvider.GetRequiredService<RunChallengePlanner>().PlanAsync(createdBy, Ct);
         if (plan.Challenge is null)
             return (plan, 0);
         scope.ServiceProvider.GetRequiredService<IRunsStore>().AddChallenge(plan.Challenge);

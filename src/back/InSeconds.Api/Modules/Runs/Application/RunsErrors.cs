@@ -37,6 +37,9 @@ public static class RunsErrorCodes
     /// <summary>La difficulté d'une manche ne se choisit plus (pas la manche en cours, pas de choix, déjà choisie ou déjà commencée).</summary>
     public const string DifficultyLocked = "runs.difficulty_locked";
 
+    /// <summary>Le thème de cette manche ne se choisit plus (pas la manche en cours, pas en attente de thème, pas le créateur, ou déjà commencée).</summary>
+    public const string ThemeLocked = "runs.theme_locked";
+
     /// <summary>Le morceau ne se change pas : plus d'Échange dans cette manche, plus de morceau en réserve, ou la difficulté reste à choisir.</summary>
     public const string SwapUnavailable = "runs.swap_unavailable";
 }
@@ -72,6 +75,12 @@ internal static class RunsProblems
 
     public static ProblemDetails DifficultyNotOffered() =>
         ApiProblem.Of(StatusCodes.Status400BadRequest, ErrorCodes.BadRequest, "Cette difficulté n'est pas proposée pour cette manche.");
+
+    public static ProblemDetails ThemeLocked() =>
+        ApiProblem.Of(StatusCodes.Status409Conflict, RunsErrorCodes.ThemeLocked, "Le thème de cette manche ne se choisit plus.");
+
+    public static ProblemDetails ThemeNotOffered() =>
+        ApiProblem.Of(StatusCodes.Status400BadRequest, ErrorCodes.BadRequest, "Ce thème n'est pas proposé pour cette manche.");
 
     public static ProblemDetails SwapUnavailable() =>
         ApiProblem.Of(StatusCodes.Status409Conflict, RunsErrorCodes.SwapUnavailable, "Tu ne peux plus changer de morceau dans cette manche.");
@@ -159,4 +168,8 @@ internal static partial class RunsLog
     [LoggerMessage(EventId = 1414, Level = LogLevel.Information,
         Message = "Partie {SessionId} de {PlayerId} : morceau n°{TrackPosition} changé (Échange)")]
     public static partial void TrackSwapped(ILogger logger, int sessionId, Guid playerId, int trackPosition);
+
+    [LoggerMessage(EventId = 1415, Level = LogLevel.Information,
+        Message = "Partie {SessionId} de {PlayerId} : thème de la manche {Round} choisi (mystère : {Mystery})")]
+    public static partial void ThemeChosen(ILogger logger, int sessionId, Guid playerId, int round, bool mystery);
 }

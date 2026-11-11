@@ -54,7 +54,7 @@ public sealed class RunsOptions
     public const decimal MaxExtendListenSeconds = 30m;
 
     /// <summary>Les cartes qui se gagnent : leurs noms d'API.</summary>
-    public static int[] DefaultThemedRounds => [3];
+    public static int[] DefaultThemedRounds => [2, 3, 4];
 
     public static string[] DefaultCards => [.. RunCards.Earnable.Select(RunCards.KeyOf)];
 
@@ -104,7 +104,10 @@ public sealed class RunsOptions
     /// <summary>De combien l'objectif d'une manche doit être dépassé pour qu'elle offre une carte (en pourcentage de l'objectif).</summary>
     public int RewardMarginPercent { get; set; } = DefaultRewardMarginPercent;
 
-    /// <summary>Les manches à thème (de la 2e à la dernière : jamais la première) ; sans valeur, la 3e seule.</summary>
+    /// <summary>
+    /// Les manches qui peuvent avoir un thème (de la 2e à la dernière : jamais la première) ; sans valeur, les manches 2 à 4. Chaque playlist en tire une au
+    /// hasard, ou aucune (autant de chances pour chaque cas) ; le créateur choisit le thème de cette manche juste avant de la commencer.
+    /// </summary>
     public int[]? ThemedRounds { get; set; }
 
     public IReadOnlyList<int> EffectiveThemedRounds => ThemedRounds ?? [.. DefaultThemedRounds.Where(r => r <= Rounds)];

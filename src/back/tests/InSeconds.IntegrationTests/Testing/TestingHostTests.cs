@@ -152,6 +152,17 @@ public class TestingHostTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    [Fact]
+    public async Task RunsForceThemedRound_SansPlaylist_404()
+    {
+        var client = _host.CreateClient();
+        await client.PostAsync("/api/e2e/reset", null, TestContext.Current.CancellationToken);
+
+        var response = await client.PostAsync("/api/e2e/runs/force-themed-round?round=2", null, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
     [Theory]
     [InlineData("Production")]
     [InlineData("Staging")]

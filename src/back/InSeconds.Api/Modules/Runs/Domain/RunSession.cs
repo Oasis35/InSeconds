@@ -168,9 +168,21 @@ public sealed class RunSession
     /// </summary>
     public bool CanChooseDifficulty(RunChallenge challenge, int round) =>
         CurrentRound(challenge) == round
+        && challenge.Rules.PendingThemeRound != round
         && challenge.Rules.HasChoice(round)
         && _rounds.TrueForAll(r => r.Round != round)
         && !RoundStarted(challenge, round);
+
+    /// <summary>
+    /// Le créateur de la playlist peut encore choisir le thème de la manche en cours : c'est la manche en attente de thème et rien n'y a commencé.
+    /// Un autre joueur (un ami) ne choisit pas : son arrivée à cette manche la tire pour lui (<c>RunPlayer</c>), le thème devient celui de tous.
+    /// </summary>
+    public bool CanChooseTheme(RunChallenge challenge)
+    {
+        ArgumentNullException.ThrowIfNull(challenge);
+        return IsPending && challenge.CreatedBy == PlayerId && CurrentRound(challenge) is { } round && challenge.Rules.PendingThemeRound == round
+            && !RoundStarted(challenge, round);
+    }
 
     /// <summary>
     /// Quelque chose a commencé dans la manche en cours : une réponse (hors morceau neutralisé), une carte jouée, l'écoute ou le chrono du morceau
@@ -192,7 +204,8 @@ public sealed class RunSession
     public bool CanSwap(RunChallenge challenge)
     {
         ArgumentNullException.ThrowIfNull(challenge);
-        if (!IsPending || !challenge.Rules.HasSwap || CurrentRound(challenge) is not { } round || CanChooseDifficulty(challenge, round))
+        if (!IsPending || !challenge.Rules.HasSwap || CurrentRound(challenge) is not { } round || CanChooseDifficulty(challenge, round)
+            || challenge.Rules.PendingThemeRound == round)
             return false;
         // Jamais une fois le morceau écouté ou son chrono parti : le joueur le connaîtrait déjà.
         if (RoundOfCurrentTrack().ListenedSeconds > 0 || CurrentClockAt is not null)
@@ -653,6 +666,13 @@ public interface IRunsStore
     /// démarrages simultanés se suivent.
     /// </summary>
     Task LockPlayerStartAsync(Guid playerId, CancellationToken ct);
+
+    /// <summary>
+    /// Réserve ce défi jusqu'à la fin de la transaction et en relit l'état (règles, morceaux, réserve) : le thème d'une manche est écrit sur le défi,
+    /// partagé par tous ses joueurs, et deux joueurs qui y arrivent ensemble (le créateur qui choisit, un ami qui reçoit le thème mystère) se suivent
+    /// au lieu d'écrire chacun le leur.
+    /// </summary>
+    Task LockChallengeAsync(RunChallenge challenge, CancellationToken ct);
 
     /// <summary>Réserve le record de ce joueur jusqu'à la fin de la transaction : deux parties qui se terminent ensemble ne le créent pas deux fois.</summary>
     Task LockRecordAsync(Guid playerId, CancellationToken ct);

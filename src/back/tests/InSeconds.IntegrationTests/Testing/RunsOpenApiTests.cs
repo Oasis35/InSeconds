@@ -13,7 +13,7 @@ public class RunsOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(p
 
         Assert.Equal(
             [
-                "abandonRun", "chooseRunDifficulty", "getRunChallenge", "getRunComparison", "getRunSession", "getRunThemeOffer", "getRunsMe", "grantRunAccess", "joinRun",
+                "abandonRun", "chooseRunDifficulty", "chooseRunTheme", "getRunChallenge", "getRunComparison", "getRunSession", "getRunsMe", "grantRunAccess", "joinRun",
                 "launchRun", "listRunAccess", "refreshRunPreview", "revokeRunAccess", "startRunClock", "submitRunAnswer", "swapRunTrack", "updateRunListening",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));

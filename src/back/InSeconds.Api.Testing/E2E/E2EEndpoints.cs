@@ -157,6 +157,17 @@ public static class E2EEndpoints
                 new RunTrackEntry(t.Position, t.Round, tracks[t.TrackId].DeezerTrackId, tracks[t.TrackId].Artist, tracks[t.TrackId].Title))]));
         });
 
+        // La manche à thème de la dernière playlist de Run tirée : le tirage est aléatoire (une manche parmi `Runs:ThemedRounds`, ou aucune),
+        // ce qui rendrait le choix du thème imprévisible dans un E2E. Remis à zéro par /reset (la playlist disparaît).
+        e2e.MapPost("/runs/force-themed-round", async (int round, InSecondsDbContext db, CancellationToken ct) =>
+        {
+            var updated = await db.Database.ExecuteSqlInterpolatedAsync($"""
+                UPDATE runs.challenges SET rules = jsonb_set(rules, ARRAY['pendingThemeRound'], to_jsonb({round}))
+                WHERE id = (SELECT max(id) FROM runs.challenges)
+                """, ct);
+            return updated == 0 ? Results.NotFound() : Results.Ok();
+        });
+
         // Le faux Deezer ne donne plus d'extrait pour ces morceaux (le morceau existe toujours) : un Run les neutralise quand il y arrive.
         // Remis à zéro par /reset.
         e2e.MapPost("/deezer/without-preview", (WithoutPreviewRequest request, FakeDeezerState deezer) =>

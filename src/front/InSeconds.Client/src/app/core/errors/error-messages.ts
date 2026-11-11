@@ -62,6 +62,7 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'runs.no_challenge': 'errors.runs.no_challenge',
   'runs.session_not_found': 'errors.runs.session_not_found',
   'runs.swap_unavailable': 'errors.runs.swap_unavailable',
+  'runs.theme_locked': 'errors.runs.theme_locked',
   'runs.track_lock_not_released': 'errors.runs.track_lock_not_released',
   'runs.track_not_found': 'errors.runs.track_not_found',
 };

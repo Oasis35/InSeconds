@@ -7,7 +7,7 @@ import {
 import { toAppError } from '../../core/errors/app-error';
 import {
   RunComparison, RunCurrentTrack, RunDifficulty, RunFinish, RunLink, RunNeutralized, RunPassedRound, RunPlay, RunRecord, RunRound, RunRoundScore,
-  RunRoundSummary, RunSession, RunStatus, RunThemeOffer, RunTrack, RunsMe,
+  RunRoundSummary, RunSession, RunStatus, RunTrack, RunsMe,
 } from '../domain/run';
 import { RunCardKey, RunTrackEffects, isRunCard } from '../domain/run-cards';
 
@@ -75,14 +75,9 @@ export class RunsApi {
     return toComparison(await firstValueFrom(this.client.getRunComparison(code)));
   }
 
-  /** Les thèmes proposés au créateur d'une playlist (deux, tirés au hasard) ; vide : aucune manche à thème. */
-  async themeOffer(): Promise<readonly RunThemeOffer[]> {
-    return (await firstValueFrom(this.client.getRunThemeOffer())).map(t => ({ id: t.id, name: t.name, round: t.round, icon: t.icon ?? null }));
-  }
-
-  /** Lance une playlist neuve et la partie de son auteur ; `themeId` : le thème choisi pour la manche à thème, vide pour « Surprise ». */
-  launch(themeId: number | null = null): Promise<StartOutcome> {
-    return this.start(() => this.client.launchRun(themeId ?? undefined));
+  /** Lance une playlist neuve et la partie de son auteur ; le thème de la manche à thème se choisit plus tard, juste avant elle. */
+  launch(): Promise<StartOutcome> {
+    return this.start(() => this.client.launchRun());
   }
 
   /** Reprend la partie d'une playlist (ou la relève, pour un ami qui a reçu le lien). */
@@ -101,6 +96,11 @@ export class RunsApi {
   /** « Changer de morceau » : l'Échange offert de la manche ; rend la partie et le morceau de réserve, à la même place. */
   async swap(sessionId: number, position: number): Promise<RunPlay> {
     return toPlay(await firstValueFrom(this.client.swapRunTrack(sessionId, { position })));
+  }
+
+  /** Choisit le thème de la manche à thème (le créateur seulement) : `themeId` vide pour « Thème mystère », que le serveur tire. */
+  async chooseTheme(sessionId: number, round: number, themeId: number | null): Promise<RunPlay> {
+    return toPlay(await firstValueFrom(this.client.chooseRunTheme(sessionId, { round, themeId: themeId ?? undefined })));
   }
 
   /** Choisit la difficulté de la manche en cours ; la réponse porte son premier morceau (son extrait ne part qu'avec le choix). */
@@ -277,6 +277,12 @@ function toSession(session: RunSessionResponse): RunSession {
             maxScore: option.maxScore,
             listenSeconds: option.listenSeconds,
           })),
+        }
+      : null,
+    themeChoice: session.themeChoice
+      ? {
+          round: session.themeChoice.round,
+          themes: session.themeChoice.themes.map(t => ({ id: t.id, name: t.name, round: t.round, icon: t.icon ?? null })),
         }
       : null,
     hand: (session.hand ?? []).filter(c => isRunCard(c.card)).map(c => ({ slot: c.slot, card: c.card as RunCardKey })),

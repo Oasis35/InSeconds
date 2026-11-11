@@ -1,4 +1,4 @@
-using InSeconds.Api.Modules.Gameplay.Domain;
+using InSeconds.Api.Modules.Gameplay.Contracts;
 using InSeconds.Api.Modules.Runs.Application;
 using InSeconds.Api.Modules.Runs.Domain;
 
@@ -8,7 +8,6 @@ namespace InSeconds.UnitTests.Runs;
 public class RunThemesTests
 {
     private static readonly RunRules Rules = RunsOptions.DefaultRules();
-    private readonly RankBandSelector _selector = new(new FisherYatesShuffle());
 
     [Fact]
     public void SansTheme_TousLesMorceauxSontDedans_AvecTheme_SeulementCeuxQuiL_Ont()
@@ -32,8 +31,8 @@ public class RunThemesTests
     }
 
     [Fact]
-    public void LesReglesParDefaut_UneSeuleMancheATheme_LaTroisieme_JamaisLaPremiere() =>
-        Assert.Equal([3], new RunsOptions().EffectiveThemedRounds);
+    public void LesReglesParDefaut_LesManchesDeuxATroisEtQuatrePeuventAvoirUnTheme_JamaisLaPremiere() =>
+        Assert.Equal([2, 3, 4], new RunsOptions().EffectiveThemedRounds);
 
     [Theory]
     [InlineData(1)]
@@ -42,38 +41,101 @@ public class RunThemesTests
         Assert.Contains(RunsOptionsChecks.Problems(new RunsOptions { ThemedRounds = [round] }), p => p.Contains("ThemedRounds"));
 
     [Fact]
-    public void LaMancheATheme_NeTireQueDansLeTheme_LesAutresSuiventLeurTranche_AucunMorceauDeuxFois()
+    public void UnChoixDeThemeDemandeTroisThemesAuMoins_DeuxAChoisirEtDeQuoiTirerLeMystere() =>
+        Assert.Equal(3, RunThemes.MinEligibleThemes);
+
+    private static readonly DateTimeOffset Now = new(2026, 11, 11, 8, 0, 0, TimeSpan.Zero);
+    private static readonly IRunScoringPolicy Scoring = new ArtistTitleScoring();
+    private static readonly RoundOutcome Found = new(true, true, 10m, 0);
+    private static readonly Guid Creator = Guid.NewGuid();
+
+    // 20 morceaux (1 à 20) et 8 de réserve (21 à 28) ; la manche 2 attend son thème.
+    private static RunChallenge Pending(int round = 2)
     {
-        // 100 morceaux de rang décroissant ; les 10 de rang moyen (41 à 50) ont le thème 7.
-        var pool = Enumerable.Range(1, 100).Select(id => new RankedTrack(id, 1_000_000 - id * 1000, id is >= 41 and <= 50 ? [7] : null)).ToList();
-        var rules = Rules with { Themes = [new RunRoundTheme(3, 7, "Années 80")] };
+        var rules = Rules with { PendingThemeRound = round };
+        var tracks = Enumerable.Range(1, rules.TrackCount)
+            .Select(id => new PlannedTrack(id, (id - 1) / rules.TracksPerRound + 1, rules.MultiplierOf((id - 1) / rules.TracksPerRound + 1))).ToList();
+        var reserve = Enumerable.Range(1, rules.Rounds * rules.ReservePerRound)
+            .Select(i => new PlannedTrack(20 + i, (i - 1) / rules.ReservePerRound + 1, 1m)).ToList();
+        return RunChallenge.Create("K7Q2M9", 1, rules, tracks, Creator, Now, reserve);
+    }
 
-        var selection = _selector.Select(pool, rules, seed: 5);
-
-        Assert.True(selection.IsSufficient);
-        var all = selection.Tracks.Concat(selection.Reserve!).ToList();
-        Assert.Equal(all.Count, all.Select(t => t.TrackId).Distinct().Count());
-        Assert.All(all.Where(t => t.Round == 3), t => Assert.InRange(t.TrackId, 41, 50));
-        Assert.Equal(5, selection.Tracks.Count(t => t.Round == 3));
-        Assert.Equal(20, selection.Tracks.Count);
+    private static RunSession InRoundTwo(RunChallenge challenge, Guid? player = null)
+    {
+        var session = RunSession.Start(0, player ?? Creator, Now);
+        for (var i = 0; i < 5; i++)
+            session.Answer(challenge, Found, Scoring, Now);
+        return session;
     }
 
     [Fact]
-    public void UnThemeTropPetitPourSaManche_LaRendASaTranche()
+    public void ApplyTheme_RemplaceLesMorceauxEtLaReserveDeLaManche_LesAutresMancheNeBougentPas_LeThemeEstFige()
     {
-        var pool = Enumerable.Range(1, 100).Select(id => new RankedTrack(id, 1_000_000 - id * 1000, id <= 3 ? [7] : null)).ToList();
+        var challenge = Pending();
 
-        var selection = _selector.Select(pool, Rules with { Themes = [new RunRoundTheme(3, 7, "Films")] }, seed: 5);
+        challenge.ApplyTheme(new RunRoundTheme(2, 7, "Films"), [101, 102, 103, 104, 105], [106, 107]);
 
-        Assert.True(selection.IsSufficient);
-        Assert.All(selection.Tracks.Where(t => t.Round == 3), t => Assert.InRange(t.TrackId, 51, 75));
+        Assert.Equal([101, 102, 103, 104, 105], challenge.Tracks.Where(t => t.Round == 2).OrderBy(t => t.Position).Select(t => t.TrackId));
+        Assert.Equal([106, 107], challenge.ReserveOf(2).Select(r => r.TrackId));
+        Assert.Equal(Enumerable.Range(1, 5), challenge.Tracks.Where(t => t.Round == 1).Select(t => t.TrackId));
+        Assert.Equal([3], challenge.Tracks.Where(t => t.Round == 3).Select(t => (int)t.Round).Distinct());
+        Assert.Null(challenge.Rules.PendingThemeRound);
+        Assert.Equal(new RunRoundTheme(2, 7, "Films"), Assert.Single(challenge.Rules.Themes!));
     }
 
     [Fact]
-    public void SansManchesATheme_LeTirageNEstPasChange()
+    public void ApplyTheme_RefuseUneMancheQuiNAttendPasDeTheme()
     {
-        var pool = Enumerable.Range(1, 100).Select(id => new RankedTrack(id, 1_000_000 - id * 1000)).ToList();
+        var challenge = Pending();
 
-        Assert.Equal(_selector.Select(pool, Rules, seed: 9).Tracks, _selector.Select(pool, Rules with { Themes = [] }, seed: 9).Tracks);
+        Assert.Throws<InvalidOperationException>(() => challenge.ApplyTheme(new RunRoundTheme(3, 7, "Films"), [101, 102, 103, 104, 105], [106, 107]));
+    }
+
+    [Fact]
+    public void ApplyTheme_RefuseUnMorceauDEUneAutreManche_OuLeMauvaisNombre()
+    {
+        var challenge = Pending();
+
+        Assert.Throws<ArgumentException>(() => challenge.ApplyTheme(new RunRoundTheme(2, 7, "Films"), [1, 102, 103, 104, 105], [106, 107]));
+        Assert.Throws<ArgumentException>(() => challenge.ApplyTheme(new RunRoundTheme(2, 7, "Films"), [101, 102, 103, 104], [106, 107]));
+        Assert.Equal(2, challenge.Rules.PendingThemeRound);
+    }
+
+    [Fact]
+    public void DropPendingTheme_LaMancheSeJoueSansTheme_AvecSesMorceauxDeRang()
+    {
+        var challenge = Pending();
+
+        challenge.DropPendingTheme();
+
+        Assert.Null(challenge.Rules.PendingThemeRound);
+        Assert.Null(challenge.Rules.Themes);
+        Assert.Equal(Enumerable.Range(6, 5), challenge.Tracks.Where(t => t.Round == 2).Select(t => t.TrackId));
+    }
+
+    [Fact]
+    public void LeCreateurChoisitLeThemeAvantLePremierSonDeLaManche_LaDifficulteAttendLeTheme()
+    {
+        var challenge = Pending();
+        var session = InRoundTwo(challenge);
+
+        Assert.True(session.CanChooseTheme(challenge));
+        Assert.False(session.CanChooseDifficulty(challenge, 2));
+        Assert.False(session.CanSwap(challenge));
+
+        challenge.ApplyTheme(new RunRoundTheme(2, 7, "Films"), [101, 102, 103, 104, 105], [106, 107]);
+
+        Assert.False(session.CanChooseTheme(challenge));
+        Assert.True(session.CanChooseDifficulty(challenge, 2));
+    }
+
+    [Fact]
+    public void UnAmiNeChoisitPasLeTheme_ElleNEstPasProposeAvantLaMancheEnAttente()
+    {
+        var challenge = Pending();
+
+        Assert.False(InRoundTwo(challenge, Guid.NewGuid()).CanChooseTheme(challenge));
+        // Au départ, la manche 1 n'a jamais de thème : rien n'est proposé.
+        Assert.False(RunSession.Start(0, Creator, Now).CanChooseTheme(challenge));
     }
 }
