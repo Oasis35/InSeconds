@@ -11,7 +11,7 @@ describe('ThemeDetailComponent', () => {
     poolTrack({ id: 3, artist: 'Soft Cell', title: 'Tainted Love', isDisabled: true }),
   ];
 
-  function render(theme: ThemeRow = { id: 1, name: 'Années 80', total: 3, playable: 1, health: 'unplayable' }) {
+  function render(theme: ThemeRow = { id: 1, name: 'Années 80', icon: null, total: 3, playable: 1, health: 'unplayable' }) {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     const fixture = TestBed.createComponent(ThemeDetailComponent);
     fixture.componentRef.setInput('theme', theme);
@@ -23,7 +23,18 @@ describe('ThemeDetailComponent', () => {
   it('avertit qu\'il manque des morceaux jouables, et seulement alors', () => {
     expect(render().el.querySelector('[data-testid="theme-warning"]')).not.toBeNull();
     TestBed.resetTestingModule();
-    expect(render({ id: 1, name: 'Films', total: 20, playable: 20, health: 'varied' }).el.querySelector('[data-testid="theme-warning"]')).toBeNull();
+    expect(render({ id: 1, name: 'Films', icon: null, total: 20, playable: 20, health: 'varied' }).el.querySelector('[data-testid="theme-warning"]')).toBeNull();
+  });
+
+  it('montre l\'icône du thème et ouvre le choix d\'icône', () => {
+    const { el, cmp } = render({ id: 1, name: 'Années 80', icon: 'music', total: 3, playable: 1, health: 'unplayable' });
+    let picked = 0;
+    cmp.pickIcon.subscribe(() => picked++);
+
+    expect(el.querySelector('h2 svg')).not.toBeNull();
+    (el.querySelector('[data-testid="theme-icon-open"]') as HTMLElement).click();
+
+    expect(picked).toBe(1);
   });
 
   it('liste les morceaux avec leur état (sans extrait, désactivé)', () => {
@@ -67,7 +78,7 @@ describe('ThemeDetailComponent', () => {
     const { el } = render();
     expect(el.querySelector<HTMLButtonElement>('[data-testid="theme-delete"]')!.disabled).toBe(true);
     TestBed.resetTestingModule();
-    const empty = render({ id: 2, name: 'Vide', total: 0, playable: 0, health: 'unplayable' });
+    const empty = render({ id: 2, name: 'Vide', icon: null, total: 0, playable: 0, health: 'unplayable' });
     expect(empty.el.querySelector<HTMLButtonElement>('[data-testid="theme-delete"]')!.disabled).toBe(false);
   });
 

@@ -10,7 +10,7 @@ describe('RunThemeScreenComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
     fixture = TestBed.createComponent(RunThemeScreenComponent);
-    fixture.componentRef.setInput('offer', [{ id: 1, name: 'Années 80', round: 3 }, { id: 2, name: 'Rap français', round: 3 }]);
+    fixture.componentRef.setInput('offer', [{ id: 1, name: 'Années 80', round: 3, icon: null }, { id: 2, name: 'Rap français', round: 3, icon: null }]);
     fixture.componentRef.setInput('choice', 1);
     fixture.detectChanges();
   });
@@ -21,6 +21,14 @@ describe('RunThemeScreenComponent', () => {
     expect(el().textContent).toContain('Années 80');
     expect(el().textContent).toContain('Rap français');
     expect(Array.from(tiles).map(t => t.getAttribute('aria-checked'))).toEqual(['true', 'false', 'false']);
+  });
+
+  it('montre l\'icône d\'un thème qui en a une, rien pour les autres', () => {
+    fixture.componentRef.setInput('offer', [{ id: 1, name: 'Années 80', round: 3, icon: 'music' }, { id: 2, name: 'Rap français', round: 3, icon: null }]);
+    fixture.detectChanges();
+
+    expect(el().querySelector('[data-theme-id="1"] svg')).not.toBeNull();
+    expect(el().querySelector('[data-theme-id="2"] svg')).toBeNull();
   });
 
   it('« Surprise » est coché quand aucun thème ne l\'est', () => {

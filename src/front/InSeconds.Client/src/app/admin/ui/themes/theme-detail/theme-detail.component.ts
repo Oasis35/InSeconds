@@ -4,6 +4,7 @@ import { PoolTrack, THEME_MAX_LENGTH } from '../../../domain/pool-track';
 import { ThemeRow, filterByLabel, isPlayableTrack, missingTracks } from '../../../domain/themes';
 import { HEALTH_COLOR } from '../health-style';
 import { ButtonComponent } from '../../../../ui/button/button.component';
+import { ThemeIconComponent } from '../../../../ui/theme-icon/theme-icon.component';
 
 /**
  * Le détail d'un thème : son nom (renommable), son état, l'avertissement quand il manque des morceaux jouables, et la liste de ses morceaux
@@ -11,7 +12,7 @@ import { ButtonComponent } from '../../../../ui/button/button.component';
  */
 @Component({
   selector: 'app-theme-detail',
-  imports: [TranslatePipe, ButtonComponent],
+  imports: [TranslatePipe, ButtonComponent, ThemeIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-3">
@@ -32,7 +33,10 @@ import { ButtonComponent } from '../../../../ui/button/button.component';
           (change)="renameTo(valueOf($event))" data-testid="theme-name-input" />
       } @else {
         <h2 class="text-xl font-semibold flex flex-wrap items-center gap-3" style="color:var(--text-hi)">
-          {{ theme().name }}
+          <span class="inline-flex items-center gap-2">
+            <app-theme-icon [name]="theme().icon" [size]="22" />
+            {{ theme().name }}
+          </span>
           <span class="text-xs font-normal inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full" [style.color]="color[theme().health]"
             [style.border]="'1px solid ' + color[theme().health]">
             <span aria-hidden="true" class="w-2 h-2 rounded-full" [style.background]="color[theme().health]"></span>
@@ -53,7 +57,10 @@ import { ButtonComponent } from '../../../../ui/button/button.component';
         <p role="alert" class="text-xs" style="color:var(--text-error)" data-testid="theme-error">{{ key | translate }}</p>
       }
 
-      <button type="button" appButton (click)="addTracks.emit()" data-testid="theme-add-open">{{ 'admin.themes.addTracks' | translate }}</button>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" appButton (click)="addTracks.emit()" data-testid="theme-add-open">{{ 'admin.themes.addTracks' | translate }}</button>
+        <button type="button" appButton variant="neutral" (click)="pickIcon.emit()" data-testid="theme-icon-open">{{ 'admin.themes.changeIcon' | translate }}</button>
+      </div>
 
       @if (tracks().length > 0) {
         <input type="search" class="app-input" [value]="text()" (input)="text.set(valueOf($event))"
@@ -96,6 +103,7 @@ export class ThemeDetailComponent {
   readonly rename = output<string>();
   readonly remove = output();
   readonly addTracks = output();
+  readonly pickIcon = output();
   readonly listen = output<PoolTrack>();
   readonly removeTrack = output<PoolTrack>();
 

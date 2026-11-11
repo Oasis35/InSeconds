@@ -33,15 +33,15 @@ describe('themes', () => {
     const rows = themeRows([{ id: 2, name: 'Films' }, { id: 1, name: 'Années 80' }], tracks);
 
     expect(rows).toEqual([
-      { id: 1, name: 'Années 80', total: 2, playable: 1, health: 'unplayable' },
-      { id: 2, name: 'Films', total: 1, playable: 1, health: 'unplayable' },
+      { id: 1, name: 'Années 80', icon: null, total: 2, playable: 1, health: 'unplayable' },
+      { id: 2, name: 'Films', icon: null, total: 1, playable: 1, health: 'unplayable' },
     ]);
   });
 
   it('filtre les thèmes par nom (accents et casse ignorés) et par état', () => {
     const rows = [
-      { id: 1, name: 'Années 80', total: 4, playable: 4, health: 'unplayable' as const },
-      { id: 2, name: 'Films', total: 20, playable: 20, health: 'varied' as const },
+      { id: 1, name: 'Années 80', icon: null, total: 4, playable: 4, health: 'unplayable' as const },
+      { id: 2, name: 'Films', icon: null, total: 20, playable: 20, health: 'varied' as const },
     ];
 
     expect(filterThemes(rows, 'annees', 'all').map(r => r.id)).toEqual([1]);

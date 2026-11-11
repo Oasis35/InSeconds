@@ -16,7 +16,7 @@ class FakeAudio implements PreviewAudio {
 }
 
 describe('ThemesPage', () => {
-  const themes: PoolTheme[] = [{ id: 1, name: 'Années 80', trackCount: 2 }, { id: 2, name: 'Films', trackCount: 0 }];
+  const themes: PoolTheme[] = [{ id: 1, name: 'Années 80', trackCount: 2, icon: null }, { id: 2, name: 'Films', trackCount: 0, icon: null }];
   const aha = poolTrack({ id: 1, deezerTrackId: 11, artist: 'a-ha', title: 'Take On Me', themeIds: [1, 2] });
   const toto = poolTrack({ id: 2, deezerTrackId: 12, artist: 'Toto', title: 'Africa', themeIds: [1] });
   const eminem = poolTrack({ id: 3, deezerTrackId: 13, artist: 'Eminem', title: 'Lose Yourself' });
@@ -71,6 +71,46 @@ describe('ThemesPage', () => {
     expect(element.querySelector('[data-testid="theme-track"]')).toBeNull();
   });
 
+  it('change l\'icône du thème ouvert depuis le sélecteur, puis revient au détail', async () => {
+    const { element, settle } = await render({ query: { theme: '1' } });
+
+    (element.querySelector('[data-testid="theme-icon-open"]') as HTMLElement).click();
+    await settle();
+    expect(element.querySelector('[data-testid="theme-icon-picker"]')).not.toBeNull();
+
+    (element.querySelector('[data-testid="theme-icon-option"][aria-label="guitar"]') as HTMLElement).click();
+    await settle();
+    (element.querySelector('[data-testid="theme-icon-save"]') as HTMLElement).click();
+    await settle();
+
+    expect(api.setThemeIcon).toHaveBeenCalledWith(1, 'guitar');
+    expect(element.querySelector('[data-testid="theme-icon-picker"]')).toBeNull();
+    expect(element.querySelector('[data-testid="theme-add-open"]')).not.toBeNull();
+  });
+
+  it('« Sans icône » retire l\'icône', async () => {
+    const { element, settle } = await render({ query: { theme: '1' } });
+
+    (element.querySelector('[data-testid="theme-icon-open"]') as HTMLElement).click();
+    await settle();
+    (element.querySelector('[data-testid="theme-icon-clear"]') as HTMLElement).click();
+    await settle();
+
+    expect(api.setThemeIcon).toHaveBeenCalledWith(1, null);
+  });
+
+  it('une erreur à l\'enregistrement de l\'icône s\'affiche dans le sélecteur, qui reste ouvert', async () => {
+    const { element, settle } = await render({ query: { theme: '1' }, api: { setThemeIcon: vi.fn(async () => { throw problem(404, 'catalogue.theme_not_found'); }) } });
+
+    (element.querySelector('[data-testid="theme-icon-open"]') as HTMLElement).click();
+    await settle();
+    (element.querySelector('[data-testid="theme-icon-clear"]') as HTMLElement).click();
+    await settle();
+
+    expect(element.querySelector('[data-testid="theme-icon-error"]')).not.toBeNull();
+    expect(element.querySelector('[data-testid="theme-icon-picker"]')).not.toBeNull();
+  });
+
   it('retire un morceau du thème sans le sortir du pool', async () => {
     const { element, settle } = await render({ query: { theme: '1' } });
 
@@ -109,7 +149,7 @@ describe('ThemesPage', () => {
     const { element, fixture, settle } = await render({
       api: {
         listThemes: vi.fn(async () => created),
-        addTheme: vi.fn(async (name: string) => { created.push({ id: 7, name, trackCount: 0 }); }),
+        addTheme: vi.fn(async (name: string) => { created.push({ id: 7, name, trackCount: 0, icon: null }); }),
       },
     });
 

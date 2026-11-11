@@ -42,6 +42,8 @@ export interface PoolTheme {
   readonly name: string;
   /** Combien de morceaux l'ont : un thème sans morceau seulement se supprime. */
   readonly trackCount: number;
+  /** Le nom Lucide de son icône (stock de `ui/theme-icon`) ; `null` : aucune. */
+  readonly icon: string | null;
 }
 
 export const THEME_MAX_LENGTH = 60;

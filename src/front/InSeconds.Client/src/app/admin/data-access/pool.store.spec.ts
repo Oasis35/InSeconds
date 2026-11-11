@@ -28,7 +28,7 @@ describe('PoolStore', () => {
   }
 
   describe('thèmes', () => {
-    const themes = [{ id: 1, name: 'Années 80', trackCount: 2 }];
+    const themes = [{ id: 1, name: 'Années 80', trackCount: 2, icon: null }];
 
     it('lit la liste des thèmes avec le pool', async () => {
       await setup([eminem], { listThemes: vi.fn(async () => themes) });
@@ -78,6 +78,16 @@ describe('PoolStore', () => {
       expect(await store.removeTrackFromTheme(1, 5)).toBeNull();
 
       expect(api.setTrackThemes).toHaveBeenCalledWith(5, [2]);
+    });
+
+    it('donne ou retire l\'icône d\'un thème', async () => {
+      await setup([], { listThemes: vi.fn(async () => themes) });
+
+      expect(await store.setThemeIcon(1, 'music')).toBeNull();
+      expect(await store.setThemeIcon(1, null)).toBeNull();
+
+      expect(api.setThemeIcon).toHaveBeenNthCalledWith(1, 1, 'music');
+      expect(api.setThemeIcon).toHaveBeenNthCalledWith(2, 1, null);
     });
 
     it('un morceau de Deezer absent du pool y est ajouté, puis mis dans le thème', async () => {

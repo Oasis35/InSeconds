@@ -24,6 +24,7 @@ function defaults() {
     listThemes: vi.fn<() => Promise<PoolTheme[]>>(() => Promise.resolve([])),
     addTheme: vi.fn<(name: string) => Promise<void>>(() => Promise.resolve()),
     renameTheme: vi.fn<(id: number, name: string) => Promise<void>>(() => Promise.resolve()),
+    setThemeIcon: vi.fn<(id: number, icon: string | null) => Promise<void>>(() => Promise.resolve()),
     deleteTheme: vi.fn<(id: number) => Promise<void>>(() => Promise.resolve()),
     setTrackThemes: vi.fn<(id: number, themeIds: readonly number[]) => Promise<void>>(() => Promise.resolve()),
     searchDeezer: vi.fn<(query: string) => Promise<DeezerResult[]>>(() => Promise.resolve([])),

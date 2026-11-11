@@ -13,6 +13,7 @@ import { PoolStore } from '../../data-access/pool.store';
 import { DeezerResult, PoolTrack } from '../../domain/pool-track';
 import { themeRows } from '../../domain/themes';
 import { ThemeAddComponent } from '../../ui/themes/theme-add/theme-add.component';
+import { ThemeIconPickerComponent } from '../../ui/themes/theme-icon-picker/theme-icon-picker.component';
 import { ThemeDetailComponent } from '../../ui/themes/theme-detail/theme-detail.component';
 import { ThemeListComponent } from '../../ui/themes/theme-list/theme-list.component';
 
@@ -28,7 +29,7 @@ type DeezerStatus = 'loading' | 'success' | 'error';
  */
 @Component({
   selector: 'app-themes-page',
-  imports: [TranslatePipe, ErrorMessageComponent, ThemeListComponent, ThemeDetailComponent, ThemeAddComponent],
+  imports: [TranslatePipe, ErrorMessageComponent, ThemeListComponent, ThemeDetailComponent, ThemeAddComponent, ThemeIconPickerComponent],
   providers: [PoolStore, DeezerSearchStore, AudioPreviewPlayer],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full min-w-0' },
@@ -48,14 +49,16 @@ type DeezerStatus = 'loading' | 'success' | 'error';
         <section class="lg:block lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:rounded-(--radius-card) lg:p-5"
           [class.hidden]="!selected()" data-testid="theme-panel">
           @if (selected(); as theme) {
-            @if (adding()) {
+            @if (pickingIcon()) {
+              <app-theme-icon-picker [themeName]="theme.name" [current]="theme.icon" [errorKey]="detailErrorKey()" (close)="pickingIcon.set(false)" (choose)="setIcon(theme.id, $event)" />
+            } @else if (adding()) {
               <app-theme-add [poolTracks]="pool.tracks()" [themeId]="theme.id" [deezerQuery]="search.query()" [deezerResults]="search.results()"
                 [searching]="search.searching()" [searchErrorKey]="searchErrorKey()" [statuses]="deezerStatuses()"
                 (close)="adding.set(false)" (listen)="listen($event)" (previewResult)="previewResult($event)"
                 (deezerQueryChange)="search.setQuery($event)" (addPicked)="addPicked(theme.id, $event)" (addDeezer)="addDeezer(theme.id, $event)" />
             } @else {
               <app-theme-detail [theme]="theme" [tracks]="themeTracks()" [errorKey]="detailErrorKey()" (back)="selectedId.set(null)"
-                (rename)="renameTheme(theme.id, $event)" (remove)="deleteTheme(theme.id)" (addTracks)="adding.set(true)" (listen)="listen($event)"
+                (rename)="renameTheme(theme.id, $event)" (remove)="deleteTheme(theme.id)" (addTracks)="adding.set(true)" (pickIcon)="pickingIcon.set(true)" (listen)="listen($event)"
                 (removeTrack)="removeTrack(theme.id, $event)" />
             }
           } @else {
@@ -78,6 +81,7 @@ export class ThemesPage {
 
   protected readonly selectedId = signal<number | null>(null);
   protected readonly adding = signal(false);
+  protected readonly pickingIcon = signal(false);
   protected readonly listErrorKey = signal<string | null>(null);
   protected readonly detailErrorKey = signal<string | null>(null);
   protected readonly deezerStatuses = signal<Readonly<Record<number, DeezerStatus>>>({});
@@ -112,6 +116,7 @@ export class ThemesPage {
 
   protected open(id: number): void {
     this.adding.set(false);
+    this.pickingIcon.set(false);
     this.detailErrorKey.set(null);
     this.selectedId.set(id);
   }
@@ -125,6 +130,13 @@ export class ThemesPage {
 
   protected async renameTheme(id: number, name: string): Promise<void> {
     this.detailErrorKey.set(this.keyOf(await this.pool.renameTheme(id, name)));
+  }
+
+  /** Enregistre l'icône (`null` : aucune) et revient au détail ; en cas d'erreur, le sélecteur reste ouvert pour réessayer. */
+  protected async setIcon(id: number, icon: string | null): Promise<void> {
+    const error = await this.pool.setThemeIcon(id, icon);
+    this.detailErrorKey.set(this.keyOf(error));
+    if (!error) this.pickingIcon.set(false);
   }
 
   protected async deleteTheme(id: number): Promise<void> {

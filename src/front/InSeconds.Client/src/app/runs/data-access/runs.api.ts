@@ -77,7 +77,7 @@ export class RunsApi {
 
   /** Les thèmes proposés au créateur d'une playlist (deux, tirés au hasard) ; vide : aucune manche à thème. */
   async themeOffer(): Promise<readonly RunThemeOffer[]> {
-    return (await firstValueFrom(this.client.getRunThemeOffer())).map(t => ({ id: t.id, name: t.name, round: t.round }));
+    return (await firstValueFrom(this.client.getRunThemeOffer())).map(t => ({ id: t.id, name: t.name, round: t.round, icon: t.icon ?? null }));
   }
 
   /** Lance une playlist neuve et la partie de son auteur ; `themeId` : le thème choisi pour la manche à thème, vide pour « Surprise ». */

@@ -27,6 +27,7 @@ export function missingTracks(playableCount: number): number {
 export interface ThemeRow {
   readonly id: number;
   readonly name: string;
+  readonly icon: string | null;
   readonly total: number;
   readonly playable: number;
   readonly health: ThemeHealth;
@@ -35,12 +36,12 @@ export interface ThemeRow {
 export type ThemeFilter = 'all' | ThemeHealth;
 
 /** Les thèmes par nom, chacun avec ses morceaux comptés d'après le pool. */
-export function themeRows(themes: readonly { id: number; name: string }[], tracks: readonly PoolTrack[]): ThemeRow[] {
+export function themeRows(themes: readonly { id: number; name: string; icon?: string | null }[], tracks: readonly PoolTrack[]): ThemeRow[] {
   return themes
     .map(theme => {
       const inTheme = tracks.filter(t => t.themeIds.includes(theme.id));
       const playable = inTheme.filter(isPlayableTrack).length;
-      return { id: theme.id, name: theme.name, total: inTheme.length, playable, health: themeHealth(playable) };
+      return { id: theme.id, name: theme.name, icon: theme.icon ?? null, total: inTheme.length, playable, health: themeHealth(playable) };
     })
     .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
 }

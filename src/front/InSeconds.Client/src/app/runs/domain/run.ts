@@ -209,6 +209,8 @@ export interface RunThemeOffer {
   readonly name: string;
   /** La manche qui aura ce thème. */
   readonly round: number;
+  /** Le nom Lucide de son icône (stock de `ui/theme-icon`) ; `null` : aucune. */
+  readonly icon: string | null;
 }
 
 export interface RunLink {

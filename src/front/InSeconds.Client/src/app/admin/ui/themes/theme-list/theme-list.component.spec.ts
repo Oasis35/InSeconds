@@ -5,9 +5,9 @@ import { ThemeListComponent } from './theme-list.component';
 
 describe('ThemeListComponent', () => {
   const rows: ThemeRow[] = [
-    { id: 1, name: 'Années 2000', total: 32, playable: 30, health: 'varied' },
-    { id: 2, name: 'Disney', total: 9, playable: 8, health: 'thin' },
-    { id: 3, name: 'Années 80', total: 7, playable: 4, health: 'unplayable' },
+    { id: 1, name: 'Années 2000', icon: 'music', total: 32, playable: 30, health: 'varied' },
+    { id: 2, name: 'Disney', icon: null, total: 9, playable: 8, health: 'thin' },
+    { id: 3, name: 'Années 80', icon: null, total: 7, playable: 4, health: 'unplayable' },
   ];
 
   function render() {
@@ -27,6 +27,14 @@ describe('ThemeListComponent', () => {
     expect(el.textContent).toContain('admin.themes.missing');
     expect(el.querySelectorAll('[data-testid="theme-card"]')[2].textContent).toContain('admin.themes.missing');
     expect(el.querySelectorAll('[data-testid="theme-card"]')[0].textContent).not.toContain('admin.themes.missing');
+  });
+
+  it('montre l\'icône des thèmes qui en ont une', () => {
+    const el = render().el;
+
+    const withIcon = Array.from(el.querySelectorAll('[data-testid="theme-card"]')).filter(card => card.querySelector('svg') !== null);
+    expect(withIcon).toHaveLength(1);
+    expect(withIcon[0].textContent).toContain('Années 2000');
   });
 
   it('cherche par nom pendant la frappe, accents ignorés', () => {

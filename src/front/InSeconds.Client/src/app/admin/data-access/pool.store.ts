@@ -233,6 +233,7 @@ export const PoolStore = signalStore(
       add: (deezerTrackId: number) => mutate(() => api.addTrack(deezerTrackId)),
       addTheme: (name: string) => mutate(() => api.addTheme(name.trim())),
       renameTheme: (id: number, name: string) => mutate(() => api.renameTheme(id, name.trim())),
+      setThemeIcon: (id: number, icon: string | null) => mutate(() => api.setThemeIcon(id, icon)),
       deleteTheme: (id: number) => mutate(() => api.deleteTheme(id)),
       setTrackThemes: (id: number, themeIds: readonly number[]) => mutate(() => api.setTrackThemes(id, themeIds)),
       /** Met ces morceaux du pool dans le thème (un par un, ceux qui l'ont déjà sont laissés), puis relit. */

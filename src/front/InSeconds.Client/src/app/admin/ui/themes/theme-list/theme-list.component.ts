@@ -4,6 +4,7 @@ import { THEME_MAX_LENGTH } from '../../../domain/pool-track';
 import { MIN_PLAYABLE_TRACKS, ThemeFilter, ThemeRow, VARIED_FROM_TRACKS, filterThemes, missingTracks } from '../../../domain/themes';
 import { HEALTH_COLOR } from '../health-style';
 import { ButtonComponent } from '../../../../ui/button/button.component';
+import { ThemeIconComponent } from '../../../../ui/theme-icon/theme-icon.component';
 
 /**
  * La liste des thèmes : une recherche par nom, des puces par état (tous, pas jouables, peu variés, variés), un formulaire pour en créer un,
@@ -11,7 +12,7 @@ import { ButtonComponent } from '../../../../ui/button/button.component';
  */
 @Component({
   selector: 'app-theme-list',
-  imports: [TranslatePipe, ButtonComponent],
+  imports: [TranslatePipe, ButtonComponent, ThemeIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-3">
@@ -46,7 +47,10 @@ import { ButtonComponent } from '../../../../ui/button/button.component';
               style="background:var(--bg-surface-2);border:1px solid var(--border-strong)"
               [style.border-color]="row.id === selectedId() ? 'var(--border-neutral)' : null" [attr.aria-current]="row.id === selectedId() ? 'true' : null">
               <span class="flex items-center justify-between gap-3">
-                <span class="font-semibold truncate" style="color:var(--text-hi)">{{ row.name }}</span>
+                <span class="font-semibold truncate inline-flex items-center gap-2 min-w-0" style="color:var(--text-hi)">
+                  <app-theme-icon [name]="row.icon" [size]="18" />
+                  <span class="truncate">{{ row.name }}</span>
+                </span>
                 <span class="shrink-0 inline-flex items-center gap-1.5 text-xs px-2.5 py-0.5 rounded-full" [style.color]="color[row.health]"
                   [style.border]="'1px solid ' + color[row.health]">
                   <span aria-hidden="true" class="w-2 h-2 rounded-full" [style.background]="color[row.health]"></span>
