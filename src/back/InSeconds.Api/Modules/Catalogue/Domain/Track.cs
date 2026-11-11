@@ -33,6 +33,12 @@ public sealed class Track
 
     public string? CoverHash { get; private set; }
 
+    /// <summary>
+    /// Autres titres acceptés comme bonne réponse (« 22h31 - Titre » pour « Titre »), saisis par l'admin ; vide : aucun. Jamais montrés
+    /// au joueur : seul <see cref="Title"/> (nettoyé) l'est.
+    /// </summary>
+    public string[] AltTitles { get; private set; } = [];
+
     public short? ReleaseYear { get; private set; }
 
     /// <summary>Rang (popularité) chez Deezer, qui servira à la difficulté de Runs.</summary>
@@ -112,6 +118,28 @@ public sealed class Track
         var newTitle = RequireText(title, nameof(title));
         Artist = newArtist;
         Title = newTitle;
+        UpdatedAt = now;
+    }
+
+    /// <summary>Nombre d'autres titres au plus (au-delà, le titre de référence est à revoir).</summary>
+    public const int MaxAltTitles = 5;
+
+    /// <summary>
+    /// Remplace les titres alternatifs : espaces rognés, vides, doublons (sans la casse) et copie du titre de référence écartés.
+    /// Longueur du titre (300) et nombre (<see cref="MaxAltTitles"/>) bornés, comme le validateur de la route.
+    /// </summary>
+    public void SetAltTitles(IEnumerable<string> altTitles, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(altTitles);
+        var cleaned = altTitles
+            .Select(t => t?.Trim() ?? "")
+            .Where(t => t.Length > 0 && !string.Equals(t, Title, StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (cleaned.Length > MaxAltTitles || cleaned.Any(t => t.Length > 300))
+            throw new ArgumentException("Trop de titres alternatifs, ou trop longs.", nameof(altTitles));
+
+        AltTitles = cleaned;
         UpdatedAt = now;
     }
 

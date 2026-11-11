@@ -404,6 +404,9 @@
       "cancel": "Cancel",
       "save": "Save",
       "saving": "Saving...",
+      "altTitles": "Other accepted titles",
+      "altTitlesHint": "One per line (up to 5), never shown to players: an answer matching any of them is right, like the title above. Useful when Deezer suggests several versions of the title.",
+      "altTitlesError": "At most 5 titles, 300 characters each.",
       "genre": "Genre",
       "genreHint": "Deezer is checked for the album genre every month: if it gives one, it replaces the one entered here. If Deezer has none, yours is kept."
     },

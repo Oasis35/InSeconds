@@ -81,7 +81,7 @@ public sealed class RefreshOptions
 /// <summary>Un morceau, dans les réponses qui suivent son ajout, son renommage ou son actualisation.</summary>
 /// <param name="PreviewStatus"><c>unknown</c>, <c>available</c> ou <c>missing</c>.</param>
 public sealed record TrackSummary(
-    int Id, long DeezerTrackId, string Artist, string Title, string? CoverUrl, int? ReleaseYear, int? Rank, string PreviewStatus, bool IsDisabled);
+    int Id, long DeezerTrackId, string Artist, string Title, string? CoverUrl, int? ReleaseYear, int? Rank, string PreviewStatus, bool IsDisabled, IReadOnlyList<string>? AltTitles = null);
 
 /// <summary>Une ligne du pool admin : le morceau et ce que chaque mode de jeu en a fait.</summary>
 /// <param name="PreviewStatus"><c>unknown</c>, <c>available</c> ou <c>missing</c>.</param>
@@ -92,7 +92,7 @@ public sealed record TrackSummary(
 public sealed record TrackListItem(
     int Id, long DeezerTrackId, string Artist, string Title, string? CoverUrl, int? ReleaseYear, int? Rank,
     string PreviewStatus, DateTimeOffset? PreviewCheckedAt, bool IsDisabled, bool IsUsed, IReadOnlyList<TrackModeUsage> Usages,
-    IReadOnlyList<string> Genres, IReadOnlyList<int>? ThemeIds = null);
+    IReadOnlyList<string> Genres, IReadOnlyList<int>? ThemeIds = null, IReadOnlyList<string>? AltTitles = null);
 
 /// <summary>L'usage d'un morceau par un mode.</summary>
 /// <param name="Mode">Nom stable du mode (<c>daily</c>).</param>
@@ -113,7 +113,7 @@ internal static class TrackMapping
 
     public static TrackSummary ToSummary(Track track, CatalogueOptions options) => new(
         track.Id, track.DeezerTrackId, track.Artist, track.Title, options.CoverUrl(track.CoverHash),
-        track.ReleaseYear, track.DeezerRank, Name(track.PreviewStatus), track.IsDisabled);
+        track.ReleaseYear, track.DeezerRank, Name(track.PreviewStatus), track.IsDisabled, track.AltTitles);
 
     /// <summary>L'état de l'extrait et l'identité d'un morceau lus chez Deezer, tels que le pool les garde.</summary>
     public static TrackMetadata ToMetadata(DeezerTrack track) => new(
@@ -162,7 +162,8 @@ public sealed record ThemeItem(int Id, string Name, int TrackCount, string? Icon
 /// <summary>Un morceau tel que la base le lit, avant d'y joindre son usage.</summary>
 public sealed record TrackRow(
     int Id, long DeezerTrackId, string Artist, string Title, string? CoverHash, short? ReleaseYear, int? DeezerRank,
-    PreviewStatus PreviewStatus, DateTimeOffset? PreviewCheckedAt, bool IsDisabled, IReadOnlyList<string> Genres, IReadOnlyList<int>? ThemeIds = null);
+    PreviewStatus PreviewStatus, DateTimeOffset? PreviewCheckedAt, bool IsDisabled, IReadOnlyList<string> Genres, IReadOnlyList<int>? ThemeIds = null,
+    IReadOnlyList<string>? AltTitles = null);
 
 /// <summary>
 /// Le calcul de la forme des extraits (<c>InSeconds.Waveform</c>), réglé comme le reste à chaud (<c>infra.settings</c>).

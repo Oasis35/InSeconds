@@ -83,7 +83,7 @@ describe('EditTrackDialog', () => {
     save.click();
     await settle(fixture);
 
-    expect(api.renameTrack).toHaveBeenCalledWith(7, 'Eminem', 'Titre corrigé', undefined);
+    expect(api.renameTrack).toHaveBeenCalledWith(7, 'Eminem', 'Titre corrigé', undefined, undefined);
     expect(dialog.close).toHaveBeenCalledWith(true);
   });
 
@@ -121,7 +121,7 @@ describe('EditTrackDialog', () => {
     await settle(fixture);
     save.click();
     await settle(fixture);
-    expect(api.renameTrack).toHaveBeenLastCalledWith(9, 'Eminem Jr', 'Titre', undefined);
+    expect(api.renameTrack).toHaveBeenLastCalledWith(9, 'Eminem Jr', 'Titre', undefined, undefined);
   });
 
   it('des genres de Deezer plus longs que la limite n\'empêchent pas de corriger le titre', async () => {
@@ -144,7 +144,46 @@ describe('EditTrackDialog', () => {
     save.click();
     await settle(fixture);
 
-    expect(api.renameTrack).toHaveBeenCalledWith(9, 'Eminem', 'Titre', 'Blues');
+    expect(api.renameTrack).toHaveBeenCalledWith(9, 'Eminem', 'Titre', 'Blues', undefined);
+  });
+
+  it('préremplit les autres titres, un par ligne, et ne les envoie que s\'ils changent', async () => {
+    const { fixture, element, artist, save } = open(poolTrack({ id: 9, artist: 'Eminem', title: 'Titre', altTitles: ['22h31 - Titre'] }));
+    const alt = element.querySelector<HTMLTextAreaElement>('#edit-track-alt-titles')!;
+    expect(alt.value).toBe('22h31 - Titre');
+
+    // Artiste seul : les autres titres ne sont pas renvoyés.
+    type(artist, 'Eminem Jr');
+    await settle(fixture);
+    save.click();
+    await settle(fixture);
+    expect(api.renameTrack).toHaveBeenLastCalledWith(9, 'Eminem Jr', 'Titre', undefined, undefined);
+  });
+
+  it('envoie les autres titres saisis, lignes vides retirées', async () => {
+    const { fixture, element, save } = open(poolTrack({ id: 9, artist: 'Eminem', title: 'Titre' }));
+    const alt = element.querySelector<HTMLTextAreaElement>('#edit-track-alt-titles')!;
+
+    alt.value = ' 22h31 - Titre \n\n Titre bis ';
+    alt.dispatchEvent(new Event('input', { bubbles: true }));
+    await settle(fixture);
+    expect(save.disabled).toBe(false);
+    save.click();
+    await settle(fixture);
+
+    expect(api.renameTrack).toHaveBeenCalledWith(9, 'Eminem', 'Titre', undefined, ['22h31 - Titre', 'Titre bis']);
+  });
+
+  it('refuse plus de 5 autres titres', async () => {
+    const { fixture, element, save } = open(poolTrack({ id: 9, artist: 'Eminem', title: 'Titre' }));
+    const alt = element.querySelector<HTMLTextAreaElement>('#edit-track-alt-titles')!;
+
+    alt.value = 'a\nb\nc\nd\ne\nf';
+    alt.dispatchEvent(new Event('input', { bubbles: true }));
+    await settle(fixture);
+
+    expect(save.disabled).toBe(true);
+    expect(element.querySelector('[data-testid="edit-track-alt-titles-error"]')?.textContent).toContain('admin.editModal.altTitlesError');
   });
 
   it('reste ouverte et dit pourquoi quand l\'API refuse', async () => {

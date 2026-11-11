@@ -6,8 +6,9 @@ using Wolverine.Http;
 
 namespace InSeconds.Api.Modules.Catalogue.Application;
 
+/// <param name="AltTitles">Les autres titres acceptés comme bonne réponse : absent, rien ne change ; une liste (5 au plus), elle remplace celle du morceau ; vide, ils sont retirés.</param>
 /// <param name="Genre">Le genre saisi à la main : absent, rien ne change ; un texte, il remplace les genres du morceau ; vide, le genre saisi est retiré (ceux de Deezer restent).</param>
-public sealed record RenameTrack(string Artist, string Title, string? Genre = null);
+public sealed record RenameTrack(string Artist, string Title, string? Genre = null, IReadOnlyList<string>? AltTitles = null);
 
 public sealed class RenameTrackValidator : AbstractValidator<RenameTrack>
 {
@@ -17,6 +18,8 @@ public sealed class RenameTrackValidator : AbstractValidator<RenameTrack>
         RuleFor(x => x.Artist).Must(a => !string.IsNullOrWhiteSpace(a)).MaximumLength(200);
         RuleFor(x => x.Title).Must(t => !string.IsNullOrWhiteSpace(t)).MaximumLength(300);
         RuleFor(x => x.Genre).MaximumLength(60);
+        RuleFor(x => x.AltTitles).Must(l => l is null || l.Count <= Track.MaxAltTitles);
+        RuleForEach(x => x.AltTitles).MaximumLength(300);
     }
 }
 
@@ -41,6 +44,8 @@ public static class RenameTrackEndpoint
     {
         var now = time.GetUtcNow();
         track.Rename(request.Artist, request.Title, now);
+        if (request.AltTitles is not null)
+            track.SetAltTitles(request.AltTitles, now);
         if (request.Genre is not null)
         {
             var name = request.Genre.Trim();

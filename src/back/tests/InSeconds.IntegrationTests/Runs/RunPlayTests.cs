@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using InSeconds.Api.Modules.Runs.Application;
 using InSeconds.IntegrationTests.Daily;
@@ -352,6 +353,22 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(0, await _run.Api.ScalarAsync<int>($"SELECT points FROM runs.answers WHERE session_id = {id} AND position = 1"));
+    }
+
+    [Fact]
+    public async Task Reponse_TitreAlternatif_CompteCommeBonneReponse()
+    {
+        var alice = await _run.NewInvitedAsync("Alice");
+        var start = (await alice.LaunchAsync()).Session;
+        var (id, code) = (start.SessionId, start.ChallengeCode);
+        var trackId = await _run.TrackAtAsync(code, 1);
+        await _run.Api.ExecuteAsync($"UPDATE catalogue.tracks SET alt_titles = ARRAY['22h31 - Alias {trackId}'] WHERE id = {trackId}");
+
+        var response = await alice.AnswerRawAsync(id, 1, $"Artiste {trackId}", $"22h31 - Alias {trackId}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var revealed = (await response.Content.ReadFromJsonAsync<RunPlayResponse>(Ct))!.Revealed!;
+        Assert.Equal((true, true), (revealed.ArtistCorrect, revealed.TitleCorrect));
     }
 
     [Fact]

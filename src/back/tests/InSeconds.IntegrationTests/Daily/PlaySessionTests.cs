@@ -47,6 +47,19 @@ public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Reponse_TitreAlternatif_CompteCommeBonneReponse()
+    {
+        var trackId = await _game.TrackAtAsync(Today, 1);
+        await _game.Api.ExecuteAsync($"UPDATE catalogue.tracks SET alt_titles = ARRAY['22h31 - Alias {trackId}'] WHERE id = {trackId}");
+
+        var answer = await ReadAnswerAsync(await _alice.AnswerAsync(_session, 1, 1, $"Artiste {trackId}", $"22h31 - Alias {trackId}"));
+
+        Assert.Equal((true, true, 850), (answer.ArtistCorrect, answer.TitleCorrect, answer.Score));
+        // Le titre affiché reste celui du morceau : l'alias n'est jamais montré.
+        Assert.Equal($"Titre {trackId}", answer.CorrectTitle);
+    }
+
+    [Fact]
     public async Task Reponse_RevèleLeMorceau_EtCeQuEnOntFaitLesAutres()
     {
         await _game.Api.ExecuteAsync("UPDATE catalogue.tracks SET cover_hash = 'abcdef0123456789'");
