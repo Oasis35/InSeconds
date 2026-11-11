@@ -126,7 +126,7 @@ export class ThemeImportComponent {
   readonly listen = output<PoolTrack>();
   readonly applied = output<readonly ThemeAssignment[]>();
   /** « Importer un autre classement » : le résultat est à effacer. */
-  readonly reset = output();
+  readonly anotherRequested = output();
 
   protected readonly step = signal<Step>('input');
   protected readonly text = signal('');
@@ -172,6 +172,6 @@ export class ThemeImportComponent {
   protected again(): void {
     this.text.set('');
     this.step.set('input');
-    this.reset.emit();
+    this.anotherRequested.emit();
   }
 }

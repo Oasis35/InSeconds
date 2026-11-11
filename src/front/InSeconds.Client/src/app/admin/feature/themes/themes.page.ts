@@ -40,7 +40,7 @@ type DeezerStatus = 'loading' | 'success' | 'error';
     <div class="w-full max-w-2xl lg:max-w-none mx-auto flex flex-col gap-4">
       @if (importing()) {
         <app-theme-import [tracks]="pool.tracks()" [themes]="pool.themes()" [busy]="importBusy()" [errorKey]="importErrorKey()" [added]="importAdded()"
-          (closed)="closeImport()" (listen)="listen($event)" (applied)="applyImport($event)" (reset)="importAdded.set(null)" />
+          (closed)="closeImport()" (listen)="listen($event)" (applied)="applyImport($event)" (anotherRequested)="importAdded.set(null)" />
       } @else {
       <div class="flex-wrap items-center justify-between gap-x-3 lg:flex" [class.flex]="!selected()" [class.hidden]="selected()">
         <h1 class="text-xl font-semibold" style="color:var(--text-hi)">{{ 'admin.themes.title' | translate }}</h1>

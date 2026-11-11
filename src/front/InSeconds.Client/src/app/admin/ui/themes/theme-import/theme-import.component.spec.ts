@@ -99,7 +99,7 @@ describe('ThemeImportComponent', () => {
   it('montre le résultat une fois appliqué, et propose d\'en importer un autre', () => {
     const { q, fixture, cmp } = render({ added: 7 });
     let reset = 0;
-    cmp.reset.subscribe(() => reset++);
+    cmp.anotherRequested.subscribe(() => reset++);
 
     expect(q('import-result')!.textContent).toContain('admin.themes.import.done');
     q('import-again')!.click();
