@@ -18,7 +18,7 @@ function defaults() {
   return {
     listTracks: vi.fn<() => Promise<PoolTrack[]>>(() => Promise.resolve([])),
     addTrack: vi.fn<(deezerTrackId: number) => Promise<void>>(() => Promise.resolve()),
-    renameTrack: vi.fn<(id: number, artist: string, title: string, genre?: string) => Promise<void>>(() => Promise.resolve()),
+    renameTrack: vi.fn<(id: number, artist: string, title: string, genre?: string, altTitles?: readonly string[]) => Promise<void>>(() => Promise.resolve()),
     setTrackDisabled: vi.fn<(id: number, isDisabled: boolean) => Promise<void>>(() => Promise.resolve()),
     deleteTrack: vi.fn<(id: number) => Promise<void>>(() => Promise.resolve()),
     listThemes: vi.fn<() => Promise<PoolTheme[]>>(() => Promise.resolve([])),

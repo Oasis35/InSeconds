@@ -421,7 +421,7 @@ public static class SubmitRunAnswerEndpoint
         // L'écoute est fixe : la durée annoncée est toujours celle de la difficulté de la manche, le plancher d'écoute ne peut pas la dépasser
         // (PATCH …/listening).
         var outcome = session.RoundOfCurrentTrack()
-            .Answer(session.ListenSecondsOf(run.Challenge), request.Artist, request.Title, new TrackNames(info.Artist, info.Title), matcher)
+            .Answer(session.ListenSecondsOf(run.Challenge), request.Artist, request.Title, new TrackNames(info.Artist, info.Title, info.AltTitles), matcher)
             .Outcome!;
         var step = session.Answer(run.Challenge, outcome, player.Scoring, time.GetUtcNow());
         var revealed = RunViews.Revealed(run, request.Position);

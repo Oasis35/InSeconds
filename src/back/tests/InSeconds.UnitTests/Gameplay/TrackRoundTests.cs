@@ -12,6 +12,38 @@ public class TrackRoundTests
 
     // --- écouter : le plancher garde le maximum ---
 
+    [Theory]
+    [InlineData("22h31 - Fais les backs")]
+    [InlineData("Fais les backs")]
+    public void Answer_UnTitreAlternatif_EstUneBonneReponse(string title)
+    {
+        var names = new TrackNames("Artiste", "Fais les backs", ["22h31 - Fais les backs"]);
+
+        var result = TrackRound.Start.Answer(1m, "Artiste", title, names, Matcher);
+
+        Assert.True(result.Outcome!.TitleCorrect);
+    }
+
+    [Fact]
+    public void Answer_SansTitreAlternatif_LAutreVarianteEstFausse()
+    {
+        var names = new TrackNames("Artiste", "Fais les backs");
+
+        var result = TrackRound.Start.Answer(1m, "Artiste", "22h31 - Fais les backs", names, Matcher);
+
+        Assert.False(result.Outcome!.TitleCorrect);
+    }
+
+    [Fact]
+    public void Answer_UnTitreAlternatif_NeValideJamaisLArtiste()
+    {
+        var names = new TrackNames("Artiste", "Titre", ["Autre titre"]);
+
+        var result = TrackRound.Start.Answer(1m, "Autre titre", "Titre", names, Matcher);
+
+        Assert.False(result.Outcome!.ArtistCorrect);
+    }
+
     [Fact]
     public void Start_NAPasEncoreRienEcoute()
     {

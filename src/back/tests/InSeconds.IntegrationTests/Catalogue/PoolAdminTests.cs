@@ -249,6 +249,32 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Renommage_TitresAlternatifs_Remplaces_Gardes_EtRetires()
+    {
+        var track = await _app.AddAsync(1001);
+
+        var set = await _app.Admin().PatchAsJsonAsync($"{Tracks}/{track.Id}", new RenameTrack("A", "T", null, [" 22h31 - T ", "22h31 - T", ""]), Ct);
+        Assert.Equal(HttpStatusCode.OK, set.StatusCode);
+        Assert.Equal(["22h31 - T"], (await _app.ListAsync()).Single(t => t.Id == track.Id).AltTitles);
+
+        // Absent : rien ne change. Liste vide : retirés.
+        await _app.Admin().PatchAsJsonAsync($"{Tracks}/{track.Id}", new RenameTrack("A2", "T"), Ct);
+        Assert.Equal(["22h31 - T"], (await _app.ListAsync()).Single(t => t.Id == track.Id).AltTitles);
+        await _app.Admin().PatchAsJsonAsync($"{Tracks}/{track.Id}", new RenameTrack("A2", "T", null, []), Ct);
+        Assert.Empty((await _app.ListAsync()).Single(t => t.Id == track.Id).AltTitles!);
+    }
+
+    [Fact]
+    public async Task Renommage_TropDeTitresAlternatifs_400()
+    {
+        var track = await _app.AddAsync(1001);
+
+        var response = await _app.Admin().PatchAsJsonAsync($"{Tracks}/{track.Id}", new RenameTrack("A", "T", null, ["1", "2", "3", "4", "5", "6"]), Ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Renommage_GenreTropLong_400()
     {
         var track = await _app.AddAsync(1001);

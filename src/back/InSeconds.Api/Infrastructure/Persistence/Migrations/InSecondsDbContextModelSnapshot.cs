@@ -209,6 +209,13 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("album_id");
 
+                    b.PrimitiveCollection<string[]>("AltTitles")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text[]")
+                        .HasColumnName("alt_titles")
+                        .HasDefaultValueSql("'{}'::text[]");
+
                     b.Property<string>("Artist")
                         .IsRequired()
                         .HasColumnType("text")

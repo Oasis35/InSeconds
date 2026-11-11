@@ -1074,6 +1074,7 @@ export interface RenameTrack {
     artist: string;
     title: string;
     genre?: string | undefined;
+    altTitles?: string[] | undefined;
 
     [key: string]: any;
 }
@@ -1133,6 +1134,7 @@ export interface TrackListItem {
     usages: TrackModeUsage[];
     genres: string[];
     themeIds?: number[] | undefined;
+    altTitles?: string[] | undefined;
 
     [key: string]: any;
 }
@@ -1166,6 +1168,7 @@ export interface TrackSummary {
     rank: number | undefined;
     previewStatus: string;
     isDisabled: boolean;
+    altTitles?: string[] | undefined;
 
     [key: string]: any;
 }

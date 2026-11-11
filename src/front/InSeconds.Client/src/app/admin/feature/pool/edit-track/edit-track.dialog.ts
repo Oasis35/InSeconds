@@ -7,7 +7,12 @@ import { errorMessageKey } from '../../../../core/errors/error-messages';
 import { ButtonComponent } from '../../../../ui/button/button.component';
 import { ModalFrameComponent } from '../../../../ui/modal/modal-frame.component';
 import { PoolStore } from '../../../data-access/pool.store';
-import { ARTIST_MAX_LENGTH, GENRE_MAX_LENGTH, PoolTrack, TITLE_MAX_LENGTH, trackLabel } from '../../../domain/pool-track';
+import { ALT_TITLES_MAX, ARTIST_MAX_LENGTH, GENRE_MAX_LENGTH, PoolTrack, TITLE_MAX_LENGTH, trackLabel } from '../../../domain/pool-track';
+
+/** Les autres titres saisis : un par ligne, espaces rognés, lignes vides retirées. */
+function parseAltTitles(text: string): string[] {
+  return text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+}
 
 /**
  * Corriger l'artiste, le titre et le genre d'un morceau. Permis à tout moment, défi du jour compris : les
@@ -41,6 +46,12 @@ import { ARTIST_MAX_LENGTH, GENRE_MAX_LENGTH, PoolTrack, TITLE_MAX_LENGTH, track
           <label for="edit-track-genre" class="text-xs" style="color:var(--text-muted)">{{ 'admin.editModal.genre' | translate }}</label>
           <input id="edit-track-genre" type="text" [formField]="nameForm.genre" class="app-input" />
           <p class="text-[11px]" style="color:var(--text-faint)" data-testid="edit-track-genre-hint">{{ 'admin.editModal.genreHint' | translate }}</p>
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label for="edit-track-alt-titles" class="text-xs" style="color:var(--text-muted)">{{ 'admin.editModal.altTitles' | translate }}</label>
+          <textarea id="edit-track-alt-titles" rows="2" [formField]="nameForm.altTitles" class="app-input"></textarea>
+          <p class="text-[11px]" style="color:var(--text-faint)" data-testid="edit-track-alt-titles-hint">{{ 'admin.editModal.altTitlesHint' | translate }}</p>
         </div>
 
         <fieldset class="flex flex-col gap-1.5">
@@ -83,14 +94,25 @@ export class EditTrackDialog {
   private readonly dialog = inject<DialogRef<boolean>>(DialogRef);
 
   /** Deux champs non vides une fois les espaces retirés, longueurs de l'API. */
-  protected readonly nameForm = form(signal({ artist: this.track.artist, title: this.track.title, genre: this.track.genres.join(', ') }), path => {
+  protected readonly nameForm = form(signal({ artist: this.track.artist, title: this.track.title, genre: this.track.genres.join(', '), altTitles: this.track.altTitles.join('\n') }), path => {
     validate(path.artist, ({ value }) => (value().trim() ? null : { kind: 'required' }));
     validate(path.title, ({ value }) => (value().trim() ? null : { kind: 'required' }));
     maxLength(path.artist, ARTIST_MAX_LENGTH);
     maxLength(path.title, TITLE_MAX_LENGTH);
+    // Un titre alternatif par ligne : au plus 5, de la longueur d'un titre.
+    validate(path.altTitles, ({ value }) => {
+      const lines = parseAltTitles(value());
+      return lines.length <= ALT_TITLES_MAX && lines.every(line => line.length <= TITLE_MAX_LENGTH) ? null : { kind: 'altTitles' };
+    });
     // Les genres de Deezer, joints, peuvent dépasser la limite d'un genre saisi : elle ne vaut que si le champ a changé.
     validate(path.genre, ({ value }) => (value().trim() === this.originalGenre || value().trim().length <= GENRE_MAX_LENGTH ? null : { kind: 'maxLength' }));
   });
+
+  private readonly originalAltTitles = [...this.track.altTitles];
+  private altTitlesChanged(): boolean {
+    const now = parseAltTitles(this.nameForm().value().altTitles);
+    return now.length !== this.originalAltTitles.length || now.some((title, i) => title !== this.originalAltTitles[i]);
+  }
 
   /** Les thèmes cochés ; l'état d'origine sert à ne rien envoyer quand rien ne change. */
   private readonly originalThemes = [...this.track.themeIds].sort((a, b) => a - b);
@@ -119,7 +141,7 @@ export class EditTrackDialog {
   protected readonly saveDisabled = computed(() => {
     const { artist, title, genre } = this.nameForm().value();
     return this.nameForm().invalid() || this.saving()
-      || (artist.trim() === this.track.artist && title.trim() === this.track.title && genre.trim() === this.originalGenre && !this.themesChanged());
+      || (artist.trim() === this.track.artist && title.trim() === this.track.title && genre.trim() === this.originalGenre && !this.altTitlesChanged() && !this.themesChanged());
   });
 
   protected async save(): Promise<void> {
@@ -127,10 +149,10 @@ export class EditTrackDialog {
     this.saving.set(true);
     this.error.set(null);
     const { artist, title, genre } = this.nameForm().value();
-    // Le genre n'est envoyé que s'il a changé : enregistrer l'artiste seul ne remplace jamais les genres de Deezer. Les thèmes aussi seulement s'ils changent.
-    const namesChanged = artist.trim() !== this.track.artist || title.trim() !== this.track.title || genre.trim() !== this.originalGenre;
+    // Le genre et les autres titres ne sont envoyé que s'il a changé : enregistrer l'artiste seul ne remplace jamais les genres de Deezer. Les thèmes aussi seulement s'ils changent.
+    const namesChanged = artist.trim() !== this.track.artist || title.trim() !== this.track.title || genre.trim() !== this.originalGenre || this.altTitlesChanged();
     const genreToSend = genre.trim() === this.originalGenre ? undefined : genre;
-    let error = namesChanged ? await this.pool.rename(this.track.id, artist, title, genreToSend) : null;
+    let error = namesChanged ? await this.pool.rename(this.track.id, artist, title, genreToSend, this.altTitlesChanged() ? parseAltTitles(this.nameForm().value().altTitles) : undefined) : null;
     if (!error && this.themesChanged()) error = await this.pool.setTrackThemes(this.track.id, this.themeIds());
     this.saving.set(false);
     if (error) this.error.set(error);

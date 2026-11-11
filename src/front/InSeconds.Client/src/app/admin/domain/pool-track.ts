@@ -30,6 +30,8 @@ export interface PoolTrack {
   readonly usages: readonly ModeUsage[];
   /** Les genres de l'album du morceau (noms, par ordre alphabétique) : vides tant qu'ils ne sont pas lus chez Deezer. */
   readonly genres: readonly string[];
+  /** Autres titres acceptés comme bonne réponse (saisis par l'admin), jamais montrés aux joueurs : vide, aucun. */
+  readonly altTitles: readonly string[];
   /** Les thèmes du morceau (identifiants de la liste de l'admin) : vide tant qu'il n'est classé nulle part. */
   readonly themeIds: readonly number[];
   /** Dans le défi du jour d'un mode : peut être renommé (avec un avertissement) mais pas désactivé. */
@@ -95,6 +97,8 @@ export interface DeezerResult {
 /** Longueurs maximales de l'artiste et du titre (celles de l'API). */
 export const ARTIST_MAX_LENGTH = 200;
 export const TITLE_MAX_LENGTH = 300;
+/** Nombre maximal d'autres titres par morceau (validateur de l'API). */
+export const ALT_TITLES_MAX = 5;
 /** Longueur maximale du genre saisi (validateur de l'API). */
 export const GENRE_MAX_LENGTH = 60;
 
