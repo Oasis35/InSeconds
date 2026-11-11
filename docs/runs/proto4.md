@@ -12,7 +12,7 @@ Les 16 écrans de référence sont dans [`maquettes/proto4/`](maquettes/proto4/)
 - **Groupes** : 15 membres au maximum, 5 groupes par joueur, nom de 24 caractères contrôlé comme les pseudos, le tout en réglages relus à chaud. Modération des noms de groupe et des pseudos dans l'admin.
 - **Classement général par niveau**, pas par meilleur score (un score trouvé avec Shazam y pèse peu) : le top 20 puis ta place avec tes voisins, pour les comptes qui ont choisi d'apparaître ; les autres voient une position anonyme (« top 30 % »).
 - **Un seul bouton de partage** : « Défier un ami » envoie la grille et le lien de la même playlist ; « Ma grille » n'envoie que les emojis, sans lien.
-- **« Groupe »** et **« Hits »** (ex-exploits) comme noms (Hits à confirmer).
+- **« Groupe »** et **« Hits »** (ex-exploits) comme noms.
 
 ## Découpage en 8 PR
 
@@ -76,11 +76,11 @@ Un onglet « Groupes » de l'admin : liste, renommer ou supprimer un groupe, rem
 - **Classement général** (écran 13) par niveau : top 20, puis ta place avec tes voisins, pour les comptes qui ont choisi d'apparaître ; case de visibilité dans le profil. Cette partie renverse la décision « pas de leaderboard permanent » : à réécrire dans [`../architecture/decisions.md`](../architecture/decisions.md), avec `/privacy`.
 - **Hits** (écran 16) : une dizaine au plus, obtenus par événements (record, série de bonnes réponses, premier groupe...), avec une petite animation à l'obtention. Liste et noms à fixer en début de PR.
 
-## Questions encore ouvertes
+## Décisions complémentaires
 
-1. Confirmer « Hits ».
-2. Le flag de la V4 est-il le même que l'accès Setlist, ou un flag à part pour donner l'un sans l'autre ? Recommandation : le même.
-3. Barre du bas sans accès Setlist : le flag la cache, l'ancienne coque reste.
+1. **Hits** est le nom retenu pour les ex-exploits.
+2. **Un seul flag** : la V4 est derrière l'accès Setlist existant (`runs.access`), pas de flag à part.
+3. **La barre du bas est elle aussi sous ce flag** : sans l'accès, l'ancienne coque reste telle quelle. Quand tout le monde aura basculé, les anciens écrans seront retirés.
 
 ## Écrans de référence
 
