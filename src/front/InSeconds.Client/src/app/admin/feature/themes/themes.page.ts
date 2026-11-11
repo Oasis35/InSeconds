@@ -9,11 +9,13 @@ import { ErrorMessageComponent } from '../../../ui/error-message/error-message.c
 import { ModalService } from '../../../ui/modal/modal.service';
 import { CatalogueApi } from '../../data-access/catalogue.api';
 import { DeezerSearchStore } from '../../data-access/deezer-search.store';
+import { AdminCounts } from '../../data-access/admin-counts';
 import { PoolStore } from '../../data-access/pool.store';
 import { FileDownload } from '../../../core/download/file-download';
 import { DeezerResult, PoolTrack, ThemeAssignment } from '../../domain/pool-track';
 import { poolToCsv } from '../../domain/theme-import';
 import { themeRows } from '../../domain/themes';
+import { ContentTabsComponent } from '../../ui/content-tabs/content-tabs.component';
 import { ThemeImportComponent } from '../../ui/themes/theme-import/theme-import.component';
 import { ThemeAddComponent } from '../../ui/themes/theme-add/theme-add.component';
 import { ThemeIconPickerComponent } from '../../ui/themes/theme-icon-picker/theme-icon-picker.component';
@@ -32,7 +34,7 @@ type DeezerStatus = 'loading' | 'success' | 'error';
  */
 @Component({
   selector: 'app-themes-page',
-  imports: [TranslatePipe, ErrorMessageComponent, ThemeListComponent, ThemeDetailComponent, ThemeAddComponent, ThemeIconPickerComponent, ThemeImportComponent],
+  imports: [TranslatePipe, ErrorMessageComponent, ThemeListComponent, ThemeDetailComponent, ThemeAddComponent, ThemeIconPickerComponent, ThemeImportComponent, ContentTabsComponent],
   providers: [PoolStore, DeezerSearchStore, AudioPreviewPlayer],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full min-w-0' },
@@ -42,6 +44,7 @@ type DeezerStatus = 'loading' | 'success' | 'error';
         <app-theme-import [tracks]="pool.tracks()" [themes]="pool.themes()" [busy]="importBusy()" [errorKey]="importErrorKey()" [added]="importAdded()"
           (closed)="closeImport()" (listen)="listen($event)" (applied)="applyImport($event)" (anotherRequested)="importAdded.set(null)" />
       } @else {
+      <app-content-tabs [candidates]="candidateCount()" [class.hidden]="selected()" class="lg:block" />
       <div class="flex-wrap items-center justify-between gap-x-3 lg:flex" [class.flex]="!selected()" [class.hidden]="selected()">
         <h1 class="text-xl font-semibold" style="color:var(--text-hi)">{{ 'admin.themes.title' | translate }}</h1>
         <span class="flex items-center gap-1 text-sm" style="color:var(--text-muted)">
@@ -93,6 +96,8 @@ export class ThemesPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   protected readonly errorMessageKey = errorMessageKey;
+  /** Les candidats du sas à traiter, connus une fois le sas ouvert ; `null` avant. */
+  protected readonly candidateCount = inject(AdminCounts).candidates;
 
   protected readonly selectedId = signal<number | null>(null);
   protected readonly adding = signal(false);

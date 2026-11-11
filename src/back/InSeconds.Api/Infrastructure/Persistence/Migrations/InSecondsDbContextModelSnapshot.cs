@@ -24,6 +24,9 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "extensions", "citext");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.HasSequence("candidates_hilo", "catalogue")
+                .IncrementsBy(10);
+
             modelBuilder.HasSequence("challenges_hilo", "daily")
                 .IncrementsBy(10);
 
@@ -143,6 +146,89 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasName("pk_settings");
 
                     b.ToTable("settings", "infra");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Catalogue.Domain.Candidate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<int>("Id"), "candidates_hilo", "catalogue");
+
+                    b.Property<DateTimeOffset?>("AddRequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("add_requested_at");
+
+                    b.Property<long?>("AlbumId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("album_id");
+
+                    b.Property<string>("Artist")
+                        .HasColumnType("text")
+                        .HasColumnName("artist");
+
+                    b.Property<string>("CoverHash")
+                        .HasColumnType("text")
+                        .HasColumnName("cover_hash");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("DeezerTrackId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("deezer_track_id");
+
+                    b.Property<DateTimeOffset?>("DismissedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("dismissed_at");
+
+                    b.Property<short>("PreviewStatus")
+                        .HasColumnType("smallint")
+                        .HasColumnName("preview_status");
+
+                    b.Property<string>("Priority")
+                        .HasMaxLength(1)
+                        .HasColumnType("character varying(1)")
+                        .HasColumnName("priority");
+
+                    b.Property<int?>("Rank")
+                        .HasColumnType("integer")
+                        .HasColumnName("rank");
+
+                    b.Property<DateTimeOffset?>("ReadAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("read_at");
+
+                    b.Property<short?>("ReleaseYear")
+                        .HasColumnType("smallint")
+                        .HasColumnName("release_year");
+
+                    b.Property<short>("Status")
+                        .HasColumnType("smallint")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("text")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id")
+                        .HasName("pk_candidates");
+
+                    b.HasIndex("DeezerTrackId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_candidates_deezer_track_id");
+
+                    b.ToTable("candidates", "catalogue", t =>
+                        {
+                            t.HasCheckConstraint("ck_candidates_preview_status", "preview_status IN (0, 1, 2)");
+
+                            t.HasCheckConstraint("ck_candidates_priority", "priority IS NULL OR priority IN ('A', 'B', 'C')");
+
+                            t.HasCheckConstraint("ck_candidates_status", "status IN (0, 1, 2)");
+                        });
                 });
 
             modelBuilder.Entity("InSeconds.Api.Modules.Catalogue.Domain.Genre", b =>

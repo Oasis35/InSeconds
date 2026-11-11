@@ -1,10 +1,12 @@
 /** D'où vient l'effectif affiché dans le libellé d'un onglet (`AdminCounts`). */
-export type TabCount = 'pool' | 'challenges' | 'players';
+export type TabCount = 'challenges' | 'players';
 
 /** Un onglet de l'admin : son chemin sous `/admin`, son libellé nu et, s'il en a un, celui avec effectif. */
 export interface AdminTab {
   readonly path: string;
   readonly label: string;
+  /** D'autres chemins de l'admin qui laissent l'onglet allumé (l'onglet Contenu groupe les Morceaux, les Thèmes et le sas « À valider »). */
+  readonly alsoActive?: readonly string[];
   /** Libellé avec l'effectif (`{ count }`), montré dès que l'onglet a chargé ses données : pas avant sa première ouverture. */
   readonly counted?: { readonly label: string; readonly source: TabCount };
 }
@@ -13,8 +15,7 @@ export interface AdminTab {
 export const ADMIN_TABS: readonly AdminTab[] = [
   { path: 'dashboard', label: 'admin.tabs.dashboard' },
   { path: 'defis', label: 'admin.tabs.challengesPlain', counted: { label: 'admin.tabs.challenges', source: 'challenges' } },
-  { path: 'catalogue', label: 'admin.tabs.poolPlain', counted: { label: 'admin.tabs.pool', source: 'pool' } },
-  { path: 'themes', label: 'admin.tabs.themes' },
+  { path: 'catalogue', label: 'admin.tabs.content', alsoActive: ['themes', 'a-valider'] },
   { path: 'joueurs', label: 'admin.tabs.playersPlain', counted: { label: 'admin.tabs.players', source: 'players' } },
 ];
 

@@ -74,6 +74,15 @@ public class CatalogueSupportTests
     }
 
     [Fact]
+    public void DeuxImportsDuMemeIdentifiant_ConflitADeReessayer()
+    {
+        var problem = TrackConflictExceptionHandler.ProblemFor(UniqueViolation(CandidateConfiguration.DeezerIdIndex));
+
+        Assert.Equal(CatalogueErrorCodes.ConcurrentAdd, problem?.Extensions["code"]?.ToString());
+        Assert.Equal(409, problem?.Status);
+    }
+
+    [Fact]
     public void DeuxThemesQuiPrennentLeMemeNom_NomDejaPris() =>
         Assert.Equal(CatalogueErrorCodes.ThemeNameTaken, Code(UniqueViolation(ThemeConfiguration.NameIndex)));
 

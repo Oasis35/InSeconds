@@ -50,7 +50,9 @@
       "theme_name_taken": "Un thème porte déjà ce nom.",
       "theme_not_found": "Ce thème n'existe plus : recharge la liste.",
       "track_in_use": "Ce morceau a déjà servi dans un défi : il ne peut pas être supprimé (désactive-le).",
-      "track_in_today_challenge": "Ce morceau est dans le défi du jour : désactivable à partir de demain."
+      "track_in_today_challenge": "Ce morceau est dans le défi du jour : désactivable à partir de demain.",
+      "candidate_not_found": "Ce morceau n'est plus dans la liste : recharge la liste.",
+      "candidate_preview_missing": "Deezer n'a plus d'extrait pour ce morceau."
     },
     "daily": {
       "no_challenge": "Il n'y a pas de défi aujourd'hui.",
@@ -295,12 +297,10 @@
     "tabs": {
       "dashboard": "Accueil",
       "challengesPlain": "Défis",
-      "poolPlain": "Morceaux",
       "playersPlain": "Joueurs",
-      "pool": "Morceaux ({{ count }})",
       "challenges": "Défis ({{ count }})",
       "players": "Joueurs ({{ count }})",
-      "themes": "Thèmes"
+      "content": "Contenu"
     },
     "pool": {
       "cooldown": "cooldown {{ days }} j",
@@ -617,6 +617,45 @@
       "direct": "Direct",
       "other": "Autres sites",
       "rest": "Autres"
+    },
+    "content": {
+      "label": "Contenu",
+      "pool": "Morceaux",
+      "themes": "Thèmes",
+      "candidates": "À valider"
+    },
+    "candidates": {
+      "title": "À valider",
+      "help": "Colle des identifiants Deezer : ils sont lus tout de suite, et rien n'entre dans le pool sans ton clic.",
+      "importLabel": "Identifiants Deezer à importer",
+      "placeholder": "Un identifiant par ligne, avec sa priorité si tu veux :\n3135556 A",
+      "pickFile": "Charger un fichier",
+      "defaultPriority": "Priorité par défaut",
+      "noPriority": "Aucune",
+      "issues": "{{ count }} ligne(s) illisible(s) (lignes {{ lines }}) : ignorées.",
+      "tooMany": "{{ max }} morceaux au plus d'un coup.",
+      "import": "Importer ({{ count }})",
+      "importDone": "{{ created }} importé(s), {{ alreadyCandidates }} déjà dans la liste, {{ alreadyInCatalogue }} déjà dans le pool.",
+      "addDone": "{{ queued }} en cours d'ajout au pool, {{ skipped }} ignoré(s).",
+      "readingCount": "{{ count }} en cours de lecture chez Deezer…",
+      "reread": "Relancer la lecture",
+      "viewTodo": "À traiter · {{ count }}",
+      "viewDismissed": "Écartés · {{ count }}",
+      "priorityAll": "Toutes",
+      "priorityNone": "Sans priorité",
+      "filterPriority": "Priorité",
+      "selectAll": "Tout cocher",
+      "clearAll": "Tout décocher",
+      "addSelected": "Ajouter la sélection ({{ count }})",
+      "dismiss": "Écarter",
+      "restore": "Remettre dans la liste",
+      "reading": "Lecture chez Deezer…",
+      "adding": "Ajout au pool…",
+      "inCatalogue": "Déjà dans le pool",
+      "notFound": "Introuvable chez Deezer",
+      "noPreview": "Pas d'extrait chez Deezer",
+      "empty": "Rien à valider pour l'instant.",
+      "emptyDismissed": "Aucun morceau écarté."
     },
     "themes": {
       "title": "Thèmes",

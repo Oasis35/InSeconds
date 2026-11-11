@@ -2,6 +2,7 @@ using InSeconds.Api.Infrastructure.Errors;
 using InSeconds.Api.Modules.Catalogue.Domain;
 using InSeconds.Deezer;
 using Microsoft.AspNetCore.Mvc;
+using Wolverine;
 
 namespace InSeconds.Api.Modules.Catalogue.Application;
 
@@ -17,6 +18,8 @@ public static class CatalogueErrorCodes
     public const string ThemeNotFound = "catalogue.theme_not_found";
     public const string ThemeNameTaken = "catalogue.theme_name_taken";
     public const string ThemeInUse = "catalogue.theme_in_use";
+    public const string CandidateNotFound = "catalogue.candidate_not_found";
+    public const string CandidatePreviewMissing = "catalogue.candidate_preview_missing";
 }
 
 internal static class CatalogueProblems
@@ -26,6 +29,13 @@ internal static class CatalogueProblems
 
     public static ProblemDetails ThemeNotFound() =>
         ApiProblem.Of(StatusCodes.Status404NotFound, CatalogueErrorCodes.ThemeNotFound, "Thème introuvable.");
+
+    public static ProblemDetails CandidateNotFound() =>
+        ApiProblem.Of(StatusCodes.Status404NotFound, CatalogueErrorCodes.CandidateNotFound, "Candidat introuvable.");
+
+    /// <summary>Le morceau est lu mais Deezer n'a pas d'extrait : rien à écouter, 422 (la demande est bien formée).</summary>
+    public static ProblemDetails CandidatePreviewMissing() =>
+        ApiProblem.Of(StatusCodes.Status422UnprocessableEntity, CatalogueErrorCodes.CandidatePreviewMissing, "Deezer n'a pas d'extrait pour ce morceau.");
 
     public static ProblemDetails ThemeNameTaken() =>
         ApiProblem.Of(StatusCodes.Status409Conflict, CatalogueErrorCodes.ThemeNameTaken, "Un thème porte déjà ce nom.");
@@ -124,17 +134,45 @@ internal static class TrackMapping
     /// Les genres de l'album lu à l'ajout ou à l'actualisation d'un morceau. Album supprimé chez Deezer : sans genre, et inutile de le
     /// redemander. Album non lu ou Deezer indisponible : rien ne change, le contrôle nocturne rattrape.
     /// </summary>
-    public static async Task RecordAlbumGenresAsync(Track track, AlbumLookup? album, ICatalogueStore store, DateTimeOffset now, CancellationToken ct)
+    public static async Task RecordAlbumGenresAsync(Track track, AlbumLookup? album, ICatalogueStore store, DateTimeOffset now, CancellationToken ct) =>
+        ApplyAlbumGenres(track, album, await EnsureAlbumGenresAsync([album], store, ct), now);
+
+    /// <summary>Les genres de ces albums, retrouvés ou créés d'un coup (un genre neuf partagé par deux morceaux n'est créé qu'une fois), par identifiant.</summary>
+    public static async Task<IReadOnlyDictionary<long, Genre>> EnsureAlbumGenresAsync(
+        IEnumerable<AlbumLookup?> albums, ICatalogueStore store, CancellationToken ct) =>
+        (await store.EnsureGenresAsync(
+            [.. albums.OfType<AlbumLookup.Found>().SelectMany(f => f.Genres.Select(g => new GenreRef(g.Id, g.Name)))], ct)).ToDictionary(g => g.Id);
+
+    /// <summary>Note sur le morceau les genres de son album (voir <see cref="RecordAlbumGenresAsync"/> pour les cas sans genre).</summary>
+    public static void ApplyAlbumGenres(Track track, AlbumLookup? album, IReadOnlyDictionary<long, Genre> genres, DateTimeOffset now)
     {
         switch (album)
         {
             case AlbumLookup.Found found:
-                track.RecordGenres(await store.EnsureGenresAsync([.. found.Genres.Select(g => new GenreRef(g.Id, g.Name))], ct), now);
+                track.RecordGenres([.. found.Genres.Select(g => genres[g.Id])], now);
                 break;
             case AlbumLookup.NotFound:
                 track.RecordGenres([], now);
                 break;
         }
+    }
+
+    /// <summary>Un morceau neuf du pool, avec ses genres : la même création pour l'ajout à la main et pour l'ajout d'un candidat.</summary>
+    public static Track NewTrack(TrackMetadata metadata, AlbumLookup? album, IReadOnlyDictionary<long, Genre> genres, DateTimeOffset now)
+    {
+        var track = Track.Create(metadata, now);
+        ApplyAlbumGenres(track, album, genres, now);
+        return track;
+    }
+
+    /// <summary>
+    /// La forme d'onde se calcule plus tard, hors de la requête (téléchargement de l'extrait) : un message durable, différé, qui prend tous les
+    /// morceaux ajoutés entre-temps. Jamais pour un morceau sans extrait.
+    /// </summary>
+    public static void ScheduleWaveform(OutgoingMessages messages, WaveformOptions options, bool trackHasPreview)
+    {
+        if (options.ComputeOnAdd && trackHasPreview)
+            messages.Delay(new ComputeWaveforms(), TimeSpan.FromMinutes(Math.Max(1, options.DelayMinutes)));
     }
 
     // La colonne est un smallint : une année absurde est ignorée plutôt que de faire échouer l'ajout.
@@ -150,9 +188,22 @@ public interface ICatalogueQueries
     /// <summary>Les thèmes de l'admin, par nom, chacun avec le nombre de morceaux qui l'ont.</summary>
     Task<IReadOnlyList<ThemeItem>> ListThemesAsync(CancellationToken ct);
 
+    /// <summary>Les candidats du sas (écartés compris), dans l'ordre d'import, chacun avec son état : déjà au pool ou non.</summary>
+    Task<IReadOnlyList<CandidateItem>> ListCandidatesAsync(CancellationToken ct);
+
     /// <summary>Les morceaux actifs sans extrait chez Deezer, et ceux qui ont un extrait mais pas encore de forme d'onde.</summary>
     Task<CatalogueHealthResponse> GetHealthAsync(CancellationToken ct);
 }
+
+/// <summary>Un candidat du sas, tel que l'écran de l'admin le montre.</summary>
+/// <param name="Priority">« A », « B » ou « C » si l'import en donnait une, vide sinon.</param>
+/// <param name="Status"><c>pending</c> (pas encore lu chez Deezer), <c>ready</c> ou <c>not_found</c>.</param>
+/// <param name="PreviewStatus"><c>unknown</c>, <c>available</c> ou <c>missing</c> (seulement une fois lu).</param>
+/// <param name="InCatalogue">Un morceau du pool a déjà cet identifiant Deezer (ajouté depuis par un autre chemin).</param>
+/// <param name="IsAdding">L'ajout au pool est demandé et pas encore fait.</param>
+public sealed record CandidateItem(
+    int Id, long DeezerTrackId, string? Priority, string Status, string? Artist, string? Title, int? ReleaseYear, int? Rank, string PreviewStatus,
+    bool InCatalogue, bool IsDismissed, bool IsAdding);
 
 /// <summary>Un thème de la liste de l'admin.</summary>
 /// <param name="TrackCount">Les morceaux du pool qui ont ce thème (désactivés compris) ; la suppression n'est permise qu'à zéro.</param>
@@ -219,4 +270,12 @@ internal static partial class CatalogueLog
     [LoggerMessage(EventId = 1207, Level = LogLevel.Warning,
         Message = "Formes d'onde du contrôle nocturne sautées : le calcul d'un ajout n'a pas fini en {WaitMinutes} min.")]
     public static partial void WaveformsSkippedBusy(ILogger logger, int waitMinutes);
+
+    [LoggerMessage(EventId = 1208, Level = LogLevel.Information,
+        Message = "Candidats lus chez Deezer : {Read} lu(s), {NotFound} introuvable(s), {Unavailable} à relire (Deezer n'a pas répondu).")]
+    public static partial void CandidatesRead(ILogger logger, int read, int notFound, int unavailable);
+
+    [LoggerMessage(EventId = 1209, Level = LogLevel.Information,
+        Message = "Candidats ajoutés au pool : {Added} ajouté(s), {Gone} retiré(s) du sas sans ajout (déjà au pool).")]
+    public static partial void CandidatesAdded(ILogger logger, int added, int gone);
 }

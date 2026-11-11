@@ -97,4 +97,7 @@ public interface ICatalogueStore
 
     /// <summary>La date d'ajout du morceau le plus récent parmi ceux sans forme (vide : aucun n'en manque).</summary>
     Task<DateTimeOffset?> LatestAddedWithoutWaveformAsync(CancellationToken ct);
+
+    /// <summary>Parmi ces identifiants Deezer, ceux qui sont déjà ceux d'un morceau du pool.</summary>
+    Task<IReadOnlySet<long>> DeezerIdsInPoolAsync(IReadOnlyCollection<long> deezerTrackIds, CancellationToken ct);
 }

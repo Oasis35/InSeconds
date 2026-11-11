@@ -1,7 +1,9 @@
 import { WIDE_SCREEN } from '../../../core/layout/wide-screen';
 import { DatePipe, DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { TranslatePipe } from '@ngx-translate/core';
 import { BrowserIdComponent } from '../../../account/feature/browser-id/browser-id.component';
 import { ProfileStore } from '../../../account/data-access/profile.store';
@@ -44,7 +46,7 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
 @Component({
   selector: 'app-admin-shell-page',
   imports: [
-    RouterOutlet, RouterLink, RouterLinkActive, TranslatePipe, DatePipe, NgTemplateOutlet, BrowserIdComponent, DecorBackgroundComponent,
+    RouterOutlet, RouterLink, TranslatePipe, DatePipe, NgTemplateOutlet, BrowserIdComponent, DecorBackgroundComponent,
     ButtonComponent, TechPanelComponent,
   ],
   providers: [ProfileStore, SystemStore],
@@ -128,7 +130,7 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
               </a>
               <nav data-testid="admin-top-nav" class="flex justify-self-start gap-1 rounded-xl p-1.5" style="background:var(--bg-surface)" [attr.aria-label]="'admin.tabsLabel' | translate">
                 @for (tab of tabs; track tab.path) {
-                  <a [routerLink]="['/admin', tab.path]" routerLinkActive="is-active" ariaCurrentWhenActive="page" [replaceUrl]="true"
+                  <a [routerLink]="['/admin', tab.path]" [class.is-active]="isActive(tab)" [attr.aria-current]="isActive(tab) ? 'page' : null" [replaceUrl]="true"
                     class="admin-tab px-3 py-2 rounded-lg text-sm font-medium transition-colors">
                     {{ labelOf(tab).key | translate: labelOf(tab).params }}
                   </a>
@@ -149,11 +151,11 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
           </div>
 
           <!-- Téléphone : les onglets en bas, fond opaque (rien ne passe dessous en transparence). -->
-          <nav class="lg:hidden fixed bottom-0 inset-x-0 z-10 grid grid-cols-5 gap-1 px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+          <nav class="lg:hidden fixed bottom-0 inset-x-0 z-10 grid grid-cols-4 gap-1 px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
             style="background:var(--bg-page);border-top:1px solid var(--border-medium)" [attr.aria-label]="'admin.tabsLabel' | translate"
             data-testid="admin-bottom-nav">
             @for (tab of tabs; track tab.path) {
-              <a [routerLink]="['/admin', tab.path]" routerLinkActive="is-active" ariaCurrentWhenActive="page" [replaceUrl]="true"
+              <a [routerLink]="['/admin', tab.path]" [class.is-active]="isActive(tab)" [attr.aria-current]="isActive(tab) ? 'page' : null" [replaceUrl]="true"
                 class="admin-tab min-w-0 truncate text-center py-2 rounded-lg text-xs font-medium transition-colors">{{ tab.label | translate }}</a>
             }
           </nav>
@@ -175,6 +177,12 @@ export class AdminShellPage {
   protected readonly session = inject(SessionStore);
   protected readonly profile = inject(ProfileStore);
   private readonly counts = inject(AdminCounts);
+  private readonly router = inject(Router);
+  /** L'adresse courante, pour allumer l'onglet qui contient la page ouverte. */
+  private readonly url = toSignal(
+    this.router.events.pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd), map(e => e.urlAfterRedirects)),
+    { initialValue: this.router.url },
+  );
   private readonly document = inject(DOCUMENT);
   /** L'état technique (déploiement, santé, tâches, CI), lu une fois l'admin reconnu. */
   protected readonly system = inject(SystemStore);
@@ -249,7 +257,13 @@ export class AdminShellPage {
     return target instanceof HTMLElement && target.isContentEditable;
   }
 
-  /** Le libellé d'un onglet : avec son effectif une fois chargé (Pool, Défis, Joueurs), nu avant. */
+  /** L'onglet de la page ouverte : le sien, ou l'un de ceux qu'il groupe (Contenu : Morceaux, Thèmes, À valider). */
+  protected isActive(tab: AdminTab): boolean {
+    const page = this.url().split(/[?#]/)[0].split('/')[2] ?? '';
+    return page === tab.path || (tab.alsoActive?.includes(page) ?? false);
+  }
+
+  /** Le libellé d'un onglet : avec son effectif une fois chargé (Défis, Joueurs), nu avant. */
   protected labelOf(tab: AdminTab): { key: string; params: { count: number } | undefined } {
     const count = tab.counted ? this.counts[tab.counted.source]() : null;
     return tab.counted && count !== null ? { key: tab.counted.label, params: { count } } : { key: tab.label, params: undefined };

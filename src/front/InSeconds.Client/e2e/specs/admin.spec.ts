@@ -51,7 +51,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByRole('link', { name: 'Contenu', exact: true }).click();
     // En-têtes du tableau
     await expect(page.getByRole('columnheader', { name: 'Artiste' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Titre' })).toBeVisible();
@@ -66,7 +66,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByRole('link', { name: 'Contenu', exact: true }).click();
     await admin.poolSearchInput().fill('Eminem');
     await expect(page.getByRole('cell', { name: 'Eminem', exact: true })).toBeVisible();
     // Les autres artistes ne doivent pas apparaître
@@ -77,7 +77,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByRole('link', { name: 'Contenu', exact: true }).click();
     await admin.poolFilterPreview().selectOption('missing');
     // 5 morceaux sans preview dans le seed
     await expect(page.getByRole('cell', { name: 'Manquante' })).toHaveCount(5);
@@ -87,7 +87,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByRole('link', { name: 'Contenu', exact: true }).click();
     await expect(page.getByRole('columnheader', { name: 'Genre' })).toBeVisible();
 
     // Le seed range les morceaux sous les albums du faux Deezer : Pop, Rap/Hip Hop et Dance, Rock, ou aucun genre.
@@ -103,7 +103,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByRole('link', { name: 'Contenu', exact: true }).click();
 
     // Pool général : « Disponible » écarte les morceaux utilisés (Coldplay est dans un défi du seed), garde les autres.
     await admin.poolFilterStatus().selectOption('available');
@@ -126,7 +126,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByRole('link', { name: 'Contenu', exact: true }).click();
     await expect(page).not.toHaveURL(/view=/);
 
     await admin.poolView('Daily').click();
@@ -143,7 +143,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByRole('link', { name: 'Contenu', exact: true }).click();
 
     // Coldplay est dans un défi du seed, Michael Jackson n'a jamais été joué. Le texte cherché restreint la grille
     // (paginée par 15) au morceau regardé : le filtre « Joué par » s'y combine.
@@ -164,7 +164,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByRole('link', { name: 'Contenu', exact: true }).click();
     await admin.addButton().click();
 
     // Cherche dans le panneau (placeholder distinct du filtre pool)
@@ -183,7 +183,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByRole('link', { name: 'Contenu', exact: true }).click();
 
     // Filtre sur un morceau disponible connu
     await admin.poolSearchInput().fill('Sabrina Carpenter');
@@ -205,7 +205,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByRole('link', { name: 'Contenu', exact: true }).click();
 
     await admin.poolSearchInput().fill('Sabrina Carpenter');
     await page.getByRole('button', { name: '🗑' }).first().click();
@@ -221,7 +221,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByRole('link', { name: 'Contenu', exact: true }).click();
 
     // Coldplay - Yellow fait partie du défi J-2 du seed : pas de corbeille, un bouton « Désactiver » à la place.
     await admin.poolSearchInput().fill('Coldplay');
@@ -238,7 +238,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByRole('link', { name: 'Contenu', exact: true }).click();
 
     // Eminem est dans le défi du jour : « Désactiver » grisé.
     await admin.poolSearchInput().fill('Eminem');
@@ -266,7 +266,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByRole('link', { name: 'Contenu', exact: true }).click();
 
     // Eminem est dans le défi du jour : renommable lui aussi, avec un avertissement.
     await admin.poolSearchInput().fill('Eminem');
@@ -299,7 +299,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByRole('link', { name: 'Contenu', exact: true }).click();
     await admin.poolSearchInput().fill('Coldplay');
     // Petit écran seulement une fois connecté : en mobile, « Se déconnecter » est replié dans le panneau technique.
     await page.setViewportSize({ width: 375, height: 420 });
@@ -323,7 +323,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByRole('link', { name: 'Contenu', exact: true }).click();
     await admin.poolView('Daily').click();
 
     await expect(admin.poolColumnHeader('Dernière utilisation')).toBeVisible();
@@ -350,7 +350,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByRole('link', { name: 'Contenu', exact: true }).click();
     await admin.poolView('Daily').click();
 
     // Ed Sheeran (index 20, -15j) tombe dans la plage ; Queen (-5j) et Adele (-90j) en dehors.
@@ -369,7 +369,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByRole('link', { name: 'Contenu', exact: true }).click();
     await admin.poolView('Daily').click();
 
     // Adele (index 19) a le UsageCount le plus élevé du seed (7) - tri desc doit la faire remonter.
@@ -383,7 +383,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByRole('link', { name: 'Contenu', exact: true }).click();
 
     await page.getByRole('button', { name: '▶', exact: true }).first().click();
 
@@ -433,7 +433,7 @@ test.describe('Admin - panneau technique et cooldown', () => {
     // Le pool des E2E a 50 morceaux jouables et 7 jours de cooldown : le défi de demain a de quoi être tiré.
     await expect(panel.getByTestId('next-challenge')).toContainText(/Demain\s*prêt · \d+ tirables/);
 
-    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByRole('link', { name: 'Contenu', exact: true }).click();
     await page.getByTestId('sort-hardest').click();
     await expect(page.getByTestId('sort-hardest')).toHaveAttribute('aria-pressed', 'true');
     await expect(admin.poolColumnHeader('Trouvé')).toHaveAttribute('aria-sort', 'ascending');
@@ -603,10 +603,10 @@ test.describe('Admin - chargement paresseux par onglet', () => {
     // L'Accueil lit les stats des défis (joueurs et morceaux du jour) : le compteur des Défis apparaît dès l'arrivée.
     await expect(page.getByRole('link', { name: /^Défis \(\d+\)$/ })).toBeVisible();
     // Avant visite : libellé nu (pas de "(N)")
-    await expect(admin.tab('Morceaux')).toBeVisible();
+    await expect(admin.tab('Joueurs')).toBeVisible();
 
-    await admin.clickTab('Morceaux');
-    await expect(page.getByRole('link', { name: /^Morceaux \(\d+\)$/ })).toBeVisible();
+    await admin.clickTab('Joueurs');
+    await expect(page.getByRole('link', { name: /^Joueurs \(\d+\)$/ })).toBeVisible();
   });
 
   test('l\'onglet et la page de la grille des morceaux survivent au rechargement', async ({ page }) => {
@@ -633,7 +633,7 @@ test.describe('Admin - chargement paresseux par onglet', () => {
 
     await page.goto('/admin?tab=pool');
     await expect(page).toHaveURL(/\/admin\/catalogue$/);
-    await expect(page.getByRole('link', { name: /^Morceaux/ })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByRole('link', { name: 'Contenu', exact: true })).toHaveAttribute('aria-current', 'page');
   });
 });
 
