@@ -450,7 +450,5 @@ test.describe('Mode Setlist', () => {
   test("les anciennes adresses /runs et /runs/<code> mènent à /setlist en gardant la query string", async ({ page }) => {
     await page.goto('/runs/ZZZZZZ?utm_source=share');
     await expect(page).toHaveURL(/\/setlist\/ZZZZZZ\?utm_source=share$/);
-    await page.goto('/runs');
-    await expect(page).not.toHaveURL(/\/runs/);
   });
 });

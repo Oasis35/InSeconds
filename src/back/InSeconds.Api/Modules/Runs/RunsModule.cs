@@ -7,7 +7,7 @@ using InSeconds.Api.Modules.Runs.Persistence;
 namespace InSeconds.Api.Modules.Runs;
 
 /// <summary>
-/// Module Runs (nom affiché « Platines ») : le second mode de jeu, solo, en manches de difficulté croissante, dont le défi (une playlist) se partage
+/// Module Runs (nom affiché « Setlist ») : le second mode de jeu, solo, en manches de difficulté croissante, dont le défi (une playlist) se partage
 /// par un lien : son schéma <c>runs</c>, le défi et son tirage, les réglages <c>Runs:</c>, l'accès sur invitation et la partie (jauge, neutralisation,
 /// fin, record). Runs n'utilise des autres modules que leurs <c>Contracts</c> et ne voit jamais Daily.
 /// </summary>

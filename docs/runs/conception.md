@@ -147,7 +147,7 @@ Même forme et même vocabulaire que le Daily : **un défi** = une suite de morc
 runs/
 ├── domain/       run.ts (jauge, objectif, manche, pile et paliers, étapes, chrono, disque, lien, comparaison : TypeScript pur, testé seul)
 ├── data-access/  runs.api.ts (client NSwag runs/api.generated.ts), runs.providers.ts, run-game.store.ts (pilote le TrackRoundStore de gameplay), run-share.ts
-├── feature/      runs.page (la partie, le lien d'un ami et la comparaison : /runs et /runs/:code), runs.routes.ts, leave-run.guard.ts, reload-moment.ts, provide-runs.ts, home-entry (carte de l'accueil)
+├── feature/      runs.page (la partie, le lien d'un ami et la comparaison : /setlist et /setlist/:code), runs.routes.ts, leave-run.guard.ts, reload-moment.ts, provide-runs.ts, home-entry (carte de l'accueil)
 └── ui/           run-header, run-clock, run-reveal, run-wave, run-next-button, run-withdrawn-card, run-pile, run-finish, run-disc, run-home-card, run-welcome-screen, run-link-screen, run-comparison-screen, run-status-screen
 ```
 - Routes **`/setlist`** et **`/setlist/:code`** (ex-`/runs`, qui redirige en gardant la query string) : des adresses qui ne cassent pas les liens partagés si le nom change. `/setlist/*` et `/runs/*` exclus de `robots.txt` et du `sitemap.xml`.
