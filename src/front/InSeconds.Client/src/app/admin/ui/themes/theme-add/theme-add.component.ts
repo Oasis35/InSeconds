@@ -7,8 +7,8 @@ import { ButtonComponent } from '../../../../ui/button/button.component';
 type Source = 'pool' | 'deezer';
 type AddStatus = 'loading' | 'success' | 'error';
 
-/** Au plus ce nombre de morceaux du pool sont listés : on précise la recherche pour retrouver les autres. */
-const MAX_LISTED = 50;
+/** Les morceaux du pool s'affichent par tranches de cette taille : « Voir plus » en ajoute, la recherche filtre toujours tout le pool. */
+const PAGE_SIZE = 50;
 
 /**
  * L'ajout de morceaux à un thème : « Dans le pool » (recherche, cases à cocher, un bouton qui ajoute tous les morceaux cochés) ou « Sur Deezer »
@@ -34,10 +34,10 @@ const MAX_LISTED = 50;
       </div>
 
       @if (source() === 'pool') {
-        <input type="search" class="app-input" [value]="text()" (input)="text.set(valueOf($event))"
+        <input type="search" class="app-input" [value]="text()" (input)="onSearch(valueOf($event))"
           [placeholder]="'admin.themes.searchPool' | translate" [attr.aria-label]="'admin.themes.searchPool' | translate" data-testid="theme-pool-search" />
         <ul class="rounded-(--radius-card) px-3" style="background:var(--bg-surface-2);border:1px solid var(--border-strong)">
-          @for (track of candidates(); track track.id) {
+          @for (track of visible(); track track.id) {
             <li class="flex items-center gap-3 py-2.5" style="border-top:1px solid var(--border-subtle)" data-testid="theme-candidate">
               <input type="checkbox" class="w-6 h-6 shrink-0 cursor-pointer" [checked]="picked().includes(track.id)" (change)="toggle(track.id)"
                 [attr.aria-label]="track.artist + ' - ' + track.title" />
@@ -53,6 +53,11 @@ const MAX_LISTED = 50;
             <li class="py-3 text-sm" style="color:var(--text-muted)">{{ 'admin.themes.noCandidate' | translate }}</li>
           }
         </ul>
+        @if (hidden() > 0) {
+          <button type="button" class="text-sm underline min-h-11 self-center px-2" style="color:var(--text-muted)" (click)="showMore()" data-testid="theme-show-more">
+            {{ 'admin.themes.showMore' | translate: { count: hidden() } }}
+          </button>
+        }
         <button type="button" appButton [disabled]="picked().length === 0" (click)="submit()" data-testid="theme-add-submit">
           {{ 'admin.themes.addPicked' | translate: { count: picked().length } }}
         </button>
@@ -122,12 +127,16 @@ export class ThemeAddComponent {
   protected readonly text = signal('');
   protected readonly picked = signal<readonly number[]>([]);
 
+  private readonly limit = signal(PAGE_SIZE);
+
   protected readonly candidates = computed(() => {
     const id = this.themeId();
     const free = this.poolTracks().filter(t => !t.themeIds.includes(id));
     // Les morceaux jouables d'abord : ce sont eux qui font monter la jauge du thème.
-    return filterByLabel(free, this.text()).sort((a, b) => Number(isPlayableTrack(b)) - Number(isPlayableTrack(a))).slice(0, MAX_LISTED);
+    return filterByLabel(free, this.text()).sort((a, b) => Number(isPlayableTrack(b)) - Number(isPlayableTrack(a)));
   });
+  protected readonly visible = computed(() => this.candidates().slice(0, this.limit()));
+  protected readonly hidden = computed(() => Math.max(0, this.candidates().length - this.limit()));
   protected readonly inPool = computed(() => new Set(this.poolTracks().map(t => t.deezerTrackId)));
   protected readonly inTheme = computed(() => {
     const id = this.themeId();
@@ -136,6 +145,15 @@ export class ThemeAddComponent {
 
   protected valueOf(event: Event): string {
     return (event.target as HTMLInputElement).value;
+  }
+
+  protected onSearch(value: string): void {
+    this.text.set(value);
+    this.limit.set(PAGE_SIZE);
+  }
+
+  protected showMore(): void {
+    this.limit.update(n => n + PAGE_SIZE);
   }
 
   protected toggle(id: number): void {
