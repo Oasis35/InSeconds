@@ -67,9 +67,8 @@ describe('PoolStore', () => {
 
       expect(await store.addTracksToTheme(1, [5, 6, 7])).toBeNull();
 
-      expect(api.setTrackThemes).toHaveBeenCalledTimes(2);
-      expect(api.setTrackThemes).toHaveBeenCalledWith(6, [2, 1]);
-      expect(api.setTrackThemes).toHaveBeenCalledWith(7, [1]);
+      expect(api.assignTracksToThemes).toHaveBeenCalledTimes(1);
+      expect(api.assignTracksToThemes).toHaveBeenCalledWith([{ themeId: 1, trackIds: [6, 7] }]);
     });
 
     it('retire un morceau d\'un thème en gardant ses autres thèmes', async () => {
@@ -101,18 +100,30 @@ describe('PoolStore', () => {
       expect(api.setTrackThemes).toHaveBeenCalledWith(9, [1]);
     });
 
-    it('relit le pool même si un ajout en lot échoue au milieu', async () => {
+    it('relit le pool même si un ajout en lot échoue', async () => {
       const first = poolTrack({ id: 5, deezerTrackId: 15 });
-      const second = poolTrack({ id: 6, deezerTrackId: 16 });
-      const setTrackThemes = vi.fn<(id: number, themeIds: readonly number[]) => Promise<void>>()
-        .mockResolvedValueOnce().mockRejectedValueOnce(problem(500, 'server.error'));
-      await setup([first, second], { listThemes: vi.fn(async () => themes), setTrackThemes });
+      const assignTracksToThemes = vi.fn<(a: readonly unknown[]) => Promise<number>>().mockRejectedValue(problem(500, 'server.error'));
+      await setup([first], { listThemes: vi.fn(async () => themes), assignTracksToThemes });
       const reads = api.listTracks.mock.calls.length;
 
-      const error = await store.addTracksToTheme(1, [5, 6]);
+      const error = await store.addTracksToTheme(1, [5]);
 
       expect(error).not.toBeNull();
       expect(api.listTracks.mock.calls).toHaveLength(reads + 1);
+    });
+
+    it('applique un classement en lot et rend le nombre de liens créés', async () => {
+      await setup([poolTrack({ id: 5 })], { listThemes: vi.fn(async () => themes), assignTracksToThemes: vi.fn(async () => 3) });
+
+      expect(await store.assignTracksToThemes([{ themeId: 1, trackIds: [5] }])).toEqual({ added: 3 });
+    });
+
+    it('un classement refusé rend l\'erreur', async () => {
+      await setup([], { assignTracksToThemes: vi.fn(() => Promise.reject(problem(404, 'catalogue.theme_not_found'))) });
+
+      const result = await store.assignTracksToThemes([{ themeId: 9, trackIds: [5] }]);
+
+      expect('error' in result && result.error.code).toBe('catalogue.theme_not_found');
     });
 
     it('un morceau de Deezer déjà dans le pool n\'est pas ajouté une seconde fois', async () => {

@@ -682,7 +682,35 @@
       "showMore": "Show more ({{count}} left)",
       "addPicked": "Add {{count}} tracks to the theme",
       "addDeezer": "Add to pool and theme",
-      "alreadyInTheme": "Already in this theme"
+      "alreadyInTheme": "Already in this theme",
+      "export": "Export the pool",
+      "yearFrom": "Year min",
+      "yearTo": "Year max",
+      "genre": "Genre",
+      "allGenres": "All genres",
+      "pickAll": "Select the {{count}} filtered tracks",
+      "import": {
+        "open": "Import a classification",
+        "title": "Import a classification",
+        "help": "One line per \"theme ; track id\" pair (the id is in the pool export). Nothing is written before the preview, nothing is ever removed or created.",
+        "placeholder": "Rock ; 1204\nRock ; 877\n80s ; 55",
+        "pickFile": "Or pick a file (.csv, .txt)",
+        "preview": "See the preview",
+        "toAdd": "{{count}} to add",
+        "already": "{{count}} already in the theme",
+        "unknownTracks": "{{count}} unknown tracks",
+        "problems": "{{count}} lines ignored",
+        "badLine": "Line {{line}} unreadable: {{text}}",
+        "noTrack": "Line {{line}}: no track {{id}} in the pool",
+        "unknownTheme": "Unknown theme: nothing will be created",
+        "alreadyChip": "already in",
+        "nothing": "Nothing to classify in this file.",
+        "edit": "Edit",
+        "apply": "Apply ({{count}})",
+        "done": "{{count}} tracks classified.",
+        "another": "Import another",
+        "backToThemes": "Back to themes"
+      }
     }
   },
   "daily": {

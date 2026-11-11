@@ -239,6 +239,22 @@ public sealed class Track
     public bool GenresNeedReading(DateTimeOffset now, TimeSpan manualMaxAge) =>
         GenresCheckedAt is null || (GenresManual && now - GenresCheckedAt.Value >= manualMaxAge);
 
+    /// <summary>Ajoute ces thèmes au morceau sans toucher à ceux qu'il a déjà ; renvoie combien étaient nouveaux pour lui.</summary>
+    public int AddThemes(IEnumerable<Theme> themes, DateTimeOffset now)
+    {
+        var added = 0;
+        foreach (var theme in themes.DistinctBy(t => t.Id).Where(t => _themes.All(x => x.Id != t.Id)))
+        {
+            _themes.Add(theme);
+            added++;
+        }
+
+        if (added > 0)
+            UpdatedAt = now;
+
+        return added;
+    }
+
     /// <summary>Remplace les thèmes du morceau par ceux-ci (des thèmes de la liste de l'admin, chacun une fois) ; aucun : le morceau n'en a plus.</summary>
     public void SetThemes(IEnumerable<Theme> themes, DateTimeOffset now)
     {

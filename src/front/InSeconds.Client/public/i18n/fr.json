@@ -682,7 +682,35 @@
       "showMore": "Voir plus ({{count}} restants)",
       "addPicked": "Ajouter {{count}} morceaux au thème",
       "addDeezer": "Ajouter au pool et au thème",
-      "alreadyInTheme": "Déjà dans ce thème"
+      "alreadyInTheme": "Déjà dans ce thème",
+      "export": "Exporter le pool",
+      "yearFrom": "Année min",
+      "yearTo": "Année max",
+      "genre": "Genre",
+      "allGenres": "Tous les genres",
+      "pickAll": "Cocher les {{count}} morceaux filtrés",
+      "import": {
+        "open": "Importer un classement",
+        "title": "Importer un classement",
+        "help": "Une ligne par couple « thème ; id du morceau » (l'id est dans l'export du pool). Rien n'est écrit avant l'aperçu, rien n'est jamais retiré ni créé.",
+        "placeholder": "Rock ; 1204\nRock ; 877\nAnnées 80 ; 55",
+        "pickFile": "Ou choisir un fichier (.csv, .txt)",
+        "preview": "Voir l'aperçu",
+        "toAdd": "{{count}} à ajouter",
+        "already": "{{count}} déjà dans le thème",
+        "unknownTracks": "{{count}} morceaux inconnus",
+        "problems": "{{count}} lignes ignorées",
+        "badLine": "Ligne {{line}} illisible : {{text}}",
+        "noTrack": "Ligne {{line}} : aucun morceau {{id}} dans le pool",
+        "unknownTheme": "Thème inconnu : rien ne sera créé",
+        "alreadyChip": "déjà là",
+        "nothing": "Rien à classer dans ce fichier.",
+        "edit": "Modifier",
+        "apply": "Appliquer ({{count}})",
+        "done": "{{count}} morceaux classés.",
+        "another": "Importer un autre",
+        "backToThemes": "Retour aux thèmes"
+      }
     }
   },
   "daily": {

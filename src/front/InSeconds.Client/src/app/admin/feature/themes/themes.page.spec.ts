@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { AudioPreviewPlayer, PREVIEW_AUDIO_FACTORY, PreviewAudio } from '../../../core/audio-preview/audio-preview.player';
 import { PreviewTrackDialog } from '../../../core/audio-preview/preview-track.dialog';
+import { FileDownload } from '../../../core/download/file-download';
 import { ModalService } from '../../../ui/modal/modal.service';
 import { FakeCatalogueApi, fakeCatalogueApi, poolTrack, problem, provideCatalogueApiFake } from '../../data-access/testing/fake-catalogue-api';
 import { fakeCooldownApi, provideCooldownApiFake } from '../../data-access/testing/fake-cooldown-api';
@@ -23,6 +24,7 @@ describe('ThemesPage', () => {
 
   let api: FakeCatalogueApi;
   let modal: { open: ReturnType<typeof vi.fn> };
+  let download: { saveText: ReturnType<typeof vi.fn> };
   let router: { navigate: ReturnType<typeof vi.fn> };
 
   async function render(options: { query?: Record<string, string>; api?: Partial<FakeCatalogueApi>; tracks?: PoolTrack[] } = {}) {
@@ -30,11 +32,13 @@ describe('ThemesPage', () => {
       listTracks: vi.fn(async () => options.tracks ?? [aha, toto, eminem]), listThemes: vi.fn(async () => themes), ...options.api,
     });
     modal = { open: vi.fn() };
+    download = { saveText: vi.fn() };
     router = { navigate: vi.fn(async () => true) };
     TestBed.configureTestingModule({
       providers: [
         provideTranslateService(), provideCatalogueApiFake(api), provideCooldownApiFake(fakeCooldownApi()),
         { provide: ModalService, useValue: modal },
+        { provide: FileDownload, useValue: download },
         { provide: Router, useValue: router },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(options.query ?? {}) } } },
         { provide: PREVIEW_AUDIO_FACTORY, useValue: () => new FakeAudio() },
@@ -140,7 +144,7 @@ describe('ThemesPage', () => {
     element.querySelector<HTMLButtonElement>('[data-testid="theme-add-submit"]')!.click();
     await settle();
 
-    expect(api.setTrackThemes).toHaveBeenCalledTimes(1);
+    expect(api.assignTracksToThemes).toHaveBeenCalledTimes(1);
     expect(element.querySelector('[data-testid="theme-add-submit"]')).toBeNull();
   });
 
@@ -185,5 +189,51 @@ describe('ThemesPage', () => {
 
     expect(api.deleteTheme).toHaveBeenCalledWith(2);
     expect(element.querySelector('[data-testid="theme-track"]')).toBeNull();
+  });
+
+  it('exporte le pool en CSV avec les thèmes de chaque morceau', async () => {
+    const { element } = await render();
+
+    element.querySelector<HTMLButtonElement>('[data-testid="themes-export"]')!.click();
+
+    const [name, text] = download.saveText.mock.calls[0] as [string, string];
+    expect(name).toBe('inseconds-pool.csv');
+    expect(text).toContain('1;a-ha;Take On Me;;;Années 80 / Films');
+  });
+
+  it('importe un classement après l\'aperçu, en une seule requête', async () => {
+    const { element, fixture, settle } = await render();
+
+    element.querySelector<HTMLButtonElement>('[data-testid="themes-import"]')!.click();
+    fixture.detectChanges();
+    const area = element.querySelector<HTMLTextAreaElement>('[data-testid="import-text"]')!;
+    area.value = 'Films ; 2\nFilms ; 3';
+    area.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    element.querySelector<HTMLButtonElement>('[data-testid="import-preview"]')!.click();
+    fixture.detectChanges();
+    element.querySelector<HTMLButtonElement>('[data-testid="import-apply"]')!.click();
+    await settle();
+
+    expect(api.assignTracksToThemes).toHaveBeenCalledWith([{ themeId: 2, trackIds: [2, 3] }]);
+    expect(element.querySelector('[data-testid="import-result"]')).not.toBeNull();
+  });
+
+  it('un classement refusé garde l\'aperçu et affiche l\'erreur', async () => {
+    const { element, fixture, settle } = await render({ api: { assignTracksToThemes: vi.fn(() => Promise.reject(problem(404, 'catalogue.theme_not_found'))) } });
+
+    element.querySelector<HTMLButtonElement>('[data-testid="themes-import"]')!.click();
+    fixture.detectChanges();
+    const area = element.querySelector<HTMLTextAreaElement>('[data-testid="import-text"]')!;
+    area.value = 'Films ; 3';
+    area.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    element.querySelector<HTMLButtonElement>('[data-testid="import-preview"]')!.click();
+    fixture.detectChanges();
+    element.querySelector<HTMLButtonElement>('[data-testid="import-apply"]')!.click();
+    await settle();
+
+    expect(element.querySelector('[data-testid="import-error"]')).not.toBeNull();
+    expect(element.querySelector('[data-testid="import-result"]')).toBeNull();
   });
 });

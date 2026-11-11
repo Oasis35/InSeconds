@@ -10,8 +10,11 @@ import { ModalService } from '../../../ui/modal/modal.service';
 import { CatalogueApi } from '../../data-access/catalogue.api';
 import { DeezerSearchStore } from '../../data-access/deezer-search.store';
 import { PoolStore } from '../../data-access/pool.store';
-import { DeezerResult, PoolTrack } from '../../domain/pool-track';
+import { FileDownload } from '../../../core/download/file-download';
+import { DeezerResult, PoolTrack, ThemeAssignment } from '../../domain/pool-track';
+import { poolToCsv } from '../../domain/theme-import';
 import { themeRows } from '../../domain/themes';
+import { ThemeImportComponent } from '../../ui/themes/theme-import/theme-import.component';
 import { ThemeAddComponent } from '../../ui/themes/theme-add/theme-add.component';
 import { ThemeIconPickerComponent } from '../../ui/themes/theme-icon-picker/theme-icon-picker.component';
 import { ThemeDetailComponent } from '../../ui/themes/theme-detail/theme-detail.component';
@@ -29,13 +32,23 @@ type DeezerStatus = 'loading' | 'success' | 'error';
  */
 @Component({
   selector: 'app-themes-page',
-  imports: [TranslatePipe, ErrorMessageComponent, ThemeListComponent, ThemeDetailComponent, ThemeAddComponent, ThemeIconPickerComponent],
+  imports: [TranslatePipe, ErrorMessageComponent, ThemeListComponent, ThemeDetailComponent, ThemeAddComponent, ThemeIconPickerComponent, ThemeImportComponent],
   providers: [PoolStore, DeezerSearchStore, AudioPreviewPlayer],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full min-w-0' },
   template: `
     <div class="w-full max-w-2xl lg:max-w-none mx-auto flex flex-col gap-4">
-      <h1 class="text-xl font-semibold" style="color:var(--text-hi)" [class.hidden]="selected()" [class.lg:block]="true">{{ 'admin.themes.title' | translate }}</h1>
+      @if (importing()) {
+        <app-theme-import [tracks]="pool.tracks()" [themes]="pool.themes()" [busy]="importBusy()" [errorKey]="importErrorKey()" [added]="importAdded()"
+          (closed)="closeImport()" (listen)="listen($event)" (applied)="applyImport($event)" (anotherRequested)="importAdded.set(null)" />
+      } @else {
+      <div class="flex-wrap items-center justify-between gap-x-3 lg:flex" [class.flex]="!selected()" [class.hidden]="selected()">
+        <h1 class="text-xl font-semibold" style="color:var(--text-hi)">{{ 'admin.themes.title' | translate }}</h1>
+        <span class="flex items-center gap-1 text-sm" style="color:var(--text-muted)">
+          <button type="button" class="underline min-h-11 px-2" (click)="importing.set(true)" data-testid="themes-import">{{ 'admin.themes.import.open' | translate }}</button>
+          <button type="button" class="underline min-h-11 px-2" (click)="exportPool()" data-testid="themes-export">{{ 'admin.themes.export' | translate }}</button>
+        </span>
+      </div>
 
       @if (pool.error(); as error) {
         <app-error-message [messageKey]="errorMessageKey(error.code)" [traceId]="error.traceId" />
@@ -66,6 +79,7 @@ type DeezerStatus = 'loading' | 'success' | 'error';
           }
         </section>
       </div>
+      }
     </div>
   `,
 })
@@ -73,6 +87,7 @@ export class ThemesPage {
   protected readonly pool = inject(PoolStore);
   protected readonly search = inject(DeezerSearchStore);
   private readonly catalogue = inject(CatalogueApi);
+  private readonly download = inject(FileDownload);
   private readonly modal = inject(ModalService);
   private readonly injector = inject(Injector);
   private readonly route = inject(ActivatedRoute);
@@ -82,6 +97,10 @@ export class ThemesPage {
   protected readonly selectedId = signal<number | null>(null);
   protected readonly adding = signal(false);
   protected readonly pickingIcon = signal(false);
+  protected readonly importing = signal(false);
+  protected readonly importBusy = signal(false);
+  protected readonly importAdded = signal<number | null>(null);
+  protected readonly importErrorKey = signal<string | null>(null);
   protected readonly listErrorKey = signal<string | null>(null);
   protected readonly detailErrorKey = signal<string | null>(null);
   protected readonly deezerStatuses = signal<Readonly<Record<number, DeezerStatus>>>({});
@@ -153,6 +172,26 @@ export class ThemesPage {
     const error = await this.pool.addTracksToTheme(themeId, ids);
     this.detailErrorKey.set(this.keyOf(error));
     if (!error) this.adding.set(false);
+  }
+
+  protected exportPool(): void {
+    this.download.saveText('inseconds-pool.csv', poolToCsv(this.pool.tracks(), this.pool.themes()), 'text/csv;charset=utf-8');
+  }
+
+  protected closeImport(): void {
+    this.importing.set(false);
+    this.importAdded.set(null);
+    this.importErrorKey.set(null);
+  }
+
+  /** Applique le classement validé dans l'aperçu : en une requête, sans rien retirer. */
+  protected async applyImport(assignments: readonly ThemeAssignment[]): Promise<void> {
+    this.importBusy.set(true);
+    this.importErrorKey.set(null);
+    const result = await this.pool.assignTracksToThemes(assignments);
+    this.importBusy.set(false);
+    if ('error' in result) this.importErrorKey.set(errorMessageKey(result.error.code));
+    else this.importAdded.set(result.added);
   }
 
   protected async addDeezer(themeId: number, result: DeezerResult): Promise<void> {
