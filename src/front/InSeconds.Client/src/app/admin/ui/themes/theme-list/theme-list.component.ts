@@ -8,21 +8,21 @@ import { ThemeIconComponent } from '../../../../ui/theme-icon/theme-icon.compone
 
 /**
  * La liste des thèmes : une recherche par nom, des puces par état (tous, pas jouables, peu variés, variés), un formulaire pour en créer un,
- * puis une carte par thème avec sa pastille et sa jauge. Un tap sur une carte l'ouvre dans le détail.
+ * puis une carte par thème (nom, pastille d'état, compteurs). Un tap sur une carte l'ouvre dans le détail.
  */
 @Component({
   selector: 'app-theme-list',
   imports: [TranslatePipe, ButtonComponent, ThemeIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex flex-col gap-3">
+    <div class="flex flex-col gap-2">
       <input type="search" class="app-input" [value]="text()" (input)="text.set(valueOf($event))"
         [placeholder]="'admin.themes.search' | translate" [attr.aria-label]="'admin.themes.search' | translate" data-testid="theme-search" />
 
       <div class="flex flex-wrap gap-2" role="group" [attr.aria-label]="'admin.themes.filters' | translate">
         @for (chip of chips(); track chip.id) {
           <button type="button" (click)="filter.set(chip.id)" [attr.aria-pressed]="filter() === chip.id"
-            class="text-sm px-3 py-1.5 rounded-full" data-testid="theme-chip"
+            class="text-[13px] px-2.5 py-1.5 min-h-9 rounded-full" data-testid="theme-chip"
             [style.color]="filter() === chip.id ? 'var(--text-hi)' : 'var(--text-muted)'"
             [style.background]="filter() === chip.id ? 'var(--text-sep)' : 'transparent'" style="border:1px solid var(--border-neutral)">
             {{ chip.label | translate }} · {{ chip.count }}
@@ -40,10 +40,10 @@ import { ThemeIconComponent } from '../../../../ui/theme-icon/theme-icon.compone
         <p role="alert" class="text-xs" style="color:var(--text-error)" data-testid="themes-error">{{ key | translate }}</p>
       }
 
-      <ul class="flex flex-col gap-2.5">
+      <ul class="flex flex-col gap-2">
         @for (row of shown(); track row.id) {
           <li>
-            <button type="button" (click)="opened.emit(row.id)" class="w-full text-left rounded-(--radius-card) p-4 flex flex-col gap-2" data-testid="theme-card"
+            <button type="button" (click)="opened.emit(row.id)" class="w-full text-left rounded-(--radius-card) px-3.5 py-2.5 flex flex-col gap-0.5" data-testid="theme-card"
               style="background:var(--bg-surface-2);border:1px solid var(--border-strong)"
               [style.border-color]="row.id === selectedId() ? 'var(--border-neutral)' : null" [attr.aria-current]="row.id === selectedId() ? 'true' : null">
               <span class="flex items-center justify-between gap-3">
@@ -58,9 +58,6 @@ import { ThemeIconComponent } from '../../../../ui/theme-icon/theme-icon.compone
                 </span>
               </span>
               <span class="text-sm" style="color:var(--text-muted)">{{ 'admin.themes.counts' | translate: { total: row.total, playable: row.playable } }}</span>
-              <span class="h-1.5 rounded-full w-full" style="background:var(--text-sep)">
-                <span class="block h-full rounded-full" [style.background]="color[row.health]" [style.width.%]="barWidth(row)"></span>
-              </span>
               @if (row.health === 'unplayable') {
                 <span class="text-sm" style="color:var(--text-error)">{{ 'admin.themes.missing' | translate: { count: missing(row) } }}</span>
               }
@@ -99,11 +96,6 @@ export class ThemeListComponent {
 
   protected missing(row: ThemeRow): number {
     return missingTracks(row.playable);
-  }
-
-  /** La jauge se remplit jusqu'au seuil « varié » : pleine = vert. */
-  protected barWidth(row: ThemeRow): number {
-    return Math.min(100, Math.round((row.playable / VARIED_FROM_TRACKS) * 100));
   }
 
   protected valueOf(event: Event): string {

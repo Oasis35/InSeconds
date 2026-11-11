@@ -71,6 +71,35 @@ describe('ThemesPage', () => {
     expect(element.querySelector('[data-testid="theme-panel"]')?.textContent).toContain('Années 80');
   });
 
+  describe('pagination des morceaux d\'un thème', () => {
+    const tracks = Array.from({ length: 23 }, (_, i) => poolTrack({ id: i + 1, deezerTrackId: 100 + i, artist: 'Artiste', title: `Titre ${String(i + 1).padStart(2, '0')}`, themeIds: [1] }));
+
+    it('ouvre la page de l\'adresse (?page=, à partir de 1)', async () => {
+      const { element } = await render({ query: { theme: '1', page: '3' }, tracks });
+
+      expect(element.querySelectorAll('[data-testid="theme-track"]')).toHaveLength(3);
+    });
+
+    it('écrit la page dans l\'adresse avec le thème, et l\'efface à la première', async () => {
+      const { element, settle } = await render({ query: { theme: '1' }, tracks });
+      expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({ queryParams: { theme: 1, page: null } }));
+
+      element.querySelector<HTMLButtonElement>('[data-testid="theme-page-next"]')!.click();
+      await settle();
+
+      expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({ queryParams: { theme: 1, page: 2 }, replaceUrl: true }));
+    });
+
+    it('revient à la première page en ouvrant un autre thème', async () => {
+      const { element, settle } = await render({ query: { theme: '1', page: '2' }, tracks });
+
+      (element.querySelector('[data-testid="theme-back"]') as HTMLElement).click();
+      await settle();
+
+      expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({ queryParams: { theme: null, page: null } }));
+    });
+  });
+
   it('un thème inconnu dans l\'adresse n\'ouvre rien', async () => {
     const { element } = await render({ query: { theme: '99' } });
 
@@ -199,7 +228,7 @@ describe('ThemesPage', () => {
     element.querySelector<HTMLButtonElement>('[data-testid="themes-export"]')!.click();
 
     const [name, text] = download.saveText.mock.calls[0] as [string, string];
-    expect(name).toBe('inseconds-pool.csv');
+    expect(name).toMatch(/^inseconds-pool-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.csv$/);
     expect(text).toContain('1;a-ha;Take On Me;;;Années 80 / Films');
   });
 

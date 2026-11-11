@@ -142,6 +142,14 @@ export function totalToAdd(preview: ImportPreview): number {
   return preview.groups.reduce((sum, g) => sum + g.toAdd, 0);
 }
 
+/** Le nom du fichier d'export du pool, avec la date et l'heure locales (aaaa-mm-jj_hh-mm-ss) : plusieurs exports de suite ne s'écrasent pas. */
+export function poolCsvFileName(now: Date): string {
+  const two = (n: number) => String(n).padStart(2, '0');
+  const day = `${now.getFullYear()}-${two(now.getMonth() + 1)}-${two(now.getDate())}`;
+  const time = `${two(now.getHours())}-${two(now.getMinutes())}-${two(now.getSeconds())}`;
+  return `inseconds-pool-${day}_${time}.csv`;
+}
+
 /**
  * Le pool en CSV (séparateur `;`, ouvert tel quel par un tableur français, d'où le BOM UTF-8 : sans lui Excel lit les accents en ANSI) : une ligne par morceau avec son identifiant, son artiste, son
  * titre, son année, ses genres et ses thèmes actuels. C'est ce fichier qu'on donne à Claude pour qu'il rende un classement.
