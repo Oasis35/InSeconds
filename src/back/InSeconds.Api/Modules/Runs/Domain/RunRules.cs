@@ -24,11 +24,17 @@ namespace InSeconds.Api.Modules.Runs.Domain;
 /// <param name="Themes">
 /// Les manches à thème (jamais la première) : pour chacune, le thème de la liste de l'admin (« Années 80 ») dont tous ses morceaux sont tirés, et son
 /// nom au moment de la création (un renommage ensuite ne change rien). Les autres manches suivent leur tranche de rang. Figé avec la playlist : tous
-/// ses joueurs jouent les mêmes morceaux, la comparaison reste juste ; vide : aucune manche à thème.
+/// ses joueurs jouent les mêmes morceaux, la comparaison reste juste ; vide : aucune manche à thème (ou pas encore choisie, cf. <paramref name="PendingThemeRound"/>).
+/// </param>
+/// <param name="PendingThemeRound">
+/// La manche à thème que le créateur n'a pas encore choisie : tirée avec la playlist (parmi les manches de <c>Runs:ThemedRounds</c>, ou aucune), elle
+/// se joue d'abord avec les morceaux de sa tranche de rang ; le créateur choisit son thème juste avant de la commencer, et ses morceaux sont alors
+/// tirés dans ce thème (<c>RunChallenge.ApplyTheme</c>). Vide : aucune manche en attente de thème.
 /// </param>
 public sealed record RunRules(
     int Rounds, int TracksPerRound, decimal ListenSeconds, IReadOnlyList<int> ThresholdPercents, decimal MinMultiplier, decimal MaxMultiplier,
-    int AnswerSeconds = 0, IReadOnlyList<RunRoundRules>? RoundRules = null, int ReservePerRound = 0, RunCardRules? Cards = null, IReadOnlyList<RunRoundTheme>? Themes = null)
+    int AnswerSeconds = 0, IReadOnlyList<RunRoundRules>? RoundRules = null, int ReservePerRound = 0, RunCardRules? Cards = null, IReadOnlyList<RunRoundTheme>? Themes = null,
+    int? PendingThemeRound = null)
 {
     /// <summary>Le thème de cette manche, vide si elle n'en a pas.</summary>
     public RunRoundTheme? ThemeOf(int round) => Themes?.FirstOrDefault(t => t.Round == round);

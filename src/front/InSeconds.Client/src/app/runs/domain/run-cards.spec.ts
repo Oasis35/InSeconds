@@ -40,7 +40,7 @@ describe('l\'écran de palier', () => {
     round: { round: 2, score: 0, objective: 366, maxScore: 665 }, roundTracks: [], finish: null, answerSeconds: 45, clockRemainingSeconds: null,
     playedTracks: [], passedRounds: [{ round: 1, score: 500, objective: 225, disc: { key: 'runs.discs.wax', stars: 0 } }],
     difficultyChoice: { round: 2, options: [{ difficulty: 'safe', objective: 366, maxScore: 665, listenSeconds: 10 }] },
-    hand: [], swapAvailable: false, nextDisc: { key: 'runs.discs.bronze', stars: 0 }, cardValues: null, ghost: null, themes: [],
+    hand: [], swapAvailable: false, nextDisc: { key: 'runs.discs.bronze', stars: 0 }, cardValues: null, ghost: null, themes: [], themeChoice: null,
     ...overrides,
   });
 

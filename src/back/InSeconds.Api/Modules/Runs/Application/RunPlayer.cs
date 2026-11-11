@@ -23,6 +23,7 @@ public sealed class RunPlayer(
     ITrackDirectory directory,
     Gameplay.Contracts.ISeededShuffle shuffle,
     RunChoiceDealer choiceDealer,
+    RunThemeDealer themeDealer,
     ITrackPreviews previews,
     ITrackWaveforms waveforms,
     IRunsStore store,
@@ -61,6 +62,18 @@ public sealed class RunPlayer(
         while (session.IsPending)
         {
             var track = run.TrackAt(session.NextPosition)!;
+            // Une manche à thème que le créateur n'a pas choisie : lui seul le choisit (rien ne part avant, comme pour la difficulté). Un ami qui arrive le
+            // premier à cette manche reçoit le thème mystère, pour tous ; sans trois thèmes fournis, la manche se joue sans thème. Les morceaux de la
+            // manche changent : la liste des morceaux chargés est relue.
+            if (challenge.Rules.PendingThemeRound == track.Round)
+            {
+                if (session.CanChooseTheme(challenge) && await themeDealer.OfferAsync(challenge, ct) is not null)
+                    break;
+                await themeDealer.ApplyAsync(challenge, themeId: null, ct);
+                run = await LoadAsync(session, challenge, ct);
+                track = run.TrackAt(session.NextPosition)!;
+            }
+
             // Une manche dont la difficulté reste à choisir : rien de son premier morceau ne part (ni extrait, ni neutralisation) avant le choix,
             // sinon le joueur miserait en connaissant le morceau. Le choix (POST …/difficulty) reprend ici.
             if (session.CanChooseDifficulty(challenge, track.Round))
@@ -109,6 +122,7 @@ public sealed class RunPlayer(
     {
         ArgumentNullException.ThrowIfNull(run);
         var record = run.Session.IsPending ? null : await store.FindRecordAsync(run.Session.PlayerId, ct);
+        var themeOffer = run.Session.CanChooseTheme(run.Challenge) ? await themeDealer.OfferAsync(run.Challenge, ct) : null;
         IReadOnlyDictionary<int, byte[]> shapes = new Dictionary<int, byte[]>();
         if (withWaveforms && run.Session.IsPending)
         {
@@ -118,7 +132,8 @@ public sealed class RunPlayer(
                 shapes = await waveforms.GetAsync(played, ct, reportMissing: false);
         }
 
-        return RunViews.Session(run, scoring, rules.Discs, record, shapes, time.GetUtcNow(), await ghosts.OfAsync(run.Session, run.Challenge, ct));
+        return RunViews.Session(run, scoring, rules.Discs, record, shapes, time.GetUtcNow(), await ghosts.OfAsync(run.Session, run.Challenge, ct),
+            themeOffer);
     }
 
     // Le bilan d'une manche terminée ; la carte qu'elle fait gagner se journalise et se compte ici, une seule fois (la manche ne se termine qu'une fois).
@@ -235,7 +250,7 @@ internal static class RunViews
 
     public static RunSessionResponse Session(
         LoadedRun run, IRunScoringPolicy scoring, IReadOnlyList<string> discs, RunRecord? record, IReadOnlyDictionary<int, byte[]> shapes,
-        DateTimeOffset now, RunGhostResponse? ghost)
+        DateTimeOffset now, RunGhostResponse? ghost, RunThemeOffer? themeOffer = null)
     {
         var (session, challenge, _) = run;
         var rules = challenge.Rules;
@@ -277,7 +292,9 @@ internal static class RunViews
             session.IsPending && session.CanSwap(challenge),
             session.IsPending ? DiscOf(DiscLadder.Of(session.RoundsPassed + 1, discs)) : null,
             rules.Cards is { } cards ? new RunCardValuesResponse(cards.ExtendBonusSeconds, cards.RewardMarginPercent) : null,
-            ghost, RunViews.ThemesOf(rules));
+            ghost, RunViews.ThemesOf(rules),
+            themeOffer is null ? null : new RunThemeChoiceResponse(
+                themeOffer.Round, [.. themeOffer.Themes.Select(t => new RunThemeOfferItem(t.Id, t.Name, themeOffer.Round, t.Icon))]));
     }
 
     // Chaque difficulté proposée, calculée sur les morceaux de la manche (un morceau déjà neutralisé en est retiré, comme pour la jauge).

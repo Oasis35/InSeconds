@@ -15,31 +15,11 @@ public sealed record PlanResult(RunChallenge? Challenge, int EligibleCount, int 
 /// reste le garde-fou.
 /// </summary>
 public sealed class RunChallengePlanner(
-    ITrackDirectory tracks, IRunTrackSelector selector, ISeededShuffle shuffle, RunCardDealer dealer, IRunsStore store, RunsRules rules,
+    ITrackDirectory tracks, IRunTrackSelector selector, RunCardDealer dealer, IRunsStore store, RunsRules rules,
     TimeProvider time)
 {
     /// <summary>Combien de codes essayer avant de renoncer (une collision répétée n'est plus de la malchance).</summary>
     private const int MaxCodeAttempts = 5;
-
-    /// <summary>Combien de thèmes le créateur se voit proposer au lancement (plus « Surprise »).</summary>
-    public const int OfferedThemes = 2;
-
-    /// <summary>
-    /// Les thèmes proposés au créateur : deux tirés au hasard parmi ceux qui ont assez de morceaux pour une manche et sa réserve ; vide s'il n'y a
-    /// pas de manche à thème ou pas de thème assez fourni.
-    /// </summary>
-    public async Task<IReadOnlyList<RunRoundTheme>> OfferThemesAsync(CancellationToken ct)
-    {
-        var current = rules.Current();
-        var themedRounds = rules.ThemedRounds().Where(r => r >= 2 && r <= current.Rounds).Order().ToList();
-        if (themedRounds.Count == 0)
-            return [];
-        var candidates = await CandidatesAsync(ct);
-        var names = await tracks.ListThemesAsync(ct);
-        var eligible = RunThemes.Eligible(candidates.Select(c => c.ThemeIds), current).Where(names.ContainsKey).ToList();
-        var seed = System.Security.Cryptography.RandomNumberGenerator.GetInt32(int.MaxValue);
-        return [.. shuffle.Shuffle(eligible, seed).Take(OfferedThemes).Select(id => new RunRoundTheme(themedRounds[0], id, names[id]))];
-    }
 
     private async Task<List<RankedTrack>> CandidatesAsync(CancellationToken ct)
     {
@@ -48,17 +28,15 @@ public sealed class RunChallengePlanner(
         return [.. playable.Select(id => new RankedTrack(id, infos.GetValueOrDefault(id)?.DeezerRank, infos.GetValueOrDefault(id)?.ThemeIds))];
     }
 
-    /// <param name="themeId">Le thème choisi par le créateur pour la première manche à thème ; vide : « Surprise » (tirage). Un thème inconnu ou
-    /// trop peu fourni est ignoré.</param>
-    public async Task<PlanResult> PlanAsync(Guid? createdBy, int? themeId, CancellationToken ct)
+    public async Task<PlanResult> PlanAsync(Guid? createdBy, CancellationToken ct)
     {
         var current = rules.Current();
         var candidates = await CandidatesAsync(ct);
 
         var seed = System.Security.Cryptography.RandomNumberGenerator.GetInt32(int.MaxValue);
-        // Les manches à thème : un thème de la liste de l'admin par manche, tiré avec la graine parmi ceux qui ont assez de morceaux.
-        var names = await tracks.ListThemesAsync(ct);
-        current = current with { Themes = await DrawThemesAsync(current, candidates, names, seed, themeId) };
+        // La manche à thème : tirée avec la playlist parmi les manches permises, ou aucune. Son thème n'est pas choisi ici : le créateur le choisit juste
+        // avant de la commencer (RunThemeDealer), ses morceaux sont alors tirés dans ce thème. Rien à proposer sans trois thèmes assez fournis.
+        current = current with { PendingThemeRound = await DrawThemedRoundAsync(current, candidates, seed, ct) };
         var selection = selector.Select(candidates, current, seed);
         if (!selection.IsSufficient)
             return new PlanResult(null, selection.EligibleCount, selection.Requested);
@@ -79,24 +57,17 @@ public sealed class RunChallengePlanner(
         throw new InvalidOperationException("Impossible de trouver un code de défi libre.");
     }
 
-    // Les thèmes, un par manche à thème, tirés au hasard (graine de la playlist) parmi ceux qui ont assez de morceaux (la manche et sa réserve) ;
-    // quand il y en a moins que de manches à thème, les dernières manches suivent leur tranche.
-    private Task<IReadOnlyList<RunRoundTheme>?> DrawThemesAsync(
-        RunRules current, IReadOnlyList<RankedTrack> candidates, IReadOnlyDictionary<int, string> names, int seed, int? chosen)
+    // Une chance sur (manches permises + 1) pour chaque cas : la manche à thème est l'une des manches permises, ou il n'y en a pas.
+    private async Task<int?> DrawThemedRoundAsync(RunRules current, IReadOnlyList<RankedTrack> candidates, int seed, CancellationToken ct)
     {
         var themedRounds = rules.ThemedRounds().Where(r => r >= 2 && r <= current.Rounds).Order().ToList();
-        var eligible = RunThemes.Eligible(candidates.Select(c => c.ThemeIds), current).Where(names.ContainsKey).ToList();
-        var shuffled = shuffle.Shuffle(eligible, seed).ToList();
-        // Le thème choisi prend la première manche à thème (s'il est valable), les autres manches tirent au hasard.
-        if (chosen is { } c && eligible.Contains(c))
-        {
-            shuffled.Remove(c);
-            shuffled.Insert(0, c);
-        }
-        var drawn = shuffled.Take(themedRounds.Count).ToList();
-        IReadOnlyList<RunRoundTheme>? result = drawn.Count == 0
-            ? null
-            : [.. drawn.Select((id, i) => new RunRoundTheme(themedRounds[i], id, names[id]))];
-        return Task.FromResult(result);
+        if (themedRounds.Count == 0)
+            return null;
+        var names = await tracks.ListThemesAsync(ct);
+        var eligible = RunThemes.Eligible(candidates.Select(c => c.ThemeIds), current).Count(names.ContainsKey);
+        if (eligible < RunThemes.MinEligibleThemes)
+            return null;
+        var pick = (int)((seed + 4242L) % (themedRounds.Count + 1));
+        return pick < themedRounds.Count ? themedRounds[pick] : null;
     }
 }

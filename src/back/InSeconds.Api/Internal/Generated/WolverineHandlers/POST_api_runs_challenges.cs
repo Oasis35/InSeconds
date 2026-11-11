@@ -79,10 +79,11 @@ namespace Internal.Generated.WolverineHandlers
             var loggedTrackWaveforms = new InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms(efTrackWaveforms, _loggerOfLoggedTrackWaveforms);
             var deezerTrackPreviews = new InSeconds.Api.Modules.Catalogue.Persistence.DeezerTrackPreviews(previewProvider);
             var efTrackDirectory = new InSeconds.Api.Modules.Catalogue.Persistence.EfTrackDirectory(inSecondsDbContext, _optionsMonitorOfCatalogueOptions);
-            var runChoiceDealer = new InSeconds.Api.Modules.Runs.Application.RunChoiceDealer(efTrackDirectory, _seededShuffle3);
             var efRunsStore = new InSeconds.Api.Modules.Runs.Persistence.EfRunsStore(inSecondsDbContext);
-            var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, _seededShuffle2, runChoiceDealer, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, runGhosts, _runScoringPolicy, _runsRules2, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
-            var runChallengePlanner = new InSeconds.Api.Modules.Runs.Application.RunChallengePlanner(efTrackDirectory, _runTrackSelector, _seededShuffle1, _runCardDealer, efRunsStore, _runsRules1, _timeProvider);
+            var runThemeDealer = new InSeconds.Api.Modules.Runs.Application.RunThemeDealer(efTrackDirectory, _seededShuffle3, efRunsStore);
+            var runChoiceDealer = new InSeconds.Api.Modules.Runs.Application.RunChoiceDealer(efTrackDirectory, _seededShuffle2);
+            var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, _seededShuffle1, runChoiceDealer, runThemeDealer, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, runGhosts, _runScoringPolicy, _runsRules2, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
+            var runChallengePlanner = new InSeconds.Api.Modules.Runs.Application.RunChallengePlanner(efTrackDirectory, _runTrackSelector, _runCardDealer, efRunsStore, _runsRules1, _timeProvider);
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
             var efRunAccess = new InSeconds.Api.Modules.Runs.Persistence.EfRunAccess(inSecondsDbContext, claimsCurrentPlayer);
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Runs.Application.LaunchRunEndpoint");
@@ -98,15 +99,7 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                string themeId_rawValue = httpContext.Request.Query["themeId"];
-                System.Nullable<int> themeId = default;
-
-                if (themeId_rawValue != null && int.TryParse(themeId_rawValue, System.Globalization.CultureInfo.InvariantCulture, out var themeId_parsed))
-                {
-                    themeId = themeId_parsed;
-                }
-
-                var runLaunch = await InSeconds.Api.Modules.Runs.Application.LaunchRunEndpoint.LoadAsync(claimsCurrentPlayer, efRunAccess, efRunsStore, runChallengePlanner, _loggerOfRunLaunch, httpContext.RequestAborted, themeId).ConfigureAwait(false);
+                var runLaunch = await InSeconds.Api.Modules.Runs.Application.LaunchRunEndpoint.LoadAsync(claimsCurrentPlayer, efRunAccess, efRunsStore, runChallengePlanner, _loggerOfRunLaunch, httpContext.RequestAborted).ConfigureAwait(false);
                 var problemDetails1 = InSeconds.Api.Modules.Runs.Application.LaunchRunEndpoint.Validate(runLaunch);
                 // Evaluate whether the processing should stop if there are any problems
                 if (!(ReferenceEquals(problemDetails1, Wolverine.Http.WolverineContinue.NoProblems)))

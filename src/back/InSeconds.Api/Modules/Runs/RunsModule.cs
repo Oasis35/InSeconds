@@ -25,6 +25,7 @@ public static class RunsModule
         services.AddScoped<IRunAccess, EfRunAccess>();
         services.AddScoped<RunChallengePlanner>();
         services.AddScoped<RunChoiceDealer>();
+        services.AddScoped<RunThemeDealer>();
         services.AddSingleton<IRunScoringPolicy, ArtistTitleScoring>();
         services.AddScoped<RunPlayer>();
         services.AddScoped<RunGhosts>();
