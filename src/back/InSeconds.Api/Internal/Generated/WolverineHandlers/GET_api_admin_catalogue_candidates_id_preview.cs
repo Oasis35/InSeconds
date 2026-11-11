@@ -34,7 +34,7 @@ namespace Internal.Generated.WolverineHandlers
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Wolverine.Runtime.ScopedMessageContextHolder>(serviceScope.ServiceProvider).Context = messageContext;
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
-            var efCatalogueStore = new InSeconds.Api.Modules.Catalogue.Persistence.EfCatalogueStore(inSecondsDbContext);
+            var efCandidateStore = new InSeconds.Api.Modules.Catalogue.Persistence.EfCandidateStore(inSecondsDbContext);
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var previewProvider = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Deezer.IPreviewProvider>(serviceScope.ServiceProvider);
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.GetCandidatePreviewEndpoint");
@@ -62,7 +62,7 @@ namespace Internal.Generated.WolverineHandlers
                     return;
                 }
 
-                var candidatePreviewLookup = await InSeconds.Api.Modules.Catalogue.Application.GetCandidatePreviewEndpoint.LoadAsync(id, efCatalogueStore, previewProvider, httpContext.RequestAborted).ConfigureAwait(false);
+                var candidatePreviewLookup = await InSeconds.Api.Modules.Catalogue.Application.GetCandidatePreviewEndpoint.LoadAsync(id, efCandidateStore, previewProvider, httpContext.RequestAborted).ConfigureAwait(false);
                 var problemDetails1 = InSeconds.Api.Modules.Catalogue.Application.GetCandidatePreviewEndpoint.Validate(candidatePreviewLookup);
                 // Evaluate whether the processing should stop if there are any problems
                 if (!(ReferenceEquals(problemDetails1, Wolverine.Http.WolverineContinue.NoProblems)))

@@ -2,6 +2,7 @@ using InSeconds.Api.Infrastructure.Errors;
 using InSeconds.Api.Modules.Catalogue.Domain;
 using InSeconds.Deezer;
 using Microsoft.AspNetCore.Mvc;
+using Wolverine;
 
 namespace InSeconds.Api.Modules.Catalogue.Application;
 
@@ -133,17 +134,45 @@ internal static class TrackMapping
     /// Les genres de l'album lu à l'ajout ou à l'actualisation d'un morceau. Album supprimé chez Deezer : sans genre, et inutile de le
     /// redemander. Album non lu ou Deezer indisponible : rien ne change, le contrôle nocturne rattrape.
     /// </summary>
-    public static async Task RecordAlbumGenresAsync(Track track, AlbumLookup? album, ICatalogueStore store, DateTimeOffset now, CancellationToken ct)
+    public static async Task RecordAlbumGenresAsync(Track track, AlbumLookup? album, ICatalogueStore store, DateTimeOffset now, CancellationToken ct) =>
+        ApplyAlbumGenres(track, album, await EnsureAlbumGenresAsync([album], store, ct), now);
+
+    /// <summary>Les genres de ces albums, retrouvés ou créés d'un coup (un genre neuf partagé par deux morceaux n'est créé qu'une fois), par identifiant.</summary>
+    public static async Task<IReadOnlyDictionary<long, Genre>> EnsureAlbumGenresAsync(
+        IEnumerable<AlbumLookup?> albums, ICatalogueStore store, CancellationToken ct) =>
+        (await store.EnsureGenresAsync(
+            [.. albums.OfType<AlbumLookup.Found>().SelectMany(f => f.Genres.Select(g => new GenreRef(g.Id, g.Name)))], ct)).ToDictionary(g => g.Id);
+
+    /// <summary>Note sur le morceau les genres de son album (voir <see cref="RecordAlbumGenresAsync"/> pour les cas sans genre).</summary>
+    public static void ApplyAlbumGenres(Track track, AlbumLookup? album, IReadOnlyDictionary<long, Genre> genres, DateTimeOffset now)
     {
         switch (album)
         {
             case AlbumLookup.Found found:
-                track.RecordGenres(await store.EnsureGenresAsync([.. found.Genres.Select(g => new GenreRef(g.Id, g.Name))], ct), now);
+                track.RecordGenres([.. found.Genres.Select(g => genres[g.Id])], now);
                 break;
             case AlbumLookup.NotFound:
                 track.RecordGenres([], now);
                 break;
         }
+    }
+
+    /// <summary>Un morceau neuf du pool, avec ses genres : la même création pour l'ajout à la main et pour l'ajout d'un candidat.</summary>
+    public static Track NewTrack(TrackMetadata metadata, AlbumLookup? album, IReadOnlyDictionary<long, Genre> genres, DateTimeOffset now)
+    {
+        var track = Track.Create(metadata, now);
+        ApplyAlbumGenres(track, album, genres, now);
+        return track;
+    }
+
+    /// <summary>
+    /// La forme d'onde se calcule plus tard, hors de la requête (téléchargement de l'extrait) : un message durable, différé, qui prend tous les
+    /// morceaux ajoutés entre-temps. Jamais pour un morceau sans extrait.
+    /// </summary>
+    public static void ScheduleWaveform(OutgoingMessages messages, WaveformOptions options, bool trackHasPreview)
+    {
+        if (options.ComputeOnAdd && trackHasPreview)
+            messages.Delay(new ComputeWaveforms(), TimeSpan.FromMinutes(Math.Max(1, options.DelayMinutes)));
     }
 
     // La colonne est un smallint : une année absurde est ignorée plutôt que de faire échouer l'ajout.

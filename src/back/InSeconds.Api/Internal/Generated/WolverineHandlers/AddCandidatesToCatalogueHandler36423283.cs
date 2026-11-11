@@ -33,6 +33,7 @@ namespace Internal.Generated.WolverineHandlers
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Wolverine.Runtime.ScopedMessageContextHolder>(serviceScope.ServiceProvider).Context = context;
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
+            var efCandidateStore = new InSeconds.Api.Modules.Catalogue.Persistence.EfCandidateStore(inSecondsDbContext);
             var efCatalogueStore = new InSeconds.Api.Modules.Catalogue.Persistence.EfCatalogueStore(inSecondsDbContext);
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var albumSource = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Deezer.IAlbumSource>(serviceScope.ServiceProvider);
@@ -55,7 +56,7 @@ namespace Internal.Generated.WolverineHandlers
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.AddCandidatesToCatalogueHandler");
                 
                 // The actual message execution
-                var outgoing1 = await InSeconds.Api.Modules.Catalogue.Application.AddCandidatesToCatalogueHandler.Handle(addCandidatesToCatalogue, efCatalogueStore, albumSource, _optionsMonitorOfWaveformOptions, _timeProvider, _loggerForMessage, cancellation).ConfigureAwait(false);
+                var outgoing1 = await InSeconds.Api.Modules.Catalogue.Application.AddCandidatesToCatalogueHandler.Handle(addCandidatesToCatalogue, efCatalogueStore, efCandidateStore, albumSource, _optionsMonitorOfWaveformOptions, _timeProvider, _loggerForMessage, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

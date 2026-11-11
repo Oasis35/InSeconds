@@ -58,7 +58,7 @@ public sealed record CandidatesImportPlan(
 
 public static class ImportCandidatesEndpoint
 {
-    public static async Task<CandidatesImportPlan> LoadAsync(ImportCandidates request, ICatalogueStore store, CancellationToken ct)
+    public static async Task<CandidatesImportPlan> LoadAsync(ImportCandidates request, ICatalogueStore store, ICandidateStore candidates, CancellationToken ct)
     {
         // Un identifiant qui revient garde la première priorité donnée.
         var items = request.Items
@@ -67,7 +67,7 @@ public static class ImportCandidatesEndpoint
             .ToList();
         var ids = items.Select(i => i.DeezerTrackId).ToList();
         var inPool = await store.DeezerIdsInPoolAsync(ids, ct);
-        var existing = (await store.FindCandidatesByDeezerIdsAsync(ids, ct)).ToDictionary(c => c.DeezerTrackId);
+        var existing = (await candidates.FindCandidatesByDeezerIdsAsync(ids, ct)).ToDictionary(c => c.DeezerTrackId);
         return new CandidatesImportPlan(items, inPool, existing);
     }
 
@@ -78,7 +78,7 @@ public static class ImportCandidatesEndpoint
     /// </summary>
     [WolverinePost("/api/admin/catalogue/candidates", OperationId = "importCandidates")]
     public static async Task<(ImportCandidatesResult, OutgoingMessages)> Post(
-        ImportCandidates request, [NotBody] CandidatesImportPlan plan, ICatalogueStore store, IOptionsMonitor<RefreshOptions> options,
+        ImportCandidates request, [NotBody] CandidatesImportPlan plan, ICandidateStore store, IOptionsMonitor<RefreshOptions> options,
         TimeProvider time, CancellationToken ct)
     {
         var now = time.GetUtcNow();
@@ -132,7 +132,7 @@ public static class ReadCandidatesHandler
     // Pas de transaction Wolverine : la lecture appelle Deezer, et chaque candidat est enregistré tout de suite par le store.
     [NonTransactional]
     public static async Task Handle(
-        ReadCandidates message, ICatalogueStore store, ITrackMetadataSource deezer, TimeProvider time, ILogger<ReadCandidates> logger,
+        ReadCandidates message, ICandidateStore store, ITrackMetadataSource deezer, TimeProvider time, ILogger<ReadCandidates> logger,
         CancellationToken ct)
     {
         var candidates = await store.ListCandidatesToReadAsync(message.CandidateIds, ct);
@@ -172,7 +172,7 @@ public sealed record RereadCandidatesResult(int Count);
 
 public static class RereadCandidatesEndpoint
 {
-    public static async Task<IReadOnlyList<int>> LoadAsync(ICatalogueStore store, CancellationToken ct) => await store.ListPendingCandidateIdsAsync(ct);
+    public static async Task<IReadOnlyList<int>> LoadAsync(ICandidateStore store, CancellationToken ct) => await store.ListPendingCandidateIdsAsync(ct);
 
     /// <summary><c>POST /api/admin/catalogue/candidates/reread</c> : relance la lecture des candidats que Deezer n'avait pas pu renseigner.</summary>
     [WolverinePost("/api/admin/catalogue/candidates/reread", OperationId = "rereadCandidates")]
@@ -198,7 +198,7 @@ public sealed class DismissCandidatesValidator : AbstractValidator<DismissCandid
 
 public static class DismissCandidatesEndpoint
 {
-    public static async Task<IReadOnlyList<Candidate>> LoadAsync(DismissCandidates request, ICatalogueStore store, CancellationToken ct) =>
+    public static async Task<IReadOnlyList<Candidate>> LoadAsync(DismissCandidates request, ICandidateStore store, CancellationToken ct) =>
         await store.FindCandidatesAsync(request.CandidateIds.Distinct().ToList(), ct);
 
     /// <summary>
@@ -235,11 +235,12 @@ public sealed record CandidatesAddPlan(IReadOnlyList<Candidate> Eligible, int Sk
 
 public static class AddCandidatesEndpoint
 {
-    public static async Task<CandidatesAddPlan> LoadAsync(AddCandidates request, ICatalogueStore store, TimeProvider time, CancellationToken ct)
+    public static async Task<CandidatesAddPlan> LoadAsync(
+        AddCandidates request, ICatalogueStore store, ICandidateStore candidateStore, TimeProvider time, CancellationToken ct)
     {
         var now = time.GetUtcNow();
         var wanted = request.CandidateIds.Distinct().ToList();
-        var candidates = await store.FindCandidatesAsync(wanted, ct);
+        var candidates = await candidateStore.FindCandidatesAsync(wanted, ct);
         var inPool = await store.DeezerIdsInPoolAsync([.. candidates.Select(c => c.DeezerTrackId)], ct);
         var eligible = candidates.Where(c => c.CanBeAdded(now) && !inPool.Contains(c.DeezerTrackId)).ToList();
         return new CandidatesAddPlan(eligible, wanted.Count - eligible.Count);
@@ -272,11 +273,11 @@ public static class AddCandidatesToCatalogueHandler
     // La transaction est celle de Wolverine : les morceaux ajoutés et les candidats retirés s'enregistrent ensemble. Un lot, c'est 10 lectures
     // d'album au plus (quelques secondes).
     public static async Task<OutgoingMessages> Handle(
-        AddCandidatesToCatalogue message, ICatalogueStore store, IAlbumSource albums, IOptionsMonitor<WaveformOptions> waveformOptions,
-        TimeProvider time, ILogger<AddCandidatesToCatalogue> logger, CancellationToken ct)
+        AddCandidatesToCatalogue message, ICatalogueStore store, ICandidateStore candidateStore, IAlbumSource albums,
+        IOptionsMonitor<WaveformOptions> waveformOptions, TimeProvider time, ILogger<AddCandidatesToCatalogue> logger, CancellationToken ct)
     {
         var outgoing = new OutgoingMessages();
-        var requested = (await store.FindCandidatesAsync(message.CandidateIds, ct)).Where(c => c.AddRequestedAt is not null).ToList();
+        var requested = (await candidateStore.FindCandidatesAsync(message.CandidateIds, ct)).Where(c => c.AddRequestedAt is not null).ToList();
         if (requested.Count == 0)
             return outgoing;
 
@@ -284,37 +285,25 @@ public static class AddCandidatesToCatalogueHandler
         var toAdd = requested.Where(c => c.Status == CandidateStatus.Ready && !inPool.Contains(c.DeezerTrackId)).ToList();
         // Déjà au pool entre-temps (ajouté à la main) : il quitte le sas sans doublon.
         foreach (var gone in requested.Except(toAdd))
-            store.RemoveCandidate(gone);
+            candidateStore.RemoveCandidate(gone);
 
         // Les genres se lisent sur l'album : une réponse indisponible n'empêche pas l'ajout, le contrôle nocturne les rattrape.
         var lookups = await Task.WhenAll(toAdd.Select(c => c.AlbumId is { } albumId ? albums.GetAlbumAsync(albumId, ct) : Task.FromResult<AlbumLookup?>(null)!));
         // Les genres d'un lot se réunissent d'un coup : deux morceaux d'un même genre neuf ne le créent pas deux fois.
-        var genres = (await store.EnsureGenresAsync(
-            [.. lookups.OfType<AlbumLookup.Found>().SelectMany(f => f.Genres.Select(g => new GenreRef(g.Id, g.Name)))], ct)).ToDictionary(g => g.Id);
+        var genres = await TrackMapping.EnsureAlbumGenresAsync(lookups, store, ct);
 
         var now = time.GetUtcNow();
         var withPreview = false;
         for (var i = 0; i < toAdd.Count; i++)
         {
-            var track = Track.Create(toAdd[i].ToMetadata(), now);
-            switch (lookups[i])
-            {
-                case AlbumLookup.Found found:
-                    track.RecordGenres([.. found.Genres.Select(g => genres[g.Id])], now);
-                    break;
-                case AlbumLookup.NotFound:
-                    track.RecordGenres([], now);
-                    break;
-            }
-
+            // Comme l'ajout à la main : un seul code pour créer le morceau, noter ses genres et programmer sa forme d'onde.
+            var track = TrackMapping.NewTrack(toAdd[i].ToMetadata(), lookups[i], genres, now);
             await store.AddAsync(track, ct);
-            store.RemoveCandidate(toAdd[i]);
+            candidateStore.RemoveCandidate(toAdd[i]);
             withPreview |= track.HasPreview;
         }
 
-        // Comme l'ajout à la main : la forme d'onde se calcule plus tard, hors de la requête, par un message différé qui prend tous les morceaux sans forme.
-        if (withPreview && waveformOptions.CurrentValue.ComputeOnAdd)
-            outgoing.Delay(new ComputeWaveforms(), TimeSpan.FromMinutes(Math.Max(1, waveformOptions.CurrentValue.DelayMinutes)));
+        TrackMapping.ScheduleWaveform(outgoing, waveformOptions.CurrentValue, withPreview);
         CatalogueLog.CandidatesAdded(logger, toAdd.Count, requested.Count - toAdd.Count);
         return outgoing;
     }
@@ -328,7 +317,7 @@ public sealed record CandidatePreviewLookup(Candidate? Candidate, PreviewLookup?
 
 public static class GetCandidatePreviewEndpoint
 {
-    public static async Task<CandidatePreviewLookup> LoadAsync(int id, ICatalogueStore store, IPreviewProvider previews, CancellationToken ct)
+    public static async Task<CandidatePreviewLookup> LoadAsync(int id, ICandidateStore store, IPreviewProvider previews, CancellationToken ct)
     {
         var candidate = await store.FindCandidateAsync(id, ct);
         return candidate is null

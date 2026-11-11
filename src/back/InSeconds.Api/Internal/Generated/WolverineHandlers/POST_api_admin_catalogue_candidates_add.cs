@@ -45,6 +45,7 @@ namespace Internal.Generated.WolverineHandlers
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Wolverine.Runtime.ScopedMessageContextHolder>(serviceScope.ServiceProvider).Context = messageContext;
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
+            var efCandidateStore = new InSeconds.Api.Modules.Catalogue.Persistence.EfCandidateStore(inSecondsDbContext);
             var efCatalogueStore = new InSeconds.Api.Modules.Catalogue.Persistence.EfCatalogueStore(inSecondsDbContext);
             // Reading the request body via JSON deserialization
             var (request, jsonContinue) = await ReadJsonAsync<InSeconds.Api.Modules.Catalogue.Application.AddCandidates>(httpContext);
@@ -73,7 +74,7 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                var candidatesAddPlan = await InSeconds.Api.Modules.Catalogue.Application.AddCandidatesEndpoint.LoadAsync(request, efCatalogueStore, _timeProvider, httpContext.RequestAborted).ConfigureAwait(false);
+                var candidatesAddPlan = await InSeconds.Api.Modules.Catalogue.Application.AddCandidatesEndpoint.LoadAsync(request, efCatalogueStore, efCandidateStore, _timeProvider, httpContext.RequestAborted).ConfigureAwait(false);
                 
                 // The actual HTTP request handler execution
                 (var addCandidatesResult_response, var outgoingMessages) = InSeconds.Api.Modules.Catalogue.Application.AddCandidatesEndpoint.Post(request, candidatesAddPlan, _optionsMonitorOfRefreshOptions, _timeProvider);

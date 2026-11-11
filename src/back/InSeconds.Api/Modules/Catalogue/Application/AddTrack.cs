@@ -57,16 +57,12 @@ public static class AddTrackEndpoint
     {
         var found = (TrackMetadataLookup.Found)plan.Lookup!;
         var now = time.GetUtcNow();
-        var track = Track.Create(TrackMapping.ToMetadata(found.Track), now);
-        await TrackMapping.RecordAlbumGenresAsync(track, plan.Album, store, now, ct);
-
+        var genres = await TrackMapping.EnsureAlbumGenresAsync([plan.Album], store, ct);
+        var track = TrackMapping.NewTrack(TrackMapping.ToMetadata(found.Track), plan.Album, genres, now);
         await store.AddAsync(track, ct);
 
-        // La forme d'onde se calcule plus tard, hors de la requête (téléchargement de l'extrait) : un message durable, différé, qui prend tous les
-        // morceaux ajoutés entre-temps. Jamais pour un morceau sans extrait.
         var messages = new OutgoingMessages();
-        if (waveformOptions.CurrentValue.ComputeOnAdd && track.HasPreview)
-            messages.Delay(new ComputeWaveforms(), TimeSpan.FromMinutes(Math.Max(1, waveformOptions.CurrentValue.DelayMinutes)));
+        TrackMapping.ScheduleWaveform(messages, waveformOptions.CurrentValue, track.HasPreview);
         return (TrackMapping.ToSummary(track, options.CurrentValue), messages);
     }
 }
