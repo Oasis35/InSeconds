@@ -66,7 +66,8 @@ test.describe('Mode Setlist', () => {
     await game.waitForWelcome();
     await expect(run.homeCard).toBeVisible();
     await expect(run.homeCard).toContainText('Setlist');
-    await expect(run.homeCard).toContainText('Vise le disque d’or.');
+    // Le défi du jour n'est pas joué : la carte est discrète, sans sa phrase d'accroche.
+    await expect(run.homeCard).toHaveAttribute('data-compact', 'true');
     await run.homeCard.click();
     await expect(page).toHaveURL(/\/setlist$/);
     await expect(run.startButton).toBeVisible();
