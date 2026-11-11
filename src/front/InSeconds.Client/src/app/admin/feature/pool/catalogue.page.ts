@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, Injector, computed, effect, inject, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, computed, effect, inject, signal, untracked } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AudioPreviewPlayer } from '../../../core/audio-preview/audio-preview.player';
 import { PreviewTrackData, PreviewTrackDialog } from '../../../core/audio-preview/preview-track.dialog';
+import { AppError } from '../../../core/errors/app-error';
 import { errorMessageKey } from '../../../core/errors/error-messages';
 import { ErrorMessageComponent } from '../../../ui/error-message/error-message.component';
 import { ModalService } from '../../../ui/modal/modal.service';

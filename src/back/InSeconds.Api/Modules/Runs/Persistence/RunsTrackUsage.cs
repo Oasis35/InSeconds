@@ -20,7 +20,7 @@ public sealed class RunsTrackUsage(InSecondsDbContext db) : ITrackUsage
     {
         if (trackIds.Count == 0)
             return new Dictionary<int, TrackUsage>();
-        // Un morceau de réserve aussi : un Joker peut le faire jouer, la playlist doit rester rejouable.
+        // Un morceau de réserve aussi : un Échange peut le faire jouer, la playlist doit rester rejouable.
         var used = await db.Set<RunChallengeTrack>().AsNoTracking()
             .Where(t => trackIds.Contains(t.TrackId))
             .Select(t => t.TrackId)

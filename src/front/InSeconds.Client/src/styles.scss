@@ -288,3 +288,11 @@ h1, h2, h3, .font-display {
     font-size: 1rem;
   }
 }
+
+/* Tailwind v4 laisse le curseur par défaut sur les boutons : tout ce qui se touche montre la main (cartes, Joker, indices…). Hors couche :
+   passe devant le reset de Tailwind. */
+button:not(:disabled),
+[role='button']:not([aria-disabled='true']),
+summary {
+  cursor: pointer;
+}

@@ -13,6 +13,17 @@
         <app-run-welcome-screen [record]="store.record()" [shelf]="store.shelf()" [lang]="language.current()" (start)="store.begin()" />
       }
 
+      <!-- Le créateur d'une playlist neuve choisit le thème de la manche à thème (ou « Surprise ») : « Lancer » lance le premier son. -->
+      @case ('theme') {
+        <app-run-theme-screen
+          [offer]="store.themeOffer()"
+          [choice]="store.themeChoice()"
+          [round]="store.themeOffer()[0]?.round ?? 3"
+          (choose)="store.chooseTheme($event)"
+          (start)="store.launchWithTheme()"
+        />
+      }
+
       <!-- Le lien d'un ami : le logo seul, les règles de la playlist et « Jouer » (crée l'invité, lance le premier son dans ce clic). -->
       @case ('link') {
         @if (store.link(); as link) {
@@ -34,7 +45,7 @@
       @case ('playing') {
         <div class="screen-enter flex-1 flex flex-col pt-1">
           @if (store.shownRound(); as shown) {
-            <app-run-header [round]="shown" [rounds]="store.rounds()" [muted]="store.soundsMuted()" (toggleSounds)="store.toggleSounds()" (abandon)="confirmAbandon()" />
+            <app-run-header [round]="shown" [theme]="themeOf(shown.round)" [rounds]="store.rounds()" [muted]="store.soundsMuted()" (toggleSounds)="store.toggleSounds()" (abandon)="confirmAbandon()" />
           }
 
           <div class="mt-3">
@@ -49,8 +60,14 @@
                   <app-run-clock roundCorner [seconds]="store.clockShown()!" />
                 }
                 @if (store.roundCards(); as cards) {
-                  <app-run-round-cards roundAids [hand]="cards.hand" [effects]="cards.effects" [values]="cards.values" [listenSeconds]="cards.listenSeconds"
-                    [busy]="store.cardBusy()" [playable]="cards.playable" [refused]="cards.refused" [lang]="language.current()" (playCard)="store.playCard($event)" />
+                  <app-run-round-cards roundAids [effects]="cards.effects" [values]="cards.values" [listenSeconds]="cards.listenSeconds" [refused]="cards.refused" />
+                }
+                <!-- L'Échange offert à chaque manche : un lien souligné à côté de « Passer », le même style. -->
+                @if (store.roundCards()?.swapAvailable) {
+                  <button roundLinks type="button" class="inline-flex items-center min-h-11 px-2 text-[15px] underline underline-offset-4 touch-manipulation disabled:opacity-50"
+                    style="color:var(--text-light)" [disabled]="store.cardBusy()" (click)="store.swap()" data-testid="run-swap">
+                    {{ 'runs.roundCards.swap' | translate }}
+                  </button>
                 }
                 @if (store.revealed(); as revealed) {
                   <app-run-reveal roundReveal [track]="revealed" [peaks]="round.waveform()?.peaks ?? store.shapes()[revealed.position] ?? null"
@@ -65,16 +82,19 @@
         </div>
       }
 
-      <!-- Après une manche passée : le disque gagné, l'objectif suivant, l'offre de cartes et la main, puis « Suite » (qui lance la manche). -->
+      <!-- Après une manche passée : le disque gagné, la carte gagnée, les difficultés de la suivante, puis « Jouer » (qui lance la manche). -->
       @case ('palier') {
         @if (store.palier(); as palier) {
           <div class="screen-enter flex-1 flex flex-col pt-1">
             <app-run-header [round]="palier.headerRound" [rounds]="store.rounds()" [showStatus]="false" [muted]="store.soundsMuted()"
               (toggleSounds)="store.toggleSounds()" (abandon)="confirmAbandon()" />
             <app-run-palier class="flex-1 flex flex-col" [passed]="palier.passed" [rounds]="store.rounds()" [wonDiscs]="palier.wonDiscs"
-              [nextRound]="palier.nextRound" [nextObjective]="palier.nextObjective" [nextDisc]="palier.nextDisc" [offer]="palier.offer"
-              [hand]="palier.hand" [handSize]="palier.handSize" [values]="store.session()?.cardValues ?? null" [pending]="store.pendingCard()" [busy]="store.palierBusy()" [lang]="language.current()"
-              (pick)="store.pickCard($event)" (dropCard)="store.dropForPending($event)" (pass)="store.passOffer()" (next)="store.continueFromPalier()" />
+              [nextRound]="palier.nextRound" [theme]="themeOf(palier.nextRound)" [nextObjective]="palier.nextObjective" [nextDisc]="palier.nextDisc" [earnedCard]="palier.earnedCard"
+              [options]="palier.options" [tracksPerRound]="palier.tracksPerRound" [listenSeconds]="palier.listenSeconds"
+              [values]="store.session()?.cardValues ?? null"
+              [busy]="store.palierBusy() || store.difficultyBusy()"
+              (next)="store.continueFromPalier()"
+              (choose)="store.chooseDifficulty($event)" />
           </div>
         }
       }
@@ -85,7 +105,7 @@
           <div class="screen-enter flex-1 flex flex-col pt-1">
             <app-run-header [round]="difficulty.headerRound" [rounds]="store.rounds()" [showStatus]="false" [muted]="store.soundsMuted()" (toggleSounds)="store.toggleSounds()" (abandon)="confirmAbandon()" />
             <app-run-difficulty class="flex-1 flex flex-col" [round]="difficulty.round" [totalScore]="difficulty.totalScore"
-              [options]="difficulty.options" [hand]="difficulty.hand" [listenSeconds]="difficulty.listenSeconds" [values]="store.session()?.cardValues ?? null" [busy]="store.difficultyBusy()" [lang]="language.current()"
+              [options]="difficulty.options" [tracksPerRound]="difficulty.tracksPerRound" [listenSeconds]="difficulty.listenSeconds" [busy]="store.difficultyBusy()"
               (choose)="store.chooseDifficulty($event)" />
           </div>
         }
@@ -93,15 +113,20 @@
 
       @case ('finished') {
         @if (store.finish(); as finish) {
-          <app-run-finish [finish]="finish" [canPlayAgain]="store.canPlayAgain()" [shareCopied]="share.copied()" [shareFailed]="share.failed()"
-            [lang]="language.current()" (share)="share.shareScore(finish, language.current())" (compare)="store.showComparison()" (playAgain)="store.playAgain()" />
+          <app-run-finish [finish]="finish" [duel]="store.duel()" [canPlayAgain]="store.canPlayAgain()" [shareCopied]="share.copied()" [shareFailed]="share.failed()"
+            [lang]="language.current()" (share)="share.shareScore(finish, language.current(), store.duel())" (compare)="store.showComparison()" (playAgain)="store.playAgain()" />
         }
+      }
+
+      @case ('pseudo') {
+        <app-run-pseudo-screen [initial]="session.player()?.pseudo ?? ''" [busy]="store.pseudoBusy()" [error]="store.pseudoError()"
+          (save)="store.savePseudo($event)" (dismiss)="store.cancelPseudo()" />
       }
 
       @case ('comparison') {
         @if (store.comparison(); as comparison) {
           <app-run-comparison-screen [comparison]="comparison" [shareCopied]="share.copied()" [shareFailed]="share.failed()"
-            (share)="share.share(comparison.code)" />
+            [canEditPseudo]="session.isKnown()" (editPseudo)="editPseudo()" (share)="share.share(comparison.code)" />
         }
       }
 

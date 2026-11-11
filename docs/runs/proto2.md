@@ -1,28 +1,29 @@
+> **Depuis le proto 3** ([`proto3.md`](proto3.md)) : les difficultés s'appellent Facile, Normal, Mélomane (« Sûre » et « Risquée » dans ce document), leur choix est sur l'écran de palier, et les coups de pouce sont trois cartes gagnées à la performance, avec l'Échange offert à la place du Joker.
+
 # Run (Platines) : proto 2, palier, difficulté et coups de pouce
 
-Règles et écrans du proto 2, décidés avec Clément le 05/11/2026. **Livré sur le staging** (tickets [#498](https://github.com/Oasis35/InSeconds/issues/498) à [#505](https://github.com/Oasis35/InSeconds/issues/505), une PR chacun, sauf #504 en trois) : difficultés et réserve du Joker, coups de pouce, écran de palier, « Difficulté ? », cartes jouées en manche, fin du run (« Rejouer », partage en grille, étagère), fantôme d'un ami, série de bonnes réponses, sons d'interface, mesure et tableau Grafana ; le proto 1 ([`regles.md`](regles.md)) reste la référence de ce qui tourne en prod tant que `env/staging` n'est pas promu. Captures de l'app : [`ecrans.md`](ecrans.md) § Captures de l'app. Les chiffres marqués « provisoire » se règlent après les parties de test. Maquette interactive : artifact « Platines, palier et pari » sur claude.ai (privé) ; les captures de [`maquettes/`](maquettes/) (`proto2-*.png`) en sont tirées le 05/11/2026. Plan et tickets : [`plan.md`](plan.md).
+Règles et écrans du proto 2, décidés avec Clément le 05/11/2026. **Livré sur le staging** (tickets [#498](https://github.com/Oasis35/InSeconds/issues/498) à [#505](https://github.com/Oasis35/InSeconds/issues/505), une PR chacun, sauf #504 en trois) : difficultés et réserve de morceaux, coups de pouce, écran de palier, « Difficulté ? », cartes jouées en manche, fin du run (« Rejouer », partage en grille, étagère), fantôme d'un ami, série de bonnes réponses, sons d'interface, mesure et tableau Grafana ; le proto 1 ([`regles.md`](regles.md)) reste la référence de ce qui tourne en prod tant que `env/staging` n'est pas promu. Captures de l'app : [`ecrans.md`](ecrans.md) § Captures de l'app. Les chiffres marqués « provisoire » se règlent après les parties de test. Maquette interactive : artifact « Platines, palier et pari » sur claude.ai (privé) ; les captures de [`maquettes/`](maquettes/) (`proto2-*.png`) en sont tirées le 05/11/2026. Plan et tickets : [`plan.md`](plan.md).
 
 ## Ce que le proto 2 change
 
-Le proto 1 enchaîne 4 manches sans choix. Le proto 2 ajoute, entre deux manches, un **moment de jeu** : le joueur voit ce qu'il a gagné, choisit un coup de pouce, puis **mise sur la difficulté** de la manche suivante. Le but est que le run soit rejouable, partageable et qu'il donne envie d'« encore une manche ».
+Le proto 1 enchaîne 4 manches sans choix. Le proto 2 ajoute, entre deux manches, un **moment de jeu** : le joueur voit ce qu'il a gagné (un disque, parfois une carte), puis **mise sur la difficulté** de la manche suivante. Le but est que le run soit rejouable, partageable et qu'il donne envie d'« encore une manche ».
 
 Trois idées, rien d'autre :
 
 1. un **écran de palier** après chaque manche passée ([#500](https://github.com/Oasis35/InSeconds/issues/500)) ;
 2. un **choix de difficulté** (Facile, Sûre, Risquée) qui fixe l'objectif et le plafond de points de la manche ([#498](https://github.com/Oasis35/InSeconds/issues/498) côté back, [#501](https://github.com/Oasis35/InSeconds/issues/501) pour l'écran) ;
-3. des **coups de pouce** (cartes), 2 en main, à jouer sur un morceau ([#499](https://github.com/Oasis35/InSeconds/issues/499) côté back, [#502](https://github.com/Oasis35/InSeconds/issues/502) sur l'écran de manche).
+3. des **coups de pouce** (cartes), gagnés quand une manche dépasse largement l'objectif ([#499](https://github.com/Oasis35/InSeconds/issues/499) côté back, [#502](https://github.com/Oasis35/InSeconds/issues/502) sur l'écran de manche).
 
 Ce que le proto 2 ne fait pas : atouts passifs, contraintes, pactes, rareté, déblocages, run éclair, thèmes (cf. [`plan.md`](plan.md) § Bonus).
 
 ## Le déroulé
 
 1. Dernier morceau de la manche : la carte rejoint la pile, la ligne de palier se pose (comme aujourd'hui).
-2. **Écran de palier** (si la manche est passée) : le disque gagné, le score, l'objectif de la manche suivante, trois cartes à prendre, la main du joueur, « Suite ».
-3. **Écran « Difficulté ? »** : trois colonnes, les bonus de la main en bas. Toucher une colonne lance le premier morceau de la manche, au même toucher : le son est déverrouillé dans le toucher, l'extrait arrive avec la réponse au choix (rien du morceau ne part avant, pour qu'on ne mise pas en le connaissant) et se lance aussitôt, comme « Commencer » (iPhone).
-4. La manche se joue avec les cartes de la main au-dessus du champ de saisie.
-5. Jauge non remplie à la fin de la manche : **fin du run**, comme au proto 1. Pas d'écran de palier, on va à la fin.
+2. **Écran de palier** (si la manche est passée) : le disque gagné, le score, la carte gagnée s'il y en a une, puis la manche suivante en trois colonnes et « Jouer ». Toucher une colonne la choisit, « Jouer » lance le premier morceau de la manche, au même toucher : le son est déverrouillé dans le toucher, l'extrait arrive avec la réponse au choix (rien du morceau ne part avant, pour qu'on ne mise pas en le connaissant) et se lance aussitôt, comme « Commencer » (iPhone).
+3. La manche se joue avec la carte gagnée, qui agit toute seule au-dessus du champ de saisie.
+4. Jauge non remplie à la fin de la manche : **fin du run**, comme au proto 1. Pas d'écran de palier, on va à la fin.
 
-La première manche n'a ni palier ni choix de difficulté : le run démarre comme aujourd'hui, avec une carte offerte en main.
+La première manche n'a ni palier ni choix de difficulté : le run démarre sans aucun bonus.
 
 ## L'écran de palier
 
@@ -32,11 +33,10 @@ Du haut vers le bas, sans phrase d'explication :
 - le **disque gagné**, grand, son nom, et l'étagère des disques de l'échelle (le suivant en pointillé) ;
 - le **score** du run avec sa jauge et le repère de l'objectif franchi ;
 - « Manche 2 » et l'objectif suivant en gros (« 333 pts pour » + le disque visé) ;
-- **trois cartes** à toucher (icône et nom seulement) et « Passer » en lien : le joueur en prend une ou refuse ;
-- la **main** (2 emplacements) ;
-- « Suite ».
+- la **carte gagnée** à la manche, s'il y en a une (signe, « Carte gagnée » et nom, rien à toucher) ;
+- les trois difficultés de la manche suivante et « Jouer ».
 
-Le disque se pose, le score monte jusqu'au repère, les cartes arrivent une à une : animations GSAP par la façade `ui/motion`, rien entre le toucher et `play()` (pièges 44 et 46), `prefers-reduced-motion` respecté.
+Le disque se pose, le score monte jusqu'au repère, la carte arrive : animations GSAP par la façade `ui/motion`, rien entre le toucher et `play()` (pièges 44 et 46), `prefers-reduced-motion` respecté.
 
 | Maquette | L'app |
 |---|---|
@@ -44,7 +44,7 @@ Le disque se pose, le score monte jusqu'au repère, les cartes arrivent une à u
 
 ## La difficulté de la manche
 
-Trois colonnes à plat sur une base commune, hauteur proportionnelle au **plafond de points** de la manche, avec en pointillé l'**objectif** : un cadenas et son chiffre posés sur la frontière, la zone dessous assombrie. Titre « Difficulté ? », « Ton score » en haut, le total atteignable (« → 1250 ») sous chaque plafond, les bonus en main en bas. Aucune colonne n'est présélectionnée.
+Trois colonnes à plat sur une base commune, hauteur proportionnelle au **plafond de points** de la manche, avec en pointillé l'**objectif** : un cadenas et son chiffre posés sur la frontière, la zone dessous assombrie. Titre « Difficulté ? », « Ton score » en haut. Normal est présélectionné.
 
 | Maquette | L'app |
 |---|---|
@@ -71,30 +71,23 @@ Questions à trancher avec les parties de test : barème exact des trois colonne
 
 ## Les coups de pouce
 
-Des cartes **durables** : une carte reste en main tant qu'on ne la lâche pas et agit **toute seule** sur chaque morceau, sans clic (seul le Joker, à usage unique, se joue). **La première manche se joue sans aucun bonus** : rien au départ. **2 emplacements en main** ; à chaque palier le joueur peut prendre **une carte parmi 3** tirées au hasard (jamais une carte qu'il a déjà en main), ou aucune. Main pleine : il touche la carte à lâcher, ou refuse l'offre ; une carte lâchée peut revenir dans une offre. Les playlists d'avant (règle figée `Durable` à faux) gardent le comportement à usage unique avec une carte de départ.
+Trois cartes se **gagnent** (proto 3) : quand une manche est passée avec un score d'au moins l'objectif + 25 % (`Runs:RewardMarginPercent`, à ajuster aux parties de test), le joueur reçoit au palier la carte que la playlist a tirée pour cette manche (tirée à la création avec la graine : même carte pour tous les joueurs). **La première manche se joue sans aucun bonus.** Une seule carte à la fois, **à usage unique** : elle agit **toute seule** sur chaque morceau de la manche suivante, sans clic, puis disparaît.
 
 | Carte | Effet (provisoire) |
 |---|---|
 | QCM | l'autocomplétion est remplacée par trois réponses dont une seule est juste ; les deux fausses sont proches (même genre ou même époque) ; la bonne réponse rapporte tous les points |
-| Joker | change de morceau |
-| Année | affiche l'année du morceau |
-| Initiales | affiche les initiales de l'artiste et du titre |
+| Indice | affiche l'année, les initiales de l'artiste et du titre, et le genre de l'album quand il est connu |
 | Prolongation | +5 s d'écoute (`Runs:ExtendBonusSeconds`) |
-| Repêchage | un morceau raté (ou à moitié juste) rapporte le quart des points du morceau |
-| Rabais | l'objectif de la manche baisse de 10 % tant que la carte est en main |
-| Délai | +15 s au chrono de 45 s (réglable par `Runs:HourglassSeconds`) |
-| Genre | affiche le genre du morceau (celui de son album ; rien s'il n'en a pas) |
-| L'un ou l'autre | l'artiste **ou** le titre suffit pour les points entiers du morceau (sans effet avec le QCM) |
 
-- Les **offres sont les mêmes pour tous les joueurs de la playlist** et figées avec elle : la comparaison reste juste.
-- **Rien d'une carte n'identifie un morceau avant la réponse** (piège 31) : « Année », « Initiales » et « Genre » sont servies par le serveur avec le morceau en cours, jamais d'avance, jamais envoyées d'avance. « QCM » : les deux fausses réponses viennent du serveur, qui ne dit pas laquelle est juste.
-- Sur l'écran de manche, les cartes sont **au-dessus du champ de saisie** ; « Passer (0 pts) » reste un simple lien souligné sous « Valider ».
-- Une carte jouée monte dans la carte du morceau (animation), avec ce qu'elle révèle (l'année, les initiales, les secondes ajoutées) ; le serveur en tient le compte (une carte ne se joue qu'une fois). « QCM » remplace le champ et « Valider » par les trois réponses à toucher ; « Prolongation » relance l'écoute sur 20 s ; un Joker passe au morceau de réserve, écoute et chrono remis à zéro.
-- Côté serveur (règles d’avant les cartes durables ; en durable, les cartes en main agissent sans être jouées et leurs effets sont recalculés à chaque envoi du morceau) : une même carte ne se joue qu'une fois par morceau (« Rabais » une fois par manche) ; un Joker sort le morceau suivant de la réserve de la manche, remet l'écoute et le chrono à zéro, et efface les cartes déjà jouées sur l'ancien morceau ; « QCM » propose deux morceaux du catalogue hors de la playlist, d'autres artistes, les mêmes pour tous les joueurs ; « Repêchage » donne les points d'un morceau à moitié trouvé sans changer les verdicts (le partage montre toujours un morceau raté). L'offre d'un palier reste ouverte jusqu'à ce qu'une carte soit prise, que le joueur la passe, ou qu'il choisisse la difficulté ; tant qu'elle est ouverte, rien du premier morceau de la manche ne part. Jouer une carte ferme aussi le choix de la difficulté. Une carte qui n'aurait rien à changer ne se joue pas (Joker sans réserve, Année inconnue, QCM sans deux leurres, Délai sans chrono ou après le chrono). « Prolongation » donne 20 s d'écoute même dans la manche boss ; « Repêchage » puis « Passer » rapporte les points d'un morceau à moitié trouvé (c'est un morceau raté), jamais une réponse en retard.
+**Échange** : « Changer de morceau », un lien souligné à côté de « Passer », **un par manche, non cumulable**, tant que le morceau n'a pas été écouté (le morceau de réserve de la manche prend sa place, écoute et chrono remis à zéro). Il ne change pas le barème.
+
+- **Rien d'une carte n'identifie un morceau avant la réponse** (piège 31) : l'Indice et le QCM sont servis par le serveur avec le morceau en cours, jamais d'avance. « QCM » : les deux fausses réponses viennent du serveur, qui ne dit pas laquelle est juste.
+- Sur l'écran de manche, une tuile par carte active **au-dessus du champ de saisie** ; « Passer (0 pts) » et « Changer de morceau » sont de simples liens soulignés sous « Valider ».
+- Une tuile monte dans la carte du morceau (animation) avec ce qu'elle révèle ; « QCM » remplace le champ et « Valider » par les trois réponses à toucher ; « Prolongation » allonge l'écoute du morceau.
 
 | Maquette | L'app |
 |---|---|
-| ![Manche 2 avec les cartes en main (maquette)](maquettes/proto2-manche-cartes.png) | ![Une carte jouée sur le morceau](maquettes/app/manche-carte-jouee.png) |
+| ![Manche 2 avec une carte (maquette d'avant le proto 3)](maquettes/proto2-manche-cartes.png) | ![Une carte jouée sur le morceau](maquettes/app/manche-carte-jouee.png) |
 
 ## Fin du run, partage et viralité
 
@@ -113,28 +106,28 @@ Des cartes **durables** : une carte reste en main tant qu'on ne la lâche pas et
   🟩 trouvé (artiste et titre), 🟨 à moitié, 🟥 raté, ⬜ morceau retiré ; seules les manches jouées ont leur ligne, et rien n'y identifie un morceau.
 - **Fantôme** : seulement celui d'un **ami sur la même playlist** (par son lien) : l'écart avec lui à chaque morceau. Il n'y a pas de fantôme de son propre record (Clément, 05/11). L'ami est l'auteur de la playlist, s'il l'a finie (gagnée ou perdue) ; sous « Total du run », son pseudo et son total au même morceau en violet, puis « 60 pts d'avance », « 40 pts de retard » ou « À égalité ». Le serveur n'envoie son total que sur les morceaux que le joueur a joués (un morceau retiré au joueur ne compte pas), jusqu'au dernier répondu, jamais d'avance ; un ami dépassé est marqué « arrêt en manche 2 ».
 - **Combo visuel** : série de bonnes réponses affichée, sans aucun point (« 3 d'affilée » à côté de « Total du run », en orange, dès deux bonnes réponses ; un morceau retiré ne la casse pas, un morceau raté ou à moitié trouvé la remet à zéro).
-- **Sons d'interface** : sons à nous, libres de droits, jamais pendant un extrait, avec un bouton pour les couper. Tous synthétisés dans le navigateur (aucun fichier) : le tic des dernières secondes, deux notes qui montent pour une manche passée, un déclic pour une carte prise, un petit arpège pour un run gagné, deux notes qui descendent pour un run perdu. Le bouton (un haut-parleur) est à droite de la barre du run ; ce navigateur retient le choix.
+- **Sons d'interface** : sons à nous, libres de droits, jamais pendant un extrait, avec un bouton pour les couper. Tous synthétisés dans le navigateur (aucun fichier) : le tic des dernières secondes, deux notes qui montent pour une manche passée, un déclic pour une carte gagnée, un petit arpège pour un run gagné, deux notes qui descendent pour un run perdu. Le bouton (un haut-parleur) est à droite de la barre du run ; ce navigateur retient le choix.
 - Étagère des disques gagnés sur l'accueil du mode (« Tes disques » : chaque disque et son nombre ; une partie sans manche passée ou abandonnée n'en pose pas).
 
 ## Ce que cela change côté code
 
 Les noms exacts viendront de la conception ([`conception.md`](conception.md) § 7 prévoit déjà que les bonus décorent `IRunScoringPolicy` et modifient `RunRules`).
 
-- **Règles figées dans la playlist** : les trois difficultés de chaque manche (objectif, plafond, facteur de points), les offres de cartes de chaque palier (et, avant les cartes durables, la carte de départ) sont tirées **à la création** et enregistrées avec la playlist (`rules` en `jsonb` et colonnes de tirage). Les playlists existantes n'ont pas ces champs : elles se jouent comme au proto 1, sans palier ni choix.
-- **Tirage** : pour la même manche, les trois difficultés peuvent tirer des morceaux de tranches de rang Deezer voisines ; chaque manche a ses morceaux principaux et une réserve pour « Joker ». Tout est enregistré à la création (même playlist pour tous).
-- **La partie** retient, par manche, la difficulté choisie, les cartes prises, lâchées et jouées, et les morceaux remplacés par un Joker. Aucune nouvelle donnée de joueur hors de la partie (l'effacement du joueur la couvre déjà, piège 48).
+- **Règles figées dans la playlist** : les trois difficultés de chaque manche (objectif, plafond, facteur de points), la carte que chaque manche peut donner, la marge de la récompense et l'effet de la Prolongation sont tirés **à la création** et enregistrées avec la playlist (`rules` en `jsonb` et colonnes de tirage). Les playlists existantes n'ont pas ces champs : elles se jouent comme au proto 1, sans palier ni choix.
+- **Tirage** : pour la même manche, les trois difficultés peuvent tirer des morceaux de tranches de rang Deezer voisines ; chaque manche a ses morceaux principaux et une réserve pour l'Échange. Tout est enregistré à la création (même playlist pour tous).
+- **La partie** retient, par manche, la difficulté choisie, la carte gagnée à chaque manche, et les morceaux remplacés par un Échange. Aucune nouvelle donnée de joueur hors de la partie (l'effacement du joueur la couvre déjà, piège 48).
 - **Calcul des points** : côté serveur uniquement ; la difficulté et chaque carte sont des décorateurs de la politique de score ou des modificateurs des règles de la manche. Le client ne propose jamais de score.
-- **Routes** : choix de la difficulté (qui démarre le morceau), prise d'une carte, jeu d'une carte, lâcher une carte ; erreurs en ProblemDetails avec codes stables `runs.*`.
-- **Front** (domaine `runs/`) : écran de palier, écran de difficulté, main, cartes au-dessus du champ, grille de partage ; textes FR/EN ; animations par `ui/motion`.
-- **Mesure** : compteurs par difficulté choisie (`inseconds.runs.difficulties`, par manche), par carte prise, lâchée et jouée et par offre passée (`inseconds.runs.cards`), et la manche ratée de chaque run perdu (étiquette `round` de l'événement `lost`), d'où la part des runs perdus à l'objectif (`RunsMetrics`, rangée « Platines » du tableau Grafana « Activité »).
-- **Tests** : unitaires des politiques de score et des cartes, intégration des routes, E2E (palier, difficulté, carte jouée, run perdu), tests de règles figées d'une playlist déjà créée.
+- **Routes** : choix de la difficulté (qui démarre le morceau), changement de morceau (`POST …/swap`) ; aucune route pour les cartes, qui agissent seules ; erreurs en ProblemDetails avec codes stables `runs.*`.
+- **Front** (domaine `runs/`) : écran de palier, écran de difficulté, tuiles des cartes au-dessus du champ, lien « Changer de morceau », grille de partage ; textes FR/EN ; animations par `ui/motion`.
+- **Mesure** : compteurs par difficulté choisie (`inseconds.runs.difficulties`, par manche), par carte gagnée et par Échange (`inseconds.runs.cards`), et la manche ratée de chaque run perdu (étiquette `round` de l'événement `lost`), d'où la part des runs perdus à l'objectif (`RunsMetrics`, rangée « Platines » du tableau Grafana « Activité »).
+- **Tests** : unitaires des politiques de score et des cartes, intégration des routes, E2E (palier, difficulté, carte gagnée, Échange, run perdu), tests de règles figées d'une playlist déjà créée.
 
 ## Découpage en tickets
 
 Epic [#368](https://github.com/Oasis35/InSeconds/issues/368), ticket parent du proto 2 [#497](https://github.com/Oasis35/InSeconds/issues/497) ; chaque sous-ticket est une ou deux PR vers `env/staging`.
 
 1. Règles figées d'un run : difficultés par manche, seuils de départ, tirage (back).
-2. Cartes : modèle, main, offres, routes, décorateurs de points (back).
+2. Cartes : modèle, main, offres, routes, décorateurs de points (back ; remplacé au proto 3 par l'Échange et les cartes gagnées).
 3. Écran de palier et main (front).
 4. Écran « Difficulté ? » et départ de la manche au toucher (front).
 5. Cartes jouées sur l'écran de manche (front).

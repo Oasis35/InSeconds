@@ -63,6 +63,23 @@ public class PlayersPurgeTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task VideLePseudoDesInvitesQuiNeRevientPlus_PasCeluiDUnCompteNiDUnInviteRecent()
+    {
+        var stale = await AddPlayerAsync("now() - interval '92 days'");
+        var recent = await AddPlayerAsync("now() - interval '10 days'");
+        var neverSeen = await AddPlayerAsync("NULL", createdAt: "now() - interval '200 days'");
+        var account = await AddPlayerAsync("now() - interval '92 days'", "compte");
+        foreach (var id in new[] { stale, recent, neverSeen, account })
+            await _api.ExecuteAsync($"UPDATE players.players SET guest_pseudo = 'Léa' WHERE id = '{id}'");
+
+        var report = await RunAsync();
+
+        Assert.Equal(2, report["guestPseudos"]);
+        var kept = await _api.ScalarAsync<Guid[]>("SELECT array_agg(id) FROM players.players WHERE guest_pseudo IS NOT NULL");
+        Assert.Equal(new[] { recent, account }.Order().ToArray(), kept!.Order().ToArray());
+    }
+
+    [Fact]
     public async Task EffaceLesComptesInactifsDepuis3Ans_PasLesAdminsNiLesInvites()
     {
         await PlayerDataSeed.AddChallengeAsync(_api);

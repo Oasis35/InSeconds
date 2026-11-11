@@ -38,6 +38,13 @@ public interface IPlayerDirectory
     /// </summary>
     Task<IReadOnlyDictionary<Guid, string>> GetPseudosAsync(IReadOnlyCollection<Guid> playerIds, CancellationToken ct);
 
+    /// <summary>
+    /// Les noms qu'on affiche à côté d'un joueur : le pseudo de son compte, à défaut celui que l'invité s'est donné. Un joueur sans pseudo
+    /// (invité muet) et un joueur supprimé n'y figurent pas. Pour les écrans qui montrent les joueurs d'une playlist ; les statistiques
+    /// d'un jour, elles, gardent <see cref="GetPseudosAsync"/> (jamais un pseudo d'invité).
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, string>> GetDisplayNamesAsync(IReadOnlyCollection<Guid> playerIds, CancellationToken ct);
+
     /// <summary>Invités, comptes et joueurs actifs, vus de <paramref name="now"/> ; les joueurs supprimés ne comptent pas.</summary>
     Task<PlayerBreakdown> GetBreakdownAsync(DateTimeOffset now, CancellationToken ct);
 

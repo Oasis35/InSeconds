@@ -9,6 +9,8 @@ UPDATE players.accounts
        -- 19 caractères (CHECK de 3 à 20), unique : tiré de l'identifiant du joueur, jamais du pseudo d'origine.
        pseudo = 'joueur-' || left(replace(player_id::text, '-', ''), 12)
  WHERE lower(email::text) <> lower(:'keep');
+-- Le pseudo qu'un invité donne dans le mode Run est un texte libre : effacé (l'invité le redonnera).
+UPDATE players.players SET guest_pseudo = NULL WHERE guest_pseudo IS NOT NULL;
 -- TRUNCATE plutôt que DELETE sans WHERE : même effet ici (aucune table ne les référence), et l'intention « tout vider » est explicite.
 TRUNCATE players.auth_tokens, players.device_sessions, players.legacy_tokens, infra.data_protection_keys;
 

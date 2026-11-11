@@ -1,5 +1,5 @@
 import { Provider } from '@angular/core';
-import { RunComparison, RunCurrentTrack, RunLink, RunPlay, RunRound, RunSession, RunTrack, RunsMe } from '../../domain/run';
+import { RunComparison, RunCurrentTrack, RunLink, RunPlay, RunRound, RunSession, RunThemeOffer, RunTrack, RunsMe } from '../../domain/run';
 import { LinkOutcome, RunAnswerToSend, RunsApi, StartOutcome } from '../runs.api';
 
 export const ME = (overrides: Partial<RunsMe> = {}): RunsMe => ({ hasAccess: true, record: null, pending: null, shelf: [], ...overrides });
@@ -14,7 +14,7 @@ export const TRACK = (overrides: Partial<RunTrack> = {}): RunTrack => ({
 export const SESSION = (overrides: Partial<RunSession> = {}): RunSession => ({
   sessionId: 7, challengeCode: 'ABC234', status: 'pending', rounds: 4, tracksPerRound: 5, listenSeconds: 10, totalScore: 0, roundsPassed: 0,
   round: ROUND(), roundTracks: [], finish: null, answerSeconds: 45, clockRemainingSeconds: null, playedTracks: [], passedRounds: [],
-  difficultyChoice: null, hand: [], offer: null, handSize: 0, nextDisc: null, cardValues: null, ghost: null, ...overrides,
+  difficultyChoice: null, hand: [], swapAvailable: false, nextDisc: null, cardValues: null, ghost: null, themes: [], ...overrides,
 });
 
 export const CURRENT = (overrides: Partial<RunCurrentTrack> = {}): RunCurrentTrack => ({
@@ -26,7 +26,7 @@ export const PLAY = (overrides: Partial<RunPlay> = {}): RunPlay => ({
 });
 
 export const LINK = (overrides: Partial<RunLink> = {}): RunLink => ({
-  code: 'ABC234', authorPseudo: 'Clément', trackCount: 20, rounds: 4, tracksPerRound: 5, listenSeconds: 10, answerSeconds: 45, myStatus: 'none', mySessionId: null, ...overrides,
+  code: 'ABC234', authorPseudo: 'Clément', trackCount: 20, rounds: 4, tracksPerRound: 5, listenSeconds: 10, answerSeconds: 45, myStatus: 'none', mySessionId: null, themes: [], ...overrides,
 });
 
 export const COMPARISON = (overrides: Partial<RunComparison> = {}): RunComparison => ({
@@ -35,14 +35,14 @@ export const COMPARISON = (overrides: Partial<RunComparison> = {}): RunCompariso
   playerCount: 2,
   roundCount: 4,
   rows: [
-    { pseudo: 'Clément', disc: { key: 'runs.discs.gold', stars: 0 }, rounds: [500, 600, 700, 800], totalScore: 2600, isMe: false },
-    { pseudo: null, disc: { key: 'runs.discs.wax', stars: 0 }, rounds: [480, 0, null, null], totalScore: 480, isMe: true },
+    { pseudo: 'Clément', disc: { key: 'runs.discs.gold', stars: 0 }, rounds: [500, 600, 700, 800], totalScore: 2600, isMe: false, tag: null },
+    { pseudo: null, disc: { key: 'runs.discs.wax', stars: 0 }, rounds: [480, 0, null, null], totalScore: 480, isMe: true, tag: null },
   ],
   ...overrides,
 });
 
 /** Un faux adaptateur : chaque réponse se règle par une propriété, chaque appel est noté. */
-export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge' | 'comparison' | 'launch' | 'join' | 'refreshPreview' | 'submitAnswer' | 'startClock' | 'abandon' | 'chooseDifficulty' | 'takeCard' | 'passOffer' | 'playCard'> {
+export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge' | 'comparison' | 'launch' | 'themeOffer' | 'join' | 'refreshPreview' | 'submitAnswer' | 'startClock' | 'abandon' | 'chooseDifficulty' | 'swap'> {
   readonly calls: string[] = [];
   readonly answers: RunAnswerToSend[] = [];
 
@@ -55,9 +55,7 @@ export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge'
   refreshResult: RunPlay | Error = PLAY();
   answerResult: RunPlay | Error = PLAY();
   chooseResult: RunPlay | Error = PLAY();
-  takeResult: RunSession | Error = SESSION();
-  passResult: RunSession | Error = SESSION();
-  playResult: RunPlay | Error = PLAY();
+  swapResult: RunPlay | Error = PLAY();
   abandonError: Error | null = null;
 
   me(): Promise<RunsMe> {
@@ -80,8 +78,15 @@ export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge'
     return this.comparisonResult instanceof Error ? Promise.reject(this.comparisonResult) : Promise.resolve(this.comparisonResult);
   }
 
-  launch(): Promise<StartOutcome> {
-    this.calls.push('launch');
+  offerResult: readonly RunThemeOffer[] | Error = [];
+
+  themeOffer(): Promise<readonly RunThemeOffer[]> {
+    this.calls.push('themeOffer');
+    return this.offerResult instanceof Error ? Promise.reject(this.offerResult) : Promise.resolve(this.offerResult);
+  }
+
+  launch(themeId: number | null = null): Promise<StartOutcome> {
+    this.calls.push(themeId === null ? 'launch' : `launch:${themeId}`);
     return Promise.resolve(this.launchResult);
   }
 
@@ -109,19 +114,9 @@ export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge'
     return this.chooseResult instanceof Error ? Promise.reject(this.chooseResult) : Promise.resolve(this.chooseResult);
   }
 
-  takeCard(sessionId: number, afterRound: number, card: string, dropSlot: number | null): Promise<RunSession> {
-    this.calls.push(`takeCard:${sessionId}:${afterRound}:${card}:${dropSlot ?? ''}`);
-    return this.takeResult instanceof Error ? Promise.reject(this.takeResult) : Promise.resolve(this.takeResult);
-  }
-
-  playCard(sessionId: number, slot: number, position: number): Promise<RunPlay> {
-    this.calls.push(`playCard:${sessionId}:${slot}:${position}`);
-    return this.playResult instanceof Error ? Promise.reject(this.playResult) : Promise.resolve(this.playResult);
-  }
-
-  passOffer(sessionId: number, afterRound: number): Promise<RunSession> {
-    this.calls.push(`passOffer:${sessionId}:${afterRound}`);
-    return this.passResult instanceof Error ? Promise.reject(this.passResult) : Promise.resolve(this.passResult);
+  swap(sessionId: number, position: number): Promise<RunPlay> {
+    this.calls.push(`swap:${sessionId}:${position}`);
+    return this.swapResult instanceof Error ? Promise.reject(this.swapResult) : Promise.resolve(this.swapResult);
   }
 
   startClock(sessionId: number, position: number): Promise<number | null> {

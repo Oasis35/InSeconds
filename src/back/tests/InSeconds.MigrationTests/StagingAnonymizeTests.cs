@@ -20,6 +20,7 @@ public class StagingAnonymizeTests(ScriptDatabase database)
             INSERT INTO players.auth_tokens (created_at, email, expires_at, purpose, token_hash) VALUES (now(), 'joueur@example.com', now() + interval '10 minutes', 1, '\x010203');
             INSERT INTO players.device_sessions (id, created_at, last_seen_at, player_id) VALUES (1, now(), now(), '{other}');
             INSERT INTO players.legacy_tokens (player_id, token_hash) VALUES ('{other}', '\x01');
+            UPDATE players.players SET guest_pseudo = 'Léa' WHERE id = '{other}';
             INSERT INTO infra.data_protection_keys (friendly_name, xml) VALUES ('key', '<key/>');
             INSERT INTO infra.backup_runs (finished_at, off_site) VALUES (now(), true);
             """);
@@ -35,6 +36,7 @@ public class StagingAnonymizeTests(ScriptDatabase database)
         var result = await database.RunSqlFileAsync(cs, "staging-anonymize.sql", "keep=garde@example.com");
 
         Assert.True(result.ExitCode == 0, result.Output);
+        Assert.Equal(0L, await Count(cs, "players.players WHERE guest_pseudo IS NOT NULL"));
         // L'adresse gardée (STAGING_KEEP_EMAIL, sans tenir compte de la casse) garde aussi son rôle admin : celui qui teste le staging.
         Assert.Equal(1L, await Count(cs, $"players.accounts WHERE player_id = '{kept}' AND email = 'Garde@example.com' AND pseudo = 'Garde' AND is_admin"));
         var pseudo = "joueur-" + other.ToString("N")[..12];

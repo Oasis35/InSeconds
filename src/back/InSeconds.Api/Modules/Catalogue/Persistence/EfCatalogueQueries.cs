@@ -15,7 +15,13 @@ public sealed class EfCatalogueQueries(InSecondsDbContext db) : ICatalogueQuerie
             .Select(t => new TrackRow(
                 t.Id, t.DeezerTrackId, t.Artist, t.Title, t.CoverHash, t.ReleaseYear, t.DeezerRank,
                 t.PreviewStatus, t.PreviewCheckedAt, t.DisabledAt != null,
-                t.Genres.OrderBy(g => g.Name).Select(g => g.Name).ToList()))
+                t.Genres.OrderBy(g => g.Name).Select(g => g.Name).ToList(), t.Themes.OrderBy(x => x.Id).Select(x => x.Id).ToList()))
+            .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<ThemeItem>> ListThemesAsync(CancellationToken ct) =>
+        await db.Set<Theme>().AsNoTracking()
+            .OrderBy(t => t.Name)
+            .Select(t => new ThemeItem(t.Id, t.Name, db.Set<Track>().Count(track => track.Themes.Any(x => x.Id == t.Id)), t.Icon))
             .ToListAsync(ct);
 
     public async Task<CatalogueHealthResponse> GetHealthAsync(CancellationToken ct)
@@ -36,6 +42,12 @@ public sealed class EfTrackDirectory(InSecondsDbContext db, IOptionsMonitor<Cata
             .Select(t => t.Id)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyDictionary<int, string>> ListThemesAsync(CancellationToken ct) =>
+        await db.Set<Theme>().AsNoTracking().ToDictionaryAsync(t => t.Id, t => t.Name, ct);
+
+    public async Task<IReadOnlyDictionary<int, string>> ListThemeIconsAsync(CancellationToken ct) =>
+        await db.Set<Theme>().AsNoTracking().Where(t => t.Icon != null).ToDictionaryAsync(t => t.Id, t => t.Icon!, ct);
+
     public async Task<IReadOnlyDictionary<int, TrackInfo>> GetAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct)
     {
         var ids = trackIds.ToArray();
@@ -50,6 +62,7 @@ public sealed class EfTrackDirectory(InSecondsDbContext db, IOptionsMonitor<Cata
                 t.CoverHash,
                 t.ReleaseYear,
                 t.DeezerRank,
+                ThemeIds = t.Themes.OrderBy(x => x.Id).Select(x => x.Id).ToList(),
                 Genres = t.Genres.OrderBy(g => g.Name).Select(g => g.Name).ToList(),
             })
             .ToListAsync(ct);
@@ -57,6 +70,6 @@ public sealed class EfTrackDirectory(InSecondsDbContext db, IOptionsMonitor<Cata
         var catalogue = options.CurrentValue;
         return tracks.ToDictionary(
             t => t.Id,
-            t => new TrackInfo(t.Id, t.DeezerTrackId, t.Artist, t.Title, TrackTitles.CleanDisplayTitle(t.Title), catalogue.CoverUrl(t.CoverHash), t.ReleaseYear, t.DeezerRank, t.Genres));
+            t => new TrackInfo(t.Id, t.DeezerTrackId, t.Artist, t.Title, TrackTitles.CleanDisplayTitle(t.Title), catalogue.CoverUrl(t.CoverHash), t.ReleaseYear, t.DeezerRank, t.Genres, t.ThemeIds));
     }
 }

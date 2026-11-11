@@ -14,12 +14,24 @@ public static class CatalogueErrorCodes
     public const string ConcurrentAdd = "catalogue.concurrent_add";
     public const string NotFoundOnDeezer = "catalogue.not_found_on_deezer";
     public const string DeezerUnavailable = "catalogue.deezer_unavailable";
+    public const string ThemeNotFound = "catalogue.theme_not_found";
+    public const string ThemeNameTaken = "catalogue.theme_name_taken";
+    public const string ThemeInUse = "catalogue.theme_in_use";
 }
 
 internal static class CatalogueProblems
 {
     public static ProblemDetails TrackNotFound() =>
         ApiProblem.Of(StatusCodes.Status404NotFound, ErrorCodes.NotFound, "Morceau introuvable.");
+
+    public static ProblemDetails ThemeNotFound() =>
+        ApiProblem.Of(StatusCodes.Status404NotFound, CatalogueErrorCodes.ThemeNotFound, "Thème introuvable.");
+
+    public static ProblemDetails ThemeNameTaken() =>
+        ApiProblem.Of(StatusCodes.Status409Conflict, CatalogueErrorCodes.ThemeNameTaken, "Un thème porte déjà ce nom.");
+
+    public static ProblemDetails ThemeInUse() =>
+        ApiProblem.Of(StatusCodes.Status409Conflict, CatalogueErrorCodes.ThemeInUse, "Des morceaux ont ce thème : retire-le d'abord de chacun.");
 
     public static ProblemDetails TrackInUse(string action) =>
         ApiProblem.Of(StatusCodes.Status409Conflict, CatalogueErrorCodes.TrackInUse, $"Ce morceau est utilisé dans un défi et ne peut pas être {action}.");
@@ -76,10 +88,11 @@ public sealed record TrackSummary(
 /// <param name="IsUsed">Un mode au moins l'a joué (ou le déclare utilisé) : ni suppression ni actualisation (409 <c>catalogue.track_in_use</c>).</param>
 /// <param name="Usages">Un élément par mode qui a quelque chose à dire du morceau, dans l'ordre d'enregistrement des modes.</param>
 /// <param name="Genres">Les genres de l'album du morceau (noms), vides tant qu'ils ne sont pas lus ou si l'album n'en a pas.</param>
+/// <param name="ThemeIds">Les thèmes de la liste de l'admin associés au morceau (plusieurs possibles), vides : aucun.</param>
 public sealed record TrackListItem(
     int Id, long DeezerTrackId, string Artist, string Title, string? CoverUrl, int? ReleaseYear, int? Rank,
     string PreviewStatus, DateTimeOffset? PreviewCheckedAt, bool IsDisabled, bool IsUsed, IReadOnlyList<TrackModeUsage> Usages,
-    IReadOnlyList<string> Genres);
+    IReadOnlyList<string> Genres, IReadOnlyList<int>? ThemeIds = null);
 
 /// <summary>L'usage d'un morceau par un mode.</summary>
 /// <param name="Mode">Nom stable du mode (<c>daily</c>).</param>
@@ -134,14 +147,22 @@ public interface ICatalogueQueries
     /// <summary>Tous les morceaux du pool, par artiste puis titre.</summary>
     Task<IReadOnlyList<TrackRow>> ListTracksAsync(CancellationToken ct);
 
+    /// <summary>Les thèmes de l'admin, par nom, chacun avec le nombre de morceaux qui l'ont.</summary>
+    Task<IReadOnlyList<ThemeItem>> ListThemesAsync(CancellationToken ct);
+
     /// <summary>Les morceaux actifs sans extrait chez Deezer, et ceux qui ont un extrait mais pas encore de forme d'onde.</summary>
     Task<CatalogueHealthResponse> GetHealthAsync(CancellationToken ct);
 }
 
+/// <summary>Un thème de la liste de l'admin.</summary>
+/// <param name="TrackCount">Les morceaux du pool qui ont ce thème (désactivés compris) ; la suppression n'est permise qu'à zéro.</param>
+/// <param name="Icon">Le nom de l'icône du thème (Lucide), vide : aucune.</param>
+public sealed record ThemeItem(int Id, string Name, int TrackCount, string? Icon = null);
+
 /// <summary>Un morceau tel que la base le lit, avant d'y joindre son usage.</summary>
 public sealed record TrackRow(
     int Id, long DeezerTrackId, string Artist, string Title, string? CoverHash, short? ReleaseYear, int? DeezerRank,
-    PreviewStatus PreviewStatus, DateTimeOffset? PreviewCheckedAt, bool IsDisabled, IReadOnlyList<string> Genres);
+    PreviewStatus PreviewStatus, DateTimeOffset? PreviewCheckedAt, bool IsDisabled, IReadOnlyList<string> Genres, IReadOnlyList<int>? ThemeIds = null);
 
 /// <summary>
 /// Le calcul de la forme des extraits (<c>InSeconds.Waveform</c>), réglé comme le reste à chaud (<c>infra.settings</c>).

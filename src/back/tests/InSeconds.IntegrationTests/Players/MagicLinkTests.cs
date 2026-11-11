@@ -106,6 +106,20 @@ public class MagicLinkTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task InviteConverti_SonPseudoDInviteEstVide_LeComptePrendLaMain()
+    {
+        var browser = _app.Browser();
+        var guestId = (await (await browser.PostAsync("/api/players/guest", null, Ct)).Content.ReadFromJsonAsync<GuestResponse>(Ct))!.PlayerId;
+        await browser.PutAsJsonAsync("/api/players/me/guest-pseudo", new SetGuestPseudo("Léa"), Ct);
+        var token = await _app.RequestTokenAsync("convertie@example.com");
+
+        await MagicLinkApi.VerifyAsync(browser, token, "Convertie");
+
+        Assert.Null(await _app.Api.ScalarAsync<string>($"SELECT guest_pseudo FROM players.players WHERE id = '{guestId}'"));
+        Assert.Equal("Convertie", (await MagicLinkApi.MeAsync(browser))!.Pseudo);
+    }
+
+    [Fact]
     public async Task SansCookie_AdresseInconnue_NouveauJoueurAvecSonCompte()
     {
         var browser = _app.Browser();

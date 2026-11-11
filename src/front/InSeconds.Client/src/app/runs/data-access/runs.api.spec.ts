@@ -27,7 +27,7 @@ describe('RunsApi', () => {
   let api: RunsApi;
 
   beforeEach(() => {
-    client = { getRunsMe: vi.fn(), getRunChallenge: vi.fn(), getRunComparison: vi.fn(), launchRun: vi.fn(), joinRun: vi.fn(), refreshRunPreview: vi.fn(), submitRunAnswer: vi.fn(), abandonRun: vi.fn(), playRunCard: vi.fn() };
+    client = { getRunsMe: vi.fn(), getRunChallenge: vi.fn(), getRunComparison: vi.fn(), launchRun: vi.fn(), joinRun: vi.fn(), refreshRunPreview: vi.fn(), submitRunAnswer: vi.fn(), abandonRun: vi.fn(), swapRunTrack: vi.fn() };
     TestBed.configureTestingModule({ providers: [{ provide: RunsClient, useValue: client }, RunsApi] });
     api = TestBed.inject(RunsApi);
   });
@@ -46,15 +46,16 @@ describe('RunsApi', () => {
     });
   });
 
-  it('une carte jouée : ses effets sur le morceau en types du domaine, une carte inconnue ignorée', async () => {
-    client['playRunCard'].mockReturnValue(of({ ...play, current: { ...play.current, effects: {
-      cards: ['year', 'futureCard'], year: 1995, artistInitials: undefined, titleInitials: ['G', 'L'], choices: undefined, clockBonusSeconds: 0,
+  it('« Changer de morceau » : le morceau de réserve et ses effets en types du domaine, une carte inconnue ignorée', async () => {
+    client['swapRunTrack'].mockReturnValue(of({ ...play, session: { ...play.session, swapAvailable: false }, current: { ...play.current, effects: {
+      cards: ['hint', 'futureCard'], year: 1995, artistInitials: undefined, titleInitials: ['G', 'L'], choices: undefined,
     } } } as unknown as RunPlayResponse));
 
-    const result = await api.playCard(7, 2, 3);
+    const result = await api.swap(7, 3);
 
-    expect(client['playRunCard']).toHaveBeenCalledWith(7, 2, { position: 3 });
-    expect(result.current?.effects).toEqual({ cards: ['year'], year: 1995, artistInitials: null, titleInitials: ['G', 'L'], choices: null, clockBonusSeconds: 0, genre: null });
+    expect(client['swapRunTrack']).toHaveBeenCalledWith(7, { position: 3 });
+    expect(result.session.swapAvailable).toBe(false);
+    expect(result.current?.effects).toEqual({ cards: ['hint'], year: 1995, artistInitials: null, titleInitials: ['G', 'L'], choices: null, genre: null });
   });
 
   it('sans record ni partie en cours : `null` plutôt que `undefined`', async () => {
@@ -157,7 +158,7 @@ describe('RunsApi', () => {
 
       expect(await api.challenge('abc234')).toEqual({
         kind: 'ok',
-        link: { code: 'ABC234', authorPseudo: null, trackCount: 20, rounds: 4, tracksPerRound: 5, listenSeconds: 10, answerSeconds: 45, myStatus: 'none', mySessionId: null },
+        link: { code: 'ABC234', authorPseudo: null, trackCount: 20, rounds: 4, tracksPerRound: 5, listenSeconds: 10, answerSeconds: 45, myStatus: 'none', mySessionId: null, themes: [] },
       });
       expect(client['getRunChallenge']).toHaveBeenCalledWith('abc234');
     });
@@ -191,7 +192,7 @@ describe('RunsApi', () => {
 
       const comparison = await api.comparison('ABC234');
 
-      expect(comparison.rows[1]).toEqual({ pseudo: null, disc: { key: 'runs.discs.wax', stars: 0 }, rounds: [480, 0, null, null], totalScore: 480, isMe: true });
+      expect(comparison.rows[1]).toEqual({ pseudo: null, disc: { key: 'runs.discs.wax', stars: 0 }, rounds: [480, 0, null, null], totalScore: 480, isMe: true, tag: null });
       expect(comparison).toMatchObject({ code: 'ABC234', authorPseudo: 'Clément', playerCount: 2, roundCount: 4 });
     });
 

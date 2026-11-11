@@ -26,6 +26,9 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'catalogue.duplicate_deezer_id': 'errors.catalogue.duplicate_deezer_id',
   'catalogue.not_found_on_deezer': 'errors.catalogue.not_found_on_deezer',
   'catalogue.track_in_today_challenge': 'errors.catalogue.track_in_today_challenge',
+  'catalogue.theme_in_use': 'errors.catalogue.theme_in_use',
+  'catalogue.theme_name_taken': 'errors.catalogue.theme_name_taken',
+  'catalogue.theme_not_found': 'errors.catalogue.theme_not_found',
   'catalogue.track_in_use': 'errors.catalogue.track_in_use',
 
   // Daily
@@ -45,6 +48,7 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'players.invalid_or_expired_token': 'errors.players.invalid_or_expired_token',
   'players.pseudo_mismatch': 'errors.players.pseudo_mismatch',
   'players.pseudo_taken': 'errors.players.pseudo_taken',
+  'players.not_a_guest': 'errors.players.not_a_guest',
   'players.same_email': 'errors.players.same_email',
 
   // Runs
@@ -52,16 +56,12 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'runs.access_denied': 'errors.runs.access_denied',
   'runs.already_answered': 'errors.runs.already_answered',
   'runs.already_played': 'errors.runs.already_played',
-  'runs.card_already_active': 'errors.runs.card_already_active',
-  'runs.card_not_found': 'errors.runs.card_not_found',
-  'runs.card_unavailable': 'errors.runs.card_unavailable',
   'runs.challenge_not_found': 'errors.runs.challenge_not_found',
   'runs.comparison_locked': 'errors.runs.comparison_locked',
   'runs.difficulty_locked': 'errors.runs.difficulty_locked',
-  'runs.hand_full': 'errors.runs.hand_full',
   'runs.no_challenge': 'errors.runs.no_challenge',
-  'runs.offer_closed': 'errors.runs.offer_closed',
   'runs.session_not_found': 'errors.runs.session_not_found',
+  'runs.swap_unavailable': 'errors.runs.swap_unavailable',
   'runs.track_lock_not_released': 'errors.runs.track_lock_not_released',
   'runs.track_not_found': 'errors.runs.track_not_found',
 };

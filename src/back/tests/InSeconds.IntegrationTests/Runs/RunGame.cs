@@ -115,27 +115,11 @@ internal sealed class RunGamer(RunGame game, Guid id, HttpClient client)
     public async Task<RunPlayResponse> ChooseAsync(int sessionId, int round, string difficulty) =>
         await ReadAsync<RunPlayResponse>(await ChooseRawAsync(sessionId, round, difficulty));
 
-    public Task<HttpResponseMessage> TakeCardRawAsync(int sessionId, int afterRound, string card, int? dropSlot = null) =>
-        Client.PostAsJsonAsync($"/api/runs/sessions/{sessionId}/cards", new TakeRunCard(afterRound, card, dropSlot), Ct);
+    public Task<HttpResponseMessage> SwapRawAsync(int sessionId, int position) =>
+        Client.PostAsJsonAsync($"/api/runs/sessions/{sessionId}/swap", new SwapRunTrack(position), Ct);
 
-    public async Task<RunSessionResponse> TakeCardAsync(int sessionId, int afterRound, string card, int? dropSlot = null) =>
-        await ReadAsync<RunSessionResponse>(await TakeCardRawAsync(sessionId, afterRound, card, dropSlot));
-
-    public Task<HttpResponseMessage> PassOfferRawAsync(int sessionId, int afterRound) =>
-        Client.PostAsJsonAsync($"/api/runs/sessions/{sessionId}/cards/pass", new PassRunOffer(afterRound), Ct);
-
-    public async Task<RunSessionResponse> PassOfferAsync(int sessionId, int afterRound) =>
-        await ReadAsync<RunSessionResponse>(await PassOfferRawAsync(sessionId, afterRound));
-
-    public Task<HttpResponseMessage> DropCardRawAsync(int sessionId, int slot) =>
-        Client.PostAsync($"/api/runs/sessions/{sessionId}/cards/{slot}/drop", null, Ct);
-
-    public Task<HttpResponseMessage> PlayCardRawAsync(int sessionId, int slot, int position) =>
-        Client.PostAsJsonAsync($"/api/runs/sessions/{sessionId}/cards/{slot}/play", new PlayRunCard(position), Ct);
-
-    /// <summary>Joue une carte de la main sur le morceau en cours ; rend la partie et le morceau avec ses effets.</summary>
-    public async Task<RunPlayResponse> PlayCardAsync(int sessionId, int slot, int position) =>
-        await ReadAsync<RunPlayResponse>(await PlayCardRawAsync(sessionId, slot, position));
+    /// <summary>Change le morceau en cours (« Échange ») ; rend la partie et le nouveau morceau.</summary>
+    public async Task<RunPlayResponse> SwapAsync(int sessionId, int position) => await ReadAsync<RunPlayResponse>(await SwapRawAsync(sessionId, position));
 
     public Task<HttpResponseMessage> AbandonRawAsync(int sessionId) => Client.PostAsync($"/api/runs/sessions/{sessionId}/abandon", null, Ct);
 

@@ -3,7 +3,7 @@
  * les écrans en tirent (barre d'objectif, pastilles, libellés). Le serveur décide de tout (points, jauge, neutralisation, fin) : le front affiche.
  */
 
-import { RunCardOffer, RunHandCard, RunTrackEffects, RunCardValues } from './run-cards';
+import { RunCardKey, RunTrackEffects, RunCardValues } from './run-cards';
 
 export type RunStatus = 'pending' | 'won' | 'lost' | 'abandoned';
 
@@ -109,18 +109,24 @@ export interface RunSession {
    * qu'avec le choix.
    */
   readonly difficultyChoice: RunDifficultyChoice | null;
-  /** Les cartes en main (vide sans coups de pouce). */
+  /** La carte gagnée à la manche passée, qui agit sur la manche en cours (au plus une ; vide sinon). */
   readonly hand: readonly RunHandCard[];
-  /** L'offre du palier, tant qu'elle est ouverte. */
-  readonly offer: RunCardOffer | null;
-  /** Les emplacements de la main ; 0 : une playlist sans coups de pouce (pas d'écran de palier). */
-  readonly handSize: number;
+  /** « Changer de morceau » est offert : l'Échange de la manche n'a pas servi et le morceau en cours n'a pas encore été écouté. */
+  readonly swapAvailable: boolean;
   /** Le disque que la manche en cours fait gagner si elle est passée ; `null` une fois la partie finie. */
   readonly nextDisc: RunDisc | null;
-  /** Ce que valent les cartes de la playlist (règles figées) ; `null` sans coups de pouce. */
+  /** Ce que valent les cartes de la playlist (règles figées). */
   readonly cardValues: RunCardValues | null;
   /** Le fantôme de l'ami qui a lancé la playlist, s'il l'a finie ; `null` sinon (sa propre playlist, rien encore répondu). */
   readonly ghost: RunGhost | null;
+  /** Les manches à thème de la playlist (jamais la première) ; vide : aucune. */
+  readonly themes: readonly RunTheme[];
+}
+
+/** La carte tenue : son numéro dans la partie et la carte. */
+export interface RunHandCard {
+  readonly slot: number;
+  readonly card: RunCardKey;
 }
 
 /** Une difficulté de manche : objectif et plafond plus ou moins hauts. */
@@ -191,6 +197,22 @@ export interface RunPlay {
 }
 
 /** Ce que montre le lien d'une playlist (écran « lien reçu ») : jamais un morceau (piège 31), ni le nombre de joueurs. */
+/** La manche à thème d'une playlist (jamais la première) : son numéro et le nom du thème tel qu'il était à la création de la playlist. */
+export interface RunTheme {
+  readonly round: number;
+  readonly name: string;
+}
+
+/** Un thème proposé au créateur d'une playlist, au lancement. */
+export interface RunThemeOffer {
+  readonly id: number;
+  readonly name: string;
+  /** La manche qui aura ce thème. */
+  readonly round: number;
+  /** Le nom Lucide de son icône (stock de `ui/theme-icon`) ; `null` : aucune. */
+  readonly icon: string | null;
+}
+
 export interface RunLink {
   readonly code: string;
   /** Le pseudo de son auteur ; `null` pour un invité (« Invité » à l'écran). */
@@ -204,6 +226,8 @@ export interface RunLink {
   /** La partie de ce joueur sur la playlist : pas jouée, en cours, ou finie. */
   readonly myStatus: 'none' | RunStatus;
   readonly mySessionId: number | null;
+  /** Les manches à thème de la playlist ; vide : aucune. */
+  readonly themes: readonly RunTheme[];
 }
 
 /** Une partie terminée d'une playlist, dans le tableau de comparaison. */
@@ -216,6 +240,8 @@ export interface RunComparisonRow {
   readonly totalScore: number;
   /** C'est la partie du joueur qui regarde (« Toi »). */
   readonly isMe: boolean;
+  /** Le repère grisé qui distingue deux joueurs de même pseudo dans ce tableau ; `null` sans homonyme. */
+  readonly tag: string | null;
 }
 
 /** Les joueurs d'une playlist, triés par total, après la fin de sa propre partie. */
@@ -338,18 +364,17 @@ export function runSegments(rounds: number, shown: Pick<RunRound, 'round' | 'sco
 }
 
 /**
- * L'écran de palier est dû : la playlist a des coups de pouce, la manche précédente vient d'être passée, et le serveur dit que la manche en cours
- * attend encore le joueur (son offre est ouverte ou sa difficulté reste à choisir : rien n'y a commencé), sauf si le joueur l'a déjà quitté par
- * « Suite » (`dismissedFor`, la manche qu'il a ouverte).
+ * L'écran de palier est dû : la manche précédente vient d'être passée et la manche en cours attend encore sa difficulté (rien n'y a commencé),
+ * sauf si le joueur l'a déjà quitté (`dismissedFor`, la manche qu'il a ouverte).
  */
 export function palierDue(session: RunSession, dismissedFor: number | null): boolean {
   const round = session.round;
-  if (session.status !== 'pending' || session.handSize <= 0 || !round || round.round < 2 || dismissedFor === round.round) return false;
-  return (session.offer !== null || session.difficultyChoice !== null) && session.roundTracks.length === 0
+  if (session.status !== 'pending' || !round || round.round < 2 || dismissedFor === round.round) return false;
+  return session.difficultyChoice !== null && session.roundTracks.length === 0
     && session.passedRounds.some(p => p.round === round.round - 1);
 }
 
-/** L'objectif de la manche à venir montré au palier : celui de « Sûre » (la difficulté se choisit ensuite), sinon celui de la manche. */
+/** L'objectif de la manche à venir montré au palier : celui de « Normal » (quand la difficulté ne se choisit pas sur l'écran), sinon celui de la manche. */
 export function nextObjective(session: RunSession): number {
   return session.difficultyChoice?.options.find(o => o.difficulty === 'safe')?.objective ?? session.round?.objective ?? 0;
 }
@@ -483,6 +508,24 @@ export function ghostGap(session: Pick<RunSession, 'ghost' | 'totalScore'> | nul
   return { pseudo: ghost.pseudo, total: ghost.total, gap: session.totalScore - ghost.total, stoppedAtRound: ghost.stoppedAtRound };
 }
 
+/** Le duel de l'écran de fin : le joueur face à l'ami qui a lancé la playlist (sur les morceaux que le joueur a joués). */
+export interface RunDuel {
+  /** Le pseudo de l'ami ; `null` pour un invité (« Invité » à l'écran). */
+  readonly pseudo: string | null;
+  /** L'avance (positive) ou le retard (négatif) du joueur, en points ; 0 : égalité. */
+  readonly gap: number;
+}
+
+/**
+ * Le duel d'une partie finie (gagnée ou perdue) sur la playlist d'un ami qui l'a finie ; `null` sans ami (sa propre playlist, un ami qui n'est pas
+ * arrivé au bout) et pour une partie abandonnée.
+ */
+export function duelOf(session: Pick<RunSession, 'ghost' | 'totalScore' | 'status'> | null): RunDuel | null {
+  if (!session || (session.status !== 'won' && session.status !== 'lost')) return null;
+  const gap = ghostGap(session);
+  return gap ? { pseudo: gap.pseudo, gap: gap.gap } : null;
+}
+
 /** À partir de combien de bonnes réponses d'affilée la série s'affiche. */
 export const COMBO_MIN = 2;
 
@@ -503,9 +546,9 @@ export function comboOf(tracks: readonly Pick<RunTrack, 'position' | 'neutralize
 }
 
 /**
- * Où en est une partie, vu du serveur : son statut, ses morceaux joués, l'offre et le choix de difficulté en attente, sa main. Deux relectures
+ * Où en est une partie, vu du serveur : son statut, ses morceaux joués, le choix de difficulté en attente, sa main. Deux relectures
  * différentes disent qu'elle a avancé ailleurs (un autre onglet) ; la même relecture, que rien n'a bougé.
  */
-export const progressKey = (session: Pick<RunSession, 'status' | 'playedTracks' | 'offer' | 'difficultyChoice' | 'hand'>): string =>
-  [session.status, session.playedTracks.length, session.offer?.afterRound ?? '', session.difficultyChoice?.round ?? '',
+export const progressKey = (session: Pick<RunSession, 'status' | 'playedTracks' | 'difficultyChoice' | 'hand'>): string =>
+  [session.status, session.playedTracks.length, session.difficultyChoice?.round ?? '',
     session.hand.map(c => `${c.slot}:${c.card}`).join(',')].join('|');

@@ -26,6 +26,29 @@ public interface ICatalogueStore
     /// </summary>
     Task<Genre> FindOrAddGenreByNameAsync(string name, CancellationToken ct);
 
+    /// <summary>Le morceau avec ses thèmes, suivi pour être modifié.</summary>
+    Task<Track?> FindWithThemesAsync(int id, CancellationToken ct);
+
+    /// <summary>Les thèmes de ces identifiants, suivis (un identifiant inconnu est absent du résultat).</summary>
+    Task<IReadOnlyList<Theme>> FindThemesAsync(IReadOnlyCollection<int> ids, CancellationToken ct);
+
+    /// <summary>Ajoute le thème et lui attribue tout de suite son identifiant.</summary>
+    ValueTask AddThemeAsync(Theme theme, CancellationToken ct);
+
+    void RemoveTheme(Theme theme);
+
+    /// <summary>Le thème, suivi pour être modifié.</summary>
+    Task<Theme?> FindThemeAsync(int id, CancellationToken ct);
+
+    /// <summary>Un thème porte déjà ce nom (casse ignorée), hors <paramref name="exceptThemeId"/>.</summary>
+    Task<bool> ThemeNameTakenAsync(string name, int? exceptThemeId, CancellationToken ct);
+
+    /// <summary>Au moins un morceau a ce thème.</summary>
+    Task<bool> ThemeInUseAsync(int themeId, CancellationToken ct);
+
+    /// <summary>Les morceaux qui ont ce thème.</summary>
+    Task<int> CountThemeTracksAsync(int themeId, CancellationToken ct);
+
     /// <summary>Cet identifiant Deezer est déjà celui d'un morceau (hors <paramref name="exceptTrackId"/>).</summary>
     Task<bool> DeezerIdTakenAsync(long deezerTrackId, int? exceptTrackId, CancellationToken ct);
 

@@ -39,6 +39,9 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
             modelBuilder.HasSequence("sessions_hilo", "runs")
                 .IncrementsBy(10);
 
+            modelBuilder.HasSequence("themes_hilo", "catalogue")
+                .IncrementsBy(10);
+
             modelBuilder.HasSequence("tracks_hilo", "catalogue")
                 .IncrementsBy(10);
 
@@ -157,6 +160,40 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasName("pk_genres");
 
                     b.ToTable("genres", "catalogue");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Catalogue.Domain.Theme", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<int>("Id"), "themes_hilo", "catalogue");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Icon")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("icon");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("citext")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_themes");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_themes_name");
+
+                    b.ToTable("themes", "catalogue");
                 });
 
             modelBuilder.Entity("InSeconds.Api.Modules.Catalogue.Domain.Track", b =>
@@ -669,6 +706,11 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("GuestPseudo")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("guest_pseudo");
+
                     b.Property<DateTimeOffset?>("LastSeenAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_seen_at");
@@ -907,10 +949,6 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ended_at");
 
-                    b.Property<short>("OffersClosedThrough")
-                        .HasColumnType("smallint")
-                        .HasColumnName("offers_closed_through");
-
                     b.Property<Guid>("PlayerId")
                         .HasColumnType("uuid")
                         .HasColumnName("player_id");
@@ -968,10 +1006,6 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     b.Property<short>("Card")
                         .HasColumnType("smallint")
                         .HasColumnName("card");
-
-                    b.PrimitiveCollection<int[]>("DecoyTrackIds")
-                        .HasColumnType("integer[]")
-                        .HasColumnName("decoy_track_ids");
 
                     b.Property<short?>("DroppedAfterRound")
                         .HasColumnType("smallint")
@@ -1174,6 +1208,25 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_track_genres_genre_id");
 
                     b.ToTable("track_genres", "catalogue");
+                });
+
+            modelBuilder.Entity("track_themes", b =>
+                {
+                    b.Property<int>("track_id")
+                        .HasColumnType("integer")
+                        .HasColumnName("track_id");
+
+                    b.Property<int>("theme_id")
+                        .HasColumnType("integer")
+                        .HasColumnName("theme_id");
+
+                    b.HasKey("track_id", "theme_id")
+                        .HasName("pk_track_themes");
+
+                    b.HasIndex("theme_id")
+                        .HasDatabaseName("ix_track_themes_theme_id");
+
+                    b.ToTable("track_themes", "catalogue");
                 });
 
             modelBuilder.Entity("InSeconds.Api.Modules.Daily.Domain.ChallengeTrack", b =>
@@ -1416,6 +1469,23 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_track_genres_tracks_track_id");
+                });
+
+            modelBuilder.Entity("track_themes", b =>
+                {
+                    b.HasOne("InSeconds.Api.Modules.Catalogue.Domain.Theme", null)
+                        .WithMany()
+                        .HasForeignKey("theme_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_track_themes_themes_theme_id");
+
+                    b.HasOne("InSeconds.Api.Modules.Catalogue.Domain.Track", null)
+                        .WithMany()
+                        .HasForeignKey("track_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_track_themes_tracks_track_id");
                 });
 
             modelBuilder.Entity("InSeconds.Api.Modules.Daily.Domain.DailyChallenge", b =>

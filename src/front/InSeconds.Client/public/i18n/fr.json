@@ -38,6 +38,7 @@
       "invalid_or_expired_token": "Ce lien est invalide ou a expiré.",
       "pseudo_mismatch": "Ce n'est pas ton pseudo.",
       "pseudo_taken": "Ce pseudo est déjà pris.",
+      "not_a_guest": "Ce compte n'est plus un invité : change ton pseudo depuis ton profil.",
       "same_email": "C'est déjà ton adresse actuelle."
     },
     "catalogue": {
@@ -45,6 +46,9 @@
       "not_found_on_deezer": "Ce morceau est introuvable chez Deezer.",
       "concurrent_add": "Un autre ajout écrit les mêmes genres au même moment : réessaie dans un instant.",
       "deezer_unavailable": "Deezer est indisponible pour le moment, réessaie dans un instant.",
+      "theme_in_use": "Ce thème est encore associé à des morceaux : retire-le d'abord de ces morceaux.",
+      "theme_name_taken": "Un thème porte déjà ce nom.",
+      "theme_not_found": "Ce thème n'existe plus : recharge la liste.",
       "track_in_use": "Ce morceau a déjà servi dans un défi : il ne peut pas être supprimé (désactive-le).",
       "track_in_today_challenge": "Ce morceau est dans le défi du jour : désactivable à partir de demain."
     },
@@ -65,17 +69,13 @@
       "challenge_not_found": "Cette playlist n'existe pas. Vérifie le lien.",
       "comparison_locked": "La comparaison s'ouvre une fois ta partie terminée.",
       "difficulty_locked": "La difficulté de cette manche est déjà fixée.",
-      "card_not_found": "Cette carte n'est plus dans ta main.",
-      "offer_closed": "Cette offre n'est plus ouverte.",
-      "hand_full": "Ta main est pleine : lâche une carte pour en prendre une.",
-      "card_already_active": "Cette carte est déjà jouée sur ce morceau.",
-      "card_unavailable": "Cette carte ne peut pas se jouer ici.",
       "session_not_found": "Cette partie n'existe plus.",
       "already_played": "Tu as déjà joué cette playlist.",
       "abandoned": "Tu as abandonné cette playlist.",
       "track_not_found": "Ce morceau n'existe pas dans cette playlist.",
       "track_lock_not_released": "Réponds d'abord au morceau en cours.",
-      "already_answered": "Tu as déjà répondu à ce morceau."
+      "already_answered": "Tu as déjà répondu à ce morceau.",
+      "swap_unavailable": "Le changement de morceau n'est plus possible."
     }
   },
   "shell": {
@@ -298,7 +298,8 @@
       "playersPlain": "Joueurs",
       "pool": "Morceaux ({{ count }})",
       "challenges": "Défis ({{ count }})",
-      "players": "Joueurs ({{ count }})"
+      "players": "Joueurs ({{ count }})",
+      "themes": "Thèmes"
     },
     "pool": {
       "cooldown": "cooldown {{ days }} j",
@@ -392,6 +393,8 @@
       "deleting": "Suppression..."
     },
     "editModal": {
+      "themes": "Thèmes",
+      "themesNone": "Aucun thème dans la liste : ajoute-en depuis l'onglet Morceaux.",
       "title": "Modifier le morceau",
       "artist": "Artiste",
       "titleField": "Titre",
@@ -610,6 +613,71 @@
       "direct": "Direct",
       "other": "Autres sites",
       "rest": "Autres"
+    },
+    "themes": {
+      "title": "Thèmes",
+      "changeIcon": "Changer l'icône",
+      "iconTitle": "Icône de « {{name}} »",
+      "iconSearch": "Rechercher une icône",
+      "iconCategories": "Catégories d'icônes",
+      "iconAll": "Toutes",
+      "iconCat": {
+        "music": "Musique",
+        "cinema": "Écrans et jeux",
+        "fete": "Fête et cœur",
+        "voyage": "Voyage et lieux",
+        "nature": "Nature et météo",
+        "animaux": "Animaux",
+        "sport": "Sport",
+        "table": "Table et sorties",
+        "objets": "Objets et époques"
+      },
+      "iconGrid": "Icônes",
+      "iconNone": "Aucune icône ne correspond.",
+      "iconClear": "Sans icône",
+      "iconChoose": "Choisir",
+      "search": "Rechercher un thème",
+      "filters": "Filtrer par état",
+      "newName": "Nouveau thème",
+      "create": "Créer",
+      "chip": {
+        "all": "Tous",
+        "unplayable": "Pas jouables",
+        "thin": "Peu variés",
+        "varied": "Variés"
+      },
+      "health": {
+        "unplayable": "Pas jouable",
+        "thin": "Peu varié",
+        "varied": "Varié"
+      },
+      "counts": "{{total}} morceaux · {{playable}} jouables",
+      "missing": "Il manque {{count}} morceaux jouables.",
+      "legend": "Rouge : moins de {{min}} jouables · jaune : jusqu'à {{varied}} · vert : {{varied}} et plus.",
+      "empty": "Aucun thème.",
+      "pick": "Choisis un thème dans la liste.",
+      "back": "Thèmes",
+      "rename": "Renommer",
+      "delete": "Supprimer",
+      "deleteBlocked": "Retire d'abord ses morceaux",
+      "name": "Nom du thème",
+      "addTracks": "Ajouter des morceaux",
+      "searchInTheme": "Chercher dans ce thème",
+      "noTracks": "Aucun morceau dans ce thème.",
+      "removeTrack": "Retirer du thème",
+      "disabled": "désactivé",
+      "noPreview": "sans extrait",
+      "close": "Fermer",
+      "source": {
+        "pool": "Dans le pool",
+        "deezer": "Sur Deezer"
+      },
+      "searchPool": "Chercher dans le pool",
+      "searchDeezer": "Chercher sur Deezer",
+      "noCandidate": "Aucun morceau à ajouter.",
+      "addPicked": "Ajouter {{count}} morceaux au thème",
+      "addDeezer": "Ajouter au pool et au thème",
+      "alreadyInTheme": "Déjà dans ce thème"
     }
   },
   "daily": {
@@ -872,7 +940,7 @@
     },
     "data": {
       "title": "Données collectées, finalités et base légale",
-      "body": "Aucune donnée n'est exigée pour jouer : le mode invité ne demande ni nom, ni email, ni inscription.\nSelon votre usage, l'application traite les catégories de données suivantes :\n· identifiant technique pseudonyme : généré aléatoirement et stocké dans un cookie, il permet de reconnaître votre navigateur d'une visite à l'autre (reprise de partie, limitation à une partie par jour, série de victoires). Finalité : fourniture du jeu. Base légale : exécution du service demandé (article 6.1.b du RGPD) ;\n· appareils connectés : pour chaque navigateur où vous jouez, l'application garde la date de première connexion, la date de dernière visite et un libellé grossier du navigateur et de l'appareil (par exemple « Safari · iPhone », jamais l'en-tête technique complet). Avec un compte, la liste de vos appareils s'affiche dans votre profil, où vous pouvez déconnecter chacun d'eux. Finalité : sécurité du compte et connexion multi-appareils. Base légale : exécution du service demandé (article 6.1.b) ;\n· email et pseudo, uniquement si vous créez un compte : un compte optionnel, activé par un lien de connexion envoyé par email (sans mot de passe), permet de retrouver votre historique et votre série sur n'importe quel appareil ; le pseudo est un nom d'affichage que vous choisissez librement. Finalité : gestion du compte et connexion multi-appareils. Base légale : votre consentement (article 6.1.a du RGPD), vous restez libre de jouer en invité sans jamais fournir ces informations ;\n· données de partie : le résultat de chaque réponse (artiste et titre trouvés ou non, sans le texte que vous tapez, qui n'est jamais conservé), durées d'écoute choisies, scores et dates de jeu. Finalité : faire fonctionner le jeu et calculer des statistiques globales anonymes (score médian, taux de réussite par morceau). Base légale : exécution du service demandé (article 6.1.b). Avec un compte, l'éditeur peut consulter dans l'espace d'administration votre pseudo, votre adresse email, votre série et l'historique de vos parties des 30 derniers jours, uniquement pour faire fonctionner le service et répondre à vos demandes ;\n· mode Platines (sur invitation) : pour chaque partie, le résultat de chaque morceau (artiste et titre trouvés ou non, jamais le texte que vous tapez), ses points, la difficulté que vous avez choisie pour chaque manche et l'heure du choix, les coups de pouce reçus, lâchés ou joués (sur quel morceau, et à quelle heure), les manches passées, le score et les dates de jeu ; votre record (meilleur score et meilleur disque) ; les playlists que vous lancez et leur auteur ; l'autorisation d'accès que l'éditeur vous a donnée. Une playlist se partage par un lien : ceux qui l'ouvrent voient le pseudo de son auteur (« Invité » sans compte), pendant leur partie le total de l'auteur morceau par morceau (jusqu'au morceau où ils en sont) si l'auteur a fini la playlist et, une fois leur propre partie finie, le pseudo (ou « Invité »), le disque et le score de chacun de ceux qui l'ont jouée. Ce n'est pas un classement public : seuls ceux qui ont le lien les voient. Si vous supprimez votre compte, vos parties disparaissent ; les playlists que vous avez lancées restent jouables, sans auteur. Finalité : faire fonctionner ce mode et la comparaison entre ceux qui ont joué la même playlist. Base légale : exécution du service demandé (article 6.1.b) ;\n· adresse IP : traitée techniquement à chaque requête, comme pour tout site web, à des fins de sécurité (limitation du nombre de tentatives de connexion pour prévenir les abus). Finalité : sécurité du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· journaux techniques : à chaque requête, l'application enregistre l'identifiant technique pseudonyme décrit ci-dessus, la page ou l'action concernée, sa durée, son résultat, le type de navigateur et d'appareil (par exemple « Safari · iPhone ») et, en cas de bug, le message d'erreur, sa pile d'appels, la version de l'application et l'état de la connexion (en ligne ou non). Ces journaux ne contiennent jamais votre email, votre pseudo, vos réponses saisies ni votre cookie. Finalité : détecter et corriger les bugs, surveiller le bon fonctionnement du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· mesure d'audience : à chaque page affichée, un petit script de Cloudflare Web Analytics envoie à Cloudflare l'adresse de la page, le site d'où vous venez, le type de navigateur et d'appareil, et les temps de chargement de la page. Cloudflare en tire des statistiques agrégées (visites, pages vues, pays, sites d'origine, appareils, vitesse du site), sans cookie ni identifiant qui permette de vous reconnaître ; l'éditeur ne voit que ces statistiques. Finalité : connaître la fréquentation du site et sa vitesse. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· source d'arrivée : à la création de votre identifiant d'invité, l'application note d'où vous arrivez : le nom de campagne porté par le lien que vous avez suivi (par exemple « instagram », ou « share » pour un lien partagé par un joueur), sinon le seul nom de domaine du site d'où vous venez (par exemple « google.com », jamais l'adresse complète de la page), ou « direct ». Elle est gardée dans votre navigateur le temps de la visite, puis rattachée à votre identifiant pseudonyme ; elle figure dans la copie de vos données et disparaît avec elles. Finalité : savoir quels canaux amènent de nouveaux joueurs (mesure d'audience). Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· préférences locales : votre langue préférée, le choix de couper les sons du mode Platines et le souvenir des messages d'information déjà affichés sont stockés localement dans votre navigateur ; ils ne quittent jamais votre appareil et ne sont jamais transmis à nos serveurs."
+      "body": "Aucune donnée n'est exigée pour jouer : le mode invité ne demande ni nom, ni email, ni inscription.\nSelon votre usage, l'application traite les catégories de données suivantes :\n· identifiant technique pseudonyme : généré aléatoirement et stocké dans un cookie, il permet de reconnaître votre navigateur d'une visite à l'autre (reprise de partie, limitation à une partie par jour, série de victoires). Finalité : fourniture du jeu. Base légale : exécution du service demandé (article 6.1.b du RGPD) ;\n· appareils connectés : pour chaque navigateur où vous jouez, l'application garde la date de première connexion, la date de dernière visite et un libellé grossier du navigateur et de l'appareil (par exemple « Safari · iPhone », jamais l'en-tête technique complet). Avec un compte, la liste de vos appareils s'affiche dans votre profil, où vous pouvez déconnecter chacun d'eux. Finalité : sécurité du compte et connexion multi-appareils. Base légale : exécution du service demandé (article 6.1.b) ;\n· email et pseudo, uniquement si vous créez un compte : un compte optionnel, activé par un lien de connexion envoyé par email (sans mot de passe), permet de retrouver votre historique et votre série sur n'importe quel appareil ; le pseudo est un nom d'affichage que vous choisissez librement. Finalité : gestion du compte et connexion multi-appareils. Base légale : votre consentement (article 6.1.a du RGPD), vous restez libre de jouer en invité sans jamais fournir ces informations ;\n· données de partie : le résultat de chaque réponse (artiste et titre trouvés ou non, sans le texte que vous tapez, qui n'est jamais conservé), durées d'écoute choisies, scores et dates de jeu. Finalité : faire fonctionner le jeu et calculer des statistiques globales anonymes (score médian, taux de réussite par morceau). Base légale : exécution du service demandé (article 6.1.b). Avec un compte, l'éditeur peut consulter dans l'espace d'administration votre pseudo, votre adresse email, votre série et l'historique de vos parties des 30 derniers jours, uniquement pour faire fonctionner le service et répondre à vos demandes ;\n· mode Platines (sur invitation) : pour chaque partie, le résultat de chaque morceau (artiste et titre trouvés ou non, jamais le texte que vous tapez), ses points, la difficulté que vous avez choisie pour chaque manche et l'heure du choix, les coups de pouce reçus, lâchés ou joués (sur quel morceau, et à quelle heure), les manches passées, le score et les dates de jeu ; votre record (meilleur score et meilleur disque) ; les playlists que vous lancez et leur auteur ; l'autorisation d'accès que l'éditeur vous a donnée. Une playlist se partage par un lien : ceux qui l'ouvrent voient le pseudo de son auteur (celui de son compte, sinon son pseudo d'invité, sinon « Invité »), pendant leur partie le total de l'auteur morceau par morceau (jusqu'au morceau où ils en sont) si l'auteur a fini la playlist et, une fois leur propre partie finie, le pseudo (celui du compte, sinon le pseudo d'invité, sinon « Invité »), le disque et le score de chacun de ceux qui l'ont jouée. Ce n'est pas un classement public : seuls ceux qui ont le lien les voient. Sans compte, vous donnez un pseudo d'invité à la fin de votre première partie sur la playlist d'un ami : il est obligatoire pour voir la comparaison, rattaché à votre identifiant technique (donc à votre navigateur) pour que vous le retrouviez à chaque visite, modifiable à tout moment, et jamais identique à celui d'un compte ; si deux joueurs d'une même comparaison ont le même pseudo, une courte marque dérivée de leur identifiant les distingue. Il figure dans la copie de vos données et est effacé automatiquement 91 jours après votre dernière visite (et si vous créez un compte, c'est le pseudo du compte qui compte). Si vous supprimez votre compte, vos parties disparaissent ; les playlists que vous avez lancées restent jouables, sans auteur. Finalité : faire fonctionner ce mode et la comparaison entre ceux qui ont joué la même playlist. Base légale : exécution du service demandé (article 6.1.b) ;\n· adresse IP : traitée techniquement à chaque requête, comme pour tout site web, à des fins de sécurité (limitation du nombre de tentatives de connexion pour prévenir les abus). Finalité : sécurité du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· journaux techniques : à chaque requête, l'application enregistre l'identifiant technique pseudonyme décrit ci-dessus, la page ou l'action concernée, sa durée, son résultat, le type de navigateur et d'appareil (par exemple « Safari · iPhone ») et, en cas de bug, le message d'erreur, sa pile d'appels, la version de l'application et l'état de la connexion (en ligne ou non). Ces journaux ne contiennent jamais votre email, votre pseudo, vos réponses saisies ni votre cookie. Finalité : détecter et corriger les bugs, surveiller le bon fonctionnement du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· mesure d'audience : à chaque page affichée, un petit script de Cloudflare Web Analytics envoie à Cloudflare l'adresse de la page, le site d'où vous venez, le type de navigateur et d'appareil, et les temps de chargement de la page. Cloudflare en tire des statistiques agrégées (visites, pages vues, pays, sites d'origine, appareils, vitesse du site), sans cookie ni identifiant qui permette de vous reconnaître ; l'éditeur ne voit que ces statistiques. Finalité : connaître la fréquentation du site et sa vitesse. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· source d'arrivée : à la création de votre identifiant d'invité, l'application note d'où vous arrivez : le nom de campagne porté par le lien que vous avez suivi (par exemple « instagram », ou « share » pour un lien partagé par un joueur), sinon le seul nom de domaine du site d'où vous venez (par exemple « google.com », jamais l'adresse complète de la page), ou « direct ». Elle est gardée dans votre navigateur le temps de la visite, puis rattachée à votre identifiant pseudonyme ; elle figure dans la copie de vos données et disparaît avec elles. Finalité : savoir quels canaux amènent de nouveaux joueurs (mesure d'audience). Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· préférences locales : votre langue préférée, le choix de couper les sons du mode Platines et le souvenir des messages d'information déjà affichés sont stockés localement dans votre navigateur ; ils ne quittent jamais votre appareil et ne sont jamais transmis à nos serveurs."
     },
     "cookie": {
       "title": "Cookie",
@@ -880,7 +948,7 @@
     },
     "retention": {
       "title": "Durée de conservation",
-      "body": "Les données de jeu (réponses, scores, série de victoires) sont conservées tant que votre identifiant ou votre compte existe en base, afin d'alimenter votre historique et les statistiques globales anonymes présentées aux joueurs. Un compte sans aucune visite depuis 3 ans est supprimé automatiquement, avec son historique, sa série et ses appareils (durée recommandée par la CNIL), sans email de prévenance. Un joueur invité n'est pas supprimé : une fois ses appareils effacés (voir ci-dessous), plus rien ne permet de le retrouver, et ses parties ne servent plus qu'aux statistiques anonymes.\nPour un joueur invité, ces données ne sont jamais croisées avec une identité réelle : seul un identifiant technique aléatoire vous relie à vos parties.\nSi vous créez un compte, votre historique est associé à votre adresse email : c'est ce qui permet de le retrouver sur un autre appareil. Vous pouvez les supprimer vous-même depuis votre profil, ou sur simple demande (voir « Vos droits »).\nUn appareil connecté (y compris un appareil déconnecté) est supprimé automatiquement 91 jours après sa dernière visite, soit un jour après l'expiration de son cookie ; un appareil déconnecté ne peut plus jamais être réutilisé.\nLes journaux techniques (voir « Données collectées ») sont conservés 14 jours au maximum, puis supprimés automatiquement.\nLe lien de connexion et le lien de confirmation d'un changement d'email ne sont valables que 15 minutes et ne peuvent être utilisés qu'une seule fois ; passé ce délai ou après utilisation, ils deviennent définitivement invalides, et ils sont effacés de la base chaque nuit une fois expirés.\nPour reprendre sans vous déconnecter les joueurs de l'ancienne version du jeu, une empreinte cryptographique de leur ancien cookie est conservée provisoirement ; elle sera supprimée au plus tard 90 jours après la mise en service de la nouvelle version (16 octobre 2026).\nSauvegardes : la base de données est sauvegardée chaque nuit. Les copies sont chiffrées et conservées 7 jours sur le serveur, 30 jours pour les copies quotidiennes et 12 mois pour une copie mensuelle hors du serveur (voir « Destinataires »). Des données supprimées de la base peuvent donc subsister dans ces copies jusqu'à leur expiration ; elles n'en sont jamais restaurées, sauf incident grave."
+      "body": "Les données de jeu (réponses, scores, série de victoires) sont conservées tant que votre identifiant ou votre compte existe en base, afin d'alimenter votre historique et les statistiques globales anonymes présentées aux joueurs. Un compte sans aucune visite depuis 3 ans est supprimé automatiquement, avec son historique, sa série et ses appareils (durée recommandée par la CNIL), sans email de prévenance. Un joueur invité n'est pas supprimé : le pseudo qu'il s'est donné est effacé automatiquement 91 jours après sa dernière visite ; ensuite, avec ses appareils effacés (voir ci-dessous), plus rien ne permet de le retrouver, et ses parties ne servent plus qu'aux statistiques anonymes.\nPour un joueur invité, ces données ne sont jamais croisées avec une identité réelle : seul un identifiant technique aléatoire vous relie à vos parties.\nSi vous créez un compte, votre historique est associé à votre adresse email : c'est ce qui permet de le retrouver sur un autre appareil. Vous pouvez les supprimer vous-même depuis votre profil, ou sur simple demande (voir « Vos droits »).\nUn appareil connecté (y compris un appareil déconnecté) est supprimé automatiquement 91 jours après sa dernière visite, soit un jour après l'expiration de son cookie ; un appareil déconnecté ne peut plus jamais être réutilisé.\nLes journaux techniques (voir « Données collectées ») sont conservés 14 jours au maximum, puis supprimés automatiquement.\nLe lien de connexion et le lien de confirmation d'un changement d'email ne sont valables que 15 minutes et ne peuvent être utilisés qu'une seule fois ; passé ce délai ou après utilisation, ils deviennent définitivement invalides, et ils sont effacés de la base chaque nuit une fois expirés.\nPour reprendre sans vous déconnecter les joueurs de l'ancienne version du jeu, une empreinte cryptographique de leur ancien cookie est conservée provisoirement ; elle sera supprimée au plus tard 90 jours après la mise en service de la nouvelle version (16 octobre 2026).\nSauvegardes : la base de données est sauvegardée chaque nuit. Les copies sont chiffrées et conservées 7 jours sur le serveur, 30 jours pour les copies quotidiennes et 12 mois pour une copie mensuelle hors du serveur (voir « Destinataires »). Des données supprimées de la base peuvent donc subsister dans ces copies jusqu'à leur expiration ; elles n'en sont jamais restaurées, sauf incident grave."
     },
     "thirdParties": {
       "title": "Destinataires, hébergement et transferts hors UE",
@@ -977,15 +1045,43 @@
       "toDaily": "Jouer au défi du jour",
       "compare": "Voir les autres joueurs",
       "playAgain": "Rejouer",
+      "duelAhead": "Tu bats {{ name }} de {{ points }} pts",
+      "duelBehind": "{{ name }} gagne de {{ points }} pts",
+      "duelTied": "Égalité avec {{ name }}",
+      "rematch": "Revanche",
       "shortfallBefore": "Il t’a manqué",
       "shortfallPoints": "{{ points }} pts",
       "shortfallAfter": "pour le {{ disc }}"
+    },
+    "pseudo": {
+      "title": "Ton pseudo",
+      "titleEdit": "Changer de pseudo",
+      "subtitle": "Il s'affiche à côté de ton score dans la comparaison de la playlist.",
+      "label": "Pseudo",
+      "hint": "3 à 20 caractères.",
+      "save": "Valider",
+      "cancel": "Annuler",
+      "required": "Choisis un pseudo.",
+      "tooShort": "Trois caractères minimum.",
+      "tooLong": "Vingt caractères maximum.",
+      "invalid": "Lettres, chiffres, espace, _, . ou - seulement.",
+      "taken": "Ce pseudo est déjà pris."
+    },
+    "theme": {
+      "title": "Ta playlist",
+      "subtitle": "Manche {{round}} : choisis le thème",
+      "tracks": "Tous les morceaux de la manche, de ce thème",
+      "surprise": "Surprise",
+      "surpriseHint": "On tire au hasard",
+      "friends": "Tes amis jouent la même playlist.",
+      "launch": "Lancer"
     },
     "link": {
       "guest": "Invité",
       "title": "{{ pseudo }} te lance une playlist",
       "tracks": "{{ tracks }} morceaux, les mêmes pour tous ses joueurs : comparez vos scores à la fin",
       "rounds": "{{ rounds }} manches, de plus en plus dures",
+      "theme": "Manche {{ round }} : thème {{ name }}",
       "listen": "{{ seconds }} pour trouver l’artiste et le titre",
       "listenAndAnswer": "{{ seconds }} d’écoute, {{ answer }} pour trouver l’artiste et le titre",
       "goal": "Passe les {{ rounds }} manches et deviens disque d’or",
@@ -999,6 +1095,7 @@
       "roundShort": "M{{ round }}",
       "total": "Total",
       "you": "Toi",
+      "editPseudo": "Changer mon pseudo",
       "share": "Partager la playlist"
     },
     "discs": {
@@ -1016,76 +1113,53 @@
       "text": "Je te lance une playlist sur InSeconds. Tu fais mieux que moi ?",
       "header": "{{ score }} pts · {{ disc }} · InSeconds Platines",
       "round": "Manche {{ round }}",
-      "beatMe": "Bats-moi sur la même playlist :"
+      "duelWon": "J’ai battu {{ name }} de {{ points }} pts.",
+      "beatMe": "Fais mieux sur la même playlist :"
     },
     "palier": {
+      "theme": "Manche {{round}} · thème",
       "round": "Manche {{round}}",
       "shelf": "Les disques de la playlist",
       "points": "pts",
       "scoreLabel": "{{score}} points pour un objectif de {{objective}}",
       "nextRound": "Manche {{round}}",
       "pointsFor": "pts pour",
-      "offer": "Un coup de pouce",
-      "pass": "Passer",
-      "hand": "En main",
-      "emptySlot": "Emplacement libre",
-      "dropHint": "Touche la carte à lâcher",
-      "next": "Suite"
+      "next": "Suite",
+      "earned": "Carte gagnée"
     },
     "cards": {
       "three_choices": {
         "name": "QCM"
       },
-      "joker": {
-        "name": "Joker"
-      },
-      "year": {
-        "name": "Année"
-      },
-      "initials": {
-        "name": "Initiales"
+      "hint": {
+        "name": "Indice"
       },
       "extend": {
         "name": "Prolongation"
-      },
-      "net": {
-        "name": "Repêchage"
-      },
-      "lower_target": {
-        "name": "Rabais"
-      },
-      "hourglass": {
-        "name": "Délai"
-      },
-      "genre": {
-        "name": "Genre"
-      },
-      "either_or": {
-        "name": "L’un ou l’autre"
       }
     },
     "difficulty": {
       "round": "Manche {{round}}",
       "title": "Difficulté ?",
       "yourScore": "Ton score",
-      "max": "max",
+      "perTrack": "{{points}} pts max\npar morceau",
       "listen": "écoute {{seconds}}",
-      "hand": "En main",
       "easy": "Facile",
-      "safe": "Sûre",
-      "risky": "Risquée",
-      "columnLabel": "{{name}} : jusqu'à {{max}} points, objectif {{objective}}"
+      "safe": "Normal",
+      "risky": "Mélomane",
+      "columnLabel": "{{name}} : objectif {{objective}} points, jusqu'à {{perTrack}} points par morceau"
     },
     "roundCards": {
-      "play": "Jouer {{card}}",
-      "net": "Un raté compte à moitié",
-      "lowerTarget": "Objectif de la manche abaissé",
-      "hourglass": "+{{seconds}} au chrono",
+      "hint": {
+        "year": "Année",
+        "artist": "Initiales de l’artiste",
+        "title": "Initiales du titre",
+        "genre": "Genre"
+      },
       "extend": "Écoute de {{seconds}}",
       "choicesHint": "Une seule est juste",
-      "refused": "Cette carte n'a pas pu être jouée.",
-      "netQuarter": "Un raté compte un quart",
-      "eitherOr": "Artiste ou titre : un seul suffit"
+      "swap": "Changer de morceau",
+      "refused": "Ce morceau n'a pas pu être changé."
     },
     "ghost": {
       "ahead": "{{ points }} pts d’avance",

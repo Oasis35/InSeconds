@@ -57,6 +57,8 @@ test.describe('Mode Platines', () => {
   test("partie gagnée : 20 bonnes réponses, les 4 manches débloquées, le disque d'or et un nouveau record", async ({ page, api }) => {
     // 20 morceaux répondus un à un, chacun avec sa réponse : plus long qu'une partie du jour.
     test.slow();
+    // Seul l'Indice se gagne ici : le QCM remplace la saisie, que ce parcours tape (couvert par les tests du store).
+    await api.setRunSetting('Runs:Cards', '["hint"]');
     const run = new RunPage(page);
     await run.loginAsAdmin();
     await run.launch();
@@ -113,28 +115,63 @@ test.describe('Mode Platines', () => {
     await expect(run.welcome.getByTestId('run-shelf').locator('[data-shelf-disc="runs.discs.gold"]')).toHaveCount(1);
   });
 
-  test("« Risquée » avant la dernière manche : le boss annonce une écoute plus courte, et la partie se gagne jusqu'au bout", async ({ page, api }) => {
+  test("playlist à thème : le créateur choisit son thème au lancement (deux thèmes et « Surprise »), il est figé dans les règles de la playlist", async ({ page, api }) => {
+    const run = new RunPage(page);
+    await run.loginAsAdmin();
+
+    // La liste de l'admin : deux thèmes de 8 morceaux chacun (de quoi remplir une manche et sa réserve), sans morceau en commun.
+    const post = async <T>(url: string, data: unknown, method: 'post' | 'put' = 'post'): Promise<T | null> => {
+      const res = await page.request[method](url, { data });
+      expect(res.ok(), `${method} ${url}`).toBe(true);
+      return res.status() === 204 ? null : ((await res.json()) as T);
+    };
+    const list = await page.request.get('/api/admin/catalogue/tracks');
+    const tracks = ((await list.json()) as { id: number; previewStatus: string; isDisabled: boolean }[]).filter(t => !t.isDisabled && t.previewStatus === 'available');
+    const eighties = await post<{ id: number }>('/api/admin/catalogue/themes', { name: 'Années 80' });
+    const movies = await post<{ id: number }>('/api/admin/catalogue/themes', { name: 'Films' });
+    for (const [index, track] of tracks.slice(0, 16).entries()) {
+      await post(`/api/admin/catalogue/tracks/${track.id}/themes`, { themeIds: [(index < 8 ? eighties : movies)!.id] }, 'put');
+    }
+
+    await run.open();
+    await run.startButton.click();
+
+    // L'écran de choix : les deux thèmes offerts et « Surprise », un seul coché ; « Lancer » est le clic qui lance le son.
+    await expect(page.getByTestId('run-theme')).toBeVisible();
+    await expect(page.locator('[data-theme-id]')).toHaveCount(3);
+    await expect(page.locator('[data-theme-id][aria-checked="true"]')).toHaveCount(1);
+    const tile = page.locator('[data-theme-id]:not([data-theme-id="surprise"])').first();
+    const chosenName = (await tile.locator('span.font-bold').innerText()).trim();
+    await tile.click();
+    await expect(tile).toHaveAttribute('aria-checked', 'true');
+    await page.getByTestId('run-theme-start').click();
+    await run.answerInput.waitFor({ state: 'visible' });
+
+    // Le thème choisi est figé dans les règles de la playlist, sur sa première manche à thème (la 3e).
+    const link = await page.request.get(`/api/runs/challenges/${await api.latestRunCode()}`);
+    expect(((await link.json()) as { themes: { round: number; name: string }[] }).themes).toEqual([{ round: 3, name: chosenName }]);
+  });
+
+  test("« Mélomane » avant la dernière manche : le boss annonce une écoute plus courte, et la partie se gagne jusqu'au bout", async ({ page, api }) => {
     test.slow();
+    await api.setRunSetting('Runs:Cards', '["hint"]');
     const run = new RunPage(page);
     await run.loginAsAdmin();
     await run.launch();
     const tracks = await api.latestRunTracks();
-    const difficulty = page.getByTestId('run-difficulty');
 
     await run.winRound(tracks, 1);
-    // Avant la manche 3 : « Risquée » ne change pas l'écoute, rien n'annonce de boss.
+    // Avant la manche 3 : « Mélomane » ne change pas l'écoute, rien n'annonce de boss.
     await inSequence(tracks.filter(t => t.round === 2), track => run.answerRight(track));
-    await run.palierNextButton.click();
-    await expect(difficulty).toBeVisible();
+    await expect(run.palier.getByTestId('run-difficulty-safe')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByTestId('run-difficulty-boss')).toHaveCount(0);
-    await page.getByTestId('run-difficulty-safe').click();
+    await run.palier.getByTestId('run-difficulty-safe').click();
     await expect(run.roundTitle).toHaveText('Manche 3');
 
-    // Avant la dernière manche : seule la colonne « Risquée » annonce l'écoute du boss (5 s au lieu de 10 s).
+    // Avant la dernière manche : seule la colonne « Mélomane » annonce l'écoute du boss (5 s au lieu de 10 s).
     await inSequence(tracks.filter(t => t.round === 3), track => run.answerRight(track));
-    await run.palierNextButton.click();
     await expect(page.getByTestId('run-difficulty-boss')).toHaveCount(1);
-    await expect(page.getByTestId('run-difficulty-risky').getByTestId('run-difficulty-boss')).toContainText('5');
+    await expect(page.getByTestId('run-difficulty-boss')).toContainText('5');
     await page.getByTestId('run-difficulty-risky').click();
     await expect(run.roundTitle).toHaveText('Manche 4');
 
@@ -175,15 +212,13 @@ test.describe('Mode Platines', () => {
   });
 
   test("une playlist sans coups de pouce ni choix de difficulté se joue comme au proto 1 : ni palier, ni « Difficulté ? »", async ({ page, api }) => {
-    // Comme une playlist tirée avant le proto 2 : aucune carte, une seule difficulté (« Sûre »), donc rien à choisir.
+    // Comme une playlist tirée avant le proto 2 : aucune carte, une seule difficulté (« Normal »), donc rien à choisir.
     await api.setRunSetting('Runs:CardsEnabled', 'false');
     await api.setRunSetting('Runs:Difficulties', '[{"difficulty":"safe","pointsFactor":1,"objectiveFactor":1}]');
     const run = new RunPage(page);
     await run.loginAsAdmin();
     await run.launch();
     const tracks = await api.latestRunTracks();
-    await expect(run.handCards).toHaveCount(0);
-
     await inSequence(tracks.filter(t => t.round === 1), track => run.answerRight(track));
 
     // La manche passée enchaîne directement sur la suivante : le premier morceau de la manche 2 se joue.
@@ -193,28 +228,38 @@ test.describe('Mode Platines', () => {
     await expect(run.answerInput).toBeVisible();
   });
 
-  test('une carte prise au palier agit toute seule sur la manche suivante, sans clic', async ({ page, api }) => {
-    await api.setRunSetting('Runs:Cards', '["year"]');
+  test('une manche passée bien au-delà de l\'objectif donne une carte, qui agit toute seule sur la manche suivante', async ({ page, api }) => {
+    await api.setRunSetting('Runs:Cards', '["hint"]');
     const run = new RunPage(page);
     await run.loginAsAdmin();
     await run.launch();
     const tracks = await api.latestRunTracks();
 
-    // Première manche sans aucune carte : rien en main, rien à jouer.
-    await expect(run.handCards).toHaveCount(0);
+    // Première manche sans aucune carte : rien à afficher sur le morceau.
     await expect(run.cardEffects).toHaveCount(0);
     await inSequence(tracks.filter(t => t.round === 1), track => run.answerRight(track));
 
-    // Au palier : on prend l'Année, puis « Sûre ».
+    // Au palier : la carte gagnée est annoncée, sans rien à toucher ; un toucher sur « Normal » lance la manche.
     await expect(run.palier).toBeVisible();
-    await page.getByTestId('run-offer-year').click();
-    await run.palierNextButton.click();
-    await page.getByTestId('run-difficulty-safe').click();
+    await expect(page.getByTestId('run-palier-earned')).toContainText('Indice');
+    await run.palier.getByTestId('run-difficulty-safe').click();
 
-    // L'année s'affiche d'elle-même sur le morceau ; la carte n'est pas un bouton.
+    // L'indice s'affiche de lui-même sur le morceau (l'année) ; la carte n'est pas un bouton.
     await expect(run.roundTitle).toHaveText('Manche 2');
-    await expect(run.cardEffects.and(page.locator('[data-card="year"]'))).toBeVisible();
-    await expect(run.handCards).toHaveCount(0);
+    await expect(run.cardEffects.and(page.locator('[data-card="hint"]'))).toBeVisible();
+  });
+
+  test('« Changer de morceau » : un seul échange par manche, rendu à la manche suivante', async ({ page }) => {
+    const run = new RunPage(page);
+    await run.loginAsAdmin();
+    await run.launch();
+
+    await expect(run.swapLink).toHaveText('Changer de morceau');
+    await run.swapLink.click();
+
+    // Le morceau de réserve prend la place : l'échange a servi, le lien disparaît jusqu'à la manche suivante.
+    await expect(run.swapLink).toHaveCount(0);
+    await expect(run.answerInput).toBeVisible();
   });
 
   test('le chrono à zéro envoie ce qui est tapé, sans confirmation', async ({ page }) => {
@@ -287,6 +332,8 @@ test.describe('Mode Platines', () => {
     await author.loginAsAdmin();
     await author.launch();
     await author.loseFirstRound();
+    // Sa propre playlist : pas de duel.
+    await expect(page.getByTestId('run-duel')).toHaveCount(0);
     const code = await api.latestRunCode();
 
     // Un ami, dans son propre navigateur, sans identité ni accès : le lien reçu, ses règles, « Jouer ».
@@ -316,12 +363,25 @@ test.describe('Mode Platines', () => {
       await expect(friendPage.getByTestId('run-ghost-gap')).toHaveText('À égalité');
     });
 
+    // Le duel ouvre l'écran de fin (les deux à 0 : égalité), sur un ton neutre.
+    await expect(friendPage.getByTestId('run-duel')).toHaveText('Égalité avec AdminE2E');
+
     // Sans accès, pas de « Rejouer » : le jeu du jour à la place.
     await expect(friend.playAgainButton).toHaveCount(0);
     await expect(friend.toDailyLink).toBeVisible();
 
     // La comparaison : les deux joueurs, « Toi » sur sa propre ligne, le pseudo de l'auteur en surtitre.
     await friend.compareButton.click();
+
+    // Un invité sans pseudo le donne avant de voir la comparaison : obligatoire (pas de « Passer »), jamais celui d'un compte (sans tenir compte de la casse).
+    await expect(friend.pseudoScreen).toBeVisible();
+    await expect(friend.pseudoCancel).toHaveCount(0);
+    await friend.pseudoInput.fill('admine2e');
+    await friend.pseudoSave.click();
+    await expect(friend.pseudoError).toContainText('déjà pris');
+    await friend.pseudoInput.fill('Léa');
+    await friend.pseudoSave.click();
+
     await expect(friend.comparisonTitle).toHaveText('2 joueurs de cette playlist');
     await expect(friend.comparisonEyebrow).toHaveText('Playlist de AdminE2E');
     await expect(friend.comparisonRows).toHaveCount(2);
@@ -334,10 +394,20 @@ test.describe('Mode Platines', () => {
     await expect(friend.comparisonTitle).toHaveText('2 joueurs de cette playlist');
     await expect(friend.linkScreen).toHaveCount(0);
 
+    // Le pseudo est retrouvé à la visite suivante (rien à ressaisir) ; le crayon le change, et l'auteur voit le nouveau.
+    await expect(friend.pseudoScreen).toHaveCount(0);
+    await friend.pseudoEdit.click();
+    await expect(friend.pseudoInput).toHaveValue('Léa');
+    await friend.pseudoInput.fill('Léo');
+    await friend.pseudoSave.click();
+    await expect(friend.comparisonTitle).toHaveText('2 joueurs de cette playlist');
+
     // L'auteur voit l'invité de l'ami dans le même tableau.
     await page.goto(`/runs/${code}`);
     await expect(author.comparisonRows).toHaveCount(2);
-    await expect(author.comparison.getByText('Invité', { exact: true })).toBeVisible();
+    await expect(author.comparison.getByText('Léo', { exact: true })).toBeVisible();
+    // Le compte garde son pseudo de compte : son crayon existe aussi, il mène à son profil.
+    await expect(author.comparison.getByTestId('run-comparison-edit-pseudo')).toBeVisible();
 
     // Un lien inconnu le dit, sans proposer de réessayer.
     await friendPage.goto('/runs/ZZZZZZ');

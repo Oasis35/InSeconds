@@ -32,6 +32,22 @@ public sealed class EfPlayerDirectory(InSecondsDbContext db) : IPlayerDirectory
             .ToDictionaryAsync(a => a.PlayerId, a => a.Pseudo, ct);
     }
 
+    public async Task<IReadOnlyDictionary<Guid, string>> GetDisplayNamesAsync(IReadOnlyCollection<Guid> playerIds, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(playerIds);
+        if (playerIds.Count == 0)
+            return new Dictionary<Guid, string>();
+
+        var ids = playerIds.Distinct().ToList();
+        var rows = await (from p in db.Set<Player>().AsNoTracking()
+                          where ids.Contains(p.Id)
+                          join a in db.Set<Account>().AsNoTracking() on p.Id equals a.PlayerId into accounts
+                          from account in accounts.DefaultIfEmpty()
+                          select new { p.Id, Name = account == null ? p.GuestPseudo : account.Pseudo })
+            .ToListAsync(ct);
+        return rows.Where(r => r.Name is not null).ToDictionary(r => r.Id, r => r.Name!);
+    }
+
     public async Task<PlayerBreakdown> GetBreakdownAsync(DateTimeOffset now, CancellationToken ct)
     {
         var since7 = now.AddDays(-7);

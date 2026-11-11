@@ -55,6 +55,15 @@ describe('SessionLoader', () => {
     expect(session.isLinked()).toBe(true);
   });
 
+  it("le pseudo d'un invité est enregistré puis l'identité relue", async () => {
+    setup({ getMe: vi.fn(async () => ({ ...linkedPlayer, isGuest: true, pseudo: 'Léa' })) });
+
+    await loader.setGuestPseudo('Léa');
+
+    expect(api.setGuestPseudo).toHaveBeenCalledWith('Léa');
+    expect(session.player()?.pseudo).toBe('Léa');
+  });
+
   it('vide la session quand l\'identité a disparu (cookie révoqué)', async () => {
     setup({ getMe: vi.fn(async () => linkedPlayer) });
     await loader.ensureLoaded();

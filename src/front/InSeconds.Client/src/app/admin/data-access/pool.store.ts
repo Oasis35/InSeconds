@@ -7,7 +7,7 @@ import {
   HARDEST_FIRST, NO_FILTERS, PoolFilters, PoolSort, PreviewFilter, SortColumn,
   StatusFilter, clampPage, filterTracks, nextSort, pageOf, sortTracks, statusOf, totalPages,
 } from '../domain/pool-filters';
-import { PoolTrack, isUsed, trackLabel } from '../domain/pool-track';
+import { PoolTheme, PoolTrack, isUsed, trackLabel } from '../domain/pool-track';
 import { POOL_VIEW } from '../domain/pool-views';
 import { CooldownApi } from './cooldown.api';
 import { AdminCounts } from './admin-counts';
@@ -48,6 +48,8 @@ interface PoolState {
    */
   cooldown: CooldownSettings | null;
   cooldownSave: CooldownSaveStatus;
+  /** La liste des thèmes de l'admin ; vide tant qu'elle n'est pas lue. */
+  themes: readonly PoolTheme[];
 }
 
 /**
@@ -61,7 +63,7 @@ export const PoolStore = signalStore(
   withRequestStatus(),
   withState<PoolState>({
     tracks: [], view: POOL_VIEW, filters: NO_FILTERS, sort: null, requestedPage: 0, selectedIds: [], togglingIds: [], toggleError: null,
-    cooldown: null, cooldownSave: 'idle',
+    cooldown: null, cooldownSave: 'idle', themes: [],
   }),
   withComputed(({ tracks, view, filters, sort, requestedPage, selectedIds }) => {
     const filtered = computed(() => filterTracks(tracks(), filters(), view()));
@@ -118,10 +120,21 @@ export const PoolStore = signalStore(
       }
     }
 
+    /** Les thèmes sont relus avec la liste (leur nombre de morceaux change avec elle) ; un échec ne bloque pas le pool. */
+    async function loadThemes(mine: number): Promise<void> {
+      try {
+        const themes = await api.listThemes();
+        if (mine === latestLoad) patchState(store, { themes });
+      } catch {
+        // la liste reste telle quelle
+      }
+    }
+
     async function load(): Promise<void> {
       const mine = ++latestLoad;
       patchState(store, setPending());
       const settingRead = loadCooldown(mine);
+      const themesRead = loadThemes(mine);
       try {
         const tracks = await api.listTracks();
         if (mine !== latestLoad) return;
@@ -137,6 +150,7 @@ export const PoolStore = signalStore(
         if (mine === latestLoad) patchState(store, setError(appError));
       }
       await settingRead;
+      await themesRead;
     }
 
     /** Supprime un morceau ; déjà supprimé (une première tentative a abouti avant l'échec d'un autre) : rien à refaire. */
@@ -157,6 +171,18 @@ export const PoolStore = signalStore(
       }
       await load();
       return null;
+    }
+
+    /** Comme `mutate`, pour une action en plusieurs appels : une partie a pu aboutir avant l'échec, le pool est donc relu dans tous les cas. */
+    async function mutateAndReload(action: () => Promise<void>): Promise<AppError | null> {
+      let error: AppError | null = null;
+      try {
+        await action();
+      } catch (error_) {
+        error = await toAppError(error_);
+      }
+      await load();
+      return error;
     }
 
     return {
@@ -205,6 +231,37 @@ export const PoolStore = signalStore(
 
       // --- actions ---
       add: (deezerTrackId: number) => mutate(() => api.addTrack(deezerTrackId)),
+      addTheme: (name: string) => mutate(() => api.addTheme(name.trim())),
+      renameTheme: (id: number, name: string) => mutate(() => api.renameTheme(id, name.trim())),
+      setThemeIcon: (id: number, icon: string | null) => mutate(() => api.setThemeIcon(id, icon)),
+      deleteTheme: (id: number) => mutate(() => api.deleteTheme(id)),
+      setTrackThemes: (id: number, themeIds: readonly number[]) => mutate(() => api.setTrackThemes(id, themeIds)),
+      /** Met ces morceaux du pool dans le thème (un par un, ceux qui l'ont déjà sont laissés), puis relit. */
+      addTracksToTheme: (themeId: number, trackIds: readonly number[]) => mutateAndReload(async () => {
+        const pending = trackIds.flatMap(id => {
+          const track = store.tracks().find(t => t.id === id);
+          return track && !track.themeIds.includes(themeId) ? [track] : [];
+        });
+        // Un par un, dans l'ordre : le serveur n'est pas chargé de plusieurs écritures à la fois sur le même thème.
+        await pending.reduce(async (previous, track) => {
+          await previous;
+          await api.setTrackThemes(track.id, [...track.themeIds, themeId]);
+        }, Promise.resolve());
+      }),
+      /** Retire le morceau du thème : il reste dans le pool et garde ses autres thèmes. */
+      removeTrackFromTheme: (themeId: number, trackId: number) => mutate(async () => {
+        const track = store.tracks().find(t => t.id === trackId);
+        if (track?.themeIds.includes(themeId)) await api.setTrackThemes(trackId, track.themeIds.filter(x => x !== themeId));
+      }),
+      /** Ajoute au pool le morceau de Deezer s'il n'y est pas encore, puis le met dans le thème. */
+      addDeezerTrackToTheme: (themeId: number, deezerTrackId: number) => mutateAndReload(async () => {
+        let track = store.tracks().find(t => t.deezerTrackId === deezerTrackId);
+        if (!track) {
+          await api.addTrack(deezerTrackId);
+          track = (await api.listTracks()).find(t => t.deezerTrackId === deezerTrackId);
+        }
+        if (track && !track.themeIds.includes(themeId)) await api.setTrackThemes(track.id, [...track.themeIds, themeId]);
+      }),
       rename: (id: number, artist: string, title: string, genre?: string) =>
         mutate(() => api.renameTrack(id, artist.trim(), title.trim(), genre?.trim())),
 

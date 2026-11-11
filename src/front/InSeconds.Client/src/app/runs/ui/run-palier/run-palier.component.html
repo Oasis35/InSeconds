@@ -1,14 +1,22 @@
 <section class="flex-1 flex flex-col" data-testid="run-palier-screen">
-  <!-- Le disque gagné, grand, son nom, et l'étagère des disques de l'échelle (ceux qui restent à gagner en pointillé). -->
-  <p class="text-center text-[15px] mt-2" style="color:var(--text-light)">{{ 'runs.palier.round' | translate: { round: passed().round } }}</p>
-  <div #disc class="flex justify-center mt-3">
-    <app-run-disc [disc]="passed().disc.key" [size]="88" [shine]="false" />
+  <!-- Le disque gagné, son nom et le score de la manche sur une seule ligne ; l'étagère des disques (les suivants en pointillé) dessous. -->
+  <div class="flex items-center gap-3.5 mt-2">
+    <div #disc class="flex-none">
+      <app-run-disc [disc]="passed().disc.key" [size]="56" [shine]="false" />
+    </div>
+    <div class="flex-1 min-w-0">
+      <p class="text-[13px] leading-tight" style="color:var(--text-light)">{{ 'runs.palier.round' | translate: { round: passed().round } }}</p>
+      <h1 class="text-[22px] font-extrabold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="run-palier-disc">
+        {{ passed().disc.key | translate }}
+      </h1>
+    </div>
+    <div class="text-right">
+      <span #score class="block text-[30px] font-extrabold leading-none" style="font-family:var(--font-score);color:var(--text-hi)"
+        data-testid="run-palier-score">{{ passed().score }}</span>
+      <span class="text-[12px]" style="color:var(--text-muted)">{{ 'runs.palier.points' | translate }}</span>
+    </div>
   </div>
-  <h1 class="text-center text-[28px] font-extrabold mt-3 leading-tight" style="font-family:var(--font-display);color:var(--text-hi)"
-    data-testid="run-palier-disc">
-    {{ passed().disc.key | translate }}
-  </h1>
-  <ul class="flex justify-center gap-2.5 mt-3" [attr.aria-label]="'runs.palier.shelf' | translate">
+  <ul class="flex justify-center gap-2.5 mt-2" [attr.aria-label]="'runs.palier.shelf' | translate">
     @for (won of shelf(); track $index) {
       <li class="grid place-items-center rounded-full" style="width:22px;height:22px"
         [style.border]="won ? null : '1.5px dashed var(--border-strong)'">
@@ -19,88 +27,68 @@
     }
   </ul>
 
-  <!-- Le score de la manche, sa jauge et le repère de l'objectif franchi. -->
-  <div class="mt-5">
-    <div class="flex items-baseline justify-between">
-      <span #score class="text-[34px] font-extrabold leading-none" style="font-family:var(--font-score);color:var(--text-hi)"
-        data-testid="run-palier-score">{{ passed().score }}</span>
-      <span class="text-[13px]" style="color:var(--text-muted)">{{ 'runs.palier.points' | translate }}</span>
-    </div>
+  <!-- La jauge de la manche et le repère de l'objectif franchi. -->
+  <div class="mt-3">
     <span class="sr-only">{{ 'runs.palier.scoreLabel' | translate: { score: passed().score, objective: passed().objective } }}</span>
-    <div class="relative mt-2.5 rounded-full" style="height:8px;background:var(--bg-inactive)" aria-hidden="true">
+    <div class="relative rounded-full" style="height:8px;background:var(--bg-inactive)" aria-hidden="true">
       <div #fill class="absolute inset-0 rounded-full" style="background:var(--color-success)" data-testid="run-palier-fill"></div>
       <div class="absolute" style="top:-5px;width:2px;height:18px;background:var(--text-hi)" [style.left.%]="mark() * 100"></div>
     </div>
   </div>
 
-  <hr class="my-4" style="border:0;border-top:1px solid var(--border-subtle)" />
-
-  <!-- L'objectif de la manche suivante et le disque qu'elle fait gagner. -->
-  <p class="text-[15px]" style="color:var(--text-light)">{{ 'runs.palier.nextRound' | translate: { round: nextRound() } }}</p>
-  <p class="flex items-center gap-2.5 mt-1" data-testid="run-palier-next">
-    <span class="text-[38px] font-extrabold leading-none" style="font-family:var(--font-score);color:var(--color-accent)">{{ nextObjective() }}</span>
-    <span class="text-[15px]" style="color:var(--text-light)">{{ 'runs.palier.pointsFor' | translate }}</span>
-    @if (nextDisc(); as disc) {
-      <app-run-disc [disc]="disc" [size]="30" [shine]="false" />
-      <span class="sr-only">{{ disc | translate }}</span>
-    }
-  </p>
-
-  <!-- L'offre : trois cartes à toucher (une à prendre), ou « Passer ». -->
-  @if (offer(); as offer) {
-    <div class="mt-4">
-      <div class="flex items-center justify-between">
-        <h2 class="text-[15px]" style="color:var(--text-light)">{{ 'runs.palier.offer' | translate }}</h2>
-        <!-- Un lien souligné (maquette), avec une zone de toucher de 44 px. -->
-        <button type="button" class="inline-flex items-center min-h-11 px-2 -mr-2 text-[14px] underline underline-offset-4 touch-manipulation"
-          style="color:var(--text-muted)" [disabled]="busy()" (click)="pass.emit()" data-testid="run-palier-pass">{{ 'runs.palier.pass' | translate }}</button>
-      </div>
-      <div #cards class="grid grid-cols-3 gap-2.5 mt-1.5">
-        @for (card of offer.cards; track card) {
-          <button type="button" data-card class="offer-card text-left p-2.5 flex flex-col justify-between touch-manipulation"
-            style="min-height:84px;background:var(--bg-surface);border-radius:var(--radius-card)"
-            [style.border]="pending() === card ? '1.5px solid var(--color-accent)' : '1px solid var(--border-neutral)'"
-            [attr.aria-pressed]="pending() === card" [disabled]="busy()" (click)="pick.emit(card)" [attr.data-testid]="'run-offer-' + card">
-            <span class="text-[22px] font-bold leading-none" style="font-family:var(--font-clock)" [style.color]="color(card).color" aria-hidden="true">{{ glyph(card, values()) }}</span>
-            <span class="text-[14px] font-semibold leading-tight mt-3 break-words" style="color:var(--text-hi)">{{ 'runs.cards.' + card + '.name' | translate }}</span>
-          </button>
-        }
-      </div>
+  <!-- La carte gagnée : elle agira sur la manche suivante, sans rien à toucher. -->
+  @if (earnedCard(); as card) {
+    <div #earned class="mt-3 flex items-center gap-3 px-3.5 py-2" data-testid="run-palier-earned"
+      [style.border-color]="color(card).color" [style.background]="'rgb(' + color(card).rgb + ' / 0.08)'"
+      style="border:1px solid;border-radius:var(--radius-card)">
+      <span class="text-[22px] font-bold leading-none" style="font-family:var(--font-clock)" [style.color]="color(card).color" aria-hidden="true">{{ glyph(card, values()) }}</span>
+      <span class="flex flex-col">
+        <span class="text-[13px]" style="color:var(--text-muted)">{{ 'runs.palier.earned' | translate }}</span>
+        <span class="text-[16px] font-semibold leading-tight" style="color:var(--text-hi)">{{ 'runs.cards.' + card + '.name' | translate }}</span>
+      </span>
     </div>
   }
 
-  <!-- La main : deux emplacements ; main pleine avec une carte en attente, toucher une carte de la main l'échange. -->
-  <div class="mt-4">
-    <div>
-      <h2 class="text-[14px] mb-2" style="color:var(--text-muted)">{{ 'runs.palier.hand' | translate }}</h2>
-      <ul class="grid grid-cols-2 gap-2.5" data-testid="run-hand">
-        @for (slot of slots(); track $index) {
-          <li>
-            @if (slot) {
-              <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left touch-manipulation"
-                style="min-height:44px;background:var(--bg-surface);border-radius:var(--radius-button)"
-                [style.border]="pending() ? '1.5px dashed var(--color-accent)' : '1px solid var(--border-neutral)'"
-                [disabled]="!pending() || busy()" (click)="dropCard.emit(slot.slot)" [attr.data-testid]="'run-hand-' + slot.card">
-                <span class="text-[13px] font-bold" style="font-family:var(--font-clock)" [style.color]="color(slot.card).color" aria-hidden="true">{{ glyph(slot.card, values()) }}</span>
-                <span class="text-[14px] font-semibold leading-tight" style="color:var(--text-hi)">{{ 'runs.cards.' + slot.card + '.name' | translate }}</span>
-              </button>
-            } @else {
-              <div style="height:44px;border:1.5px dashed var(--border-strong);border-radius:var(--radius-button)"><span class="sr-only">{{ 'runs.palier.emptySlot' | translate }}</span></div>
-            }
-          </li>
-        }
-      </ul>
-    </div>
-    @if (pending() && full()) {
-      <p class="text-[13px] mt-2 text-right" style="color:var(--color-accent)" data-testid="run-hand-drop-hint">{{ 'runs.palier.dropHint' | translate }}</p>
-    }
-  </div>
+  <div class="my-2"></div>
 
-  <!-- « Suite » reste toujours à portée du pouce, même sur un petit téléphone : collé en bas de l'écran pendant le défilement. -->
-  <div class="flex-1 min-h-4"></div>
-  <div class="sticky bottom-0 -mx-5 px-5 pt-3 pb-5 -mb-5" style="background:linear-gradient(to bottom, transparent, var(--bg-page) 30%)">
-    <button appButton type="button" size="lg" [block]="true" [disabled]="busy()" (click)="next.emit()" data-testid="run-palier-next-button">
-      {{ 'runs.palier.next' | translate }}
-    </button>
-  </div>
+  <!-- Le thème de la manche suivante, annoncé avant de jouer. -->
+  @if (theme(); as name) {
+    <div class="mb-3 flex items-center gap-3 px-3.5 py-2.5" data-testid="run-palier-theme"
+      style="border:1px solid var(--color-accent);background:rgb(var(--rgb-accent) / 0.08);border-radius:var(--radius-card)">
+      <span class="text-[22px] leading-none" style="color:var(--color-accent)" aria-hidden="true">&#9835;</span>
+      <span class="flex flex-col">
+        <span class="text-xs" style="color:var(--text-muted)">{{ 'runs.palier.theme' | translate: { round: nextRound() } }}</span>
+        <span class="text-[18px] font-extrabold leading-tight" style="color:var(--text-hi)">{{ name }}</span>
+      </span>
+    </div>
+  }
+
+  <!-- La manche suivante : ses trois difficultés (le choix est ici, un seul écran), sinon son objectif et le disque qu'elle fait gagner. -->
+  @if (options(); as options) {
+    <p class="text-[15px]" style="color:var(--text-light)">{{ 'runs.palier.nextRound' | translate: { round: nextRound() } }}</p>
+    <p class="text-[22px] font-extrabold leading-tight mb-3" style="font-family:var(--font-display);color:var(--color-accent)">{{ 'runs.difficulty.title' | translate }}</p>
+    <app-run-difficulty-columns [options]="options" [tracksPerRound]="tracksPerRound()" [listenSeconds]="listenSeconds()"
+      [selected]="effective()" (selectedChange)="selected.set($event)" (picked)="choose.emit($event)" [busy]="busy()" />
+  } @else {
+    <p class="text-[15px]" style="color:var(--text-light)">{{ 'runs.palier.nextRound' | translate: { round: nextRound() } }}</p>
+    <p class="flex items-center gap-2.5 mt-1" data-testid="run-palier-next">
+      <span class="text-[38px] font-extrabold leading-none" style="font-family:var(--font-score);color:var(--color-accent)">{{ nextObjective() }}</span>
+      <span class="text-[15px]" style="color:var(--text-light)">{{ 'runs.palier.pointsFor' | translate }}</span>
+      @if (nextDisc(); as disc) {
+        <app-run-disc [disc]="disc" [size]="30" [shine]="false" />
+        <span class="sr-only">{{ disc | translate }}</span>
+      }
+    </p>
+  }
+
+
+  <!-- Avec les difficultés, un toucher sur une colonne lance la manche : pas de bouton. Sinon « Suite » reste à portée du pouce. -->
+  @if (!options()) {
+    <div class="flex-1 min-h-4"></div>
+    <div class="sticky bottom-0 -mx-5 px-5 pt-3 pb-5 -mb-5" style="background:linear-gradient(to bottom, transparent, var(--bg-page) 30%)">
+      <button appButton type="button" size="lg" [block]="true" [disabled]="busy()" (click)="advance()" data-testid="run-palier-next-button">
+        {{ 'runs.palier.next' | translate }}
+      </button>
+    </div>
+  }
 </section>

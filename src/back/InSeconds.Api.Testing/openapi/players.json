@@ -11,17 +11,16 @@
           "Players"
         ],
         "operationId": "createGuest",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GuestResponse"
-                }
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGuest"
               }
             }
-          },
+          }
+        },
+        "responses": {
           "429": {
             "description": "Too Many Requests",
             "content": {
@@ -31,13 +30,14 @@
                 }
               }
             }
-          }
-        },
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateGuest"
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestResponse"
+                }
               }
             }
           }
@@ -64,6 +64,16 @@
         ],
         "operationId": "listDevices",
         "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -73,16 +83,6 @@
                   "items": {
                     "$ref": "#/components/schemas/DeviceResponse"
                   }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -108,19 +108,6 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -150,6 +137,19 @@
                 }
               }
             }
+          },
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -161,16 +161,6 @@
         ],
         "operationId": "revokeOtherDevices",
         "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RevokedDevicesResponse"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -187,6 +177,16 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevokedDevicesResponse"
                 }
               }
             }
@@ -217,43 +217,23 @@
         }
       }
     },
-    "/api/players/me/pseudo": {
+    "/api/players/me/guest-pseudo": {
       "put": {
         "tags": [
           "Players"
         ],
-        "operationId": "updatePseudo",
+        "operationId": "setGuestPseudo",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdatePseudo"
+                "$ref": "#/components/schemas/SetGuestPseudo"
               }
             }
           },
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PseudoResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -280,6 +260,182 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PseudoResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/players/me/export": {
+      "get": {
+        "tags": [
+          "Players"
+        ],
+        "operationId": "exportMyData",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerDataExport"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/players/me/delete": {
+      "post": {
+        "tags": [
+          "Players"
+        ],
+        "operationId": "deleteMyAccount",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteMyAccount"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/players/me/pseudo": {
+      "put": {
+        "tags": [
+          "Players"
+        ],
+        "operationId": "updatePseudo",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePseudo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PseudoResponse"
                 }
               }
             }
@@ -304,19 +460,6 @@
           "required": true
         },
         "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -353,6 +496,19 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
                 }
               }
             }
@@ -377,12 +533,12 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "409": {
+            "description": "Conflict",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EmailChangedResponse"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -397,12 +553,12 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
+          "200": {
+            "description": "OK",
             "content": {
-              "application/problem+json": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
+                  "$ref": "#/components/schemas/EmailChangedResponse"
                 }
               }
             }
@@ -427,6 +583,16 @@
           "required": true
         },
         "responses": {
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "204": {
             "description": "No Content"
           },
@@ -436,16 +602,6 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/HttpValidationProblemDetails"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -470,26 +626,6 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VerifyMagicLinkResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
-                }
-              }
-            }
-          },
           "403": {
             "description": "Forbidden",
             "content": {
@@ -509,62 +645,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/api/players/me/export": {
-      "get": {
-        "tags": [
-          "Players"
-        ],
-        "operationId": "exportMyData",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PlayerDataExport"
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "No Content"
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/players/me/delete": {
-      "post": {
-        "tags": [
-          "Players"
-        ],
-        "operationId": "deleteMyAccount",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DeleteMyAccount"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "No Content"
           },
           "400": {
             "description": "Bad Request",
@@ -576,22 +656,12 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorized",
+          "200": {
+            "description": "OK",
             "content": {
-              "application/problem+json": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
+                  "$ref": "#/components/schemas/VerifyMagicLinkResponse"
                 }
               }
             }
@@ -602,6 +672,33 @@
   },
   "components": {
     "schemas": {
+      "AccountExport": {
+        "required": [
+          "email",
+          "pseudo",
+          "linkedAt",
+          "isAdmin"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "pseudo": {
+            "type": "string"
+          },
+          "linkedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "isAdmin": {
+            "type": "boolean"
+          }
+        }
+      },
       "ConfirmEmailChange": {
         "required": [
           "token"
@@ -610,6 +707,60 @@
         "properties": {
           "token": {
             "type": "string"
+          }
+        }
+      },
+      "CreateGuest": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "DeleteMyAccount": {
+        "required": [
+          "pseudo"
+        ],
+        "type": "object",
+        "properties": {
+          "pseudo": {
+            "type": "string"
+          }
+        }
+      },
+      "DeviceExport": {
+        "required": [
+          "label",
+          "createdAt",
+          "lastSeenAt",
+          "revokedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastSeenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -708,6 +859,72 @@
                 "type": "string"
               }
             }
+          }
+        }
+      },
+      "PlayerDataExport": {
+        "required": [
+          "exportedAt",
+          "playerId",
+          "createdAt",
+          "lastSeenAt",
+          "acquisitionSource",
+          "guestPseudo",
+          "account",
+          "devices",
+          "modules"
+        ],
+        "type": "object",
+        "properties": {
+          "exportedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "playerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastSeenAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "acquisitionSource": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "guestPseudo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "account": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AccountExport"
+              }
+            ]
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeviceExport"
+            }
+          },
+          "modules": {
+            "type": "object"
           }
         }
       },
@@ -823,6 +1040,17 @@
           }
         }
       },
+      "SetGuestPseudo": {
+        "required": [
+          "pseudo"
+        ],
+        "type": "object",
+        "properties": {
+          "pseudo": {
+            "type": "string"
+          }
+        }
+      },
       "UpdatePseudo": {
         "required": [
           "pseudo"
@@ -867,146 +1095,6 @@
             ]
           }
         }
-      },
-      "AccountExport": {
-        "required": [
-          "email",
-          "pseudo",
-          "linkedAt",
-          "isAdmin"
-        ],
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string"
-          },
-          "pseudo": {
-            "type": "string"
-          },
-          "linkedAt": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          },
-          "isAdmin": {
-            "type": "boolean"
-          }
-        }
-      },
-      "DeleteMyAccount": {
-        "required": [
-          "pseudo"
-        ],
-        "type": "object",
-        "properties": {
-          "pseudo": {
-            "type": "string"
-          }
-        }
-      },
-      "DeviceExport": {
-        "required": [
-          "label",
-          "createdAt",
-          "lastSeenAt",
-          "revokedAt"
-        ],
-        "type": "object",
-        "properties": {
-          "label": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "lastSeenAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "revokedAt": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          }
-        }
-      },
-      "PlayerDataExport": {
-        "required": [
-          "exportedAt",
-          "playerId",
-          "createdAt",
-          "lastSeenAt",
-          "acquisitionSource",
-          "account",
-          "devices",
-          "modules"
-        ],
-        "type": "object",
-        "properties": {
-          "exportedAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "playerId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "lastSeenAt": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          },
-          "account": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/AccountExport"
-              }
-            ]
-          },
-          "devices": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DeviceExport"
-            }
-          },
-          "modules": {
-            "type": "object"
-          },
-          "acquisitionSource": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
-      },
-      "CreateGuest": {
-        "type": "object",
-        "properties": {
-          "source": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
       }
     }
   },
@@ -1028,6 +1116,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Players.Application.GetMeEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Players.Application.SetGuestPseudoEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Players.Application.ExportMyDataEndpoint"

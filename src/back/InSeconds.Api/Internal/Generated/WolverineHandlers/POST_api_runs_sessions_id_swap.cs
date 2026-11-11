@@ -18,12 +18,12 @@ using Wolverine.Runtime;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: POST_api_runs_sessions_id_cards_slot_play
+    // START: POST_api_runs_sessions_id_swap
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class POST_api_runs_sessions_id_cards_slot_play : Wolverine.Http.HttpHandler
+    public sealed class POST_api_runs_sessions_id_swap : Wolverine.Http.HttpHandler
     {
         private readonly Wolverine.Http.WolverineHttpOptions _wolverineHttpOptions;
-        private readonly FluentValidation.IValidator<InSeconds.Api.Modules.Runs.Application.PlayRunCard> _validatorOfPlayRunCard;
+        private readonly FluentValidation.IValidator<InSeconds.Api.Modules.Runs.Application.SwapRunTrack> _validatorOfSwapRunTrack;
         private readonly InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle _seededShuffle1;
         private readonly InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle _seededShuffle2;
         private readonly InSeconds.Api.Modules.Runs.Application.RunsMetrics _runsMetrics;
@@ -32,18 +32,18 @@ namespace Internal.Generated.WolverineHandlers
         private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor;
         private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _serviceScopeFactory;
         private readonly Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms> _loggerOfLoggedTrackWaveforms;
-        private readonly Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Runs.Application.PlayRunCard> _loggerForMessage;
         private readonly Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Runs.Application.RunPlayer> _loggerOfRunPlayer;
+        private readonly Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Runs.Application.SwapRunTrack> _loggerForMessage;
         private readonly Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> _optionsMonitorOfCatalogueOptions;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly System.TimeProvider _timeProvider;
-        private readonly Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Runs.Application.PlayRunCard> _problemDetailSourceOfPlayRunCard;
+        private readonly Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Runs.Application.SwapRunTrack> _problemDetailSourceOfSwapRunTrack;
         private readonly Wolverine.Runtime.IWolverineRuntime _wolverineRuntime;
 
-        public POST_api_runs_sessions_id_cards_slot_play(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, FluentValidation.IValidator<InSeconds.Api.Modules.Runs.Application.PlayRunCard> validatorOfPlayRunCard, InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle __seededShuffle1, InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle __seededShuffle2, InSeconds.Api.Modules.Runs.Application.RunsMetrics runsMetrics, InSeconds.Api.Modules.Runs.Application.RunsRules runsRules, InSeconds.Api.Modules.Runs.Domain.IRunScoringPolicy runScoringPolicy, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms> loggerOfLoggedTrackWaveforms, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Runs.Application.PlayRunCard> loggerForMessage, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Runs.Application.RunPlayer> loggerOfRunPlayer, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Runs.Application.PlayRunCard> problemDetailSourceOfPlayRunCard, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
+        public POST_api_runs_sessions_id_swap(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, FluentValidation.IValidator<InSeconds.Api.Modules.Runs.Application.SwapRunTrack> validatorOfSwapRunTrack, InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle __seededShuffle1, InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle __seededShuffle2, InSeconds.Api.Modules.Runs.Application.RunsMetrics runsMetrics, InSeconds.Api.Modules.Runs.Application.RunsRules runsRules, InSeconds.Api.Modules.Runs.Domain.IRunScoringPolicy runScoringPolicy, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms> loggerOfLoggedTrackWaveforms, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Runs.Application.RunPlayer> loggerOfRunPlayer, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Runs.Application.SwapRunTrack> loggerForMessage, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Runs.Application.SwapRunTrack> problemDetailSourceOfSwapRunTrack, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
         {
             _wolverineHttpOptions = wolverineHttpOptions;
-            _validatorOfPlayRunCard = validatorOfPlayRunCard;
+            _validatorOfSwapRunTrack = validatorOfSwapRunTrack;
             _seededShuffle1 = __seededShuffle1;
             _seededShuffle2 = __seededShuffle2;
             _runsMetrics = runsMetrics;
@@ -52,12 +52,12 @@ namespace Internal.Generated.WolverineHandlers
             _httpContextAccessor = httpContextAccessor;
             _serviceScopeFactory = serviceScopeFactory;
             _loggerOfLoggedTrackWaveforms = loggerOfLoggedTrackWaveforms;
-            _loggerForMessage = loggerForMessage;
             _loggerOfRunPlayer = loggerOfRunPlayer;
+            _loggerForMessage = loggerForMessage;
             _optionsMonitorOfCatalogueOptions = optionsMonitorOfCatalogueOptions;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
             _timeProvider = timeProvider;
-            _problemDetailSourceOfPlayRunCard = problemDetailSourceOfPlayRunCard;
+            _problemDetailSourceOfSwapRunTrack = problemDetailSourceOfSwapRunTrack;
             _wolverineRuntime = wolverineRuntime;
         }
 
@@ -77,16 +77,16 @@ namespace Internal.Generated.WolverineHandlers
             var loggedTrackWaveforms = new InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms(efTrackWaveforms, _loggerOfLoggedTrackWaveforms);
             var deezerTrackPreviews = new InSeconds.Api.Modules.Catalogue.Persistence.DeezerTrackPreviews(previewProvider);
             var efTrackDirectory = new InSeconds.Api.Modules.Catalogue.Persistence.EfTrackDirectory(inSecondsDbContext, _optionsMonitorOfCatalogueOptions);
-            var runChoiceDealer = new InSeconds.Api.Modules.Runs.Application.RunChoiceDealer(efTrackDirectory, _seededShuffle1);
+            var runChoiceDealer = new InSeconds.Api.Modules.Runs.Application.RunChoiceDealer(efTrackDirectory, _seededShuffle2);
             var efRunsStore = new InSeconds.Api.Modules.Runs.Persistence.EfRunsStore(inSecondsDbContext);
-            var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, _seededShuffle2, runChoiceDealer, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, runGhosts, _runScoringPolicy, _runsRules, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
+            var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, _seededShuffle1, runChoiceDealer, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, runGhosts, _runScoringPolicy, _runsRules, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
             // Reading the request body via JSON deserialization
-            var (request, jsonContinue) = await ReadJsonAsync<InSeconds.Api.Modules.Runs.Application.PlayRunCard>(httpContext);
+            var (request, jsonContinue) = await ReadJsonAsync<InSeconds.Api.Modules.Runs.Application.SwapRunTrack>(httpContext);
             if (jsonContinue == Wolverine.HandlerContinuation.Stop) return;
             
             // Execute FluentValidation validators
-            var result1 = await Wolverine.Http.FluentValidation.Internals.FluentValidationHttpExecutor.ExecuteOne<InSeconds.Api.Modules.Runs.Application.PlayRunCard>(_validatorOfPlayRunCard, _problemDetailSourceOfPlayRunCard, request).ConfigureAwait(false);
+            var result1 = await Wolverine.Http.FluentValidation.Internals.FluentValidationHttpExecutor.ExecuteOne<InSeconds.Api.Modules.Runs.Application.SwapRunTrack>(_validatorOfSwapRunTrack, _problemDetailSourceOfSwapRunTrack, request).ConfigureAwait(false);
 
             // Evaluate whether or not the execution should be stopped based on the IResult value
             if (result1 != null && !(result1 is Wolverine.Http.WolverineContinue))
@@ -95,7 +95,7 @@ namespace Internal.Generated.WolverineHandlers
                 return;
             }
 
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Runs.Application.PlayRunCardEndpoint");
+            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Runs.Application.SwapRunTrackEndpoint");
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
             var efCoreEnvelopeTransaction = new Wolverine.EntityFrameworkCore.Internals.EfCoreEnvelopeTransaction(inSecondsDbContext, messageContext, _domainEventScraperIEnumerable);
@@ -108,18 +108,6 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                string slot_rawValue = (string?)httpContext.GetRouteValue("slot");
-                int slot = default;
-
-                if (slot_rawValue != null && int.TryParse(slot_rawValue, System.Globalization.CultureInfo.InvariantCulture, out slot))
-                {
-                }
-                else
-                {
-                    httpContext.Response.StatusCode = 404;
-                    return;
-                }
-
                 string id_rawValue = (string?)httpContext.GetRouteValue("id");
                 int id = default;
 
@@ -132,8 +120,8 @@ namespace Internal.Generated.WolverineHandlers
                     return;
                 }
 
-                var cardPlay = await InSeconds.Api.Modules.Runs.Application.PlayRunCardEndpoint.LoadAsync(id, slot, claimsCurrentPlayer, efRunsStore, efTrackDirectory, runChoiceDealer, httpContext.RequestAborted).ConfigureAwait(false);
-                var problemDetails2 = InSeconds.Api.Modules.Runs.Application.PlayRunCardEndpoint.Validate(slot, request, cardPlay, _timeProvider);
+                var playableRun = await InSeconds.Api.Modules.Runs.Application.SwapRunTrackEndpoint.LoadAsync(id, claimsCurrentPlayer, efRunsStore, httpContext.RequestAborted).ConfigureAwait(false);
+                var problemDetails2 = InSeconds.Api.Modules.Runs.Application.SwapRunTrackEndpoint.Validate(request, playableRun);
                 // Evaluate whether the processing should stop if there are any problems
                 if (!(ReferenceEquals(problemDetails2, Wolverine.Http.WolverineContinue.NoProblems)))
                 {
@@ -143,7 +131,7 @@ namespace Internal.Generated.WolverineHandlers
 
                 
                 // The actual HTTP request handler execution
-                var runPlayResponse_response = await InSeconds.Api.Modules.Runs.Application.PlayRunCardEndpoint.Post(slot, request, cardPlay, runPlayer, _timeProvider, _runsMetrics, _loggerForMessage, httpContext.RequestAborted).ConfigureAwait(false);
+                var runPlayResponse_response = await InSeconds.Api.Modules.Runs.Application.SwapRunTrackEndpoint.Post(request, playableRun, runPlayer, _timeProvider, _runsMetrics, _loggerForMessage, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware
@@ -164,7 +152,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: POST_api_runs_sessions_id_cards_slot_play
+    // END: POST_api_runs_sessions_id_swap
     
     
 }

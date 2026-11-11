@@ -1,4 +1,5 @@
 using FluentValidation;
+using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Gameplay.Contracts;
 using InSeconds.Api.Modules.Players.Contracts;
 using InSeconds.Api.Modules.Runs.Domain;
@@ -27,6 +28,26 @@ public sealed record RunsMeResponse(bool HasAccess, RunRecordResponse? Record, R
 public sealed record RunShelfDiscResponse(RunDiscResponse Disc, int Count);
 
 public sealed record RunPendingResponse(int SessionId, string ChallengeCode);
+
+/// <summary>Un thème proposé au lancement : identifiant, nom, manche qu'il concernera (la première manche à thème) et icône (Lucide), vide s'il n'en a pas.</summary>
+public sealed record RunThemeOfferItem(int Id, string Name, int Round, string? Icon = null);
+
+public static class GetRunThemeOfferEndpoint
+{
+    /// <summary>
+    /// <c>GET /api/runs/theme-offer</c> : les deux thèmes proposés au créateur d'une playlist (tirés au hasard), vides quand aucune manche n'a de
+    /// thème. Le choix part avec <c>POST /api/runs/challenges?themeId=</c> ; sans thème c'est « Surprise ». Ne crée rien.
+    /// </summary>
+    [Authorize]
+    [WolverineGet("/api/runs/theme-offer", OperationId = "getRunThemeOffer")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    public static async Task<IReadOnlyList<RunThemeOfferItem>> Get(RunChallengePlanner planner, ITrackDirectory tracks, CancellationToken ct)
+    {
+        var offer = await planner.OfferThemesAsync(ct);
+        var icons = offer.Count == 0 ? new Dictionary<int, string>() : await tracks.ListThemeIconsAsync(ct);
+        return [.. offer.Select(t => new RunThemeOfferItem(t.ThemeId, t.Name, t.Round, icons.GetValueOrDefault(t.ThemeId)))];
+    }
+}
 
 public static class GetRunsMeEndpoint
 {
@@ -58,14 +79,15 @@ public sealed record RunLaunch(Guid PlayerId, bool HasAccess, PlanResult? Plan);
 public static class LaunchRunEndpoint
 {
     public static async Task<RunLaunch> LoadAsync(
-        ICurrentPlayer current, IRunAccess access, IRunsStore store, RunChallengePlanner planner, ILogger<RunLaunch> logger, CancellationToken ct)
+        ICurrentPlayer current, IRunAccess access, IRunsStore store, RunChallengePlanner planner, ILogger<RunLaunch> logger,
+        CancellationToken ct, int? themeId = null)
     {
         var playerId = current.PlayerId!.Value;
         if (!await access.CanPlayAsync(playerId, ct))
             return new RunLaunch(playerId, false, null);
 
         await store.LockPlayerStartAsync(playerId, ct);
-        var plan = await planner.PlanAsync(playerId, ct);
+        var plan = await planner.PlanAsync(playerId, themeId, ct);
         if (plan.Challenge is null)
             RunsLog.PoolInsufficient(logger, plan.EligibleCount, plan.Requested);
         return new RunLaunch(playerId, true, plan);
@@ -96,7 +118,7 @@ public static class LaunchRunEndpoint
     {
         var challenge = launch.Plan!.Challenge!;
         store.AddChallenge(challenge);
-        var session = RunSession.Start(challenge.Id, launch.PlayerId, time.GetUtcNow(), challenge.Rules);
+        var session = RunSession.Start(challenge.Id, launch.PlayerId, time.GetUtcNow());
         await store.AddAsync(session, ct);
         RunsLog.RunLaunched(logger, session.Id, launch.PlayerId, challenge.Code);
         metrics.RunLaunched();
@@ -112,9 +134,10 @@ public static class LaunchRunEndpoint
 /// <param name="MyStatus">La partie du joueur sur cette playlist : <c>none</c> (pas jouée), <c>pending</c>, <c>won</c>, <c>lost</c> ou <c>abandoned</c>.</param>
 /// <param name="MySessionId">Sa partie sur cette playlist, s'il en a une.</param>
 /// <param name="AnswerSeconds">Le chrono de chaque morceau (règles figées) ; 0 : pas de chrono.</param>
+/// <param name="Themes">Les manches à thème de la playlist (jamais la première) avec le nom du thème tel qu'il était à sa création ; vide : aucune.</param>
 public sealed record RunChallengeResponse(
     string Code, string? AuthorPseudo, int TrackCount, int Rounds, int TracksPerRound, decimal ListenSeconds, string MyStatus, int? MySessionId,
-    int AnswerSeconds);
+    int AnswerSeconds, IReadOnlyList<RunRoundThemeResponse>? Themes = null);
 
 public static class GetRunChallengeEndpoint
 {
@@ -136,13 +159,13 @@ public static class GetRunChallengeEndpoint
     {
         string? author = null;
         if (challenge.CreatedBy is { } createdBy)
-            author = (await players.GetPseudosAsync([createdBy], ct)).GetValueOrDefault(createdBy);
+            author = (await players.GetDisplayNamesAsync([createdBy], ct)).GetValueOrDefault(createdBy);
 
         var mine = current.PlayerId is { } playerId ? await queries.FindSessionAsync(challenge.Id, playerId, ct) : null;
         var rules = challenge.Rules;
         return new RunChallengeResponse(
             challenge.Code, author, challenge.Tracks.Count, challenge.Tracks.Select(t => t.Round).Distinct().Count(), rules.TracksPerRound,
-            rules.ListenSeconds, mine is null ? "none" : RunViews.StatusOf(mine.Status), mine?.SessionId, rules.AnswerSeconds);
+            rules.ListenSeconds, mine is null ? "none" : RunViews.StatusOf(mine.Status), mine?.SessionId, rules.AnswerSeconds, RunViews.ThemesOf(rules));
     }
 }
 
@@ -186,7 +209,7 @@ public static class JoinRunEndpoint
     {
         var challenge = join.Challenge!;
         var resuming = join.Session is not null;
-        var session = join.Session ?? RunSession.Start(challenge.Id, join.PlayerId, time.GetUtcNow(), challenge.Rules);
+        var session = join.Session ?? RunSession.Start(challenge.Id, join.PlayerId, time.GetUtcNow());
         if (resuming)
         {
             RunsLog.SessionResumed(logger, session.Id, join.PlayerId, session.Answers.Count);
@@ -477,11 +500,7 @@ public static class ChooseRunDifficultyEndpoint
     {
         var (session, challenge) = loaded;
         var difficulty = RunDifficulties.Parse(request.Difficulty)!.Value;
-        // Choisir la difficulté ferme l'offre encore ouverte du palier : une offre passée sans carte, comptée comme telle.
-        var offerOpen = session.OpenOffer(challenge) is not null;
         session.ChooseDifficulty(challenge, request.Round, difficulty, time.GetUtcNow());
-        if (offerOpen)
-            metrics.OfferPassed();
         RunsLog.DifficultyChosen(logger, session.Id, session.PlayerId, request.Round, RunDifficulties.KeyOf(difficulty));
         metrics.DifficultyChosen(request.Round, RunDifficulties.KeyOf(difficulty));
         return await player.AdvanceAsync(await player.LoadAsync(session, challenge, ct), answered: null, revealed: null, isResuming: false, ct);

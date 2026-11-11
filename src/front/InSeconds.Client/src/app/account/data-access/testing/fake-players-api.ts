@@ -21,6 +21,7 @@ function defaults() {
   return {
     getMe: vi.fn<() => Promise<SessionPlayer | null>>(() => Promise.resolve(null)),
     createGuest: vi.fn<(source: string | null) => Promise<string>>(() => Promise.resolve('guest-1')),
+    setGuestPseudo: vi.fn<(pseudo: string) => Promise<string>>(pseudo => Promise.resolve(pseudo)),
     requestMagicLink: vi.fn<(email: string) => Promise<void>>(() => Promise.resolve()),
     verifyMagicLink: vi.fn<(token: string, pseudo?: string) => Promise<MagicLinkVerification>>(
       () => Promise.resolve({ needsPseudo: false, email: null }),

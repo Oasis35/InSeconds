@@ -8,7 +8,7 @@ namespace InSeconds.UnitTests.Runs;
 
 /// <summary>
 /// Le proto 2 : les difficultés de chaque manche figées dans la playlist (objectif, facteur de points, écoute de la manche boss), le choix fait
-/// dans la partie avant le premier son de la manche, la réserve du Joker, et les playlists du proto 1 qui se jouent comme avant.
+/// dans la partie avant le premier son de la manche, la réserve de l'Échange, et les playlists du proto 1 qui se jouent comme avant.
 /// </summary>
 public class RunDifficultyTests
 {

@@ -10,7 +10,7 @@ describe('PlayersApi', () => {
   beforeEach(() => {
     client = {
       getMe: vi.fn(), createGuest: vi.fn(), requestMagicLink: vi.fn(), verifyMagicLink: vi.fn(), logout: vi.fn(),
-      updatePseudo: vi.fn(), requestEmailChange: vi.fn(), confirmEmailChange: vi.fn(), listDevices: vi.fn(),
+      updatePseudo: vi.fn(), setGuestPseudo: vi.fn(), requestEmailChange: vi.fn(), confirmEmailChange: vi.fn(), listDevices: vi.fn(),
       revokeDevice: vi.fn(), revokeOtherDevices: vi.fn(), exportMyData: vi.fn(), deleteMyAccount: vi.fn(),
     } as unknown as typeof client;
     TestBed.configureTestingModule({ providers: [{ provide: PlayersClient, useValue: client }] });
@@ -86,6 +86,13 @@ describe('PlayersApi', () => {
 
     expect(await api.updatePseudo('Bob')).toBe('Bob');
     expect(client.updatePseudo).toHaveBeenCalledWith({ pseudo: 'Bob' });
+  });
+
+  it("enregistre le pseudo d'un invité et rend le pseudo enregistré", async () => {
+    client.setGuestPseudo.mockReturnValue(of({ pseudo: 'Léa' }));
+
+    expect(await api.setGuestPseudo('Léa')).toBe('Léa');
+    expect(client.setGuestPseudo).toHaveBeenCalledWith({ pseudo: 'Léa' });
   });
 
   it('demande un changement d\'email puis le confirme', async () => {

@@ -16,6 +16,7 @@ internal sealed class PlayerConfiguration : IEntityTypeConfiguration<Player>
         builder.HasKey(p => p.Id);
         builder.Property(p => p.Id).ValueGeneratedNever();
         builder.Property(p => p.AcquisitionSource).HasMaxLength(AcquisitionSource.MaxLength);
+        builder.Property(p => p.GuestPseudo).HasMaxLength(20);
     }
 }
 

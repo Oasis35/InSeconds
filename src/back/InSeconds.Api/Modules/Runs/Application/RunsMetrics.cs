@@ -1,5 +1,6 @@
 using System.Diagnostics.Metrics;
 using InSeconds.Api.Modules.Gameplay.Contracts;
+using InSeconds.Api.Modules.Runs.Domain;
 
 namespace InSeconds.Api.Modules.Runs.Application;
 
@@ -19,12 +20,16 @@ public sealed class RunsMetrics
     public const string DiscsName = "inseconds.runs.discs";
     public const string DifficultiesName = "inseconds.runs.difficulties";
     public const string CardsName = "inseconds.runs.cards";
+    public const string DuelsName = "inseconds.runs.duels";
 
-    /// <summary>Étiquette <c>action</c> des coups de pouce : carte prise au palier, lâchée, jouée sur un morceau, ou offre passée (sans carte).</summary>
-    public const string CardTakenAction = "taken";
-    public const string CardDroppedAction = "dropped";
-    public const string CardPlayedAction = "played";
-    public const string OfferPassedAction = "passed";
+    /// <summary>Étiquette <c>result</c> d'un duel : le joueur devant l'ami (<c>ahead</c>), derrière (<c>behind</c>) ou à égalité (<c>tied</c>).</summary>
+    public const string DuelAhead = "ahead";
+    public const string DuelBehind = "behind";
+    public const string DuelTied = "tied";
+
+    /// <summary>Étiquette <c>action</c> des coups de pouce : carte gagnée en franchissant une manche, ou morceau changé (Échange).</summary>
+    public const string CardEarnedAction = "earned";
+    public const string SwappedAction = "swapped";
 
     /// <summary>Étiquette <c>event</c> des parties : run lancé (nouvelle playlist), playlist relevée, gagnée, perdue, abandonnée.</summary>
     public const string Launched = "launched";
@@ -39,6 +44,7 @@ public sealed class RunsMetrics
     private readonly Counter<long> _discs;
     private readonly Counter<long> _difficulties;
     private readonly Counter<long> _cards;
+    private readonly Counter<long> _duels;
 
     public RunsMetrics(IMeterFactory meterFactory)
     {
@@ -48,7 +54,8 @@ public sealed class RunsMetrics
         _neutralized = meter.CreateCounter<long>(NeutralizedName, description: "Morceaux neutralisés (Deezer n'a plus d'extrait).");
         _discs = meter.CreateCounter<long>(DiscsName, description: "Disques obtenus à la fin d'une partie gagnée ou perdue, par clé (disc).");
         _difficulties = meter.CreateCounter<long>(DifficultiesName, description: "Difficultés choisies, par manche (round) et difficulté (difficulty).");
-        _cards = meter.CreateCounter<long>(CardsName, description: "Coups de pouce, par action (action) et carte (card ; absente pour une offre passée).");
+        _cards = meter.CreateCounter<long>(CardsName, description: "Coups de pouce, par action (action : carte gagnée, morceau changé) et carte (card).");
+        _duels = meter.CreateCounter<long>(DuelsName, description: "Duels finis contre l'ami qui a lancé la playlist, par résultat (result : devant, derrière, égalité).");
     }
 
     public void RunLaunched() => Session(Launched);
@@ -70,16 +77,16 @@ public sealed class RunsMetrics
         _discs.Add(1, new KeyValuePair<string, object?>("disc", disc));
     }
 
+    /// <summary>La fin d'une partie jouée sur la playlist d'un ami qui l'a finie : le joueur est devant, derrière ou à égalité.</summary>
+    public void DuelEnded(int gap) =>
+        _duels.Add(1, new KeyValuePair<string, object?>("result", gap > 0 ? DuelAhead : gap < 0 ? DuelBehind : DuelTied));
+
     public void DifficultyChosen(int round, string difficulty) =>
         _difficulties.Add(1, new KeyValuePair<string, object?>("round", round), new KeyValuePair<string, object?>("difficulty", difficulty));
 
-    public void CardTaken(string card) => Card(CardTakenAction, card);
+    public void CardEarned(string card) => Card(CardEarnedAction, card);
 
-    public void CardDropped(string card) => Card(CardDroppedAction, card);
-
-    public void CardPlayed(string card) => Card(CardPlayedAction, card);
-
-    public void OfferPassed() => _cards.Add(1, new KeyValuePair<string, object?>("action", OfferPassedAction));
+    public void TrackSwapped() => Card(SwappedAction, RunCards.KeyOf(RunCard.Swap));
 
     public void AnswerSubmitted(RoundOutcome outcome, int round) =>
         _answers.Add(1,

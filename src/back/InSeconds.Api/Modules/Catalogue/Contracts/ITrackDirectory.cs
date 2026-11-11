@@ -7,9 +7,10 @@ namespace InSeconds.Api.Modules.Catalogue.Contracts;
 /// <param name="CoverUrl">Adresse de la pochette, reconstruite avec <c>Catalogue:CoverUrlTemplate</c>.</param>
 /// <param name="DeezerRank">Rang (popularité) chez Deezer, vide s'il n'a jamais été lu : la difficulté de Runs en tire ses tranches.</param>
 /// <param name="Genres">Noms des genres de l'album du morceau (Deezer), par ordre alphabétique ; vide tant qu'ils ne sont pas lus, ou si l'album n'en a pas. Servis par la carte « Genre » et le choix des leurres du « QCM » de Runs.</param>
+/// <param name="ThemeIds">Les thèmes que l'admin a associés au morceau (<see cref="ITrackDirectory.ListThemesAsync"/> en donne les noms), vide : aucun. Runs en tire les playlists à thème.</param>
 public sealed record TrackInfo(
     int Id, long DeezerTrackId, string Artist, string Title, string DisplayTitle, string? CoverUrl, int? ReleaseYear, int? DeezerRank,
-    IReadOnlyList<string> Genres);
+    IReadOnlyList<string> Genres, IReadOnlyList<int>? ThemeIds = null);
 
 /// <summary>Lecture des morceaux par les autres modules.</summary>
 public interface ITrackDirectory
@@ -22,4 +23,10 @@ public interface ITrackDirectory
     /// Triés par identifiant : un tirage à graine doit partir du même ordre à chaque appel.
     /// </summary>
     Task<IReadOnlyList<int>> ListPlayableIdsAsync(CancellationToken ct);
+
+    /// <summary>Les thèmes de la liste de l'admin : identifiant et nom.</summary>
+    Task<IReadOnlyDictionary<int, string>> ListThemesAsync(CancellationToken ct);
+
+    /// <summary>Les icônes des thèmes (le nom d'une icône Lucide), par identifiant de thème ; un thème sans icône est absent.</summary>
+    Task<IReadOnlyDictionary<int, string>> ListThemeIconsAsync(CancellationToken ct);
 }

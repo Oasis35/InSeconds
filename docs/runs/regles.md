@@ -29,7 +29,7 @@ Règles validées par Clément le 17/10/2026. Les écrans qui les montrent : [`e
 
 ## La jauge
 
-- Chaque manche a un **objectif** : un pourcentage du maximum de la manche, **45, 55, 68 puis 80 %**, soit 225, 366, 568 et 800 points (40, 50, 60 et 70 % pour les playlists créées avant le 05/11/2026, qui gardent leurs règles figées). Le proto 2 en fait l'objectif de « Sûre » ([`proto2.md`](proto2.md)). Le score de la manche doit l'atteindre (`>=`) pour **débloquer la manche suivante**.
+- Chaque manche a un **objectif** : un pourcentage du maximum de la manche, **45, 55, 68 puis 80 %**, soit 225, 366, 568 et 800 points (40, 50, 60 et 70 % pour les playlists créées avant le 05/11/2026, qui gardent leurs règles figées). Le proto 2 en fait l'objectif de « Normal » (ex « Sûre ») ([`proto2.md`](proto2.md)). Le score de la manche doit l'atteindre (`>=`) pour **débloquer la manche suivante**.
 - La jauge se remplit à chaque réponse. Pleine avant la fin de la manche, on joue quand même les morceaux restants : **la jauge ne sert qu'à passer, ce qui compte ce sont les points** (Clément, 17/10).
 - **Morceau sans extrait** (Deezer l'a retiré depuis le tirage) : **neutralisé** par le serveur. Il ne rapporte rien et sort du maximum de la manche ; l'objectif se recalcule sur les morceaux restants. Une manche entièrement neutralisée est passée. Une panne passagère de Deezer ne neutralise pas : le joueur réessaie.
 
@@ -57,7 +57,7 @@ La suite de l'échelle est prévue pour quand un run aura plus de 4 manches : pl
 
 ## La playlist partagée
 
-- Chaque run a un lien : **`inseconds.cc/runs/K7Q2M9`** (code de 6 caractères sans caractère ambigu, saisie insensible à la casse). Il se partage depuis l'écran de fin (« Partager mon score » : le score en grille et « Bats-moi » avec le lien) et depuis la comparaison (« Partager la playlist »).
+- Chaque run a un lien : **`inseconds.cc/runs/K7Q2M9`** (code de 6 caractères sans caractère ambigu, saisie insensible à la casse). Il se partage depuis l'écran de fin (« Partager mon score » : le score en grille et « Fais mieux » avec le lien) et depuis la comparaison (« Partager la playlist »).
 - Tous ceux qui ouvrent le lien jouent **les mêmes 20 morceaux, dans le même ordre**, **une seule fois** chacun, sans compte obligatoire (un invité est créé comme au Daily).
 - Les 20 morceaux sont tirés dès le départ : un ami peut aller plus loin que l'auteur de la playlist si celui-ci a perdu avant la fin.
 - **Comparaison** : après avoir fini sa partie (une partie abandonnée est finie), chacun voit toutes les parties **gagnées ou perdues** sur cette playlist, manche par manche (une manche non jouée est vide), avec le pseudo de chacun (« Invité » pour un invité), son disque et son total, triées par total. Rouvrir le lien d'une playlist déjà jouée mène directement à la comparaison : une playlist se joue une seule fois. **Ce n'est pas un classement général** : seuls ceux qui ont le lien la voient, et la page de confidentialité le dit.

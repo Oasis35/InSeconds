@@ -32,6 +32,12 @@ export class SessionLoader {
     return this.loading;
   }
 
+  /** Donne un pseudo à l'invité de ce navigateur, puis relit l'identité (le pseudo y figure). Une erreur de l'API remonte à l'appelant. */
+  async setGuestPseudo(pseudo: string): Promise<void> {
+    await this.api.setGuestPseudo(pseudo);
+    await this.reload();
+  }
+
   /**
    * Crée l'invité si ce navigateur n'a encore aucune identité (`POST /api/players/guest`, jamais
    * un `GET`), puis relit l'identité. Sert à l'identifiant navigateur de l'admin, qui doit exister

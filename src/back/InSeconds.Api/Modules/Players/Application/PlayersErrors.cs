@@ -11,6 +11,7 @@ public static class PlayersErrorCodes
     public const string EmailTaken = "players.email_taken";
     public const string SameEmail = "players.same_email";
     public const string GuestForbidden = "players.guest_forbidden";
+    public const string NotAGuest = "players.not_a_guest";
     public const string PseudoMismatch = "players.pseudo_mismatch";
 }
 
@@ -31,6 +32,10 @@ internal static class PlayersProblems
     /// <summary>Réservé aux comptes : un invité n'a ni pseudo ni adresse.</summary>
     public static ProblemDetails GuestForbidden() =>
         ApiProblem.Of(StatusCodes.Status403Forbidden, PlayersErrorCodes.GuestForbidden, "Réservé aux comptes.");
+
+    /// <summary>Réservé aux invités : un compte a son pseudo (profil).</summary>
+    public static ProblemDetails NotAGuest() =>
+        ApiProblem.Of(StatusCodes.Status409Conflict, PlayersErrorCodes.NotAGuest, "Un compte change son pseudo dans son profil.");
 
     /// <summary>Suppression du compte : le pseudo retapé n'est pas le sien.</summary>
     public static ProblemDetails PseudoMismatch() =>

@@ -30,9 +30,23 @@ export interface PoolTrack {
   readonly usages: readonly ModeUsage[];
   /** Les genres de l'album du morceau (noms, par ordre alphabétique) : vides tant qu'ils ne sont pas lus chez Deezer. */
   readonly genres: readonly string[];
+  /** Les thèmes du morceau (identifiants de la liste de l'admin) : vide tant qu'il n'est classé nulle part. */
+  readonly themeIds: readonly number[];
   /** Dans le défi du jour d'un mode : peut être renommé (avec un avertissement) mais pas désactivé. */
   readonly inTodayChallenge: boolean;
 }
+
+/** Un thème de la liste de l'admin : un morceau peut en avoir plusieurs, une manche de Platines en tire ses morceaux. */
+export interface PoolTheme {
+  readonly id: number;
+  readonly name: string;
+  /** Combien de morceaux l'ont : un thème sans morceau seulement se supprime. */
+  readonly trackCount: number;
+  /** Le nom Lucide de son icône (stock de `ui/theme-icon`) ; `null` : aucune. */
+  readonly icon: string | null;
+}
+
+export const THEME_MAX_LENGTH = 60;
 
 /** Un morceau que l'un des modes a joué ne se supprime plus : on le retire du tirage (désactivation). */
 export function isUsed(track: Pick<PoolTrack, 'isUsed'>): boolean {

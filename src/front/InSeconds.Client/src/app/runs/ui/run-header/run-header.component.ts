@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, output, viewChild } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
+import { pop } from '../../../ui/motion/motion';
 import { RunRound, pointsToGo, runSegments } from '../../domain/run';
 
 /**
@@ -54,14 +55,22 @@ import { RunRound, pointsToGo, runSegments } from '../../domain/run';
     </div>
     @if (showStatus()) {
     <div class="flex justify-between items-baseline mt-2.5" style="min-height:22px">
-      <h1 class="text-[15px] font-bold" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="run-round-title">
+      <h1 class="flex items-center gap-2 text-[15px] font-bold" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="run-round-title">
         {{ 'runs.header.roundShort' | translate: { round: round().round } }}
+        @if (theme(); as name) {
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-bold" style="border:1px solid var(--color-accent);color:var(--color-accent)" data-testid="run-theme-pill">{{ name }}</span>
+        }
       </h1>
       <p class="text-[13px]" style="color:var(--text-light)" data-testid="run-to-go">
         @if (toGo() > 0) {
           {{ 'runs.header.toGoBefore' | translate }} <b class="font-semibold" style="color:var(--color-accent)">{{ 'runs.header.points' | translate: { points: toGo() } }}</b> {{ 'runs.header.toGoAfter' | translate }}
         } @else {
-          <span style="color:var(--color-success)">{{ 'runs.header.reached' | translate }}</span>
+          <span #reached class="inline-flex items-center gap-1 font-semibold" style="color:var(--color-success)" data-testid="run-reached">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12.5 L10 17.5 L19 7" />
+            </svg>
+            {{ 'runs.header.reached' | translate }}
+          </span>
         }
       </p>
     </div>
@@ -73,6 +82,8 @@ import { RunRound, pointsToGo, runSegments } from '../../domain/run';
   `,
 })
 export class RunHeaderComponent {
+  /** Le thème de la manche, s'il y en a un : une pastille à côté du titre. */
+  readonly theme = input<string | null>(null);
   /** La manche affichée : son score, son objectif, son maximum. */
   readonly round = input.required<RunRound>();
   /** Le nombre de manches de la playlist. */
@@ -87,4 +98,24 @@ export class RunHeaderComponent {
 
   protected readonly segments = computed(() => runSegments(this.rounds(), this.round()));
   protected readonly toGo = computed(() => pointsToGo(this.round()));
+
+  private readonly reached = viewChild<ElementRef<HTMLElement>>('reached');
+  /** Ce qui manquait au dernier affichage : le signal « objectif atteint » ne se joue qu'au passage de « il manque des points » à « atteint ». */
+  private lastToGo: number | null = null;
+  /** L'objectif vient d'être franchi : le signal attend que son repère soit à l'écran. */
+  private justReached = false;
+
+  constructor() {
+    effect(() => {
+      const toGo = this.toGo();
+      if (toGo === 0 && this.lastToGo !== null && this.lastToGo > 0) this.justReached = true;
+      if (toGo > 0) this.justReached = false;
+      this.lastToGo = toGo;
+      const element = this.reached()?.nativeElement;
+      if (this.justReached && element) {
+        this.justReached = false;
+        pop(element);
+      }
+    });
+  }
 }

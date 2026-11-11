@@ -39,6 +39,12 @@ export class RunPage {
   readonly linkRules: Locator;
   readonly linkPlayButton: Locator;
   readonly compareButton: Locator;
+  readonly pseudoScreen: Locator;
+  readonly pseudoInput: Locator;
+  readonly pseudoSave: Locator;
+  readonly pseudoCancel: Locator;
+  readonly pseudoError: Locator;
+  readonly pseudoEdit: Locator;
   readonly toDailyLink: Locator;
   readonly comparison: Locator;
   readonly comparisonEyebrow: Locator;
@@ -46,7 +52,7 @@ export class RunPage {
   readonly comparisonRows: Locator;
   readonly statusScreen: Locator;
   readonly roundCards: Locator;
-  readonly handCards: Locator;
+  readonly swapLink: Locator;
   readonly cardEffects: Locator;
 
   constructor(readonly page: Page) {
@@ -79,10 +85,16 @@ export class RunPage {
     this.linkRules           = page.getByTestId('run-link-rules');
     this.linkPlayButton      = page.getByTestId('run-link-play');
     this.compareButton       = page.getByTestId('run-compare');
+    this.pseudoScreen        = page.getByTestId('run-pseudo');
+    this.pseudoInput         = page.getByTestId('run-pseudo-input');
+    this.pseudoSave          = page.getByTestId('run-pseudo-save');
+    this.pseudoCancel        = page.getByTestId('run-pseudo-cancel');
+    this.pseudoError         = page.getByTestId('run-pseudo-error');
+    this.pseudoEdit          = page.getByTestId('run-comparison-edit-pseudo');
     this.toDailyLink         = page.getByTestId('run-to-daily');
     this.comparison          = page.getByTestId('run-comparison');
     this.roundCards          = page.getByTestId('run-round-cards');
-    this.handCards           = this.roundCards.locator('button[data-testid^="run-play-"]');
+    this.swapLink            = page.getByTestId('run-swap');
     this.cardEffects         = page.getByTestId('run-card-effect');
     this.comparisonEyebrow   = page.getByTestId('run-comparison-eyebrow');
     this.comparisonTitle     = page.getByTestId('run-comparison-title');
@@ -170,17 +182,14 @@ export class RunPage {
   }
 
   /**
-   * Répond juste à tous les morceaux d'une manche. Sauf à la dernière (qui mène à la fin) : l'écran de palier, ses trois cartes offertes,
-   * « Suite », l'écran « Difficulté ? » (Sûre par défaut, ou celle demandée pour la manche suivante), puis la ligne de la manche posée dans la pile.
+   * Répond juste à tous les morceaux d'une manche. Sauf à la dernière (qui mène à la fin) : l'écran de palier, les trois difficultés sur le même écran (un toucher sur celle demandée pour la manche suivante lance la manche), puis la ligne de la manche posée dans la pile.
    */
   async winRound(tracks: RunTrack[], round: number, difficulty: 'easy' | 'safe' | 'risky' = 'safe'): Promise<void> {
     await expect(this.roundTitle).toHaveText(`Manche ${round}`);
     await inSequence(tracks.filter(t => t.round === round), track => this.answerRight(track));
     if (round === 4) return;
     await expect(this.palier).toBeVisible();
-    await expect(this.palier.locator('[data-card]')).toHaveCount(3);
-    await this.palierNextButton.click();
-    // « Sûre » : l'objectif et les points du proto 1 ; le toucher lance le premier morceau de la manche.
+    // « Normal » : l'objectif et les points du proto 1 ; un toucher sur la colonne lance le premier morceau de la manche.
     await this.page.getByTestId(`run-difficulty-${difficulty}`).click();
     await expect(this.paliers).toHaveCount(round);
   }
