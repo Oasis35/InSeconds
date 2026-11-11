@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { CatalogueClient, DeezerTrackResult, TrackListItem, TrackModeUsage } from '../../api/catalogue/api.generated';
-import { DeezerResult, ModeUsage, PoolTheme, PoolTrack, PreviewState } from '../domain/pool-track';
+import { DeezerResult, ModeUsage, PoolTheme, PoolTrack, PreviewState, ThemeAssignment } from '../domain/pool-track';
 
 /**
  * Adaptateur de l'API du module Catalogue : seule porte d'entrée vers le client généré
@@ -61,6 +61,14 @@ export class CatalogueApi {
     await firstValueFrom(this.client.setTrackThemes(id, { themeIds: [...themeIds] }));
   }
 
+  /** Ajoute des morceaux à des thèmes en une requête, sans rien retirer (un lien déjà là est ignoré) ; rend le nombre de liens créés. */
+  async assignTracksToThemes(assignments: readonly ThemeAssignment[]): Promise<number> {
+    const result = await firstValueFrom(this.client.assignTracksToThemes({
+      assignments: assignments.map(a => ({ themeId: a.themeId, trackIds: [...a.trackIds] })),
+    }));
+    return result.added;
+  }
+
   /** Recherche chez Deezer, titres bruts (ce qui deviendra le titre du morceau). */
   async searchDeezer(query: string): Promise<DeezerResult[]> {
     return (await firstValueFrom(this.client.searchDeezer(query))).map(toDeezerResult);
@@ -84,6 +92,7 @@ function toPoolTrack(item: TrackListItem): PoolTrack {
     deezerTrackId: item.deezerTrackId,
     artist: item.artist,
     title: item.title,
+    releaseYear: item.releaseYear ?? null,
     preview: toPreviewState(item.previewStatus),
     isDisabled: item.isDisabled,
     isUsed: item.isUsed,

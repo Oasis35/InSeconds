@@ -132,4 +132,34 @@ describe('ThemeAddComponent', () => {
     expect(buttons[1].disabled).toBe(true);
     expect(el.textContent).toContain('admin.themes.alreadyInTheme');
   });
+
+  it('filtre par années et par genre, et coche tous les morceaux filtrés d\'un coup', () => {
+    const tracks = [
+      poolTrack({ id: 1, deezerTrackId: 11, artist: 'a', title: 'A', releaseYear: 1985, genres: ['Pop'] }),
+      poolTrack({ id: 2, deezerTrackId: 12, artist: 'b', title: 'B', releaseYear: 1992, genres: ['Rock'] }),
+      poolTrack({ id: 3, deezerTrackId: 13, artist: 'c', title: 'C', releaseYear: 2005, genres: ['Rock'] }),
+      poolTrack({ id: 4, deezerTrackId: 14, artist: 'd', title: 'D', releaseYear: null, genres: ['Rock'] }),
+    ];
+    const { el, fixture } = renderWith(tracks);
+    const set = (testid: string, value: string, event = 'input') => {
+      const field = el.querySelector<HTMLInputElement | HTMLSelectElement>(`[data-testid="${testid}"]`)!;
+      field.value = value;
+      field.dispatchEvent(new Event(event));
+      fixture.detectChanges();
+    };
+    const submitted: (readonly number[])[] = [];
+    fixture.componentInstance.addPicked.subscribe(ids => submitted.push(ids));
+
+    set('theme-year-from', '1990');
+    set('theme-year-to', '2009');
+    set('theme-genre', 'Rock', 'change');
+    expect(candidates(el)).toHaveLength(2);
+
+    el.querySelector<HTMLButtonElement>('[data-testid="theme-pick-all"]')!.click();
+    fixture.detectChanges();
+    el.querySelector<HTMLButtonElement>('[data-testid="theme-add-submit"]')!.click();
+
+    expect(submitted).toHaveLength(1);
+    expect([...submitted[0]].sort()).toEqual([2, 3]);
+  });
 });

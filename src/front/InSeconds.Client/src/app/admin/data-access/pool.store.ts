@@ -7,7 +7,7 @@ import {
   HARDEST_FIRST, NO_FILTERS, PoolFilters, PoolSort, PreviewFilter, SortColumn,
   StatusFilter, clampPage, filterTracks, nextSort, pageOf, sortTracks, statusOf, totalPages,
 } from '../domain/pool-filters';
-import { PoolTheme, PoolTrack, isUsed, trackLabel } from '../domain/pool-track';
+import { PoolTheme, PoolTrack, ThemeAssignment, isUsed, trackLabel } from '../domain/pool-track';
 import { POOL_VIEW } from '../domain/pool-views';
 import { CooldownApi } from './cooldown.api';
 import { AdminCounts } from './admin-counts';
@@ -236,18 +236,17 @@ export const PoolStore = signalStore(
       setThemeIcon: (id: number, icon: string | null) => mutate(() => api.setThemeIcon(id, icon)),
       deleteTheme: (id: number) => mutate(() => api.deleteTheme(id)),
       setTrackThemes: (id: number, themeIds: readonly number[]) => mutate(() => api.setTrackThemes(id, themeIds)),
-      /** Met ces morceaux du pool dans le thème (un par un, ceux qui l'ont déjà sont laissés), puis relit. */
+      /** Met ces morceaux du pool dans le thème en une requête (ceux qui l'ont déjà sont laissés), puis relit. */
       addTracksToTheme: (themeId: number, trackIds: readonly number[]) => mutateAndReload(async () => {
-        const pending = trackIds.flatMap(id => {
-          const track = store.tracks().find(t => t.id === id);
-          return track && !track.themeIds.includes(themeId) ? [track] : [];
-        });
-        // Un par un, dans l'ordre : le serveur n'est pas chargé de plusieurs écritures à la fois sur le même thème.
-        await pending.reduce(async (previous, track) => {
-          await previous;
-          await api.setTrackThemes(track.id, [...track.themeIds, themeId]);
-        }, Promise.resolve());
+        const pending = trackIds.filter(id => !store.tracks().find(t => t.id === id)?.themeIds.includes(themeId));
+        if (pending.length > 0) await api.assignTracksToThemes([{ themeId, trackIds: pending }]);
       }),
+      /** Applique un classement (thème, morceaux) en une requête, sans rien retirer ; rend le nombre de liens créés (ou l'erreur), puis relit. */
+      async assignTracksToThemes(assignments: readonly ThemeAssignment[]): Promise<{ added: number } | { error: AppError }> {
+        let added = 0;
+        const error = await mutateAndReload(async () => { added = await api.assignTracksToThemes(assignments); });
+        return error ? { error } : { added };
+      },
       /** Retire le morceau du thème : il reste dans le pool et garde ses autres thèmes. */
       removeTrackFromTheme: (themeId: number, trackId: number) => mutate(async () => {
         const track = store.tracks().find(t => t.id === trackId);

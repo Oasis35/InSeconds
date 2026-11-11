@@ -24,6 +24,8 @@ export interface PoolTrack {
   readonly deezerTrackId: number;
   readonly artist: string;
   readonly title: string;
+  /** L'année de sortie lue chez Deezer, `null` tant qu'elle n'est pas connue. */
+  readonly releaseYear: number | null;
   readonly preview: PreviewState;
   readonly isDisabled: boolean;
   readonly isUsed: boolean;
@@ -46,6 +48,12 @@ export interface PoolTheme {
   readonly trackCount: number;
   /** Le nom Lucide de son icône (stock de `ui/theme-icon`) ; `null` : aucune. */
   readonly icon: string | null;
+}
+
+/** Des morceaux à mettre dans un thème. */
+export interface ThemeAssignment {
+  readonly themeId: number;
+  readonly trackIds: readonly number[];
 }
 
 export const THEME_MAX_LENGTH = 60;

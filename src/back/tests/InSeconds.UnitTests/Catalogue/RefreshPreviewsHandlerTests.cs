@@ -570,6 +570,8 @@ public class RefreshPreviewsHandlerTests
 
         public Task<Track?> FindWithThemesAsync(int id, CancellationToken ct) => throw new NotSupportedException();
 
+        public Task<IReadOnlyList<Track>> FindManyWithThemesAsync(IReadOnlyCollection<int> ids, CancellationToken ct) => throw new NotSupportedException();
+
         public Task<IReadOnlyList<Theme>> FindThemesAsync(IReadOnlyCollection<int> ids, CancellationToken ct) => throw new NotSupportedException();
 
         public ValueTask AddThemeAsync(Theme theme, CancellationToken ct) => throw new NotSupportedException();

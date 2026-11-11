@@ -35,6 +35,9 @@ public sealed class EfCatalogueStore(InSecondsDbContext db) : ICatalogueStore
     public Task<Track?> FindWithThemesAsync(int id, CancellationToken ct) =>
         db.Set<Track>().Include(t => t.Themes).FirstOrDefaultAsync(t => t.Id == id, ct);
 
+    public async Task<IReadOnlyList<Track>> FindManyWithThemesAsync(IReadOnlyCollection<int> ids, CancellationToken ct) =>
+        await db.Set<Track>().Include(t => t.Themes).Where(t => ids.Contains(t.Id)).ToListAsync(ct);
+
     public async Task<IReadOnlyList<Theme>> FindThemesAsync(IReadOnlyCollection<int> ids, CancellationToken ct) =>
         await db.Set<Theme>().Where(t => ids.Contains(t.Id)).ToListAsync(ct);
 

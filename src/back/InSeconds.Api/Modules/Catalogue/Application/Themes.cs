@@ -169,3 +169,70 @@ public static class SetTrackThemesEndpoint
     public static void Put(SetTrackThemes request, [NotBody] TrackThemesChange change, TimeProvider time) =>
         change.Track!.SetThemes(change.Themes, time.GetUtcNow());
 }
+
+/// <summary>Les morceaux à ajouter à un thème.</summary>
+public sealed record ThemeAssignment(int ThemeId, IReadOnlyList<int> TrackIds);
+
+/// <param name="Assignments">Un élément par thème (le même thème peut revenir : ses morceaux s'additionnent).</param>
+public sealed record AssignTracksToThemes(IReadOnlyList<ThemeAssignment> Assignments);
+
+/// <param name="Added">Les liens créés : un morceau qui avait déjà le thème, ou qui n'existe plus, n'en crée aucun.</param>
+public sealed record AssignTracksToThemesResult(int Added);
+
+public sealed class AssignTracksToThemesValidator : AbstractValidator<AssignTracksToThemes>
+{
+    /// <summary>Un import de tout le pool (850 morceaux) dans une douzaine de thèmes tient largement dedans.</summary>
+    public const int MaxLinks = 20_000;
+
+    public AssignTracksToThemesValidator()
+    {
+        RuleFor(x => x.Assignments).NotEmpty().Must(a => a.Count <= 500);
+        RuleFor(x => x.Assignments).Must(a => a.Sum(i => i.TrackIds.Count) <= MaxLinks).WithMessage($"Au plus {MaxLinks} morceaux à la fois.");
+        RuleForEach(x => x.Assignments).Must(a => a.TrackIds.Count > 0);
+    }
+}
+
+/// <summary>Ce que l'ajout en lot a chargé : les thèmes demandés et les morceaux qui existent encore.</summary>
+public sealed record ThemeAssignmentPlan(IReadOnlyList<Theme> Themes, IReadOnlyList<Track> Tracks, bool ThemeMissing);
+
+public static class AssignTracksToThemesEndpoint
+{
+    public static async Task<ThemeAssignmentPlan> LoadAsync(AssignTracksToThemes request, ICatalogueStore store, CancellationToken ct)
+    {
+        var themeIds = request.Assignments.Select(a => a.ThemeId).Distinct().ToList();
+        var themes = await store.FindThemesAsync(themeIds, ct);
+        var trackIds = request.Assignments.SelectMany(a => a.TrackIds).Distinct().ToList();
+        var tracks = themes.Count == themeIds.Count ? await store.FindManyWithThemesAsync(trackIds, ct) : [];
+        return new ThemeAssignmentPlan(themes, tracks, themes.Count != themeIds.Count);
+    }
+
+    public static ProblemDetails Validate(ThemeAssignmentPlan plan) =>
+        plan.ThemeMissing ? CatalogueProblems.ThemeNotFound() : WolverineContinue.NoProblems;
+
+    /// <summary>
+    /// <c>POST /api/admin/catalogue/themes/assignments</c> <c>{ assignments: [{ themeId, trackIds }] }</c> : **ajoute** ces morceaux à ces thèmes, sans
+    /// rien retirer (contrairement à <c>PUT /tracks/{id}/themes</c>, qui remplace). Sert l'import d'un classement et l'ajout en lot par filtre de
+    /// l'onglet Thèmes. Un morceau qui a déjà le thème ou qui n'existe plus est ignoré. 404 si un thème n'existe pas (rien n'est écrit), 400 si la
+    /// demande est vide ou démesurée.
+    /// </summary>
+    [WolverinePost("/api/admin/catalogue/themes/assignments", OperationId = "assignTracksToThemes")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public static AssignTracksToThemesResult Post(AssignTracksToThemes request, [NotBody] ThemeAssignmentPlan plan, TimeProvider time)
+    {
+        var now = time.GetUtcNow();
+        var themesById = plan.Themes.ToDictionary(t => t.Id);
+        var tracksById = plan.Tracks.ToDictionary(t => t.Id);
+        var added = 0;
+        foreach (var assignment in request.Assignments)
+        {
+            var theme = themesById[assignment.ThemeId];
+            foreach (var trackId in assignment.TrackIds.Distinct())
+            {
+                if (tracksById.TryGetValue(trackId, out var track))
+                    added += track.AddThemes([theme], now);
+            }
+        }
+
+        return new AssignTracksToThemesResult(added);
+    }
+}
