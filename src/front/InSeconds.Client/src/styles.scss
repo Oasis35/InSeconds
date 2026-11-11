@@ -216,8 +216,18 @@ h1, h2, h3, .font-display {
   background: var(--overlay-dark);
 }
 
+.app-modal-panel,
+.app-sheet-panel {
+  /* Une fenêtre plus haute que l'écran défile dans son conteneur (overflow: auto du CDK, max-height héritée),
+     au lieu de déborder sans moyen d'atteindre le bas (fenêtre « Modifier le morceau » de l'admin). */
+  max-height: calc(100dvh - 2rem);
+}
+
 .app-modal-panel > .cdk-dialog-container,
 .app-sheet-panel > .cdk-dialog-container {
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   display: block;
   padding: 1.5rem;
   background: var(--bg-surface-2);

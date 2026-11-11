@@ -784,6 +784,56 @@
           }
         }
       }
+    },
+    "/api/admin/catalogue/themes/assignments": {
+      "post": {
+        "tags": [
+          "Catalogue"
+        ],
+        "operationId": "assignTracksToThemes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignTracksToThemes"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignTracksToThemesResult"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -797,6 +847,32 @@
           "deezerTrackId": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "AssignTracksToThemes": {
+        "required": [
+          "assignments"
+        ],
+        "type": "object",
+        "properties": {
+          "assignments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ThemeAssignment"
+            }
+          }
+        }
+      },
+      "AssignTracksToThemesResult": {
+        "required": [
+          "added"
+        ],
+        "type": "object",
+        "properties": {
+          "added": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -990,6 +1066,26 @@
         "type": "object",
         "properties": {
           "themeIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
+      "ThemeAssignment": {
+        "required": [
+          "themeId",
+          "trackIds"
+        ],
+        "type": "object",
+        "properties": {
+          "themeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "trackIds": {
             "type": "array",
             "items": {
               "type": "integer",
@@ -1349,6 +1445,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Catalogue.Application.SetTrackThemesEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Catalogue.Application.AssignTracksToThemesEndpoint"
     }
   ]
 }

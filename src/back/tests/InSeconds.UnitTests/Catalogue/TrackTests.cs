@@ -375,4 +375,41 @@ public class TrackTests
         Assert.Equal(T1, track.UpdatedAt);
         Assert.Equal(T0, track.CreatedAt);
     }
+
+    // ---------- Thèmes ----------
+
+    private static Theme ThemeWithId(int id, string name)
+    {
+        var theme = new Theme(name, T0);
+        typeof(Theme).GetProperty(nameof(Theme.Id))!.SetValue(theme, id);
+        return theme;
+    }
+
+    [Fact]
+    public void AddThemes_AjouteSansRetirer_EtNeCompteQueLesNouveaux()
+    {
+        var films = ThemeWithId(1, "Films");
+        var rap = ThemeWithId(2, "Rap");
+        var track = NewTrack();
+        track.SetThemes([rap], T0);
+
+        var added = track.AddThemes([films, rap, films], T1);
+
+        Assert.Equal(1, added);
+        Assert.Equal([1, 2], track.Themes.Select(t => t.Id).Order());
+        Assert.Equal(T1, track.UpdatedAt);
+    }
+
+    [Fact]
+    public void AddThemes_RienDeNouveau_NeChangeNiLesThemesNiLaDate()
+    {
+        var films = ThemeWithId(1, "Films");
+        var track = NewTrack();
+        track.SetThemes([films], T0);
+
+        var added = track.AddThemes([films], T1);
+
+        Assert.Equal(0, added);
+        Assert.Equal(T0, track.UpdatedAt);
+    }
 }

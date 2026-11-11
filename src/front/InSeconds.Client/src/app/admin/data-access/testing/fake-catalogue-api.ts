@@ -1,5 +1,5 @@
 import { Provider } from '@angular/core';
-import { DeezerResult, PoolTheme, PoolTrack } from '../../domain/pool-track';
+import { DeezerResult, PoolTheme, PoolTrack, ThemeAssignment } from '../../domain/pool-track';
 import { CatalogueApi } from '../catalogue.api';
 
 /** Erreur telle que la lève le client NSwag quand l'API répond par un `ProblemDetails` (cf. `toAppError`). */
@@ -27,6 +27,7 @@ function defaults() {
     setThemeIcon: vi.fn<(id: number, icon: string | null) => Promise<void>>(() => Promise.resolve()),
     deleteTheme: vi.fn<(id: number) => Promise<void>>(() => Promise.resolve()),
     setTrackThemes: vi.fn<(id: number, themeIds: readonly number[]) => Promise<void>>(() => Promise.resolve()),
+    assignTracksToThemes: vi.fn<(assignments: readonly ThemeAssignment[]) => Promise<number>>(a => Promise.resolve(a.reduce((n, x) => n + x.trackIds.length, 0))),
     searchDeezer: vi.fn<(query: string) => Promise<DeezerResult[]>>(() => Promise.resolve([])),
     findPreviewUrl: vi.fn<(track: Pick<PoolTrack, 'artist' | 'title' | 'deezerTrackId'>) => Promise<string | null>>(
       () => Promise.resolve(null),

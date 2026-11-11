@@ -13,7 +13,7 @@ public class CatalogueOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTe
 
         Assert.Equal(
             [
-                "addTheme", "addTrack", "deleteTheme", "deleteTrack", "getCatalogueHealth", "listThemes", "listTracks", "renameTheme",
+                "addTheme", "addTrack", "assignTracksToThemes", "deleteTheme", "deleteTrack", "getCatalogueHealth", "listThemes", "listTracks", "renameTheme",
                 "renameTrack", "searchDeezer", "searchTracks", "setThemeIcon", "setTrackDisabled", "setTrackThemes", "updateTrack",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));

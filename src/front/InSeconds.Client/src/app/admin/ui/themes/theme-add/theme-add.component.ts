@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, WritableSignal, computed, input, output, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { DeezerResult, PoolTrack } from '../../../domain/pool-track';
 import { filterByLabel, isPlayableTrack } from '../../../domain/themes';
@@ -36,6 +36,23 @@ const PAGE_SIZE = 50;
       @if (source() === 'pool') {
         <input type="search" class="app-input" [value]="text()" (input)="onSearch(valueOf($event))"
           [placeholder]="'admin.themes.searchPool' | translate" [attr.aria-label]="'admin.themes.searchPool' | translate" data-testid="theme-pool-search" />
+        <div class="flex flex-wrap items-center gap-2" data-testid="theme-pool-filters">
+          <input type="number" inputmode="numeric" class="app-input w-24" [value]="yearFrom()" (input)="onYear(yearFrom, valueOf($event))"
+            [placeholder]="'admin.themes.yearFrom' | translate" [attr.aria-label]="'admin.themes.yearFrom' | translate" data-testid="theme-year-from" />
+          <input type="number" inputmode="numeric" class="app-input w-24" [value]="yearTo()" (input)="onYear(yearTo, valueOf($event))"
+            [placeholder]="'admin.themes.yearTo' | translate" [attr.aria-label]="'admin.themes.yearTo' | translate" data-testid="theme-year-to" />
+          <select class="app-input flex-1 min-w-32" [value]="genre()" (change)="onGenre(valueOf($event))" [attr.aria-label]="'admin.themes.genre' | translate" data-testid="theme-genre">
+            <option value="">{{ 'admin.themes.allGenres' | translate }}</option>
+            @for (g of genres(); track g) {
+              <option [value]="g">{{ g }}</option>
+            }
+          </select>
+        </div>
+        @if (candidates().length > 0) {
+          <button type="button" class="text-sm underline min-h-11 self-start px-2" style="color:var(--text-muted)" (click)="pickAll()" data-testid="theme-pick-all">
+            {{ 'admin.themes.pickAll' | translate: { count: candidates().length } }}
+          </button>
+        }
         <ul class="rounded-(--radius-card) px-3" style="background:var(--bg-surface-2);border:1px solid var(--border-strong)">
           @for (track of visible(); track track.id) {
             <li class="flex items-center gap-3 py-2.5" style="border-top:1px solid var(--border-subtle)" data-testid="theme-candidate">
@@ -126,6 +143,9 @@ export class ThemeAddComponent {
   protected readonly source = signal<Source>('pool');
   protected readonly text = signal('');
   protected readonly picked = signal<readonly number[]>([]);
+  protected readonly yearFrom = signal('');
+  protected readonly yearTo = signal('');
+  protected readonly genre = signal('');
 
   private readonly limit = signal(PAGE_SIZE);
 
@@ -133,8 +153,16 @@ export class ThemeAddComponent {
     const id = this.themeId();
     const free = this.poolTracks().filter(t => !t.themeIds.includes(id));
     // Les morceaux jouables d'abord : ce sont eux qui font monter la jauge du thème.
-    return filterByLabel(free, this.text()).sort((a, b) => Number(isPlayableTrack(b)) - Number(isPlayableTrack(a)));
+    const from = Number(this.yearFrom());
+    const to = Number(this.yearTo());
+    const genre = this.genre();
+    const filtered = filterByLabel(free, this.text()).filter(t =>
+      (!this.yearFrom() || (t.releaseYear !== null && t.releaseYear >= from))
+      && (!this.yearTo() || (t.releaseYear !== null && t.releaseYear <= to))
+      && (!genre || t.genres.includes(genre)));
+    return filtered.sort((a, b) => Number(isPlayableTrack(b)) - Number(isPlayableTrack(a)));
   });
+  protected readonly genres = computed(() => [...new Set(this.poolTracks().flatMap(t => t.genres))].sort((a, b) => a.localeCompare(b, 'fr')));
   protected readonly visible = computed(() => this.candidates().slice(0, this.limit()));
   protected readonly hidden = computed(() => Math.max(0, this.candidates().length - this.limit()));
   protected readonly inPool = computed(() => new Set(this.poolTracks().map(t => t.deezerTrackId)));
@@ -150,6 +178,21 @@ export class ThemeAddComponent {
   protected onSearch(value: string): void {
     this.text.set(value);
     this.limit.set(PAGE_SIZE);
+  }
+
+  protected onYear(field: WritableSignal<string>, value: string): void {
+    field.set(value.trim());
+    this.limit.set(PAGE_SIZE);
+  }
+
+  protected onGenre(value: string): void {
+    this.genre.set(value);
+    this.limit.set(PAGE_SIZE);
+  }
+
+  /** Coche tous les morceaux que les filtres laissent (pas seulement ceux qu'on voit : « Voir plus » n'est pas à enchaîner). */
+  protected pickAll(): void {
+    this.picked.set(this.candidates().map(t => t.id));
   }
 
   protected showMore(): void {

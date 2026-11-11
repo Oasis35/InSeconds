@@ -352,4 +352,55 @@ test.describe('Admin - icônes des thèmes', () => {
     await expect(page.locator('[data-theme-id="mystery"] svg')).toHaveCount(0);
     await expect(page.locator('[data-theme-id] svg')).not.toHaveCount(0);
   });
+
+  test('importe un classement après un aperçu, sans rien retirer, et exporte le pool', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    const rock = await createTheme(page, 'Rock', 1, 0);
+    await createTheme(page, 'Jazz', 0);
+    const tracks = (await listTracks(page)).filter(t => !t.isDisabled && t.previewStatus === 'available');
+    const [already, one, two] = [tracks[0], tracks[1], tracks[2]];
+    await admin.clickTab('Thèmes');
+
+    await page.getByTestId('themes-import').click();
+    await page.getByTestId('import-text').fill(`Rock ; ${already.id}\nrock ; ${one.id}\nJazz ; ${two.id}\nFilms ; ${one.id}\nJazz ; 99999`);
+    await page.getByTestId('import-preview').click();
+
+    await expect(page.getByTestId('import-group')).toHaveCount(3);
+    await expect(page.getByTestId('import-unknown-theme')).toBeVisible();
+    await expect(page.getByTestId('import-problems')).toBeVisible();
+    // Un morceau décoché n'est pas ajouté.
+    await page.getByTestId('import-track').filter({ hasText: two.title }).getByRole('checkbox').uncheck();
+    await expect(page.getByTestId('import-apply')).toBeEnabled();
+    await page.getByTestId('import-apply').click();
+
+    await expect(page.getByTestId('import-result')).toBeVisible();
+    const after = await listTracks(page);
+    expect(after.find(t => t.id === one.id)?.themeIds).toContain(rock);
+    expect(after.find(t => t.id === already.id)?.themeIds).toEqual([rock]);
+    expect(after.find(t => t.id === two.id)?.themeIds).toEqual([]);
+
+    await page.getByTestId('import-close').click();
+    const download = page.waitForEvent('download');
+    await page.getByTestId('themes-export').click();
+    expect((await download).suggestedFilename()).toBe('inseconds-pool.csv');
+  });
+
+  test('ajoute en lot les morceaux d\'un filtre d\'années ou de genre', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    const theme = await createTheme(page, 'Tout', 0);
+    await admin.clickTab('Thèmes');
+
+    await card(page, 'Tout').click();
+    await page.getByTestId('theme-add-open').click();
+    await page.getByTestId('theme-pick-all').click();
+    await page.getByTestId('theme-add-submit').click();
+
+    await expect(page.getByTestId('theme-add-submit')).toHaveCount(0);
+    const inTheme = (await listTracks(page)).filter(t => t.themeIds.includes(theme));
+    expect(inTheme.length).toBeGreaterThan(1);
+  });
 });

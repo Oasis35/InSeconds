@@ -29,6 +29,9 @@ public interface ICatalogueStore
     /// <summary>Le morceau avec ses thèmes, suivi pour être modifié.</summary>
     Task<Track?> FindWithThemesAsync(int id, CancellationToken ct);
 
+    /// <summary>Les morceaux de ces identifiants avec leurs thèmes, suivis (un identifiant inconnu est absent du résultat).</summary>
+    Task<IReadOnlyList<Track>> FindManyWithThemesAsync(IReadOnlyCollection<int> ids, CancellationToken ct);
+
     /// <summary>Les thèmes de ces identifiants, suivis (un identifiant inconnu est absent du résultat).</summary>
     Task<IReadOnlyList<Theme>> FindThemesAsync(IReadOnlyCollection<int> ids, CancellationToken ct);
 

@@ -178,4 +178,63 @@ public class ThemeAdminTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Empty((await _app.Admin().GetFromJsonAsync<IReadOnlyList<ThemeItem>>(Themes, Ct))!);
         Assert.Equal(HttpStatusCode.NotFound, (await _app.Admin().DeleteAsync($"{Themes}/{films.Id}", Ct)).StatusCode);
     }
+
+    [Fact]
+    public async Task AjouterEnLot_AjouteSansRetirer_IgnoreLesDejaLaEtLesMorceauxInconnus()
+    {
+        var films = await AddAsync("Films");
+        var rap = await AddAsync("Rap");
+        await _app.Admin().PutAsJsonAsync("/api/admin/catalogue/tracks/1/themes", new SetTrackThemes([rap.Id]), Ct);
+
+        var response = await _app.Admin().PostAsJsonAsync(
+            $"{Themes}/assignments",
+            new AssignTracksToThemes([new ThemeAssignment(films.Id, [1, 2, 2, 999]), new ThemeAssignment(rap.Id, [1, 2])]),
+            Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(3, (await response.Content.ReadFromJsonAsync<AssignTracksToThemesResult>(Ct))!.Added);
+        var pool = await _app.Admin().GetFromJsonAsync<IReadOnlyList<TrackListItem>>("/api/admin/catalogue/tracks", Ct);
+        Assert.Equal(new[] { films.Id, rap.Id }.Order(), pool!.Single(t => t.Id == 1).ThemeIds!.Order());
+        Assert.Equal(new[] { films.Id, rap.Id }.Order(), pool!.Single(t => t.Id == 2).ThemeIds!.Order());
+
+        var again = await _app.Admin().PostAsJsonAsync($"{Themes}/assignments", new AssignTracksToThemes([new ThemeAssignment(films.Id, [1, 2])]), Ct);
+        Assert.Equal(0, (await again.Content.ReadFromJsonAsync<AssignTracksToThemesResult>(Ct))!.Added);
+    }
+
+    [Fact]
+    public async Task AjouterEnLot_UnThemeInconnu_404_EtRienNEstEcrit()
+    {
+        var films = await AddAsync("Films");
+
+        var response = await _app.Admin().PostAsJsonAsync(
+            $"{Themes}/assignments", new AssignTracksToThemes([new ThemeAssignment(films.Id, [1]), new ThemeAssignment(9999, [2])]), Ct);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("catalogue.theme_not_found", await CodeOfAsync(response));
+        Assert.Equal(0, (await _app.Admin().GetFromJsonAsync<IReadOnlyList<ThemeItem>>(Themes, Ct))!.Single().TrackCount);
+    }
+
+    [Fact]
+    public async Task AjouterEnLot_UneDemandeVideOuSansMorceau_400()
+    {
+        var films = await AddAsync("Films");
+
+        Assert.Equal(HttpStatusCode.BadRequest, (await _app.Admin().PostAsJsonAsync($"{Themes}/assignments", new AssignTracksToThemes([]), Ct)).StatusCode);
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            (await _app.Admin().PostAsJsonAsync($"{Themes}/assignments", new AssignTracksToThemes([new ThemeAssignment(films.Id, [])]), Ct)).StatusCode);
+    }
+
+    [Fact]
+    public async Task AjouterEnLot_UneListeNulleOuTropLongue_400()
+    {
+        var films = await AddAsync("Films");
+        var nullTracks = new StringContent("{\"assignments\":[{\"themeId\":" + films.Id + ",\"trackIds\":null}]}", System.Text.Encoding.UTF8, "application/json");
+
+        Assert.Equal(HttpStatusCode.BadRequest, (await _app.Admin().PostAsync($"{Themes}/assignments", nullTracks, Ct)).StatusCode);
+        var many = Enumerable.Range(1, AssignTracksToThemesValidator.MaxLinks + 1).ToList();
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            (await _app.Admin().PostAsJsonAsync($"{Themes}/assignments", new AssignTracksToThemes([new ThemeAssignment(films.Id, many)]), Ct)).StatusCode);
+    }
 }
