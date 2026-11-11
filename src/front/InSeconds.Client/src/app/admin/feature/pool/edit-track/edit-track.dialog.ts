@@ -51,6 +51,9 @@ function parseAltTitles(text: string): string[] {
         <div class="flex flex-col gap-1">
           <label for="edit-track-alt-titles" class="text-xs" style="color:var(--text-muted)">{{ 'admin.editModal.altTitles' | translate }}</label>
           <textarea id="edit-track-alt-titles" rows="2" [formField]="nameForm.altTitles" class="app-input"></textarea>
+          @if (nameForm.altTitles().invalid()) {
+            <p class="text-[11px]" style="color:var(--text-error)" role="alert" data-testid="edit-track-alt-titles-error">{{ 'admin.editModal.altTitlesError' | translate }}</p>
+          }
           <p class="text-[11px]" style="color:var(--text-faint)" data-testid="edit-track-alt-titles-hint">{{ 'admin.editModal.altTitlesHint' | translate }}</p>
         </div>
 

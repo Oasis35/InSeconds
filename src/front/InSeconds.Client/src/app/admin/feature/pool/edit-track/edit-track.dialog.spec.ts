@@ -183,6 +183,7 @@ describe('EditTrackDialog', () => {
     await settle(fixture);
 
     expect(save.disabled).toBe(true);
+    expect(element.querySelector('[data-testid="edit-track-alt-titles-error"]')?.textContent).toContain('admin.editModal.altTitlesError');
   });
 
   it('reste ouverte et dit pourquoi quand l\'API refuse', async () => {

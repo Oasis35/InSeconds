@@ -406,6 +406,7 @@
       "saving": "Enregistrement...",
       "altTitles": "Autres titres acceptés",
       "altTitlesHint": "Un par ligne (5 au plus), jamais montrés aux joueurs : une réponse égale à l’un d’eux est juste, comme le titre ci-dessus. Utile quand Deezer propose plusieurs versions du titre.",
+      "altTitlesError": "Au plus 5 titres, de 300 caractères chacun.",
       "genre": "Genre",
       "genreHint": "Deezer relit le genre de l’album chaque mois : s’il en donne un, il remplace celui saisi ici. Sans genre chez Deezer, le tien est gardé."
     },
