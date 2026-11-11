@@ -42,7 +42,7 @@ type DeezerStatus = 'loading' | 'success' | 'error';
         <app-theme-import [tracks]="pool.tracks()" [themes]="pool.themes()" [busy]="importBusy()" [errorKey]="importErrorKey()" [added]="importAdded()"
           (closed)="closeImport()" (listen)="listen($event)" (applied)="applyImport($event)" (reset)="importAdded.set(null)" />
       } @else {
-      <div class="items-center justify-between gap-3 lg:flex" [class.flex]="!selected()" [class.hidden]="selected()">
+      <div class="flex-wrap items-center justify-between gap-x-3 lg:flex" [class.flex]="!selected()" [class.hidden]="selected()">
         <h1 class="text-xl font-semibold" style="color:var(--text-hi)">{{ 'admin.themes.title' | translate }}</h1>
         <span class="flex items-center gap-1 text-sm" style="color:var(--text-muted)">
           <button type="button" class="underline min-h-11 px-2" (click)="importing.set(true)" data-testid="themes-import">{{ 'admin.themes.import.open' | translate }}</button>

@@ -28,6 +28,13 @@ describe('theme-import', () => {
       expect(parsed.issues.map(i => i.line)).toEqual([3, 4]);
     });
 
+    it('signale une première ligne mal formée au lieu de la prendre pour un en-tête', () => {
+      const parsed = parseClassification('Rock ; 12a\nRock ; 12');
+
+      expect(parsed.issues.map(i => i.line)).toEqual([1]);
+      expect(parsed.lines).toHaveLength(1);
+    });
+
     it('accepte un nom de thème entre guillemets et un BOM', () => {
       const parsed = parseClassification('﻿"Rock ; roll"; 12');
 
@@ -66,7 +73,8 @@ describe('theme-import', () => {
   describe('poolToCsv', () => {
     it('écrit une ligne par morceau avec année, genres et thèmes, et protège les séparateurs', () => {
       const csv = poolToCsv([...tracks, poolTrack({ id: 13, artist: 'Guns; "N" Roses', title: 'Yo' })], themes);
-      const lines = csv.trim().split('\r\n');
+      expect(csv.startsWith('\uFEFF')).toBe(true);
+      const lines = csv.slice(1).trim().split('\r\n');
 
       expect(lines[0]).toBe('id;artiste;titre;année;genres;thèmes');
       expect(lines[1]).toBe('10;a-ha;Take On Me;1985;Pop;Années 80');

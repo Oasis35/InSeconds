@@ -224,4 +224,17 @@ public class ThemeAdminTests(PostgresFixture postgres) : IAsyncLifetime
             HttpStatusCode.BadRequest,
             (await _app.Admin().PostAsJsonAsync($"{Themes}/assignments", new AssignTracksToThemes([new ThemeAssignment(films.Id, [])]), Ct)).StatusCode);
     }
+
+    [Fact]
+    public async Task AjouterEnLot_UneListeNulleOuTropLongue_400()
+    {
+        var films = await AddAsync("Films");
+        var nullTracks = new StringContent("{\"assignments\":[{\"themeId\":" + films.Id + ",\"trackIds\":null}]}", System.Text.Encoding.UTF8, "application/json");
+
+        Assert.Equal(HttpStatusCode.BadRequest, (await _app.Admin().PostAsync($"{Themes}/assignments", nullTracks, Ct)).StatusCode);
+        var many = Enumerable.Range(1, AssignTracksToThemesValidator.MaxLinks + 1).ToList();
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            (await _app.Admin().PostAsJsonAsync($"{Themes}/assignments", new AssignTracksToThemes([new ThemeAssignment(films.Id, many)]), Ct)).StatusCode);
+    }
 }

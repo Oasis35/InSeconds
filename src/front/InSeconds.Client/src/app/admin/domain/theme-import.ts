@@ -39,8 +39,8 @@ export function parseClassification(text: string): ParsedClassification {
     const ids = cut < 0 ? [] : trimmed.slice(cut + 1).split(/[\s,;]+/).filter(Boolean);
     if (themeName !== '' && ids.length > 0 && ids.every(id => /^\d+$/.test(id))) {
       for (const id of ids) lines.push({ line, themeName, trackId: Number(id) });
-    } else if (!(isFirst && cut >= 0)) {
-      // La toute première ligne avec un séparateur est prise pour l'en-tête d'un fichier exporté.
+    } else if (!(isFirst && /^(id|identifiant)$/i.test(ids[0] ?? ''))) {
+      // Seule la première ligne dont le second champ est « id » est l'en-tête d'un fichier exporté ; toute autre ligne illisible est signalée.
       issues.push({ line, text: trimmed });
     }
   });
@@ -143,7 +143,7 @@ export function totalToAdd(preview: ImportPreview): number {
 }
 
 /**
- * Le pool en CSV (séparateur `;`, ouvert tel quel par un tableur français) : une ligne par morceau avec son identifiant, son artiste, son
+ * Le pool en CSV (séparateur `;`, ouvert tel quel par un tableur français, d'où le BOM UTF-8 : sans lui Excel lit les accents en ANSI) : une ligne par morceau avec son identifiant, son artiste, son
  * titre, son année, ses genres et ses thèmes actuels. C'est ce fichier qu'on donne à Claude pour qu'il rende un classement.
  */
 export function poolToCsv(tracks: readonly PoolTrack[], themes: readonly PoolTheme[]): string {
@@ -152,7 +152,7 @@ export function poolToCsv(tracks: readonly PoolTrack[], themes: readonly PoolThe
     String(t.id), t.artist, t.title, t.releaseYear === null ? '' : String(t.releaseYear), t.genres.join(' / '),
     t.themeIds.map(id => names.get(id)).filter((n): n is string => !!n).join(' / '),
   ]);
-  return [['id', 'artiste', 'titre', 'année', 'genres', 'thèmes'], ...rows].map(row => row.map(csvCell).join(';')).join('\r\n') + '\r\n';
+  return '\uFEFF' + [['id', 'artiste', 'titre', 'année', 'genres', 'thèmes'], ...rows].map(row => row.map(csvCell).join(';')).join('\r\n') + '\r\n';
 }
 
 function csvCell(value: string): string {

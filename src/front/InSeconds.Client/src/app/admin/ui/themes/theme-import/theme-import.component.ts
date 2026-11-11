@@ -34,14 +34,14 @@ type Step = 'input' | 'preview';
         <p class="text-sm" style="color:var(--text-muted)">{{ 'admin.themes.import.help' | translate }}</p>
         <textarea class="app-input min-h-48 font-mono" [value]="text()" (input)="text.set(valueOf($event))" spellcheck="false"
           [placeholder]="'admin.themes.import.placeholder' | translate" [attr.aria-label]="'admin.themes.import.title' | translate" data-testid="import-text"></textarea>
-        <label class="text-sm underline self-start min-h-11 inline-flex items-center cursor-pointer" style="color:var(--text-muted)">
+        <label class="text-sm underline self-start min-h-11 inline-flex items-center cursor-pointer focus-within:outline-2 focus-within:outline-offset-2" style="color:var(--text-muted)">
           {{ 'admin.themes.import.pickFile' | translate }}
           <input type="file" accept=".csv,.txt,text/csv,text/plain" class="sr-only" (change)="readFile($event)" data-testid="import-file" />
         </label>
         <button type="button" appButton [disabled]="!text().trim()" (click)="toPreview()" data-testid="import-preview">{{ 'admin.themes.import.preview' | translate }}</button>
       } @else {
         <div class="flex flex-wrap gap-2 text-sm" data-testid="import-summary">
-          <span class="px-2.5 py-0.5 rounded-full" style="color:var(--color-success);border:1px solid var(--color-success)">{{ 'admin.themes.import.toAdd' | translate: { count: total() } }}</span>
+          <span class="px-2.5 py-0.5 rounded-full" [style.color]="total() > 0 ? 'var(--color-success)' : 'var(--text-muted)'" [style.border]="'1px solid ' + (total() > 0 ? 'var(--color-success)' : 'var(--border-neutral)')">{{ 'admin.themes.import.toAdd' | translate: { count: total() } }}</span>
           @if (alreadyCount() > 0) {
             <span class="px-2.5 py-0.5 rounded-full" style="color:var(--text-muted);border:1px solid var(--border-neutral)">{{ 'admin.themes.import.already' | translate: { count: alreadyCount() } }}</span>
           }
@@ -105,8 +105,8 @@ type Step = 'input' | 'preview';
         }
 
         <div class="flex flex-wrap gap-2 sticky bottom-0 py-2" style="background:var(--bg-page)">
-          <button type="button" appButton variant="neutral" (click)="step.set('input')" data-testid="import-back">{{ 'admin.themes.import.edit' | translate }}</button>
-          <button type="button" appButton [disabled]="total() === 0 || busy()" (click)="apply()" data-testid="import-apply">
+          <button type="button" appButton variant="neutral" class="flex-1" (click)="step.set('input')" data-testid="import-back">{{ 'admin.themes.import.edit' | translate }}</button>
+          <button type="button" appButton class="flex-1" [disabled]="total() === 0 || busy()" (click)="apply()" data-testid="import-apply">
             {{ 'admin.themes.import.apply' | translate: { count: total() } }}
           </button>
         </div>
@@ -141,8 +141,8 @@ export class ThemeImportComponent {
     return (event.target as HTMLTextAreaElement).value;
   }
 
-  protected keyOf(themeId: number | null, trackId: number): string {
-    return exclusionKey(themeId ?? 0, trackId);
+  protected keyOf(themeId: number, trackId: number): string {
+    return exclusionKey(themeId, trackId);
   }
 
   protected async readFile(event: Event): Promise<void> {
@@ -156,7 +156,7 @@ export class ThemeImportComponent {
     this.step.set('preview');
   }
 
-  protected toggle(themeId: number | null, trackId: number): void {
+  protected toggle(themeId: number, trackId: number): void {
     const key = this.keyOf(themeId, trackId);
     this.excluded.update(set => {
       const next = new Set(set);

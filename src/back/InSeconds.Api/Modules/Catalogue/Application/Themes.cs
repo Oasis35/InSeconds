@@ -184,11 +184,14 @@ public sealed class AssignTracksToThemesValidator : AbstractValidator<AssignTrac
     /// <summary>Un import de tout le pool (850 morceaux) dans une douzaine de thèmes tient largement dedans.</summary>
     public const int MaxLinks = 20_000;
 
+    /// <summary>Le nombre de thèmes d'une même demande.</summary>
+    public const int MaxThemes = 500;
+
     public AssignTracksToThemesValidator()
     {
-        RuleFor(x => x.Assignments).NotEmpty().Must(a => a.Count <= 500);
-        RuleFor(x => x.Assignments).Must(a => a.Sum(i => i.TrackIds.Count) <= MaxLinks).WithMessage($"Au plus {MaxLinks} morceaux à la fois.");
-        RuleForEach(x => x.Assignments).Must(a => a.TrackIds.Count > 0);
+        RuleFor(x => x.Assignments).NotEmpty().Must(a => a.Count <= MaxThemes).WithMessage($"Au plus {MaxThemes} thèmes à la fois.");
+        RuleFor(x => x.Assignments).Must(a => a.Sum(i => i?.TrackIds?.Count ?? 0) <= MaxLinks).WithMessage($"Au plus {MaxLinks} morceaux à la fois.");
+        RuleForEach(x => x.Assignments).Must(a => a?.TrackIds is { Count: > 0 });
     }
 }
 
