@@ -98,8 +98,10 @@ export class DailyPage implements OnInit {
     effect(() => {
       const screen = this.store.screen();
       this.chrome.setImmersive(screen === 'playing');
-      this.chrome.setDailyDone(screen === 'welcome' || screen === 'resume_prompt' ? false
-        : screen === 'already_played' || screen === 'done' ? true : null);
+      let done: boolean | null = null;
+      if (screen === 'welcome' || screen === 'resume_prompt') done = false;
+      else if (screen === 'already_played' || screen === 'done') done = true;
+      this.chrome.setDailyDone(done);
     });
     this.destroyRef.onDestroy(() => this.chrome.setImmersive(false));
     // Une nouvelle version du site ne recharge jamais la page en pleine manche (cf. `reloadMomentFor`).
