@@ -4,7 +4,7 @@ import { ButtonComponent, ButtonVariant } from '../../../ui/button/button.compon
 
 /**
  * Le bouton de partage de la fin d'une partie, commun aux modes (un mode n'importe pas l'autre) : « Partager mon score » au Daily, « Partager mon
- * score » (en contour neutre sous « Rejouer ») et « Partager la playlist » aux Platines. Chaque mode donne ses clés de traduction ; les défauts sont ceux du Daily.
+ * score » (en contour neutre sous « Rejouer ») et « Partager la playlist » aux Setlist. Chaque mode donne ses clés de traduction ; les défauts sont ceux du Daily.
  */
 @Component({
   selector: 'app-share-button',

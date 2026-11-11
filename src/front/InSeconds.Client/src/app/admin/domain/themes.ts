@@ -1,6 +1,6 @@
 import { PoolTrack } from './pool-track';
 
-/** Combien de morceaux jouables un thème doit avoir pour qu'une manche de Platines le tire (5 à jouer et 2 de réserve, `Runs:`). */
+/** Combien de morceaux jouables un thème doit avoir pour qu'une manche de Setlist le tire (5 à jouer et 2 de réserve, `Runs:`). */
 export const MIN_PLAYABLE_TRACKS = 7;
 /** À partir de combien de morceaux jouables un thème est assez varié pour que deux parties ne se ressemblent pas trop. */
 export const VARIED_FROM_TRACKS = 14;

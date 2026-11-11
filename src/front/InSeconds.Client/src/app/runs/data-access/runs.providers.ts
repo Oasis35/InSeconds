@@ -4,7 +4,7 @@ import { environment } from '../../../environments/environment';
 import { RunsApi } from './runs.api';
 
 /**
- * L'adresse de l'API, le client généré et l'adaptateur du mode Run, fournis par la **route** `/runs` (jamais à la racine : un fournisseur du démarrage qui
+ * L'adresse de l'API, le client généré et l'adaptateur du mode Run, fournis par la **route** `/setlist` (jamais à la racine : un fournisseur du démarrage qui
  * importerait ce client mettrait tout le client dans le bundle initial). Vide en dev et en E2E : le proxy d'`ng serve` relaie `/api`.
  */
 export function provideRunsApi(): Provider[] {

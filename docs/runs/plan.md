@@ -1,4 +1,4 @@
-# Run (Platines) : plan
+# Run (Setlist) : plan
 
 Feuille de route du mode, idées pour la suite et historique des décisions. Le découpage en PR du proto 1, livré, est dans [`../historique/runs-proto1-decoupage.md`](../historique/runs-proto1-decoupage.md). Règles : [`regles.md`](regles.md). Écrans : [`ecrans.md`](ecrans.md). Conception : [`conception.md`](conception.md).
 
@@ -88,7 +88,7 @@ Pour le prototype des bonus : une douzaine de bonus communs, sans rareté ni dé
   - victoire au bout de 4 manches ;
   - écoute fixe de 10 s, pool commun avec le Daily ;
   - points = (50 + 50) × difficulté, runs illimités ;
-  - nom affiché « Platines », paliers en disques inventés ;
+  - nom affiché « Setlist », paliers en disques inventés ;
   - accès sur invitation, playlist partagée par lien avec comparaison et sans classement ;
   - morceau sans extrait neutralisé, partie à l'honneur sans chrono (chrono de 45 s ajouté le 03/11, cf. regles.md) ;
   - entrée par une carte sur l'accueil (option A).

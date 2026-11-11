@@ -1190,7 +1190,7 @@ describe('RunGameStore', () => {
     });
   });
 
-  describe("le lien d'un ami (/runs/<code>)", () => {
+  describe("le lien d'un ami (/setlist/<code>)", () => {
     it("une playlist pas encore jouée : l'écran du lien, sans rien lancer ni créer d'invité", async () => {
       api.meResult = ME({ hasAccess: false });
 

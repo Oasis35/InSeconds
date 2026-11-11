@@ -3,13 +3,13 @@ import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { RunDiscComponent } from '../run-disc/run-disc.component';
 
-/** La carte Platines de l'accueil et de l'écran « déjà joué » : disque doré, « Platines », « Accès anticipé », « Vise le disque d'or. », chevron. Ouvre `/runs`. */
+/** La carte Setlist de l'accueil et de l'écran « déjà joué » : disque doré, « Setlist », « Accès anticipé », « Vise le disque d'or. », chevron. Ouvre `/setlist`. */
 @Component({
   selector: 'app-run-home-card',
   imports: [TranslatePipe, RouterLink, RunDiscComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <a routerLink="/runs" data-testid="run-home-card"
+    <a routerLink="/setlist" data-testid="run-home-card"
       class="flex items-center gap-4 rounded-(--radius-card) px-4 py-3.5 transition-colors touch-manipulation hover:bg-white/[0.03]"
       style="background:rgb(var(--rgb-surface) / 0.55);border:1px solid rgb(var(--rgb-warning) / 0.45)">
       <app-run-disc class="shrink-0" disc="runs.discs.gold" [size]="52" />

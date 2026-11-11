@@ -7,7 +7,7 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
 import { ButtonComponent } from '../../../ui/button/button.component';
 
 /**
- * Le lien reçu : ce que voit un ami qui ouvre `/runs/<code>` sans avoir joué cette playlist, invité compris, avec ou sans accès à Platines. Le logo
+ * Le lien reçu : ce que voit un ami qui ouvre `/setlist/<code>` sans avoir joué cette playlist, invité compris, avec ou sans accès à Setlist. Le logo
  * seul en haut (ni série ni compte : l'écran doit marcher pour un invité tout neuf), le disque d'or, « Clément te lance une playlist » (« Invité » à
  * défaut), quatre règles courtes tirées des règles figées de la playlist, puis « Jouer », le clic qui crée l'invité si besoin et lance le premier
  * son (iPhone). Ni surtitre ni nombre de joueurs.

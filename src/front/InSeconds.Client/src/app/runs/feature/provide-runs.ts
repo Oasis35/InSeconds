@@ -2,8 +2,8 @@ import { EnvironmentProviders, makeEnvironmentProviders } from '@angular/core';
 import { HOME_MODE_ENTRIES } from '../../core/shell/home-mode-entries/home-mode-entries';
 
 /**
- * Ce que le domaine `runs` branche dans l'app dès le démarrage : son entrée sur l'accueil du jeu du jour (la carte Platines), chargée à la
- * demande. Rien d'autre : le client de l'API et le lecteur sont fournis par la route `/runs` et par l'entrée elle-même.
+ * Ce que le domaine `runs` branche dans l'app dès le démarrage : son entrée sur l'accueil du jeu du jour (la carte Setlist), chargée à la
+ * demande. Rien d'autre : le client de l'API et le lecteur sont fournis par la route `/setlist` et par l'entrée elle-même.
  */
 export function provideRuns(): EnvironmentProviders {
   return makeEnvironmentProviders([

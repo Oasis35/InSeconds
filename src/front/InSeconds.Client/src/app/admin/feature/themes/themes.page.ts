@@ -27,7 +27,7 @@ const DIALOG_MAX_WIDTH = '26rem';
 type DeezerStatus = 'loading' | 'success' | 'error';
 
 /**
- * `/admin/themes` (onglet « Thèmes ») : les thèmes de morceaux, dont les manches de Platines tirent leurs morceaux. À gauche (sur téléphone : seule, puis
+ * `/admin/themes` (onglet « Thèmes ») : les thèmes de morceaux, dont les manches de Setlist tirent leurs morceaux. À gauche (sur téléphone : seule, puis
  * remplacée par le détail), la liste avec recherche et puces d'état ; à droite, le détail du thème ouvert, qui défile avec la page comme le reste de l'admin : ses morceaux, paginés
  * (écoute ▶, retrait ✕ : le morceau reste dans le pool) et l'ajout de morceaux du pool ou de Deezer. Le thème ouvert et la page de ses morceaux vivent
  * dans l'adresse (`?theme=3&page=2`, page numérotée à partir de 1).

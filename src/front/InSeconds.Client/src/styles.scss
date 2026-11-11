@@ -55,13 +55,13 @@
   --wave-locked:   color-mix(in srgb, rgb(var(--rgb-text)) 14%, rgb(var(--rgb-bg)));     /* pas encore débloqué */
   --wave-unlocked: color-mix(in srgb, rgb(var(--rgb-accent-2)) 32%, rgb(var(--rgb-bg))); /* débloqué, ou déjà écouté */
   --wave-trail:    color-mix(in srgb, rgb(var(--rgb-accent-2)) 30%, white);              /* traîne derrière la tête de lecture */
-  --wave-old:      color-mix(in srgb, rgb(var(--rgb-text)) 30%, rgb(var(--rgb-bg)));     /* un morceau déjà joué (la pile de Platines) */
+  --wave-old:      color-mix(in srgb, rgb(var(--rgb-text)) 30%, rgb(var(--rgb-bg)));     /* un morceau déjà joué (la pile de Setlist) */
 
   /* Bordures / overlays */
   --border-subtle:  rgb(var(--rgb-border) / 0.15);
   --border-medium:  rgb(var(--rgb-border) / 0.18);
   --border-strong:  rgb(var(--rgb-border) / 0.3);
-  /* La zone sous un objectif (écran « Difficulté ? » de Platines) : assombrie. */
+  /* La zone sous un objectif (écran « Difficulté ? » de Setlist) : assombrie. */
   --shade-below:    rgb(0 0 0 / 0.28);
   /* Contour des boutons secondaires sans couleur de sens (Passer, indices) */
   --border-neutral: rgb(var(--rgb-text) / 0.28);
@@ -77,7 +77,7 @@
      à l'orange de la série (chaud). */
   --gradient-ice: linear-gradient(135deg, #BEFAFF, rgb(var(--rgb-accent-2)) 55%, rgb(var(--rgb-violet)));
 
-  /* Disques du mode Run (Platines) */
+  /* Disques du mode Run (Setlist) */
   --disc-gold:      rgb(var(--rgb-warning));
   --disc-silver:    #C3C9D4;
   --disc-bronze:    #C47A3A;
