@@ -135,6 +135,28 @@ test.describe('Admin - thèmes', () => {
     expect(all).toBe(8);
   });
 
+  test('pagine les morceaux du thème par 10, la page vit dans l\'adresse', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    const id = await createTheme(page, 'Années 90', 12);
+    await admin.clickTab('Thèmes');
+    await card(page, 'Années 90').click();
+    await expect(page.getByTestId('theme-track')).toHaveCount(10);
+    await expect(page).toHaveURL(new RegExp(`theme=${id}(&|$)`));
+
+    await page.getByTestId('theme-page-next').click();
+
+    await expect(page.getByTestId('theme-track')).toHaveCount(2);
+    await expect(page).toHaveURL(new RegExp(`theme=${id}&page=2$`));
+    await page.reload();
+    await expect(page.getByTestId('theme-track')).toHaveCount(2);
+
+    await page.getByTestId('theme-page-prev').click();
+    await expect(page.getByTestId('theme-track')).toHaveCount(10);
+    await expect(page).not.toHaveURL(/page=/);
+  });
+
   test('ajoute des morceaux du pool au thème', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();

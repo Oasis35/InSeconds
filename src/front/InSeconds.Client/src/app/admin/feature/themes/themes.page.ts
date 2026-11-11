@@ -73,7 +73,7 @@ type DeezerStatus = 'loading' | 'success' | 'error';
                 (closed)="adding.set(false)" (listen)="listen($event)" (previewResult)="previewResult($event)"
                 (deezerQueryChange)="search.setQuery($event)" (addPicked)="addPicked(theme.id, $event)" (addDeezer)="addDeezer(theme.id, $event)" />
             } @else {
-              <app-theme-detail [theme]="theme" [tracks]="themeTracks()" [errorKey]="detailErrorKey()" [page]="page()" (pageChange)="page.set($event)" (back)="closeDetail()"
+              <app-theme-detail [theme]="theme" [tracks]="themeTracks()" [errorKey]="detailErrorKey()" [page]="page()" [ready]="pool.isFulfilled()" (pageChange)="page.set($event)" (back)="closeDetail()"
                 (rename)="renameTheme(theme.id, $event)" (remove)="deleteTheme(theme.id)" (addTracks)="adding.set(true)" (pickIcon)="pickingIcon.set(true)" (listen)="listen($event)"
                 (removeTrack)="removeTrack(theme.id, $event)" />
             }

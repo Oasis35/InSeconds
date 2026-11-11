@@ -154,6 +154,26 @@ describe('ThemeDetailComponent', () => {
       expect(changes).toContain(2);
     });
 
+    it('garde la page de l\'adresse tant que les morceaux ne sont pas lus', () => {
+      TestBed.configureTestingModule({ providers: [provideTranslateService()] });
+      const fixture = TestBed.createComponent(ThemeDetailComponent);
+      fixture.componentRef.setInput('theme', { id: 1, name: 'Années 80', icon: null, total: 0, playable: 0, health: 'unplayable' } satisfies ThemeRow);
+      fixture.componentRef.setInput('tracks', []);
+      fixture.componentRef.setInput('page', 1);
+      fixture.componentRef.setInput('ready', false);
+      const changes: number[] = [];
+      fixture.componentInstance.pageChange.subscribe(p => changes.push(p));
+      fixture.detectChanges();
+      expect(changes).toEqual([]);
+
+      fixture.componentRef.setInput('tracks', many);
+      fixture.componentRef.setInput('ready', true);
+      fixture.detectChanges();
+
+      expect(changes).toEqual([]);
+      expect(fixture.nativeElement.querySelectorAll('[data-testid="theme-track"]')).toHaveLength(10);
+    });
+
     it('repart de la première page quand on cherche dans le thème', () => {
       const { fixture, el, changes } = renderMany(1);
       const input = el.querySelector<HTMLInputElement>('[data-testid="theme-track-search"]')!;

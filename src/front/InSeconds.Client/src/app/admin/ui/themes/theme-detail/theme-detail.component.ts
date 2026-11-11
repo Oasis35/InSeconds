@@ -40,11 +40,11 @@ export const THEME_PAGE_SIZE = 10;
             </span>
           </h2>
         }
-        <button type="button" appButton variant="neutral" size="sm" (click)="pickIcon.emit()" data-testid="theme-icon-open">{{ 'admin.themes.changeIcon' | translate }}</button>
+        <button type="button" appButton variant="neutral" size="sm" class="touch-target" (click)="pickIcon.emit()" data-testid="theme-icon-open">{{ 'admin.themes.changeIcon' | translate }}</button>
         <span class="flex flex-wrap items-center gap-2 lg:ml-auto">
           <button type="button" appButton (click)="addTracks.emit()" data-testid="theme-add-open">{{ 'admin.themes.addTracks' | translate }}</button>
-          <button type="button" appButton variant="neutral" size="sm" (click)="editing.set(!editing())" data-testid="theme-rename">{{ 'admin.themes.rename' | translate }}</button>
-          <button type="button" appButton variant="neutral" size="sm" [disabled]="theme().total > 0"
+          <button type="button" appButton variant="neutral" size="sm" class="touch-target" (click)="editing.set(!editing())" data-testid="theme-rename">{{ 'admin.themes.rename' | translate }}</button>
+          <button type="button" appButton variant="neutral" size="sm" class="touch-target" [disabled]="theme().total > 0"
             [title]="(theme().total > 0 ? 'admin.themes.deleteBlocked' : 'admin.themes.delete') | translate"
             (click)="remove.emit()" data-testid="theme-delete">{{ 'admin.themes.delete' | translate }}</button>
         </span>
@@ -93,17 +93,23 @@ export const THEME_PAGE_SIZE = 10;
       </ul>
 
       @if (pages() > 1) {
-        <nav class="flex items-center justify-between gap-2" [attr.aria-label]="'admin.themes.pagination' | translate" data-testid="theme-pager">
-          <button type="button" appButton variant="neutral" size="sm" [disabled]="current() === 0" (click)="goTo(current() - 1)" data-testid="theme-page-prev">
+        <nav class="flex items-center justify-between gap-1" [attr.aria-label]="'admin.themes.pagination' | translate" data-testid="theme-pager">
+          <button type="button" appButton variant="neutral" size="sm" class="touch-target" [disabled]="current() === 0" (click)="goTo(current() - 1)" data-testid="theme-page-prev">
             ← {{ 'admin.themes.previous' | translate }}
           </button>
-          <span class="text-sm" style="color:var(--text-muted)" data-testid="theme-page-label">{{ 'admin.themes.pageOf' | translate: { current: current() + 1, total: pages() } }}</span>
-          <button type="button" appButton variant="neutral" size="sm" [disabled]="current() >= pages() - 1" (click)="goTo(current() + 1)" data-testid="theme-page-next">
+          <span class="text-xs" style="color:var(--text-muted)" data-testid="theme-page-label">{{ 'admin.themes.pageOf' | translate: { current: current() + 1, total: pages() } }}</span>
+          <button type="button" appButton variant="neutral" size="sm" class="touch-target" [disabled]="current() >= pages() - 1" (click)="goTo(current() + 1)" data-testid="theme-page-next">
             {{ 'admin.themes.next' | translate }} →
           </button>
         </nav>
       }
     </div>
+  `,
+  // Sur écran tactile, les petits boutons font 44 px de haut (le `sm` du kit est compact, pour la souris).
+  styles: `
+    @media (pointer: coarse) {
+      button.touch-target { min-height: 2.75rem; }
+    }
   `,
 })
 export class ThemeDetailComponent {
@@ -113,6 +119,8 @@ export class ThemeDetailComponent {
   readonly errorKey = input<string | null>(null);
   /** La page affichée, à partir de 0 : la page du thème la garde (elle vit dans l'adresse). */
   readonly page = input(0);
+  /** Les morceaux du pool sont lus : tant qu'ils ne le sont pas, la liste est vide sans que la page de l'adresse soit à corriger. */
+  readonly ready = input(true);
   readonly pageChange = output<number>();
   readonly back = output();
   readonly rename = output<string>();
@@ -137,7 +145,7 @@ export class ThemeDetailComponent {
   constructor() {
     // La page ramenée à la dernière existante est aussi rendue à la page du thème, donc à l'adresse.
     effect(() => {
-      if (this.current() !== this.page()) this.pageChange.emit(this.current());
+      if (this.ready() && this.current() !== this.page()) this.pageChange.emit(this.current());
     });
   }
 

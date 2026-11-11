@@ -22,7 +22,7 @@ import { ThemeIconComponent } from '../../../../ui/theme-icon/theme-icon.compone
       <div class="flex flex-wrap gap-2" role="group" [attr.aria-label]="'admin.themes.filters' | translate">
         @for (chip of chips(); track chip.id) {
           <button type="button" (click)="filter.set(chip.id)" [attr.aria-pressed]="filter() === chip.id"
-            class="text-[13px] px-2.5 py-1 rounded-full" data-testid="theme-chip"
+            class="text-[13px] px-2.5 py-1.5 min-h-9 rounded-full" data-testid="theme-chip"
             [style.color]="filter() === chip.id ? 'var(--text-hi)' : 'var(--text-muted)'"
             [style.background]="filter() === chip.id ? 'var(--text-sep)' : 'transparent'" style="border:1px solid var(--border-neutral)">
             {{ chip.label | translate }} · {{ chip.count }}
