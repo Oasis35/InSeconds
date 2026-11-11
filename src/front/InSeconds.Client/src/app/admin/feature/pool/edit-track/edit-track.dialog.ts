@@ -148,11 +148,13 @@ export class EditTrackDialog {
     if (this.saveDisabled()) return;
     this.saving.set(true);
     this.error.set(null);
-    const { artist, title, genre } = this.nameForm().value();
-    // Le genre et les autres titres ne sont envoyé que s'il a changé : enregistrer l'artiste seul ne remplace jamais les genres de Deezer. Les thèmes aussi seulement s'ils changent.
+    const { artist, title, genre, altTitles } = this.nameForm().value();
+    // Le genre et les autres titres ne sont envoyés que s'ils ont changé : enregistrer l'artiste seul ne remplace jamais les genres de Deezer. Les thèmes aussi seulement s'ils changent.
     const namesChanged = artist.trim() !== this.track.artist || title.trim() !== this.track.title || genre.trim() !== this.originalGenre || this.altTitlesChanged();
     const genreToSend = genre.trim() === this.originalGenre ? undefined : genre;
-    let error = namesChanged ? await this.pool.rename(this.track.id, artist, title, genreToSend, this.altTitlesChanged() ? parseAltTitles(this.nameForm().value().altTitles) : undefined) : null;
+    const altTitlesToSend = this.altTitlesChanged() ? parseAltTitles(altTitles) : undefined;
+    let error: AppError | null = null;
+    if (namesChanged) error = await this.pool.rename(this.track.id, artist, title, genreToSend, altTitlesToSend);
     if (!error && this.themesChanged()) error = await this.pool.setTrackThemes(this.track.id, this.themeIds());
     this.saving.set(false);
     if (error) this.error.set(error);
