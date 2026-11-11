@@ -13,7 +13,7 @@ import { AdminCounts } from '../../data-access/admin-counts';
 import { PoolStore } from '../../data-access/pool.store';
 import { FileDownload } from '../../../core/download/file-download';
 import { DeezerResult, PoolTrack, ThemeAssignment } from '../../domain/pool-track';
-import { poolToCsv } from '../../domain/theme-import';
+import { poolCsvFileName, poolToCsv } from '../../domain/theme-import';
 import { themeRows } from '../../domain/themes';
 import { ContentTabsComponent } from '../../ui/content-tabs/content-tabs.component';
 import { ThemeImportComponent } from '../../ui/themes/theme-import/theme-import.component';
@@ -28,9 +28,9 @@ type DeezerStatus = 'loading' | 'success' | 'error';
 
 /**
  * `/admin/themes` (onglet « Thèmes ») : les thèmes de morceaux, dont les manches de Platines tirent leurs morceaux. À gauche (sur téléphone : seule, puis
- * remplacée par le détail), la liste avec recherche et puces d'état ; à droite, le détail du thème ouvert, collé sous les onglets sur PC et qui défile dans
- * lui-même : ses morceaux (écoute ▶, retrait ✕ : le morceau reste dans le pool) et l'ajout de morceaux du pool ou de Deezer. Le thème ouvert vit dans
- * l'adresse (`?theme=3`).
+ * remplacée par le détail), la liste avec recherche et puces d'état ; à droite, le détail du thème ouvert, qui défile avec la page comme le reste de l'admin : ses morceaux, paginés
+ * (écoute ▶, retrait ✕ : le morceau reste dans le pool) et l'ajout de morceaux du pool ou de Deezer. Le thème ouvert et la page de ses morceaux vivent
+ * dans l'adresse (`?theme=3&page=2`, page numérotée à partir de 1).
  */
 @Component({
   selector: 'app-themes-page',
@@ -39,14 +39,14 @@ type DeezerStatus = 'loading' | 'success' | 'error';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full min-w-0' },
   template: `
-    <div class="w-full max-w-2xl lg:max-w-none mx-auto flex flex-col gap-4">
+    <div class="w-full max-w-2xl lg:max-w-none mx-auto flex flex-col gap-3">
       @if (importing()) {
         <app-theme-import [tracks]="pool.tracks()" [themes]="pool.themes()" [busy]="importBusy()" [errorKey]="importErrorKey()" [added]="importAdded()"
           (closed)="closeImport()" (listen)="listen($event)" (applied)="applyImport($event)" (anotherRequested)="importAdded.set(null)" />
       } @else {
-      <app-content-tabs [candidates]="candidateCount()" [class.hidden]="selected()" class="lg:block" />
-      <div class="flex-wrap items-center justify-between gap-x-3 lg:flex" [class.flex]="!selected()" [class.hidden]="selected()">
-        <h1 class="text-xl font-semibold" style="color:var(--text-hi)">{{ 'admin.themes.title' | translate }}</h1>
+      <div class="flex-wrap items-center justify-between gap-x-3 gap-y-1 lg:flex" [class.flex]="!selected()" [class.hidden]="selected()">
+        <app-content-tabs [candidates]="candidateCount()" class="w-full lg:w-auto" />
+        <h1 class="text-xl font-semibold lg:sr-only" style="color:var(--text-hi)">{{ 'admin.themes.title' | translate }}</h1>
         <span class="flex items-center gap-1 text-sm" style="color:var(--text-muted)">
           <button type="button" class="underline min-h-11 px-2" (click)="importing.set(true)" data-testid="themes-import">{{ 'admin.themes.import.open' | translate }}</button>
           <button type="button" class="underline min-h-11 px-2" (click)="exportPool()" data-testid="themes-export">{{ 'admin.themes.export' | translate }}</button>
@@ -62,7 +62,7 @@ type DeezerStatus = 'loading' | 'success' | 'error';
           <app-theme-list [rows]="rows()" [selectedId]="selectedId()" [errorKey]="listErrorKey()" (opened)="open($event)" (add)="createTheme($event)" />
         </section>
 
-        <section class="lg:block lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:rounded-(--radius-card) lg:p-5"
+        <section class="lg:block lg:rounded-(--radius-card) lg:p-4"
           [class.hidden]="!selected()" data-testid="theme-panel">
           @if (selected(); as theme) {
             @if (pickingIcon()) {
@@ -73,7 +73,7 @@ type DeezerStatus = 'loading' | 'success' | 'error';
                 (closed)="adding.set(false)" (listen)="listen($event)" (previewResult)="previewResult($event)"
                 (deezerQueryChange)="search.setQuery($event)" (addPicked)="addPicked(theme.id, $event)" (addDeezer)="addDeezer(theme.id, $event)" />
             } @else {
-              <app-theme-detail [theme]="theme" [tracks]="themeTracks()" [errorKey]="detailErrorKey()" (back)="selectedId.set(null)"
+              <app-theme-detail [theme]="theme" [tracks]="themeTracks()" [errorKey]="detailErrorKey()" [page]="page()" (pageChange)="page.set($event)" (back)="closeDetail()"
                 (rename)="renameTheme(theme.id, $event)" (remove)="deleteTheme(theme.id)" (addTracks)="adding.set(true)" (pickIcon)="pickingIcon.set(true)" (listen)="listen($event)"
                 (removeTrack)="removeTrack(theme.id, $event)" />
             }
@@ -100,6 +100,8 @@ export class ThemesPage {
   protected readonly candidateCount = inject(AdminCounts).candidates;
 
   protected readonly selectedId = signal<number | null>(null);
+  /** La page des morceaux du thème ouvert, à partir de 0. */
+  protected readonly page = signal(0);
   protected readonly adding = signal(false);
   protected readonly pickingIcon = signal(false);
   protected readonly importing = signal(false);
@@ -124,13 +126,16 @@ export class ThemesPage {
   constructor() {
     const id = Number(this.route.snapshot.queryParamMap.get('theme'));
     if (Number.isInteger(id) && id > 0) this.selectedId.set(id);
+    const page = Number(this.route.snapshot.queryParamMap.get('page'));
+    if (Number.isInteger(page) && page >= 1) this.page.set(page - 1);
 
-    // Le thème ouvert → adresse, une fois la liste lue (un thème qui n'existe plus ferme le détail).
+    // Le thème ouvert et la page de ses morceaux → adresse, une fois la liste lue (un thème qui n'existe plus ferme le détail).
     effect(() => {
       if (!this.pool.isFulfilled()) return;
       const current = this.selected()?.id ?? null;
+      const page = this.page() + 1;
       untracked(() => void this.router.navigate([], {
-        relativeTo: this.route, queryParams: { theme: current }, queryParamsHandling: 'merge', replaceUrl: true,
+        relativeTo: this.route, queryParams: { theme: current, page: current !== null && page > 1 ? page : null }, queryParamsHandling: 'merge', replaceUrl: true,
       }));
     });
 
@@ -142,7 +147,13 @@ export class ThemesPage {
     this.adding.set(false);
     this.pickingIcon.set(false);
     this.detailErrorKey.set(null);
+    this.page.set(0);
     this.selectedId.set(id);
+  }
+
+  protected closeDetail(): void {
+    this.page.set(0);
+    this.selectedId.set(null);
   }
 
   protected async createTheme(name: string): Promise<void> {
@@ -166,7 +177,10 @@ export class ThemesPage {
   protected async deleteTheme(id: number): Promise<void> {
     const error = await this.pool.deleteTheme(id);
     this.detailErrorKey.set(this.keyOf(error));
-    if (!error) this.selectedId.set(null);
+    if (!error) {
+      this.page.set(0);
+      this.selectedId.set(null);
+    }
   }
 
   protected async removeTrack(themeId: number, track: PoolTrack): Promise<void> {
@@ -180,7 +194,7 @@ export class ThemesPage {
   }
 
   protected exportPool(): void {
-    this.download.saveText('inseconds-pool.csv', poolToCsv(this.pool.tracks(), this.pool.themes()), 'text/csv;charset=utf-8');
+    this.download.saveText(poolCsvFileName(new Date()), poolToCsv(this.pool.tracks(), this.pool.themes()), 'text/csv;charset=utf-8');
   }
 
   protected closeImport(): void {

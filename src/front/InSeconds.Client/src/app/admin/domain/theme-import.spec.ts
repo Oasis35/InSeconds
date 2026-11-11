@@ -1,6 +1,6 @@
 import { PoolTheme } from './pool-track';
 import { poolTrack } from './testing/pool-track.fixture';
-import { assignmentsOf, exclusionKey, parseClassification, poolToCsv, previewImport, totalToAdd } from './theme-import';
+import { assignmentsOf, exclusionKey, parseClassification, poolCsvFileName, poolToCsv, previewImport, totalToAdd } from './theme-import';
 
 describe('theme-import', () => {
   const themes: PoolTheme[] = [
@@ -67,6 +67,12 @@ describe('theme-import', () => {
       const preview = previewImport(parseClassification('Films ; 11\nAnnées 80 ; 10'), themes, tracks);
 
       expect(assignmentsOf(preview)).toEqual([]);
+    });
+  });
+
+  describe('poolCsvFileName', () => {
+    it('met l\'année, le mois, le jour, l\'heure, les minutes et les secondes dans le nom', () => {
+      expect(poolCsvFileName(new Date(2026, 10, 11, 17, 5, 9))).toBe('inseconds-pool-2026-11-11_17-05-09.csv');
     });
   });
 

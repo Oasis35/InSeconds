@@ -384,7 +384,7 @@ test.describe('Admin - icônes des thèmes', () => {
     await page.getByTestId('import-close').click();
     const download = page.waitForEvent('download');
     await page.getByTestId('themes-export').click();
-    expect((await download).suggestedFilename()).toBe('inseconds-pool.csv');
+    expect((await download).suggestedFilename()).toMatch(/^inseconds-pool-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.csv$/);
   });
 
   test('ajoute en lot les morceaux d\'un filtre d\'années ou de genre', async ({ page }) => {

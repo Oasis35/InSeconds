@@ -112,4 +112,61 @@ describe('ThemeDetailComponent', () => {
 
     expect(renamed).toEqual([]);
   });
+
+  describe('pagination', () => {
+    const many = Array.from({ length: 23 }, (_, i) => poolTrack({ id: i + 1, artist: 'Artiste', title: `Titre ${String(i + 1).padStart(2, '0')}` }));
+
+    function renderMany(page = 0) {
+      TestBed.configureTestingModule({ providers: [provideTranslateService()] });
+      const fixture = TestBed.createComponent(ThemeDetailComponent);
+      fixture.componentRef.setInput('theme', { id: 1, name: 'Années 80', icon: null, total: 23, playable: 23, health: 'varied' } satisfies ThemeRow);
+      fixture.componentRef.setInput('tracks', many);
+      fixture.componentRef.setInput('page', page);
+      const changes: number[] = [];
+      fixture.componentInstance.pageChange.subscribe(p => changes.push(p));
+      fixture.detectChanges();
+      return { fixture, el: fixture.nativeElement as HTMLElement, changes };
+    }
+
+    it('montre 10 morceaux par page et propose la page suivante', () => {
+      const { el, changes } = renderMany();
+
+      expect(el.querySelectorAll('[data-testid="theme-track"]')).toHaveLength(10);
+      expect(el.querySelector('[data-testid="theme-page-label"]')?.textContent).toContain('admin.themes.pageOf');
+      expect(el.querySelector<HTMLButtonElement>('[data-testid="theme-page-prev"]')!.disabled).toBe(true);
+
+      el.querySelector<HTMLButtonElement>('[data-testid="theme-page-next"]')!.click();
+      expect(changes).toEqual([1]);
+    });
+
+    it('affiche la page demandée, la dernière avec le reste', () => {
+      const { el } = renderMany(2);
+
+      expect(el.querySelectorAll('[data-testid="theme-track"]')).toHaveLength(3);
+      expect(el.querySelector<HTMLButtonElement>('[data-testid="theme-page-next"]')!.disabled).toBe(true);
+    });
+
+    it('ramène une page au-delà de la dernière à la dernière, et le dit à la page du thème', () => {
+      const { fixture, el, changes } = renderMany(9);
+      fixture.detectChanges();
+
+      expect(el.querySelectorAll('[data-testid="theme-track"]')).toHaveLength(3);
+      expect(changes).toContain(2);
+    });
+
+    it('repart de la première page quand on cherche dans le thème', () => {
+      const { fixture, el, changes } = renderMany(1);
+      const input = el.querySelector<HTMLInputElement>('[data-testid="theme-track-search"]')!;
+
+      input.value = 'titre 1';
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      expect(changes).toContain(0);
+    });
+
+    it('n\'affiche pas de pagination pour une seule page', () => {
+      expect(render().el.querySelector('[data-testid="theme-pager"]')).toBeNull();
+    });
+  });
 });
