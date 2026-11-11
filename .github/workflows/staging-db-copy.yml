@@ -2,7 +2,7 @@ name: Copy prod DB to staging
 
 # Lancement manuel uniquement (onglet Actions → "Copy prod DB to staging" → Run workflow).
 #
-# Copie les données de la prod (schémas players, catalogue, daily, runs, infra) dans la base du staging, puis les
+# Copie les données de la prod (schémas players, catalogue, daily, runs, social, infra) dans la base du staging, puis les
 # anonymise (deploy/vps/copy-prod-db-to-staging.sh, avec deploy/vps/staging-anonymize.sql de ce commit).
 # Un workflow manuel n'est listé que s'il existe sur main ; c'est la version de la branche choisie au lancement
 # qui s'exécute. La prod n'est lue qu'en pg_dump, jamais modifiée. L'image de l'API staging doit être déployée :
