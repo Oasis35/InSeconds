@@ -111,3 +111,30 @@ internal sealed class ThemeConfiguration : IEntityTypeConfiguration<Theme>
         builder.Property(t => t.CreatedAt).IsRequired();
     }
 }
+
+internal sealed class CandidateConfiguration : IEntityTypeConfiguration<Candidate>
+{
+    /// <summary>Index unique de l'identifiant Deezer : un morceau n'est candidat qu'une fois.</summary>
+    public const string DeezerIdIndex = "ix_candidates_deezer_track_id";
+
+    public void Configure(EntityTypeBuilder<Candidate> builder)
+    {
+        builder.ToTable("candidates", DbSchemas.Catalogue, table =>
+        {
+            table.HasCheckConstraint("ck_candidates_status", "status IN (0, 1, 2)");
+            table.HasCheckConstraint("ck_candidates_preview_status", "preview_status IN (0, 1, 2)");
+            table.HasCheckConstraint("ck_candidates_priority", "priority IS NULL OR priority IN ('A', 'B', 'C')");
+        });
+        builder.HasKey(c => c.Id);
+        // Identifiant tiré d'une séquence dès l'ajout : les messages de lecture le portent avant l'enregistrement de la transaction.
+        builder.Property(c => c.Id).UseHiLo("candidates_hilo", DbSchemas.Catalogue);
+        builder.Property(c => c.DeezerTrackId).IsRequired();
+        builder.HasIndex(c => c.DeezerTrackId).IsUnique().HasDatabaseName(DeezerIdIndex);
+        builder.Property(c => c.Priority).HasMaxLength(Candidate.MaxPriorityLength);
+        builder.Property(c => c.Status).HasConversion<short>();
+        builder.Property(c => c.PreviewStatus).HasConversion<short>();
+        builder.Property(c => c.CreatedAt).IsRequired();
+        // Ignoré : calculé depuis DismissedAt.
+        builder.Ignore(c => c.IsDismissed);
+    }
+}

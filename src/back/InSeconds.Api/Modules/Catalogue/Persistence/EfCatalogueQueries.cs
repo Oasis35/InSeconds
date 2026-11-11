@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace InSeconds.Api.Modules.Catalogue.Persistence;
 
-public sealed class EfCatalogueQueries(InSecondsDbContext db) : ICatalogueQueries
+public sealed class EfCatalogueQueries(InSecondsDbContext db, TimeProvider time) : ICatalogueQueries
 {
     public async Task<IReadOnlyList<TrackRow>> ListTracksAsync(CancellationToken ct) =>
         await db.Set<Track>().AsNoTracking()
@@ -23,6 +23,42 @@ public sealed class EfCatalogueQueries(InSecondsDbContext db) : ICatalogueQuerie
             .OrderBy(t => t.Name)
             .Select(t => new ThemeItem(t.Id, t.Name, db.Set<Track>().Count(track => track.Themes.Any(x => x.Id == t.Id)), t.Icon))
             .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<CandidateItem>> ListCandidatesAsync(CancellationToken ct)
+    {
+        var rows = await db.Set<Candidate>().AsNoTracking()
+            .OrderBy(c => c.Id)
+            .Select(c => new
+            {
+                c.Id,
+                c.DeezerTrackId,
+                c.Priority,
+                c.Status,
+                c.Artist,
+                c.Title,
+                c.ReleaseYear,
+                c.Rank,
+                c.PreviewStatus,
+                InCatalogue = db.Set<Track>().Any(t => t.DeezerTrackId == c.DeezerTrackId),
+                IsDismissed = c.DismissedAt != null,
+                AddRequestedAt = c.AddRequestedAt,
+            })
+            .ToListAsync(ct);
+        var now = time.GetUtcNow();
+        return
+        [
+            .. rows.Select(r => new CandidateItem(
+                r.Id, r.DeezerTrackId, r.Priority, CandidateStatusName(r.Status), r.Artist, r.Title, r.ReleaseYear, r.Rank,
+                TrackMapping.Name(r.PreviewStatus), r.InCatalogue, r.IsDismissed, Candidate.IsAddingAt(r.AddRequestedAt, now))),
+        ];
+    }
+
+    private static string CandidateStatusName(CandidateStatus status) => status switch
+    {
+        CandidateStatus.Ready => "ready",
+        CandidateStatus.NotFound => "not_found",
+        _ => "pending",
+    };
 
     public async Task<CatalogueHealthResponse> GetHealthAsync(CancellationToken ct)
     {

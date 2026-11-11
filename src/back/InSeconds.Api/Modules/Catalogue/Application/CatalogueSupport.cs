@@ -17,6 +17,8 @@ public static class CatalogueErrorCodes
     public const string ThemeNotFound = "catalogue.theme_not_found";
     public const string ThemeNameTaken = "catalogue.theme_name_taken";
     public const string ThemeInUse = "catalogue.theme_in_use";
+    public const string CandidateNotFound = "catalogue.candidate_not_found";
+    public const string CandidatePreviewMissing = "catalogue.candidate_preview_missing";
 }
 
 internal static class CatalogueProblems
@@ -26,6 +28,13 @@ internal static class CatalogueProblems
 
     public static ProblemDetails ThemeNotFound() =>
         ApiProblem.Of(StatusCodes.Status404NotFound, CatalogueErrorCodes.ThemeNotFound, "Thème introuvable.");
+
+    public static ProblemDetails CandidateNotFound() =>
+        ApiProblem.Of(StatusCodes.Status404NotFound, CatalogueErrorCodes.CandidateNotFound, "Candidat introuvable.");
+
+    /// <summary>Le morceau est lu mais Deezer n'a pas d'extrait : rien à écouter, 422 (la demande est bien formée).</summary>
+    public static ProblemDetails CandidatePreviewMissing() =>
+        ApiProblem.Of(StatusCodes.Status422UnprocessableEntity, CatalogueErrorCodes.CandidatePreviewMissing, "Deezer n'a pas d'extrait pour ce morceau.");
 
     public static ProblemDetails ThemeNameTaken() =>
         ApiProblem.Of(StatusCodes.Status409Conflict, CatalogueErrorCodes.ThemeNameTaken, "Un thème porte déjà ce nom.");
@@ -150,9 +159,22 @@ public interface ICatalogueQueries
     /// <summary>Les thèmes de l'admin, par nom, chacun avec le nombre de morceaux qui l'ont.</summary>
     Task<IReadOnlyList<ThemeItem>> ListThemesAsync(CancellationToken ct);
 
+    /// <summary>Les candidats du sas (écartés compris), dans l'ordre d'import, chacun avec son état : déjà au pool ou non.</summary>
+    Task<IReadOnlyList<CandidateItem>> ListCandidatesAsync(CancellationToken ct);
+
     /// <summary>Les morceaux actifs sans extrait chez Deezer, et ceux qui ont un extrait mais pas encore de forme d'onde.</summary>
     Task<CatalogueHealthResponse> GetHealthAsync(CancellationToken ct);
 }
+
+/// <summary>Un candidat du sas, tel que l'écran de l'admin le montre.</summary>
+/// <param name="Priority">« A », « B » ou « C » si l'import en donnait une, vide sinon.</param>
+/// <param name="Status"><c>pending</c> (pas encore lu chez Deezer), <c>ready</c> ou <c>not_found</c>.</param>
+/// <param name="PreviewStatus"><c>unknown</c>, <c>available</c> ou <c>missing</c> (seulement une fois lu).</param>
+/// <param name="InCatalogue">Un morceau du pool a déjà cet identifiant Deezer (ajouté depuis par un autre chemin).</param>
+/// <param name="IsAdding">L'ajout au pool est demandé et pas encore fait.</param>
+public sealed record CandidateItem(
+    int Id, long DeezerTrackId, string? Priority, string Status, string? Artist, string? Title, int? ReleaseYear, int? Rank, string PreviewStatus,
+    bool InCatalogue, bool IsDismissed, bool IsAdding);
 
 /// <summary>Un thème de la liste de l'admin.</summary>
 /// <param name="TrackCount">Les morceaux du pool qui ont ce thème (désactivés compris) ; la suppression n'est permise qu'à zéro.</param>
@@ -219,4 +241,12 @@ internal static partial class CatalogueLog
     [LoggerMessage(EventId = 1207, Level = LogLevel.Warning,
         Message = "Formes d'onde du contrôle nocturne sautées : le calcul d'un ajout n'a pas fini en {WaitMinutes} min.")]
     public static partial void WaveformsSkippedBusy(ILogger logger, int waitMinutes);
+
+    [LoggerMessage(EventId = 1208, Level = LogLevel.Information,
+        Message = "Candidats lus chez Deezer : {Read} lu(s), {NotFound} introuvable(s), {Unavailable} à relire (Deezer n'a pas répondu).")]
+    public static partial void CandidatesRead(ILogger logger, int read, int notFound, int unavailable);
+
+    [LoggerMessage(EventId = 1209, Level = LogLevel.Information,
+        Message = "Candidats ajoutés au pool : {Added} ajouté(s), {Gone} retiré(s) du sas sans ajout (déjà au pool).")]
+    public static partial void CandidatesAdded(ILogger logger, int added, int gone);
 }

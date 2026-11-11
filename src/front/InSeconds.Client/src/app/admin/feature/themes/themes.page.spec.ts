@@ -9,6 +9,7 @@ import { FakeCatalogueApi, fakeCatalogueApi, poolTrack, problem, provideCatalogu
 import { fakeCooldownApi, provideCooldownApiFake } from '../../data-access/testing/fake-cooldown-api';
 import { PoolTheme, PoolTrack } from '../../domain/pool-track';
 import { ThemesPage } from './themes.page';
+import { stubContentTabs } from '../../ui/content-tabs/testing/content-tabs.stub';
 
 class FakeAudio implements PreviewAudio {
   paused = true; currentTime = 0; duration = 30; onended = null;
@@ -44,6 +45,7 @@ describe('ThemesPage', () => {
         { provide: PREVIEW_AUDIO_FACTORY, useValue: () => new FakeAudio() },
       ],
     });
+    stubContentTabs(ThemesPage);
     const fixture = TestBed.createComponent(ThemesPage);
     fixture.detectChanges();
     await fixture.whenStable();

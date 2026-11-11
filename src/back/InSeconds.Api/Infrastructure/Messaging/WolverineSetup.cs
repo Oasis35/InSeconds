@@ -36,6 +36,9 @@ public static class WolverineSetup
         opts.Policies.AutoApplyTransactions();
         opts.Policies.UseDurableLocalQueues();
         opts.UseFluentValidation();
+        // Le sas des candidats : un lot après l'autre (quota de Deezer, et deux ajouts en même temps ne doivent pas créer le même genre neuf).
+        opts.LocalQueueFor<InSeconds.Api.Modules.Catalogue.Application.ReadCandidates>().Sequential();
+        opts.LocalQueueFor<InSeconds.Api.Modules.Catalogue.Application.AddCandidatesToCatalogue>().Sequential();
 
         opts.CodeGeneration.TypeLoadMode = TypeLoadModeFor(environment);
         // En test, rien n'est écrit dans Internal/Generated : seuls les handlers propres aux tests y sont compilés.

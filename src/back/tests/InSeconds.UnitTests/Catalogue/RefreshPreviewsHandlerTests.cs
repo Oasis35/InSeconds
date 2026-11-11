@@ -574,6 +574,25 @@ public class RefreshPreviewsHandlerTests
 
         public Task<IReadOnlyList<Theme>> FindThemesAsync(IReadOnlyCollection<int> ids, CancellationToken ct) => throw new NotSupportedException();
 
+        public ValueTask AddCandidateAsync(Candidate candidate, CancellationToken ct) => throw new NotSupportedException();
+
+        public void RemoveCandidate(Candidate candidate) => throw new NotSupportedException();
+
+        public Task<Candidate?> FindCandidateAsync(int id, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<Candidate>> FindCandidatesAsync(IReadOnlyCollection<int> ids, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<Candidate>> FindCandidatesByDeezerIdsAsync(IReadOnlyCollection<long> deezerTrackIds, CancellationToken ct) =>
+            throw new NotSupportedException();
+
+        public Task<IReadOnlySet<long>> DeezerIdsInPoolAsync(IReadOnlyCollection<long> deezerTrackIds, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<int>> ListPendingCandidateIdsAsync(CancellationToken ct) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<Candidate>> ListCandidatesToReadAsync(IReadOnlyCollection<int> ids, CancellationToken ct) => throw new NotSupportedException();
+
+        public Task SaveCandidateReadsAsync(IReadOnlyCollection<Candidate> candidates, CancellationToken ct) => throw new NotSupportedException();
+
         public ValueTask AddThemeAsync(Theme theme, CancellationToken ct) => throw new NotSupportedException();
 
         public void RemoveTheme(Theme theme) => throw new NotSupportedException();

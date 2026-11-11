@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { CatalogueClient, DeezerTrackResult, TrackListItem, TrackModeUsage } from '../../api/catalogue/api.generated';
+import { CandidateItem, CatalogueClient, DeezerTrackResult, TrackListItem, TrackModeUsage } from '../../api/catalogue/api.generated';
+import { Candidate, CandidatePriority, CandidateStatus } from '../domain/candidates';
 import { DeezerResult, ModeUsage, PoolTheme, PoolTrack, PreviewState, ThemeAssignment } from '../domain/pool-track';
 
 /**
@@ -69,6 +70,37 @@ export class CatalogueApi {
     return result.added;
   }
 
+  /** Le sas « À valider » : tous les candidats (écartés compris), sans l'adresse d'un extrait (elle expire : voir `candidatePreviewUrl`). */
+  async listCandidates(): Promise<Candidate[]> {
+    return (await firstValueFrom(this.client.listCandidates())).map(toCandidate);
+  }
+
+  /** Importe des identifiants Deezer dans le sas ; leur lecture chez Deezer part en arrière-plan. */
+  async importCandidates(items: readonly { deezerTrackId: number; priority: CandidatePriority | null }[]): Promise<ImportResult> {
+    return firstValueFrom(this.client.importCandidates({ items: items.map(i => ({ deezerTrackId: i.deezerTrackId, priority: i.priority ?? undefined })) }));
+  }
+
+  /** Relance la lecture chez Deezer des candidats pas encore lus ; rend leur nombre. */
+  async rereadCandidates(): Promise<number> {
+    return (await firstValueFrom(this.client.rereadCandidates())).count;
+  }
+
+  /** Écarte des candidats (ou les remet dans la liste : `dismissed` faux). */
+  async dismissCandidates(candidateIds: readonly number[], dismissed: boolean): Promise<void> {
+    await firstValueFrom(this.client.dismissCandidates({ candidateIds: [...candidateIds], dismissed }));
+  }
+
+  /** Demande l'ajout au pool ; il se fait en arrière-plan, par lots espacés. Rend ce qui est parti et ce qui ne pouvait pas. */
+  async addCandidates(candidateIds: readonly number[]): Promise<{ queued: number; skipped: number }> {
+    const result = await firstValueFrom(this.client.addCandidates({ candidateIds: [...candidateIds] }));
+    return { queued: result.queued, skipped: result.skipped };
+  }
+
+  /** Une adresse d'extrait toute fraîche (elle est signée et expire au bout de 15 min). */
+  async candidatePreviewUrl(id: number): Promise<string> {
+    return (await firstValueFrom(this.client.getCandidatePreview(id))).url;
+  }
+
   /** Recherche chez Deezer, titres bruts (ce qui deviendra le titre du morceau). */
   async searchDeezer(query: string): Promise<DeezerResult[]> {
     return (await firstValueFrom(this.client.searchDeezer(query))).map(toDeezerResult);
@@ -84,6 +116,30 @@ export class CatalogueApi {
     const match = results.find(result => result.deezerTrackId === track.deezerTrackId) ?? results[0];
     return match?.previewUrl ?? null;
   }
+}
+
+/** Ce qu'un import a fait : candidats créés, déjà dans le sas, déjà dans le pool. */
+export interface ImportResult {
+  readonly created: number;
+  readonly alreadyCandidates: number;
+  readonly alreadyInCatalogue: number;
+}
+
+function toCandidate(item: CandidateItem): Candidate {
+  return {
+    id: item.id,
+    deezerTrackId: item.deezerTrackId,
+    priority: item.priority === 'A' || item.priority === 'B' || item.priority === 'C' ? (item.priority as CandidatePriority) : null,
+    status: item.status === 'ready' || item.status === 'not_found' ? (item.status as CandidateStatus) : 'pending',
+    artist: item.artist ?? null,
+    title: item.title ?? null,
+    releaseYear: item.releaseYear ?? null,
+    rank: item.rank ?? null,
+    preview: toPreviewState(item.previewStatus),
+    inCatalogue: item.inCatalogue,
+    isDismissed: item.isDismissed,
+    isAdding: item.isAdding,
+  };
 }
 
 function toPoolTrack(item: TrackListItem): PoolTrack {

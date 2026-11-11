@@ -289,9 +289,9 @@ test.describe('Admin - icônes des thèmes', () => {
     expect(total).toBeGreaterThan(100);
 
     await page.getByTestId('theme-icon-category').filter({ hasText: 'Animaux' }).click();
-    const animals = await options.count();
-    expect(animals).toBeGreaterThan(0);
-    expect(animals).toBeLessThan(total);
+    // Le filtre s'applique au rendu suivant : on attend le nouveau compte au lieu de le lire tout de suite.
+    await expect.poll(() => options.count()).toBeLessThan(total);
+    expect(await options.count()).toBeGreaterThan(0);
     await expect(page.getByRole('button', { name: 'cat', exact: true })).toBeVisible();
 
     await page.getByTestId('theme-icon-search').fill('zzzzzz');
