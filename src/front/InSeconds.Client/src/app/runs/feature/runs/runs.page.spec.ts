@@ -4,6 +4,7 @@ import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import { Subject } from 'rxjs';
 import fr from '../../../../../public/i18n/fr.json';
 import { SessionLoader } from '../../../account/data-access/session-loader';
+import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { VersionService } from '../../../core/version/version.service';
 import { FakeAudioPort, provideFakeAudio } from '../../../gameplay/data-access/testing/fake-audio.port';
 import { FakeWaveformPort, provideFakeWaveform } from '../../../gameplay/data-access/testing/fake-waveform.port';
@@ -90,6 +91,21 @@ describe('RunsPage', () => {
       expect(page.canLeave()).toBe(true);
       expect(sheet).toBeNull();
     });
+  });
+
+  it('en manche, la barre du bas disparaît ; elle revient quand on quitte la page', async () => {
+    const { fixture, store } = create();
+    const chrome = TestBed.inject(ShellChromeStore);
+    await store.init();
+    TestBed.tick();
+    expect(chrome.immersive()).toBe(false);
+
+    await store.begin();
+    TestBed.tick();
+    expect(chrome.immersive()).toBe(true);
+
+    fixture.destroy();
+    expect(chrome.immersive()).toBe(false);
   });
 
   it('sans accès sur invitation, renvoie au jeu du jour sans écran', async () => {

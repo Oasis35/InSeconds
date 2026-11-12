@@ -3,7 +3,9 @@ import { Subject } from 'rxjs';
 import { FileDownload } from '../../../core/download/file-download';
 import { Router, provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
+import { LanguageService } from '../../../core/i18n/language.service';
 import { SessionStore } from '../../../core/session/session.store';
+import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { ModalService } from '../../../ui/modal/modal.service';
 import { ToastService } from '../../../ui/toast/toast.service';
 import { FakePlayersApi, device, fakePlayersApi, linkedPlayer, problem, providePlayersApiFake } from '../../data-access/testing/fake-players-api';
@@ -64,6 +66,31 @@ describe('ProfilePage', () => {
 
     expect(pseudoInput(fixture).value).toBe('Alice');
     expect(emailInput(fixture).value).toBe('alice@example.com');
+  });
+
+  describe('nouvelle interface (V4)', () => {
+    it('sans la V4, ni bascule de langue ni liens légaux : le pied de page les porte', async () => {
+      const fixture = await render();
+
+      expect(query(fixture, '[data-testid="profile-language"]')).toBeNull();
+      expect(query(fixture, '[data-testid="profile-legal"]')).toBeNull();
+    });
+
+    it('sous la V4, la langue se choisit ici et les liens légaux restent joignables', async () => {
+      const fixture = await render();
+      TestBed.inject(ShellChromeStore).setV4(true);
+      await settle(fixture);
+
+      const english = query<HTMLButtonElement>(fixture, '[data-testid="language-en"]')!;
+      expect(query(fixture, '[data-testid="language-fr"]')!.getAttribute('aria-pressed')).toBe('true');
+      english.click();
+      await settle(fixture);
+
+      expect(TestBed.inject(LanguageService).current()).toBe('en');
+      expect(english.getAttribute('aria-pressed')).toBe('true');
+      const links = [...query(fixture, '[data-testid="profile-legal"]')!.querySelectorAll('a')].map(a => a.getAttribute('href'));
+      expect(links).toEqual(['/legal', '/privacy', 'mailto:contact@inseconds.cc']);
+    });
   });
 
   describe('pseudo', () => {
