@@ -7,7 +7,7 @@ namespace InSeconds.Api.Testing.ApiDocs;
 /// Documents OpenAPI de l'hôte de test (un client NSwag par module côté front, généré depuis ces
 /// documents). Servis seulement ici, jamais par l'API de prod (S9). Un document par module, filtré sur
 /// le préfixe de ses routes ; <c>/openapi/players.json</c> pour le module Players, <c>/openapi/catalogue.json</c> pour
-/// Catalogue, <c>/openapi/daily.json</c> pour Daily, <c>/openapi/runs.json</c> pour Runs, <c>/openapi/admin.json</c> pour le suivi des tâches. Les documents sauvegardés pour le front sont <c>openapi/players.json</c>, <c>openapi/catalogue.json</c>, <c>openapi/daily.json</c>, <c>openapi/runs.json</c> et <c>openapi/admin.json</c>
+/// Catalogue, <c>/openapi/daily.json</c> pour Daily, <c>/openapi/runs.json</c> pour Runs, <c>/openapi/social.json</c> pour Social, <c>/openapi/admin.json</c> pour le suivi des tâches. Les documents sauvegardés pour le front sont <c>openapi/players.json</c>, <c>openapi/catalogue.json</c>, <c>openapi/daily.json</c>, <c>openapi/runs.json</c>, <c>openapi/social.json</c> et <c>openapi/admin.json</c>
 /// (cf. CLAUDE.md du back).
 /// </summary>
 public static class OpenApiDocuments
@@ -16,6 +16,7 @@ public static class OpenApiDocuments
     public const string Catalogue = "catalogue";
     public const string Daily = "daily";
     public const string Runs = "runs";
+    public const string Social = "social";
     public const string Admin = "admin";
 
     public static IServiceCollection AddOpenApiDocuments(this IServiceCollection services)
@@ -28,6 +29,8 @@ public static class OpenApiDocuments
         AddModuleDocument(services, Daily, tag: "Daily", "api/daily", "api/admin/daily", "api/admin/players");
         // Le mode Run : ses routes joueur, et les routes admin de l'accès (l'interrupteur de l'onglet Joueurs).
         AddModuleDocument(services, Runs, tag: "Runs", "api/runs", "api/admin/runs");
+        // Les groupes entre amis (Social) : un seul préfixe, le classement et les invitations en font partie.
+        AddModuleDocument(services, Social, tag: "Social", "api/social");
         // L'infrastructure, pas un module : le suivi des tâches planifiées, et l'état du système (commit de l'API, dernière sauvegarde).
         AddModuleDocument(services, Admin, tag: "Admin", "api/admin/jobs", "api/admin/system");
         return services;

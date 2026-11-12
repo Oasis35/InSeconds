@@ -52,6 +52,10 @@ public static class RateLimitingServiceCollectionExtensions
             [RateLimitPolicies.RunLink] = (60, TimeSpan.FromMinutes(5), PartitionBy.Ip),
             // Même borne que l'extrait d'un jour passé : on réécoute quelques morceaux d'un run, sans vider le quota Deezer.
             [RateLimitPolicies.RunHistoryPreview] = (40, TimeSpan.FromMinutes(5), PartitionBy.Player),
+            // Un joueur crée ou rejoint quelques groupes : 20 écritures en 10 minutes ne gênent personne et bornent les lignes créées.
+            [RateLimitPolicies.SocialWrite] = (20, TimeSpan.FromMinutes(10), PartitionBy.Player),
+            // Un lien s'ouvre une fois par ami : large pour un NAT partagé, trop étroit pour deviner des codes (31⁸ possibles).
+            [RateLimitPolicies.SocialInvitation] = (60, TimeSpan.FromMinutes(5), PartitionBy.Ip),
         };
 
     /// <param name="playerKey">

@@ -21,15 +21,13 @@ public sealed class PostgresFixture : IAsyncLifetime
     // Chaque API de test ouvre plusieurs pools (EF, Wolverine, Hangfire) sur sa propre base : la
     // limite par défaut (100 connexions) est vite atteinte quand les classes tournent en parallèle.
     // Chaque API de test libère ses pools à sa destruction (ApiFactory.DisposeAsync).
-    private readonly PostgreSqlContainer _container = Environment.GetEnvironmentVariable("LOCAL_PG") is not null ? null! : new PostgreSqlBuilder("postgres:17-alpine")
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:17-alpine")
         .WithCommand("-c", "max_connections=500")
         .Build();
 
-    private string Cs() => Environment.GetEnvironmentVariable("LOCAL_PG") ?? _container.GetConnectionString();
-
     public async ValueTask InitializeAsync()
     {
-        if (Environment.GetEnvironmentVariable("LOCAL_PG") is null) await _container.StartAsync();
+        await _container.StartAsync();
         await ExecuteAsync($"CREATE DATABASE {TemplateDatabase}");
         await using (var api = new ApiFactory(ConnectionStringFor(TemplateDatabase)))
         {
@@ -51,7 +49,8 @@ public sealed class PostgresFixture : IAsyncLifetime
             await api.ExecuteAsync("TRUNCATE infra.data_protection_keys");
         }
     }
-    public async ValueTask DisposeAsync() { if (Environment.GetEnvironmentVariable("LOCAL_PG") is null) await _container.DisposeAsync(); }
+
+    public async ValueTask DisposeAsync() => await _container.DisposeAsync();
 
     /// <summary>Une base neuve, déjà migrée, avec les tables de Wolverine et de Hangfire.</summary>
     public Task<string> CreateDatabaseAsync() => CreateAsync($"TEMPLATE {TemplateDatabase}");
@@ -68,12 +67,12 @@ public sealed class PostgresFixture : IAsyncLifetime
 
     private async Task ExecuteAsync(string sql)
     {
-        await using var connection = new NpgsqlConnection(Cs());
+        await using var connection = new NpgsqlConnection(_container.GetConnectionString());
         await connection.OpenAsync();
         await using var command = new NpgsqlCommand(sql, connection);
         await command.ExecuteNonQueryAsync();
     }
 
     private string ConnectionStringFor(string database) =>
-        new NpgsqlConnectionStringBuilder(Cs()) { Database = database }.ConnectionString;
+        new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Database = database }.ConnectionString;
 }

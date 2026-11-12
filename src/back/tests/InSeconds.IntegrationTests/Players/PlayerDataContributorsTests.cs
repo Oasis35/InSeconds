@@ -37,7 +37,7 @@ public class PlayerDataContributorsTests(PostgresFixture postgres) : IAsyncLifet
 
         var export = (await device.Client.GetFromJsonAsync<PlayerDataExport>("/api/players/me/export", Ct))!;
 
-        Assert.Equal(["daily", "runs", "autre"], export.Modules.Keys);
+        Assert.Equal(["daily", "runs", "social", "autre"], export.Modules.Keys);
         Assert.Single(ExportReading.Daily(export).Games);
         Assert.Equal(3, ExportReading.Section<OtherSection>(export, "autre").Rounds);
         Assert.Equal([device.PlayerId], _log.Exported);
