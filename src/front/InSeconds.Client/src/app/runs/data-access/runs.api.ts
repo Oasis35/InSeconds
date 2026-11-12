@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom, retry, throwError, timer } from 'rxjs';
 import {
-  RunChallengeResponse, RunComparisonResponse, RunCurrentTrackResponse, RunFinishResponse, RunNeutralizedResponse, RunPassedRoundResponse, RunPlayResponse, RunRecordResponse, RunRoundResponse, RunRoundScoreResponse,
+  RunChallengeResponse, RunComparisonResponse, RunCurrentTrackResponse, RunFinishResponse, RunHistoryResponse, RunNeutralizedResponse, RunPassedRoundResponse, RunPlayResponse, RunRecordResponse, RunRoundResponse, RunRoundScoreResponse,
   RunRoundSummaryResponse, RunSessionResponse, RunTrackEffectsResponse, RunTrackResponse, RunsClient, RunsMeResponse,
 } from '../../api/runs/api.generated';
 import { toAppError } from '../../core/errors/app-error';
@@ -9,6 +9,7 @@ import {
   RunComparison, RunCurrentTrack, RunDifficulty, RunFinish, RunLink, RunNeutralized, RunPassedRound, RunPlay, RunRecord, RunRound, RunRoundScore,
   RunRoundSummary, RunSession, RunStatus, RunTrack, RunsMe,
 } from '../domain/run';
+import { RunHistory } from '../domain/run-history';
 import { RunCardKey, RunTrackEffects, isRunCard } from '../domain/run-cards';
 
 /** Les refus que le jeu connaît : ils deviennent des issues, pas des erreurs. */
@@ -73,6 +74,24 @@ export class RunsApi {
   /** Les joueurs de la playlist, après la fin de sa propre partie (409 `runs.comparison_locked` sinon). */
   async comparison(code: string): Promise<RunComparison> {
     return toComparison(await firstValueFrom(this.client.getRunComparison(code)));
+  }
+
+  /**
+   * Les setlists finies du joueur sur un mois (`aaaa-mm` ; le mois en cours sans mois), avec le résumé de toutes ses parties. Un navigateur que le
+   * serveur ne connaît pas encore (401) n'a rien joué : un historique vide, pas une erreur.
+   */
+  async history(month: string | null): Promise<RunHistory> {
+    try {
+      return toHistory(await firstValueFrom(this.client.getRunHistory(month ?? undefined)));
+    } catch (error) {
+      if ((await toAppError(error)).status === 401) return { month: month ?? '', previousMonth: null, nextMonth: null, playedCount: 0, averageScore: null, bestScore: null, runs: [] };
+      throw error;
+    }
+  }
+
+  /** Une adresse neuve pour l'extrait d'un morceau joué d'une partie finie (elle expire en 15 min, piège 14) ; `null` si Deezer n'en a pas. */
+  async pastPreviewUrl(sessionId: number, position: number): Promise<string | null> {
+    return (await firstValueFrom(this.client.getRunPastPreview(sessionId, position))).previewUrl ?? null;
   }
 
   /** Lance une playlist neuve et la partie de son auteur ; le thème de la manche à thème se choisit plus tard, juste avant elle. */
@@ -345,5 +364,29 @@ export function toPlay(play: RunPlayResponse): RunPlay {
     roundSummaries: play.roundSummaries.map(toSummary),
     current: toCurrent(play.current),
     isResuming: play.isResuming,
+  };
+}
+
+/** `aaaa-mm-jj` : le client annonce une `Date` mais le JSON livre un texte (et l'adaptateur ne doit pas dépendre du fuseau du navigateur). */
+function toDateText(value: unknown): string {
+  if (typeof value === 'string') return value.slice(0, 10);
+  return value instanceof Date ? value.toISOString().slice(0, 10) : '';
+}
+
+function toHistory(history: RunHistoryResponse): RunHistory {
+  return {
+    month: history.month,
+    previousMonth: history.previousMonth ?? null,
+    nextMonth: history.nextMonth ?? null,
+    playedCount: history.playedCount,
+    averageScore: history.averageScore ?? null,
+    bestScore: history.bestScore ?? null,
+    runs: history.runs.map(run => ({
+      sessionId: run.sessionId,
+      date: toDateText(run.date),
+      disc: { key: run.disc.key, stars: run.disc.stars },
+      score: run.score,
+      difficulty: toDifficulty(run.difficulty),
+    })),
   };
 }

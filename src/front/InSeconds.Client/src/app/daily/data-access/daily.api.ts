@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom, retry, throwError, timer } from 'rxjs';
 import {
-  ArchiveDayResponse, ArchiveMeResponse, DailyClient, DailySettingsResponse, GuessBucketResponse, ResumedAnswer, StartSessionResponse, StreakResponse, SubmitAnswerResponse, TodayResponse,
+  ArchiveDayResponse, ArchiveMeResponse, DailyClient, DailyHistoryResponse, DailySettingsResponse, GuessBucketResponse, ResumedAnswer, StartSessionResponse, StreakResponse, SubmitAnswerResponse, TodayResponse,
   TodayStatsResponse,
 } from '../../api/daily/api.generated';
 import { toAppError } from '../../core/errors/app-error';
@@ -10,6 +10,7 @@ import {
 } from '../domain/daily';
 import { Streak } from '../domain/streak';
 import { ArchiveDay, ArchiveMe } from '../domain/archive';
+import { DailyHistory } from '../domain/history';
 
 /** Des réponses d'erreur que le jeu connaît : refus du démarrage (la partie est finie, pas de défi). */
 const ALREADY_PLAYED = 'daily.already_played';
@@ -113,6 +114,19 @@ export class DailyApi {
   /** Une adresse neuve pour l'extrait d'un morceau d'un jour passé (elle expire en 15 min, piège 14) ; `null` si Deezer n'en a pas. */
   async archivePreviewUrl(date: string, position: number): Promise<string | null> {
     return (await firstValueFrom(this.client.getArchivePreview(date, position))).previewUrl ?? null;
+  }
+
+  /**
+   * Les défis terminés du joueur sur un mois (`aaaa-mm` ; le mois en cours sans mois), avec le résumé de toutes ses parties. Un navigateur que le
+   * serveur ne connaît pas encore (401) n'a rien joué : un historique vide, pas une erreur.
+   */
+  async history(month: string | null): Promise<DailyHistory> {
+    try {
+      return toHistory(await firstValueFrom(this.client.getDailyHistory(month ?? undefined)));
+    } catch (error) {
+      if ((await toAppError(error)).status === 401) return { month: month ?? '', previousMonth: null, nextMonth: null, playedCount: 0, averageScore: null, bestScore: null, games: [] };
+      throw error;
+    }
   }
 }
 
@@ -286,6 +300,22 @@ function toArchiveMe(me: ArchiveMeResponse): ArchiveMe {
     betterThanPercent: me.betterThanPercent ?? null,
     answers: me.answers.map(a => ({
       position: a.position, artistCorrect: a.artistCorrect, titleCorrect: a.titleCorrect, listenedSeconds: a.listenedSeconds, score: a.score,
+    })),
+  };
+}
+
+function toHistory(history: DailyHistoryResponse): DailyHistory {
+  return {
+    month: history.month,
+    previousMonth: history.previousMonth ?? null,
+    nextMonth: history.nextMonth ?? null,
+    playedCount: history.playedCount,
+    averageScore: history.averageScore ?? null,
+    bestScore: history.bestScore ?? null,
+    games: history.games.map(game => ({
+      date: toDateText(game.date) ?? '',
+      score: game.score,
+      tracks: game.tracks.map(t => ({ position: t.position, artistCorrect: t.artistCorrect, titleCorrect: t.titleCorrect })),
     })),
   };
 }

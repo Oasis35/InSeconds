@@ -27,7 +27,7 @@
       }
 
       @case ('welcome') {
-        <app-welcome-screen
+        <app-welcome-screen [hideArchive]="chrome.v4()"
           [trackCount]="store.peekTracksCount()"
           [dateLabel]="dateLabel()"
           [streak]="store.pillStreak()"

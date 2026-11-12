@@ -1,0 +1,66 @@
+<div class="da-bg min-h-dvh flex flex-col relative" style="color:var(--text-body)">
+  <app-decor-background />
+
+  <main class="relative flex-1 flex flex-col gap-4 px-5 pt-4 pb-5 w-full max-w-lg mx-auto overflow-x-clip">
+    <header class="relative flex items-center justify-center min-h-11">
+      <a routerLink="/setlist/history" data-testid="detail-back" [attr.aria-label]="'ui.history.setlist.back' | translate"
+         class="absolute left-0 inline-flex items-center justify-center w-11 h-11 rounded-full text-xl" style="border:1px solid var(--border-neutral);color:var(--text-light)">‹</a>
+      @if (status() === 'ready') {
+        <h1 class="text-lg font-semibold" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="detail-title">{{ 'ui.history.setlist.detailTitle' | translate: { count: count() } }}</h1>
+      }
+    </header>
+
+    @switch (status()) {
+      @case ('loading') {
+        <p class="text-sm text-center animate-pulse" style="color:var(--text-faint)">{{ 'ui.history.loading' | translate }}</p>
+      }
+      @case ('error') {
+        <app-run-status-screen kind="error" [errorCode]="errorReporting.lastErrorCode()" (retry)="load()" />
+      }
+      @case ('not_found') {
+        <p class="text-sm text-center py-6" style="color:var(--text-muted)" data-testid="detail-not-found">{{ 'ui.history.setlist.notFound' | translate }}</p>
+      }
+      @case ('ready') {
+        <div class="flex gap-2" role="group">
+          <button type="button" (click)="onlyMissed.set(false)" [attr.aria-pressed]="!onlyMissed()" data-testid="detail-all"
+                  class="flex-1 min-h-11 text-sm cursor-pointer touch-manipulation rounded-(--radius-button)"
+                  [style.border]="!onlyMissed() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
+                  [style.color]="!onlyMissed() ? 'var(--text-hi)' : 'var(--text-muted)'">{{ 'ui.history.setlist.allTracks' | translate }}</button>
+          <button type="button" (click)="onlyMissed.set(true)" [attr.aria-pressed]="onlyMissed()" data-testid="detail-missed"
+                  class="flex-1 min-h-11 text-sm cursor-pointer touch-manipulation rounded-(--radius-button)"
+                  [style.border]="onlyMissed() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
+                  [style.color]="onlyMissed() ? 'var(--text-hi)' : 'var(--text-muted)'">{{ 'ui.history.setlist.missed' | translate: { count: missedCount() } }}</button>
+        </div>
+
+        @for (round of rounds(); track round.round) {
+          <section class="flex flex-col gap-2" data-testid="detail-round">
+            <h2 class="text-xs" style="color:var(--text-muted)">{{ 'ui.history.setlist.round' | translate: { round: round.round } }}</h2>
+            @for (track of round.tracks; track track.position) {
+              <div class="flex items-center gap-3 px-3 py-2" data-testid="detail-track" [attr.data-missed]="isMissed(track)"
+                   style="background:var(--bg-surface);border-radius:var(--radius-card)"
+                   [style.border]="isMissed(track) ? '1px solid var(--color-fail)' : '1px solid var(--border-medium)'">
+                @if (track.coverUrl && !track.neutralized) {
+                  <img [src]="track.coverUrl" alt="" class="rounded-full object-cover shrink-0" style="width:40px;height:40px" loading="lazy" />
+                } @else {
+                  <span class="rounded-full shrink-0" style="width:40px;height:40px;background:var(--bg-inactive)" aria-hidden="true"></span>
+                }
+                <span class="flex-1 min-w-0 flex flex-col">
+                  <span class="text-sm font-semibold truncate" style="color:var(--text-hi)">{{ track.neutralized ? ('ui.history.setlist.withdrawn' | translate) : track.title }}</span>
+                  <span class="text-xs truncate" style="color:var(--text-muted)">{{ track.artist }}</span>
+                </span>
+                @if (!track.neutralized) {
+                  <span class="text-base font-bold" aria-hidden="true" [style.color]="isMissed(track) ? 'var(--color-fail)' : 'var(--color-success)'">{{ isMissed(track) ? '✗' : '✓' }}</span>
+                  <button type="button" (click)="listen(track)" data-testid="detail-listen" [attr.aria-label]="'ui.history.setlist.listen' | translate: { title: track.title }"
+                          class="inline-flex items-center justify-center w-11 h-11 rounded-full shrink-0 cursor-pointer touch-manipulation"
+                          style="border:1.5px solid var(--color-accent-2);color:var(--color-accent-2)">▶</button>
+                }
+              </div>
+            }
+          </section>
+        } @empty {
+          <p class="text-sm text-center py-6" style="color:var(--text-muted)" data-testid="detail-empty">{{ 'ui.history.setlist.noMissed' | translate }}</p>
+        }
+      }
+    }
+  </main>
+</div>

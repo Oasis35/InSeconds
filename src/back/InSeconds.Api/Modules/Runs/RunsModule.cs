@@ -23,6 +23,7 @@ public static class RunsModule
         services.AddSingleton<RunCardDealer>();
         services.AddScoped<IRunsStore, EfRunsStore>();
         services.AddScoped<IRunsQueries, EfRunsQueries>();
+        services.AddScoped<IRunHistoryQueries, EfRunHistoryQueries>();
         services.AddScoped<IRunAccess, EfRunAccess>();
         services.AddScoped<RunChallengePlanner>();
         services.AddScoped<RunChoiceDealer>();

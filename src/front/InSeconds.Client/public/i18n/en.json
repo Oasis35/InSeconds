@@ -55,30 +55,32 @@
       "candidate_preview_missing": "Deezer no longer has a preview for this track."
     },
     "daily": {
-      "no_challenge": "There's no challenge today.",
-      "already_played": "You've already played today's challenge.",
       "abandoned": "You abandoned today's challenge.",
-      "session_not_found": "This game no longer exists.",
-      "track_not_found": "This track isn't in today's challenge.",
-      "track_lock_not_released": "Answer the current track first.",
-      "hint_locked": "This hint isn't unlocked yet.",
       "already_answered": "You've already answered this track.",
-      "listened_duration_below_verified_minimum": "The announced step is shorter than what you listened to."
+      "already_played": "You've already played today's challenge.",
+      "hint_locked": "This hint isn't unlocked yet.",
+      "invalid_month": "Invalid month: the expected format is yyyy-mm.",
+      "listened_duration_below_verified_minimum": "The announced step is shorter than what you listened to.",
+      "no_challenge": "There's no challenge today.",
+      "session_not_found": "This game no longer exists.",
+      "track_lock_not_released": "Answer the current track first.",
+      "track_not_found": "This track isn't in today's challenge."
     },
     "runs": {
+      "abandoned": "You abandoned this playlist.",
       "access_denied": "Setlist is invitation-only for now.",
-      "no_challenge": "Not enough tracks for a playlist, try again later.",
+      "already_answered": "You've already answered this track.",
+      "already_played": "You've already played this playlist.",
       "challenge_not_found": "This playlist doesn't exist. Check the link.",
       "comparison_locked": "The comparison opens once your game is over.",
       "difficulty_locked": "This round's difficulty is already set.",
-      "theme_locked": "This round's theme is already chosen.",
+      "invalid_month": "Invalid month: the expected format is yyyy-mm.",
+      "no_challenge": "Not enough tracks for a playlist, try again later.",
       "session_not_found": "This game no longer exists.",
-      "already_played": "You've already played this playlist.",
-      "abandoned": "You abandoned this playlist.",
-      "track_not_found": "This track isn't in this playlist.",
+      "swap_unavailable": "Swapping the track is no longer possible.",
+      "theme_locked": "This round's theme is already chosen.",
       "track_lock_not_released": "Answer the current track first.",
-      "already_answered": "You've already answered this track.",
-      "swap_unavailable": "Swapping the track is no longer possible."
+      "track_not_found": "This track isn't in this playlist."
     }
   },
   "shell": {
@@ -112,6 +114,41 @@
   "ui": {
     "envBanner": {
       "label": "development environment"
+    },
+    "history": {
+      "title": "History",
+      "tabs": {
+        "daily": "Daily challenges",
+        "setlist": "Setlists"
+      },
+      "average": "Average",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "daily": {
+        "count": "Challenges played",
+        "best": "Best",
+        "empty": "No challenge played this month."
+      },
+      "setlist": {
+        "count": "Setlists",
+        "best": "Record",
+        "empty": "No setlist played this month.",
+        "emptyFilter": "No setlist at this difficulty this month.",
+        "all": "All",
+        "filterLabel": "Difficulty",
+        "detailTitle": "Your {{count}} tracks",
+        "back": "Back to history",
+        "allTracks": "All",
+        "missed": "Missed · {{count}}",
+        "round": "Round {{round}}",
+        "listen": "Listen to {{title}}",
+        "noMissed": "No missed track.",
+        "notFound": "This game cannot be found.",
+        "withdrawn": "Track withdrawn"
+      },
+      "loading": "Loading…"
     }
   },
   "gameplay": {
@@ -1248,7 +1285,8 @@
       "bar": {
         "label": "Navigation",
         "daily": "Today",
-        "setlist": "Setlist"
+        "setlist": "Setlist",
+        "history": "History"
       },
       "dailyLeft": "Today's challenge is still waiting"
     }

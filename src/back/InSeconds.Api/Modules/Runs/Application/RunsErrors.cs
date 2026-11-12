@@ -27,6 +27,9 @@ public static class RunsErrorCodes
 
     public const string TrackNotFound = "runs.track_not_found";
 
+    /// <summary>Le mois de l'historique n'est pas écrit `aaaa-mm`.</summary>
+    public const string InvalidMonth = "runs.invalid_month";
+
     /// <summary>Piège 35 : un autre morceau que le morceau en cours.</summary>
     public const string TrackLockNotReleased = "runs.track_lock_not_released";
 
@@ -87,6 +90,9 @@ internal static class RunsProblems
 
     public static ProblemDetails TrackNotFound() =>
         ApiProblem.Of(StatusCodes.Status404NotFound, RunsErrorCodes.TrackNotFound, "Morceau introuvable dans cette playlist.");
+
+    public static ProblemDetails InvalidMonth() =>
+        ApiProblem.Of(StatusCodes.Status400BadRequest, RunsErrorCodes.InvalidMonth, "Le mois doit être au format aaaa-mm.");
 
     public static ProblemDetails AlreadyAnswered() =>
         ApiProblem.Of(StatusCodes.Status409Conflict, RunsErrorCodes.AlreadyAnswered, "Ce morceau a déjà reçu sa réponse.");
