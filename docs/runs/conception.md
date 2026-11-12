@@ -1,10 +1,10 @@
-# Run (Platines) : conception technique du proto 1
+# Run (Setlist) : conception technique du proto 1
 
 17/10/2026, sur la base d'`env/staging` au commit `629ca5c`, revue après une relecture indépendante du plan et après les maquettes. **Livré le 27/10/2026** : ce document décrit le code tel qu'il est ; les écarts avec les maquettes sont à la fin d'[`ecrans.md`](ecrans.md#écarts-entre-les-maquettes-et-lapp-livrée). Règles : [`regles.md`](regles.md). Écrans : [`ecrans.md`](ecrans.md). Découpage en PR (historique) : [`runs-proto1-decoupage.md`](../historique/runs-proto1-decoupage.md).
 
 ## 1. Principe
 
-Platines est un **second mode**, rangé dans le module back `Runs` et le domaine front `runs/` que l'architecture lui réserve. Il ne voit que les `Contracts` de Players, Catalogue et Gameplay ; **Daily et Runs ne se voient jamais**. Rien n'est modifié dans Daily, sauf là où Players et Catalogue doivent cesser de ne connaître que Daily (§ 6) et où un composant d'écran du Daily devient commun (§ 5.3).
+Setlist est un **second mode**, rangé dans le module back `Runs` et le domaine front `runs/` que l'architecture lui réserve. Il ne voit que les `Contracts` de Players, Catalogue et Gameplay ; **Daily et Runs ne se voient jamais**. Rien n'est modifié dans Daily, sauf là où Players et Catalogue doivent cesser de ne connaître que Daily (§ 6) et où un composant d'écran du Daily devient commun (§ 5.3).
 
 ```
             Daily ───────✕─────── Runs          (un mode ne voit jamais l'autre)
@@ -14,7 +14,7 @@ Platines est un **second mode**, rangé dans le module back `Runs` et le domaine
      Players/Contracts   Catalogue/Contracts    ICurrentPlayer, IPlayerDirectory, IPlayerDataContributor / ITrackDirectory, ITrackPreviews, ITrackUsage
 ```
 
-Nom technique `Runs` partout (module, schéma, routes, clés de réglage, dossier front) ; « Platines » n'existe que dans les traductions.
+Nom technique `Runs` partout (module, schéma, routes, clés de réglage, dossier front) ; « Setlist » n'existe que dans les traductions.
 
 ## 2. Ce qui est réutilisé tel quel
 
@@ -147,10 +147,10 @@ Même forme et même vocabulaire que le Daily : **un défi** = une suite de morc
 runs/
 ├── domain/       run.ts (jauge, objectif, manche, pile et paliers, étapes, chrono, disque, lien, comparaison : TypeScript pur, testé seul)
 ├── data-access/  runs.api.ts (client NSwag runs/api.generated.ts), runs.providers.ts, run-game.store.ts (pilote le TrackRoundStore de gameplay), run-share.ts
-├── feature/      runs.page (la partie, le lien d'un ami et la comparaison : /runs et /runs/:code), runs.routes.ts, leave-run.guard.ts, reload-moment.ts, provide-runs.ts, home-entry (carte de l'accueil)
+├── feature/      runs.page (la partie, le lien d'un ami et la comparaison : /setlist et /setlist/:code), runs.routes.ts, leave-run.guard.ts, reload-moment.ts, provide-runs.ts, home-entry (carte de l'accueil)
 └── ui/           run-header, run-clock, run-reveal, run-wave, run-next-button, run-withdrawn-card, run-pile, run-finish, run-disc, run-home-card, run-welcome-screen, run-link-screen, run-comparison-screen, run-status-screen
 ```
-- Routes **`/runs`** et **`/runs/:code`** : des adresses neutres, qui ne cassent pas les liens partagés si le nom change. `/runs/*` exclu de `robots.txt` et du `sitemap.xml`.
+- Routes **`/setlist`** et **`/setlist/:code`** (ex-`/runs`, qui redirige en gardant la query string) : des adresses qui ne cassent pas les liens partagés si le nom change. `/setlist/*` et `/runs/*` exclus de `robots.txt` et du `sitemap.xml`.
 - Sheriff : `runs` voit `gameplay` et `account` (pour créer l'invité d'un ami), jamais `daily`.
 - Repris du Daily : confirmation avant de quitter une partie (`canDeactivate`), moment sûr de rechargement après une nouvelle version (`ReloadMoment`, une étape de réponse en est un), remontée des erreurs. La synchronisation entre onglets du Daily (relire l'état au retour de l'onglet) n'est pas reprise : cf. [`../taches.md`](../taches.md).
 - Traductions `runs.*` FR/EN (disques compris), mobile first, saisie à 16 px, modales par `ModalService`, boutons par `appButton`.
@@ -158,7 +158,7 @@ runs/
 ### 5.2 Les étapes d'une partie
 `link` (lien reçu, [`ecrans.md`](ecrans.md#7-le-lien-reçu) § 7), `welcome` (premier morceau : le clic lance le son) ou `resume` (partie en cours) → par morceau : `playing` / `answering` (carte compacte de `gameplay`, disposition `inline`, avec le chrono) → `revealed` (réponse dans la carte, le morceau entre dans la pile, enchaînement après 2 s ou clic « Morceau suivant »), ou `neutralized` (carte « Morceau retiré de la manche », [`ecrans.md`](ecrans.md#2b-le-morceau-sans-extrait) § 2b, même bouton) → manche suivante (une ligne de palier se pose dans la pile, sans écran de bilan), ou `finished` (écran de fin) après une manche ratée ou la dernière. Reprise : la partie revient au morceau en cours de son état serveur, chrono compris.
 
-Sur `/runs/<code>`, le serveur choisit l'écran d'après la partie du joueur sur cette playlist (`GET /api/runs/challenges/{code}`) : pas jouée → `link`, en cours → `resume`, finie ou abandonnée → `comparison` (une playlist se joue une seule fois). `RunScreen` (`run-game.store.ts`) : `loading`, `welcome`, `link`, `resume`, `playing`, `finished`, `comparison`, `access_denied`, `no_challenge`, `not_found`, `error`.
+Sur `/setlist/<code>`, le serveur choisit l'écran d'après la partie du joueur sur cette playlist (`GET /api/runs/challenges/{code}`) : pas jouée → `link`, en cours → `resume`, finie ou abandonnée → `comparison` (une playlist se joue une seule fois). `RunScreen` (`run-game.store.ts`) : `loading`, `welcome`, `link`, `resume`, `playing`, `finished`, `comparison`, `access_denied`, `no_challenge`, `not_found`, `error`.
 
 Le serveur enchaîne en une réponse ce qu'il peut (la réponse, les morceaux suivants qu'il retire faute d'extrait) : le front en tire une **file d'étapes** (`playSteps`, `domain/run.ts`), montrées une à une, chacune derrière un clic ou l'enchaînement automatique de 2 s (dans le prolongement du geste du joueur ; coupé en mouvement réduit et en E2E). Le son ne part jamais à l'arrivée d'une réponse (un morceau retiré pendant la redemande de son extrait attend le clic « Morceau suivant »).
 
@@ -179,7 +179,7 @@ Les confirmations d'abandon et de sortie (`ModalService.confirm`, `leave-game.gu
 - Le « booléen » d'accès = la ligne de `runs.access`, sans mettre une notion de mode dans `players.accounts`.
 
 ### 5.5 Admin
-L'interrupteur « Platines » de l'onglet Joueurs lit `GET /api/admin/runs/access` une fois et appelle `PUT`/`DELETE`.
+L'interrupteur « Setlist » de l'onglet Joueurs lit `GET /api/admin/runs/access` une fois et appelle `PUT`/`DELETE`.
 
 ## 6. Ce qui touche l'existant : Players et Catalogue ne connaissent aucun mode
 

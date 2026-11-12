@@ -1,6 +1,6 @@
-# Run (Platines) : les écrans du proto 1
+# Run (Setlist) : les écrans du proto 1
 
-**Ces maquettes font référence** (Clément, 17/10/2026) : elles sont à intégrer telles quelles, avec le design système existant (tokens `:root` de `styles.scss`, `appButton`, composants du domaine `gameplay`, `ModalService`). Les images de `maquettes/` sont la copie figée de l'artifact Design « Platines » (lien dans #360). Les règles qu'elles montrent : [`regles.md`](regles.md).
+**Ces maquettes font référence** (Clément, 17/10/2026) : elles sont à intégrer telles quelles, avec le design système existant (tokens `:root` de `styles.scss`, `appButton`, composants du domaine `gameplay`, `ModalService`). Les images de `maquettes/` sont la copie figée de l'artifact Design « Setlist » (lien dans #360). Les règles qu'elles montrent : [`regles.md`](regles.md).
 
 Format : téléphone, 390 × 844. Les textes des maquettes sont ceux à reprendre dans les traductions FR (`runs.*`), à traduire en EN. Les chiffres sont des exemples.
 
@@ -32,12 +32,12 @@ Clément, 18/10 : un écran qui existe déjà au Daily ne se redessine pas, il s
 | Service indisponible | overlay `core/shell/service-down` | aucun, commun à toute l'app |
 
 Sans écran du tout :
-- **Accès refusé** (`runs.access_denied` sur `/runs`) : retour au Daily.
+- **Accès refusé** (`runs.access_denied` sur `/setlist`) : retour au Daily.
 - **Lien d'une playlist déjà jouée** : directement la comparaison (§ 5) ; une playlist en cours mène à l'écran de reprise.
 
 ## 1. La manche (écran en pile)
 
-Clément, 03/11/2026 : l'écran de jeu a été refait (maquettes animées du fil « Platines » ; les images `maquettes/manche*.png`, `reponse.png`, `morceau-neutralise.png` et `fin-de-manche.png` sont périmées). Un seul écran pour toute la partie, de haut en bas :
+Clément, 03/11/2026 : l'écran de jeu a été refait (maquettes animées du fil « Setlist » ; les images `maquettes/manche*.png`, `reponse.png`, `morceau-neutralise.png` et `fin-de-manche.png` sont périmées). Un seul écran pour toute la partie, de haut en bas :
 - **En-tête** : ✕ (abandonner) à gauche, la barre du run en 4 segments (un par manche, rempli selon le score de la manche, vert une fois l'objectif atteint), puis « Manche 2 · encore 120 pts pour passer » (« objectif atteint » une fois passé). Ni score total ni mise en jeu dans l'en-tête.
 - **Carte du morceau en cours**, compacte : bouton membrane de relecture à gauche de la forme d'onde (écoute fixe de 10 s, aucun palier), la saisie « Artiste - Titre », Valider et Passer (0 pts). Confirmations en ligne comme au Daily.
 - **Chrono** : 45 s par morceau (`Runs:AnswerSeconds`), affiché « 0:45 » en gris en haut à droite de la carte. Il part au premier son et les réécoutes sont gratuites. Pendant les 5 dernières secondes, le chiffre passe en grand et en blanc, la carte prend un contour blanc translucide, et un tic sonne chaque seconde quand l'extrait ne joue pas. À 0, ce qui est tapé est envoyé. Le serveur fait foi : une réponse arrivée après le chrono (plus 5 s de marge) vaut 0 point, et le chrono continue de tourner quand le joueur s'absente (il le retrouve à la reprise).
@@ -75,7 +75,7 @@ Même mise en page dans les deux cas :
 - Surtitre **« PLAYLIST DE CLÉMENT »** (pseudo de l'auteur, sans le code du lien), titre **« 4 joueurs de cette playlist »**.
 - Tableau : Joueur (pseudo et disque dessous), M1 à M4, Total ; trié par total. **« Toi »** surligné en orange ; **✕** pour une manche non jouée ; « Invité » pour un joueur sans compte.
 - **« Partager la playlist »** en bas.
-- **Accès** : en ouvrant le lien (`/runs/<code>`) d'une playlist déjà jouée, et par « Voir les autres joueurs » (lien discret sous « Partager mon score » de l'écran de fin). Une partie abandonnée y a accès aussi (la playlist ne se rejoue pas) ; elle n'est pas dans le tableau (seules les parties gagnées ou perdues y figurent). Égalité de total : plus de manches passées, puis la première terminée.
+- **Accès** : en ouvrant le lien (`/setlist/<code>`) d'une playlist déjà jouée, et par « Voir les autres joueurs » (lien discret sous « Partager mon score » de l'écran de fin). Une partie abandonnée y a accès aussi (la playlist ne se rejoue pas) ; elle n'est pas dans le tableau (seules les parties gagnées ou perdues y figurent). Égalité de total : plus de manches passées, puis la première terminée.
 
 ## 6. L'entrée sur l'accueil
 
@@ -83,15 +83,15 @@ Même mise en page dans les deux cas :
 |---|---|
 | ![Carte sur l'accueil](maquettes/accueil.png) | ![Carte sur l'écran déjà joué](maquettes/deja-joue.png) |
 
-- **Seule la carte Platines est ajoutée** : rien d'autre ne change sur ces deux écrans (Clément, 17/10).
-- Carte sous le contenu existant (en bas de l'accueil, sous le bloc du score sur « déjà joué ») : disque doré, « Platines », badge « ACCÈS ANTICIPÉ », « Vise le disque d'or. », chevron. Un clic ouvre `/runs`.
+- **Seule la carte Setlist est ajoutée** : rien d'autre ne change sur ces deux écrans (Clément, 17/10).
+- Carte sous le contenu existant (en bas de l'accueil, sous le bloc du score sur « déjà joué ») : disque doré, « Setlist », badge « ACCÈS ANTICIPÉ », « Vise le disque d'or. », chevron. Un clic ouvre `/runs`.
 - Visible seulement pour un compte qui a l'accès, jamais pendant une manche.
 
 ## 7. Le lien reçu
 
 ![Lien reçu](maquettes/lien-recu.png)
 
-Ce que voit un ami qui ouvre `inseconds.cc/runs/<code>` sans avoir encore joué cette playlist, invité compris, avec ou sans accès à Platines :
+Ce que voit un ami qui ouvre `inseconds.cc/setlist/<code>` sans avoir encore joué cette playlist, invité compris, avec ou sans accès à Setlist :
 - le logo seul en haut (ni série, ni compte : l'écran doit marcher pour un invité tout neuf) ;
 - le disque d'or et le titre « Clément te lance une playlist » (pseudo de l'auteur, « Invité » à défaut), sans surtitre ;
 - un bloc de quatre règles courtes : « 20 morceaux, les mêmes pour tous ses joueurs : comparez vos scores à la fin » (la comparaison n'est visible qu'après avoir joué, réponse à `runs.comparison_locked`), « 4 manches, de plus en plus dures », « 10 s d'écoute, 45 s pour trouver l'artiste et le titre » (« 10 s pour trouver l'artiste et le titre » pour une playlist sans chrono), « passe les 4 manches et deviens **disque d'or** » (petit disque doré en pastille) ;

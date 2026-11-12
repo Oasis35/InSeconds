@@ -1,8 +1,8 @@
 > **Depuis le proto 3** ([`proto3.md`](proto3.md)) : les difficultés s'appellent Facile, Normal, Mélomane (« Sûre » et « Risquée » dans ce document), leur choix est sur l'écran de palier, et les coups de pouce sont trois cartes gagnées à la performance, avec l'Échange offert à la place du Joker.
 
-# Run (Platines) : proto 2, palier, difficulté et coups de pouce
+# Run (Setlist) : proto 2, palier, difficulté et coups de pouce
 
-Règles et écrans du proto 2, décidés avec Clément le 05/11/2026. **Livré sur le staging** (tickets [#498](https://github.com/Oasis35/InSeconds/issues/498) à [#505](https://github.com/Oasis35/InSeconds/issues/505), une PR chacun, sauf #504 en trois) : difficultés et réserve de morceaux, coups de pouce, écran de palier, « Difficulté ? », cartes jouées en manche, fin du run (« Rejouer », partage en grille, étagère), fantôme d'un ami, série de bonnes réponses, sons d'interface, mesure et tableau Grafana ; le proto 1 ([`regles.md`](regles.md)) reste la référence de ce qui tourne en prod tant que `env/staging` n'est pas promu. Captures de l'app : [`ecrans.md`](ecrans.md) § Captures de l'app. Les chiffres marqués « provisoire » se règlent après les parties de test. Maquette interactive : artifact « Platines, palier et pari » sur claude.ai (privé) ; les captures de [`maquettes/`](maquettes/) (`proto2-*.png`) en sont tirées le 05/11/2026. Plan et tickets : [`plan.md`](plan.md).
+Règles et écrans du proto 2, décidés avec Clément le 05/11/2026. **Livré sur le staging** (tickets [#498](https://github.com/Oasis35/InSeconds/issues/498) à [#505](https://github.com/Oasis35/InSeconds/issues/505), une PR chacun, sauf #504 en trois) : difficultés et réserve de morceaux, coups de pouce, écran de palier, « Difficulté ? », cartes jouées en manche, fin du run (« Rejouer », partage en grille, étagère), fantôme d'un ami, série de bonnes réponses, sons d'interface, mesure et tableau Grafana ; le proto 1 ([`regles.md`](regles.md)) reste la référence de ce qui tourne en prod tant que `env/staging` n'est pas promu. Captures de l'app : [`ecrans.md`](ecrans.md) § Captures de l'app. Les chiffres marqués « provisoire » se règlent après les parties de test. Maquette interactive : artifact « Setlist, palier et pari » sur claude.ai (privé) ; les captures de [`maquettes/`](maquettes/) (`proto2-*.png`) en sont tirées le 05/11/2026. Plan et tickets : [`plan.md`](plan.md).
 
 ## Ce que le proto 2 change
 
@@ -95,7 +95,7 @@ Trois cartes se **gagnent** (proto 3) : quand une manche est passée avec un sco
 - **Partage en grille** : une ligne d'emojis par manche (trouvé, à moitié, raté, comme le partage du Daily) avec la difficulté choisie, le disque, le score et le lien `?utm_source=share`, plus une invitation « Bats-moi » vers la même playlist. Le score et le disque d'abord, pour qu'ils se lisent dans l'aperçu d'une conversation :
 
   ```
-  2 410 pts · Disque d'argent · InSeconds Platines
+  2 410 pts · Disque d'argent · InSeconds Setlist
   🟩🟨🟥⬜🟩 Manche 1 · Sûre
   🟩🟩🟩🟩🟨 Manche 2 · Risquée
   🟨🟥🟩🟥🟥 Manche 3 · Facile
@@ -119,7 +119,7 @@ Les noms exacts viendront de la conception ([`conception.md`](conception.md) § 
 - **Calcul des points** : côté serveur uniquement ; la difficulté et chaque carte sont des décorateurs de la politique de score ou des modificateurs des règles de la manche. Le client ne propose jamais de score.
 - **Routes** : choix de la difficulté (qui démarre le morceau), changement de morceau (`POST …/swap`) ; aucune route pour les cartes, qui agissent seules ; erreurs en ProblemDetails avec codes stables `runs.*`.
 - **Front** (domaine `runs/`) : écran de palier, écran de difficulté, tuiles des cartes au-dessus du champ, lien « Changer de morceau », grille de partage ; textes FR/EN ; animations par `ui/motion`.
-- **Mesure** : compteurs par difficulté choisie (`inseconds.runs.difficulties`, par manche), par carte gagnée et par Échange (`inseconds.runs.cards`), et la manche ratée de chaque run perdu (étiquette `round` de l'événement `lost`), d'où la part des runs perdus à l'objectif (`RunsMetrics`, rangée « Platines » du tableau Grafana « Activité »).
+- **Mesure** : compteurs par difficulté choisie (`inseconds.runs.difficulties`, par manche), par carte gagnée et par Échange (`inseconds.runs.cards`), et la manche ratée de chaque run perdu (étiquette `round` de l'événement `lost`), d'où la part des runs perdus à l'objectif (`RunsMetrics`, rangée « Setlist » du tableau Grafana « Activité »).
 - **Tests** : unitaires des politiques de score et des cartes, intégration des routes, E2E (palier, difficulté, carte gagnée, Échange, run perdu), tests de règles figées d'une playlist déjà créée.
 
 ## Découpage en tickets

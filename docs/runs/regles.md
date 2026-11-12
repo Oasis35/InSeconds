@@ -1,4 +1,4 @@
-# Run (Platines) : règles du proto 1
+# Run (Setlist) : règles du proto 1
 
 Règles validées par Clément le 17/10/2026. Les écrans qui les montrent : [`ecrans.md`](ecrans.md). Leur traduction technique : [`conception.md`](conception.md). Les valeurs ci-dessous sont celles livrées avec le proto 1 (les défauts de `Runs:`) ; les seuils et la difficulté seront réglés après les parties de test (tout est réglable à chaud, cf. [Réglages](#réglages)).
 
@@ -64,8 +64,8 @@ La suite de l'échelle est prévue pour quand un run aura plus de 4 manches : pl
 
 ## L'accès pendant le proto
 
-- **Sur invitation** : Platines n'est ouvert qu'aux comptes que Clément autorise, par un interrupteur dans l'onglet Joueurs de l'admin. Les admins ont l'accès d'office. Un invité sans compte n'y a pas accès. L'interrupteur est distinct du rôle admin (qui reste posé en SQL seulement).
-- Sans accès, rien ne change pour le joueur : pas de carte Platines sur l'accueil, et l'adresse `/runs` renvoie vers le Daily.
+- **Sur invitation** : Setlist n'est ouvert qu'aux comptes que Clément autorise, par un interrupteur dans l'onglet Joueurs de l'admin. Les admins ont l'accès d'office. Un invité sans compte n'y a pas accès. L'interrupteur est distinct du rôle admin (qui reste posé en SQL seulement).
+- Sans accès, rien ne change pour le joueur : pas de carte Setlist sur l'accueil, et l'adresse `/setlist` renvoie vers le Daily.
 - **Lien reçu** : un ami sans accès qui ouvre le lien d'une playlist peut jouer **cette playlist-là seulement**, invité compris. À la fin, il ne voit pas « Rejouer » mais une invitation à jouer au Daily.
 - Retirer l'accès n'interrompt pas une partie en cours ; cela empêche seulement d'en lancer une nouvelle.
 

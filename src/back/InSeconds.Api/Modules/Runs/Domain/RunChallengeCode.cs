@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 namespace InSeconds.Api.Modules.Runs.Domain;
 
 /// <summary>
-/// Le code d'un défi, qui est son lien (<c>/runs/K7Q2M9</c>) : 6 caractères tirés par <see cref="RandomNumberGenerator"/> dans un alphabet sans
+/// Le code d'un défi, qui est son lien (<c>/setlist/K7Q2M9</c>) : 6 caractères tirés par <see cref="RandomNumberGenerator"/> dans un alphabet sans
 /// ambiguïté (ni 0/O, ni 1/I/L), en majuscules. La saisie est insensible à la casse.
 /// </summary>
 public static class RunChallengeCode

@@ -6,7 +6,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
 /**
  * Reprise d'une partie en cours, avec confirmation d'abandon en deux temps : commune aux modes (la date si le mode la donne, « Partie en
  * pause », « X morceaux sur Y déjà joués », Reprendre / Abandonner). Chaque mode donne son avertissement d'abandon (le Daily parle de la série,
- * Platines du record), dit s'il propose de se connecter, et peut poser un contenu sous les boutons (le relevé de série du Daily).
+ * Setlist du record), dit s'il propose de se connecter, et peut poser un contenu sous les boutons (le relevé de série du Daily).
  */
 @Component({
   selector: 'app-resume-screen',

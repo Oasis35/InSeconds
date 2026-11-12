@@ -1,4 +1,4 @@
-# Platines proto 3 : plus simple, plus ludique, plus viral
+# Setlist proto 3 : plus simple, plus ludique, plus viral
 
 Le proto 3 ([#531](https://github.com/Oasis35/InSeconds/issues/531)) simplifie le mode pour qu'un joueur occasionnel le comprenne sans explication, tout en gardant de la profondeur pour un fan de blind tests. Il se livre en **3 PR** vers `env/staging`, chacune testée au staging avant la suivante. Les chiffres des difficultés et des cartes sont des hypothèses, à régler aux parties de test.
 

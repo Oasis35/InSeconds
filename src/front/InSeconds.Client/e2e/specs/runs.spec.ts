@@ -5,7 +5,7 @@ import { GamePage } from '../pages/game.page';
 import { RunPage } from '../pages/run.page';
 import { inSequence } from '../fixtures/sequence';
 
-// Le mode Run (« Platines ») : 4 manches de 5 morceaux, écoute fixe de 10 s, 45 s pour répondre, (50 + 50) points par morceau × le multiplicateur
+// Le mode Run (« Setlist ») : 4 manches de 5 morceaux, écoute fixe de 10 s, 45 s pour répondre, (50 + 50) points par morceau × le multiplicateur
 // de la manche, et une jauge par manche (40, 50, 60 puis 70 % du maximum). Le tirage est aléatoire : l'hôte de test donne les morceaux de la
 // playlist tirée. L'écran : la carte du morceau (chrono dans son coin), puis le total du run et la pile des morceaux joués.
 
@@ -25,12 +25,12 @@ async function seedThemes(page: Page, tracks: RunTrack[]): Promise<void> {
   await inSequence(free.slice(0, 30), (track, index) => post(`/api/admin/catalogue/tracks/${track.id}/themes`, { themeIds: [themes[Math.floor(index / 10)].id] }, 'put'));
 }
 
-test.describe('Mode Platines', () => {
+test.describe('Mode Setlist', () => {
   test.beforeEach(async ({ api }) => {
     await api.reseed();
   });
 
-  test("sans accès, pas de carte sur l'accueil et /runs renvoie au jeu du jour ; l'accès ouvert par l'admin la montre", async ({ page, api }) => {
+  test("sans accès, pas de carte sur l'accueil et /setlist renvoie au jeu du jour ; l'accès ouvert par l'admin la montre", async ({ page, api }) => {
     const game = new GamePage(page);
     const run = new RunPage(page);
 
@@ -55,8 +55,8 @@ test.describe('Mode Platines', () => {
     await page.unroute('**/api/runs/me');
     await expect(run.homeCard).toHaveCount(0);
 
-    // L'adresse du mode ne montre rien : retour au jeu du jour, sans laisser /runs dans l'historique.
-    await page.goto('/runs');
+    // L'adresse du mode ne montre rien : retour au jeu du jour, sans laisser /setlist dans l'historique.
+    await page.goto('/setlist');
     await expect(page).toHaveURL(/\/daily$/);
     await game.waitForWelcome();
 
@@ -65,10 +65,10 @@ test.describe('Mode Platines', () => {
     await game.goto();
     await game.waitForWelcome();
     await expect(run.homeCard).toBeVisible();
-    await expect(run.homeCard).toContainText('Platines');
+    await expect(run.homeCard).toContainText('Setlist');
     await expect(run.homeCard).toContainText('Vise le disque d’or.');
     await run.homeCard.click();
-    await expect(page).toHaveURL(/\/runs$/);
+    await expect(page).toHaveURL(/\/setlist$/);
     await expect(run.startButton).toBeVisible();
   });
 
@@ -127,7 +127,7 @@ test.describe('Mode Platines', () => {
     await expect(run.page.getByTestId('run-shortfall')).toHaveCount(0);
 
     // Le record et le disque d'or apparaissent ensuite sur l'accueil du mode.
-    await page.goto('/runs');
+    await page.goto('/setlist');
     await expect(run.welcome.getByTestId('run-record')).toBeVisible();
     await expect(run.welcome.getByTestId('run-shelf').locator('[data-shelf-disc]')).toContainText(['×1']);
     await expect(run.welcome.getByTestId('run-shelf').locator('[data-shelf-disc="runs.discs.gold"]')).toHaveCount(1);
@@ -344,7 +344,7 @@ test.describe('Mode Platines', () => {
     await run.answerRight(tracks[0]);
     await expect(run.pileTracks).toHaveCount(1);
 
-    await page.goto('/runs');
+    await page.goto('/setlist');
     await expect(page.getByRole('heading', { name: 'Partie en pause' })).toBeVisible();
     await run.resumeButton.click();
 
@@ -422,7 +422,7 @@ test.describe('Mode Platines', () => {
     await expect(friend.comparison.getByText('✕')).toHaveCount(6);
 
     // Une playlist se joue une seule fois : le même lien rouvert mène directement à la comparaison.
-    await friendPage.goto(`/runs/${code}`);
+    await friendPage.goto(`/setlist/${code}`);
     await expect(friend.comparisonTitle).toHaveText('2 joueurs de cette playlist');
     await expect(friend.linkScreen).toHaveCount(0);
 
@@ -435,15 +435,20 @@ test.describe('Mode Platines', () => {
     await expect(friend.comparisonTitle).toHaveText('2 joueurs de cette playlist');
 
     // L'auteur voit l'invité de l'ami dans le même tableau.
-    await page.goto(`/runs/${code}`);
+    await page.goto(`/setlist/${code}`);
     await expect(author.comparisonRows).toHaveCount(2);
     await expect(author.comparison.getByText('Léo', { exact: true })).toBeVisible();
     // Le compte garde son pseudo de compte : son crayon existe aussi, il mène à son profil.
     await expect(author.comparison.getByTestId('run-comparison-edit-pseudo')).toBeVisible();
 
     // Un lien inconnu le dit, sans proposer de réessayer.
-    await friendPage.goto('/runs/ZZZZZZ');
+    await friendPage.goto('/setlist/ZZZZZZ');
     await expect(friend.statusScreen).toContainText('Playlist introuvable');
     await friendContext.close();
+  });
+
+  test("les anciennes adresses /runs et /runs/<code> mènent à /setlist en gardant la query string", async ({ page }) => {
+    await page.goto('/runs/ZZZZZZ?utm_source=share');
+    await expect(page).toHaveURL(/\/setlist\/ZZZZZZ\?utm_source=share$/);
   });
 });

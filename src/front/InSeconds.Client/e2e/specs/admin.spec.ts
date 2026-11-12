@@ -760,7 +760,7 @@ test.describe('Admin - joueurs', () => {
     await expect(history).not.toBeVisible();
   });
 
-  test('ouvre l\'accès au mode Platines d\'un compte, gardé au rechargement', async ({ page, api }) => {
+  test('ouvre l\'accès au mode Setlist d\'un compte, gardé au rechargement', async ({ page, api }) => {
     await linkAccount(page, api, 'acces-run@e2e.test', 'JoueurRun');
 
     const admin = new AdminPage(page);
