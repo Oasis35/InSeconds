@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace InSeconds.IntegrationTests.Social;
 
 /// <summary>
-/// Le classement d'un groupe (nourri par les parties du mode Run, par le contrat de Social), ce que voit un non-membre (rien : 404, jamais un pseudo) et les droits
+/// Le classement d'un groupe (nourri par le niveau des joueurs au mode Run, par le contrat de Social), ce que voit un non-membre (rien : 404, jamais un pseudo) et les droits
 /// RGPD du joueur (copie et effacement, piège 48).
 /// </summary>
 public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetime
@@ -48,6 +48,23 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
             INSERT INTO runs.sessions (id, challenge_id, player_id, status, current_position, rounds_passed, total_score, started_at, ended_at)
             VALUES ({id}, {challengeId}, '{playerId}', {status}, 1, {roundsPassed}, {score}, now() - interval '{minutesAgo + 5} minutes', now() - interval '{minutesAgo} minutes')
             """);
+        if (status is not (1 or 2))
+            return;
+        // Le niveau du joueur, comme le calcule la fin d'une partie : la moyenne de ses dix dernières parties gagnées ou perdues.
+        await _game.Api.ExecuteAsync($"""
+            INSERT INTO runs.player_levels (player_id, points, runs_played, recent_scores, last_delta, updated_at)
+            SELECT player_id,
+                   round((SELECT avg(s) FROM (SELECT total_score AS s FROM runs.sessions r WHERE r.player_id = '{playerId}' AND r.status IN (1, 2) ORDER BY ended_at DESC LIMIT 10) recent))::int,
+                   count(*)::int, array_agg(total_score ORDER BY ended_at), 0, now()
+            FROM runs.sessions WHERE player_id = '{playerId}' AND status IN (1, 2) GROUP BY player_id
+            ON CONFLICT (player_id) DO UPDATE SET points = excluded.points, runs_played = excluded.runs_played, recent_scores = excluded.recent_scores
+            """);
+        await _game.Api.ExecuteAsync($"""
+            INSERT INTO runs.records (player_id, best_score, best_rounds_passed, session_id, achieved_at)
+            VALUES ('{playerId}', {score}, {roundsPassed}, {id}, now())
+            ON CONFLICT (player_id) DO UPDATE SET best_score = excluded.best_score, session_id = excluded.session_id
+            WHERE runs.records.best_score < excluded.best_score
+            """);
     }
 
     private async Task<(Gamer Alice, Gamer Bob, Gamer Carol, GroupSummaryResponse Group)> GroupOfThreeAsync()
@@ -61,7 +78,7 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
     }
 
     [Fact]
-    public async Task Classement_ParPerformanceRecente_LesSansPartieALaFin()
+    public async Task Classement_ParNiveau_LesSansPartieALaFin()
     {
         var (alice, bob, carol, group) = await GroupOfThreeAsync();
         await AddRunAsync(alice.Id, status: 2, roundsPassed: 2, score: 800);
@@ -73,16 +90,18 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
 
         Assert.Equal(["Bob", "Alice", "Carol"], ranking.Entries.Select(e => e.Pseudo));
         Assert.Equal([1, 2, null], ranking.Entries.Select(e => e.Rank));
-        Assert.Equal([1d, 0.5d, null], ranking.Entries.Select(e => e.Performance));
+        Assert.Equal([2500, 800, null], ranking.Entries.Select(e => e.Points));
+        Assert.Equal(["runs.discs.platinum", "runs.discs.bronze", null], ranking.Entries.Select(e => e.Badge));
+        Assert.Equal([Math.Round(2500d / 3400, 4), Math.Round(800d / 3400, 4), null], ranking.Entries.Select(e => e.Performance));
         Assert.Equal([2500, 800, null], ranking.Entries.Select(e => e.BestScore));
         Assert.Equal([false, true, false], ranking.Entries.Select(e => e.IsMe));
     }
 
     [Fact]
-    public async Task Classement_MoyenneDesCinqDernieresParties()
+    public async Task Classement_LeNiveauEstLaMoyenneDesPartiesRecentes()
     {
         var (alice, _, _, group) = await GroupOfThreeAsync();
-        // Six parties : la plus ancienne (4 manches sur 4) sort de la fenêtre des cinq dernières.
+        // Six parties : 2000 puis cinq à 100, soit 417 points de niveau (disque Cire), le record restant à 2000.
         await AddRunAsync(alice.Id, status: 1, roundsPassed: 4, score: 2000, minutesAgo: 60);
         for (var i = 1; i <= 5; i++)
             await AddRunAsync(alice.Id, status: 2, roundsPassed: 0, score: 100, minutesAgo: i);
@@ -90,8 +109,7 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
         var ranking = (await alice.Client.GetFromJsonAsync<GroupRankingResponse>($"/api/social/groups/{group.Id}/ranking", Ct))!;
 
         var me = ranking.Entries.Single(e => e.IsMe);
-        Assert.Equal(0d, me.Performance);
-        Assert.Equal(6, me.GamesPlayed);
+        Assert.Equal((417, "runs.discs.wax", 6), (me.Points, me.Badge, me.GamesPlayed));
         Assert.Equal(2000, me.BestScore);
     }
 

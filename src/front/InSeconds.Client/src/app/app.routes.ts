@@ -35,6 +35,7 @@ export const routes: Routes = [
   // Domaines : chacun remplace sa page d'attente par ses routes (chargées à la demande, avec leurs stores).
   { path: 'daily', loadChildren: () => import('./daily/feature/daily.routes').then(m => m.DAILY_ROUTES) },
   { path: 'setlist', loadChildren: () => import('./runs/feature/runs.routes').then(m => m.RUNS_ROUTES) },
+  { path: 'ranking', loadChildren: () => import('./social/feature/social.routes').then(m => m.SOCIAL_ROUTES) },
   { path: 'account', loadChildren: () => import('./account/feature/account.routes').then(m => m.ACCOUNT_ROUTES) },
   { path: 'admin', loadChildren: () => import('./admin/feature/admin.routes').then(m => m.ADMIN_ROUTES) },
   { path: 'legal', loadComponent: () => import('./core/shell/legal/legal.page').then(m => m.LegalPage) },

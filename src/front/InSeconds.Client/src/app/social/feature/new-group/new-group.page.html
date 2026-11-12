@@ -1,0 +1,50 @@
+<div class="da-bg min-h-dvh flex flex-col relative" style="color:var(--text-body)">
+  <app-decor-background />
+
+  <main class="relative flex-1 flex flex-col gap-5 px-5 pt-2 pb-5 w-full max-w-lg mx-auto overflow-x-clip">
+    <app-brand [homeLink]="true" />
+
+    <div class="space-y-1">
+      <h1 class="text-2xl font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.create.title' | translate }}</h1>
+      <p class="text-sm" style="color:var(--text-light)">{{ 'social.create.subtitle' | translate }}</p>
+    </div>
+
+    @if (!session.loaded()) {
+      <!-- Identité pas encore lue. -->
+    } @else if (!session.isLinked()) {
+      <div class="flex flex-col gap-3" data-testid="new-group-guest">
+        <p class="text-sm" style="color:var(--text-light)">{{ 'social.create.accountRequired' | translate }}</p>
+        <a appButton routerLink="/account/login" [block]="true">{{ 'social.empty.createAccount' | translate }}</a>
+      </div>
+    } @else {
+      <form class="flex-1 flex flex-col gap-5" data-testid="new-group" (submit)="$event.preventDefault(); submit()">
+        <label class="block space-y-1.5">
+          <span class="text-xs font-semibold" style="color:var(--text-muted)">{{ 'social.create.label' | translate }}</span>
+          <input type="text" autocomplete="off" autocapitalize="sentences" spellcheck="false" [attr.maxlength]="maxLength" data-testid="new-group-name"
+                 class="w-full rounded-(--radius-button) px-4 py-3 text-base"
+                 style="background:var(--bg-surface-2);border:1px solid var(--color-accent-3);color:var(--text-hi)"
+                 [value]="name()" [attr.aria-invalid]="error() ? 'true' : null" (input)="name.set($any($event.target).value); error.set(null)" />
+          @if (error(); as key) {
+            <span class="block text-sm" style="color:var(--text-error)" role="alert" data-testid="new-group-error">{{ key | translate }}</span>
+          }
+        </label>
+
+        <ol class="flex flex-col gap-3 text-base" style="color:var(--text-hi)">
+          @for (step of [1, 2, 3]; track step) {
+            <li class="flex items-baseline gap-2">
+              <span class="font-bold tabular-nums" style="color:var(--color-accent-3)">{{ step }}</span>
+              <span>{{ 'social.create.step' + step | translate }}</span>
+            </li>
+          }
+        </ol>
+
+        <p class="text-xs" style="color:var(--text-muted)">{{ 'social.create.privacy' | translate }}</p>
+
+        <div class="mt-auto flex flex-col gap-2">
+          <button appButton type="submit" size="lg" [block]="true" [disabled]="busy()" data-testid="new-group-submit">{{ 'social.create.submit' | translate }}</button>
+          <a routerLink="/ranking" class="self-center text-sm underline py-3 px-4" style="color:var(--text-muted)">{{ 'social.create.cancel' | translate }}</a>
+        </div>
+      </form>
+    }
+  </main>
+</div>

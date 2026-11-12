@@ -6,7 +6,9 @@ namespace InSeconds.Api.Modules.Social.Domain;
 public sealed record RankingInput(Guid PlayerId, string Pseudo, IReadOnlyList<MemberPerformance> Performances);
 
 /// <summary>Une ligne du classement. <see cref="Rank"/> et <see cref="Performance"/> sont vides pour un membre qui n'a fini aucune partie.</summary>
-public sealed record RankingRow(int? Rank, Guid PlayerId, string Pseudo, double? Performance, int GamesPlayed, int? BestScore);
+/// <param name="Points">Les points montrés à côté du membre : la moyenne de ceux des modes qui en donnent ; vide si aucun n'en donne.</param>
+/// <param name="Badge">Le badge (clé de traduction) du mode où il a le plus de points ; vide si aucun n'en donne.</param>
+public sealed record RankingRow(int? Rank, Guid PlayerId, string Pseudo, double? Performance, int GamesPlayed, int? BestScore, int? Points = null, string? Badge = null);
 
 /// <summary>
 /// Le classement d'un groupe : la **moyenne des performances** (de 0 à 1) des modes où le membre a joué, la plus haute d'abord ; à égalité, celui qui a
@@ -46,7 +48,10 @@ public static class GroupRankingPolicy
             var current = ordered[i];
             var tiesPrevious = i > 0 && ordered[i - 1].Performance == current.Performance && ordered[i - 1].Games == current.Games;
             var rank = tiesPrevious ? rows[i - 1].Rank : i + 1;
-            rows.Add(new RankingRow(rank, current.Member.PlayerId, current.Member.Pseudo, current.Performance, current.Games, current.Best));
+            var withPoints = current.Member.Performances.Where(p => p.Points is not null).ToList();
+            int? points = withPoints.Count == 0 ? null : (int)Math.Round(withPoints.Average(p => (double)p.Points!.Value), MidpointRounding.AwayFromZero);
+            var badge = current.Member.Performances.Where(p => p.Badge is not null).OrderByDescending(p => p.Points ?? 0).Select(p => p.Badge).FirstOrDefault();
+            rows.Add(new RankingRow(rank, current.Member.PlayerId, current.Member.Pseudo, current.Performance, current.Games, current.Best, points, badge));
         }
 
         rows.AddRange(unplayed

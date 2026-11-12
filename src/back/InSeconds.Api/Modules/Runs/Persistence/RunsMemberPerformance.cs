@@ -1,4 +1,5 @@
 using InSeconds.Api.Infrastructure.Persistence;
+using InSeconds.Api.Modules.Runs.Application;
 using InSeconds.Api.Modules.Runs.Domain;
 using InSeconds.Api.Modules.Social.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -6,11 +7,12 @@ using Microsoft.EntityFrameworkCore;
 namespace InSeconds.Api.Modules.Runs.Persistence;
 
 /// <summary>
-/// Ce que Runs donne au classement d'un groupe : la performance récente de chaque joueur (<see cref="RunPerformance"/>), son nombre de parties finies
-/// et son record. Un joueur sans partie finie (gagnée ou perdue : une partie abandonnée ne compte pas) n'y figure pas. Runs ne connaît de Social que ce
-/// contrat.
+/// Ce que Runs donne au classement d'un groupe : le **niveau** de chaque joueur (<see cref="RunLevel"/>). Sa performance est la part de ses points de
+/// niveau dans ceux du plus haut disque (de 0 à 1), ses points et son disque sont montrés à côté de lui, avec son nombre de parties comptées et son
+/// record. Un joueur sans niveau (aucune partie gagnée ou perdue : une partie abandonnée ne compte pas) n'y figure pas. Runs ne connaît de Social que
+/// ce contrat.
 /// </summary>
-public sealed class RunsMemberPerformance(InSecondsDbContext db) : IMemberPerformanceSource
+public sealed class RunsMemberPerformance(InSecondsDbContext db, RunsRules rules) : IMemberPerformanceSource
 {
     public string Source => "runs";
 
@@ -22,23 +24,20 @@ public sealed class RunsMemberPerformance(InSecondsDbContext db) : IMemberPerfor
         if (ids.Count == 0)
             return result;
 
-        var finished = db.Set<RunSession>().AsNoTracking()
-            .Where(s => ids.Contains(s.PlayerId) && (s.Status == RunSessionStatus.Won || s.Status == RunSessionStatus.Lost));
-        var totals = await finished.GroupBy(s => s.PlayerId)
-            .Select(g => new { PlayerId = g.Key, Games = g.Count(), Best = g.Max(s => s.TotalScore) })
+        var levels = await db.Set<RunLevel>().AsNoTracking()
+            .Where(l => ids.Contains(l.PlayerId) && l.RunsPlayed > 0)
+            .Select(l => new { l.PlayerId, l.Points, l.RunsPlayed })
             .ToListAsync(ct);
-        // Les dernières parties de chacun (au plus RecentGames ; 15 joueurs au plus par groupe : une petite requête par joueur).
-        foreach (var total in totals)
+        var bests = await db.Set<RunRecord>().AsNoTracking()
+            .Where(r => ids.Contains(r.PlayerId))
+            .ToDictionaryAsync(r => r.PlayerId, r => r.BestScore, ct);
+        var ladder = rules.Levels.Ladder;
+        foreach (var level in levels)
         {
-            var recent = await (from s in finished
-                                join c in db.Set<RunChallenge>().AsNoTracking() on s.ChallengeId equals c.Id
-                                where s.PlayerId == total.PlayerId
-                                orderby s.EndedAt descending, s.Id descending
-                                select new { s.RoundsPassed, c.Rules })
-                .Take(RunPerformance.RecentGames)
-                .ToListAsync(ct);
-            var average = RunPerformance.Average([.. recent.Select(r => RunPerformance.OfGame(r.RoundsPassed, r.Rules.Rounds))]);
-            result[total.PlayerId] = new MemberPerformance(average, total.Games, total.Best);
+            var standing = RunLevelPolicy.Standing(level.Points, ladder);
+            result[level.PlayerId] = new MemberPerformance(
+                RunLevelPolicy.Share(level.Points, ladder), level.RunsPlayed, bests.TryGetValue(level.PlayerId, out var best) ? best : null,
+                level.Points, standing.Current.Disc);
         }
 
         return result;

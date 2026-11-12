@@ -175,6 +175,14 @@ test.describe('Mode Setlist', () => {
     await expect(run.page.getByTestId('run-level-provisional')).toBeVisible();
     await expect(run.page.getByTestId('run-level-delta')).toHaveText(/^\+/);
     await expect(run.page.getByTestId('run-share')).toContainText('Défier un ami');
+    // « Défier un ami » ouvre la feuille de partage : défier, inviter dans un groupe (ici, en créer un) ou sa grille.
+    await run.page.getByTestId('run-share').click();
+    await expect(run.page.getByTestId('share-sheet')).toBeVisible();
+    await expect(run.page.getByTestId('share-challenge')).toBeVisible();
+    await expect(run.page.getByTestId('share-create-group')).toBeVisible();
+    await expect(run.page.getByTestId('share-grid')).toBeVisible();
+    await run.page.keyboard.press('Escape');
+    await expect(run.page.getByTestId('share-sheet')).toHaveCount(0);
     await expect(run.playAgainButton).toHaveText('Nouvelle setlist');
     await expect(run.page.getByTestId('run-shortfall')).toHaveCount(0);
 

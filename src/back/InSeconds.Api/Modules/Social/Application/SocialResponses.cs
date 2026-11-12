@@ -16,7 +16,9 @@ public sealed record GroupDetailResponse(
 /// <param name="Rank">Vide pour un membre qui n'a fini aucune partie.</param>
 /// <param name="Performance">De 0 à 1, la moyenne des modes joués ; vide sans partie.</param>
 /// <param name="BestScore">Son meilleur score, vide si aucun mode joué n'en donne.</param>
-public sealed record RankingEntryResponse(int? Rank, string Pseudo, bool IsMe, double? Performance, int GamesPlayed, int? BestScore);
+/// <param name="Points">Ses points de niveau ; vide sans partie, ou si aucun mode joué n'en donne.</param>
+/// <param name="Badge">La clé de traduction de son disque (<c>runs.discs.gold</c>) ; vide sans partie.</param>
+public sealed record RankingEntryResponse(int? Rank, string Pseudo, bool IsMe, double? Performance, int GamesPlayed, int? BestScore, int? Points, string? Badge);
 
 public sealed record GroupRankingResponse(int GroupId, string Name, IReadOnlyList<RankingEntryResponse> Entries);
 

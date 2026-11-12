@@ -7,7 +7,7 @@ import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 
 /**
  * La barre du bas de la V4 : les pages du joueur, une ligne de liens légaux au-dessus. Visible seulement sous l'accès Setlist, sur le jeu du
- * jour et sur Setlist, et jamais pendant une manche. « Aujourd'hui » respire en cyan tant que le défi du jour n'est pas joué.
+ * jour, sur Setlist et sur le classement, et jamais pendant une manche. « Aujourd'hui » respire en cyan tant que le défi du jour n'est pas joué.
  */
 @Component({
   selector: 'app-setlist-bottom-bar',
@@ -34,6 +34,8 @@ import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
                   }
                 } @else if (tab.id === 'setlist') {
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg>
+                } @else if (tab.id === 'ranking') {
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 20v-6M12 20V5M18 20v-9"/></svg>
                 } @else {
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
                 }
@@ -61,10 +63,12 @@ export class SetlistBottomBarComponent {
     { initialValue: this.router.url },
   );
 
-  private readonly section = computed<'daily' | 'setlist' | 'history' | null>(() => {
+  private readonly section = computed<'daily' | 'setlist' | 'ranking' | 'history' | null>(() => {
     const path = this.url().split(/[?#]/)[0];
     // L'historique a une page par mode (`/daily/history`, `/setlist/history`) et un seul onglet.
     if (/^\/(daily|setlist)\/history(\/|$)/.test(path)) return 'history';
+    // Le classement entre amis ; la création d'un groupe et le lien d'invitation sont des écrans pleins, sans barre.
+    if (path === '/ranking') return 'ranking';
     if (path === '/daily' || path.startsWith('/daily/')) return 'daily';
     if (path === '/setlist' || path.startsWith('/setlist/')) return 'setlist';
     return null;
@@ -75,6 +79,7 @@ export class SetlistBottomBarComponent {
   protected readonly tabs = computed(() => [
     { id: 'daily', link: '/daily', labelKey: 'runs.v4.bar.daily', active: this.section() === 'daily' },
     { id: 'setlist', link: '/setlist', labelKey: 'runs.v4.bar.setlist', active: this.section() === 'setlist' },
+    { id: 'ranking', link: '/ranking', labelKey: 'runs.v4.bar.ranking', active: this.section() === 'ranking' },
     { id: 'history', link: '/daily/history', labelKey: 'runs.v4.bar.history', active: this.section() === 'history' },
   ]);
 

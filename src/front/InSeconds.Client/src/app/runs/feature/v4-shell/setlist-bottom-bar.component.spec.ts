@@ -54,4 +54,11 @@ describe('SetlistBottomBarComponent', () => {
     TestBed.resetTestingModule();
     expect((await render('/daily/history?mois=2026-10', {})).el.querySelector('[data-testid="tab-daily"]')?.getAttribute('aria-current')).toBeNull();
   });
+
+  it('« Classement » ouvre le classement entre amis et s\'allume sur ses pages', async () => {
+    const { el } = await render('/ranking?group=4', {});
+    expect(el.querySelector('[data-testid="tab-ranking"]')?.getAttribute('href')).toBe('/ranking');
+    expect(el.querySelector('[data-testid="tab-ranking"]')?.getAttribute('aria-current')).toBe('page');
+    expect(el.querySelector('[data-testid="tab-setlist"]')?.getAttribute('aria-current')).toBeNull();
+  });
 });

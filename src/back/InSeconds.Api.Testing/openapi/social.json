@@ -1056,7 +1056,9 @@
           "isMe",
           "performance",
           "gamesPlayed",
-          "bestScore"
+          "bestScore",
+          "points",
+          "badge"
         ],
         "type": "object",
         "properties": {
@@ -1090,6 +1092,19 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "points": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "badge": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

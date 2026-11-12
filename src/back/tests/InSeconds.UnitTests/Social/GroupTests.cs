@@ -204,5 +204,17 @@ public class GroupRankingPolicyTests
     }
 
     [Fact]
+    public void PointsEtDisque_CeuxDeLaSource_UnMembreSansPartieNEnAPas()
+    {
+        var rows = GroupRankingPolicy.Rank([
+            Member("Alice", new MemberPerformance(0.5, 4, 1900, Points: 1700, Badge: "runs.discs.gold")),
+            Member("Bob"),
+        ]);
+
+        Assert.Equal((1700, "runs.discs.gold"), (rows[0].Points, rows[0].Badge));
+        Assert.Equal((null, null), (rows[1].Points, rows[1].Badge));
+    }
+
+    [Fact]
     public void Vide_RienARendre() => Assert.Empty(GroupRankingPolicy.Rank([]));
 }
