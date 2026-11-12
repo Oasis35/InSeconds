@@ -39,4 +39,7 @@ public static class RateLimitPolicies
 
     /// <summary>Lecture du lien d'une playlist (public, sans authentification) : par IP, contre l'énumération des codes.</summary>
     public const string RunLink = "run-link";
+
+    /// <summary>Extrait d'un morceau d'une partie finie de l'historique (chaque appel interroge Deezer, quota partagé avec les parties) : par joueur.</summary>
+    public const string RunHistoryPreview = "run-history-preview";
 }

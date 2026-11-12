@@ -22,6 +22,7 @@ public static class DailyModule
         services.AddScoped<IDailyStore, EfDailyStore>();
         services.AddScoped<IDailyQueries, EfDailyQueries>();
         services.AddScoped<IDailyStatsQueries, EfDailyStatsQueries>();
+        services.AddScoped<IDailyHistoryQueries, EfDailyHistoryQueries>();
         services.AddSingleton<ITrackSelector, CooldownSeededSelector>();
         // Les règles du jeu lues à chaud dans les réglages (paliers, barème, indices, gels), et le contrôle de leur cohérence au démarrage.
         services.AddSingleton<DailyRules>();
