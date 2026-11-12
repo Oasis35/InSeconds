@@ -117,4 +117,7 @@ internal static partial class SocialLog
 
     [LoggerMessage(EventId = 1807, Level = LogLevel.Information, Message = "Groupe {GroupId} supprimé par l'admin {AdminId}")]
     public static partial void AdminDeleted(ILogger logger, int groupId, Guid adminId);
+
+    [LoggerMessage(EventId = 1808, Level = LogLevel.Information, Message = "{PlayerId} a changé sa visibilité au classement général ({Visible})")]
+    public static partial void RankingVisibilityChanged(ILogger logger, Guid playerId, bool visible);
 }

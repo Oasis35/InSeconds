@@ -1005,87 +1005,6 @@
         }
       }
     },
-    "/api/runs/sessions/{id}/swap": {
-      "post": {
-        "tags": [
-          "Runs"
-        ],
-        "operationId": "swapRunTrack",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SwapRunTrack"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RunPlayResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/runs/history": {
       "get": {
         "tags": [
@@ -1208,6 +1127,117 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/hits": {
+      "get": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "getRunHits",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunHitsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/sessions/{id}/swap": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "swapRunTrack",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwapRunTrack"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunPlayResponse"
                 }
               }
             }
@@ -1746,6 +1776,152 @@
           }
         }
       },
+      "RunHistoryResponse": {
+        "required": [
+          "month",
+          "previousMonth",
+          "nextMonth",
+          "playedCount",
+          "averageScore",
+          "bestScore",
+          "runs"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "previousMonth": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nextMonth": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "playedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "averageScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "bestScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "runs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunHistoryRunResponse"
+            }
+          }
+        }
+      },
+      "RunHistoryRunResponse": {
+        "required": [
+          "sessionId",
+          "challengeCode",
+          "date",
+          "status",
+          "disc",
+          "roundsPassed",
+          "score",
+          "difficulty"
+        ],
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "challengeCode": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "type": "string"
+          },
+          "disc": {
+            "$ref": "#/components/schemas/RunDiscResponse"
+          },
+          "roundsPassed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "difficulty": {
+            "type": "string"
+          }
+        }
+      },
+      "RunHitResponse": {
+        "required": [
+          "key",
+          "earned",
+          "progress",
+          "target"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "earned": {
+            "type": "boolean"
+          },
+          "progress": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "target": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "RunHitsResponse": {
+        "required": [
+          "hits",
+          "earnedCount"
+        ],
+        "type": "object",
+        "properties": {
+          "hits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunHitResponse"
+            }
+          },
+          "earnedCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "RunLevelResponse": {
         "required": [
           "points",
@@ -1857,6 +2033,20 @@
           },
           "difficulty": {
             "type": "string"
+          }
+        }
+      },
+      "RunPastPreviewResponse": {
+        "required": [
+          "previewUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "previewUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -2570,116 +2760,6 @@
             "format": "double"
           }
         }
-      },
-      "RunHistoryResponse": {
-        "required": [
-          "month",
-          "previousMonth",
-          "nextMonth",
-          "playedCount",
-          "averageScore",
-          "bestScore",
-          "runs"
-        ],
-        "type": "object",
-        "properties": {
-          "month": {
-            "type": "string"
-          },
-          "previousMonth": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "nextMonth": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "playedCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "averageScore": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "bestScore": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "runs": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/RunHistoryRunResponse"
-            }
-          }
-        }
-      },
-      "RunHistoryRunResponse": {
-        "required": [
-          "sessionId",
-          "challengeCode",
-          "date",
-          "status",
-          "disc",
-          "roundsPassed",
-          "score",
-          "difficulty"
-        ],
-        "type": "object",
-        "properties": {
-          "sessionId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "challengeCode": {
-            "type": "string"
-          },
-          "date": {
-            "type": "string",
-            "format": "date"
-          },
-          "status": {
-            "type": "string"
-          },
-          "disc": {
-            "$ref": "#/components/schemas/RunDiscResponse"
-          },
-          "roundsPassed": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "score": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "difficulty": {
-            "type": "string"
-          }
-        }
-      },
-      "RunPastPreviewResponse": {
-        "required": [
-          "previewUrl"
-        ],
-        "type": "object",
-        "properties": {
-          "previewUrl": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
       }
     }
   },
@@ -2737,6 +2817,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Runs.Application.GetRunPastPreviewEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.GetRunHitsEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Runs.Application.SwapRunTrackEndpoint"

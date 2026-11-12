@@ -14,6 +14,9 @@
           <a routerLink="/daily" data-testid="daily-left" class="block pt-2 text-center text-sm underline" style="color:var(--text-light)">{{ 'runs.v4.dailyLeft' | translate }}</a>
         }
         <app-run-welcome-screen [record]="store.record()" [level]="chrome.v4() ? store.level() : null" [shelf]="store.shelf()" [lang]="language.current()" (start)="store.begin()" />
+        @if (chrome.v4()) {
+          <app-run-hits-line class="block pt-3 pb-4" />
+        }
       }
 
       <!-- Juste avant la manche à thème, le créateur choisit son thème (ou « Thème mystère », tiré au sort) ; le thème se révèle, puis la manche suit. -->
@@ -121,6 +124,9 @@
           }
           <app-run-finish [finish]="finish" [showLevel]="chrome.v4()" [reviewLink]="reviewLink()" [duel]="store.duel()" [canPlayAgain]="store.canPlayAgain()" [shareCopied]="share.copied()" [shareFailed]="share.failed()"
             [lang]="language.current()" (share)="shareFinish(finish)" (compare)="store.showComparison()" (playAgain)="store.playAgain()" />
+          @if (chrome.v4()) {
+            <app-run-hits-line class="block pb-3" />
+          }
           <app-groups-strip class="block pb-6" [showGroups]="chrome.v4() && session.isLinked()" />
         }
       }

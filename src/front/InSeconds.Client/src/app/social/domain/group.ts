@@ -84,3 +84,16 @@ export function badgeColor(badge: string | null): string | null {
 
 /** L'initiale affichée dans la pastille d'un membre. */
 export const initialOf = (pseudo: string): string => (pseudo.trim()[0] ?? '?').toUpperCase();
+
+/**
+ * Le classement général tel que le joueur le lit : la tête, puis lui et ses voisins s'il y apparaît plus bas. `topPercent` le situe par dizaines
+ * (« top 30 % »), vide tant qu'il n'a fini aucune partie ; `canAppear` est faux pour un invité.
+ */
+export interface GeneralRanking {
+  readonly top: readonly RankingEntry[];
+  readonly around: readonly RankingEntry[];
+  readonly total: number;
+  readonly visible: boolean;
+  readonly canAppear: boolean;
+  readonly topPercent: number | null;
+}

@@ -79,4 +79,38 @@ test.describe('Groupes entre amis', () => {
     await page.reload();
     await expect(page.getByTestId('ranking-row')).toHaveCount(1);
   });
+
+  test("le classement général : personne n'y figure sans l'avoir choisi, le choix est gardé ; les Hits se lisent depuis la Setlist", async ({ page, api }) => {
+    const player = new RunPage(page);
+    const playerId = await player.loginAsPlayer('zoe-general@e2e.test', 'ZoeGeneral');
+    await api.grantRunAccess(playerId);
+
+    // La pastille « Général » : vide, et l'interrupteur éteint par défaut.
+    await page.goto('/ranking');
+    await page.getByTestId('ranking-general').click();
+    await expect(page).toHaveURL(/\/ranking\?view=general$/);
+    await expect(page.getByTestId('general-empty')).toBeVisible();
+    await expect(page.getByTestId('general-visible')).toHaveAttribute('aria-checked', 'false');
+
+    // Le choix d'apparaître tient au rechargement.
+    await page.getByTestId('general-visible').click();
+    await expect(page.getByTestId('general-visible')).toHaveAttribute('aria-checked', 'true');
+    await page.reload();
+    await expect(page.getByTestId('general-visible')).toHaveAttribute('aria-checked', 'true');
+
+    // Le profil y mène.
+    await page.goto('/account/profile');
+    await page.getByTestId('profile-general-ranking').click();
+    await expect(page).toHaveURL(/\/ranking\?view=general$/);
+
+    // Les Hits : la ligne de l'accueil du mode ouvre la liste, rien n'est obtenu sans partie finie.
+    await page.goto('/setlist');
+    await expect(page.getByTestId('run-hits-count')).toHaveText('0 / 17');
+    await page.getByTestId('run-hits-line').click();
+    await expect(page).toHaveURL(/\/setlist\/hits$/);
+    await expect(page.getByTestId('hit')).toHaveCount(17);
+    await expect(page.getByTestId('hits-count')).toHaveText('0 / 17');
+    await page.getByTestId('hits-back').click();
+    await expect(page).toHaveURL(/\/setlist$/);
+  });
 });

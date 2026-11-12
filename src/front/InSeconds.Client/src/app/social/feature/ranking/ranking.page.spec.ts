@@ -47,6 +47,23 @@ describe('RankingPage', () => {
   });
   afterEach(() => TestBed.inject(PendingInvite).clear());
 
+  it('ouvre le classement général par sa pastille, même sans groupe', async () => {
+    api.groups = { groups: [], maxGroups: 5 };
+    const { el } = await render('/ranking?view=general');
+
+    expect(find(el, 'ranking-general')?.getAttribute('aria-current')).toBe('page');
+    expect(find(el, 'ranking-general')?.getAttribute('href')).toBe('/ranking?view=general');
+    expect(find(el, 'general-ranking')).not.toBeNull();
+    expect(find(el, 'ranking-empty')).toBeNull();
+  });
+
+  it('garde la pastille « Général » éteinte sur le classement d\'un groupe', async () => {
+    const { el } = await render();
+
+    expect(find(el, 'ranking-general')?.getAttribute('aria-current')).toBeNull();
+    expect(find(el, 'general-ranking')).toBeNull();
+  });
+
   it('montre mes groupes en pastilles et le classement du premier', async () => {
     const { el } = await render();
 

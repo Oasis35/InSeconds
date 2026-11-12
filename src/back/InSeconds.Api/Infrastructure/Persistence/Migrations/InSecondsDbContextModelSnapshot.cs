@@ -1271,6 +1271,22 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     b.ToTable("group_members", "social");
                 });
 
+            modelBuilder.Entity("InSeconds.Api.Modules.Social.Domain.RankingVisibility", b =>
+                {
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<DateTimeOffset>("VisibleSince")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("visible_since");
+
+                    b.HasKey("PlayerId")
+                        .HasName("pk_ranking_visibility");
+
+                    b.ToTable("ranking_visibility", "social");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
                 {
                     b.Property<int>("Id")
@@ -1686,6 +1702,16 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_group_members_players_player_id");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Social.Domain.RankingVisibility", b =>
+                {
+                    b.HasOne("InSeconds.Api.Modules.Players.Domain.Player", null)
+                        .WithMany()
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_ranking_visibility_players_player_id");
                 });
 
             modelBuilder.Entity("track_genres", b =>

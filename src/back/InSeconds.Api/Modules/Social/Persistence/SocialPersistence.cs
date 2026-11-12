@@ -45,6 +45,18 @@ internal sealed class GroupMemberConfiguration : IEntityTypeConfiguration<GroupM
     }
 }
 
+internal sealed class RankingVisibilityConfiguration : IEntityTypeConfiguration<RankingVisibility>
+{
+    public void Configure(EntityTypeBuilder<RankingVisibility> builder)
+    {
+        builder.ToTable("ranking_visibility", DbSchemas.Social);
+        builder.HasKey(v => v.PlayerId);
+        builder.Property(v => v.PlayerId).ValueGeneratedNever();
+        builder.HasOne("InSeconds.Api.Modules.Players.Domain.Player", navigationName: null).WithMany()
+            .HasForeignKey(nameof(RankingVisibility.PlayerId)).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
 // Implémentations publiques : Wolverine construit lui-même les dépendances des endpoints (code généré), et refuse une implémentation interne.
 
 public sealed class EfGroupStore(InSecondsDbContext db) : IGroupStore
@@ -91,8 +103,21 @@ public sealed class EfGroupStore(InSecondsDbContext db) : IGroupStore
     }
 }
 
+public sealed class EfRankingVisibilityStore(InSecondsDbContext db) : IRankingVisibilityStore
+{
+    public Task<RankingVisibility?> FindAsync(Guid playerId, CancellationToken ct) =>
+        db.Set<RankingVisibility>().FirstOrDefaultAsync(v => v.PlayerId == playerId, ct);
+
+    public void Add(RankingVisibility visibility) => db.Set<RankingVisibility>().Add(visibility);
+
+    public void Remove(RankingVisibility visibility) => db.Set<RankingVisibility>().Remove(visibility);
+}
+
 public sealed class EfSocialQueries(InSecondsDbContext db) : ISocialQueries
 {
+    public async Task<IReadOnlyList<Guid>> ListRankingVisiblePlayersAsync(CancellationToken ct) =>
+        await db.Set<RankingVisibility>().AsNoTracking().Select(v => v.PlayerId).ToListAsync(ct);
+
     public async Task<IReadOnlyList<GroupView>> ListGroupsOfAsync(Guid playerId, CancellationToken ct)
     {
         var groups = await db.Set<Group>().AsNoTracking()
@@ -144,7 +169,9 @@ public sealed class SocialPlayerData(InSecondsDbContext db) : IPlayerDataContrib
                             orderby m.JoinedAt, g.Id
                             select new SocialGroupExport(g.Name, g.OwnerId == playerId, m.JoinedAt, g.CreatedAt, g.Members.Count))
             .ToListAsync(ct);
-        return new SocialDataExport(groups);
+        var visibleSince = await db.Set<RankingVisibility>().AsNoTracking()
+            .Where(v => v.PlayerId == playerId).Select(v => (DateTimeOffset?)v.VisibleSince).FirstOrDefaultAsync(ct);
+        return new SocialDataExport(groups, visibleSince);
     }
 
     // Exécuté tout de suite, dans la transaction de l'appelant (pas de SaveChanges : la ligne du joueur part juste après). Un groupe qu'il a créé passe
@@ -168,6 +195,7 @@ public sealed class SocialPlayerData(InSecondsDbContext db) : IPlayerDataContrib
         }
 
         await db.Set<GroupMember>().Where(m => m.PlayerId == playerId).ExecuteDeleteAsync(ct);
+        await db.Set<RankingVisibility>().Where(v => v.PlayerId == playerId).ExecuteDeleteAsync(ct);
         // Aucune « partie » ici : le compte rendu de l'effacement ne compte que les parties de jeu.
         return 0;
     }

@@ -4,6 +4,7 @@ import { provideRunsApi } from '../data-access/runs.providers';
 import { provideSocialApi } from '../../social/data-access/social.providers';
 import { RunHistoryDetailPage } from './history-detail/run-history-detail.page';
 import { RunHistoryPage } from './history/run-history.page';
+import { RunHitsPage } from './hits/run-hits.page';
 import { leaveRunGuard } from './leave-run.guard';
 import { RunsPage } from './runs/runs.page';
 
@@ -21,6 +22,8 @@ export const RUNS_ROUTES: Routes = [
       // L'historique du joueur (V4) et les morceaux d'une de ses parties finies ; avant `:code`, qui prendrait « history » pour un lien.
       { path: 'history', component: RunHistoryPage },
       { path: 'history/:id', component: RunHistoryDetailPage },
+      // Les Hits du joueur ; avant `:code` aussi.
+      { path: 'hits', component: RunHitsPage },
       // Le lien d'une playlist : lien reçu, reprise ou comparaison selon la partie du joueur (le serveur décide).
       { path: ':code', component: RunsPage, canDeactivate: [leaveRunGuard] },
     ],

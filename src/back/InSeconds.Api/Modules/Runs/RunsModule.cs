@@ -24,6 +24,7 @@ public static class RunsModule
         services.AddScoped<IRunsStore, EfRunsStore>();
         services.AddScoped<IRunsQueries, EfRunsQueries>();
         services.AddScoped<IRunHistoryQueries, EfRunHistoryQueries>();
+        services.AddScoped<IRunHitsQueries, EfRunHitsQueries>();
         services.AddScoped<IRunAccess, EfRunAccess>();
         services.AddScoped<RunChallengePlanner>();
         services.AddScoped<RunChoiceDealer>();

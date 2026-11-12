@@ -1,4 +1,4 @@
-import { Group, GroupRanking, Invitation, MyGroups } from '../../domain/group';
+import { GeneralRanking, Group, GroupRanking, Invitation, MyGroups } from '../../domain/group';
 import { GroupOutcome, InvitationOutcome, SocialApi } from '../social.api';
 
 export const GROUP: Group = { id: 4, name: 'Potes', inviteCode: 'ABCD2345', memberCount: 3, maxMembers: 15, isOwner: true };
@@ -15,6 +15,18 @@ export const RANKING: GroupRanking = {
 
 export const INVITATION: Invitation = { groupName: 'Potes', memberCount: 3, maxMembers: 15, isFull: false, alreadyMember: false };
 
+export const GENERAL: GeneralRanking = {
+  top: [
+    { rank: 1, pseudo: 'Nova', isMe: false, points: 3100, badge: 'runs.discs.platinum' },
+    { rank: 2, pseudo: 'Théo', isMe: false, points: 1910, badge: 'runs.discs.gold' },
+  ],
+  around: [
+    { rank: 41, pseudo: 'Iris', isMe: false, points: 1400, badge: 'runs.discs.silver' },
+    { rank: 42, pseudo: 'Moi', isMe: true, points: 1380, badge: 'runs.discs.silver' },
+  ],
+  total: 60, visible: true, canAppear: true, topPercent: 70,
+};
+
 /** Un faux adaptateur de l'API Social : il rend ce qu'on lui a posé et note les appels. */
 export class FakeSocialApi {
   groups: MyGroups = { groups: [GROUP, OTHER_GROUP], maxGroups: 5 };
@@ -22,6 +34,9 @@ export class FakeSocialApi {
   createOutcome: GroupOutcome = { kind: 'ok', group: GROUP };
   joinOutcome: GroupOutcome = { kind: 'ok', group: GROUP };
   invitationOutcome: InvitationOutcome = { kind: 'ok', invitation: INVITATION };
+  general: GeneralRanking = GENERAL;
+  failGeneral = false;
+  failVisibility = false;
   failGroups = false;
   failLeave = false;
   readonly calls: string[] = [];
@@ -37,6 +52,21 @@ export class FakeSocialApi {
     const ranking = this.rankings.get(groupId);
     if (!ranking) return Promise.reject(new Error('not found'));
     return Promise.resolve(ranking);
+  }
+
+  generalRanking(): Promise<GeneralRanking> {
+    this.calls.push('generalRanking');
+    if (this.failGeneral) return Promise.reject(new Error('down'));
+    return Promise.resolve(this.general);
+  }
+
+  setRankingVisibility(visible: boolean): Promise<void> {
+    this.calls.push(`visibility:${visible}`);
+    if (this.failVisibility) return Promise.reject(new Error('down'));
+    this.general = visible
+      ? GENERAL
+      : { ...GENERAL, around: [], visible: false };
+    return Promise.resolve();
   }
 
   create(name: string): Promise<GroupOutcome> {

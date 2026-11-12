@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { GroupRankingResponse, GroupSummaryResponse, InvitationResponse, SocialClient } from '../../api/social/api.generated';
+import { GroupRankingResponse, GroupSummaryResponse, InvitationResponse, RankingEntryResponse, SocialClient } from '../../api/social/api.generated';
 import { toAppError } from '../../core/errors/app-error';
-import { Group, GroupRanking, Invitation, MyGroups } from '../domain/group';
+import { GeneralRanking, Group, GroupRanking, Invitation, MyGroups, RankingEntry } from '../domain/group';
 
 /** Les refus que les écrans connaissent : ils deviennent des issues, pas des erreurs. */
 const REFUSALS = ['account_required', 'invalid_name', 'too_many_groups', 'group_full', 'invitation_not_found', 'group_not_found'] as const;
@@ -36,6 +36,20 @@ export class SocialApi {
 
   async ranking(groupId: number): Promise<GroupRanking> {
     return toRanking(await firstValueFrom(this.client.getGroupRanking(groupId)));
+  }
+
+  /** Le classement général : la tête, ma place et mon choix d'y apparaître. */
+  async generalRanking(): Promise<GeneralRanking> {
+    const response = await firstValueFrom(this.client.getGeneralRanking());
+    return {
+      top: response.top.map(toEntry), around: response.around.map(toEntry), total: response.total,
+      visible: response.visible, canAppear: response.canAppear, topPercent: response.topPercent ?? null,
+    };
+  }
+
+  /** Apparaître ou non dans le classement général (un compte seulement). */
+  async setRankingVisibility(visible: boolean): Promise<void> {
+    await firstValueFrom(this.client.setRankingVisibility({ visible }));
   }
 
   create(name: string): Promise<GroupOutcome> {
@@ -83,10 +97,12 @@ function toRanking(response: GroupRankingResponse): GroupRanking {
   return {
     groupId: response.groupId,
     name: response.name,
-    entries: response.entries.map(entry => ({
-      rank: entry.rank ?? null, pseudo: entry.pseudo, isMe: entry.isMe, points: entry.points ?? null, badge: entry.badge ?? null,
-    })),
+    entries: response.entries.map(toEntry),
   };
+}
+
+function toEntry(entry: RankingEntryResponse): RankingEntry {
+  return { rank: entry.rank ?? null, pseudo: entry.pseudo, isMe: entry.isMe, points: entry.points ?? null, badge: entry.badge ?? null };
 }
 
 function toInvitation(response: InvitationResponse): Invitation {

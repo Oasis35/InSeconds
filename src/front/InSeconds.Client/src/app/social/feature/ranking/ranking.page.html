@@ -39,19 +39,26 @@
           </div>
         }
         @case ('ready') {
-          @if (store.groups().length) {
-            <nav class="flex flex-wrap gap-2" [attr.aria-label]="'social.ranking.groupsLabel' | translate">
-              @for (group of store.groups(); track group.id) {
-                <a [routerLink]="['/ranking']" [queryParams]="{ group: group.id }" [attr.aria-current]="group.id === store.selectedId() ? 'page' : null"
-                   class="flex items-center px-4 min-h-11 text-sm touch-manipulation rounded-(--radius-button) max-w-full truncate" data-testid="ranking-group"
-                   [style.border]="group.id === store.selectedId() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
-                   [style.color]="group.id === store.selectedId() ? 'var(--text-hi)' : 'var(--text-muted)'">{{ group.name }}</a>
-              }
-              @if (store.canCreate()) {
-                <a routerLink="/ranking/new" class="flex items-center px-4 min-h-11 text-sm touch-manipulation rounded-(--radius-button)" data-testid="ranking-new"
-                   style="border:1px solid var(--color-accent-3);color:var(--color-accent-3)">{{ 'social.ranking.newGroup' | translate }}</a>
-              }
-            </nav>
+          <nav class="flex flex-wrap gap-2" [attr.aria-label]="'social.ranking.groupsLabel' | translate">
+            <a [routerLink]="['/ranking']" [queryParams]="{ view: 'general' }" [attr.aria-current]="general() ? 'page' : null"
+               class="flex items-center px-4 min-h-11 text-sm touch-manipulation rounded-(--radius-button)" data-testid="ranking-general"
+               [style.border]="general() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
+               [style.color]="general() ? 'var(--text-hi)' : 'var(--text-muted)'">{{ 'social.general.tab' | translate }}</a>
+            @for (group of store.groups(); track group.id) {
+              <a [routerLink]="['/ranking']" [queryParams]="{ group: group.id }" [attr.aria-current]="!general() && group.id === store.selectedId() ? 'page' : null"
+                 class="flex items-center px-4 min-h-11 text-sm touch-manipulation rounded-(--radius-button) max-w-full truncate" data-testid="ranking-group"
+                 [style.border]="!general() && group.id === store.selectedId() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
+                 [style.color]="!general() && group.id === store.selectedId() ? 'var(--text-hi)' : 'var(--text-muted)'">{{ group.name }}</a>
+            }
+            @if (store.groups().length && store.canCreate()) {
+              <a routerLink="/ranking/new" class="flex items-center px-4 min-h-11 text-sm touch-manipulation rounded-(--radius-button)" data-testid="ranking-new"
+                 style="border:1px solid var(--color-accent-3);color:var(--color-accent-3)">{{ 'social.ranking.newGroup' | translate }}</a>
+            }
+          </nav>
+
+          @if (general()) {
+            <app-general-ranking [lang]="language.current()" />
+          } @else if (store.groups().length) {
 
             @switch (store.rankingStatus()) {
               @case ('error') {

@@ -18,6 +18,7 @@ public static class SocialModule
         services.AddSingleton<SocialRules>();
         services.AddScoped<IGroupStore, EfGroupStore>();
         services.AddScoped<ISocialQueries, EfSocialQueries>();
+        services.AddScoped<IRankingVisibilityStore, EfRankingVisibilityStore>();
         services.AddScoped<GroupRanking>();
         return services;
     }

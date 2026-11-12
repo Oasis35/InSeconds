@@ -10,6 +10,7 @@ import {
   RunRoundSummary, RunSession, RunStatus, RunTrack, RunsMe, RunLevel,
 } from '../domain/run';
 import { RunHistory } from '../domain/run-history';
+import { RunHit } from '../domain/run-hits';
 import { RunCardKey, RunTrackEffects, isRunCard } from '../domain/run-cards';
 
 /** Les refus que le jeu connaît : ils deviennent des issues, pas des erreurs. */
@@ -85,6 +86,17 @@ export class RunsApi {
       return toHistory(await firstValueFrom(this.client.getRunHistory(month ?? undefined)));
     } catch (error) {
       if ((await toAppError(error)).status === 401) return { month: month ?? '', previousMonth: null, nextMonth: null, playedCount: 0, averageScore: null, bestScore: null, runs: [] };
+      throw error;
+    }
+  }
+
+  /** Les Hits du joueur sur ses parties finies, dans l'ordre de l'écran. Un navigateur que le serveur ne connaît pas (401) n'en a aucun à montrer. */
+  async hits(): Promise<RunHit[]> {
+    try {
+      const response = await firstValueFrom(this.client.getRunHits());
+      return response.hits.map(hit => ({ key: hit.key, earned: hit.earned, progress: hit.progress ?? null, target: hit.target ?? null }));
+    } catch (error) {
+      if ((await toAppError(error)).status === 401) return [];
       throw error;
     }
   }

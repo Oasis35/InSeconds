@@ -38,6 +38,7 @@ import { GroupsStore } from '../../../social/data-access/groups.store';
 import { PendingInvite } from '../../../social/data-access/pending-invite';
 import { GroupsStripComponent } from '../../../social/feature/groups-strip/groups-strip.component';
 import { RunFinish } from '../../domain/run';
+import { RunHitsLineComponent } from '../hits-line/run-hits-line.component';
 import { reloadMomentFor } from '../reload-moment';
 import { RunShareSheetComponent, RunShareSheetData } from '../share-sheet/run-share-sheet.component';
 
@@ -52,7 +53,7 @@ import { RunShareSheetComponent, RunShareSheetData } from '../share-sheet/run-sh
     TranslatePipe, RouterLink, DecorBackgroundComponent, TrackRoundComponent, RunHeaderComponent, RunClockComponent, RunRevealComponent, RunPileComponent,
     RunWithdrawnCardComponent, RunFinishComponent, RunWelcomeScreenComponent, RunStatusScreenComponent, ResumeScreenComponent,
     RunLinkScreenComponent, RunThemeScreenComponent, RunPseudoScreenComponent, RunComparisonScreenComponent, RunPalierComponent, RunDifficultyComponent, RunRoundCardsComponent,
-    GroupsStripComponent,
+    GroupsStripComponent, RunHitsLineComponent,
   ],
   providers: [RunGameStore, TrackRoundStore, RunShare, RunSounds, GroupsStore],
   changeDetection: ChangeDetectionStrategy.OnPush,

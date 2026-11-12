@@ -10,8 +10,8 @@ public class SocialOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests
 
         Assert.Equal(
             [
-                "createGroup", "deleteAdminGroup", "deleteGroup", "getGroup", "getGroupRanking", "getInvitation", "joinGroup", "leaveGroup", "listAdminGroups",
-                "listMyGroups", "renameAdminGroup", "resetAdminGroupName", "rotateGroupInviteCode",
+                "createGroup", "deleteAdminGroup", "deleteGroup", "getGeneralRanking", "getGroup", "getGroupRanking", "getInvitation", "joinGroup", "leaveGroup", "listAdminGroups",
+                "listMyGroups", "renameAdminGroup", "resetAdminGroupName", "rotateGroupInviteCode", "setRankingVisibility",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));
         Assert.All(document["paths"]!.AsObject().Select(p => p.Key), path =>
@@ -35,5 +35,8 @@ public class SocialOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests
         Assert.NotNull(Operation(document, "renameAdminGroup")["requestBody"]);
         Assert.NotNull(Operation(document, "renameAdminGroup")["responses"]!["400"]);
         Assert.Null(Operation(document, "deleteAdminGroup")["responses"]!["204"]!["content"]);
+        Assert.Null(Operation(document, "getGeneralRanking")["requestBody"]);
+        Assert.NotNull(Operation(document, "setRankingVisibility")["requestBody"]);
+        Assert.NotNull(Operation(document, "setRankingVisibility")["responses"]!["403"]);
     }
 }

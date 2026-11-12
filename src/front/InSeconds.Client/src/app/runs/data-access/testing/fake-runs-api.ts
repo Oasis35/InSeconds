@@ -1,3 +1,4 @@
+import { RunHit } from '../../domain/run-hits';
 import { Provider } from '@angular/core';
 import { RunComparison, RunCurrentTrack, RunLink, RunPlay, RunRound, RunSession, RunTrack, RunsMe } from '../../domain/run';
 import { LinkOutcome, RunAnswerToSend, RunsApi, StartOutcome } from '../runs.api';
@@ -42,7 +43,7 @@ export const COMPARISON = (overrides: Partial<RunComparison> = {}): RunCompariso
 });
 
 /** Un faux adaptateur : chaque réponse se règle par une propriété, chaque appel est noté. */
-export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge' | 'comparison' | 'launch' | 'chooseTheme' | 'join' | 'refreshPreview' | 'submitAnswer' | 'startClock' | 'abandon' | 'chooseDifficulty' | 'swap'> {
+export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge' | 'comparison' | 'launch' | 'chooseTheme' | 'join' | 'refreshPreview' | 'submitAnswer' | 'startClock' | 'abandon' | 'chooseDifficulty' | 'swap' | 'hits'> {
   readonly calls: string[] = [];
   readonly answers: RunAnswerToSend[] = [];
 
@@ -57,6 +58,12 @@ export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge'
   chooseResult: RunPlay | Error = PLAY();
   swapResult: RunPlay | Error = PLAY();
   abandonError: Error | null = null;
+  hitsResult: RunHit[] | Error = [];
+
+  hits(): Promise<RunHit[]> {
+    this.calls.push('hits');
+    return this.hitsResult instanceof Error ? Promise.reject(this.hitsResult) : Promise.resolve(this.hitsResult);
+  }
 
   me(): Promise<RunsMe> {
     this.calls.push('me');

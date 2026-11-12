@@ -218,3 +218,72 @@ public class GroupRankingPolicyTests
     [Fact]
     public void Vide_RienARendre() => Assert.Empty(GroupRankingPolicy.Rank([]));
 }
+
+public class GeneralRankingPolicyTests
+{
+    private static List<RankingRow> Ranked(int count) =>
+        [.. GroupRankingPolicy.Rank(Enumerable.Range(1, count).Select(i =>
+            new RankingInput(new Guid(i, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), $"J{i:D3}", [new MemberPerformance(1d - i / 1000d, 1)])))];
+
+    [Fact]
+    public void LaTete_PuisLeJoueurEtSesDeuxVoisins()
+    {
+        var rows = Ranked(60);
+
+        var view = GeneralRankingPolicy.Build(rows, rows[39].PlayerId, viewer: null);
+
+        Assert.Equal(Enumerable.Range(1, 20).Cast<int?>(), view.Top.Select(r => r.Rank));
+        Assert.Equal([39, 40, 41], view.Around.Select(r => r.Rank));
+        Assert.Equal((60, 70), (view.Total, view.TopPercent));
+    }
+
+    [Fact]
+    public void DansLaTete_PasDeVoisins_JusteApres_SansDoublonAvecLaTete()
+    {
+        var rows = Ranked(30);
+
+        Assert.Empty(GeneralRankingPolicy.Build(rows, rows[4].PlayerId, null).Around);
+        Assert.Equal([21, 22], GeneralRankingPolicy.Build(rows, rows[20].PlayerId, null).Around.Select(r => r.Rank));
+        Assert.Equal([29, 30], GeneralRankingPolicy.Build(rows, rows[29].PlayerId, null).Around.Select(r => r.Rank));
+    }
+
+    [Fact]
+    public void LesSansPartie_NeSontPasClasses()
+    {
+        var rows = GroupRankingPolicy.Rank([
+            new RankingInput(Guid.NewGuid(), "Alice", [new MemberPerformance(0.5, 1)]), new RankingInput(Guid.NewGuid(), "Zoe", []),
+        ]);
+
+        var view = GeneralRankingPolicy.Build(rows, rows[1].PlayerId, null);
+
+        Assert.Equal(["Alice"], view.Top.Select(r => r.Pseudo));
+        Assert.Equal(1, view.Total);
+        Assert.Null(view.TopPercent);
+    }
+
+    [Theory]
+    [InlineData(0.9995, 10)] // devant tout le monde : 1er sur 41
+    [InlineData(0.9885, 30)] // derrière 11 joueurs : 12e sur 41
+    [InlineData(0.5, 100)] // dernier
+    public void CeluiQuiNApparaitPas_ASaPositionParDizaines_SansEtreDansLaListe(double performance, int expected)
+    {
+        var rows = Ranked(40);
+        var me = new RankingRow(1, Guid.NewGuid(), "Moi", performance, 3, null);
+
+        var view = GeneralRankingPolicy.Build(rows, me.PlayerId, me);
+
+        Assert.Equal(expected, view.TopPercent);
+        Assert.Empty(view.Around);
+        Assert.DoesNotContain(view.Top, r => r.PlayerId == me.PlayerId);
+        Assert.Equal(40, view.Total);
+    }
+
+    [Fact]
+    public void SansPartie_NiPositionNiVoisins()
+    {
+        var view = GeneralRankingPolicy.Build(Ranked(5), Guid.NewGuid(), new RankingRow(null, Guid.NewGuid(), "Moi", null, 0, null));
+
+        Assert.Null(view.TopPercent);
+        Assert.Equal(5, view.Total);
+    }
+}

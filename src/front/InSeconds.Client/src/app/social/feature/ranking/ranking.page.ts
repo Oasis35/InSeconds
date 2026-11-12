@@ -15,10 +15,12 @@ import { ModalService } from '../../../ui/modal/modal.service';
 import { GroupShare } from '../../data-access/group-share';
 import { GroupsStore } from '../../data-access/groups.store';
 import { PendingInvite } from '../../data-access/pending-invite';
+import { GeneralRankingComponent } from '../general-ranking/general-ranking.component';
 import { RankingListComponent } from '../../ui/ranking-list/ranking-list.component';
 
 /**
- * Le classement entre amis (`/ranking`, `?group=<id>`) : une pastille par groupe et « + Groupe », le classement du groupe choisi (la ligne du
+ * Le classement (`/ranking`, `?group=<id>`, `?view=general`) : la pastille « Général » (le classement général, par niveau), une par groupe et
+ * « + Groupe », le classement du groupe choisi (la ligne du
  * joueur en orange), « Inviter un ami » et « Quitter le groupe ». Sans groupe : « Joue contre tes amis ». Sans compte : l'invitation à en créer
  * un (un groupe exige un compte). Seuls les membres d'un groupe voient les pseudos des autres : le serveur le garantit.
  */
@@ -26,6 +28,7 @@ import { RankingListComponent } from '../../ui/ranking-list/ranking-list.compone
   selector: 'app-ranking-page',
   imports: [
     TranslatePipe, RouterLink, DecorBackgroundComponent, BrandComponent, AccountLinkComponent, InstagramLinkComponent, ButtonComponent, RankingListComponent,
+    GeneralRankingComponent,
   ],
   providers: [GroupsStore, GroupShare],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -53,6 +56,9 @@ export class RankingPage {
     })),
     { initialValue: null },
   );
+
+  /** `?view=general` : le classement général à la place de celui d'un groupe. */
+  protected readonly general = toSignal(inject(ActivatedRoute).queryParamMap.pipe(map(params => params.get('view') === 'general')), { initialValue: false });
 
   constructor() {
     effect(() => {
