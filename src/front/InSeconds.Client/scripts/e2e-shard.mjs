@@ -15,6 +15,7 @@ const WEIGHTS = {
   'admin-themes.spec.ts': 75,
   'admin-candidates.spec.ts': 40, // estimé le 11/11/2026, à mesurer
   'admin.spec.ts': 97,
+  'groups.spec.ts': 15, // estimé le 12/11/2026, à mesurer
   'scoring.spec.ts': 65,
   'streak-freeze.spec.ts': 52,
   'already-played.spec.ts': 49,
