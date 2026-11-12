@@ -1,7 +1,6 @@
 import { Component, signal } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
-import { provideTranslateService } from '@ngx-translate/core';
 import { adminGroup } from '../../../data-access/testing/fake-admin-groups-api';
+import { finishPending, renderHost } from '../../testing/host';
 import { GroupRowComponent } from './group-row.component';
 
 @Component({
@@ -19,17 +18,7 @@ class HostComponent {
 }
 
 describe('GroupRowComponent', () => {
-  function render() {
-    TestBed.configureTestingModule({ providers: [provideTranslateService()] });
-    const fixture = TestBed.createComponent(HostComponent);
-    fixture.detectChanges();
-    const element = fixture.nativeElement as HTMLElement;
-    const click = (testId: string) => {
-      (element.querySelector(`[data-testid="${testId}"]`) as HTMLElement).click();
-      fixture.detectChanges();
-    };
-    return { fixture, element, host: fixture.componentInstance, click };
-  }
+  const render = () => renderHost(HostComponent);
 
   it('montre le nom et le créateur', () => {
     const { element } = render();
@@ -80,19 +69,11 @@ describe('GroupRowComponent', () => {
   it('se referme quand l\'attente se termine sans refus, et reste ouverte avec un refus', () => {
     const { fixture, element, host, click } = render();
     click('delete-group');
-    host.pending.set(true);
-    fixture.detectChanges();
-    host.pending.set(false);
-    host.errorKey.set('errors.social.group_not_found');
-    fixture.detectChanges();
+    finishPending(fixture, host, 'errors.social.group_not_found');
     expect(element.querySelector('[data-testid="group-error"]')).not.toBeNull();
     expect(element.querySelector('[data-testid="confirm-delete"]')).not.toBeNull();
 
-    host.errorKey.set(null);
-    host.pending.set(true);
-    fixture.detectChanges();
-    host.pending.set(false);
-    fixture.detectChanges();
+    finishPending(fixture, host, null);
     expect(element.querySelector('[data-testid="confirm-delete"]')).toBeNull();
   });
 });

@@ -1,6 +1,5 @@
 import { Component, signal } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
-import { provideTranslateService } from '@ngx-translate/core';
+import { finishPending, renderHost } from '../../testing/host';
 import { PlayerPseudoResetComponent } from './player-pseudo-reset.component';
 
 @Component({
@@ -14,17 +13,7 @@ class HostComponent {
 }
 
 describe('PlayerPseudoResetComponent', () => {
-  function render() {
-    TestBed.configureTestingModule({ providers: [provideTranslateService()] });
-    const fixture = TestBed.createComponent(HostComponent);
-    fixture.detectChanges();
-    const element = fixture.nativeElement as HTMLElement;
-    const click = (testId: string) => {
-      (element.querySelector(`[data-testid="${testId}"]`) as HTMLElement).click();
-      fixture.detectChanges();
-    };
-    return { fixture, element, host: fixture.componentInstance, click };
-  }
+  const render = () => renderHost(HostComponent);
 
   it('ne remet rien à zéro sans confirmation', () => {
     const { host, click } = render();
@@ -45,19 +34,11 @@ describe('PlayerPseudoResetComponent', () => {
   it('montre le refus et reste ouvert, puis se referme à la réussite', () => {
     const { fixture, element, host, click } = render();
     click('pseudo-reset-open');
-    host.pending.set(true);
-    fixture.detectChanges();
-    host.pending.set(false);
-    host.errorKey.set('errors.common.not_found');
-    fixture.detectChanges();
+    finishPending(fixture, host, 'errors.common.not_found');
     expect(element.querySelector('[data-testid="pseudo-reset-error"]')).not.toBeNull();
     expect(element.querySelector('[data-testid="confirm-pseudo-reset"]')).not.toBeNull();
 
-    host.errorKey.set(null);
-    host.pending.set(true);
-    fixture.detectChanges();
-    host.pending.set(false);
-    fixture.detectChanges();
+    finishPending(fixture, host, null);
     expect(element.querySelector('[data-testid="pseudo-reset-open"]')).not.toBeNull();
   });
 });
