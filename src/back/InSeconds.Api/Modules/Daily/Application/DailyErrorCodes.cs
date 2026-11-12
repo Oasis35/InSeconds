@@ -29,6 +29,9 @@ public static class DailyErrorCodes
     /// </summary>
     public const string ArchiveNotAvailable = "daily.archive_not_available";
 
+    /// <summary>Le mois de l'historique n'est pas écrit `aaaa-mm`.</summary>
+    public const string InvalidMonth = "daily.invalid_month";
+
     /// <summary>Le palier annoncé est inférieur à la durée que le serveur a vu écouter sur ce morceau (anti-triche).</summary>
     public const string ListenedBelowMinimum = "daily.listened_duration_below_verified_minimum";
 }

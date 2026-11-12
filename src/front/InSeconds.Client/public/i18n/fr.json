@@ -55,30 +55,32 @@
       "candidate_preview_missing": "Deezer n'a plus d'extrait pour ce morceau."
     },
     "daily": {
-      "no_challenge": "Il n'y a pas de défi aujourd'hui.",
-      "already_played": "Tu as déjà joué le défi d'aujourd'hui.",
       "abandoned": "Tu as abandonné le défi d'aujourd'hui.",
-      "session_not_found": "Cette partie n'existe plus.",
-      "track_not_found": "Ce morceau n'existe pas dans le défi du jour.",
-      "track_lock_not_released": "Réponds d'abord au morceau en cours.",
-      "hint_locked": "Cet indice n'est pas encore débloqué.",
       "already_answered": "Tu as déjà répondu à ce morceau.",
-      "listened_duration_below_verified_minimum": "Le palier annoncé est plus court que ce que tu as écouté."
+      "already_played": "Tu as déjà joué le défi d'aujourd'hui.",
+      "hint_locked": "Cet indice n'est pas encore débloqué.",
+      "invalid_month": "Mois invalide : le format attendu est aaaa-mm.",
+      "listened_duration_below_verified_minimum": "Le palier annoncé est plus court que ce que tu as écouté.",
+      "no_challenge": "Il n'y a pas de défi aujourd'hui.",
+      "session_not_found": "Cette partie n'existe plus.",
+      "track_lock_not_released": "Réponds d'abord au morceau en cours.",
+      "track_not_found": "Ce morceau n'existe pas dans le défi du jour."
     },
     "runs": {
+      "abandoned": "Tu as abandonné cette playlist.",
       "access_denied": "Setlist est ouvert sur invitation pour le moment.",
-      "no_challenge": "Pas assez de morceaux pour une playlist, réessaie plus tard.",
+      "already_answered": "Tu as déjà répondu à ce morceau.",
+      "already_played": "Tu as déjà joué cette playlist.",
       "challenge_not_found": "Cette playlist n'existe pas. Vérifie le lien.",
       "comparison_locked": "La comparaison s'ouvre une fois ta partie terminée.",
       "difficulty_locked": "La difficulté de cette manche est déjà fixée.",
-      "theme_locked": "Le thème de cette manche est déjà choisi.",
+      "invalid_month": "Mois invalide : le format attendu est aaaa-mm.",
+      "no_challenge": "Pas assez de morceaux pour une playlist, réessaie plus tard.",
       "session_not_found": "Cette partie n'existe plus.",
-      "already_played": "Tu as déjà joué cette playlist.",
-      "abandoned": "Tu as abandonné cette playlist.",
-      "track_not_found": "Ce morceau n'existe pas dans cette playlist.",
+      "swap_unavailable": "Le changement de morceau n'est plus possible.",
+      "theme_locked": "Le thème de cette manche est déjà choisi.",
       "track_lock_not_released": "Réponds d'abord au morceau en cours.",
-      "already_answered": "Tu as déjà répondu à ce morceau.",
-      "swap_unavailable": "Le changement de morceau n'est plus possible."
+      "track_not_found": "Ce morceau n'existe pas dans cette playlist."
     }
   },
   "shell": {
@@ -112,6 +114,41 @@
   "ui": {
     "envBanner": {
       "label": "environnement de développement"
+    },
+    "history": {
+      "title": "Historique",
+      "tabs": {
+        "daily": "Défis du jour",
+        "setlist": "Setlists"
+      },
+      "average": "Moyenne",
+      "today": "Aujourd'hui",
+      "yesterday": "Hier",
+      "previousMonth": "Mois précédent",
+      "nextMonth": "Mois suivant",
+      "daily": {
+        "count": "Défis joués",
+        "best": "Meilleur",
+        "empty": "Aucun défi joué ce mois-ci."
+      },
+      "setlist": {
+        "count": "Setlists",
+        "best": "Record",
+        "empty": "Aucune setlist jouée ce mois-ci.",
+        "emptyFilter": "Aucune setlist à cette difficulté ce mois-ci.",
+        "all": "Toutes",
+        "filterLabel": "Difficulté",
+        "detailTitle": "Tes {{count}} morceaux",
+        "back": "Retour à l'historique",
+        "allTracks": "Tous",
+        "missed": "Ratés · {{count}}",
+        "round": "Manche {{round}}",
+        "listen": "Écouter {{title}}",
+        "noMissed": "Aucun morceau raté.",
+        "notFound": "Cette partie est introuvable.",
+        "withdrawn": "Morceau retiré"
+      },
+      "loading": "Chargement…"
     }
   },
   "gameplay": {
@@ -1248,7 +1285,8 @@
       "bar": {
         "label": "Navigation",
         "daily": "Aujourd'hui",
-        "setlist": "Setlist"
+        "setlist": "Setlist",
+        "history": "Historique"
       },
       "dailyLeft": "Il te reste le défi du jour"
     }

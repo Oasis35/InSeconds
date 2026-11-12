@@ -1085,6 +1085,135 @@
           }
         }
       }
+    },
+    "/api/runs/history": {
+      "get": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "getRunHistory",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunHistoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/sessions/{id}/tracks/{position}/preview": {
+      "get": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "getRunPastPreview",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "position",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunPastPreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2364,6 +2493,116 @@
             "format": "double"
           }
         }
+      },
+      "RunHistoryResponse": {
+        "required": [
+          "month",
+          "previousMonth",
+          "nextMonth",
+          "playedCount",
+          "averageScore",
+          "bestScore",
+          "runs"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "previousMonth": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nextMonth": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "playedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "averageScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "bestScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "runs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunHistoryRunResponse"
+            }
+          }
+        }
+      },
+      "RunHistoryRunResponse": {
+        "required": [
+          "sessionId",
+          "challengeCode",
+          "date",
+          "status",
+          "disc",
+          "roundsPassed",
+          "score",
+          "difficulty"
+        ],
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "challengeCode": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "type": "string"
+          },
+          "disc": {
+            "$ref": "#/components/schemas/RunDiscResponse"
+          },
+          "roundsPassed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "difficulty": {
+            "type": "string"
+          }
+        }
+      },
+      "RunPastPreviewResponse": {
+        "required": [
+          "previewUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "previewUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
       }
     }
   },
@@ -2415,6 +2654,12 @@
     },
     {
       "name": "InSeconds.Api.Modules.Runs.Application.AbandonRunEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.GetRunHistoryEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.GetRunPastPreviewEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Runs.Application.SwapRunTrackEndpoint"

@@ -32,8 +32,10 @@ import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
                   @if (chrome.dailyDone() === false) {
                     <span class="bar-pulse absolute -top-0.5 -right-1 h-2 w-2 rounded-full" data-testid="daily-pending" style="background:var(--color-accent-2)"></span>
                   }
-                } @else {
+                } @else if (tab.id === 'setlist') {
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg>
+                } @else {
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
                 }
               </span>
               <span>{{ tab.labelKey | translate }}</span>
@@ -59,8 +61,10 @@ export class SetlistBottomBarComponent {
     { initialValue: this.router.url },
   );
 
-  private readonly section = computed<'daily' | 'setlist' | null>(() => {
+  private readonly section = computed<'daily' | 'setlist' | 'history' | null>(() => {
     const path = this.url().split(/[?#]/)[0];
+    // L'historique a une page par mode (`/daily/history`, `/setlist/history`) et un seul onglet.
+    if (/^\/(daily|setlist)\/history(\/|$)/.test(path)) return 'history';
     if (path === '/daily' || path.startsWith('/daily/')) return 'daily';
     if (path === '/setlist' || path.startsWith('/setlist/')) return 'setlist';
     return null;
@@ -71,6 +75,7 @@ export class SetlistBottomBarComponent {
   protected readonly tabs = computed(() => [
     { id: 'daily', link: '/daily', labelKey: 'runs.v4.bar.daily', active: this.section() === 'daily' },
     { id: 'setlist', link: '/setlist', labelKey: 'runs.v4.bar.setlist', active: this.section() === 'setlist' },
+    { id: 'history', link: '/daily/history', labelKey: 'runs.v4.bar.history', active: this.section() === 'history' },
   ]);
 
   constructor() {
