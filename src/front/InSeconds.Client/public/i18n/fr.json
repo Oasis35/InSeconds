@@ -255,7 +255,8 @@
         "cancel": "Annuler",
         "done": "Ton compte est supprimé."
       },
-      "backToGame": "Retour au jeu"
+      "backToGame": "Retour au jeu",
+      "language": "Langue"
     },
     "devices": {
       "title": "Appareils connectés",
@@ -1242,6 +1243,14 @@
       "tied": "À égalité",
       "stopped": "arrêt en manche {{ round }}"
     },
-    "combo": "{{ count }} d’affilée"
+    "combo": "{{ count }} d’affilée",
+    "v4": {
+      "bar": {
+        "label": "Navigation",
+        "daily": "Aujourd'hui",
+        "setlist": "Setlist"
+      },
+      "dailyLeft": "Il te reste le défi du jour"
+    }
   }
 }

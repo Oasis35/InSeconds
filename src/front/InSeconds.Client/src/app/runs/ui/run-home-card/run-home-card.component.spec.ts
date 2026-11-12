@@ -15,4 +15,15 @@ describe('RunHomeCardComponent', () => {
     expect(element.textContent).toContain('runs.welcome.badge');
     expect(element.textContent).toContain('runs.welcome.tagline');
   });
+
+  it('discrète tant que le défi du jour reste à jouer : sans la promesse', () => {
+    TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
+    const fixture = TestBed.createComponent(RunHomeCardComponent);
+    fixture.componentRef.setInput('compact', true);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('[data-testid="run-home-card"]')?.getAttribute('data-compact')).toBe('true');
+    expect(element.textContent).not.toContain('runs.welcome.tagline');
+  });
 });
