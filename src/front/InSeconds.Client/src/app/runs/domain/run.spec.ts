@@ -1,6 +1,6 @@
 import {
   RunPassedRound, RunPlay, RunRound, RunRoundSummary, RunSession, RunTrack, clockLabel, finishSquares, gainLabel, isFinished, objectiveBar,
-  comboOf, duelOf, ghostGap, playSteps, playedCount, pointsToGo, runPile, runSegments, stepPosition,
+  comboOf, duelOf, levelDeltaText, ghostGap, playSteps, playedCount, pointsToGo, runPile, runSegments, stepPosition,
 } from './run';
 
 describe('objectiveBar', () => {
@@ -249,5 +249,19 @@ describe('comboOf', () => {
   it('un morceau retiré ne casse pas la série, un morceau à moitié trouvé la remet à zéro', () => {
     expect(comboOf([played(1, true), played(2, false, true), played(3, true)])).toBe(2);
     expect(comboOf([played(1, true), { position: 2, neutralized: false, artistCorrect: true, titleCorrect: false }])).toBe(0);
+  });
+});
+
+describe('levelDeltaText', () => {
+  const format = (value: number) => String(value);
+
+  it('une hausse avec son signe, une baisse avec un vrai signe moins', () => {
+    expect(levelDeltaText(38, format)).toBe('+38');
+    expect(levelDeltaText(-12, format)).toBe('−12');
+  });
+
+  it('rien pour un niveau inchangé ou hors de la fin de run', () => {
+    expect(levelDeltaText(0, format)).toBeNull();
+    expect(levelDeltaText(null, format)).toBeNull();
   });
 });

@@ -5,6 +5,7 @@ import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-bu
 import { RunDuel, RunFinish, discStars, finishSquares } from '../../domain/run';
 import { finishSequence } from '../../../ui/motion/motion';
 import { RunDiscComponent } from '../run-disc/run-disc.component';
+import { RunLevelCardComponent } from '../run-level-card/run-level-card.component';
 import { ButtonComponent } from '../../../ui/button/button.component';
 
 /**
@@ -14,11 +15,12 @@ import { ButtonComponent } from '../../../ui/button/button.component';
  * bronze »), et le bloc « Fais mieux » avec « Partager mon score » (la grille et le lien de la même playlist). Un joueur sans accès (venu par un lien)
  * ne peut pas lancer de playlist : le lien vers le jeu du jour remplace « Rejouer », en bas. Quand l'ami qui a lancé la playlist l'a finie, le duel
  * ouvre l'écran (« Tu bats Léa de 126 pts », « Léa gagne de 40 pts »), sur un ton neutre, jamais « perdu ». La fin se joue en 2,2 s au plus, un
- * toucher la saute, et rien n'attend la fin : les boutons sont actifs dès le début (`finishSequence`).
+ * toucher la saute, et rien n'attend la fin : les boutons sont actifs dès le début (`finishSequence`). Dans la nouvelle interface (`showLevel`), la
+ * carte du niveau suit les manches, « Rejouer » devient « Nouvelle setlist » et le partage « Défier un ami ».
  */
 @Component({
   selector: 'app-run-finish',
-  imports: [TranslatePipe, RouterLink, ButtonComponent, RunDiscComponent, ShareButtonComponent],
+  imports: [TranslatePipe, RouterLink, ButtonComponent, RunDiscComponent, RunLevelCardComponent, ShareButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex-1 flex flex-col', '(click)': 'skipSequence()' },
   template: `
@@ -92,6 +94,11 @@ import { ButtonComponent } from '../../../ui/button/button.component';
         }
       </div>
 
+      @if (level(); as level) {
+        <!-- Le niveau après cette partie : le disque, les points et ce qu'elle a changé, puis « Revoir » (la partie dans l'historique). -->
+        <app-run-level-card [level]="level" [lang]="lang()" [reviewLink]="reviewLink()" />
+      }
+
       @if (canPlayAgain()) {
         <div class="flex flex-col gap-2">
           @if (finish().shortfall; as shortfall) {
@@ -103,7 +110,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
             </p>
           }
           <button appButton type="button" size="lg" [block]="true" (click)="playAgain.emit()" data-testid="run-play-again">
-            {{ (duel() ? 'runs.finished.rematch' : 'runs.finished.playAgain') | translate }}
+            {{ (duel() ? 'runs.finished.rematch' : level() ? 'runs.level.newSetlist' : 'runs.finished.playAgain') | translate }}
           </button>
         </div>
       }
@@ -111,7 +118,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
       <section class="flex flex-col gap-2.5" data-motion="finish-late">
         <h3 class="text-sm font-semibold" style="font-family:var(--font-body);color:var(--text-hi)">{{ 'runs.finished.shareTitle' | translate }}</h3>
         <p class="text-sm leading-relaxed" style="color:var(--text-light)">{{ 'runs.finished.shareBody' | translate: { tracks: finish().trackCount } }}</p>
-        <app-share-button data-testid="run-share" [copied]="shareCopied()" [failed]="shareFailed()" labelKey="runs.finished.share"
+        <app-share-button data-testid="run-share" [copied]="shareCopied()" [failed]="shareFailed()" [labelKey]="level() ? 'runs.level.challenge' : 'runs.finished.share'"
           copiedKey="runs.finished.shareCopied" failedKey="runs.finished.shareFailed"
           [variant]="canPlayAgain() ? 'neutral' : 'primary'" [glow]="!canPlayAgain()" (share)="share.emit()" />
         <button type="button" (click)="compare.emit()" data-testid="run-compare" class="w-full text-sm underline touch-manipulation" style="color:var(--text-muted)">
@@ -133,6 +140,10 @@ export class RunFinishComponent {
   readonly duel = input<RunDuel | null>(null);
   /** Le joueur a l'accès : il peut lancer une autre playlist. Sinon (un ami venu par un lien), le jeu du jour lui est proposé. */
   readonly canPlayAgain = input(true);
+  /** La nouvelle interface (accès Setlist) : le niveau du joueur s'affiche, « Rejouer » devient « Nouvelle setlist » et le partage « Défier un ami ». */
+  readonly showLevel = input(false);
+  /** Le lien de cette partie dans l'historique (« Revoir ») ; `null` : pas de lien. */
+  readonly reviewLink = input<string | null>(null);
   readonly shareCopied = input(false);
   readonly shareFailed = input(false);
   readonly lang = input<'fr' | 'en'>('fr');
@@ -142,6 +153,7 @@ export class RunFinishComponent {
   /** « Rejouer » : la page lance une nouvelle playlist et son premier son dans ce clic. */
   readonly playAgain = output();
 
+  protected readonly level = computed(() => (this.showLevel() ? this.finish().level : null));
   protected readonly squares = computed(() => finishSquares(this.finish()));
   protected readonly stars = discStars;
   private readonly numbers = computed(() => new Intl.NumberFormat(this.lang()));

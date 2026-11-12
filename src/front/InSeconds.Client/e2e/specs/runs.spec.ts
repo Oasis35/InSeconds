@@ -170,14 +170,23 @@ test.describe('Mode Setlist', () => {
     await expect(run.disc).toHaveText('Disque d’or !');
     await expect(run.record).toHaveText('Nouveau record');
     await expect(run.found).toHaveText('20 / 20 morceaux trouvés');
-    await expect(run.page.getByTestId('run-share')).toContainText('Partager mon score');
-    // Gagnée : « Rejouer » en action principale, rien n'a manqué.
-    await expect(run.playAgainButton).toHaveText('Rejouer');
+    // Nouvelle interface (le joueur a l'accès) : son niveau, encore provisoire après une seule partie, « Nouvelle setlist » et « Défier un ami ».
+    await expect(run.page.getByTestId('run-level')).toBeVisible();
+    await expect(run.page.getByTestId('run-level-provisional')).toBeVisible();
+    await expect(run.page.getByTestId('run-level-delta')).toHaveText(/^\+/);
+    await expect(run.page.getByTestId('run-share')).toContainText('Défier un ami');
+    await expect(run.playAgainButton).toHaveText('Nouvelle setlist');
     await expect(run.page.getByTestId('run-shortfall')).toHaveCount(0);
+
+    // « Revoir » : la partie dans l'historique, avec ses 20 morceaux.
+    await run.page.getByTestId('run-level-review').click();
+    await expect(page).toHaveURL(/\/setlist\/history\/\d+$/);
 
     // Le record et le disque d'or apparaissent ensuite sur l'accueil du mode.
     await page.goto('/setlist');
     await expect(run.welcome.getByTestId('run-record')).toBeVisible();
+    await expect(run.welcome.getByTestId('run-level')).toBeVisible();
+    await expect(run.welcome.getByTestId('run-level-delta')).toHaveCount(0);
     await expect(run.welcome.getByTestId('run-shelf').locator('[data-shelf-disc]')).toContainText(['×1']);
     await expect(run.welcome.getByTestId('run-shelf').locator('[data-shelf-disc="runs.discs.gold"]')).toHaveCount(1);
   });

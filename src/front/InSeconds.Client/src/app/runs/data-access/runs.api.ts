@@ -2,12 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom, retry, throwError, timer } from 'rxjs';
 import {
   RunChallengeResponse, RunComparisonResponse, RunCurrentTrackResponse, RunFinishResponse, RunHistoryResponse, RunNeutralizedResponse, RunPassedRoundResponse, RunPlayResponse, RunRecordResponse, RunRoundResponse, RunRoundScoreResponse,
-  RunRoundSummaryResponse, RunSessionResponse, RunTrackEffectsResponse, RunTrackResponse, RunsClient, RunsMeResponse,
+  RunRoundSummaryResponse, RunSessionResponse, RunTrackEffectsResponse, RunTrackResponse, RunsClient, RunsMeResponse, RunLevelResponse,
 } from '../../api/runs/api.generated';
 import { toAppError } from '../../core/errors/app-error';
 import {
   RunComparison, RunCurrentTrack, RunDifficulty, RunFinish, RunLink, RunNeutralized, RunPassedRound, RunPlay, RunRecord, RunRound, RunRoundScore,
-  RunRoundSummary, RunSession, RunStatus, RunTrack, RunsMe,
+  RunRoundSummary, RunSession, RunStatus, RunTrack, RunsMe, RunLevel,
 } from '../domain/run';
 import { RunHistory } from '../domain/run-history';
 import { RunCardKey, RunTrackEffects, isRunCard } from '../domain/run-cards';
@@ -217,6 +217,21 @@ function toMe(me: RunsMeResponse): RunsMe {
     record: toRecord(me.record),
     pending: me.pending ? { sessionId: me.pending.sessionId, challengeCode: me.pending.challengeCode } : null,
     shelf: (me.shelf ?? []).map(entry => ({ disc: { key: entry.disc.key, stars: entry.disc.stars }, count: entry.count })),
+    level: toLevel(me.level),
+  };
+}
+
+function toLevel(level: RunLevelResponse | undefined): RunLevel | null {
+  if (!level) return null;
+  return {
+    points: level.points,
+    disc: { key: level.disc.key, stars: level.disc.stars },
+    nextDisc: level.nextDisc ? { key: level.nextDisc.key, stars: level.nextDisc.stars } : null,
+    pointsToNext: level.pointsToNext ?? null,
+    progressPercent: level.progressPercent,
+    provisional: level.provisional,
+    runsPlayed: level.runsPlayed,
+    delta: level.delta ?? null,
   };
 }
 
@@ -267,6 +282,7 @@ function toFinish(finish: RunFinishResponse | undefined): RunFinish | null {
     shortfall: finish.shortfall
       ? { points: finish.shortfall.points, disc: { key: finish.shortfall.disc.key, stars: finish.shortfall.disc.stars } }
       : null,
+    level: toLevel(finish.level),
   };
 }
 

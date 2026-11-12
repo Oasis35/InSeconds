@@ -1,17 +1,18 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { RunRecord, RunShelfDisc, discStars } from '../../domain/run';
+import { RunLevel, RunRecord, RunShelfDisc, discStars } from '../../domain/run';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { RunDiscComponent } from '../run-disc/run-disc.component';
+import { RunLevelCardComponent } from '../run-level-card/run-level-card.component';
 
 /**
  * L'accueil du mode : le nom, « accès anticipé », la promesse, le record du joueur s'il en a un, l'étagère des disques qu'il a gagnés (chacun avec son
  * nombre), puis « Lancer une partie » (une playlist neuve ; une partie en cours passe par l'écran de reprise). Le clic sur ce bouton est le geste qui
- * déverrouille le son.
+ * déverrouille le son. Dans la nouvelle interface, la carte du niveau (disque, points, ce qui manque pour le suivant) se place avant l'étagère.
  */
 @Component({
   selector: 'app-run-welcome-screen',
-  imports: [TranslatePipe, ButtonComponent, RunDiscComponent],
+  imports: [TranslatePipe, ButtonComponent, RunDiscComponent, RunLevelCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="screen-enter flex-1 flex flex-col items-center justify-center gap-6 text-center px-4" data-testid="run-welcome">
@@ -26,6 +27,9 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
           </p>
         }
       </div>
+      @if (level(); as level) {
+        <app-run-level-card class="w-full max-w-xs text-left" [level]="level" [lang]="lang()" />
+      }
       @if (shelf().length > 0) {
         <section class="w-full max-w-xs" data-testid="run-shelf">
           <h2 class="text-sm mb-2" style="color:var(--text-muted)">{{ 'runs.welcome.shelf' | translate }}</h2>
@@ -54,6 +58,8 @@ export class RunWelcomeScreenComponent {
   readonly lang = input<'fr' | 'en'>('fr');
   /** Les disques gagnés, du moins bon au meilleur ; vide : pas d'étagère. */
   readonly shelf = input<readonly RunShelfDisc[]>([]);
+  /** Le niveau du joueur (nouvelle interface) ; `null` : pas de carte de niveau. */
+  readonly level = input<RunLevel | null>(null);
   protected readonly stars = discStars;
   private readonly numbers = computed(() => new Intl.NumberFormat(this.lang()));
   readonly start = output();

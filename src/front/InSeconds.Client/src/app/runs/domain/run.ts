@@ -80,6 +80,30 @@ export interface RunFinish {
   readonly challengeCode: string;
   /** Ce qui a manqué pour le disque suivant ; `null` pour une partie gagnée ou abandonnée. */
   readonly shortfall: RunShortfall | null;
+  /** Le niveau du joueur après cette partie ; `null` pour une partie abandonnée ou un serveur qui ne l'envoie pas. */
+  readonly level: RunLevel | null;
+}
+
+/**
+ * Le niveau du joueur : ses points (la moyenne de ses dernières parties, ils montent et descendent), son disque, le suivant et ce qui manque pour
+ * l'avoir (`null` au dernier disque), sa progression entre les deux (de 0 à 100), « provisoire » tant qu'il a fini trop peu de parties, et ce que la
+ * dernière partie a changé (`null` hors de l'écran de fin).
+ */
+export interface RunLevel {
+  readonly points: number;
+  readonly disc: RunDisc;
+  readonly nextDisc: RunDisc | null;
+  readonly pointsToNext: number | null;
+  readonly progressPercent: number;
+  readonly provisional: boolean;
+  readonly runsPlayed: number;
+  readonly delta: number | null;
+}
+
+/** « +38 », « −12 » : ce que la partie a changé au niveau ; rien pour un niveau inchangé ou inconnu. */
+export function levelDeltaText(delta: number | null, format: (value: number) => string): string | null {
+  if (delta === null || delta === 0) return null;
+  return delta > 0 ? `+${format(delta)}` : `−${format(-delta)}`;
 }
 
 export interface RunSession {
@@ -268,6 +292,8 @@ export interface RunsMe {
   readonly pending: { readonly sessionId: number; readonly challengeCode: string } | null;
   /** Les disques gagnés par ses parties finies, du moins bon au meilleur. */
   readonly shelf: readonly RunShelfDisc[];
+  /** Son niveau ; `null` avant sa première partie finie. */
+  readonly level: RunLevel | null;
 }
 
 /** Ce que la barre d'objectif dessine : la part du maximum déjà marquée et l'emplacement du trait de l'objectif. */

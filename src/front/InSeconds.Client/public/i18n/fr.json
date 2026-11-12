@@ -1216,7 +1216,10 @@
       "wax": "Disque de cire",
       "bronze": "Disque de bronze",
       "silver": "Disque d’argent",
-      "gold": "Disque d’or"
+      "gold": "Disque d’or",
+      "platinum": "Disque de platine",
+      "double_platinum": "Double platine",
+      "diamond": "Disque de diamant"
     },
     "withdrawn": {
       "title": "Morceau retiré de la manche",
@@ -1289,6 +1292,16 @@
         "history": "Historique"
       },
       "dailyLeft": "Il te reste le défi du jour"
+    },
+    "level": {
+      "title": "Ton niveau",
+      "provisional": "provisoire",
+      "next": "{{ disc }} dans {{ points }} pts",
+      "top": "Le plus haut disque",
+      "review": "Revoir",
+      "label": "Niveau : {{ disc }}, {{ points }} points",
+      "newSetlist": "Nouvelle setlist",
+      "challenge": "Défier un ami"
     }
   }
 }
