@@ -1,0 +1,62 @@
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
+import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-button.component';
+import { TrackResultRow } from '../../../gameplay/ui/track-results-list/track-results-list.component';
+import { trackBar } from '../day-result-screen/result-rows';
+
+/**
+ * La carte du défi du jour sur l'accueil de la V4, une fois joué : « Défi du jour · fait », le score, une petite barre par morceau, le
+ * compte à rebours du prochain défi, « Voir le résultat » (l'écran complet) et « Partager mon score » en contour orange : la Setlist
+ * prend la place principale dessous.
+ */
+@Component({
+  selector: 'app-home-done-card',
+  imports: [TranslatePipe, ShareButtonComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'block' },
+  template: `
+    <section class="rounded-(--radius-card) px-5 py-4 flex flex-col gap-3" data-testid="home-done"
+      style="background:rgb(var(--rgb-surface) / 0.55);border:1px solid var(--border-subtle)">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <h2 class="text-sm font-normal" style="font-family:var(--font-body);color:var(--text-light)">{{ 'daily.home.done' | translate }}</h2>
+          <p class="tabular-nums" data-testid="home-score"
+            style="font-family:var(--font-score);font-size:2.4rem;font-weight:900;line-height:1;letter-spacing:-0.02em;color:var(--text-hi)">{{ score() ?? '-' }}</p>
+        </div>
+        <div class="text-right shrink-0">
+          <p class="text-sm" style="color:var(--text-light)">{{ 'daily.result.nextChallenge' | translate }}</p>
+          <p class="tabular-nums" data-testid="countdown"
+            style="font-family:var(--font-clock);font-size:1.25rem;font-weight:600;line-height:1.2;color:var(--color-accent-2);text-shadow:0 0 12px rgb(var(--rgb-accent-2) / 0.45)">{{ countdown() }}</p>
+        </div>
+      </div>
+      <div class="flex items-center justify-between gap-3">
+        <span class="flex gap-1" aria-hidden="true">
+          @for (row of rows(); track row.position) {
+            <span class="w-4 h-1.5 rounded-full" [style.background]="bar(row)" data-testid="track-bar"></span>
+          }
+        </span>
+        <button type="button" (click)="seeResult.emit()" data-testid="home-see-result"
+          class="inline-flex items-center gap-1 min-h-11 text-sm cursor-pointer touch-manipulation" style="color:var(--text-light)">
+          {{ 'daily.home.seeResult' | translate }}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            aria-hidden="true"><polyline points="9 6 15 12 9 18" /></svg>
+        </button>
+      </div>
+      @if (score() !== null) {
+        <app-share-button class="w-full" variant="accent" [glow]="false" [copied]="shareCopied()" [failed]="shareFailed()" [disabled]="!canShare()" (share)="share.emit()" />
+      }
+    </section>
+  `,
+})
+export class HomeDoneCardComponent {
+  readonly score = input.required<number | null>();
+  readonly rows = input.required<readonly TrackResultRow[]>();
+  readonly countdown = input.required<string>();
+  readonly canShare = input(true);
+  readonly shareCopied = input(false);
+  readonly shareFailed = input(false);
+  readonly share = output<void>();
+  readonly seeResult = output<void>();
+
+  protected readonly bar = trackBar;
+}

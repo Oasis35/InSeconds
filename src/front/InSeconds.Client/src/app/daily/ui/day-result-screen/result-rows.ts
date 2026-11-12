@@ -52,3 +52,11 @@ export function shareTracksOf(rows: readonly TrackResultRow[]): ShareTrack[] {
     ? []
     : [{ artistCorrect: r.artistCorrect === true, titleCorrect: r.titleCorrect === true, listenedSeconds: r.listenedSeconds }]);
 }
+
+/** Une barre par morceau : verte (artiste et titre), rouge (rien), moitié-moitié (l'un des deux) ; éteinte sans réponse. */
+export function trackBar(row: Pick<TrackResultRow, 'artistCorrect' | 'titleCorrect'>): string {
+  if (row.artistCorrect === null) return 'var(--text-sep)';
+  if (row.artistCorrect && row.titleCorrect) return 'var(--color-success)';
+  if (!row.artistCorrect && !row.titleCorrect) return 'var(--color-fail)';
+  return 'linear-gradient(90deg, var(--color-success) 50%, var(--color-fail) 50%)';
+}

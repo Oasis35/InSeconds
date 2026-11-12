@@ -27,7 +27,22 @@
       }
 
       @case ('welcome') {
-        <app-welcome-screen [hideArchive]="chrome.v4()"
+        @if (chrome.v4()) {
+          <!-- L'accueil de la V4 : la date, la carte du défi, puis la carte Setlist. -->
+          <div class="screen-enter flex flex-col gap-3" data-testid="home-v4">
+            <p class="px-1 text-sm first-letter:uppercase" style="color:var(--text-light)" data-testid="welcome-date">{{ dateLabel() }}</p>
+            <app-home-challenge-card
+              [trackCount]="store.peekTracksCount()"
+              [streak]="store.pillStreak()"
+              [bestScore]="store.bestScore()"
+              [yesterdayMedian]="store.yesterdayMedian()"
+              [remaining]="remaining()"
+              [linked]="store.linked()"
+              (startGame)="store.begin()"
+              (openStreak)="openStreakSheet()" />
+          </div>
+        } @else {
+        <app-welcome-screen
           [trackCount]="store.peekTracksCount()"
           [dateLabel]="dateLabel()"
           [streak]="store.pillStreak()"
@@ -37,6 +52,7 @@
           [linked]="store.linked()"
           (startGame)="store.begin()"
           (openStreak)="openStreakSheet()" />
+        }
         <!-- Les autres modes (la carte Setlist pour un compte qui y a accès) : rien d'autre ne change sur l'accueil. -->
         <app-home-mode-entries />
       }
@@ -68,6 +84,20 @@
       @case ('already_played') {
         @if (store.abandoned()) {
           <app-abandoned-screen [countdown]="store.countdown()" />
+        } @else if (chrome.v4() && !showResult()) {
+          <!-- L'accueil de la V4, défi fait : son résumé, l'écran complet derrière « Voir le résultat », la Setlist en grand dessous. -->
+          <div class="screen-enter flex flex-col gap-3" data-testid="home-v4">
+            <p class="px-1 text-sm first-letter:uppercase" style="color:var(--text-light)" data-testid="welcome-date">{{ dateLabel() }}</p>
+            <app-home-done-card
+              [score]="store.stats()?.yourScore ?? null"
+              [rows]="resultRows()"
+              [countdown]="store.countdown()"
+              [shareCopied]="shareCopied()"
+              [shareFailed]="shareFailed()"
+              [canShare]="store.stats()?.yourScore != null"
+              (share)="share()"
+              (seeResult)="openResult()" />
+          </div>
         } @else {
           <app-day-result-screen
             [score]="store.stats()?.yourScore ?? null"

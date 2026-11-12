@@ -829,6 +829,13 @@
     "header": {
       "track": "Piste {{ current }} / {{ total }}"
     },
+    "home": {
+      "label": "Défi du jour",
+      "done": "Défi du jour · fait",
+      "seeResult": "Voir le résultat",
+      "remainingHours": "Il te reste le défi du jour · plus que {{ n }} h",
+      "remainingMinutes": "Il te reste le défi du jour · plus que {{ n }} min"
+    },
     "welcome": {
       "title": "Blind test du jour",
       "subtitle": "{{ count }} morceaux à deviner",
@@ -1137,6 +1144,13 @@
       "total": "Total du run",
       "round": "manche {{ round }}",
       "withdrawn": "Morceau retiré"
+    },
+    "home": {
+      "record": "Record",
+      "anytime": "à toi quand tu veux",
+      "playedToday": "Setlist jouée",
+      "play": "Jouer",
+      "replay": "Rejouer"
     },
     "welcome": {
       "badge": "Accès anticipé",

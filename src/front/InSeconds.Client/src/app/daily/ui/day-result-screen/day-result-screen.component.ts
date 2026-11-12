@@ -4,6 +4,7 @@ import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 import { ArchiveDay } from '../../domain/archive';
 import { DayStats } from '../../domain/daily';
 import { Highlight, highlightOf } from '../../domain/highlight';
+import { trackBar } from './result-rows';
 import { TrackResultRow, TrackResultsListComponent } from '../../../gameplay/ui/track-results-list/track-results-list.component';
 import { ScoreDistributionChartComponent } from '../../../ui/score-distribution-chart/score-distribution-chart.component';
 import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-button.component';
@@ -61,11 +62,5 @@ export class DayResultScreenComponent {
         notFoundCount: r.notFoundCount,
       }))));
 
-  /** Une barre par morceau : verte (artiste et titre), rouge (rien), moitié-moitié (l'un des deux) ; éteinte sans réponse. */
-  protected barOf(row: TrackResultRow): string {
-    if (row.artistCorrect === null) return 'var(--text-sep)';
-    if (row.artistCorrect && row.titleCorrect) return 'var(--color-success)';
-    if (!row.artistCorrect && !row.titleCorrect) return 'var(--color-fail)';
-    return 'linear-gradient(90deg, var(--color-success) 50%, var(--color-fail) 50%)';
-  }
+  protected readonly barOf = trackBar;
 }

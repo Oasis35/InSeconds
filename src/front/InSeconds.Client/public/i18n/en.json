@@ -829,6 +829,13 @@
     "header": {
       "track": "Track {{ current }} / {{ total }}"
     },
+    "home": {
+      "label": "Daily challenge",
+      "done": "Daily challenge · done",
+      "seeResult": "See the result",
+      "remainingHours": "The daily challenge is still waiting · {{ n }} h left",
+      "remainingMinutes": "The daily challenge is still waiting · {{ n }} min left"
+    },
     "welcome": {
       "title": "Today's blind test",
       "subtitle": "{{ count }} tracks to guess",
@@ -1137,6 +1144,13 @@
       "total": "Run total",
       "round": "round {{ round }}",
       "withdrawn": "Track removed"
+    },
+    "home": {
+      "record": "Best",
+      "anytime": "yours whenever you like",
+      "playedToday": "Setlist played",
+      "play": "Play",
+      "replay": "Play again"
     },
     "welcome": {
       "badge": "Early access",
