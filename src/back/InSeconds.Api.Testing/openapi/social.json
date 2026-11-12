@@ -5,6 +5,182 @@
     "version": "v2"
   },
   "paths": {
+    "/api/admin/social/groups": {
+      "get": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "listAdminGroups",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminGroupsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/social/groups/{id}/name": {
+      "put": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "renameAdminGroup",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameGroup"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupNameResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/social/groups/{id}/name/reset": {
+      "post": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "resetAdminGroupName",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupNameResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/social/groups/{id}": {
+      "delete": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "deleteAdminGroup",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/social/groups": {
       "get": {
         "tags": [
@@ -585,6 +761,58 @@
   },
   "components": {
     "schemas": {
+      "AdminGroupResponse": {
+        "required": [
+          "id",
+          "name",
+          "memberCount",
+          "ownerId",
+          "ownerPseudo",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "memberCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ownerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ownerPseudo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AdminGroupsResponse": {
+        "required": [
+          "groups"
+        ],
+        "type": "object",
+        "properties": {
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminGroupResponse"
+            }
+          }
+        }
+      },
       "CreateGroup": {
         "required": [
           "name"
@@ -677,6 +905,17 @@
           "joinedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "GroupNameResponse": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
           }
         }
       },
@@ -868,10 +1107,33 @@
             ]
           }
         }
+      },
+      "RenameGroup": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
       }
     }
   },
   "tags": [
+    {
+      "name": "InSeconds.Api.Modules.Social.Application.ListAdminGroupsEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Social.Application.RenameAdminGroupEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Social.Application.ResetAdminGroupNameEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Social.Application.DeleteAdminGroupEndpoint"
+    },
     {
       "name": "InSeconds.Api.Modules.Social.Application.ListMyGroupsEndpoint"
     },

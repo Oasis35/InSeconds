@@ -99,7 +99,7 @@ describe('AdminShellPage', () => {
     const { element } = await open(admin, '/admin/catalogue');
 
     for (const links of [sideTabs(element), bottomTabs(element)]) {
-      expect(links.map(a => a.getAttribute('href'))).toEqual(['/admin/dashboard', '/admin/defis', '/admin/catalogue', '/admin/joueurs']);
+      expect(links.map(a => a.getAttribute('href'))).toEqual(['/admin/dashboard', '/admin/defis', '/admin/catalogue', '/admin/groupes', '/admin/joueurs']);
       expect(links.filter(a => a.getAttribute('aria-current') === 'page').map(a => a.getAttribute('href'))).toEqual(['/admin/catalogue']);
     }
   });
@@ -191,7 +191,7 @@ describe('AdminShellPage', () => {
     const { element } = await open(admin, '/admin/catalogue');
 
     expect(sideTabs(element).map(a => a.textContent?.trim())).toEqual([
-      'admin.tabs.dashboard', 'admin.tabs.challengesPlain', 'admin.tabs.content', 'admin.tabs.playersPlain',
+      'admin.tabs.dashboard', 'admin.tabs.challengesPlain', 'admin.tabs.content', 'admin.tabs.groupsPlain', 'admin.tabs.playersPlain',
     ]);
   });
 
@@ -204,10 +204,10 @@ describe('AdminShellPage', () => {
     harness.detectChanges();
 
     expect(sideTabs(element).map(a => a.textContent?.trim()))
-      .toEqual(['admin.tabs.dashboard', 'admin.tabs.challenges', 'admin.tabs.content', 'admin.tabs.players']);
+      .toEqual(['admin.tabs.dashboard', 'admin.tabs.challenges', 'admin.tabs.content', 'admin.tabs.groupsPlain', 'admin.tabs.players']);
     // La barre du bas, étroite, garde les libellés nus.
     expect(bottomTabs(element).map(a => a.textContent?.trim()))
-      .toEqual(['admin.tabs.dashboard', 'admin.tabs.challengesPlain', 'admin.tabs.content', 'admin.tabs.playersPlain']);
+      .toEqual(['admin.tabs.dashboard', 'admin.tabs.challengesPlain', 'admin.tabs.content', 'admin.tabs.groupsPlain', 'admin.tabs.playersPlain']);
   });
 
   it('ne montre pas l\'heure de déploiement quand le build ne la connaît pas', async () => {

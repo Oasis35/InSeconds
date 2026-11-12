@@ -62,6 +62,10 @@ describe('ADMIN_ROUTES', () => {
     expect(await landOn('/admin/a-valider')).toBe('/admin/a-valider');
   });
 
+  it('garde l\'onglet Groupes à son adresse', async () => {
+    expect(await landOn('/admin/groupes')).toBe('/admin/groupes');
+  });
+
   it('un onglet inconnu mène au tableau de bord', async () => {
     expect(await landOn('/admin?tab=nimporte-quoi')).toBe('/admin/dashboard');
     expect(await landOn('/admin/nimporte-quoi')).toBe('/admin/dashboard');

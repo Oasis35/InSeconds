@@ -5,6 +5,57 @@
     "version": "v2"
   },
   "paths": {
+    "/api/admin/accounts/{playerId}/pseudo/reset": {
+      "post": {
+        "tags": [
+          "Players"
+        ],
+        "operationId": "resetPlayerPseudo",
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResetPseudoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/players/guest": {
       "post": {
         "tags": [
@@ -1028,6 +1079,20 @@
           }
         }
       },
+      "ResetPseudoResponse": {
+        "required": [
+          "pseudo"
+        ],
+        "type": "object",
+        "properties": {
+          "pseudo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "RevokedDevicesResponse": {
         "required": [
           "revoked"
@@ -1099,6 +1164,9 @@
     }
   },
   "tags": [
+    {
+      "name": "InSeconds.Api.Modules.Players.Application.ResetPseudoEndpoint"
+    },
     {
       "name": "InSeconds.Api.Modules.Players.Application.CreateGuestEndpoint"
     },

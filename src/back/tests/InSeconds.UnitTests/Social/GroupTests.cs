@@ -124,6 +124,25 @@ public class GroupNameTests
     [InlineData("   ", false)]
     [InlineData(null, false)]
     public void IsValid(string? name, bool expected) => Assert.Equal(expected, GroupName.IsValid(name, 24));
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(12)]
+    [InlineData(2147483647)]
+    public void Replacement_EstUnNomValide_AvecLeReglageParDefaut(int id) =>
+        Assert.True(GroupName.IsValid(GroupName.Replacement(id), 24));
+
+    [Fact]
+    public void Rename_RogneLeNom_EtGardeLeCodeEtLesMembres()
+    {
+        var group = Group.Create("Les copains", "ABCD2345", Guid.NewGuid(), DateTimeOffset.UnixEpoch);
+
+        group.Rename("  Les amis ");
+
+        Assert.Equal("Les amis", group.Name);
+        Assert.Equal("ABCD2345", group.InviteCode);
+        Assert.Single(group.Members);
+    }
 }
 
 public class GroupRankingPolicyTests

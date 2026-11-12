@@ -154,4 +154,26 @@ describe('AdminPlayersStore', () => {
       expect(store.runAccess()).toEqual(['b']);
     });
   });
+
+  describe('remise à zéro d\'un pseudo', () => {
+    it('montre le pseudo attribué par l\'API, seulement après sa réponse', async () => {
+      const store = create();
+      await store.load();
+      const pending = store.resetPseudo('b');
+      expect(store.pseudoResetPending()).toEqual(['b']);
+      expect(store.players().find(p => p.id === 'b')?.pseudo).toBe('Bob');
+      expect(await pending).toBe(true);
+      expect(api.resetPseudo).toHaveBeenCalledWith('b');
+      expect(store.players().find(p => p.id === 'b')?.pseudo).toBe('Joueur4242');
+      expect(store.pseudoResetPending()).toEqual([]);
+    });
+
+    it('garde le pseudo et signale l\'erreur quand l\'API refuse', async () => {
+      const store = create({ resetPseudo: vi.fn(() => Promise.reject(problem(404, 'common.not_found'))) });
+      await store.load();
+      expect(await store.resetPseudo('b')).toBe(false);
+      expect(store.players().find(p => p.id === 'b')?.pseudo).toBe('Bob');
+      expect(store.pseudoResetError()?.code).toBe('common.not_found');
+    });
+  });
 });

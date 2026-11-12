@@ -65,4 +65,8 @@ internal static partial class PlayersLog
 
     [LoggerMessage(EventId = 1009, Level = LogLevel.Error, Message = "Purge des joueurs : étape {PurgeStep} en échec")]
     public static partial void PurgeStepFailed(ILogger logger, Exception exception, string purgeStep);
+
+    /// <summary>Pseudo remis à zéro par un admin (modération) : jamais l'ancien pseudo ni le nouveau, des identifiants seulement.</summary>
+    [LoggerMessage(EventId = 1010, Level = LogLevel.Information, Message = "Pseudo de {PlayerId} remis à zéro par l'admin {AdminId}")]
+    public static partial void PseudoReset(ILogger logger, Guid playerId, Guid adminId);
 }
