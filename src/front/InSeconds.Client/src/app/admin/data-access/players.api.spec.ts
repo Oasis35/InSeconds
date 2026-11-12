@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { DailyClient } from '../../api/daily/api.generated';
+import { PlayersClient } from '../../api/players/api.generated';
 import { RunsClient } from '../../api/runs/api.generated';
 import { AdminPlayersApi } from './players.api';
 
@@ -8,9 +9,11 @@ describe('AdminPlayersApi', () => {
   const client = { listRegisteredPlayers: vi.fn(), getPlayerHistory: vi.fn() };
   const runs = { listRunAccess: vi.fn(), grantRunAccess: vi.fn(), revokeRunAccess: vi.fn() };
 
+  const players = { resetPlayerPseudo: vi.fn() };
+
   function create(): AdminPlayersApi {
     TestBed.configureTestingModule({
-      providers: [AdminPlayersApi, { provide: DailyClient, useValue: client }, { provide: RunsClient, useValue: runs }],
+      providers: [AdminPlayersApi, { provide: DailyClient, useValue: client }, { provide: RunsClient, useValue: runs }, { provide: PlayersClient, useValue: players }],
     });
     return TestBed.inject(AdminPlayersApi);
   }
@@ -62,5 +65,16 @@ describe('AdminPlayersApi', () => {
     expect(runs.grantRunAccess).toHaveBeenCalledWith('a');
     await api.setRunAccess('a', false);
     expect(runs.revokeRunAccess).toHaveBeenCalledWith('a');
+  });
+
+  it('remet le pseudo à zéro et rend le pseudo attribué', async () => {
+    players.resetPlayerPseudo.mockReturnValue(of({ pseudo: 'Joueur4242' }));
+    expect(await create().resetPseudo('a')).toBe('Joueur4242');
+    expect(players.resetPlayerPseudo).toHaveBeenCalledWith('a');
+  });
+
+  it('rend null quand l\'API ne donne aucun pseudo', async () => {
+    players.resetPlayerPseudo.mockReturnValue(of({}));
+    expect(await create().resetPseudo('a')).toBeNull();
   });
 });

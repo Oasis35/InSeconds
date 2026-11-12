@@ -108,4 +108,13 @@ internal static partial class SocialLog
 
     [LoggerMessage(EventId = 1804, Level = LogLevel.Information, Message = "Code d'invitation du groupe {GroupId} renouvelé par {PlayerId}")]
     public static partial void InviteCodeRotated(ILogger logger, int groupId, Guid playerId);
+
+    [LoggerMessage(EventId = 1805, Level = LogLevel.Information, Message = "Groupe {GroupId} renommé par l'admin {AdminId}")]
+    public static partial void AdminRenamed(ILogger logger, int groupId, Guid adminId);
+
+    [LoggerMessage(EventId = 1806, Level = LogLevel.Information, Message = "Nom du groupe {GroupId} remis à zéro par l'admin {AdminId}")]
+    public static partial void AdminNameReset(ILogger logger, int groupId, Guid adminId);
+
+    [LoggerMessage(EventId = 1807, Level = LogLevel.Information, Message = "Groupe {GroupId} supprimé par l'admin {AdminId}")]
+    public static partial void AdminDeleted(ILogger logger, int groupId, Guid adminId);
 }

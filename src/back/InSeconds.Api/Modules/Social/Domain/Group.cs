@@ -71,6 +71,9 @@ public sealed class Group
         return GroupDeparture.OwnerChanged;
     }
 
+    /// <summary>Un autre nom, déjà contrôlé (<see cref="GroupName"/>) : la modération de l'admin renomme un nom inapproprié.</summary>
+    public void Rename(string name) => Name = name.Trim();
+
     /// <summary>Un nouveau code : l'ancien lien ne rejoint plus rien.</summary>
     public void RotateInviteCode(string newCode)
     {
@@ -137,6 +140,12 @@ public static class GroupName
     public const int ColumnLength = 40;
 
     public static bool IsValid(string? name, int maxLength) => PseudoRules.IsValid(name, MinLength, maxLength);
+
+    /// <summary>
+    /// Le nom de remplacement d'un nom inapproprié remis à zéro par l'admin : « Groupe » et l'identifiant du groupe (jamais son code
+    /// d'invitation, qui est un secret). Toujours un nom valide, quel que soit le réglage de longueur.
+    /// </summary>
+    public static string Replacement(int groupId) => $"Groupe {groupId}";
 }
 
 /// <summary>Les écritures et les agrégats suivis du module : charger un groupe pour le modifier, l'ajouter, le supprimer, et les verrous.</summary>
