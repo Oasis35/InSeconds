@@ -9,6 +9,9 @@ public sealed record GroupMemberEntry(Guid PlayerId, DateTimeOffset JoinedAt);
 /// <summary>Un groupe tel que ses membres le lisent. Jamais construit pour un non-membre : le port ne rend rien dans ce cas.</summary>
 public sealed record GroupView(int Id, string Name, string InviteCode, Guid OwnerId, DateTimeOffset CreatedAt, IReadOnlyList<GroupMemberEntry> Members);
 
+/// <summary>Un groupe tel que l'admin le lit pour le modérer : jamais le code d'invitation ni la liste des membres.</summary>
+public sealed record AdminGroupView(int Id, string Name, int MemberCount, Guid OwnerId, DateTimeOffset CreatedAt);
+
 /// <summary>Ce que montre un lien d'invitation, à qui le détient.</summary>
 public sealed record InvitationView(string Name, int MemberCount, bool AlreadyMember);
 
@@ -20,6 +23,9 @@ public interface ISocialQueries
 
     /// <summary>Le groupe, **seulement** si ce joueur en est membre : un non-membre n'apprend rien (rien rendu).</summary>
     Task<GroupView?> FindGroupForMemberAsync(int groupId, Guid playerId, CancellationToken ct);
+
+    /// <summary>Tous les groupes, le plus récent d'abord : l'onglet Groupes de l'admin (modération).</summary>
+    Task<IReadOnlyList<AdminGroupView>> ListAllGroupsAsync(CancellationToken ct);
 
     /// <summary>Ce que le lien montre : rien si le code est inconnu. <paramref name="playerId"/> vide : navigateur sans identité.</summary>
     Task<InvitationView?> FindInvitationAsync(string code, Guid? playerId, CancellationToken ct);

@@ -81,6 +81,10 @@
       "theme_locked": "Le thème de cette manche est déjà choisi.",
       "track_lock_not_released": "Réponds d'abord au morceau en cours.",
       "track_not_found": "Ce morceau n'existe pas dans cette playlist."
+    },
+    "social": {
+      "invalid_name": "Ce nom de groupe n'est pas valide.",
+      "group_not_found": "Ce groupe n'existe plus."
     }
   },
   "shell": {
@@ -336,6 +340,7 @@
       "dashboard": "Accueil",
       "challengesPlain": "Défis",
       "playersPlain": "Joueurs",
+      "groupsPlain": "Groupes",
       "challenges": "Défis ({{ count }})",
       "players": "Joueurs ({{ count }})",
       "content": "Contenu"
@@ -535,6 +540,28 @@
       "colCompleted": "Finies",
       "scoreChart": "Répartition des scores"
     },
+    "groups": {
+      "title": "Groupes ({{ count }})",
+      "filterPlaceholder": "Filtrer par nom ou créateur",
+      "loading": "Chargement des groupes...",
+      "empty": "Aucun groupe pour l'instant.",
+      "noMatch": "Aucun groupe ne correspond à ce filtre.",
+      "colName": "Nom",
+      "colMembers": "Membres",
+      "colOwner": "Créateur",
+      "colCreated": "Créé le",
+      "memberCount": "{{ count }} membre(s)",
+      "renameLabel": "Nouveau nom du groupe",
+      "rename": "Renommer",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "resetName": "Remettre le nom à zéro",
+      "resetConfirm": "Remplacer le nom par un nom neutre ?",
+      "resetYes": "Remettre à zéro",
+      "delete": "Supprimer",
+      "deleteConfirm": "Supprimer ce groupe et ses adhésions ?",
+      "deleteYes": "Supprimer pour de bon"
+    },
     "players": {
       "title": "Comptes inscrits ({{ count }})",
       "filterPlaceholder": "Filtrer par pseudo ou email",
@@ -549,6 +576,10 @@
       "colRun": "Run",
       "runAccessToggle": "Autoriser ce compte à jouer au mode Run",
       "runAccessAdmin": "Les admins ont l'accès d'office au mode Run",
+      "resetPseudo": "Remettre le pseudo à zéro",
+      "resetPseudoConfirm": "Remplacer le pseudo par un pseudo neutre ?",
+      "resetPseudoYes": "Remettre à zéro",
+      "resetPseudoCancel": "Annuler",
       "colGames": "Parties",
       "adminBadge": "Admin",
       "neverSeen": "Jamais",

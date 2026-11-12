@@ -24,6 +24,7 @@ function defaults() {
     history: vi.fn<(playerId: string) => Promise<PlayerGame[]>>(() => Promise.resolve([])),
     listRunAccess: vi.fn<() => Promise<string[]>>(() => Promise.resolve([])),
     setRunAccess: vi.fn<(playerId: string, enabled: boolean) => Promise<void>>(() => Promise.resolve()),
+    resetPseudo: vi.fn<(playerId: string) => Promise<string | null>>(() => Promise.resolve('Joueur4242')),
   } satisfies Record<keyof AdminPlayersApi, unknown>;
 }
 

@@ -21,7 +21,8 @@ public static class OpenApiDocuments
 
     public static IServiceCollection AddOpenApiDocuments(this IServiceCollection services)
     {
-        AddModuleDocument(services, Players, tag: "Players", "api/players");
+        // Les routes admin de modération des pseudos (`api/admin/accounts`) sont celles de Players.
+        AddModuleDocument(services, Players, tag: "Players", "api/players", "api/admin/accounts");
         // Deux préfixes : la recherche publique, et les routes admin du pool.
         AddModuleDocument(services, Catalogue, tag: "Catalogue", "api/catalogue", "api/admin/catalogue");
         // Le jeu du jour et ses routes admin (défi du jour, stats, tableau de bord, historique, cooldown). La liste
@@ -29,8 +30,8 @@ public static class OpenApiDocuments
         AddModuleDocument(services, Daily, tag: "Daily", "api/daily", "api/admin/daily", "api/admin/players");
         // Le mode Run : ses routes joueur, et les routes admin de l'accès (l'interrupteur de l'onglet Joueurs).
         AddModuleDocument(services, Runs, tag: "Runs", "api/runs", "api/admin/runs");
-        // Les groupes entre amis (Social) : un seul préfixe, le classement et les invitations en font partie.
-        AddModuleDocument(services, Social, tag: "Social", "api/social");
+        // Les groupes entre amis (Social) : le classement et les invitations en font partie, et les routes admin de modération des groupes.
+        AddModuleDocument(services, Social, tag: "Social", "api/social", "api/admin/social");
         // L'infrastructure, pas un module : le suivi des tâches planifiées, et l'état du système (commit de l'API, dernière sauvegarde).
         AddModuleDocument(services, Admin, tag: "Admin", "api/admin/jobs", "api/admin/system");
         return services;
