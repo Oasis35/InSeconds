@@ -14,11 +14,12 @@ public class OpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(postg
         Assert.Equal(
             [
                 "confirmEmailChange", "createGuest", "deleteMyAccount", "exportMyData", "getMe", "listDevices", "logout",
-                "requestEmailChange", "requestMagicLink", "revokeDevice", "revokeOtherDevices", "setGuestPseudo", "updatePseudo", "verifyMagicLink",
+                "requestEmailChange", "requestMagicLink", "resetPlayerPseudo", "revokeDevice", "revokeOtherDevices", "setGuestPseudo", "updatePseudo", "verifyMagicLink",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));
-        // Rien d'autre que le module : ni /api/e2e, ni /api/admin, ni dev-login.
-        Assert.All(document["paths"]!.AsObject().Select(p => p.Key), path => Assert.StartsWith("/api/players", path));
+        // Rien d'autre que le module : ni /api/e2e, ni dev-login, et pour l'admin la seule modération des pseudos.
+        Assert.All(document["paths"]!.AsObject().Select(p => p.Key), path =>
+            Assert.True(path.StartsWith("/api/players", StringComparison.Ordinal) || path.StartsWith("/api/admin/accounts", StringComparison.Ordinal), path));
     }
 
     [Fact]

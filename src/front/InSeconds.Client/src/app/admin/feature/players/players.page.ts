@@ -6,6 +6,7 @@ import { ErrorMessageComponent } from '../../../ui/error-message/error-message.c
 import { AdminPlayersStore } from '../../data-access/players.store';
 import { canPlayRuns } from '../../domain/registered-player';
 import { PlayerCardComponent } from '../../ui/players/player-card/player-card.component';
+import { PlayerPseudoResetComponent } from '../../ui/players/player-pseudo-reset/player-pseudo-reset.component';
 import { PlayerHistoryComponent } from '../../ui/players/player-history/player-history.component';
 import { PlayersLoyaltyComponent } from '../../ui/players/players-loyalty/players-loyalty.component';
 import { PlayerRowComponent } from '../../ui/players/player-row/player-row.component';
@@ -20,7 +21,7 @@ import { PlayerRowComponent } from '../../ui/players/player-row/player-row.compo
  */
 @Component({
   selector: 'app-admin-players-page',
-  imports: [TranslatePipe, ErrorMessageComponent, PlayerRowComponent, PlayerCardComponent, PlayerHistoryComponent, PlayersLoyaltyComponent],
+  imports: [TranslatePipe, ErrorMessageComponent, PlayerRowComponent, PlayerCardComponent, PlayerHistoryComponent, PlayerPseudoResetComponent, PlayersLoyaltyComponent],
   providers: [AdminPlayersStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex w-full min-w-0 justify-center' },
@@ -68,6 +69,8 @@ import { PlayerRowComponent } from '../../ui/players/player-row/player-row.compo
                 (runAccessToggled)="store.setRunAccess(player.id, $event)">
                 @if (expanded && store.expandedHistory(); as history) {
                   <div class="mt-2" data-testid="player-history" [id]="'player-history-' + player.id">
+                    <app-player-pseudo-reset class="mb-2" [pending]="store.pseudoResetPending().includes(player.id)" [errorKey]="pseudoErrorKey()"
+                      (confirmed)="store.resetPseudo(player.id)" />
                     <app-player-history [games]="history.games" [status]="history.status" />
                   </div>
                 }
@@ -98,6 +101,8 @@ import { PlayerRowComponent } from '../../ui/players/player-row/player-row.compo
                     <tr data-testid="player-history" [id]="'player-history-' + player.id"
                       style="border-bottom:1px solid var(--border-subtle);background:var(--bg-inactive)">
                       <td colspan="7" class="px-4 pb-3 pt-1">
+                        <app-player-pseudo-reset class="mb-2" [pending]="store.pseudoResetPending().includes(player.id)" [errorKey]="pseudoErrorKey()"
+                          (confirmed)="store.resetPseudo(player.id)" />
                         <app-player-history [games]="history.games" [status]="history.status" />
                       </td>
                     </tr>
@@ -120,5 +125,11 @@ export class PlayersPage {
 
   constructor() {
     void this.store.load();
+  }
+
+  /** La clé de traduction du dernier refus d'une remise à zéro de pseudo (une seule ligne est dépliée à la fois), sinon `null`. */
+  protected pseudoErrorKey(): string | null {
+    const error = this.store.pseudoResetError();
+    return error ? errorMessageKey(error.code) : null;
   }
 }

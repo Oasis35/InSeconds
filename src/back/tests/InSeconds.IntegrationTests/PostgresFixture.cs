@@ -21,13 +21,10 @@ public sealed class PostgresFixture : IAsyncLifetime
     // Chaque API de test ouvre plusieurs pools (EF, Wolverine, Hangfire) sur sa propre base : la
     // limite par défaut (100 connexions) est vite atteinte quand les classes tournent en parallèle.
     // Chaque API de test libère ses pools à sa destruction (ApiFactory.DisposeAsync).
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:17-alpine")
-        .WithCommand("-c", "max_connections=500")
-        .Build();
 
     public async ValueTask InitializeAsync()
     {
-        await _container.StartAsync();
+        // LOCALPATCH
         await ExecuteAsync($"CREATE DATABASE {TemplateDatabase}");
         await using (var api = new ApiFactory(ConnectionStringFor(TemplateDatabase)))
         {
@@ -50,7 +47,7 @@ public sealed class PostgresFixture : IAsyncLifetime
         }
     }
 
-    public async ValueTask DisposeAsync() => await _container.DisposeAsync();
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     /// <summary>Une base neuve, déjà migrée, avec les tables de Wolverine et de Hangfire.</summary>
     public Task<string> CreateDatabaseAsync() => CreateAsync($"TEMPLATE {TemplateDatabase}");
@@ -67,12 +64,12 @@ public sealed class PostgresFixture : IAsyncLifetime
 
     private async Task ExecuteAsync(string sql)
     {
-        await using var connection = new NpgsqlConnection(_container.GetConnectionString());
+        await using var connection = new NpgsqlConnection("Host=localhost;Port=55437;Username=postgres;Password=x;Database=postgres");
         await connection.OpenAsync();
         await using var command = new NpgsqlCommand(sql, connection);
         await command.ExecuteNonQueryAsync();
     }
 
     private string ConnectionStringFor(string database) =>
-        new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Database = database }.ConnectionString;
+        new NpgsqlConnectionStringBuilder("Host=localhost;Port=55437;Username=postgres;Password=x;Database=postgres") { Database = database }.ConnectionString;
 }

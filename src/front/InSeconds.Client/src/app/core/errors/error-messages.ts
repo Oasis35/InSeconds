@@ -67,6 +67,9 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'runs.theme_locked': 'errors.runs.theme_locked',
   'runs.track_lock_not_released': 'errors.runs.track_lock_not_released',
   'runs.track_not_found': 'errors.runs.track_not_found',
+  // Social (modération des groupes de l'admin)
+  'social.group_not_found': 'errors.social.group_not_found',
+  'social.invalid_name': 'errors.social.invalid_name',
 };
 
 /** Message affiché pour un code inconnu, toujours avec le `traceId` quand il existe. */

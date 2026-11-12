@@ -1,17 +1,19 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AdminPlayer, AdminPlayerGame, DailyClient } from '../../api/daily/api.generated';
+import { PlayersClient } from '../../api/players/api.generated';
 import { RunsClient } from '../../api/runs/api.generated';
 import { PlayerGame, RegisteredPlayer, RegisteredPlayersPage, toGameStatus } from '../domain/registered-player';
 
 /**
  * Adaptateur de l'onglet Joueurs : seule porte vers les clients générés pour les routes admin des comptes
- * (le jeu du jour : liste et historique ; le mode Run : l'accès). Rend des types du domaine ; les erreurs sont celles du client (`toAppError`).
+ * (le jeu du jour : liste et historique ; le mode Run : l'accès ; les joueurs : la remise à zéro d'un pseudo). Rend des types du domaine ; les erreurs sont celles du client (`toAppError`).
  */
 @Injectable()
 export class AdminPlayersApi {
   private readonly client = inject(DailyClient);
   private readonly runs = inject(RunsClient);
+  private readonly players = inject(PlayersClient);
 
   /** Les comptes inscrits, les plus récemment vus d'abord (l'ordre vient de l'API), et la part des joueurs revenus le lendemain. */
   async list(): Promise<RegisteredPlayersPage> {
@@ -32,6 +34,11 @@ export class AdminPlayersApi {
   /** Autorise ou retire l'accès au mode Run d'un compte (idempotent) ; 404 `common.not_found` pour un invité ou un joueur inconnu. */
   async setRunAccess(playerId: string, enabled: boolean): Promise<void> {
     await firstValueFrom(enabled ? this.runs.grantRunAccess(playerId) : this.runs.revokeRunAccess(playerId));
+  }
+
+  /** Remet le pseudo d'un compte à zéro (un pseudo inapproprié) et rend le pseudo neutre attribué ; 404 `common.not_found` pour un joueur inconnu. */
+  async resetPseudo(playerId: string): Promise<string | null> {
+    return (await firstValueFrom(this.players.resetPlayerPseudo(playerId))).pseudo ?? null;
   }
 }
 
