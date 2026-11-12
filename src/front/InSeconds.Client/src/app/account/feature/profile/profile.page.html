@@ -118,7 +118,7 @@
           @for (code of ['fr', 'en']; track code) {
             <button type="button" (click)="setLanguage($any(code))" [attr.aria-pressed]="locale() === code" [attr.data-testid]="'language-' + code"
                     class="rounded-(--radius-button) px-3 py-2 text-sm cursor-pointer touch-manipulation"
-                    [style.border]="locale() === code ? '1px solid var(--accent-orange)' : '1px solid var(--border-neutral)'"
+                    [style.border]="locale() === code ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
                     [style.color]="locale() === code ? 'var(--text-hi)' : 'var(--text-muted)'">{{ code.toUpperCase() }}</button>
           }
         </div>
