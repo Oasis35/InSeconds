@@ -35,6 +35,28 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
+
+            // Le niveau des joueurs qui ont déjà fini des parties (gagnées ou perdues) : la moyenne de leurs 10 dernières, comme RunLevelPolicy avec la
+            // fenêtre par défaut, et leurs 50 derniers scores de la plus ancienne à la plus récente. Sans cela, ils n'auraient de niveau qu'à leur
+            // prochaine partie.
+            migrationBuilder.Sql(
+                """
+                WITH finished AS (
+                    SELECT player_id, GREATEST(total_score, 0) AS score,
+                           row_number() OVER (PARTITION BY player_id ORDER BY ended_at DESC, id DESC) AS rn,
+                           count(*) OVER (PARTITION BY player_id) AS played
+                    FROM runs.sessions
+                    WHERE status IN (1, 2) AND ended_at IS NOT NULL
+                )
+                INSERT INTO runs.player_levels (player_id, points, runs_played, recent_scores, last_session_id, last_delta, updated_at)
+                SELECT player_id,
+                       round(avg(score) FILTER (WHERE rn <= 10))::int,
+                       max(played)::int,
+                       array_agg(score ORDER BY rn DESC) FILTER (WHERE rn <= 50),
+                       NULL, 0, now()
+                FROM finished
+                GROUP BY player_id;
+                """);
         }
 
         /// <inheritdoc />
