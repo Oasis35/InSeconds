@@ -1,0 +1,71 @@
+<div class="da-bg min-h-dvh flex flex-col relative" style="color:var(--text-body)">
+  <app-decor-background />
+
+  <main class="relative flex-1 flex flex-col gap-4 px-5 pt-2 pb-5 w-full max-w-lg mx-auto overflow-x-clip">
+    <app-brand [homeLink]="true">
+      <div brandRight class="flex items-center gap-2">
+        <app-instagram-link />
+        <app-account-link />
+      </div>
+    </app-brand>
+
+    <div class="flex items-center gap-3">
+      <a routerLink="/setlist" class="flex items-center justify-center w-11 h-11 shrink-0 rounded-full" data-testid="hits-back"
+         [attr.aria-label]="'runs.hits.back' | translate" style="border:1px solid var(--border-neutral);color:var(--text-hi)"><span aria-hidden="true">‹</span></a>
+      <h1 class="text-2xl font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'runs.hits.title' | translate }}</h1>
+    </div>
+
+    @switch (store.status()) {
+      @case ('error') {
+        <app-run-status-screen kind="error" [errorCode]="errorReporting.lastErrorCode()" (retry)="retry()" />
+      }
+      @case ('ready') {
+        @if (store.total()) {
+          <p class="flex items-baseline justify-between text-sm" style="color:var(--text-muted)">
+            <span>{{ 'runs.hits.earned' | translate }}</span>
+            <span class="text-lg font-bold tabular-nums" style="font-family:var(--font-clock);color:var(--color-accent-3)" data-testid="hits-count">{{ store.earnedCount() }} / {{ store.total() }}</span>
+          </p>
+          <ul class="flex flex-col gap-2" data-testid="hits-list">
+            @for (row of rows(); track row.key) {
+              @if (row.fresh) {
+                <li #freshRow class="flex items-center gap-3 px-4 py-3 min-h-14" data-testid="hit" [attr.data-hit]="row.key" data-earned="true" data-fresh="true"
+                    style="background:rgb(var(--rgb-accent-3) / 0.1);border:1px solid var(--color-accent-3);border-radius:var(--radius-card)">
+                  <span class="flex items-center justify-center w-8 h-8 shrink-0 rounded-full font-bold" aria-hidden="true" style="background:var(--color-accent-3);color:var(--bg-page)">✓</span>
+                  <span class="flex-1 min-w-0 text-base font-bold" style="color:var(--text-hi)">{{ row.nameKey | translate }}</span>
+                  <span class="text-xs font-bold shrink-0" style="color:var(--color-accent-3)">{{ 'runs.hits.new' | translate }}</span>
+                </li>
+              } @else {
+                <li class="flex items-center gap-3 px-4 py-3 min-h-14" data-testid="hit" [attr.data-hit]="row.key" [attr.data-earned]="row.earned"
+                    [style.background]="'var(--bg-surface)'" [style.border-radius]="'var(--radius-card)'"
+                    [style.border]="row.earned ? '1px solid var(--color-accent-3)' : '1px solid var(--border-medium)'">
+                  <span class="flex items-center justify-center w-8 h-8 shrink-0 rounded-full font-bold" aria-hidden="true"
+                        [style.background]="row.earned ? 'var(--color-accent-3)' : 'transparent'" [style.color]="'var(--bg-page)'"
+                        [style.border]="row.earned ? 'none' : '1px solid var(--border-neutral)'">@if (row.earned) {✓}</span>
+                  <span class="flex-1 min-w-0 flex flex-col gap-1.5">
+                    <span class="flex items-baseline justify-between gap-3">
+                      <span class="text-base" [class.font-bold]="row.earned" [style.color]="row.earned ? 'var(--text-hi)' : 'var(--text-light)'">{{ row.nameKey | translate }}</span>
+                      @if (row.percent !== null) {
+                        <span class="text-xs tabular-nums shrink-0" style="font-family:var(--font-clock);color:var(--text-muted)" data-testid="hit-progress">{{ row.progress }} / {{ row.target }}</span>
+                      }
+                    </span>
+                    @if (row.percent !== null) {
+                      <span class="block h-1.5 rounded-full overflow-hidden" aria-hidden="true" style="background:var(--border-medium)">
+                        <span class="block h-full rounded-full" style="background:var(--color-accent-3)" [style.width.%]="row.percent"></span>
+                      </span>
+                    }
+                  </span>
+                  <span class="sr-only">{{ (row.earned ? 'runs.hits.stateEarned' : 'runs.hits.stateLocked') | translate }}</span>
+                </li>
+              }
+            }
+          </ul>
+        } @else {
+          <p class="text-sm text-center py-6" style="color:var(--text-muted)" data-testid="hits-empty">{{ 'runs.hits.empty' | translate }}</p>
+        }
+      }
+      @default {
+        <p class="text-sm text-center animate-pulse" style="color:var(--text-faint)">{{ 'ui.history.loading' | translate }}</p>
+      }
+    }
+  </main>
+</div>

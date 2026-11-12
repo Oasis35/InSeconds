@@ -1187,87 +1187,6 @@ export class RunsClient {
     }
 
     /**
-     * @return OK
-     */
-    swapRunTrack(id: number, body: SwapRunTrack): Observable<RunPlayResponse> {
-        let url_ = this.baseUrl + "/api/runs/sessions/{id}/swap";
-        if (id === undefined || id === null)
-            throw new globalThis.Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(body);
-
-        let options_ : any = {
-            body: content_,
-            observe: "response",
-            responseType: "blob",
-            headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
-        };
-
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processSwapRunTrack(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processSwapRunTrack(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<RunPlayResponse>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<RunPlayResponse>;
-        }));
-    }
-
-    protected processSwapRunTrack(response: HttpResponseBase): Observable<RunPlayResponse> {
-        const status = response.status;
-        const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
-
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RunPlayResponse;
-            return _observableOf(result200);
-            }));
-        } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Bad Request", status, _responseText, _headers, result400);
-            }));
-        } else if (status === 401) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result401: any = null;
-            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Unauthorized", status, _responseText, _headers, result401);
-            }));
-        } else if (status === 404) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result404: any = null;
-            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Not Found", status, _responseText, _headers, result404);
-            }));
-        } else if (status === 409) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result409: any = null;
-            result409 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Conflict", status, _responseText, _headers, result409);
-            }));
-        } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
-        }
-        return _observableOf(null as any);
-    }
-
-    /**
      * @param month (optional) 
      * @return OK
      */
@@ -1405,6 +1324,143 @@ export class RunsClient {
             let result429: any = null;
             result429 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("Too Many Requests", status, _responseText, _headers, result429);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getRunHits(): Observable<RunHitsResponse> {
+        let url_ = this.baseUrl + "/api/runs/hits";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetRunHits(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetRunHits(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<RunHitsResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<RunHitsResponse>;
+        }));
+    }
+
+    protected processGetRunHits(response: HttpResponseBase): Observable<RunHitsResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RunHitsResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    swapRunTrack(id: number, body: SwapRunTrack): Observable<RunPlayResponse> {
+        let url_ = this.baseUrl + "/api/runs/sessions/{id}/swap";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSwapRunTrack(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSwapRunTrack(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<RunPlayResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<RunPlayResponse>;
+        }));
+    }
+
+    protected processSwapRunTrack(response: HttpResponseBase): Observable<RunPlayResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RunPlayResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            }));
+        } else if (status === 409) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result409: any = null;
+            result409 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Conflict", status, _responseText, _headers, result409);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -1575,6 +1631,47 @@ export interface RunHandCardResponse {
     [key: string]: any;
 }
 
+export interface RunHistoryResponse {
+    month: string;
+    previousMonth: string | undefined;
+    nextMonth: string | undefined;
+    playedCount: number;
+    averageScore: number | undefined;
+    bestScore: number | undefined;
+    runs: RunHistoryRunResponse[];
+
+    [key: string]: any;
+}
+
+export interface RunHistoryRunResponse {
+    sessionId: number;
+    challengeCode: string;
+    date: Date;
+    status: string;
+    disc: RunDiscResponse;
+    roundsPassed: number;
+    score: number;
+    difficulty: string;
+
+    [key: string]: any;
+}
+
+export interface RunHitResponse {
+    key: string;
+    earned: boolean;
+    progress: number | undefined;
+    target: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface RunHitsResponse {
+    hits: RunHitResponse[];
+    earnedCount: number;
+
+    [key: string]: any;
+}
+
 export interface RunLevelResponse {
     points: number;
     disc: RunDiscResponse;
@@ -1603,6 +1700,12 @@ export interface RunPassedRoundResponse {
     objective: number;
     disc: RunDiscResponse;
     difficulty: string;
+
+    [key: string]: any;
+}
+
+export interface RunPastPreviewResponse {
+    previewUrl: string | undefined;
 
     [key: string]: any;
 }
@@ -1790,37 +1893,6 @@ export interface SwapRunTrack {
 export interface UpdateRunListening {
     position: number;
     listenedSeconds: number;
-
-    [key: string]: any;
-}
-
-export interface RunHistoryResponse {
-    month: string;
-    previousMonth: string | undefined;
-    nextMonth: string | undefined;
-    playedCount: number;
-    averageScore: number | undefined;
-    bestScore: number | undefined;
-    runs: RunHistoryRunResponse[];
-
-    [key: string]: any;
-}
-
-export interface RunHistoryRunResponse {
-    sessionId: number;
-    challengeCode: string;
-    date: Date;
-    status: string;
-    disc: RunDiscResponse;
-    roundsPassed: number;
-    score: number;
-    difficulty: string;
-
-    [key: string]: any;
-}
-
-export interface RunPastPreviewResponse {
-    previewUrl: string | undefined;
 
     [key: string]: any;
 }

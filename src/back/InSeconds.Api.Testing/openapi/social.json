@@ -181,6 +181,99 @@
         }
       }
     },
+    "/api/social/ranking": {
+      "get": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "getGeneralRanking",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralRankingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/social/ranking/visibility": {
+      "put": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "setRankingVisibility",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetRankingVisibility"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/social/groups": {
       "get": {
         "tags": [
@@ -824,6 +917,48 @@
           }
         }
       },
+      "GeneralRankingResponse": {
+        "required": [
+          "top",
+          "around",
+          "total",
+          "visible",
+          "canAppear",
+          "topPercent"
+        ],
+        "type": "object",
+        "properties": {
+          "top": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RankingEntryResponse"
+            }
+          },
+          "around": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RankingEntryResponse"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "visible": {
+            "type": "boolean"
+          },
+          "canAppear": {
+            "type": "boolean"
+          },
+          "topPercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "GroupDetailResponse": {
         "required": [
           "id",
@@ -1118,6 +1253,17 @@
             "type": "string"
           }
         }
+      },
+      "SetRankingVisibility": {
+        "required": [
+          "visible"
+        ],
+        "type": "object",
+        "properties": {
+          "visible": {
+            "type": "boolean"
+          }
+        }
       }
     }
   },
@@ -1133,6 +1279,12 @@
     },
     {
       "name": "InSeconds.Api.Modules.Social.Application.DeleteAdminGroupEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Social.Application.GetGeneralRankingEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Social.Application.SetRankingVisibilityEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Social.Application.ListMyGroupsEndpoint"

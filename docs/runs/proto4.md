@@ -86,8 +86,10 @@ Un onglet « Groupes » de l'admin : liste, renommer ou supprimer un groupe, rem
 
 ## PR 8 : classement général et Hits
 
+**État : codée.** Classement général : table `social.ranking_visibility` (une ligne par compte qui a choisi d'apparaître, aucune par défaut), `GET /api/social/ranking` (les 20 premiers, le joueur et ses deux voisins, sa position par dizaines) et `PUT /api/social/ranking/visibility` ; à l'écran, la pastille « Général » de `/ranking` (`?view=general`) avec l'interrupteur « Apparaître dans le classement » sur cette page, et une ligne du profil qui y mène (la maquette le mettait dans le profil : le domaine `account` n'importe pas `social`). Hits : **17**, liste validée le 12/11/2026 (première setlist terminée, premier record battu, première carte gagnée, première manche en Mélomane, premier groupe rejoint, 10 et 50 setlists jouées, manche parfaite, 10 bonnes réponses d'affilée, battre le boss, setlist gagnée, disque d'or en Mélomane, un ami a joué ta setlist, duel gagné, 5 duels gagnés, niveau Or, niveau Diamant) ; calculés à la lecture par `GET /api/runs/hits` sur les parties finies (aucune table ; les niveaux sont jugés sur le plus haut niveau atteint, pour qu'un Hit obtenu le reste), le Hit des groupes étant ajouté par le front ; écran `/setlist/hits`, ligne « Hits 4 / 17 » sur l'accueil du mode et la fin d'une partie, temps fort sur un Hit obtenu depuis la dernière visite (liste des Hits déjà montrés gardée dans le navigateur).
+
 - **Classement général** (écran 13) par niveau : top 20, puis ta place avec tes voisins, pour les comptes qui ont choisi d'apparaître ; case de visibilité dans le profil. Mise à jour de `decisions.md` et `/privacy` pour cette partie.
-- **Hits** (écran 16) : une dizaine au plus, obtenus par événements (record, série de bonnes réponses, premier groupe...), avec une petite animation à l'obtention. Liste et noms à fixer en début de PR.
+- **Hits** (écran 16) : une dizaine au départ, 17 après validation, obtenus par événements (record, série de bonnes réponses, premier groupe...), avec une petite animation à l'obtention. Liste et noms à fixer en début de PR.
 
 ## Écrans de référence
 

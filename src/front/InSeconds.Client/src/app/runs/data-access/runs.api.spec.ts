@@ -27,7 +27,7 @@ describe('RunsApi', () => {
   let api: RunsApi;
 
   beforeEach(() => {
-    client = { getRunsMe: vi.fn(), getRunChallenge: vi.fn(), getRunComparison: vi.fn(), launchRun: vi.fn(), joinRun: vi.fn(), refreshRunPreview: vi.fn(), submitRunAnswer: vi.fn(), abandonRun: vi.fn(), swapRunTrack: vi.fn(), getRunHistory: vi.fn(), getRunPastPreview: vi.fn() };
+    client = { getRunsMe: vi.fn(), getRunChallenge: vi.fn(), getRunComparison: vi.fn(), launchRun: vi.fn(), joinRun: vi.fn(), refreshRunPreview: vi.fn(), submitRunAnswer: vi.fn(), abandonRun: vi.fn(), swapRunTrack: vi.fn(), getRunHistory: vi.fn(), getRunPastPreview: vi.fn(), getRunHits: vi.fn() };
     TestBed.configureTestingModule({ providers: [{ provide: RunsClient, useValue: client }, RunsApi] });
     api = TestBed.inject(RunsApi);
   });
@@ -234,6 +234,19 @@ describe('RunsApi', () => {
 
       expect((await api.history(null)).runs).toEqual([]);
       await expect(api.history(null)).rejects.toBeDefined();
+    });
+
+    it("les Hits : vides en null, aucun pour un navigateur inconnu (401), une autre erreur remonte", async () => {
+      client['getRunHits']
+        .mockReturnValueOnce(of({ hits: [{ key: 'first_setlist', earned: true }, { key: 'ten_setlists', earned: false, progress: 7, target: 10 }], earnedCount: 1 }))
+        .mockReturnValueOnce(throwError(() => problem(401, 'common.unauthorized')))
+        .mockReturnValueOnce(throwError(() => problem(500, 'common.unexpected')));
+
+      expect(await api.hits()).toEqual([
+        { key: 'first_setlist', earned: true, progress: null, target: null }, { key: 'ten_setlists', earned: false, progress: 7, target: 10 },
+      ]);
+      expect(await api.hits()).toEqual([]);
+      await expect(api.hits()).rejects.toBeDefined();
     });
 
     it("l'extrait d'un morceau joué : son adresse, `null` sans extrait", async () => {

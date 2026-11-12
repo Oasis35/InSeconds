@@ -13,7 +13,7 @@ describe('SocialApi', () => {
   let api: SocialApi;
 
   beforeEach(() => {
-    client = { listMyGroups: vi.fn(), getGroupRanking: vi.fn(), createGroup: vi.fn(), joinGroup: vi.fn(), leaveGroup: vi.fn(), getInvitation: vi.fn() };
+    client = { listMyGroups: vi.fn(), getGroupRanking: vi.fn(), createGroup: vi.fn(), joinGroup: vi.fn(), leaveGroup: vi.fn(), getInvitation: vi.fn(), getGeneralRanking: vi.fn(), setRankingVisibility: vi.fn() };
     TestBed.configureTestingModule({ providers: [{ provide: SocialClient, useValue: client }, SocialApi] });
     api = TestBed.inject(SocialApi);
   });
@@ -40,6 +40,19 @@ describe('SocialApi', () => {
         { rank: null, pseudo: 'Sam', isMe: true, points: null, badge: null },
       ],
     });
+  });
+
+  it('lit le classement général et envoie le choix d\'y apparaître', async () => {
+    const row = { rank: 1, pseudo: 'Nova', isMe: false, performance: 0.9, gamesPlayed: 9, bestScore: 3300, points: 3100, badge: 'runs.discs.platinum' };
+    client['getGeneralRanking'].mockReturnValue(of({ top: [row], around: [], total: 1, visible: false, canAppear: true, topPercent: undefined }));
+    client['setRankingVisibility'].mockReturnValue(of(undefined));
+
+    expect(await api.generalRanking()).toEqual({
+      top: [{ rank: 1, pseudo: 'Nova', isMe: false, points: 3100, badge: 'runs.discs.platinum' }],
+      around: [], total: 1, visible: false, canAppear: true, topPercent: null,
+    });
+    await api.setRankingVisibility(true);
+    expect(client['setRankingVisibility']).toHaveBeenCalledWith({ visible: true });
   });
 
   it('crée un groupe, le nom rogné', async () => {

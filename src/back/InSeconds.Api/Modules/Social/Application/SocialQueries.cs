@@ -29,6 +29,9 @@ public interface ISocialQueries
 
     /// <summary>Ce que le lien montre : rien si le code est inconnu. <paramref name="playerId"/> vide : navigateur sans identité.</summary>
     Task<InvitationView?> FindInvitationAsync(string code, Guid? playerId, CancellationToken ct);
+
+    /// <summary>Les joueurs qui ont choisi d'apparaître dans le classement général.</summary>
+    Task<IReadOnlyList<Guid>> ListRankingVisiblePlayersAsync(CancellationToken ct);
 }
 
 /// <summary>
@@ -37,17 +40,25 @@ public interface ISocialQueries
 /// </summary>
 public sealed class GroupRanking(IEnumerable<IMemberPerformanceSource> sources, IPlayerDirectory players)
 {
-    public async Task<IReadOnlyList<RankingRow>> RankAsync(GroupView group, CancellationToken ct)
+    public Task<IReadOnlyList<RankingRow>> RankAsync(GroupView group, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(group);
-        var ids = group.Members.Select(m => m.PlayerId).ToList();
+        return RankAsync([.. group.Members.Select(m => m.PlayerId)], ct);
+    }
+
+    /// <summary>Ces joueurs, classés entre eux (le classement général : ceux qui ont choisi d'y apparaître).</summary>
+    public async Task<IReadOnlyList<RankingRow>> RankAsync(IReadOnlyList<Guid> ids, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(ids);
+        if (ids.Count == 0)
+            return [];
         var pseudos = await players.GetPseudosAsync(ids, ct);
         var performances = ids.ToDictionary(id => id, _ => new List<MemberPerformance>());
         foreach (var source in sources)
         {
             foreach (var (playerId, performance) in await source.GetAsync(ids, ct))
             {
-                // Une source qui rend un joueur qui n'est pas du groupe est ignorée : seuls les membres comptent.
+                // Une source qui rend un joueur qu'on ne lui a pas demandé est ignorée.
                 if (performances.TryGetValue(playerId, out var list))
                     list.Add(performance);
             }

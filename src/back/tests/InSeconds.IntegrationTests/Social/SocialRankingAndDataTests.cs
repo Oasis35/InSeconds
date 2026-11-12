@@ -189,6 +189,87 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
         Assert.Equal(0L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM social.groups WHERE owner_id IN ('{alice.Id}', '{carol.Id}')"));
     }
 
+    private static Task<HttpResponseMessage> SetVisibleAsync(Gamer gamer, bool visible) =>
+        gamer.Client.PutAsJsonAsync("/api/social/ranking/visibility", new SetRankingVisibility(visible), Ct);
+
+    private static async Task<GeneralRankingResponse> GeneralAsync(Gamer gamer) =>
+        (await gamer.Client.GetFromJsonAsync<GeneralRankingResponse>("/api/social/ranking", Ct))!;
+
+    [Fact]
+    public async Task General_PersonneParDefaut_SeulsCeuxQuiLOntChoisiYOntLeurPseudo()
+    {
+        var (alice, bob, carol) = (await _game.NewPlayerAsync("Alice"), await _game.NewPlayerAsync("Bob"), await _game.NewPlayerAsync("Carol"));
+        await AddRunAsync(alice.Id, status: 2, roundsPassed: 2, score: 800);
+        await AddRunAsync(bob.Id, status: 1, roundsPassed: 4, score: 2500);
+        await AddRunAsync(carol.Id, status: 1, roundsPassed: 4, score: 1700);
+
+        var empty = await GeneralAsync(alice);
+        Assert.Empty(empty.Top);
+        Assert.Equal((0, false, true), (empty.Total, empty.Visible, empty.CanAppear));
+
+        Assert.Equal(HttpStatusCode.NoContent, (await SetVisibleAsync(bob, true)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await SetVisibleAsync(carol, true)).StatusCode);
+        // Le choisir deux fois ne change rien.
+        Assert.Equal(HttpStatusCode.NoContent, (await SetVisibleAsync(carol, true)).StatusCode);
+
+        // Alice n'y apparaît pas : elle lit les deux autres, et sa position anonyme (3e sur 3 : top 100 %).
+        var seenByAlice = await GeneralAsync(alice);
+        Assert.Equal(["Bob", "Carol"], seenByAlice.Top.Select(e => e.Pseudo));
+        Assert.Equal([2500, 1700], seenByAlice.Top.Select(e => e.Points));
+        Assert.Equal(["runs.discs.platinum", "runs.discs.gold"], seenByAlice.Top.Select(e => e.Badge));
+        Assert.DoesNotContain(seenByAlice.Top, e => e.IsMe);
+        Assert.Equal((2, false, 100), (seenByAlice.Total, seenByAlice.Visible, seenByAlice.TopPercent));
+        Assert.DoesNotContain("Alice", System.Text.Json.JsonSerializer.Serialize(await GeneralAsync(bob)), StringComparison.Ordinal);
+
+        // Bob y est premier.
+        var seenByBob = await GeneralAsync(bob);
+        Assert.True(seenByBob.Top[0].IsMe);
+        Assert.Equal((true, 50), (seenByBob.Visible, seenByBob.TopPercent));
+        Assert.Empty(seenByBob.Around);
+
+        // Carol se retire : elle disparaît de la liste des autres.
+        Assert.Equal(HttpStatusCode.NoContent, (await SetVisibleAsync(carol, false)).StatusCode);
+        Assert.Equal(["Bob"], (await GeneralAsync(alice)).Top.Select(e => e.Pseudo));
+    }
+
+    [Fact]
+    public async Task General_UnJoueurVisibleSansPartie_NEstPasClasse()
+    {
+        var dave = await _game.NewPlayerAsync("Dave");
+        await SetVisibleAsync(dave, true);
+
+        var ranking = await GeneralAsync(dave);
+
+        Assert.Empty(ranking.Top);
+        Assert.Equal((0, true), (ranking.Total, ranking.Visible));
+        Assert.Null(ranking.TopPercent);
+    }
+
+    [Fact]
+    public async Task General_UnInvite_LitLeClassement_MaisNePeutPasYApparaitre()
+    {
+        var guest = await _game.NewPlayerAsync();
+
+        var refused = await SetVisibleAsync(guest, true);
+
+        Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
+        Assert.False((await GeneralAsync(guest)).CanAppear);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await _game.Api.CreateClient().GetAsync("/api/social/ranking", Ct)).StatusCode);
+    }
+
+    [Fact]
+    public async Task General_LeChoixEstDansLaCopie_EtPartAvecLeCompte()
+    {
+        var erin = await _game.NewPlayerAsync("Erin");
+        await SetVisibleAsync(erin, true);
+
+        var social = ExportReading.Section<SocialDataExport>((await erin.Client.GetFromJsonAsync<PlayerDataExport>("/api/players/me/export", Ct))!, "social");
+        Assert.NotNull(social.RankingVisibleSince);
+
+        (await erin.Client.PostAsJsonAsync("/api/players/me/delete", new DeleteMyAccount("Erin"), Ct)).EnsureSuccessStatusCode();
+        Assert.Equal(0L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM social.ranking_visibility WHERE player_id = '{erin.Id}'"));
+    }
+
     [Fact]
     public async Task Piege48_ToutesLesColonnesPlayerIdDeSocial_SontConnuesDeLEffacement()
     {
@@ -197,7 +278,8 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
             WHERE column_name IN ('player_id', 'owner_id') AND table_schema = 'social'
             """))!;
 
-        Assert.Equal(["social.group_members.player_id", "social.groups.owner_id"], tables.Order(StringComparer.Ordinal));
+        Assert.Equal(
+            ["social.group_members.player_id", "social.groups.owner_id", "social.ranking_visibility.player_id"], tables.Order(StringComparer.Ordinal));
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
