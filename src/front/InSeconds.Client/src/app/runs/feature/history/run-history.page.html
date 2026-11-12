@@ -15,14 +15,14 @@
       <app-history-summary countKey="ui.history.setlist.count" bestKey="ui.history.setlist.best" [count]="history.playedCount"
                            [average]="history.averageScore" [best]="history.bestScore" [locale]="language.current()" />
 
-      <div class="flex flex-wrap gap-2" role="group" [attr.aria-label]="'ui.history.setlist.filterLabel' | translate">
+      <fieldset class="flex flex-wrap gap-2 border-0 p-0 m-0 min-w-0" [attr.aria-label]="'ui.history.setlist.filterLabel' | translate">
         @for (filter of filters; track filter) {
           <button type="button" (click)="store.chooseFilter(filter)" [attr.aria-pressed]="store.filter() === filter" [attr.data-testid]="'history-filter-' + filter"
                   class="px-3 min-h-11 text-sm cursor-pointer touch-manipulation rounded-(--radius-button)"
                   [style.border]="store.filter() === filter ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
                   [style.color]="store.filter() === filter ? 'var(--text-hi)' : 'var(--text-muted)'">{{ filterKey(filter) | translate }}</button>
         }
-      </div>
+      </fieldset>
 
       @if (history.month) {
         <app-month-nav [month]="history.month" [previous]="history.previousMonth" [next]="history.nextMonth" [lang]="language.current()" />

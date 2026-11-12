@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'neutral' | 'danger' | 'ghost';
+export type ButtonVariant = 'primary' | 'secondary' | 'neutral' | 'accent' | 'danger' | 'ghost';
 export type ButtonSize = 'lg' | 'md' | 'sm';
 
 /**
@@ -9,6 +9,7 @@ export type ButtonSize = 'lg' | 'md' | 'sm';
  * - `primary` : dégradé orange → terracotta, action principale de l'écran ;
  * - `secondary` : fond de carte et contour, action alternative (« Annuler », « Réessayer » d'un chargement) ;
  * - `neutral` : contour neutre sans fond, action sans sens propre (« Passer », « Abandonner », « Plus tard »…) ;
+ * - `accent` : contour orange sans fond, une action du joueur qui n'est pas la principale de l'écran (« Partager mon score » de l'accueil) ;
  * - `danger` : action destructive (abandonner, supprimer) ;
  * - `ghost` : lien discret.
  *
@@ -25,6 +26,7 @@ export type ButtonSize = 'lg' | 'md' | 'sm';
     '[class.app-button--primary]': "variant() === 'primary'",
     '[class.app-button--secondary]': "variant() === 'secondary'",
     '[class.app-button--neutral]': "variant() === 'neutral'",
+    '[class.app-button--accent]': "variant() === 'accent'",
     '[class.app-button--danger]': "variant() === 'danger'",
     '[class.app-button--ghost]': "variant() === 'ghost'",
     '[class.app-button--sm]': "size() === 'sm'",

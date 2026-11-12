@@ -66,9 +66,10 @@ test.describe('Mode Setlist', () => {
     await game.waitForWelcome();
     await expect(run.homeCard).toBeVisible();
     await expect(run.homeCard).toContainText('Setlist');
-    // Le défi du jour n'est pas joué : la carte est discrète, sans sa phrase d'accroche.
-    await expect(run.homeCard).toHaveAttribute('data-compact', 'true');
-    await run.homeCard.click();
+    // Le défi du jour n'est pas joué : la carte est discrète (« Jouer » en contour), sous la carte du défi.
+    await expect(run.homeCard).toHaveAttribute('data-size', 'small');
+    await expect(page.getByTestId('home-challenge')).toBeVisible();
+    await page.getByTestId('run-home-play').click();
     await expect(page).toHaveURL(/\/setlist$/);
     await expect(run.startButton).toBeVisible();
   });
@@ -95,6 +96,9 @@ test.describe('Mode Setlist', () => {
     await expect(page.getByTestId('header-instagram')).toBeVisible();
     await expect(page.getByTestId('tab-daily')).toHaveAttribute('aria-current', 'page');
     await expect(page.getByTestId('daily-pending')).toBeVisible();
+    // L'accueil de la maquette : la carte du défi, avec sa série dedans, puis la carte Setlist.
+    await expect(page.getByTestId('home-challenge')).toBeVisible();
+    await expect(page.getByTestId('run-home-card')).toHaveAttribute('data-size', 'small');
     await expect(bar.getByRole('link', { name: 'Confidentialité' })).toBeVisible();
 
     // L'onglet Setlist mène au mode, qui rappelle le défi restant et y ramène.

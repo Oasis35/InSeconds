@@ -1,7 +1,9 @@
 import {
   ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { VersionService } from '../../../core/version/version.service';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
@@ -22,6 +24,9 @@ import { DailyGameStore } from '../../data-access/daily-game.store';
 import { DailyShare } from '../../data-access/daily-share';
 import { GuestStreakNotice } from '../../data-access/guest-streak-notice';
 import { LostStreakNotice } from '../../data-access/lost-streak-notice';
+import { ReturnVisit } from '../../data-access/return-visit';
+import { HomeChallengeCardComponent } from '../../ui/home-challenge-card/home-challenge-card.component';
+import { HomeDoneCardComponent } from '../../ui/home-done-card/home-done-card.component';
 import { AbandonedScreenComponent } from '../../ui/abandoned-screen/abandoned-screen.component';
 import { DayResultScreenComponent } from '../../ui/day-result-screen/day-result-screen.component';
 import { rowsFromResults, rowsFromStats, shareTracksOf } from '../../ui/day-result-screen/result-rows';
@@ -43,7 +48,7 @@ import { WelcomeScreenComponent } from '../../ui/welcome-screen/welcome-screen.c
 import { reloadMomentFor } from '../reload-moment';
 import { StreakPillComponent } from '../../ui/streak-pill/streak-pill.component';
 import { formatGameDate } from '../../domain/archive';
-import { todayUtc } from '../../domain/countdown';
+import { secondsUntilMidnightUtc, timeLeft, todayUtc } from '../../domain/countdown';
 
 /**
  * La page du jeu du jour (`/daily`) : elle affiche l'écran que le `DailyGameStore` indique, et branche ce qui est propre au navigateur :
@@ -57,8 +62,9 @@ import { todayUtc } from '../../domain/countdown';
     WelcomeScreenComponent, ResumeScreenComponent, HomeModeEntriesComponent, StatusScreenComponent, AbandonedScreenComponent, DayResultScreenComponent,
     GuestStreakToastComponent, LostStreakToastComponent, GelUsedToastComponent, GelEarnedToastComponent,
     DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent, StreakPillComponent, ButtonComponent, InstagramLinkComponent,
+    HomeChallengeCardComponent, HomeDoneCardComponent,
   ],
-  providers: [DailyGameStore, TrackRoundStore, DailyShare, LostStreakNotice, GuestStreakNotice],
+  providers: [DailyGameStore, TrackRoundStore, DailyShare, LostStreakNotice, GuestStreakNotice, ReturnVisit],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './daily.page.html',
   host: {
@@ -91,6 +97,11 @@ export class DailyPage implements OnInit {
     this.store.screen() === 'done' ? rowsFromResults(this.store.results(), this.store.stats()) : rowsFromStats(this.store.stats()));
   /** La date du jour de jeu (UTC) dans la langue, en tête de l'accueil et de la reprise : « mardi 28 octobre ». */
   protected readonly dateLabel = computed(() => formatGameDate(todayUtc(new Date()), this.language.current(), 'weekday'));
+  /** V4, au retour dans la journée : le temps qu'il reste pour jouer le défi (à la première visite du jour, on accueille sans rappel). */
+  private readonly returning = inject(ReturnVisit).check(todayUtc(new Date()));
+  protected readonly remaining = computed(() => (this.returning ? timeLeft(secondsUntilMidnightUtc(new Date())) : null));
+  /** V4, défi fait : l'accueil montre son résumé, « Voir le résultat » ouvre l'écran complet (`?view=result`, le retour ramène à l'accueil). */
+  protected readonly showResult = toSignal(inject(ActivatedRoute).queryParamMap.pipe(map(params => params.get('view') === 'result')), { initialValue: false });
   protected readonly isEnglish = () => this.language.current() === 'en';
 
   constructor() {
@@ -170,6 +181,10 @@ export class DailyPage implements OnInit {
       tone: 'danger',
     });
     if (confirmed) await this.store.abandon();
+  }
+
+  protected openResult(): void {
+    void this.router.navigate([], { queryParams: { view: 'result' }, queryParamsHandling: 'merge' });
   }
 
   protected openStreakSheet(): void {

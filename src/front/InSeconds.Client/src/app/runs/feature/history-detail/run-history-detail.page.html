@@ -21,7 +21,7 @@
         <p class="text-sm text-center py-6" style="color:var(--text-muted)" data-testid="detail-not-found">{{ 'ui.history.setlist.notFound' | translate }}</p>
       }
       @case ('ready') {
-        <div class="flex gap-2" role="group">
+        <fieldset class="flex gap-2 border-0 p-0 m-0 min-w-0">
           <button type="button" (click)="onlyMissed.set(false)" [attr.aria-pressed]="!onlyMissed()" data-testid="detail-all"
                   class="flex-1 min-h-11 text-sm cursor-pointer touch-manipulation rounded-(--radius-button)"
                   [style.border]="!onlyMissed() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
@@ -30,7 +30,7 @@
                   class="flex-1 min-h-11 text-sm cursor-pointer touch-manipulation rounded-(--radius-button)"
                   [style.border]="onlyMissed() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
                   [style.color]="onlyMissed() ? 'var(--text-hi)' : 'var(--text-muted)'">{{ 'ui.history.setlist.missed' | translate: { count: missedCount() } }}</button>
-        </div>
+        </fieldset>
 
         @for (round of rounds(); track round.round) {
           <section class="flex flex-col gap-2" data-testid="detail-round">

@@ -47,3 +47,8 @@ export function tracksByRound(tracks: readonly RunTrack[], onlyMissed: boolean):
   }
   return [...rounds.entries()].sort(([a], [b]) => a - b).map(([round, list]) => ({ round, tracks: list }));
 }
+
+/** Le score de la dernière setlist finie ce jour-là (`aaaa-mm-jj`, UTC), les parties étant lues de la plus récente à la plus ancienne ; `null` sans partie ce jour-là. */
+export function scoreOfDay(runs: readonly RunHistoryEntry[], day: string): number | null {
+  return runs.find(run => run.date === day)?.score ?? null;
+}

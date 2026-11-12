@@ -21,3 +21,15 @@ export function formatCountdown(totalSeconds: number): string {
   const seconds = totalSeconds % 60;
   return [hours, minutes, seconds].map(n => String(n).padStart(2, '0')).join(':');
 }
+
+/** Le temps qu'il reste, arrondi pour une phrase : en heures entières, en minutes sous une heure (une au moins). */
+export interface TimeLeft {
+  readonly unit: 'hours' | 'minutes';
+  readonly value: number;
+}
+
+export function timeLeft(totalSeconds: number): TimeLeft {
+  const hours = Math.floor(totalSeconds / 3600);
+  if (hours >= 1) return { unit: 'hours', value: hours };
+  return { unit: 'minutes', value: Math.max(1, Math.ceil(totalSeconds / 60)) };
+}
