@@ -26,7 +26,7 @@ import { TranslatePipe } from '@ngx-translate/core';
         style="background:var(--bg-inactive);color:var(--text-hi);border:1px solid var(--border-neutral)">{{ 'admin.players.resetPseudo' | translate }}</button>
     }
     @if (errorKey(); as key) {
-      <p class="basis-full text-sm" role="alert" data-testid="pseudo-reset-error" style="color:var(--color-error)">{{ key | translate }}</p>
+      <p class="basis-full text-sm" role="alert" data-testid="pseudo-reset-error" style="color:var(--text-error)">{{ key | translate }}</p>
     }
   `,
 })

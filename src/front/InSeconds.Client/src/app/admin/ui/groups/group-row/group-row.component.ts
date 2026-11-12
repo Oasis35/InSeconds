@@ -58,7 +58,7 @@ type RowMode = 'idle' | 'rename' | 'reset' | 'delete';
           <span class="text-sm" style="color:var(--text-muted)">{{ 'admin.groups.deleteConfirm' | translate }}</span>
           <button type="button" data-testid="confirm-delete" [disabled]="pending()" (click)="removeRequested.emit()"
             class="px-3 py-1.5 rounded-(--radius-button) text-sm font-medium disabled:opacity-50"
-            style="background:var(--bg-inactive);color:var(--color-error);border:1px solid var(--color-error)">{{ 'admin.groups.deleteYes' | translate }}</button>
+            style="background:var(--bg-inactive);color:var(--text-error);border:1px solid var(--text-error)">{{ 'admin.groups.deleteYes' | translate }}</button>
           <button type="button" (click)="close()" [disabled]="pending()" class="px-2 py-1.5 text-sm underline" style="color:var(--text-muted)">{{ 'admin.groups.cancel' | translate }}</button>
         }
         @case ('rename') {}
@@ -68,13 +68,13 @@ type RowMode = 'idle' | 'rename' | 'reset' | 'delete';
           <button type="button" data-testid="reset-group-name" (click)="open('reset')" class="px-3 py-1.5 rounded-(--radius-button) text-sm hover:opacity-80"
             style="background:var(--bg-inactive);color:var(--text-hi);border:1px solid var(--border-neutral)">{{ 'admin.groups.resetName' | translate }}</button>
           <button type="button" data-testid="delete-group" (click)="open('delete')" class="px-3 py-1.5 rounded-(--radius-button) text-sm hover:opacity-80"
-            style="background:var(--bg-inactive);color:var(--color-error);border:1px solid var(--border-neutral)">{{ 'admin.groups.delete' | translate }}</button>
+            style="background:var(--bg-inactive);color:var(--text-error);border:1px solid var(--border-neutral)">{{ 'admin.groups.delete' | translate }}</button>
         }
       }
     </div>
 
     @if (errorKey(); as key) {
-      <p class="mt-2 text-sm lg:col-span-5" role="alert" data-testid="group-error" style="color:var(--color-error)">{{ key | translate }}</p>
+      <p class="mt-2 text-sm lg:col-span-5" role="alert" data-testid="group-error" style="color:var(--text-error)">{{ key | translate }}</p>
     }
   `,
 })

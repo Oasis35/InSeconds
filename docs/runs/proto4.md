@@ -74,6 +74,8 @@ Nouveau module noyau `Social` (schéma `social`) : groupes, membres, codes d'inv
 
 ## PR 7 : modération dans l'admin
 
+**État : codée (#571).** L'onglet « Groupes » (`/admin/groupes`) liste les groupes et permet de renommer, remettre le nom à zéro (« Groupe 12 ») ou supprimer ; la fiche d'un joueur, dans l'onglet Joueurs, remet un pseudo à zéro (« Joueur4821 » pour un compte, pseudo retiré pour un invité). Avant cette PR, rien ne modérait les pseudos : seules les règles de saisie (`PseudoRules`) les filtraient.
+
 Un onglet « Groupes » de l'admin : liste, renommer ou supprimer un groupe, remettre à zéro un nom de groupe ou un pseudo inapproprié. À vérifier d'abord : ce que la modération des pseudos fait déjà. Routes `/api/admin/...` (policy Admin automatique, `SecurityTests`).
 
 ## PR 8 : classement général et Hits
