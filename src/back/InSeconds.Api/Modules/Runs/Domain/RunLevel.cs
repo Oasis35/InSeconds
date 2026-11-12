@@ -35,6 +35,14 @@ public static class RunLevelPolicy
     /// <summary>Le niveau est provisoire tant que le joueur n'a pas fini <paramref name="provisionalRuns"/> parties.</summary>
     public static bool IsProvisional(int runsPlayed, int provisionalRuns) => runsPlayed < provisionalRuns;
 
+    /// <summary>La part de ces points dans ceux du plus haut disque, de 0 à 1 : ce que le classement d'un groupe compare.</summary>
+    public static double Share(int points, IReadOnlyList<RunLevelStep> ladder)
+    {
+        ArgumentNullException.ThrowIfNull(ladder);
+        var top = ladder.Count == 0 ? 0 : ladder[^1].FromPoints;
+        return top <= 0 ? 0d : Math.Clamp((double)points / top, 0d, 1d);
+    }
+
     /// <summary>Le disque de ces points et ce qu'il reste pour le suivant. <paramref name="ladder"/> : du plus bas au plus haut, le premier palier à 0.</summary>
     public static RunLevelStanding Standing(int points, IReadOnlyList<RunLevelStep> ladder)
     {

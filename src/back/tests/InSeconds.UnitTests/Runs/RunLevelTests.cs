@@ -250,4 +250,12 @@ public class RunLevelOptionsTests
         Assert.Empty(RunsOptionsChecks.Problems(new RunsOptions { Levels = levels }));
         Assert.Equal([new RunLevelStep("runs.discs.wax", 0), new RunLevelStep("runs.discs.gold", 1000)], levels.Ladder);
     }
+
+    [Theory]
+    [InlineData(0, 0d)]
+    [InlineData(1700, 0.5d)]
+    [InlineData(3400, 1d)]
+    [InlineData(5000, 1d)]
+    public void Share_LaPartDesPointsDansCeuxDuPlusHautDisque(int points, double expected) =>
+        Assert.Equal(expected, RunLevelPolicy.Share(points, [new RunLevelStep("runs.discs.scratched", 0), new RunLevelStep("runs.discs.diamond", 3400)]));
 }

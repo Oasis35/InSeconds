@@ -781,6 +781,8 @@ export interface RankingEntryResponse {
     performance: number | undefined;
     gamesPlayed: number;
     bestScore: number | undefined;
+    points: number | undefined;
+    badge: string | undefined;
 
     [key: string]: any;
 }

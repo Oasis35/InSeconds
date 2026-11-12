@@ -141,7 +141,7 @@ public static class GetGroupRankingEndpoint
         var playerId = current.PlayerId!.Value;
         var rows = await ranking.RankAsync(group, ct);
         return new GroupRankingResponse(
-            group.Id, group.Name, [.. rows.Select(r => new RankingEntryResponse(r.Rank, r.Pseudo, r.PlayerId == playerId, r.Performance, r.GamesPlayed, r.BestScore))]);
+            group.Id, group.Name, [.. rows.Select(r => new RankingEntryResponse(r.Rank, r.Pseudo, r.PlayerId == playerId, r.Performance, r.GamesPlayed, r.BestScore, r.Points, r.Badge))]);
     }
 }
 
