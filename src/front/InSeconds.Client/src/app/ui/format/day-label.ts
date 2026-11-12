@@ -21,11 +21,16 @@ function locale(lang: string): string {
   return lang === 'en' ? 'en-GB' : 'fr-FR';
 }
 
+function relativeDay(days: number): DayLabel['relative'] {
+  if (days === 0) return 'today';
+  return days === 1 ? 'yesterday' : null;
+}
+
 /** Le jour d'un défi (jour UTC, comme le jeu) lu depuis `todayText`. */
 export function dayLabel(dateText: string, todayText: string, lang: string): DayLabel {
   const days = Math.round((utc(todayText) - utc(dateText)) / DAY_MS);
   const text = new Intl.DateTimeFormat(locale(lang), { weekday: 'long', day: 'numeric', timeZone: 'UTC' }).format(new Date(utc(dateText)));
-  return { relative: days === 0 ? 'today' : days === 1 ? 'yesterday' : null, text: capitalized(text) };
+  return { relative: relativeDay(days), text: capitalized(text) };
 }
 
 /** Un mois `aaaa-mm` en toutes lettres : « Novembre 2026 ». */

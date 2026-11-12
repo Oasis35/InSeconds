@@ -26,7 +26,7 @@ describe('HomeDoneCardComponent', () => {
     const { element, q } = render();
     expect(q('home-score')?.textContent).toMatch(/2\s410/);
     expect(q('countdown')?.textContent).toContain('06:12:40');
-    expect(element.querySelectorAll('[data-testid="track-bar"]').length).toBe(3);
+    expect(element.querySelectorAll('[data-testid="track-bar"]')).toHaveLength(3);
   });
 
   it('« Voir le résultat » demande l’écran complet', () => {
