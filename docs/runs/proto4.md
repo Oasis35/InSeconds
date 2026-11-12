@@ -1,6 +1,6 @@
 # Proto 4 : la V4, une nouvelle navigation, des niveaux et des groupes
 
-**Planifié, rien n'est codé.** Le proto 4 ([#555](https://github.com/Oasis35/InSeconds/issues/555)) donne envie de rejouer et de partager sans obliger ceux qui se moquent des classements. Il apporte une barre du bas, un accueil qui met le défi du jour et le mode côte à côte, un niveau qui progresse, des groupes entre amis et un classement. Il se livre en **8 PR** vers `env/staging`, chacune testée au staging avant la suivante. Les chiffres (niveau, limites) sont des réglages, à ajuster aux parties de test.
+**En cours de codage sur le staging** (état de chaque PR sous son titre). Le proto 4 ([#555](https://github.com/Oasis35/InSeconds/issues/555)) donne envie de rejouer et de partager sans obliger ceux qui se moquent des classements. Il apporte une barre du bas, un accueil qui met le défi du jour et le mode côte à côte, un niveau qui progresse, des groupes entre amis et un classement. Il se livre en **8 PR** vers `env/staging`, chacune testée au staging avant la suivante. Les chiffres (niveau, limites) sont des réglages, à ajuster aux parties de test.
 
 Les 16 écrans de référence sont dans [`maquettes/proto4/`](maquettes/proto4/), numérotés dans l'ordre de lecture. Ils viennent de la maquette interactive du 11/11/2026 (artifact Design privé) ; les pochettes y sont remplacées par des aplats de couleur (règle du piège 47).
 
@@ -37,6 +37,8 @@ Un store front dit si le joueur voit la V4 (c'est `hasAccess` de `GET /api/runs/
 ## PR 2 : nouvelle coque, navigation et accueil
 
 Pour les joueurs avec le flag uniquement.
+
+**État : codée (#568).** Livré : la barre du bas avec les onglets Aujourd'hui et Setlist (Historique et Classement arrivent avec les PR 3 et 6), la pastille cyan du défi restant, Instagram dans l'en-tête du jeu du jour, la langue et les liens légaux dans le profil, l'accueil à deux états (carte Setlist discrète tant que le défi reste à jouer), la carte Setlist sur le résultat du jour, le lien « Il te reste le défi du jour » sur l'accueil du mode. Pas encore : le compte à rebours « plus que 6 h » de ce texte, Instagram dans l'en-tête du mode, le résumé Setlist côté back (le record déjà servi par `GET /api/runs/me` suffit pour l'instant). L'état du défi du jour n'est connu de la barre qu'après un passage par le jeu du jour pendant la visite.
 
 - **Barre du bas** à 4 onglets (Aujourd'hui, Setlist, Classement, Historique), masquée pendant une manche et sur les écrans de jeu. En-tête : logo, Instagram, compte. Une ligne « Mentions légales · Confidentialité · Contact » au-dessus de la barre ; le choix FR/EN passe dans la page du compte. Les mentions légales et la confidentialité restent joignables depuis chaque écran, dans les deux coques.
 - **Accueil à deux états** : défi à faire (le Daily en grand, la Setlist discrète) ; défi fait (un résumé du Daily avec « Partager mon score », la Setlist en grand). Écrans 1 à 3.
