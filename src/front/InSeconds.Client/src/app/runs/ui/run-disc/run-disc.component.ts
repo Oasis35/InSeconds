@@ -7,12 +7,18 @@ const DISC_COLORS: Readonly<Record<string, string>> = {
   'runs.discs.bronze': 'var(--disc-bronze)',
   'runs.discs.silver': 'var(--disc-silver)',
   'runs.discs.gold': 'var(--disc-gold)',
+  'runs.discs.platinum': 'var(--disc-platinum)',
+  'runs.discs.double_platinum': 'var(--disc-platinum)',
+  'runs.discs.diamond': 'var(--disc-diamond)',
 };
 
 /** La couleur d'un disque (ses filets dans la pile). */
 export const discColor = (key: string): string => DISC_COLORS[key] ?? DISC_COLORS['runs.discs.gold'];
 
-/** Le disque dessiné (or, argent, bronze, cire, rayé) : sillons, étiquette, trou central ; le disque d'or brille. Purement décoratif. */
+/**
+ * Le disque dessiné (rayé, cire, bronze, argent, or, platine, double platine, diamant) : sillons, étiquette, trou central ; le disque d'or brille, le
+ * double platine a un second contour. Purement décoratif.
+ */
 @Component({
   selector: 'app-run-disc',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -25,6 +31,9 @@ export const discColor = (key: string): string => DISC_COLORS[key] ?? DISC_COLOR
       <circle cx="50" cy="50" r="19" [attr.fill]="color()" />
       <circle cx="50" cy="50" r="19" fill="rgb(255 255 255 / 0.28)" />
       <circle cx="50" cy="50" r="6" fill="var(--bg-page)" />
+      @if (double()) {
+        <circle cx="50" cy="50" r="42.5" fill="none" stroke="rgb(255 255 255 / 0.7)" stroke-width="1.5" data-testid="disc-double" />
+      }
       @if (scratched()) {
         <path d="M22 30 L44 56 M60 18 L78 46 M30 72 L52 84" stroke="rgb(0 0 0 / 0.4)" stroke-width="1.6" stroke-linecap="round" />
       }
@@ -40,5 +49,6 @@ export class RunDiscComponent {
 
   protected readonly color = computed(() => discColor(this.disc()));
   protected readonly gold = computed(() => this.disc() === 'runs.discs.gold');
+  protected readonly double = computed(() => this.disc() === 'runs.discs.double_platinum');
   protected readonly scratched = computed(() => this.disc() === 'runs.discs.scratched');
 }

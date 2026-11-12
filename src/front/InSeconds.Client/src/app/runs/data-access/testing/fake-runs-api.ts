@@ -2,7 +2,7 @@ import { Provider } from '@angular/core';
 import { RunComparison, RunCurrentTrack, RunLink, RunPlay, RunRound, RunSession, RunTrack, RunsMe } from '../../domain/run';
 import { LinkOutcome, RunAnswerToSend, RunsApi, StartOutcome } from '../runs.api';
 
-export const ME = (overrides: Partial<RunsMe> = {}): RunsMe => ({ hasAccess: true, record: null, pending: null, shelf: [], ...overrides });
+export const ME = (overrides: Partial<RunsMe> = {}): RunsMe => ({ hasAccess: true, record: null, pending: null, shelf: [], level: null, ...overrides });
 
 export const ROUND = (overrides: Partial<RunRound> = {}): RunRound => ({ round: 1, score: 0, objective: 200, maxScore: 500, ...overrides });
 

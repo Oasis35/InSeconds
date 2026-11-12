@@ -108,6 +108,16 @@ describe('RunsPage', () => {
     expect(chrome.immersive()).toBe(false);
   });
 
+  it('« Revoir » de la fin de run mène à la partie dans l\'historique ; rien sans partie', async () => {
+    const { page, store } = create();
+    const link = (page as unknown as { reviewLink: () => string | null }).reviewLink;
+    await store.init();
+    expect(link()).toBeNull();
+
+    await store.begin();
+    expect(link()).toBe(`/setlist/history/${store.session()?.sessionId}`);
+  });
+
   it('sans accès sur invitation, renvoie au jeu du jour sans écran', async () => {
     const { fixture } = create();
     api.meResult = ME({ hasAccess: false });

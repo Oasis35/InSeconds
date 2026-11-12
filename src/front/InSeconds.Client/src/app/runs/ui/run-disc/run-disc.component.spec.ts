@@ -25,6 +25,13 @@ describe('RunDiscComponent', () => {
   });
 
   it('un disque inconnu (échelle future) prend la couleur de l\'or', () => {
-    expect(render('runs.discs.platinum').querySelector('circle')?.getAttribute('fill')).toBe('var(--disc-gold)');
+    expect(render('runs.discs.vinyl').querySelector('circle')?.getAttribute('fill')).toBe('var(--disc-gold)');
+  });
+
+  it('les disques de niveau : platine, double platine (un second contour) et diamant', () => {
+    expect(render('runs.discs.platinum').querySelector('circle')?.getAttribute('fill')).toBe('var(--disc-platinum)');
+    expect(render('runs.discs.platinum').querySelector('[data-testid="disc-double"]')).toBeNull();
+    expect(render('runs.discs.double_platinum').querySelector('[data-testid="disc-double"]')).not.toBeNull();
+    expect(render('runs.discs.diamond').querySelector('circle')?.getAttribute('fill')).toBe('var(--disc-diamond)');
   });
 });

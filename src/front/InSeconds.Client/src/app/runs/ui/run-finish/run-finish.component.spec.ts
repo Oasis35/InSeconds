@@ -21,7 +21,7 @@ describe('RunFinishComponent', () => {
       { round: 4, score: null, objective: null, passed: false, difficulty: null },
     ],
     record: { bestScore: 2617, bestRoundsPassed: 4, isNew: false }, challengeCode: 'ABC234',
-    shortfall: { points: 83, disc: { key: 'runs.discs.silver', stars: 0 } }, ...overrides,
+    shortfall: { points: 83, disc: { key: 'runs.discs.silver', stars: 0 } }, level: null, ...overrides,
   });
 
   function render(value: RunFinish, canPlayAgain = true, duel: RunDuel | null = null) {
@@ -147,5 +147,44 @@ describe('RunFinishComponent', () => {
     for (const [part, count] of [['finish-disc', 1], ['finish-score', 1], ['finish-record', 1], ['finish-square', 20], ['finish-round', 4]] as const)
       expect(element.querySelectorAll(`[data-motion="${part}"]`), part).toHaveLength(count);
     expect(element.querySelector<HTMLButtonElement>('[data-testid="run-play-again"]')?.disabled).toBe(false);
+  });
+
+  describe('nouvelle interface (niveau)', () => {
+    const level = { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: { key: 'runs.discs.gold', stars: 0 }, pointsToNext: 220, progressPercent: 56, provisional: false, runsPlayed: 12, delta: 38 };
+
+    function renderLevel(value: RunFinish, showLevel: boolean, duel: RunDuel | null = null) {
+      const rendered = render(value, true, duel);
+      rendered.fixture.componentRef.setInput('showLevel', showLevel);
+      rendered.fixture.componentRef.setInput('reviewLink', '/setlist/history/7');
+      rendered.fixture.detectChanges();
+      return rendered;
+    }
+
+    it('la carte du niveau, « Nouvelle setlist », « Défier un ami » et « Revoir » vers la partie', () => {
+      const { element } = renderLevel(finish({ level }), true);
+
+      expect(element.querySelector('[data-testid="run-level"]')?.getAttribute('data-disc')).toBe('runs.discs.silver');
+      expect(text(element, 'run-level-delta')).toBe('+38');
+      expect(text(element, 'run-play-again')).toBe('runs.level.newSetlist');
+      expect(text(element, 'run-share')).toContain('runs.level.challenge');
+      expect(element.querySelector('[data-testid="run-level-review"]')?.getAttribute('href')).toBe('/setlist/history/7');
+    });
+
+    it('en duel, l\'action principale reste « Revanche »', () => {
+      const { element } = renderLevel(finish({ level }), true, { pseudo: 'Léa', gap: 126 });
+
+      expect(text(element, 'run-play-again')).toBe('runs.finished.rematch');
+    });
+
+    it('sans la nouvelle interface, ou sans niveau (partie abandonnée) : l\'écran d\'avant', () => {
+      for (const { element } of [renderLevel(finish({ level }), false)]) {
+        expect(element.querySelector('[data-testid="run-level"]')).toBeNull();
+        expect(text(element, 'run-play-again')).toBe('runs.finished.playAgain');
+      }
+      TestBed.resetTestingModule();
+      const { element } = renderLevel(finish({ level: null }), true);
+      expect(element.querySelector('[data-testid="run-level"]')).toBeNull();
+      expect(text(element, 'run-share')).toContain('runs.finished.share');
+    });
   });
 });

@@ -178,4 +178,8 @@ internal static partial class RunsLog
     [LoggerMessage(EventId = 1415, Level = LogLevel.Information,
         Message = "Partie {SessionId} de {PlayerId} : thème de la manche {Round} choisi (mystère : {Mystery})")]
     public static partial void ThemeChosen(ILogger logger, int sessionId, Guid playerId, int round, bool mystery);
+
+    [LoggerMessage(EventId = 1416, Level = LogLevel.Information,
+        Message = "Partie {SessionId} : niveau mis à jour ({RunsPlayed} parties comptées, {PointsDelta} points de niveau)")]
+    public static partial void LevelUpdated(ILogger logger, int sessionId, int runsPlayed, int pointsDelta);
 }

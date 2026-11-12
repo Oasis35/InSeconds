@@ -1,5 +1,5 @@
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, effect, inject, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, computed, effect, inject, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { SessionStore } from '../../../core/session/session.store';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -67,6 +67,12 @@ export class RunsPage implements OnInit {
   private readonly translate = inject(TranslateService);
 
   /** Le thème d'une manche de la playlist en cours, `null` pour une manche sans thème. */
+  /** « Revoir » de la fin de run : la partie dans l'historique. */
+  protected readonly reviewLink = computed(() => {
+    const sessionId = this.store.session()?.sessionId;
+    return sessionId === undefined ? null : `/setlist/history/${sessionId}`;
+  });
+
   protected themeOf(round: number): string | null {
     return this.store.session()?.themes.find(t => t.round === round)?.name ?? null;
   }

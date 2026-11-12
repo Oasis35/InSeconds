@@ -13,7 +13,7 @@
         @if (chrome.v4() && chrome.dailyDone() === false) {
           <a routerLink="/daily" data-testid="daily-left" class="block pt-2 text-center text-sm underline" style="color:var(--text-light)">{{ 'runs.v4.dailyLeft' | translate }}</a>
         }
-        <app-run-welcome-screen [record]="store.record()" [shelf]="store.shelf()" [lang]="language.current()" (start)="store.begin()" />
+        <app-run-welcome-screen [record]="store.record()" [level]="chrome.v4() ? store.level() : null" [shelf]="store.shelf()" [lang]="language.current()" (start)="store.begin()" />
       }
 
       <!-- Juste avant la manche à thème, le créateur choisit son thème (ou « Thème mystère », tiré au sort) ; le thème se révèle, puis la manche suit. -->
@@ -116,7 +116,10 @@
 
       @case ('finished') {
         @if (store.finish(); as finish) {
-          <app-run-finish [finish]="finish" [duel]="store.duel()" [canPlayAgain]="store.canPlayAgain()" [shareCopied]="share.copied()" [shareFailed]="share.failed()"
+          @if (chrome.v4() && chrome.dailyDone() === false) {
+            <a routerLink="/daily" data-testid="daily-left" class="block pt-2 text-center text-sm underline" style="color:var(--text-light)">{{ 'runs.v4.dailyLeft' | translate }}</a>
+          }
+          <app-run-finish [finish]="finish" [showLevel]="chrome.v4()" [reviewLink]="reviewLink()" [duel]="store.duel()" [canPlayAgain]="store.canPlayAgain()" [shareCopied]="share.copied()" [shareFailed]="share.failed()"
             [lang]="language.current()" (share)="share.shareScore(finish, language.current(), store.duel())" (compare)="store.showComparison()" (playAgain)="store.playAgain()" />
         }
       }

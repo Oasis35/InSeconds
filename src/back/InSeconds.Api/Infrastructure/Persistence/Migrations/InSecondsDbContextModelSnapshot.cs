@@ -980,6 +980,43 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     b.ToTable("challenge_tracks", "runs");
                 });
 
+            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunLevel", b =>
+                {
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<int>("LastDelta")
+                        .HasColumnType("integer")
+                        .HasColumnName("last_delta");
+
+                    b.Property<int?>("LastSessionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("last_session_id");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("integer")
+                        .HasColumnName("points");
+
+                    b.PrimitiveCollection<int[]>("RecentScores")
+                        .IsRequired()
+                        .HasColumnType("integer[]")
+                        .HasColumnName("recent_scores");
+
+                    b.Property<int>("RunsPlayed")
+                        .HasColumnType("integer")
+                        .HasColumnName("runs_played");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("PlayerId")
+                        .HasName("pk_player_levels");
+
+                    b.ToTable("player_levels", "runs");
+                });
+
             modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunRecord", b =>
                 {
                     b.Property<Guid>("PlayerId")
@@ -1552,6 +1589,16 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_challenge_tracks_tracks_track_id");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunLevel", b =>
+                {
+                    b.HasOne("InSeconds.Api.Modules.Players.Domain.Player", null)
+                        .WithMany()
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_player_levels_players_player_id");
                 });
 
             modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunRecord", b =>

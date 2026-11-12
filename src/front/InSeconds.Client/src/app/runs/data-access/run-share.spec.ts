@@ -18,7 +18,7 @@ describe('runShareText', () => {
       { round: 2, score: 150, objective: 333, passed: false, difficulty: 'risky' },
       { round: 3, score: null, objective: null, passed: false, difficulty: null },
     ],
-    record: null, challengeCode: 'K7Q2M9', shortfall: { points: 183, disc: { key: 'runs.discs.bronze', stars: 0 } },
+    record: null, challengeCode: 'K7Q2M9', shortfall: { points: 183, disc: { key: 'runs.discs.bronze', stars: 0 } }, level: null,
   };
   const t = (key: string, params?: Record<string, unknown>) => (params ? `${key}${JSON.stringify(params)}` : key);
 
@@ -89,7 +89,7 @@ describe('RunShare', () => {
     const finish: RunFinish = {
       status: 'won', disc: { key: 'runs.discs.gold', stars: 0 }, totalScore: 3000, roundsPassed: 4, foundCount: 1, trackCount: 20,
       tracks: [TRACK()], rounds: [{ round: 1, score: 100, objective: 50, passed: true, difficulty: 'safe' }], record: null,
-      challengeCode: 'K7Q2M9', shortfall: null,
+      challengeCode: 'K7Q2M9', shortfall: null, level: null,
     };
 
     await share.shareScore(finish, 'fr');

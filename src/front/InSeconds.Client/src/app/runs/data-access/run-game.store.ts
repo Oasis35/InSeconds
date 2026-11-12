@@ -181,6 +181,7 @@ export const RunGameStore = signalStore(
       record: computed(() => store.me()?.record ?? null),
       /** L'étagère des disques gagnés (l'accueil du mode). */
       shelf: computed(() => store.me()?.shelf ?? []),
+      level: computed(() => store.me()?.level ?? null),
       /** « Rejouer » : seulement avec l'accès (retiré en cours de partie, la partie se finit, mais pas d'autre). */
       canPlayAgain: computed(() => store.me()?.hasAccess === true),
       finish: computed(() => store.session()?.finish ?? null),

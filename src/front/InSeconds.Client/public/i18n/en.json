@@ -1247,7 +1247,10 @@
       "wax": "Wax record",
       "bronze": "Bronze record",
       "silver": "Silver record",
-      "gold": "Gold record"
+      "gold": "Gold record",
+      "platinum": "Platinum record",
+      "double_platinum": "Double platinum",
+      "diamond": "Diamond record"
     },
     "withdrawn": {
       "title": "Track removed from the round",
@@ -1320,6 +1323,16 @@
         "history": "History"
       },
       "dailyLeft": "Today's challenge is still waiting"
+    },
+    "level": {
+      "title": "Your level",
+      "provisional": "provisional",
+      "next": "{{ disc }} in {{ points }} pts",
+      "top": "The highest record",
+      "review": "Review",
+      "label": "Level: {{ disc }}, {{ points }} points",
+      "newSetlist": "New setlist",
+      "challenge": "Challenge a friend"
     }
   }
 }

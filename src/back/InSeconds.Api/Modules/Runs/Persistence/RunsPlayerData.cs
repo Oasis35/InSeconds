@@ -52,7 +52,10 @@ public sealed class RunsPlayerData(InSecondsDbContext db, Catalogue.Contracts.IT
             .Select(a => (DateTimeOffset?)a.GrantedAt)
             .FirstOrDefaultAsync(ct);
 
-        return new RunsDataExport(games, created, record, access);
+        var levelRow = await db.Set<RunLevel>().AsNoTracking().FirstOrDefaultAsync(l => l.PlayerId == playerId, ct);
+        var level = levelRow is null ? null : new RunLevelExport(levelRow.Points, levelRow.RunsPlayed, levelRow.RecentScores, levelRow.UpdatedAt);
+
+        return new RunsDataExport(games, created, record, access, level);
     }
 
     // Exécuté tout de suite, dans la transaction de l'appelant. Le record référence une partie : il part avant elles ; les réponses, les difficultés
@@ -60,6 +63,7 @@ public sealed class RunsPlayerData(InSecondsDbContext db, Catalogue.Contracts.IT
     public async Task<int> DeleteAsync(Guid playerId, CancellationToken ct)
     {
         await db.Set<RunRecord>().Where(r => r.PlayerId == playerId).ExecuteDeleteAsync(ct);
+        await db.Set<RunLevel>().Where(l => l.PlayerId == playerId).ExecuteDeleteAsync(ct);
         var games = await db.Set<RunSession>().Where(s => s.PlayerId == playerId).ExecuteDeleteAsync(ct);
         await db.Set<RunAccess>().Where(a => a.PlayerId == playerId).ExecuteDeleteAsync(ct);
         await db.Set<RunChallenge>().Where(c => c.CreatedBy == playerId).ExecuteUpdateAsync(s => s.SetProperty(c => c.CreatedBy, (Guid?)null), ct);

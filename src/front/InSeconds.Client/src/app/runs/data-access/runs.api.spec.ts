@@ -38,11 +38,13 @@ describe('RunsApi', () => {
     client['getRunsMe'].mockReturnValue(of({
       hasAccess: true, record: { bestScore: 900, bestRoundsPassed: 2, isNew: false }, pending: { sessionId: 7, challengeCode: 'ABC234' },
       shelf: [{ disc: { key: 'runs.discs.wax', stars: 0 }, count: 2 }],
+      level: { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: { key: 'runs.discs.gold', stars: 0 }, pointsToNext: 220, progressPercent: 56, provisional: false, runsPlayed: 12, delta: undefined },
     } as RunsMeResponse));
 
     expect(await api.me()).toEqual({
       hasAccess: true, record: { bestScore: 900, bestRoundsPassed: 2, isNew: false }, pending: { sessionId: 7, challengeCode: 'ABC234' },
       shelf: [{ disc: { key: 'runs.discs.wax', stars: 0 }, count: 2 }],
+      level: { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: { key: 'runs.discs.gold', stars: 0 }, pointsToNext: 220, progressPercent: 56, provisional: false, runsPlayed: 12, delta: null },
     });
   });
 
@@ -61,7 +63,7 @@ describe('RunsApi', () => {
   it('sans record ni partie en cours : `null` plutôt que `undefined`', async () => {
     client['getRunsMe'].mockReturnValue(of({ hasAccess: false } as RunsMeResponse));
 
-    expect(await api.me()).toEqual({ hasAccess: false, record: null, pending: null, shelf: [] });
+    expect(await api.me()).toEqual({ hasAccess: false, record: null, pending: null, shelf: [], level: null });
   });
 
   it('rend la partie en types du domaine : `undefined` devient `null`, un extrait vide aussi', async () => {
