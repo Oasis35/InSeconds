@@ -27,7 +27,7 @@ describe('RunsApi', () => {
   let api: RunsApi;
 
   beforeEach(() => {
-    client = { getRunsMe: vi.fn(), getRunChallenge: vi.fn(), getRunComparison: vi.fn(), launchRun: vi.fn(), joinRun: vi.fn(), refreshRunPreview: vi.fn(), submitRunAnswer: vi.fn(), abandonRun: vi.fn(), swapRunTrack: vi.fn() };
+    client = { getRunsMe: vi.fn(), getRunChallenge: vi.fn(), getRunComparison: vi.fn(), launchRun: vi.fn(), joinRun: vi.fn(), refreshRunPreview: vi.fn(), submitRunAnswer: vi.fn(), abandonRun: vi.fn(), swapRunTrack: vi.fn(), getRunHistory: vi.fn(), getRunPastPreview: vi.fn() };
     TestBed.configureTestingModule({ providers: [{ provide: RunsClient, useValue: client }, RunsApi] });
     api = TestBed.inject(RunsApi);
   });
@@ -209,5 +209,37 @@ describe('RunsApi', () => {
     await api.abandon(7);
 
     expect(client['abandonRun']).toHaveBeenCalledWith(7);
+  });
+
+  describe('historique', () => {
+    it('lit un mois en types du domaine', async () => {
+      client['getRunHistory'].mockReturnValue(of({
+        month: '2026-11', previousMonth: undefined, nextMonth: undefined, playedCount: 2, averageScore: 2640, bestScore: 3420,
+        runs: [{ sessionId: 7, challengeCode: 'ABC234', date: '2026-11-11', status: 'won', disc: { key: 'runs.discs.gold', stars: 0 }, roundsPassed: 4, score: 3420, difficulty: 'risky' }],
+      }));
+
+      const history = await api.history('2026-11');
+
+      expect(client['getRunHistory']).toHaveBeenCalledWith('2026-11');
+      expect(history).toEqual({
+        month: '2026-11', previousMonth: null, nextMonth: null, playedCount: 2, averageScore: 2640, bestScore: 3420,
+        runs: [{ sessionId: 7, date: '2026-11-11', disc: { key: 'runs.discs.gold', stars: 0 }, score: 3420, difficulty: 'risky' }],
+      });
+    });
+
+    it("un navigateur inconnu du serveur (401) a un historique vide ; une autre erreur remonte", async () => {
+      client['getRunHistory'].mockReturnValueOnce(throwError(() => problem(401, 'common.unauthorized'))).mockReturnValueOnce(throwError(() => problem(500, 'common.unexpected')));
+
+      expect((await api.history(null)).runs).toEqual([]);
+      await expect(api.history(null)).rejects.toBeDefined();
+    });
+
+    it("l'extrait d'un morceau joué : son adresse, `null` sans extrait", async () => {
+      client['getRunPastPreview'].mockReturnValueOnce(of({ previewUrl: 'https://preview/3.mp3' })).mockReturnValueOnce(of({}));
+
+      expect(await api.pastPreviewUrl(7, 3)).toBe('https://preview/3.mp3');
+      expect(client['getRunPastPreview']).toHaveBeenCalledWith(7, 3);
+      expect(await api.pastPreviewUrl(7, 4)).toBeNull();
+    });
   });
 });
