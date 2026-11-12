@@ -66,10 +66,45 @@ test.describe('Mode Setlist', () => {
     await game.waitForWelcome();
     await expect(run.homeCard).toBeVisible();
     await expect(run.homeCard).toContainText('Setlist');
-    await expect(run.homeCard).toContainText('Vise le disque d’or.');
+    // Le défi du jour n'est pas joué : la carte est discrète, sans sa phrase d'accroche.
+    await expect(run.homeCard).toHaveAttribute('data-compact', 'true');
     await run.homeCard.click();
     await expect(page).toHaveURL(/\/setlist$/);
     await expect(run.startButton).toBeVisible();
+  });
+
+  test("nouvelle interface : la barre du bas remplace le pied de page pour un joueur qui a l'accès, et pour lui seul", async ({ page, api }) => {
+    const game = new GamePage(page);
+    const run = new RunPage(page);
+    const bar = page.getByTestId('bottom-bar');
+
+    // Sans l'accès : l'ancienne coque, pied de page compris.
+    const playerId = await run.loginAsPlayer('joueur-v4@e2e.test', 'JoueurV4');
+    await game.goto();
+    await game.waitForWelcome();
+    await expect(page.getByTestId('footer-language')).toBeVisible();
+    await expect(bar).toHaveCount(0);
+    await expect(page.getByTestId('header-instagram')).toHaveCount(0);
+
+    // Avec l'accès : la barre, Instagram dans l'en-tête, plus de pied de page, et le défi du jour qui se signale.
+    await api.grantRunAccess(playerId);
+    await game.goto();
+    await game.waitForWelcome();
+    await expect(bar).toBeVisible();
+    await expect(page.getByTestId('footer-language')).toHaveCount(0);
+    await expect(page.getByTestId('header-instagram')).toBeVisible();
+    await expect(page.getByTestId('tab-daily')).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByTestId('daily-pending')).toBeVisible();
+    await expect(bar.getByRole('link', { name: 'Confidentialité' })).toBeVisible();
+
+    // L'onglet Setlist mène au mode, qui rappelle le défi restant et y ramène.
+    await page.getByTestId('tab-setlist').click();
+    await expect(page).toHaveURL(/\/setlist$/);
+    await expect(run.startButton).toBeVisible();
+    await expect(page.getByTestId('tab-setlist')).toHaveAttribute('aria-current', 'page');
+    await page.getByTestId('daily-left').click();
+    await expect(page).toHaveURL(/\/daily$/);
+    await game.waitForWelcome();
   });
 
   test("partie gagnée : 20 bonnes réponses, les 4 manches débloquées, le disque d'or et un nouveau record", async ({ page, api }) => {

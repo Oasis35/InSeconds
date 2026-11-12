@@ -6,6 +6,8 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { VersionService } from '../../../core/version/version.service';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
 import { LanguageService } from '../../../core/i18n/language.service';
+import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
+import { InstagramLinkComponent } from '../../../core/shell/instagram-link/instagram-link.component';
 import { AccountLinkComponent } from '../../../core/shell/account-link/account-link.component';
 import { TrackRoundStore } from '../../../gameplay/data-access/track-round.store';
 import { TrackRoundComponent } from '../../../gameplay/feature/track-round/track-round.component';
@@ -54,7 +56,7 @@ import { todayUtc } from '../../domain/countdown';
     TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, BrandComponent, DailyProgressComponent, DailyFooterComponent,
     WelcomeScreenComponent, ResumeScreenComponent, HomeModeEntriesComponent, StatusScreenComponent, AbandonedScreenComponent, DayResultScreenComponent,
     GuestStreakToastComponent, LostStreakToastComponent, GelUsedToastComponent, GelEarnedToastComponent,
-    DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent, StreakPillComponent, ButtonComponent,
+    DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent, StreakPillComponent, ButtonComponent, InstagramLinkComponent,
   ],
   providers: [DailyGameStore, TrackRoundStore, DailyShare, LostStreakNotice, GuestStreakNotice],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -67,6 +69,7 @@ import { todayUtc } from '../../domain/countdown';
 export class DailyPage implements OnInit {
   protected readonly store = inject(DailyGameStore);
   protected readonly language = inject(LanguageService);
+  protected readonly chrome = inject(ShellChromeStore);
   protected readonly errorReporting = inject(ErrorReportingService);
   private readonly round = inject(TrackRoundStore);
   private readonly modal = inject(ModalService);
@@ -91,6 +94,16 @@ export class DailyPage implements OnInit {
   protected readonly isEnglish = () => this.language.current() === 'en';
 
   constructor() {
+    // La coque (barre du bas de la V4) sait si une manche est en cours et si le défi du jour est joué.
+    effect(() => {
+      const screen = this.store.screen();
+      this.chrome.setImmersive(screen === 'playing');
+      let done: boolean | null = null;
+      if (screen === 'welcome' || screen === 'resume_prompt') done = false;
+      else if (screen === 'already_played' || screen === 'done') done = true;
+      this.chrome.setDailyDone(done);
+    });
+    this.destroyRef.onDestroy(() => this.chrome.setImmersive(false));
     // Une nouvelle version du site ne recharge jamais la page en pleine manche (cf. `reloadMomentFor`).
     inject(VersionService).allowReload(() => reloadMomentFor(this.store.screen()), this.destroyRef);
 
