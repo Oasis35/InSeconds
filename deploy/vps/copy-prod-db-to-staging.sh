@@ -4,7 +4,7 @@
 # `bash -s`, donc indépendant du contenu du checkout staging, avec STAGING_ANONYMIZE_SQL qui pointe sur le
 # staging-anonymize.sql du même commit. Ne touche jamais la base de prod autrement qu'en lecture (pg_dump).
 #
-# La copie prend les schémas des modules (players, catalogue, daily, runs, infra).
+# La copie prend les schémas des modules (players, catalogue, daily, runs, social, infra).
 # Ni public (vide), ni messaging (file de Wolverine), ni jobs (Hangfire) : le staging garde
 # les siens. Ni infra.data_protection_keys : les clés de la prod ne quittent jamais la prod.
 #
@@ -25,7 +25,7 @@ STAGING_DIR="${STAGING_DIR:-$HOME/apps/InSeconds-staging}"
 ANONYMIZE_SQL=$(realpath "${STAGING_ANONYMIZE_SQL:?à renseigner : chemin de staging-anonymize.sql}")
 PG_IMAGE=postgres:17-alpine
 # Un schéma absent de la prod (module pas encore déployé) ne gêne pas le dump.
-SCHEMAS=(players catalogue daily runs infra)
+SCHEMAS=(players catalogue daily runs social infra)
 
 read_env() { # read_env <fichier> <clé>
   local file="$1" key="$2"
@@ -87,7 +87,7 @@ pg_staging psql --no-psqlrc --quiet -v ON_ERROR_STOP=1 <<'SQL'
 BEGIN;
 -- Tous les schémas de modules, y compris ceux que la prod n'a pas encore : l'historique des migrations venu de la
 -- prod ne les connaît pas, et --migrate-only les recréerait par-dessus l'ancien (« relation already exists »).
-DROP SCHEMA IF EXISTS runs, daily, catalogue, players CASCADE;
+DROP SCHEMA IF EXISTS social, runs, daily, catalogue, players CASCADE;
 DO $$
 DECLARE
     t text;

@@ -15,7 +15,7 @@ internal static class ModuleRules
     public static readonly string[] Modes = ["Daily", "Runs"];
 
     /// <summary>Les noyaux : ils ne voient d'un mode que ce que <see cref="NamedExceptions"/> autorise.</summary>
-    public static readonly string[] Cores = ["Players", "Catalogue"];
+    public static readonly string[] Cores = ["Players", "Catalogue", "Social"];
 
     /// <summary>
     /// Les seules choses d'un mode qu'un noyau a le droit de voir, nommées une à une : le gel offert à la création d'un compte (Daily seul a des

@@ -36,5 +36,8 @@ public static class DbSchemas
     /// <summary>Module Runs : défis, parties, records et accès du second mode de jeu.</summary>
     public const string Runs = "runs";
 
+    /// <summary>Module Social : les groupes entre amis, leurs membres et leurs codes d'invitation.</summary>
+    public const string Social = "social";
+
     public const string MigrationsHistoryTable = "__ef_migrations_history";
 }

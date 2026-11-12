@@ -39,4 +39,10 @@ public static class RateLimitPolicies
 
     /// <summary>Lecture du lien d'une playlist (public, sans authentification) : par IP, contre l'énumération des codes.</summary>
     public const string RunLink = "run-link";
+
+    /// <summary>Création d'un groupe, adhésion et renouvellement d'un code d'invitation : par joueur.</summary>
+    public const string SocialWrite = "social-write";
+
+    /// <summary>Lecture du lien d'invitation d'un groupe (public, sans authentification) : par IP, contre l'énumération des codes.</summary>
+    public const string SocialInvitation = "social-invitation";
 }

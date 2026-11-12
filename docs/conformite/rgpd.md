@@ -23,7 +23,7 @@ Panneau technique de l'admin : lecture anonyme de l'API publique de GitHub (`api
 
 ## Droits du joueur
 
-- **Copie** : `GET /api/players/me/export` (JSON : source d'arrivée, compte, appareils, puis une section par mode de jeu sous `modules` : `modules.daily` pour la série et les parties, `modules.runs` pour les parties (réponses, difficulté de chaque manche, coups de pouce), les playlists créées, le record et l'accès), bouton « Tes données » du profil.
+- **Copie** : `GET /api/players/me/export` (JSON : source d'arrivée, compte, appareils, puis une section par mode de jeu sous `modules` : `modules.daily` pour la série et les parties, `modules.runs` pour les parties (réponses, difficulté de chaque manche, coups de pouce), les playlists créées, le record et l'accès, `modules.social` pour les groupes), bouton « Tes données » du profil.
 - **Effacement** : `POST /api/players/me/delete` (pseudo retapé pour confirmer), effacement réel (`AccountErasure`, qui appelle l'`IPlayerDataContributor` de chaque mode de jeu dans la même transaction).
 - **Sans connexion possible** : commandes de secours sur le VPS `--export-player` / `--delete-player` (cf. `src/back/CLAUDE.md` § Démarrage), réponse sous un mois, uniquement à l'adresse du compte.
 
@@ -34,6 +34,15 @@ Panneau technique de l'admin : lecture anonyme de l'API publique de GitHub (`api
 - **Visibilité** : une playlist se partage par son lien (code de 6 caractères). Qui l'ouvre voit le pseudo de son auteur (celui de son compte, sinon son pseudo d'invité, sinon « Invité » à l'écran, y compris pour un compte effacé) ; pendant sa partie, le **fantôme** de l'auteur s'il a fini la playlist (son total après chaque morceau, donc ses points morceau par morceau, seulement jusqu'au dernier morceau répondu, #504 ; « Invité » pour un auteur invité ; un auteur dont le compte est effacé n'a plus de fantôme, ses parties étant supprimées) ; après sa propre partie, la comparaison montre le pseudo, le disque et le score de chaque joueur de la playlist. Pas de classement public, pas de nombre de joueurs sur le lien. La page `/privacy` le dit (§ Données collectées).
 - **Effacement** : `RunsPlayerData` supprime les parties (avec leurs réponses, la difficulté de chaque manche et les coups de pouce, par cascade), le record et l'accès du joueur ; les playlists qu'il a lancées restent jouables, `created_by` passe à `null`.
 - **Énumération des liens** : la lecture d'un lien est limitée à 60 requêtes par IP en 5 minutes (`run-link`), pour 31⁶ codes possibles.
+
+## Groupes entre amis (Social)
+
+- **Données gardées** (schéma `social`) : le groupe (nom de 40 caractères au plus, texte libre limité aux caractères d'un pseudo, code d'invitation, créateur, date) et ses membres (identifiant du joueur, date d'arrivée). Un groupe exige un compte : jamais un invité. Aucun message, aucune adresse, aucun score propre au groupe : le classement est calculé à chaque lecture depuis les parties du mode de jeu (cf. `Social.Contracts.IMemberPerformanceSource`).
+- **Visibilité** : seuls les membres voient le détail d'un groupe, les pseudos des autres membres et le classement ; un non-membre reçoit un 404 (jamais un pseudo, jamais l'existence du groupe). L'aperçu d'une invitation, ouvert à qui a le lien, ne montre que le nom du groupe et le nombre de places. Le code d'invitation est un secret de lien (8 caractères, 31⁸ possibilités) que le créateur peut renouveler ; la lecture d'un lien est limitée à 60 requêtes par IP en 5 minutes (`social-invitation`).
+- **Copie** : section `modules.social` de l'export (nom, rôle, dates, nombre de membres de chaque groupe ; jamais le pseudo d'un autre membre, ni le code d'invitation).
+- **Effacement** : `SocialPlayerData` retire le joueur de ses groupes ; s'il en était le créateur, le plus ancien membre restant le devient, et le groupe disparaît quand il était le dernier. Rien du joueur ne reste dans `social`.
+- **Conservation** : tant que le compte existe (comme les autres données de jeu) ; la purge des comptes inactifs passe par le même effacement. Au staging, les noms de groupe sont remplacés et les codes renouvelés (`staging-anonymize.sql`).
+- **Journaux** : seulement des identifiants (groupe, joueur), jamais un nom de groupe ni un pseudo.
 
 ## Sauvegardes
 
