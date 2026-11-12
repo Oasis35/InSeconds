@@ -3,11 +3,12 @@ using InSeconds.Api.Modules.Players.Contracts;
 using InSeconds.Api.Modules.Runs.Application;
 using InSeconds.Api.Modules.Runs.Domain;
 using InSeconds.Api.Modules.Runs.Persistence;
+using InSeconds.Api.Modules.Social.Contracts;
 
 namespace InSeconds.Api.Modules.Runs;
 
 /// <summary>
-/// Module Runs (nom affiché « Platines ») : le second mode de jeu, solo, en manches de difficulté croissante, dont le défi (une playlist) se partage
+/// Module Runs (nom affiché « Setlist ») : le second mode de jeu, solo, en manches de difficulté croissante, dont le défi (une playlist) se partage
 /// par un lien : son schéma <c>runs</c>, le défi et son tirage, les réglages <c>Runs:</c>, l'accès sur invitation et la partie (jauge, neutralisation,
 /// fin, record). Runs n'utilise des autres modules que leurs <c>Contracts</c> et ne voit jamais Daily.
 /// </summary>
@@ -22,6 +23,8 @@ public static class RunsModule
         services.AddSingleton<RunCardDealer>();
         services.AddScoped<IRunsStore, EfRunsStore>();
         services.AddScoped<IRunsQueries, EfRunsQueries>();
+        services.AddScoped<IRunHistoryQueries, EfRunHistoryQueries>();
+        services.AddScoped<IRunHitsQueries, EfRunHitsQueries>();
         services.AddScoped<IRunAccess, EfRunAccess>();
         services.AddScoped<RunChallengePlanner>();
         services.AddScoped<RunChoiceDealer>();
@@ -33,6 +36,8 @@ public static class RunsModule
         services.AddSingleton<RunsMetrics>();
         // L'usage des morceaux : **ajouté**, jamais remplacé (Catalogue réunit l'ITrackUsage de chaque mode).
         services.AddScoped<ITrackUsage, RunsTrackUsage>();
+        // Le classement d'un groupe : la performance des joueurs, **ajoutée** comme celle de chaque mode (Social ne connaît aucun mode).
+        services.AddScoped<IMemberPerformanceSource, RunsMemberPerformance>();
         return services;
     }
 

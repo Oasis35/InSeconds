@@ -110,6 +110,31 @@
       </button>
     </div>
 
+    <!-- Langue : sous la V4, le pied de page n'est plus là, la bascule vit ici -->
+    @if (chrome.v4()) {
+      <!-- Le choix d'apparaître dans le classement général se fait sur la page du classement -->
+      <a routerLink="/ranking" [queryParams]="{ view: 'general' }" class="flex items-center justify-between gap-3 min-h-11 text-sm" data-testid="profile-general-ranking"
+         style="color:var(--text-body)">
+        <span>{{ 'social.general.profileLink' | translate }}</span><span aria-hidden="true">›</span>
+      </a>
+      <section class="flex items-center justify-between gap-3" data-testid="profile-language">
+        <span class="text-sm" style="color:var(--text-body)">{{ 'account.profile.language' | translate }}</span>
+        <div class="flex gap-2">
+          @for (code of ['fr', 'en']; track code) {
+            <button type="button" (click)="setLanguage($any(code))" [attr.aria-pressed]="locale() === code" [attr.data-testid]="'language-' + code"
+                    class="rounded-(--radius-button) px-3 py-2 text-sm cursor-pointer touch-manipulation"
+                    [style.border]="locale() === code ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
+                    [style.color]="locale() === code ? 'var(--text-hi)' : 'var(--text-muted)'">{{ code.toUpperCase() }}</button>
+          }
+        </div>
+      </section>
+      <nav class="flex flex-wrap justify-center gap-x-4 text-xs" style="color:var(--text-muted)" data-testid="profile-legal">
+        <a routerLink="/legal" class="py-3 hover:underline" style="color:inherit">{{ 'daily.footer.legal' | translate }}</a>
+        <a routerLink="/privacy" class="py-3 hover:underline" style="color:inherit">{{ 'daily.footer.privacy' | translate }}</a>
+        <a href="mailto:contact@inseconds.cc" class="py-3 hover:underline" style="color:inherit">{{ 'daily.footer.contact' | translate }}</a>
+      </nav>
+    }
+
     <!-- Tes données (RGPD) -->
     <section class="flex flex-col gap-3" aria-labelledby="data-title">
       <h2 id="data-title" class="text-sm font-semibold" style="font-family:var(--font-display);color:var(--text-muted)">

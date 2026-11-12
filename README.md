@@ -31,7 +31,7 @@
 - Installable on the home screen (PWA), updated automatically at a safe moment (never in the middle of a round)
 - List of the devices signed in to your account, sign out one device or all the others
 - Your data (GDPR): download a JSON copy of all your data and permanently delete your account ("Your data" section of the profile); devices unseen for 91 days and accounts inactive for 3 years are deleted automatically every night; what you type as an answer is never stored
-- Run mode (shown as "Platines", invitation-only for now): a second game of 4 rounds of 5 tracks, getting harder, each with a fixed 10 s listen and 45 s per track to answer, on a single screen where played tracks pile up, a points gauge to unlock the next round, and a record disc (scratched to gold); send the same playlist to friends with a link and compare scores once you have played it (`/runs`; rules and screens in [`docs/runs/`](docs/runs/README.md))
+- Run mode (shown as "Setlist", invitation-only for now): a second game of 4 rounds of 5 tracks, getting harder, each with a fixed 10 s listen and 45 s per track to answer, on a single screen where played tracks pile up, a points gauge to unlock the next round, and a record disc (scratched to gold); send the same playlist to friends with a link and compare scores once you have played it (`/runs`; rules and screens in [`docs/runs/`](docs/runs/README.md))
 
 ## Quick start
 

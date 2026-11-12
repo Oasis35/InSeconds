@@ -55,30 +55,36 @@
       "candidate_preview_missing": "Deezer n'a plus d'extrait pour ce morceau."
     },
     "daily": {
-      "no_challenge": "Il n'y a pas de défi aujourd'hui.",
-      "already_played": "Tu as déjà joué le défi d'aujourd'hui.",
       "abandoned": "Tu as abandonné le défi d'aujourd'hui.",
-      "session_not_found": "Cette partie n'existe plus.",
-      "track_not_found": "Ce morceau n'existe pas dans le défi du jour.",
-      "track_lock_not_released": "Réponds d'abord au morceau en cours.",
-      "hint_locked": "Cet indice n'est pas encore débloqué.",
       "already_answered": "Tu as déjà répondu à ce morceau.",
-      "listened_duration_below_verified_minimum": "Le palier annoncé est plus court que ce que tu as écouté."
+      "already_played": "Tu as déjà joué le défi d'aujourd'hui.",
+      "hint_locked": "Cet indice n'est pas encore débloqué.",
+      "invalid_month": "Mois invalide : le format attendu est aaaa-mm.",
+      "listened_duration_below_verified_minimum": "Le palier annoncé est plus court que ce que tu as écouté.",
+      "no_challenge": "Il n'y a pas de défi aujourd'hui.",
+      "session_not_found": "Cette partie n'existe plus.",
+      "track_lock_not_released": "Réponds d'abord au morceau en cours.",
+      "track_not_found": "Ce morceau n'existe pas dans le défi du jour."
     },
     "runs": {
-      "access_denied": "Platines est ouvert sur invitation pour le moment.",
-      "no_challenge": "Pas assez de morceaux pour une playlist, réessaie plus tard.",
+      "abandoned": "Tu as abandonné cette playlist.",
+      "access_denied": "Setlist est ouvert sur invitation pour le moment.",
+      "already_answered": "Tu as déjà répondu à ce morceau.",
+      "already_played": "Tu as déjà joué cette playlist.",
       "challenge_not_found": "Cette playlist n'existe pas. Vérifie le lien.",
       "comparison_locked": "La comparaison s'ouvre une fois ta partie terminée.",
       "difficulty_locked": "La difficulté de cette manche est déjà fixée.",
-      "theme_locked": "Le thème de cette manche est déjà choisi.",
+      "invalid_month": "Mois invalide : le format attendu est aaaa-mm.",
+      "no_challenge": "Pas assez de morceaux pour une playlist, réessaie plus tard.",
       "session_not_found": "Cette partie n'existe plus.",
-      "already_played": "Tu as déjà joué cette playlist.",
-      "abandoned": "Tu as abandonné cette playlist.",
-      "track_not_found": "Ce morceau n'existe pas dans cette playlist.",
+      "swap_unavailable": "Le changement de morceau n'est plus possible.",
+      "theme_locked": "Le thème de cette manche est déjà choisi.",
       "track_lock_not_released": "Réponds d'abord au morceau en cours.",
-      "already_answered": "Tu as déjà répondu à ce morceau.",
-      "swap_unavailable": "Le changement de morceau n'est plus possible."
+      "track_not_found": "Ce morceau n'existe pas dans cette playlist."
+    },
+    "social": {
+      "invalid_name": "Ce nom de groupe n'est pas valide.",
+      "group_not_found": "Ce groupe n'existe plus."
     }
   },
   "shell": {
@@ -112,6 +118,41 @@
   "ui": {
     "envBanner": {
       "label": "environnement de développement"
+    },
+    "history": {
+      "title": "Historique",
+      "tabs": {
+        "daily": "Défis du jour",
+        "setlist": "Setlists"
+      },
+      "average": "Moyenne",
+      "today": "Aujourd'hui",
+      "yesterday": "Hier",
+      "previousMonth": "Mois précédent",
+      "nextMonth": "Mois suivant",
+      "daily": {
+        "count": "Défis joués",
+        "best": "Meilleur",
+        "empty": "Aucun défi joué ce mois-ci."
+      },
+      "setlist": {
+        "count": "Setlists",
+        "best": "Record",
+        "empty": "Aucune setlist jouée ce mois-ci.",
+        "emptyFilter": "Aucune setlist à cette difficulté ce mois-ci.",
+        "all": "Toutes",
+        "filterLabel": "Difficulté",
+        "detailTitle": "Tes {{count}} morceaux",
+        "back": "Retour à l'historique",
+        "allTracks": "Tous",
+        "missed": "Ratés · {{count}}",
+        "round": "Manche {{round}}",
+        "listen": "Écouter {{title}}",
+        "noMissed": "Aucun morceau raté.",
+        "notFound": "Cette partie est introuvable.",
+        "withdrawn": "Morceau retiré"
+      },
+      "loading": "Chargement…"
     }
   },
   "gameplay": {
@@ -255,7 +296,8 @@
         "cancel": "Annuler",
         "done": "Ton compte est supprimé."
       },
-      "backToGame": "Retour au jeu"
+      "backToGame": "Retour au jeu",
+      "language": "Langue"
     },
     "devices": {
       "title": "Appareils connectés",
@@ -298,6 +340,7 @@
       "dashboard": "Accueil",
       "challengesPlain": "Défis",
       "playersPlain": "Joueurs",
+      "groupsPlain": "Groupes",
       "challenges": "Défis ({{ count }})",
       "players": "Joueurs ({{ count }})",
       "content": "Contenu"
@@ -497,6 +540,28 @@
       "colCompleted": "Finies",
       "scoreChart": "Répartition des scores"
     },
+    "groups": {
+      "title": "Groupes ({{ count }})",
+      "filterPlaceholder": "Filtrer par nom ou créateur",
+      "loading": "Chargement des groupes...",
+      "empty": "Aucun groupe pour l'instant.",
+      "noMatch": "Aucun groupe ne correspond à ce filtre.",
+      "colName": "Nom",
+      "colMembers": "Membres",
+      "colOwner": "Créateur",
+      "colCreated": "Créé le",
+      "memberCount": "{{ count }} membre(s)",
+      "renameLabel": "Nouveau nom du groupe",
+      "rename": "Renommer",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "resetName": "Remettre le nom à zéro",
+      "resetConfirm": "Remplacer le nom par un nom neutre ?",
+      "resetYes": "Remettre à zéro",
+      "delete": "Supprimer",
+      "deleteConfirm": "Supprimer ce groupe et ses adhésions ?",
+      "deleteYes": "Supprimer pour de bon"
+    },
     "players": {
       "title": "Comptes inscrits ({{ count }})",
       "filterPlaceholder": "Filtrer par pseudo ou email",
@@ -511,6 +576,10 @@
       "colRun": "Run",
       "runAccessToggle": "Autoriser ce compte à jouer au mode Run",
       "runAccessAdmin": "Les admins ont l'accès d'office au mode Run",
+      "resetPseudo": "Remettre le pseudo à zéro",
+      "resetPseudoConfirm": "Remplacer le pseudo par un pseudo neutre ?",
+      "resetPseudoYes": "Remettre à zéro",
+      "resetPseudoCancel": "Annuler",
       "colGames": "Parties",
       "adminBadge": "Admin",
       "neverSeen": "Jamais",
@@ -760,6 +829,13 @@
     "header": {
       "track": "Piste {{ current }} / {{ total }}"
     },
+    "home": {
+      "label": "Défi du jour",
+      "done": "Défi du jour · fait",
+      "seeResult": "Voir le résultat",
+      "remainingHours": "Il te reste le défi du jour · plus que {{ n }} h",
+      "remainingMinutes": "Il te reste le défi du jour · plus que {{ n }} min"
+    },
     "welcome": {
       "title": "Blind test du jour",
       "subtitle": "{{ count }} morceaux à deviner",
@@ -1007,7 +1083,7 @@
   "privacy": {
     "title": "Confidentialité",
     "metaDescription": "Politique de confidentialité d'InSeconds : données collectées, durées de conservation et droits RGPD, avec ou sans compte.",
-    "updated": "Dernière mise à jour : 6 novembre 2026",
+    "updated": "Dernière mise à jour : 11 novembre 2026",
     "intro": "InSeconds est un jeu de blind test musical gratuit, accessible à l'adresse https://inseconds.cc. Il reste intégralement jouable en mode invité, sans compte ni inscription ; la création d'un compte, par email uniquement, est optionnelle et sert à retrouver votre progression sur un autre appareil. Cette page décrit la politique de confidentialité du site, conformément au Règlement général sur la protection des données (RGPD, Règlement UE 2016/679) et à la loi Informatique et Libertés. L'éditeur et l'hébergeur sont présentés dans les mentions légales.",
     "legalLink": "Voir les mentions légales",
     "controller": {
@@ -1016,7 +1092,7 @@
     },
     "data": {
       "title": "Données collectées, finalités et base légale",
-      "body": "Aucune donnée n'est exigée pour jouer : le mode invité ne demande ni nom, ni email, ni inscription.\nSelon votre usage, l'application traite les catégories de données suivantes :\n· identifiant technique pseudonyme : généré aléatoirement et stocké dans un cookie, il permet de reconnaître votre navigateur d'une visite à l'autre (reprise de partie, limitation à une partie par jour, série de victoires). Finalité : fourniture du jeu. Base légale : exécution du service demandé (article 6.1.b du RGPD) ;\n· appareils connectés : pour chaque navigateur où vous jouez, l'application garde la date de première connexion, la date de dernière visite et un libellé grossier du navigateur et de l'appareil (par exemple « Safari · iPhone », jamais l'en-tête technique complet). Avec un compte, la liste de vos appareils s'affiche dans votre profil, où vous pouvez déconnecter chacun d'eux. Finalité : sécurité du compte et connexion multi-appareils. Base légale : exécution du service demandé (article 6.1.b) ;\n· email et pseudo, uniquement si vous créez un compte : un compte optionnel, activé par un lien de connexion envoyé par email (sans mot de passe), permet de retrouver votre historique et votre série sur n'importe quel appareil ; le pseudo est un nom d'affichage que vous choisissez librement. Finalité : gestion du compte et connexion multi-appareils. Base légale : votre consentement (article 6.1.a du RGPD), vous restez libre de jouer en invité sans jamais fournir ces informations ;\n· données de partie : le résultat de chaque réponse (artiste et titre trouvés ou non, sans le texte que vous tapez, qui n'est jamais conservé), durées d'écoute choisies, scores et dates de jeu. Finalité : faire fonctionner le jeu et calculer des statistiques globales anonymes (score médian, taux de réussite par morceau). Base légale : exécution du service demandé (article 6.1.b). Avec un compte, l'éditeur peut consulter dans l'espace d'administration votre pseudo, votre adresse email, votre série et l'historique de vos parties des 30 derniers jours, uniquement pour faire fonctionner le service et répondre à vos demandes ;\n· mode Platines (sur invitation) : pour chaque partie, le résultat de chaque morceau (artiste et titre trouvés ou non, jamais le texte que vous tapez), ses points, la difficulté que vous avez choisie pour chaque manche et l'heure du choix, les coups de pouce reçus, lâchés ou joués (sur quel morceau, et à quelle heure), les manches passées, le score et les dates de jeu ; votre record (meilleur score et meilleur disque) ; les playlists que vous lancez et leur auteur ; l'autorisation d'accès que l'éditeur vous a donnée. Une playlist se partage par un lien : ceux qui l'ouvrent voient le pseudo de son auteur (celui de son compte, sinon son pseudo d'invité, sinon « Invité »), pendant leur partie le total de l'auteur morceau par morceau (jusqu'au morceau où ils en sont) si l'auteur a fini la playlist et, une fois leur propre partie finie, le pseudo (celui du compte, sinon le pseudo d'invité, sinon « Invité »), le disque et le score de chacun de ceux qui l'ont jouée. Ce n'est pas un classement public : seuls ceux qui ont le lien les voient. Sans compte, vous donnez un pseudo d'invité à la fin de votre première partie sur la playlist d'un ami : il est obligatoire pour voir la comparaison, rattaché à votre identifiant technique (donc à votre navigateur) pour que vous le retrouviez à chaque visite, modifiable à tout moment, et jamais identique à celui d'un compte ; si deux joueurs d'une même comparaison ont le même pseudo, une courte marque dérivée de leur identifiant les distingue. Il figure dans la copie de vos données et est effacé automatiquement 91 jours après votre dernière visite (et si vous créez un compte, c'est le pseudo du compte qui compte). Si vous supprimez votre compte, vos parties disparaissent ; les playlists que vous avez lancées restent jouables, sans auteur. Finalité : faire fonctionner ce mode et la comparaison entre ceux qui ont joué la même playlist. Base légale : exécution du service demandé (article 6.1.b) ;\n· adresse IP : traitée techniquement à chaque requête, comme pour tout site web, à des fins de sécurité (limitation du nombre de tentatives de connexion pour prévenir les abus). Finalité : sécurité du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· journaux techniques : à chaque requête, l'application enregistre l'identifiant technique pseudonyme décrit ci-dessus, la page ou l'action concernée, sa durée, son résultat, le type de navigateur et d'appareil (par exemple « Safari · iPhone ») et, en cas de bug, le message d'erreur, sa pile d'appels, la version de l'application et l'état de la connexion (en ligne ou non). Ces journaux ne contiennent jamais votre email, votre pseudo, vos réponses saisies ni votre cookie. Finalité : détecter et corriger les bugs, surveiller le bon fonctionnement du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· mesure d'audience : à chaque page affichée, un petit script de Cloudflare Web Analytics envoie à Cloudflare l'adresse de la page, le site d'où vous venez, le type de navigateur et d'appareil, et les temps de chargement de la page. Cloudflare en tire des statistiques agrégées (visites, pages vues, pays, sites d'origine, appareils, vitesse du site), sans cookie ni identifiant qui permette de vous reconnaître ; l'éditeur ne voit que ces statistiques. Finalité : connaître la fréquentation du site et sa vitesse. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· source d'arrivée : à la création de votre identifiant d'invité, l'application note d'où vous arrivez : le nom de campagne porté par le lien que vous avez suivi (par exemple « instagram », ou « share » pour un lien partagé par un joueur), sinon le seul nom de domaine du site d'où vous venez (par exemple « google.com », jamais l'adresse complète de la page), ou « direct ». Elle est gardée dans votre navigateur le temps de la visite, puis rattachée à votre identifiant pseudonyme ; elle figure dans la copie de vos données et disparaît avec elles. Finalité : savoir quels canaux amènent de nouveaux joueurs (mesure d'audience). Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· préférences locales : votre langue préférée, le choix de couper les sons du mode Platines et le souvenir des messages d'information déjà affichés sont stockés localement dans votre navigateur ; ils ne quittent jamais votre appareil et ne sont jamais transmis à nos serveurs."
+      "body": "Aucune donnée n'est exigée pour jouer : le mode invité ne demande ni nom, ni email, ni inscription.\nSelon votre usage, l'application traite les catégories de données suivantes :\n· identifiant technique pseudonyme : généré aléatoirement et stocké dans un cookie, il permet de reconnaître votre navigateur d'une visite à l'autre (reprise de partie, limitation à une partie par jour, série de victoires). Finalité : fourniture du jeu. Base légale : exécution du service demandé (article 6.1.b du RGPD) ;\n· appareils connectés : pour chaque navigateur où vous jouez, l'application garde la date de première connexion, la date de dernière visite et un libellé grossier du navigateur et de l'appareil (par exemple « Safari · iPhone », jamais l'en-tête technique complet). Avec un compte, la liste de vos appareils s'affiche dans votre profil, où vous pouvez déconnecter chacun d'eux. Finalité : sécurité du compte et connexion multi-appareils. Base légale : exécution du service demandé (article 6.1.b) ;\n· email et pseudo, uniquement si vous créez un compte : un compte optionnel, activé par un lien de connexion envoyé par email (sans mot de passe), permet de retrouver votre historique et votre série sur n'importe quel appareil ; le pseudo est un nom d'affichage que vous choisissez librement. Finalité : gestion du compte et connexion multi-appareils. Base légale : votre consentement (article 6.1.a du RGPD), vous restez libre de jouer en invité sans jamais fournir ces informations ;\n· données de partie : le résultat de chaque réponse (artiste et titre trouvés ou non, sans le texte que vous tapez, qui n'est jamais conservé), durées d'écoute choisies, scores et dates de jeu. Finalité : faire fonctionner le jeu et calculer des statistiques globales anonymes (score médian, taux de réussite par morceau). Base légale : exécution du service demandé (article 6.1.b). Avec un compte, l'éditeur peut consulter dans l'espace d'administration votre pseudo, votre adresse email, votre série et l'historique de vos parties des 30 derniers jours, uniquement pour faire fonctionner le service et répondre à vos demandes ;\n· mode Setlist (sur invitation) : pour chaque partie, le résultat de chaque morceau (artiste et titre trouvés ou non, jamais le texte que vous tapez), ses points, la difficulté que vous avez choisie pour chaque manche et l'heure du choix, les coups de pouce reçus, lâchés ou joués (sur quel morceau, et à quelle heure), les manches passées, le score et les dates de jeu ; votre record (meilleur score et meilleur disque) ; les playlists que vous lancez et leur auteur ; l'autorisation d'accès que l'éditeur vous a donnée. Une playlist se partage par un lien : ceux qui l'ouvrent voient le pseudo de son auteur (celui de son compte, sinon son pseudo d'invité, sinon « Invité »), pendant leur partie le total de l'auteur morceau par morceau (jusqu'au morceau où ils en sont) si l'auteur a fini la playlist et, une fois leur propre partie finie, le pseudo (celui du compte, sinon le pseudo d'invité, sinon « Invité »), le disque et le score de chacun de ceux qui l'ont jouée. Ce n'est pas un classement public : seuls ceux qui ont le lien les voient. Sans compte, vous donnez un pseudo d'invité à la fin de votre première partie sur la playlist d'un ami : il est obligatoire pour voir la comparaison, rattaché à votre identifiant technique (donc à votre navigateur) pour que vous le retrouviez à chaque visite, modifiable à tout moment, et jamais identique à celui d'un compte ; si deux joueurs d'une même comparaison ont le même pseudo, une courte marque dérivée de leur identifiant les distingue. Il figure dans la copie de vos données et est effacé automatiquement 91 jours après votre dernière visite (et si vous créez un compte, c'est le pseudo du compte qui compte). Si vous supprimez votre compte, vos parties disparaissent ; les playlists que vous avez lancées restent jouables, sans auteur. Finalité : faire fonctionner ce mode et la comparaison entre ceux qui ont joué la même playlist. Base légale : exécution du service demandé (article 6.1.b) ;\n· groupes entre amis (compte requis) : le nom du groupe que vous créez ou rejoignez (texte libre, aux caractères d'un pseudo), votre rôle (créateur ou membre) et la date à laquelle vous l'avez rejoint. Les membres d'un groupe, et eux seuls, voient le pseudo de votre compte et votre classement dans le groupe (votre disque et vos points de niveau du mode Setlist, calculés à partir de vos parties récentes) ; une personne qui a le lien d'invitation voit seulement le nom du groupe et le nombre de places. Le classement général du mode Setlist est à part : vous n'y figurez que si vous l'avez choisi (interrupteur éteint par défaut, sur la page du classement) ; tant qu'il est allumé, le pseudo de votre compte, votre disque et vos points de niveau sont visibles des autres joueurs, et vous pouvez l'éteindre à tout moment. Vous pouvez quitter un groupe à tout moment (le créateur peut le supprimer) et l'effacement de votre compte vous en retire ; la copie de vos données les contient. Finalité : jouer avec ses amis et comparer ses résultats. Base légale : exécution du service demandé (article 6.1.b) ;\n· adresse IP : traitée techniquement à chaque requête, comme pour tout site web, à des fins de sécurité (limitation du nombre de tentatives de connexion pour prévenir les abus). Finalité : sécurité du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· journaux techniques : à chaque requête, l'application enregistre l'identifiant technique pseudonyme décrit ci-dessus, la page ou l'action concernée, sa durée, son résultat, le type de navigateur et d'appareil (par exemple « Safari · iPhone ») et, en cas de bug, le message d'erreur, sa pile d'appels, la version de l'application et l'état de la connexion (en ligne ou non). Ces journaux ne contiennent jamais votre email, votre pseudo, vos réponses saisies ni votre cookie. Finalité : détecter et corriger les bugs, surveiller le bon fonctionnement du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· mesure d'audience : à chaque page affichée, un petit script de Cloudflare Web Analytics envoie à Cloudflare l'adresse de la page, le site d'où vous venez, le type de navigateur et d'appareil, et les temps de chargement de la page. Cloudflare en tire des statistiques agrégées (visites, pages vues, pays, sites d'origine, appareils, vitesse du site), sans cookie ni identifiant qui permette de vous reconnaître ; l'éditeur ne voit que ces statistiques. Finalité : connaître la fréquentation du site et sa vitesse. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· source d'arrivée : à la création de votre identifiant d'invité, l'application note d'où vous arrivez : le nom de campagne porté par le lien que vous avez suivi (par exemple « instagram », ou « share » pour un lien partagé par un joueur), sinon le seul nom de domaine du site d'où vous venez (par exemple « google.com », jamais l'adresse complète de la page), ou « direct ». Elle est gardée dans votre navigateur le temps de la visite, puis rattachée à votre identifiant pseudonyme ; elle figure dans la copie de vos données et disparaît avec elles. Finalité : savoir quels canaux amènent de nouveaux joueurs (mesure d'audience). Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· préférences locales : votre langue préférée, le choix de couper les sons du mode Setlist, le souvenir des messages d'information déjà affichés et, si vous ouvrez une invitation dans un groupe avant d'avoir un compte, le code de cette invitation (pour vous la reproposer une fois connecté) sont stockés localement dans votre navigateur ; ils ne quittent jamais votre appareil et ne sont jamais transmis à nos serveurs (le code d'invitation ne l'est que si vous choisissez de rejoindre le groupe)."
     },
     "cookie": {
       "title": "Cookie",
@@ -1069,9 +1145,16 @@
       "round": "manche {{ round }}",
       "withdrawn": "Morceau retiré"
     },
+    "home": {
+      "record": "Record",
+      "anytime": "à toi quand tu veux",
+      "playedToday": "Setlist jouée",
+      "play": "Jouer",
+      "replay": "Rejouer"
+    },
     "welcome": {
       "badge": "Accès anticipé",
-      "title": "Platines",
+      "title": "Setlist",
       "tagline": "Vise le disque d’or.",
       "record": "Ton record : {{ score }} pts",
       "launch": "Lancer une partie",
@@ -1095,7 +1178,7 @@
     },
     "leave": {
       "title": "Partie en cours",
-      "body": "Ta partie est gardée : tu pourras la reprendre depuis l’accueil de Platines.",
+      "body": "Ta partie est gardée : tu pourras la reprendre depuis l’accueil de Setlist.",
       "confirm": "Quitter quand même",
       "cancel": "Continuer à jouer"
     },
@@ -1178,7 +1261,10 @@
       "wax": "Disque de cire",
       "bronze": "Disque de bronze",
       "silver": "Disque d’argent",
-      "gold": "Disque d’or"
+      "gold": "Disque d’or",
+      "platinum": "Disque de platine",
+      "double_platinum": "Double platine",
+      "diamond": "Disque de diamant"
     },
     "withdrawn": {
       "title": "Morceau retiré de la manche",
@@ -1186,10 +1272,11 @@
     },
     "share": {
       "text": "Je te lance une playlist sur InSeconds. Tu fais mieux que moi ?",
-      "header": "{{ score }} pts · {{ disc }} · InSeconds Platines",
+      "header": "{{ score }} pts · {{ disc }} · InSeconds Setlist",
       "round": "Manche {{ round }}",
       "duelWon": "J’ai battu {{ name }} de {{ points }} pts.",
-      "beatMe": "Fais mieux sur la même playlist :"
+      "beatMe": "Fais mieux sur la même playlist :",
+      "groupInvite": "Rejoins « {{ name }} » et fais mieux sur ma setlist"
     },
     "palier": {
       "theme": "Manche {{round}} · thème",
@@ -1242,6 +1329,147 @@
       "tied": "À égalité",
       "stopped": "arrêt en manche {{ round }}"
     },
-    "combo": "{{ count }} d’affilée"
+    "hits": {
+      "title": "Hits",
+      "back": "Retour à la Setlist",
+      "earned": "Obtenus",
+      "new": "Nouveau",
+      "fresh": "+{{ count }}",
+      "empty": "Joue une setlist pour obtenir ton premier Hit.",
+      "stateEarned": "obtenu",
+      "stateLocked": "à obtenir",
+      "names": {
+        "first_setlist": "Première setlist terminée",
+        "first_record": "Premier record battu",
+        "first_card": "Première carte gagnée",
+        "first_risky_round": "Première manche en Mélomane",
+        "first_group": "Premier groupe rejoint",
+        "ten_setlists": "10 setlists jouées",
+        "fifty_setlists": "50 setlists jouées",
+        "perfect_round": "Manche parfaite",
+        "ten_in_a_row": "10 bonnes réponses d’affilée",
+        "boss_beaten": "Battre le boss",
+        "setlist_won": "Setlist gagnée",
+        "gold_in_risky": "Disque d’or en Mélomane",
+        "friend_played": "Un ami a joué ta setlist",
+        "duel_won": "Duel gagné",
+        "five_duels": "5 duels gagnés",
+        "level_gold": "Niveau Or",
+        "level_diamond": "Niveau Diamant"
+      }
+    },
+    "combo": "{{ count }} d’affilée",
+    "v4": {
+      "bar": {
+        "label": "Navigation",
+        "daily": "Aujourd'hui",
+        "setlist": "Setlist",
+        "history": "Historique",
+        "ranking": "Classement"
+      },
+      "dailyLeft": "Il te reste le défi du jour"
+    },
+    "level": {
+      "title": "Ton niveau",
+      "provisional": "provisoire",
+      "next": "{{ disc }} dans {{ points }} pts",
+      "top": "Le plus haut disque",
+      "review": "Revoir",
+      "label": "Niveau : {{ disc }}, {{ points }} points",
+      "newSetlist": "Nouvelle setlist",
+      "challenge": "Défier un ami"
+    },
+    "shareSheet": {
+      "title": "Partager",
+      "challenge": "Défier un ami",
+      "challengeBody": "Il joue tes {{ tracks }} morceaux.",
+      "group": "Inviter dans un groupe",
+      "groupBody": "Il rejoint « {{ name }} » et joue tes {{ tracks }} morceaux.",
+      "groupPick": "Dans quel groupe ?",
+      "noGroup": "Créer un groupe et inviter",
+      "noGroupBody": "Un classement privé entre amis.",
+      "grid": "Ma grille",
+      "gridBody": "Seulement le résultat, sans lien.",
+      "copied": "Copié !",
+      "failed": "Copie impossible"
+    }
+  },
+  "social": {
+    "general": {
+      "tab": "Général",
+      "percent": "Tu es dans le top {{ percent }} %.",
+      "empty": "Personne n'apparaît encore ici.",
+      "appear": "Apparaître dans le classement",
+      "appearHint": "Ton pseudo et ton niveau sont alors visibles de tous.",
+      "saveFailed": "Le changement n'a pas été enregistré.",
+      "profileLink": "Classement général"
+    },
+    "ranking": {
+      "title": "Classement",
+      "loading": "Chargement…",
+      "error": "Le classement ne répond pas.",
+      "groupsLabel": "Mes groupes",
+      "newGroup": "+ Groupe",
+      "me": "Toi",
+      "unplayed": "Pas encore joué",
+      "privacy": "Seuls les membres du groupe voient ton pseudo."
+    },
+    "empty": {
+      "title": "Joue contre tes amis",
+      "body": "Crée un groupe, envoie le lien : vous vous retrouvez dans le même classement.",
+      "create": "Créer un groupe",
+      "guestBody": "Un classement privé entre amis. Il faut un compte pour en faire partie.",
+      "createAccount": "Créer un compte"
+    },
+    "invite": {
+      "button": "Inviter un ami dans {{ name }}",
+      "copied": "Lien copié !",
+      "failed": "Copie impossible",
+      "text": "Rejoins « {{ name }} » sur InSeconds : on se retrouve dans le même classement."
+    },
+    "leave": {
+      "link": "Quitter le groupe",
+      "title": "Quitter « {{ name }} » ?",
+      "body": "Tu n'apparaîtras plus dans son classement. Le lien d'invitation te permettra d'y revenir.",
+      "confirm": "Quitter",
+      "cancel": "Rester",
+      "failed": "Impossible de quitter le groupe pour le moment."
+    },
+    "create": {
+      "title": "Nouveau groupe",
+      "subtitle": "Un classement privé entre amis, famille ou collègues.",
+      "label": "Nom du groupe",
+      "step1": "Tu crées le groupe",
+      "step2": "Tu envoies le lien à tes amis",
+      "step3": "Chacun apparaît avec ses points après sa première setlist",
+      "privacy": "Seuls les membres voient ton pseudo. Tu peux quitter le groupe quand tu veux.",
+      "submit": "Créer et inviter",
+      "cancel": "Annuler",
+      "tooMany": "Tu as atteint le nombre de groupes possible.",
+      "accountRequired": "Il faut un compte pour créer un groupe.",
+      "failed": "La création n'a pas marché. Réessaie."
+    },
+    "join": {
+      "lead": "Tu es invité dans le groupe",
+      "members": "{{ count }} membres sur {{ max }}",
+      "submit": "Rejoindre",
+      "privacy": "Les membres du groupe verront ton pseudo et tes points.",
+      "already": "Tu es déjà dans ce groupe.",
+      "seeRanking": "Voir le classement",
+      "full": "Ce groupe est complet.",
+      "accountRequired": "Il faut un compte pour rejoindre un groupe. L'invitation t'attendra dans l'onglet Classement.",
+      "failed": "L'adhésion n'a pas marché. Réessaie.",
+      "notFoundTitle": "Invitation introuvable",
+      "notFoundBody": "Ce lien ne mène plus à un groupe. Demande un nouveau lien à ton ami.",
+      "backHome": "Retour au jeu du jour"
+    },
+    "pending": {
+      "line": "Tu es invité dans un groupe"
+    },
+    "strip": {
+      "rank": "n° {{ rank }} sur {{ members }}",
+      "empty": "Joue avec tes amis",
+      "create": "Créer un groupe"
+    }
   }
 }

@@ -55,30 +55,36 @@
       "candidate_preview_missing": "Deezer no longer has a preview for this track."
     },
     "daily": {
-      "no_challenge": "There's no challenge today.",
-      "already_played": "You've already played today's challenge.",
       "abandoned": "You abandoned today's challenge.",
-      "session_not_found": "This game no longer exists.",
-      "track_not_found": "This track isn't in today's challenge.",
-      "track_lock_not_released": "Answer the current track first.",
-      "hint_locked": "This hint isn't unlocked yet.",
       "already_answered": "You've already answered this track.",
-      "listened_duration_below_verified_minimum": "The announced step is shorter than what you listened to."
+      "already_played": "You've already played today's challenge.",
+      "hint_locked": "This hint isn't unlocked yet.",
+      "invalid_month": "Invalid month: the expected format is yyyy-mm.",
+      "listened_duration_below_verified_minimum": "The announced step is shorter than what you listened to.",
+      "no_challenge": "There's no challenge today.",
+      "session_not_found": "This game no longer exists.",
+      "track_lock_not_released": "Answer the current track first.",
+      "track_not_found": "This track isn't in today's challenge."
     },
     "runs": {
-      "access_denied": "Platines is invitation-only for now.",
-      "no_challenge": "Not enough tracks for a playlist, try again later.",
+      "abandoned": "You abandoned this playlist.",
+      "access_denied": "Setlist is invitation-only for now.",
+      "already_answered": "You've already answered this track.",
+      "already_played": "You've already played this playlist.",
       "challenge_not_found": "This playlist doesn't exist. Check the link.",
       "comparison_locked": "The comparison opens once your game is over.",
       "difficulty_locked": "This round's difficulty is already set.",
-      "theme_locked": "This round's theme is already chosen.",
+      "invalid_month": "Invalid month: the expected format is yyyy-mm.",
+      "no_challenge": "Not enough tracks for a playlist, try again later.",
       "session_not_found": "This game no longer exists.",
-      "already_played": "You've already played this playlist.",
-      "abandoned": "You abandoned this playlist.",
-      "track_not_found": "This track isn't in this playlist.",
+      "swap_unavailable": "Swapping the track is no longer possible.",
+      "theme_locked": "This round's theme is already chosen.",
       "track_lock_not_released": "Answer the current track first.",
-      "already_answered": "You've already answered this track.",
-      "swap_unavailable": "Swapping the track is no longer possible."
+      "track_not_found": "This track isn't in this playlist."
+    },
+    "social": {
+      "invalid_name": "That group name isn't valid.",
+      "group_not_found": "This group no longer exists."
     }
   },
   "shell": {
@@ -112,6 +118,41 @@
   "ui": {
     "envBanner": {
       "label": "development environment"
+    },
+    "history": {
+      "title": "History",
+      "tabs": {
+        "daily": "Daily challenges",
+        "setlist": "Setlists"
+      },
+      "average": "Average",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "daily": {
+        "count": "Challenges played",
+        "best": "Best",
+        "empty": "No challenge played this month."
+      },
+      "setlist": {
+        "count": "Setlists",
+        "best": "Record",
+        "empty": "No setlist played this month.",
+        "emptyFilter": "No setlist at this difficulty this month.",
+        "all": "All",
+        "filterLabel": "Difficulty",
+        "detailTitle": "Your {{count}} tracks",
+        "back": "Back to history",
+        "allTracks": "All",
+        "missed": "Missed · {{count}}",
+        "round": "Round {{round}}",
+        "listen": "Listen to {{title}}",
+        "noMissed": "No missed track.",
+        "notFound": "This game cannot be found.",
+        "withdrawn": "Track withdrawn"
+      },
+      "loading": "Loading…"
     }
   },
   "gameplay": {
@@ -255,7 +296,8 @@
         "cancel": "Cancel",
         "done": "Your account has been deleted."
       },
-      "backToGame": "Back to game"
+      "backToGame": "Back to game",
+      "language": "Language"
     },
     "devices": {
       "title": "Connected devices",
@@ -298,6 +340,7 @@
       "dashboard": "Home",
       "challengesPlain": "Challenges",
       "playersPlain": "Players",
+      "groupsPlain": "Groups",
       "challenges": "Challenges ({{ count }})",
       "players": "Players ({{ count }})",
       "content": "Content"
@@ -497,6 +540,28 @@
       "colCompleted": "Finished",
       "scoreChart": "Score distribution"
     },
+    "groups": {
+      "title": "Groups ({{ count }})",
+      "filterPlaceholder": "Filter by name or creator",
+      "loading": "Loading groups...",
+      "empty": "No groups yet.",
+      "noMatch": "No group matches this filter.",
+      "colName": "Name",
+      "colMembers": "Members",
+      "colOwner": "Creator",
+      "colCreated": "Created",
+      "memberCount": "{{ count }} member(s)",
+      "renameLabel": "New group name",
+      "rename": "Rename",
+      "save": "Save",
+      "cancel": "Cancel",
+      "resetName": "Reset name",
+      "resetConfirm": "Replace the name with a neutral one?",
+      "resetYes": "Reset",
+      "delete": "Delete",
+      "deleteConfirm": "Delete this group and its memberships?",
+      "deleteYes": "Delete for good"
+    },
     "players": {
       "title": "Registered accounts ({{ count }})",
       "filterPlaceholder": "Filter by username or email",
@@ -511,6 +576,10 @@
       "colRun": "Run",
       "runAccessToggle": "Allow this account to play Run mode",
       "runAccessAdmin": "Admins always have access to Run mode",
+      "resetPseudo": "Reset pseudo",
+      "resetPseudoConfirm": "Replace the pseudo with a neutral one?",
+      "resetPseudoYes": "Reset",
+      "resetPseudoCancel": "Cancel",
       "colGames": "Games",
       "adminBadge": "Admin",
       "neverSeen": "Never",
@@ -760,6 +829,13 @@
     "header": {
       "track": "Track {{ current }} / {{ total }}"
     },
+    "home": {
+      "label": "Daily challenge",
+      "done": "Daily challenge · done",
+      "seeResult": "See the result",
+      "remainingHours": "The daily challenge is still waiting · {{ n }} h left",
+      "remainingMinutes": "The daily challenge is still waiting · {{ n }} min left"
+    },
     "welcome": {
       "title": "Today's blind test",
       "subtitle": "{{ count }} tracks to guess",
@@ -1007,7 +1083,7 @@
   "privacy": {
     "title": "Privacy",
     "metaDescription": "InSeconds privacy policy: data collected, retention periods and GDPR rights, with or without an account.",
-    "updated": "Last updated: November 6, 2026",
+    "updated": "Last updated: November 11, 2026",
     "intro": "InSeconds is a free music blind test game, available at https://inseconds.cc. It remains fully playable as a guest, without any account or registration; creating an account, using only an email address, is optional and lets you find your progress again on another device. This page describes the site's privacy policy, in accordance with the General Data Protection Regulation (GDPR, Regulation EU 2016/679). The publisher and the host are presented in the legal notice.",
     "legalLink": "See the legal notice",
     "controller": {
@@ -1016,7 +1092,7 @@
     },
     "data": {
       "title": "Data collected, purposes and legal basis",
-      "body": "No data is required to play: guest mode asks for no name, no email, no registration.\nDepending on how you use the app, the following categories of data may be processed:\n· pseudonymous technical identifier: randomly generated and stored in a cookie, used to recognize your browser from one visit to the next (resuming a game, one game per day, win streak). Purpose: providing the game. Legal basis: performance of the requested service (Article 6.1.b GDPR);\n· connected devices: for each browser you play on, the app keeps the date of first login, the date of the last visit and a rough label of the browser and device (for example \"Safari · iPhone\", never the full technical header). With an account, the list of your devices is shown in your profile, where you can log out each one. Purpose: account security and cross-device login. Legal basis: performance of the requested service (Article 6.1.b);\n· email and pseudo, only if you create an account: an optional account, activated via a login link sent by email (no password), lets you find your history and streak again on any device; the pseudo is a display name you choose freely. Purpose: account management and cross-device login. Legal basis: your consent (Article 6.1.a GDPR), you remain free to play as a guest without ever providing this information;\n· game data: the result of each answer (whether the artist and title were found, without the text you type, which is never kept), chosen listening durations, scores and play dates. Purpose: running the game and computing anonymous global statistics (median score, success rate per track). Legal basis: performance of the requested service (Article 6.1.b). With an account, the publisher can view in the administration area your username, email address, streak and the history of your games over the last 30 days, solely to run the service and answer your requests;\n· Platines mode (invitation only): for each game, the result of each track (whether the artist and title were found, never the text you type), its points, the difficulty you chose for each round and when you chose it, the boosts you received, dropped or played (on which track, and when), the rounds passed, the score and the dates played; your record (best score and best disc); the playlists you launch and their author; the access the publisher granted you. A playlist is shared through a link: whoever opens it sees its author's pseudo (their account pseudo, otherwise their guest pseudo, otherwise \"Guest\"), during their game the author's running total track by track (up to the track they have reached) if the author finished the playlist, and, once their own game is over, the pseudo (account pseudo, otherwise guest pseudo, otherwise \"Guest\"), disc and score of everyone who played it. This is not a public leaderboard: only people with the link can see them. Without an account, you give a guest pseudo at the end of your first game on a friend's playlist: it is required to see the comparison, tied to your technical identifier (so to your browser) so that you find it again on each visit, editable at any time, and never the same as an account's pseudo; if two players of the same comparison share a pseudo, a short mark derived from their identifier tells them apart. It appears in the copy of your data and is erased automatically 91 days after your last visit (and if you create an account, the account's pseudo is the one that counts). If you delete your account, your games are deleted; the playlists you launched stay playable, without an author. Purpose: running this mode and the comparison between people who played the same playlist. Legal basis: performance of the requested service (Article 6.1.b);\n· IP address: technically processed on every request, as with any website, for security purposes (limiting the number of login attempts to prevent abuse). Purpose: service security. Legal basis: the controller's legitimate interest (Article 6.1.f);\n· technical logs: for each request, the application records the pseudonymous technical identifier described above, the page or action involved, its duration, its outcome, the browser and device type (for example \"Safari · iPhone\") and, when a bug occurs, the error message, its stack trace, the app version and the connection status (online or not). These logs never contain your email, your pseudo, your submitted answers or your cookie. Purpose: detecting and fixing bugs, monitoring that the service runs properly. Legal basis: the controller's legitimate interest (Article 6.1.f);\n· audience measurement: on each page you view, a small Cloudflare Web Analytics script sends Cloudflare the page address, the site you came from, your browser and device type, and the page load times. Cloudflare turns this into aggregate statistics (visits, page views, countries, referring sites, devices, site speed), without any cookie or identifier that could recognise you; the publisher only sees these statistics. Purpose: knowing how much the site is visited and how fast it is. Legal basis: the controller's legitimate interest (Article 6(1)(f));\n· arrival source: when your guest identifier is created, the app records where you came from: the campaign name carried by the link you followed (for example \"instagram\", or \"share\" for a link shared by a player), otherwise only the domain name of the site you came from (for example \"google.com\", never the full page address), or \"direct\". It is kept in your browser for the duration of the visit, then attached to your pseudonymous identifier; it is included in the copy of your data and deleted with it. Purpose: knowing which channels bring new players (audience measurement). Legal basis: the controller's legitimate interest (Article 6(1)(f));\n· local preferences: your preferred language, whether you muted the Platines sounds, and a record of the information messages already shown are stored locally in your browser; they never leave your device and are never sent to our servers."
+      "body": "No data is required to play: guest mode asks for no name, no email, no registration.\nDepending on how you use the app, the following categories of data may be processed:\n· pseudonymous technical identifier: randomly generated and stored in a cookie, used to recognize your browser from one visit to the next (resuming a game, one game per day, win streak). Purpose: providing the game. Legal basis: performance of the requested service (Article 6.1.b GDPR);\n· connected devices: for each browser you play on, the app keeps the date of first login, the date of the last visit and a rough label of the browser and device (for example \"Safari · iPhone\", never the full technical header). With an account, the list of your devices is shown in your profile, where you can log out each one. Purpose: account security and cross-device login. Legal basis: performance of the requested service (Article 6.1.b);\n· email and pseudo, only if you create an account: an optional account, activated via a login link sent by email (no password), lets you find your history and streak again on any device; the pseudo is a display name you choose freely. Purpose: account management and cross-device login. Legal basis: your consent (Article 6.1.a GDPR), you remain free to play as a guest without ever providing this information;\n· game data: the result of each answer (whether the artist and title were found, without the text you type, which is never kept), chosen listening durations, scores and play dates. Purpose: running the game and computing anonymous global statistics (median score, success rate per track). Legal basis: performance of the requested service (Article 6.1.b). With an account, the publisher can view in the administration area your username, email address, streak and the history of your games over the last 30 days, solely to run the service and answer your requests;\n· Setlist mode (invitation only): for each game, the result of each track (whether the artist and title were found, never the text you type), its points, the difficulty you chose for each round and when you chose it, the boosts you received, dropped or played (on which track, and when), the rounds passed, the score and the dates played; your record (best score and best disc); the playlists you launch and their author; the access the publisher granted you. A playlist is shared through a link: whoever opens it sees its author's pseudo (their account pseudo, otherwise their guest pseudo, otherwise \"Guest\"), during their game the author's running total track by track (up to the track they have reached) if the author finished the playlist, and, once their own game is over, the pseudo (account pseudo, otherwise guest pseudo, otherwise \"Guest\"), disc and score of everyone who played it. This is not a public leaderboard: only people with the link can see them. Without an account, you give a guest pseudo at the end of your first game on a friend's playlist: it is required to see the comparison, tied to your technical identifier (so to your browser) so that you find it again on each visit, editable at any time, and never the same as an account's pseudo; if two players of the same comparison share a pseudo, a short mark derived from their identifier tells them apart. It appears in the copy of your data and is erased automatically 91 days after your last visit (and if you create an account, the account's pseudo is the one that counts). If you delete your account, your games are deleted; the playlists you launched stay playable, without an author. Purpose: running this mode and the comparison between people who played the same playlist. Legal basis: performance of the requested service (Article 6.1.b);\n· friend groups (account required): the name of the group you create or join (free text, limited to the characters of a nickname), your role (creator or member) and the date you joined. The members of a group, and only they, see your account nickname and your ranking in the group (your Setlist level disc and points, computed from your recent games); someone who has the invitation link only sees the group name and the number of places left. The overall ranking of the Setlist mode is separate: you only appear in it if you chose to (a switch on the ranking page, off by default); while it is on, your account nickname, your disc and your level points are visible to other players, and you can turn it off at any time. You can leave a group at any time (the creator can delete it), deleting your account removes you from your groups, and the copy of your data includes them. Purpose: playing with friends and comparing results. Legal basis: performance of the service you asked for (Article 6.1.b);\n· IP address: technically processed on every request, as with any website, for security purposes (limiting the number of login attempts to prevent abuse). Purpose: service security. Legal basis: the controller's legitimate interest (Article 6.1.f);\n· technical logs: for each request, the application records the pseudonymous technical identifier described above, the page or action involved, its duration, its outcome, the browser and device type (for example \"Safari · iPhone\") and, when a bug occurs, the error message, its stack trace, the app version and the connection status (online or not). These logs never contain your email, your pseudo, your submitted answers or your cookie. Purpose: detecting and fixing bugs, monitoring that the service runs properly. Legal basis: the controller's legitimate interest (Article 6.1.f);\n· audience measurement: on each page you view, a small Cloudflare Web Analytics script sends Cloudflare the page address, the site you came from, your browser and device type, and the page load times. Cloudflare turns this into aggregate statistics (visits, page views, countries, referring sites, devices, site speed), without any cookie or identifier that could recognise you; the publisher only sees these statistics. Purpose: knowing how much the site is visited and how fast it is. Legal basis: the controller's legitimate interest (Article 6(1)(f));\n· arrival source: when your guest identifier is created, the app records where you came from: the campaign name carried by the link you followed (for example \"instagram\", or \"share\" for a link shared by a player), otherwise only the domain name of the site you came from (for example \"google.com\", never the full page address), or \"direct\". It is kept in your browser for the duration of the visit, then attached to your pseudonymous identifier; it is included in the copy of your data and deleted with it. Purpose: knowing which channels bring new players (audience measurement). Legal basis: the controller's legitimate interest (Article 6(1)(f));\n· local preferences: your preferred language, whether you muted the Setlist sounds, a record of the information messages already shown and, if you open a group invitation before having an account, the code of that invitation (so it can be offered again once you are signed in) are stored locally in your browser; they never leave your device and are never sent to our servers (the invitation code is only sent if you choose to join the group)."
     },
     "cookie": {
       "title": "Cookie",
@@ -1069,9 +1145,16 @@
       "round": "round {{ round }}",
       "withdrawn": "Track removed"
     },
+    "home": {
+      "record": "Best",
+      "anytime": "yours whenever you like",
+      "playedToday": "Setlist played",
+      "play": "Play",
+      "replay": "Play again"
+    },
     "welcome": {
       "badge": "Early access",
-      "title": "Platines",
+      "title": "Setlist",
       "tagline": "Aim for the gold record.",
       "record": "Your record: {{ score }} pts",
       "launch": "Start a run",
@@ -1095,7 +1178,7 @@
     },
     "leave": {
       "title": "Run in progress",
-      "body": "Your run is kept: you can resume it from the Platines home.",
+      "body": "Your run is kept: you can resume it from the Setlist home.",
       "confirm": "Leave anyway",
       "cancel": "Keep playing"
     },
@@ -1178,7 +1261,10 @@
       "wax": "Wax record",
       "bronze": "Bronze record",
       "silver": "Silver record",
-      "gold": "Gold record"
+      "gold": "Gold record",
+      "platinum": "Platinum record",
+      "double_platinum": "Double platinum",
+      "diamond": "Diamond record"
     },
     "withdrawn": {
       "title": "Track removed from the round",
@@ -1186,10 +1272,11 @@
     },
     "share": {
       "text": "I’m sending you a playlist on InSeconds. Can you beat me?",
-      "header": "{{ score }} pts · {{ disc }} · InSeconds Platines",
+      "header": "{{ score }} pts · {{ disc }} · InSeconds Setlist",
       "round": "Round {{ round }}",
       "duelWon": "I beat {{ name }} by {{ points }} pts.",
-      "beatMe": "Do better on the same playlist:"
+      "beatMe": "Do better on the same playlist:",
+      "groupInvite": "Join “{{ name }}” and beat me on my setlist"
     },
     "palier": {
       "theme": "Round {{round}} · theme",
@@ -1242,6 +1329,147 @@
       "tied": "Tied",
       "stopped": "stopped in round {{ round }}"
     },
-    "combo": "{{ count }} in a row"
+    "hits": {
+      "title": "Hits",
+      "back": "Back to Setlist",
+      "earned": "Earned",
+      "new": "New",
+      "fresh": "+{{ count }}",
+      "empty": "Play a setlist to earn your first Hit.",
+      "stateEarned": "earned",
+      "stateLocked": "not earned yet",
+      "names": {
+        "first_setlist": "First setlist finished",
+        "first_record": "First record beaten",
+        "first_card": "First card won",
+        "first_risky_round": "First round in Music buff",
+        "first_group": "First group joined",
+        "ten_setlists": "10 setlists played",
+        "fifty_setlists": "50 setlists played",
+        "perfect_round": "Perfect round",
+        "ten_in_a_row": "10 right answers in a row",
+        "boss_beaten": "Beat the boss",
+        "setlist_won": "Setlist won",
+        "gold_in_risky": "Gold record in Music buff",
+        "friend_played": "A friend played your setlist",
+        "duel_won": "Duel won",
+        "five_duels": "5 duels won",
+        "level_gold": "Gold level",
+        "level_diamond": "Diamond level"
+      }
+    },
+    "combo": "{{ count }} in a row",
+    "v4": {
+      "bar": {
+        "label": "Navigation",
+        "daily": "Today",
+        "setlist": "Setlist",
+        "history": "History",
+        "ranking": "Ranking"
+      },
+      "dailyLeft": "Today's challenge is still waiting"
+    },
+    "level": {
+      "title": "Your level",
+      "provisional": "provisional",
+      "next": "{{ disc }} in {{ points }} pts",
+      "top": "The highest record",
+      "review": "Review",
+      "label": "Level: {{ disc }}, {{ points }} points",
+      "newSetlist": "New setlist",
+      "challenge": "Challenge a friend"
+    },
+    "shareSheet": {
+      "title": "Share",
+      "challenge": "Challenge a friend",
+      "challengeBody": "They play your {{ tracks }} tracks.",
+      "group": "Invite to a group",
+      "groupBody": "They join “{{ name }}” and play your {{ tracks }} tracks.",
+      "groupPick": "Which group?",
+      "noGroup": "Create a group and invite",
+      "noGroupBody": "A private ranking between friends.",
+      "grid": "My grid",
+      "gridBody": "Only the result, no link.",
+      "copied": "Copied!",
+      "failed": "Copy failed"
+    }
+  },
+  "social": {
+    "general": {
+      "tab": "Overall",
+      "percent": "You are in the top {{ percent }}%.",
+      "empty": "Nobody appears here yet.",
+      "appear": "Appear in the ranking",
+      "appearHint": "Your nickname and level are then visible to everyone.",
+      "saveFailed": "The change was not saved.",
+      "profileLink": "Overall ranking"
+    },
+    "ranking": {
+      "title": "Ranking",
+      "loading": "Loading…",
+      "error": "The ranking is not responding.",
+      "groupsLabel": "My groups",
+      "newGroup": "+ Group",
+      "me": "You",
+      "unplayed": "Not played yet",
+      "privacy": "Only the group's members see your username."
+    },
+    "empty": {
+      "title": "Play against your friends",
+      "body": "Create a group, send the link: you all end up in the same ranking.",
+      "create": "Create a group",
+      "guestBody": "A private ranking between friends. You need an account to be part of one.",
+      "createAccount": "Create an account"
+    },
+    "invite": {
+      "button": "Invite a friend to {{ name }}",
+      "copied": "Link copied!",
+      "failed": "Copy failed",
+      "text": "Join “{{ name }}” on InSeconds: we'll be in the same ranking."
+    },
+    "leave": {
+      "link": "Leave the group",
+      "title": "Leave “{{ name }}”?",
+      "body": "You will no longer appear in its ranking. The invitation link lets you come back.",
+      "confirm": "Leave",
+      "cancel": "Stay",
+      "failed": "Unable to leave the group right now."
+    },
+    "create": {
+      "title": "New group",
+      "subtitle": "A private ranking between friends, family or colleagues.",
+      "label": "Group name",
+      "step1": "You create the group",
+      "step2": "You send the link to your friends",
+      "step3": "Everyone appears with their points after their first setlist",
+      "privacy": "Only members see your username. You can leave the group whenever you want.",
+      "submit": "Create and invite",
+      "cancel": "Cancel",
+      "tooMany": "You have reached the maximum number of groups.",
+      "accountRequired": "You need an account to create a group.",
+      "failed": "The group could not be created. Try again."
+    },
+    "join": {
+      "lead": "You are invited to the group",
+      "members": "{{ count }} members out of {{ max }}",
+      "submit": "Join",
+      "privacy": "The group's members will see your username and your points.",
+      "already": "You are already in this group.",
+      "seeRanking": "See the ranking",
+      "full": "This group is full.",
+      "accountRequired": "You need an account to join a group. The invitation will wait for you in the Ranking tab.",
+      "failed": "Joining did not work. Try again.",
+      "notFoundTitle": "Invitation not found",
+      "notFoundBody": "This link no longer leads to a group. Ask your friend for a new one.",
+      "backHome": "Back to the daily game"
+    },
+    "pending": {
+      "line": "You are invited to a group"
+    },
+    "strip": {
+      "rank": "#{{ rank }} of {{ members }}",
+      "empty": "Play with your friends",
+      "create": "Create a group"
+    }
   }
 }

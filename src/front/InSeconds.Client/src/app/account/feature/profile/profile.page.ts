@@ -7,6 +7,7 @@ import { FileDownload } from '../../../core/download/file-download';
 import { AppError } from '../../../core/errors/app-error';
 import { errorMessageKey } from '../../../core/errors/error-messages';
 import { LanguageService } from '../../../core/i18n/language.service';
+import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { SessionStore } from '../../../core/session/session.store';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
@@ -46,10 +47,16 @@ function errorOf(status: ActionStatus): AppError | null {
   templateUrl: './profile.page.html',
 })
 export class ProfilePage implements OnInit {
+  protected setLanguage(lang: 'fr' | 'en'): void {
+    this.language.use(lang);
+  }
+
   protected readonly session = inject(SessionStore);
   protected readonly profile = inject(ProfileStore);
   protected readonly devices = inject(DevicesStore);
-  protected readonly locale = inject(LanguageService).current;
+  private readonly language = inject(LanguageService);
+  protected readonly locale = this.language.current;
+  protected readonly chrome = inject(ShellChromeStore);
   private readonly modal = inject(ModalService);
   private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);

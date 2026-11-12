@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, effect, inject, viewChild } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, computed, effect, inject, viewChild } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { SessionStore } from '../../../core/session/session.store';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
@@ -33,21 +34,28 @@ import { RunRevealComponent } from '../../ui/run-reveal/run-reveal.component';
 import { RunStatusScreenComponent } from '../../ui/run-status-screen/run-status-screen.component';
 import { RunWelcomeScreenComponent } from '../../ui/run-welcome-screen/run-welcome-screen.component';
 import { RunWithdrawnCardComponent } from '../../ui/run-withdrawn-card/run-withdrawn-card.component';
+import { GroupsStore } from '../../../social/data-access/groups.store';
+import { PendingInvite } from '../../../social/data-access/pending-invite';
+import { GroupsStripComponent } from '../../../social/feature/groups-strip/groups-strip.component';
+import { RunFinish } from '../../domain/run';
+import { RunHitsLineComponent } from '../hits-line/run-hits-line.component';
 import { reloadMomentFor } from '../reload-moment';
+import { RunShareSheetComponent, RunShareSheetData } from '../share-sheet/run-share-sheet.component';
 
 /**
- * La page du mode Run (`/runs`, et `/runs/<code>` pour le lien d'un ami) : elle affiche l'écran que le `RunGameStore` indique et branche ce qui est propre au navigateur : les fenêtres
+ * La page du mode Run (`/setlist`, et `/setlist/<code>` pour le lien d'un ami) : elle affiche l'écran que le `RunGameStore` indique et branche ce qui est propre au navigateur : les fenêtres
  * (abandon, sortie de partie), la fermeture de l'onglet, la nouvelle version du site, le renvoi au jeu du jour sans accès sur invitation. Les stores `RunGameStore` et `TrackRoundStore` sont ceux de
  * cette page ; l'adaptateur de l'API et le lecteur sont fournis par la route.
  */
 @Component({
   selector: 'app-runs-page',
   imports: [
-    TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, RunHeaderComponent, RunClockComponent, RunRevealComponent, RunPileComponent,
+    TranslatePipe, RouterLink, DecorBackgroundComponent, TrackRoundComponent, RunHeaderComponent, RunClockComponent, RunRevealComponent, RunPileComponent,
     RunWithdrawnCardComponent, RunFinishComponent, RunWelcomeScreenComponent, RunStatusScreenComponent, ResumeScreenComponent,
     RunLinkScreenComponent, RunThemeScreenComponent, RunPseudoScreenComponent, RunComparisonScreenComponent, RunPalierComponent, RunDifficultyComponent, RunRoundCardsComponent,
+    GroupsStripComponent, RunHitsLineComponent,
   ],
-  providers: [RunGameStore, TrackRoundStore, RunShare, RunSounds],
+  providers: [RunGameStore, TrackRoundStore, RunShare, RunSounds, GroupsStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './runs.page.html',
   host: { '(window:beforeunload)': 'onBeforeUnload($event)', '(document:visibilitychange)': 'onVisibilityChange()' },
@@ -66,6 +74,12 @@ export class RunsPage implements OnInit {
   private readonly translate = inject(TranslateService);
 
   /** Le thème d'une manche de la playlist en cours, `null` pour une manche sans thème. */
+  /** « Revoir » de la fin de run : la partie dans l'historique. */
+  protected readonly reviewLink = computed(() => {
+    const sessionId = this.store.session()?.sessionId;
+    return sessionId === undefined ? null : `/setlist/history/${sessionId}`;
+  });
+
   protected themeOf(round: number): string | null {
     return this.store.session()?.themes.find(t => t.round === round)?.name ?? null;
   }
@@ -73,10 +87,22 @@ export class RunsPage implements OnInit {
   private readonly leaveGuard = new LeaveGuard(inject(ModalService));
   /** La manche en cours, dont la carte arrive à chaque nouveau morceau. */
   private readonly card = viewChild(TrackRoundComponent, { read: ElementRef<HTMLElement> });
-  /** Le code du lien ouvert (`/runs/<code>`), vide sur `/runs`. */
-  private readonly code = inject(ActivatedRoute).snapshot.paramMap.get('code');
+  private readonly route = inject(ActivatedRoute);
+  /** Le code du lien ouvert (`/setlist/<code>`), vide sur `/setlist`. */
+  private readonly code = this.route.snapshot.paramMap.get('code');
+  private readonly pendingInvite = inject(PendingInvite);
+  private readonly injector = inject(Injector);
+
+  protected readonly chrome = inject(ShellChromeStore);
 
   constructor() {
+    const chrome = this.chrome;
+    effect(() => {
+      // La barre ne reste que sur l'accueil, le lien, la fin et la comparaison : jamais au milieu d'un run.
+      const screen = this.store.screen();
+      chrome.setImmersive(screen === 'playing' || screen === 'theme' || screen === 'palier' || screen === 'difficulty' || screen === 'pseudo' || screen === 'resume');
+    });
+    inject(DestroyRef).onDestroy(() => chrome.setImmersive(false));
     // Une nouvelle version du site ne recharge jamais la page en pleine manche (cf. `reloadMomentFor`).
     inject(VersionService).allowReload(() => reloadMomentFor(this.store.screen()), inject(DestroyRef));
     // Si la partie quitte « playing » pendant qu'une confirmation de sortie est ouverte, il n'y a plus de manche à protéger : la navigation continue.
@@ -95,14 +121,27 @@ export class RunsPage implements OnInit {
         if (card instanceof HTMLElement) enterCard(card);
       }, { injector });
     });
-    // Sans accès sur invitation, le mode n'a pas d'écran : retour au jeu du jour, sans laisser `/runs` dans l'historique.
+    // Sans accès sur invitation, le mode n'a pas d'écran : retour au jeu du jour, sans laisser `/setlist` dans l'historique.
     effect(() => {
       if (this.store.screen() === 'access_denied') void this.router.navigateByUrl('/daily', { replaceUrl: true });
     });
   }
 
   ngOnInit(): void {
+    // Le lien d'une playlist peut aussi inviter dans un groupe (`?group=<code>`) : l'invitation attend la fin de la partie.
+    const invite = this.route.snapshot.queryParamMap.get('group');
+    if (invite) this.pendingInvite.set(invite);
     void this.store.init(this.code);
+  }
+
+  /** « Défier un ami » : sous la V4, la feuille à trois choix (défier, inviter dans un groupe, ma grille) ; sinon le partage du score. */
+  protected shareFinish(finish: RunFinish): void {
+    if (!this.chrome.v4()) {
+      void this.share.shareScore(finish, this.language.current(), this.store.duel());
+      return;
+    }
+    const data: RunShareSheetData = { finish, lang: this.language.current(), duel: this.store.duel() };
+    this.modal.openSheet<void, RunShareSheetData, RunShareSheetComponent>(RunShareSheetComponent, { data, injector: this.injector });
   }
 
   /** Le crayon de la comparaison : un invité change son pseudo ici, un compte le change dans son profil. */

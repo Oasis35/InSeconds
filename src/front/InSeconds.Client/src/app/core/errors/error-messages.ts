@@ -38,6 +38,7 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'daily.already_answered': 'errors.daily.already_answered',
   'daily.already_played': 'errors.daily.already_played',
   'daily.hint_locked': 'errors.daily.hint_locked',
+  'daily.invalid_month': 'errors.daily.invalid_month',
   'daily.listened_duration_below_verified_minimum': 'errors.daily.listened_duration_below_verified_minimum',
   'daily.no_challenge': 'errors.daily.no_challenge',
   'daily.session_not_found': 'errors.daily.session_not_found',
@@ -61,12 +62,16 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'runs.challenge_not_found': 'errors.runs.challenge_not_found',
   'runs.comparison_locked': 'errors.runs.comparison_locked',
   'runs.difficulty_locked': 'errors.runs.difficulty_locked',
+  'runs.invalid_month': 'errors.runs.invalid_month',
   'runs.no_challenge': 'errors.runs.no_challenge',
   'runs.session_not_found': 'errors.runs.session_not_found',
   'runs.swap_unavailable': 'errors.runs.swap_unavailable',
   'runs.theme_locked': 'errors.runs.theme_locked',
   'runs.track_lock_not_released': 'errors.runs.track_lock_not_released',
   'runs.track_not_found': 'errors.runs.track_not_found',
+  // Social (modération des groupes de l'admin)
+  'social.group_not_found': 'errors.social.group_not_found',
+  'social.invalid_name': 'errors.social.invalid_name',
 };
 
 /** Message affiché pour un code inconnu, toujours avec le `traceId` quand il existe. */

@@ -18,7 +18,7 @@ describe('DailyApi', () => {
   beforeEach(() => {
     client = {
       getToday: vi.fn(), startSession: vi.fn(), submitAnswer: vi.fn(), requestHint: vi.fn(), getTodayStats: vi.fn(),
-      getArchivePreview: vi.fn(),
+      getArchivePreview: vi.fn(), getDailyHistory: vi.fn(),
     };
     TestBed.configureTestingModule({ providers: [DailyApi, { provide: DailyClient, useValue: client }] });
     api = TestBed.inject(DailyApi);
@@ -158,5 +158,36 @@ describe('DailyApi', () => {
     expect(await api.archivePreviewUrl('2026-10-21', 2)).toBe('https://preview/2.mp3');
     expect(client['getArchivePreview']).toHaveBeenCalledWith('2026-10-21', 2);
     expect(await api.archivePreviewUrl('2026-10-21', 3)).toBeNull();
+  });
+
+  it("l'historique : un mois en types du domaine, le mois en cours sans mois demandé", async () => {
+    client['getDailyHistory'].mockReturnValue(of({
+      month: '2026-11', previousMonth: '2026-10', nextMonth: undefined, playedCount: 58, averageScore: 2050, bestScore: 3100,
+      games: [{ date: '2026-11-10', score: 2140, tracks: [{ position: 1, artistCorrect: true, titleCorrect: false }] }],
+    }));
+
+    const history = await api.history(null);
+
+    expect(client['getDailyHistory']).toHaveBeenCalledWith(undefined);
+    expect(history).toEqual({
+      month: '2026-11', previousMonth: '2026-10', nextMonth: null, playedCount: 58, averageScore: 2050, bestScore: 3100,
+      games: [{ date: '2026-11-10', score: 2140, tracks: [{ position: 1, artistCorrect: true, titleCorrect: false }] }],
+    });
+  });
+
+  it("l'historique d'un navigateur inconnu du serveur (401) est vide, pas une erreur", async () => {
+    client['getDailyHistory'].mockReturnValue(throwError(() => problem(401, 'common.unauthorized')));
+
+    const history = await api.history('2026-11');
+
+    expect(history.playedCount).toBe(0);
+    expect(history.games).toEqual([]);
+    expect(history.month).toBe('2026-11');
+  });
+
+  it("une autre erreur de l'historique remonte", async () => {
+    client['getDailyHistory'].mockReturnValue(throwError(() => problem(500, 'common.unexpected')));
+
+    await expect(api.history(null)).rejects.toBeDefined();
   });
 });

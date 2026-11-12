@@ -92,6 +92,12 @@ public sealed class EfRunsStore(InSecondsDbContext db) : IRunsStore
 
     public void AddRecord(RunRecord record) => db.Set<RunRecord>().Add(record);
 
+    public async Task<RunLevel?> FindLevelAsync(Guid playerId, CancellationToken ct) =>
+        db.Set<RunLevel>().Local.FirstOrDefault(l => l.PlayerId == playerId)
+        ?? await db.Set<RunLevel>().FirstOrDefaultAsync(l => l.PlayerId == playerId, ct);
+
+    public void AddLevel(RunLevel level) => db.Set<RunLevel>().Add(level);
+
     public Task<RunAccess?> FindAccessAsync(Guid playerId, CancellationToken ct) =>
         db.Set<RunAccess>().FirstOrDefaultAsync(a => a.PlayerId == playerId, ct);
 
@@ -137,6 +143,9 @@ public sealed class EfRunsQueries(InSecondsDbContext db) : IRunsQueries
 
     public Task<RunRecord?> FindRecordAsync(Guid playerId, CancellationToken ct) =>
         db.Set<RunRecord>().AsNoTracking().FirstOrDefaultAsync(r => r.PlayerId == playerId, ct);
+
+    public Task<RunLevel?> FindLevelAsync(Guid playerId, CancellationToken ct) =>
+        db.Set<RunLevel>().AsNoTracking().FirstOrDefaultAsync(l => l.PlayerId == playerId, ct);
 
     public async Task<IReadOnlyDictionary<int, int>?> FindFinishedPointsAsync(int challengeId, Guid playerId, CancellationToken ct)
     {

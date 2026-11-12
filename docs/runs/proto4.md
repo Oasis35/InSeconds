@@ -1,6 +1,6 @@
 # Proto 4 : la V4, une nouvelle navigation, des niveaux et des groupes
 
-**Planifié, rien n'est codé.** Le proto 4 ([#555](https://github.com/Oasis35/InSeconds/issues/555)) donne envie de rejouer et de partager sans obliger ceux qui se moquent des classements. Il apporte une barre du bas, un accueil qui met le défi du jour et le mode côte à côte, un niveau qui progresse, des groupes entre amis et un classement. Il se livre en **8 PR** vers `env/staging`, chacune testée au staging avant la suivante. Les chiffres (niveau, limites) sont des réglages, à ajuster aux parties de test.
+**En cours de codage sur le staging** (état de chaque PR sous son titre). Le proto 4 ([#555](https://github.com/Oasis35/InSeconds/issues/555)) donne envie de rejouer et de partager sans obliger ceux qui se moquent des classements. Il apporte une barre du bas, un accueil qui met le défi du jour et le mode côte à côte, un niveau qui progresse, des groupes entre amis et un classement. Il se livre en **8 PR** vers `env/staging`, chacune testée au staging avant la suivante. Les chiffres (niveau, limites) sont des réglages, à ajuster aux parties de test.
 
 Les 16 écrans de référence sont dans [`maquettes/proto4/`](maquettes/proto4/), numérotés dans l'ordre de lecture. Ils viennent de la maquette interactive du 11/11/2026 (artifact Design privé) ; les pochettes y sont remplacées par des aplats de couleur (règle du piège 47).
 
@@ -38,8 +38,10 @@ Un store front dit si le joueur voit la V4 (c'est `hasAccess` de `GET /api/runs/
 
 Pour les joueurs avec le flag uniquement.
 
+**État : codée (#568).** Livré : la barre du bas avec les onglets Aujourd'hui et Setlist (Historique et Classement arrivent avec les PR 3 et 6), la pastille cyan du défi restant, Instagram dans l'en-tête du jeu du jour, la langue et les liens légaux dans le profil, l'accueil à deux états (carte Setlist discrète tant que le défi reste à jouer), la carte Setlist sur le résultat du jour, le lien « Il te reste le défi du jour » sur l'accueil du mode. Pas encore : le compte à rebours « plus que 6 h » de ce texte, Instagram dans l'en-tête du mode, le résumé Setlist côté back (le record déjà servi par `GET /api/runs/me` suffit pour l'instant). L'état du défi du jour n'est connu de la barre qu'après un passage par le jeu du jour pendant la visite.
+
 - **Barre du bas** à 4 onglets (Aujourd'hui, Setlist, Classement, Historique), masquée pendant une manche et sur les écrans de jeu. En-tête : logo, Instagram, compte. Une ligne « Mentions légales · Confidentialité · Contact » au-dessus de la barre ; le choix FR/EN passe dans la page du compte. Les mentions légales et la confidentialité restent joignables depuis chaque écran, dans les deux coques.
-- **Accueil à deux états** : défi à faire (le Daily en grand, la Setlist discrète) ; défi fait (un résumé du Daily avec « Partager mon score », la Setlist en grand). Écrans 1 à 3.
+- **Accueil à deux états** : défi à faire (le Daily en grand, la Setlist discrète) ; défi fait (un résumé du Daily avec « Partager mon score », la Setlist en grand). Écrans 1 à 3. **Mis au niveau de la maquette (PR 9)** : carte « Défi du jour » avec la série dedans, carte Setlist avec le record (ou la setlist du jour, « Rejouer »), ligne cyan « plus que 6 h » au retour dans la journée, résumé du défi fait (score, barres, compte à rebours, « Voir le résultat », « Partager mon score » en contour orange) et grande carte Setlist (disque de niveau, points, jauge, « Nouvelle setlist · Disque d'or dans 220 pts »).
 - **Défi pas fait** : l'icône « Aujourd'hui » s'agite avec une pastille cyan, tant que le défi n'est pas joué (dès la première visite, sans condition), et un texte cyan « Il te reste le défi du jour · plus que 6 h » respire au-dessus de « Commencer » au retour dans la journée. Mouvement réduit si `prefers-reduced-motion`. Rien n'est forcé : à la première visite du jour, on accueille.
 - **Résultat du Daily** : une carte Setlist (record en attendant le disque) sous la série (écran 8).
 - Back : petit résumé Setlist du joueur (record, dernier run) sous le flag.
@@ -48,17 +50,23 @@ Sans le flag, l'accueil et le pied de page restent inchangés (E2E). Passage de 
 
 ## PR 3 : historique
 
+**État : codée (#569).** Une page par mode, les modes ne se connaissant pas : `/daily/history` et `/setlist/history` (`?mois=aaaa-mm`), reliées par deux onglets qui sont des liens, et un seul onglet « Historique » dans la barre du bas. Le détail d'un défi est la page des réponses du jour (`/daily/archive/<date>`, le résultat du jour pour la partie d'aujourd'hui) ; celui d'une setlist est `/setlist/history/<partie>` (par manche, « Tous / Ratés », ▶ par `GET /api/runs/sessions/{id}/tracks/{position}/preview`). Le filtre par difficulté porte sur le mois affiché. Sous la V4, le lien « Réponses des jours passés » quitte l'accueil pour le bas de l'historique.
+
 Deux onglets, Défis du jour et Setlists (écrans 9 et 10) : résumé en haut (nombre, moyenne, meilleur ou record), un mois à la fois avec les flèches, filtre par difficulté pour les setlists, un toucher ouvre le détail des morceaux (écran 11, composant commun aux deux modes : filtre « Tous / Ratés », ▶ par morceau ; le détail du Daily existe déjà, celui des setlists vient de la fin de run et de « Revoir »). Le lien des réponses des jours passés vit ici (il quitte l'accueil). Back : `GET /api/daily/history?month=` (module `Daily`) et `GET /api/runs/history` (module `Runs`), en lecture seule par des ports `I...Queries`, sans nouvelle table. Passage de `gardien-rgpd`.
 
 ## PR 4 : niveau, disques et fin de run
 
 - **Points de niveau** : moyenne glissante des performances de run (monte et descend, provisoire avant 3 runs, pas de décroissance d'inactivité pour l'instant). **Disques** : Rayé, Cire, Bronze, Argent, Or, Platine, Double platine, Diamant. Formule et seuils en réglages `Runs:Levels...`.
 - Table `runs.player_levels`, politique pure dans `Runs/Domain`, migration EF, code Wolverine régénéré.
+**État : codée (#570).** Back : `runs.player_levels`, `RunLevelPolicy`, réglages `Runs:Levels:*`, le niveau dans `GET /api/runs/me` et dans la fin d'une partie. Front : la carte du niveau (`runs/ui/run-level-card` : disque, points, « +38 », jauge, « Disque d'or dans 220 pts », « provisoire ») sur l'accueil du mode et sur la fin de run, où « Rejouer » devient « Nouvelle setlist » et le partage « Défier un ami », avec « Revoir » vers `/setlist/history/<partie>` et le rappel du défi du jour ; trois disques de plus (platine, double platine, diamant). L'écran de fin garde sa mise en page (disque de la partie, carrés, manches) : la carte du niveau s'y ajoute. Pas encore : « top 30 % ».
+
 - **Fin de run V4** (écran 4) : score et disque, jauge « Encore X pour l'Or », « Nouvelle setlist » et « Défier un ami » au milieu de l'écran, rappel du défi du jour en bas, barre du bas conservée (écran 4, d'où la dépendance à la PR 2) et lien « Revoir » vers le détail de la PR 3 une fois livré. « Défier un ami » ouvre le partage actuel (lien de la playlist) jusqu'à la PR 6 qui le remplace par la feuille à trois choix ; animations de récompense par `ui/motion`. Le classement des groupes (une ligne par groupe) arrive en PR 6.
 
 ## PR 5 : groupes, côté back
 
 Nouveau module noyau `Social` (schéma `social`) : groupes, membres, codes d'invitation, rejoindre par lien, quitter, supprimer. Le classement d'un groupe vient d'un contrat que chaque mode alimente (`Runs.Contracts` d'abord), sur le principe de `IPlayerDataContributor` : un module ne voit des autres que leur dossier `Contracts/`. Un groupe exige un compte (un invité qui rejoint est invité à en créer un). Seuls les membres voient les pseudos des autres. Tests d'architecture, d'intégration et de sécurité (un non-membre ne lit pas un classement) ; effacement et export (le contributeur `IPlayerDataContributor` couvre `social`), `/privacy`, `docs/conformite/rgpd.md`, `docs/architecture/decisions.md` (décision « pas de leaderboard permanent »), tests NetArchTest étendus (`Social` ne voit que des `Contracts`, ni Daily ni Runs ne voient `Social`) et, dans `CLAUDE.md`, le module `Social` (tableau des modules, des schémas et règles dures).
+
+**Livré (PR 5)** : le contrat est défini par Social (`Social.Contracts.IMemberPerformanceSource`, performance de 0 à 1, parties jouées, meilleur score) et implémenté par chaque mode, Runs d'abord (`RunsMemberPerformance`) : ainsi Social reste un noyau qui ne connaît aucun mode. Depuis la PR 6, Runs y répond avec le niveau du joueur (`runs.player_levels` : la part de ses points sur le dernier disque, ses points et son disque, que le classement affiche). Routes `/api/social/...` : mes groupes, création, détail, classement, aperçu anonyme d'une invitation (nom et places seulement), rejoindre, quitter, supprimer (créateur), renouveler le code. Le créateur qui quitte passe la main au plus ancien membre ; le dernier qui part supprime le groupe. Réglages `Social:MaxMembersPerGroup`, `MaxGroupsPerPlayer`, `MaxNameLength`.
 
 ## PR 6 : classement, création de groupe et partage
 
@@ -68,14 +76,20 @@ Nouveau module noyau `Social` (schéma `social`) : groupes, membres, codes d'inv
 - **Partager** (écrans 6 et 7) : trois lignes, une phrase chacune : « Défier un ami » (le lien de la playlist), « Inviter dans un groupe » (le lien de la playlist qui fait aussi rejoindre le groupe), « Ma grille » (emojis, sans lien). Sans groupe, la deuxième ligne devient « Créer un groupe et inviter ».
 - Une ligne par groupe sur la fin de run, ou « Joue avec tes amis · Créer un groupe » (écran 5).
 
+**État : codée.** Back : le classement d'un groupe rend les points et le disque de chaque membre (`MemberPerformance.Points`, `Badge`), lus du niveau. Front : domaine `social/` (`/ranking`, `/ranking/new`, `/ranking/join/<code>`), onglet « Classement » de la barre du bas, feuille de partage à trois choix sur la fin de run (`runs/feature/share-sheet`), lignes de groupes sous la fin de run (`social/feature/groups-strip`). Le lien d'une playlist peut porter `?group=<code d'invitation>` : l'invitation est gardée dans le navigateur (`localStorage`, clé `inseconds.pendingGroupInvite`, le code seul) et proposée à la fin de la partie et sur le classement ; un groupe exige un compte. Pas encore : la pastille « Général » (PR 8), la refonte complète de la fin de run.
+
 ## PR 7 : modération dans l'admin
+
+**État : codée (#571).** L'onglet « Groupes » (`/admin/groupes`) liste les groupes et permet de renommer, remettre le nom à zéro (« Groupe 12 ») ou supprimer ; la fiche d'un joueur, dans l'onglet Joueurs, remet un pseudo à zéro (« Joueur4821 » pour un compte, pseudo retiré pour un invité). Avant cette PR, rien ne modérait les pseudos : seules les règles de saisie (`PseudoRules`) les filtraient.
 
 Un onglet « Groupes » de l'admin : liste, renommer ou supprimer un groupe, remettre à zéro un nom de groupe ou un pseudo inapproprié. À vérifier d'abord : ce que la modération des pseudos fait déjà. Routes `/api/admin/...` (policy Admin automatique, `SecurityTests`).
 
 ## PR 8 : classement général et Hits
 
+**État : codée.** Classement général : table `social.ranking_visibility` (une ligne par compte qui a choisi d'apparaître, aucune par défaut), `GET /api/social/ranking` (les 20 premiers, le joueur et ses deux voisins, sa position par dizaines) et `PUT /api/social/ranking/visibility` ; à l'écran, la pastille « Général » de `/ranking` (`?view=general`) avec l'interrupteur « Apparaître dans le classement » sur cette page, et une ligne du profil qui y mène (la maquette le mettait dans le profil : le domaine `account` n'importe pas `social`). Hits : **17**, liste validée le 12/11/2026 (première setlist terminée, premier record battu, première carte gagnée, première manche en Mélomane, premier groupe rejoint, 10 et 50 setlists jouées, manche parfaite, 10 bonnes réponses d'affilée, battre le boss, setlist gagnée, disque d'or en Mélomane, un ami a joué ta setlist, duel gagné, 5 duels gagnés, niveau Or, niveau Diamant) ; calculés à la lecture par `GET /api/runs/hits` sur les parties finies (aucune table ; les niveaux sont jugés sur le plus haut niveau atteint, pour qu'un Hit obtenu le reste), le Hit des groupes étant ajouté par le front ; écran `/setlist/hits`, ligne « Hits 4 / 17 » sur l'accueil du mode et la fin d'une partie, temps fort sur un Hit obtenu depuis la dernière visite (liste des Hits déjà montrés gardée dans le navigateur).
+
 - **Classement général** (écran 13) par niveau : top 20, puis ta place avec tes voisins, pour les comptes qui ont choisi d'apparaître ; case de visibilité dans le profil. Mise à jour de `decisions.md` et `/privacy` pour cette partie.
-- **Hits** (écran 16) : une dizaine au plus, obtenus par événements (record, série de bonnes réponses, premier groupe...), avec une petite animation à l'obtention. Liste et noms à fixer en début de PR.
+- **Hits** (écran 16) : une dizaine au départ, 17 après validation, obtenus par événements (record, série de bonnes réponses, premier groupe...), avec une petite animation à l'obtention. Liste et noms à fixer en début de PR.
 
 ## Écrans de référence
 

@@ -27,7 +27,7 @@ describe('RunsApi', () => {
   let api: RunsApi;
 
   beforeEach(() => {
-    client = { getRunsMe: vi.fn(), getRunChallenge: vi.fn(), getRunComparison: vi.fn(), launchRun: vi.fn(), joinRun: vi.fn(), refreshRunPreview: vi.fn(), submitRunAnswer: vi.fn(), abandonRun: vi.fn(), swapRunTrack: vi.fn() };
+    client = { getRunsMe: vi.fn(), getRunChallenge: vi.fn(), getRunComparison: vi.fn(), launchRun: vi.fn(), joinRun: vi.fn(), refreshRunPreview: vi.fn(), submitRunAnswer: vi.fn(), abandonRun: vi.fn(), swapRunTrack: vi.fn(), getRunHistory: vi.fn(), getRunPastPreview: vi.fn(), getRunHits: vi.fn() };
     TestBed.configureTestingModule({ providers: [{ provide: RunsClient, useValue: client }, RunsApi] });
     api = TestBed.inject(RunsApi);
   });
@@ -38,11 +38,13 @@ describe('RunsApi', () => {
     client['getRunsMe'].mockReturnValue(of({
       hasAccess: true, record: { bestScore: 900, bestRoundsPassed: 2, isNew: false }, pending: { sessionId: 7, challengeCode: 'ABC234' },
       shelf: [{ disc: { key: 'runs.discs.wax', stars: 0 }, count: 2 }],
+      level: { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: { key: 'runs.discs.gold', stars: 0 }, pointsToNext: 220, progressPercent: 56, provisional: false, runsPlayed: 12, delta: undefined },
     } as RunsMeResponse));
 
     expect(await api.me()).toEqual({
       hasAccess: true, record: { bestScore: 900, bestRoundsPassed: 2, isNew: false }, pending: { sessionId: 7, challengeCode: 'ABC234' },
       shelf: [{ disc: { key: 'runs.discs.wax', stars: 0 }, count: 2 }],
+      level: { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: { key: 'runs.discs.gold', stars: 0 }, pointsToNext: 220, progressPercent: 56, provisional: false, runsPlayed: 12, delta: null },
     });
   });
 
@@ -61,7 +63,7 @@ describe('RunsApi', () => {
   it('sans record ni partie en cours : `null` plutôt que `undefined`', async () => {
     client['getRunsMe'].mockReturnValue(of({ hasAccess: false } as RunsMeResponse));
 
-    expect(await api.me()).toEqual({ hasAccess: false, record: null, pending: null, shelf: [] });
+    expect(await api.me()).toEqual({ hasAccess: false, record: null, pending: null, shelf: [], level: null });
   });
 
   it('rend la partie en types du domaine : `undefined` devient `null`, un extrait vide aussi', async () => {
@@ -209,5 +211,50 @@ describe('RunsApi', () => {
     await api.abandon(7);
 
     expect(client['abandonRun']).toHaveBeenCalledWith(7);
+  });
+
+  describe('historique', () => {
+    it('lit un mois en types du domaine', async () => {
+      client['getRunHistory'].mockReturnValue(of({
+        month: '2026-11', previousMonth: undefined, nextMonth: undefined, playedCount: 2, averageScore: 2640, bestScore: 3420,
+        runs: [{ sessionId: 7, challengeCode: 'ABC234', date: '2026-11-11', status: 'won', disc: { key: 'runs.discs.gold', stars: 0 }, roundsPassed: 4, score: 3420, difficulty: 'risky' }],
+      }));
+
+      const history = await api.history('2026-11');
+
+      expect(client['getRunHistory']).toHaveBeenCalledWith('2026-11');
+      expect(history).toEqual({
+        month: '2026-11', previousMonth: null, nextMonth: null, playedCount: 2, averageScore: 2640, bestScore: 3420,
+        runs: [{ sessionId: 7, date: '2026-11-11', disc: { key: 'runs.discs.gold', stars: 0 }, score: 3420, difficulty: 'risky' }],
+      });
+    });
+
+    it("un navigateur inconnu du serveur (401) a un historique vide ; une autre erreur remonte", async () => {
+      client['getRunHistory'].mockReturnValueOnce(throwError(() => problem(401, 'common.unauthorized'))).mockReturnValueOnce(throwError(() => problem(500, 'common.unexpected')));
+
+      expect((await api.history(null)).runs).toEqual([]);
+      await expect(api.history(null)).rejects.toBeDefined();
+    });
+
+    it("les Hits : vides en null, aucun pour un navigateur inconnu (401), une autre erreur remonte", async () => {
+      client['getRunHits']
+        .mockReturnValueOnce(of({ hits: [{ key: 'first_setlist', earned: true }, { key: 'ten_setlists', earned: false, progress: 7, target: 10 }], earnedCount: 1 }))
+        .mockReturnValueOnce(throwError(() => problem(401, 'common.unauthorized')))
+        .mockReturnValueOnce(throwError(() => problem(500, 'common.unexpected')));
+
+      expect(await api.hits()).toEqual([
+        { key: 'first_setlist', earned: true, progress: null, target: null }, { key: 'ten_setlists', earned: false, progress: 7, target: 10 },
+      ]);
+      expect(await api.hits()).toEqual([]);
+      await expect(api.hits()).rejects.toBeDefined();
+    });
+
+    it("l'extrait d'un morceau joué : son adresse, `null` sans extrait", async () => {
+      client['getRunPastPreview'].mockReturnValueOnce(of({ previewUrl: 'https://preview/3.mp3' })).mockReturnValueOnce(of({}));
+
+      expect(await api.pastPreviewUrl(7, 3)).toBe('https://preview/3.mp3');
+      expect(client['getRunPastPreview']).toHaveBeenCalledWith(7, 3);
+      expect(await api.pastPreviewUrl(7, 4)).toBeNull();
+    });
   });
 });

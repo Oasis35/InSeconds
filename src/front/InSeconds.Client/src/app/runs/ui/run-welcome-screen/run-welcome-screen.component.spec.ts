@@ -1,14 +1,16 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
-import { RunRecord, RunShelfDisc } from '../../domain/run';
+import { RunLevel, RunRecord, RunShelfDisc } from '../../domain/run';
 import { RunWelcomeScreenComponent } from './run-welcome-screen.component';
 
 describe('RunWelcomeScreenComponent', () => {
-  function render(inputs: { record?: RunRecord | null; shelf?: RunShelfDisc[] } = {}) {
-    TestBed.configureTestingModule({ providers: [provideTranslateService()] });
+  function render(inputs: { record?: RunRecord | null; shelf?: RunShelfDisc[]; level?: RunLevel | null } = {}) {
+    TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
     const fixture = TestBed.createComponent(RunWelcomeScreenComponent);
     fixture.componentRef.setInput('record', inputs.record ?? null);
     fixture.componentRef.setInput('shelf', inputs.shelf ?? []);
+    fixture.componentRef.setInput('level', inputs.level ?? null);
     fixture.detectChanges();
     return { fixture, element: fixture.nativeElement as HTMLElement };
   }
@@ -18,6 +20,16 @@ describe('RunWelcomeScreenComponent', () => {
 
     expect(element.querySelector('[data-testid="run-start"]')?.textContent).toContain('runs.welcome.launch');
     expect(element.querySelector('[data-testid="run-record"]')).toBeNull();
+  });
+
+  it('la carte du niveau dans la nouvelle interface, rien sans niveau', () => {
+    expect(render().element.querySelector('[data-testid="run-level"]')).toBeNull();
+    TestBed.resetTestingModule();
+
+    const { element } = render({ level: { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: null, pointsToNext: null, progressPercent: 100, provisional: false, runsPlayed: 12, delta: null } });
+
+    expect(element.querySelector('[data-testid="run-level"]')?.getAttribute('data-disc')).toBe('runs.discs.silver');
+    expect(element.querySelector('[data-testid="run-level-review"]')).toBeNull();
   });
 
   it('l\'étagère : chaque disque gagné avec son nombre, rien sans disque', () => {

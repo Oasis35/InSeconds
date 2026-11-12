@@ -4,15 +4,20 @@ import { ShareService } from '../../core/share/share.service';
 import { environment } from '../../../environments/environment';
 import { RUN_SHARE_EMOJI, RunDuel, RunFinish, discStars, shareRounds } from '../domain/run';
 
-/** L'adresse d'une playlist (`/runs/<code>`), celle que les amis ouvrent, marquée `utm_source=share` comme le partage du score. */
-export const playlistUrl = (code: string): string => `${environment.appUrl}/runs/${code}?utm_source=share`;
+/** L'adresse d'une playlist (`/setlist/<code>`), celle que les amis ouvrent, marquée `utm_source=share` comme le partage du score. */
+export const playlistUrl = (code: string): string => `${environment.appUrl}/setlist/${code}?utm_source=share`;
+
+/** L'adresse d'une playlist qui fait aussi rejoindre un groupe : le code d'invitation du groupe suit dans `group`. */
+export const playlistGroupUrl = (code: string, inviteCode: string): string => `${environment.appUrl}/setlist/${code}?group=${inviteCode}&utm_source=share`;
 
 /**
  * Le partage d'un run, par le menu de partage du téléphone ou sinon dans le presse-papier, et l'état du bouton (copié, échec) pour quelques secondes,
  * comme au Daily (un partage natif ou un menu fermé ne change rien au bouton) :
  * - à la fin d'une partie, le score en grille : le score et le disque d'abord (ils se lisent dans l'aperçu d'une conversation), une ligne par manche
  *   jouée (un carré par morceau, la difficulté), puis « Fais mieux » et le lien de la même playlist ;
- * - ailleurs (la comparaison), une phrase et le lien de la playlist.
+ * - ailleurs (la comparaison), une phrase et le lien de la playlist ;
+ * - depuis la feuille de partage de la V4 : la même grille sans lien (« Ma grille »), ou l'invitation dans un groupe (le lien de la playlist qui
+ *   fait aussi rejoindre le groupe).
  */
 @Injectable()
 export class RunShare {
@@ -33,6 +38,16 @@ export class RunShare {
     await this.send(runShareText(finish, lang, (key, params) => this.translate.instant(key, params), duel));
   }
 
+  /** « Ma grille » : le résultat seul, sans invitation ni lien. */
+  async shareGrid(finish: RunFinish, lang: string): Promise<void> {
+    await this.send(runShareText(finish, lang, (key, params) => this.translate.instant(key, params), null, false));
+  }
+
+  /** « Inviter dans un groupe » : une phrase avec le nom du groupe, puis le lien de la playlist qui fait aussi rejoindre ce groupe. */
+  async shareGroupInvite(code: string, group: { readonly name: string; readonly inviteCode: string }): Promise<void> {
+    await this.send([this.translate.instant('runs.share.groupInvite', { name: group.name }), playlistGroupUrl(code, group.inviteCode)].join('\n'));
+  }
+
   private async send(text: string): Promise<void> {
     const outcome = await this.sharing.share(text);
     if (outcome !== 'copied' && outcome !== 'failed') return;
@@ -43,11 +58,12 @@ export class RunShare {
 }
 
 /**
- * Le texte du partage d'une partie finie : « 2 410 pts · Disque d'argent · InSeconds Platines », puis « 🟩🟩🟨🟩🟥 Manche 1 · Normal » pour chaque
- * manche jouée, puis l'invitation et le lien de la playlist (`utm_source=share`). Rien d'un morceau n'y figure : ni artiste ni titre.
+ * Le texte du partage d'une partie finie : « 2 410 pts · Disque d'argent · InSeconds Setlist », puis « 🟩🟩🟨🟩🟥 Manche 1 · Normal » pour chaque
+ * manche jouée, puis l'invitation et le lien de la playlist (`utm_source=share`), sauf pour « Ma grille » (`withLink` faux). Rien d'un morceau n'y
+ * figure : ni artiste ni titre.
  */
 export function runShareText(
-  finish: RunFinish, lang: string, t: (key: string, params?: Record<string, unknown>) => string, duel: RunDuel | null = null,
+  finish: RunFinish, lang: string, t: (key: string, params?: Record<string, unknown>) => string, duel: RunDuel | null = null, withLink = true,
 ): string {
   const numbers = new Intl.NumberFormat(lang);
   const lines = [t('runs.share.header', { score: numbers.format(finish.totalScore), disc: t(finish.disc.key) + discStars(finish.disc) })];
@@ -58,6 +74,6 @@ export function runShareText(
     const name = t('runs.share.round', { round: round.round });
     lines.push(round.difficulty ? `${marks} ${name} · ${t('runs.difficulty.' + round.difficulty)}` : `${marks} ${name}`);
   }
-  lines.push(t('runs.share.beatMe'), playlistUrl(finish.challengeCode));
+  if (withLink) lines.push(t('runs.share.beatMe'), playlistUrl(finish.challengeCode));
   return lines.join('\n');
 }

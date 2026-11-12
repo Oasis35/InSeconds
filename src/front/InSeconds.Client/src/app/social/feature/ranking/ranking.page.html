@@ -1,0 +1,105 @@
+<div class="da-bg min-h-dvh flex flex-col relative" style="color:var(--text-body)">
+  <app-decor-background />
+
+  <main class="relative flex-1 flex flex-col gap-5 px-5 pt-2 pb-5 w-full max-w-lg mx-auto overflow-x-clip">
+    <app-brand [homeLink]="true">
+      <div brandRight class="flex items-center gap-2">
+        <app-instagram-link />
+        <app-account-link />
+      </div>
+    </app-brand>
+
+    <h1 class="text-2xl font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.ranking.title' | translate }}</h1>
+
+    @if (!session.loaded()) {
+      <!-- Identité pas encore lue : rien à conclure. -->
+    } @else if (!session.isLinked()) {
+      <section class="p-5 flex flex-col gap-3" data-testid="ranking-guest"
+               style="background:rgb(var(--rgb-accent-3) / 0.06);border:1px solid var(--color-accent-3);border-radius:var(--radius-card)">
+        <h2 class="text-lg font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.empty.title' | translate }}</h2>
+        <p class="text-sm leading-relaxed" style="color:var(--text-light)">{{ 'social.empty.guestBody' | translate }}</p>
+        <a appButton routerLink="/account/login" [block]="true" data-testid="ranking-login">{{ 'social.empty.createAccount' | translate }}</a>
+      </section>
+    } @else {
+      @if (pendingCode(); as code) {
+        <a [routerLink]="['/ranking/join', code]" class="flex items-center justify-between gap-3 px-4 py-3 min-h-11 text-sm" data-testid="ranking-pending"
+           style="border:1px solid var(--color-accent-3);border-radius:var(--radius-button);color:var(--text-hi)">
+          <span>{{ 'social.pending.line' | translate }}</span><span aria-hidden="true">›</span>
+        </a>
+      }
+
+      @switch (store.status()) {
+        @case ('error') {
+          <div class="flex flex-col items-center gap-3 py-6 text-center" data-testid="ranking-error">
+            <p class="text-sm" style="color:var(--text-muted)">{{ 'social.ranking.error' | translate }}</p>
+            @if (errorReporting.lastErrorCode(); as code) {
+              <p class="text-xs" style="color:var(--text-faint)">{{ 'errors.code' | translate }} <span class="select-all font-mono">{{ code }}</span></p>
+            }
+            <button appButton type="button" variant="secondary" (click)="retry()">{{ 'common.retry' | translate }}</button>
+          </div>
+        }
+        @case ('ready') {
+          <nav class="flex flex-wrap gap-2" [attr.aria-label]="'social.ranking.groupsLabel' | translate">
+            <a [routerLink]="['/ranking']" [queryParams]="{ view: 'general' }" [attr.aria-current]="general() ? 'page' : null"
+               class="flex items-center px-4 min-h-11 text-sm touch-manipulation rounded-(--radius-button)" data-testid="ranking-general"
+               [style.border]="general() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
+               [style.color]="general() ? 'var(--text-hi)' : 'var(--text-muted)'">{{ 'social.general.tab' | translate }}</a>
+            @for (group of store.groups(); track group.id) {
+              <a [routerLink]="['/ranking']" [queryParams]="{ group: group.id }" [attr.aria-current]="!general() && group.id === store.selectedId() ? 'page' : null"
+                 class="flex items-center px-4 min-h-11 text-sm touch-manipulation rounded-(--radius-button) max-w-full truncate" data-testid="ranking-group"
+                 [style.border]="!general() && group.id === store.selectedId() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
+                 [style.color]="!general() && group.id === store.selectedId() ? 'var(--text-hi)' : 'var(--text-muted)'">{{ group.name }}</a>
+            }
+            @if (store.groups().length && store.canCreate()) {
+              <a routerLink="/ranking/new" class="flex items-center px-4 min-h-11 text-sm touch-manipulation rounded-(--radius-button)" data-testid="ranking-new"
+                 style="border:1px solid var(--color-accent-3);color:var(--color-accent-3)">{{ 'social.ranking.newGroup' | translate }}</a>
+            }
+          </nav>
+
+          @if (general()) {
+            <app-general-ranking [lang]="language.current()" />
+          } @else if (store.groups().length) {
+
+            @switch (store.rankingStatus()) {
+              @case ('error') {
+                <p class="text-sm text-center py-6" style="color:var(--text-muted)" data-testid="ranking-error">{{ 'social.ranking.error' | translate }}</p>
+              }
+              @default {
+                @if (store.ranking(); as ranking) {
+                  <app-ranking-list [entries]="ranking.entries" [lang]="language.current()" />
+                }
+              }
+            }
+
+            @if (store.selected(); as group) {
+              <div class="flex flex-col gap-2">
+                <button appButton type="button" variant="neutral" [block]="true" (click)="share.invite(group)" data-testid="ranking-invite">
+                  @if (share.copied()) { {{ 'social.invite.copied' | translate }} }
+                  @else if (share.failed()) { {{ 'social.invite.failed' | translate }} }
+                  @else { {{ 'social.invite.button' | translate: { name: group.name } }} }
+                </button>
+                <p class="text-xs text-center" style="color:var(--text-muted)">{{ 'social.ranking.privacy' | translate }}</p>
+              </div>
+              <button type="button" class="self-center text-xs underline cursor-pointer min-h-11 px-3" style="color:var(--text-muted)" (click)="leave()" data-testid="ranking-leave">
+                {{ 'social.leave.link' | translate }}
+              </button>
+              @if (leaveFailed()) {
+                <p class="text-xs text-center" role="alert" style="color:var(--text-error)">{{ 'social.leave.failed' | translate }}</p>
+              }
+            }
+          } @else {
+            <section class="p-5 flex flex-col gap-3" data-testid="ranking-empty"
+                     style="background:rgb(var(--rgb-accent-3) / 0.06);border:1px solid var(--color-accent-3);border-radius:var(--radius-card)">
+              <h2 class="text-lg font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.empty.title' | translate }}</h2>
+              <p class="text-sm leading-relaxed" style="color:var(--text-light)">{{ 'social.empty.body' | translate }}</p>
+              <a appButton routerLink="/ranking/new" [block]="true" data-testid="ranking-create">{{ 'social.empty.create' | translate }}</a>
+            </section>
+          }
+        }
+        @default {
+          <p class="text-sm text-center animate-pulse" style="color:var(--text-faint)">{{ 'social.ranking.loading' | translate }}</p>
+        }
+      }
+    }
+  </main>
+</div>

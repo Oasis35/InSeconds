@@ -25,6 +25,10 @@ interface PlayersState {
   runAccessPending: readonly string[];
   /** Le dernier changement d'accès refusé par l'API (l'interrupteur revient à son état d'avant). */
   runAccessError: AppError | null;
+  /** Les comptes dont la remise à zéro du pseudo attend la réponse de l'API. */
+  pseudoResetPending: readonly string[];
+  /** La dernière remise à zéro de pseudo refusée par l'API (le pseudo affiché n'a pas changé). */
+  pseudoResetError: AppError | null;
 }
 
 /**
@@ -34,7 +38,7 @@ interface PlayersState {
 export const AdminPlayersStore = signalStore(
   withRequestStatus(),
   withState<PlayersState>({
-    players: [], nextDayReturnRate: null, filter: '', expandedId: null, histories: {}, historyStatus: 'idle', runAccess: [], runAccessPending: [], runAccessError: null,
+    players: [], nextDayReturnRate: null, filter: '', expandedId: null, histories: {}, historyStatus: 'idle', runAccess: [], runAccessPending: [], runAccessError: null, pseudoResetPending: [], pseudoResetError: null,
   }),
   withComputed(({ players, filter, expandedId, histories, historyStatus }) => ({
     filteredPlayers: computed(() => filterPlayers(players(), filter())),
@@ -79,6 +83,25 @@ export const AdminPlayersStore = signalStore(
           patchState(store, { runAccessError: await toAppError(error) });
         } finally {
           patchState(store, { runAccessPending: store.runAccessPending().filter(id => id !== playerId) });
+        }
+      },
+
+      /**
+       * Remet le pseudo d'un compte à zéro (modération) : l'API attribue un pseudo neutre, que la liste montre aussitôt. Rend `true` si c'est fait ;
+       * un refus se lit dans `pseudoResetError` et ne change rien.
+       */
+      async resetPseudo(playerId: string): Promise<boolean> {
+        if (store.pseudoResetPending().includes(playerId)) return false;
+        patchState(store, { pseudoResetPending: [...store.pseudoResetPending(), playerId], pseudoResetError: null });
+        try {
+          const pseudo = await api.resetPseudo(playerId);
+          patchState(store, { players: store.players().map(p => (p.id === playerId ? { ...p, pseudo } : p)) });
+          return true;
+        } catch (error) {
+          patchState(store, { pseudoResetError: await toAppError(error) });
+          return false;
+        } finally {
+          patchState(store, { pseudoResetPending: store.pseudoResetPending().filter(id => id !== playerId) });
         }
       },
 

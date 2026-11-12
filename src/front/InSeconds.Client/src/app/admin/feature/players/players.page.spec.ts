@@ -162,6 +162,32 @@ describe('PlayersPage', () => {
       expect(toggleOf(rows()[1]).getAttribute('aria-checked')).toBe('false');
     });
   });
+  describe('remise à zéro du pseudo', () => {
+    it('demande confirmation, puis montre le pseudo neutre attribué', async () => {
+      const { element, settle, rows } = await render({ api: { history: vi.fn(async () => []) } });
+      (rows()[1].querySelector('button') as HTMLButtonElement).click();
+      await settle();
+      (element.querySelector('[data-testid="pseudo-reset-open"]') as HTMLElement).click();
+      await settle();
+      expect(api.resetPseudo).not.toHaveBeenCalled();
+      (element.querySelector('[data-testid="confirm-pseudo-reset"]') as HTMLElement).click();
+      await settle();
+      expect(api.resetPseudo).toHaveBeenCalledWith('b');
+      expect(rows()[1].textContent).toContain('Joueur4242');
+    });
+
+    it('affiche le refus de l\'API', async () => {
+      const { element, settle, rows } = await render({ api: { history: vi.fn(async () => []), resetPseudo: vi.fn(() => Promise.reject(problem(404, 'common.not_found'))) } });
+      (rows()[1].querySelector('button') as HTMLButtonElement).click();
+      await settle();
+      (element.querySelector('[data-testid="pseudo-reset-open"]') as HTMLElement).click();
+      await settle();
+      (element.querySelector('[data-testid="confirm-pseudo-reset"]') as HTMLElement).click();
+      await settle();
+      expect(element.querySelector('[data-testid="pseudo-reset-error"]')).not.toBeNull();
+    });
+  });
+
   describe('sur téléphone', () => {
     it('affiche une carte par compte, sans l\'email', async () => {
       const { element, rows } = await render({ wide: false });
@@ -181,7 +207,7 @@ describe('PlayersPage', () => {
       expect(rows()[0].querySelector('[data-testid="player-history"]')?.textContent).toContain('3200');
     });
 
-    it('bascule l\'accès à Platines depuis la carte', async () => {
+    it('bascule l\'accès à Setlist depuis la carte', async () => {
       const { settle, rows } = await render({ wide: false });
       (rows()[1].querySelector('[data-testid="run-access"]') as HTMLButtonElement).click();
       await settle();

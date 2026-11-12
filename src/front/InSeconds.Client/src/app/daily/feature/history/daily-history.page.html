@@ -1,0 +1,64 @@
+<div class="da-bg min-h-dvh flex flex-col relative" style="color:var(--text-body)">
+  <app-decor-background />
+
+  <main class="relative flex-1 flex flex-col gap-5 px-5 pt-2 pb-5 w-full max-w-lg mx-auto overflow-x-clip">
+    <app-brand [homeLink]="true">
+      <div brandRight class="flex items-center gap-2">
+        <app-instagram-link />
+        <app-account-link />
+      </div>
+    </app-brand>
+
+    <app-history-tabs active="daily" />
+
+    @if (store.history(); as history) {
+      <app-history-summary countKey="ui.history.daily.count" bestKey="ui.history.daily.best" [count]="history.playedCount"
+                           [average]="history.averageScore" [best]="history.bestScore" [locale]="language.current()" />
+      @if (history.month) {
+        <app-month-nav [month]="history.month" [previous]="history.previousMonth" [next]="history.nextMonth" [lang]="language.current()" />
+      }
+    }
+
+    @switch (store.status()) {
+      @case ('loading') {
+        @if (!store.history()) {
+          <p class="text-sm text-center animate-pulse" style="color:var(--text-faint)">{{ 'ui.history.loading' | translate }}</p>
+        }
+      }
+      @case ('error') {
+        <app-status-screen titleKey="daily.error.title" bodyKey="daily.error.body" [errorCode]="errorReporting.lastErrorCode()" (retry)="retry()" />
+      }
+    }
+
+    @if (store.status() !== 'error' && store.history()) {
+      @if (rows().length) {
+        <ul class="px-4" style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)" data-testid="history-games">
+          @for (row of rows(); track row.date) {
+            <li [style.border-top]="$first ? null : '1px solid var(--border-medium)'">
+              <a [routerLink]="row.link" class="flex items-center gap-3 py-3 min-h-14 touch-manipulation" data-testid="history-game">
+                <span class="flex-1 min-w-0 flex flex-col gap-1.5">
+                  <span class="text-sm font-semibold truncate" style="color:var(--text-hi)">
+                    @if (row.day.relative) { {{ 'ui.history.' + row.day.relative | translate }} · {{ row.day.text.toLowerCase() }} } @else { {{ row.day.text }} }
+                  </span>
+                  <span class="flex gap-1" aria-hidden="true">
+                    @for (bar of row.bars; track bar.position) {
+                      <span class="bar" [attr.data-verdict]="bar.verdict"></span>
+                    }
+                  </span>
+                </span>
+                <span class="text-base font-bold tabular-nums" style="font-family:var(--font-score);color:var(--text-hi)" data-testid="history-score">{{ row.score }}</span>
+                <span aria-hidden="true" style="color:var(--text-muted)">›</span>
+              </a>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="text-sm text-center py-6" style="color:var(--text-muted)" data-testid="history-empty">{{ 'ui.history.daily.empty' | translate }}</p>
+      }
+
+      <a routerLink="/daily/archive" data-testid="history-archive" class="self-center inline-flex items-center justify-center text-[13px] underline" style="min-height:44px;color:var(--text-light)">
+        {{ 'daily.welcome.archive' | translate }}
+      </a>
+    }
+  </main>
+</div>

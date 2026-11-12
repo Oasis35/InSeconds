@@ -714,7 +714,7 @@ describe('RunGameStore', () => {
         status: 'lost', round: null, playedTracks: [1, 2, 3, 4, 5].map(position => TRACK({ position, artistCorrect: false, titleCorrect: false })),
         finish: {
           status: 'lost', disc: { key: 'runs.discs.scratched', stars: 0 }, totalScore: 0, roundsPassed: 0, foundCount: 0, trackCount: 20,
-          tracks: [], rounds: [], record: null, challengeCode: 'ABC234', shortfall: null,
+          tracks: [], rounds: [], record: null, challengeCode: 'ABC234', shortfall: null, level: null,
         },
       });
 
@@ -802,7 +802,7 @@ describe('RunGameStore', () => {
   describe('fin de partie', () => {
     const finish = (status: 'won' | 'lost', isNew = false) => ({
       status, disc: { key: 'runs.discs.gold', stars: 0 }, totalScore: 2500, roundsPassed: 4, foundCount: 18, trackCount: 20,
-      tracks: [], rounds: [], record: { bestScore: 2500, bestRoundsPassed: 4, isNew }, challengeCode: 'ABC234', shortfall: null,
+      tracks: [], rounds: [], record: { bestScore: 2500, bestRoundsPassed: 4, isNew }, challengeCode: 'ABC234', shortfall: null, level: null,
     });
 
     beforeEach(async () => {
@@ -1190,7 +1190,7 @@ describe('RunGameStore', () => {
     });
   });
 
-  describe("le lien d'un ami (/runs/<code>)", () => {
+  describe("le lien d'un ami (/setlist/<code>)", () => {
     it("une playlist pas encore jouée : l'écran du lien, sans rien lancer ni créer d'invité", async () => {
       api.meResult = ME({ hasAccess: false });
 
@@ -1295,7 +1295,7 @@ describe('RunGameStore', () => {
     it("sur /runs, la comparaison d'une partie finie se lit avec le code de la playlist de la fin", async () => {
       const finish = {
         status: 'won' as const, disc: { key: 'runs.discs.gold', stars: 0 }, totalScore: 2600, roundsPassed: 4, foundCount: 20, trackCount: 20, tracks: [],
-        rounds: [], record: null, challengeCode: 'XYZ789', shortfall: null,
+        rounds: [], record: null, challengeCode: 'XYZ789', shortfall: null, level: null,
       };
       api.launchResult = { kind: 'ok', play: PLAY({ session: SESSION({ status: 'won', round: null, finish }), current: null }) };
       await store.init();

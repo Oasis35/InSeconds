@@ -8,14 +8,14 @@ import { SheriffConfig } from '@softarc/sheriff-core';
  * - `api` : clients NSwag, importés seulement par la couche `data-access`.
  * - `environment` : `src/environments` (adresse de l'API, nom de l'environnement).
  * - Un domaine (`daily`, `account`…) a quatre couches : `domain`, `data-access`, `feature`, `ui`.
- * - `gameplay` (la manche) ne connaît aucun mode ; `daily` et `runs` ne s'importent jamais.
+ * - `gameplay` (la manche) ne connaît aucun mode ; `daily` et `runs` ne s'importent jamais ; `social` (les groupes) ne connaît aucun mode.
  * - `domain/` n'importe rien d'Angular : vérifié à part par `scripts/check-pure-domain.mjs`
  *   (Sheriff ne contrôle que les imports internes).
  *
  * Un module a le droit d'en importer un autre si **chacun** de ses tags autorise au moins un tag
  * de la cible.
  */
-const DOMAINS = ['gameplay', 'daily', 'runs', 'account', 'admin'] as const;
+const DOMAINS = ['gameplay', 'daily', 'runs', 'social', 'account', 'admin'] as const;
 const LAYERS = ['domain', 'data-access', 'feature', 'ui'] as const;
 
 const domainModules = Object.fromEntries(
@@ -30,7 +30,10 @@ const DOMAIN_DEPENDENCIES: Record<(typeof DOMAINS)[number], string[]> = {
   // Daily a besoin d'une identité (le guest se crée avant la première partie) : il lit `SessionLoader` du domaine account.
   daily: ['domain:gameplay', 'domain:account'],
   // Runs réutilise la manche de gameplay ; jamais Daily. Il lit `SessionLoader` du domaine account : le lien d'un ami crée son invité avant la partie.
-  runs: ['domain:gameplay', 'domain:account'],
+  // Il montre aussi les groupes du joueur à la fin d'une partie et invite dans un groupe (domaine social, qui ne connaît aucun mode).
+  runs: ['domain:gameplay', 'domain:account', 'domain:social'],
+  // Les groupes entre amis : l'en-tête de la manche (le logo), aucun mode.
+  social: ['domain:gameplay'],
   account: [],
   // L'admin réutilise l'histogramme « en combien de temps les autres ont trouvé » de la manche (avec les chiffres au-dessus des barres).
   admin: ['domain:account', 'domain:gameplay'],

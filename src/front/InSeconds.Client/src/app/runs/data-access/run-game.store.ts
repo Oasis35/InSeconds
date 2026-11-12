@@ -30,7 +30,7 @@ export type RunScreen =
 
 interface RunState {
   screen: RunScreen;
-  /** La playlist du lien ouvert (`/runs/<code>`) ; `null` sur `/runs`. */
+  /** La playlist du lien ouvert (`/setlist/<code>`) ; `null` sur `/setlist`. */
   code: string | null;
   link: RunLink | null;
   comparison: RunComparison | null;
@@ -181,6 +181,7 @@ export const RunGameStore = signalStore(
       record: computed(() => store.me()?.record ?? null),
       /** L'étagère des disques gagnés (l'accueil du mode). */
       shelf: computed(() => store.me()?.shelf ?? []),
+      level: computed(() => store.me()?.level ?? null),
       /** « Rejouer » : seulement avec l'accès (retiré en cours de partie, la partie se finit, mais pas d'autre). */
       canPlayAgain: computed(() => store.me()?.hasAccess === true),
       finish: computed(() => store.session()?.finish ?? null),
@@ -532,7 +533,7 @@ export const RunGameStore = signalStore(
       await loadComparison(code);
     };
 
-    /** L'écran d'un lien d'ami (`/runs/<code>`) : « lien reçu » si la playlist n'est pas jouée, la reprise si elle est en cours, la comparaison si elle est finie. */
+    /** L'écran d'un lien d'ami (`/setlist/<code>`) : « lien reçu » si la playlist n'est pas jouée, la reprise si elle est en cours, la comparaison si elle est finie. */
     const openLink = async (code: string): Promise<void> => {
       const outcome = await api.challenge(code);
       if (outcome.kind !== 'ok') {
@@ -553,7 +554,7 @@ export const RunGameStore = signalStore(
 
     /**
      * Premier chargement, ou « Réessayer » d'un écran d'erreur : mon accès, mon record, ma partie en cours (l'écran de reprise). Avec le code d'un
-     * lien (`/runs/<code>`), l'écran de ce lien. Sans argument, le code déjà ouvert est gardé (« Réessayer », retour d'un abandon).
+     * lien (`/setlist/<code>`), l'écran de ce lien. Sans argument, le code déjà ouvert est gardé (« Réessayer », retour d'un abandon).
      */
     async function init(code?: string | null): Promise<void> {
       round.reset();

@@ -61,7 +61,7 @@ describe('PageMetaService', () => {
 
   it('met noindex et retire la canonique des pages privées ou inconnues', () => {
     service.apply('/privacy');
-    for (const path of ['/account/profile', '/admin', '/runs/abc123', '/nimporte-quoi']) {
+    for (const path of ['/account/profile', '/admin', '/setlist/abc123', '/nimporte-quoi']) {
       service.apply(path);
       expect(canonical()).toBeNull();
       expect(robots()).toBe('noindex');

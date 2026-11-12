@@ -6,7 +6,11 @@ namespace InSeconds.Api.Modules.Runs.Application;
 /// </summary>
 /// <param name="Access">Quand l'admin l'a autorisé, rien s'il n'a pas de ligne d'accès (un admin l'a d'office).</param>
 public sealed record RunsDataExport(
-    IReadOnlyList<RunGameExport> Games, IReadOnlyList<RunChallengeExport> CreatedChallenges, RunRecordExport? Record, DateTimeOffset? Access);
+    IReadOnlyList<RunGameExport> Games, IReadOnlyList<RunChallengeExport> CreatedChallenges, RunRecordExport? Record, DateTimeOffset? Access,
+    RunLevelExport? Level = null);
+
+/// <summary>Le niveau : ses points, les parties finies comptées et les scores de ses dernières parties (la fenêtre de la moyenne).</summary>
+public sealed record RunLevelExport(int Points, int RunsPlayed, IReadOnlyList<int> RecentScores, DateTimeOffset UpdatedAt);
 
 /// <param name="ChallengeCode">Le lien du défi joué.</param>
 /// <param name="Status"><c>Pending</c>, <c>Won</c>, <c>Lost</c> ou <c>Abandoned</c>.</param>

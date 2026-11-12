@@ -1,8 +1,10 @@
+import { RunHit } from '../../domain/run-hits';
+import { RunHistory } from '../../domain/run-history';
 import { Provider } from '@angular/core';
 import { RunComparison, RunCurrentTrack, RunLink, RunPlay, RunRound, RunSession, RunTrack, RunsMe } from '../../domain/run';
 import { LinkOutcome, RunAnswerToSend, RunsApi, StartOutcome } from '../runs.api';
 
-export const ME = (overrides: Partial<RunsMe> = {}): RunsMe => ({ hasAccess: true, record: null, pending: null, shelf: [], ...overrides });
+export const ME = (overrides: Partial<RunsMe> = {}): RunsMe => ({ hasAccess: true, record: null, pending: null, shelf: [], level: null, ...overrides });
 
 export const ROUND = (overrides: Partial<RunRound> = {}): RunRound => ({ round: 1, score: 0, objective: 200, maxScore: 500, ...overrides });
 
@@ -42,7 +44,7 @@ export const COMPARISON = (overrides: Partial<RunComparison> = {}): RunCompariso
 });
 
 /** Un faux adaptateur : chaque réponse se règle par une propriété, chaque appel est noté. */
-export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge' | 'comparison' | 'launch' | 'chooseTheme' | 'join' | 'refreshPreview' | 'submitAnswer' | 'startClock' | 'abandon' | 'chooseDifficulty' | 'swap'> {
+export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge' | 'comparison' | 'launch' | 'chooseTheme' | 'join' | 'refreshPreview' | 'submitAnswer' | 'startClock' | 'abandon' | 'chooseDifficulty' | 'swap' | 'hits' | 'history'> {
   readonly calls: string[] = [];
   readonly answers: RunAnswerToSend[] = [];
 
@@ -57,6 +59,18 @@ export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge'
   chooseResult: RunPlay | Error = PLAY();
   swapResult: RunPlay | Error = PLAY();
   abandonError: Error | null = null;
+  hitsResult: RunHit[] | Error = [];
+  historyResult: RunHistory | Error = { month: '2026-11', previousMonth: null, nextMonth: null, playedCount: 0, averageScore: null, bestScore: null, runs: [] };
+
+  history(month: string | null): Promise<RunHistory> {
+    this.calls.push(`history:${month ?? 'current'}`);
+    return this.historyResult instanceof Error ? Promise.reject(this.historyResult) : Promise.resolve(this.historyResult);
+  }
+
+  hits(): Promise<RunHit[]> {
+    this.calls.push('hits');
+    return this.hitsResult instanceof Error ? Promise.reject(this.hitsResult) : Promise.resolve(this.hitsResult);
+  }
 
   me(): Promise<RunsMe> {
     this.calls.push('me');

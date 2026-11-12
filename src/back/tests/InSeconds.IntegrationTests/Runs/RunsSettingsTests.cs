@@ -27,6 +27,8 @@ public class RunsSettingsTests(PostgresFixture postgres) : IAsyncLifetime
     [InlineData("Runs:ThresholdPercents:0", "0", "Runs:ThresholdPercents")]
     [InlineData("Runs:MinMultiplier", "3", "Runs:MinMultiplier")]
     [InlineData("Runs:Discs:0", " ", "Runs:Discs")]
+    [InlineData("Runs:Levels:Window", "0", "Runs:Levels:Window")]
+    [InlineData("Runs:Levels:ProvisionalRuns", "11", "Runs:Levels:ProvisionalRuns")]
     public async Task Demarrage_ReglageIncoherent_RefuseDeDemarrer(string key, string value, string expected)
     {
         await using var api = new ApiFactory(_connectionString, settings: new Dictionary<string, string> { [key] = value });

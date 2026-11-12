@@ -697,6 +697,11 @@ public interface IRunsStore
 
     void AddRecord(RunRecord record);
 
+    /// <summary>Le niveau de ce joueur (sous le même verrou que son record) ; vide avant sa première partie finie.</summary>
+    Task<RunLevel?> FindLevelAsync(Guid playerId, CancellationToken ct);
+
+    void AddLevel(RunLevel level);
+
     Task<RunAccess?> FindAccessAsync(Guid playerId, CancellationToken ct);
 
     void AddAccess(RunAccess access);
