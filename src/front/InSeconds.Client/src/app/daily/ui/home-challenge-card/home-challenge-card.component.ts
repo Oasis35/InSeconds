@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonComponent } from '../../../ui/button/button.component';
+import { PointsPipe } from '../../../ui/format/points.pipe';
 import { TimeLeft } from '../../domain/countdown';
 import { Streak, isStreakProtected, pluralKey } from '../../domain/streak';
 import { StreakIconComponent } from '../streak-icon/streak-icon.component';
@@ -13,7 +14,7 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
  */
 @Component({
   selector: 'app-home-challenge-card',
-  imports: [TranslatePipe, ButtonComponent, StreakPillComponent, StreakIconComponent],
+  imports: [TranslatePipe, PointsPipe, ButtonComponent, StreakPillComponent, StreakIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
@@ -26,12 +27,12 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
       @if (bestScore() !== null) {
         <p class="mt-3 flex items-baseline gap-2 text-[15px]" style="color:var(--text-light)" data-testid="welcome-record">
           {{ 'daily.welcome.record' | translate }}
-          <b class="text-lg font-extrabold tabular-nums" style="font-family:var(--font-score);color:var(--color-accent-3)">{{ bestScore() }}</b>
+          <b class="text-lg font-extrabold tabular-nums" style="font-family:var(--font-score);color:var(--color-accent-3)">{{ bestScore() ?? 0 | appPoints }}</b>
         </p>
       } @else if (yesterdayMedian() !== null) {
         <p class="mt-3 flex items-baseline gap-2 text-[15px]" style="color:var(--text-light)" data-testid="welcome-target">
           {{ 'daily.welcome.target' | translate }}
-          <b class="text-lg font-extrabold tabular-nums" style="font-family:var(--font-score);color:var(--text-indigo)">{{ yesterdayMedian() }}</b>
+          <b class="text-lg font-extrabold tabular-nums" style="font-family:var(--font-score);color:var(--text-indigo)">{{ yesterdayMedian() ?? 0 | appPoints }}</b>
         </p>
       }
       @if (remaining(); as left) {

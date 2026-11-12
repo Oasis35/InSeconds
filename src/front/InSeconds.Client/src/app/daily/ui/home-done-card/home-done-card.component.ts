@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
+import { PointsPipe } from '../../../ui/format/points.pipe';
 import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-button.component';
 import { TrackResultRow } from '../../../gameplay/ui/track-results-list/track-results-list.component';
 import { trackBar } from '../day-result-screen/result-rows';
@@ -11,7 +12,7 @@ import { trackBar } from '../day-result-screen/result-rows';
  */
 @Component({
   selector: 'app-home-done-card',
-  imports: [TranslatePipe, ShareButtonComponent],
+  imports: [TranslatePipe, PointsPipe, ShareButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
@@ -21,7 +22,7 @@ import { trackBar } from '../day-result-screen/result-rows';
         <div class="min-w-0">
           <h2 class="text-sm font-normal" style="font-family:var(--font-body);color:var(--text-light)">{{ 'daily.home.done' | translate }}</h2>
           <p class="tabular-nums" data-testid="home-score"
-            style="font-family:var(--font-score);font-size:2.4rem;font-weight:900;line-height:1;letter-spacing:-0.02em;color:var(--text-hi)">{{ score() ?? '-' }}</p>
+            style="font-family:var(--font-score);font-size:2.4rem;font-weight:900;line-height:1;letter-spacing:-0.02em;color:var(--text-hi)">{{ score() !== null ? (score() ?? 0 | appPoints) : '-' }}</p>
         </div>
         <div class="text-right shrink-0">
           <p class="text-sm" style="color:var(--text-light)">{{ 'daily.result.nextChallenge' | translate }}</p>

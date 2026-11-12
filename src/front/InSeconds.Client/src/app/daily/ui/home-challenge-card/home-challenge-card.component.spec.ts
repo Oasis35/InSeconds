@@ -31,12 +31,12 @@ describe('HomeChallengeCardComponent', () => {
 
   it('le record du joueur passe avant la médiane des autres', () => {
     const { q } = render({ bestScore: 3120, yesterdayMedian: 1840 });
-    expect(q('welcome-record')?.textContent).toContain('3120');
+    expect(q('welcome-record')?.textContent).toMatch(/3\s120/);
     expect(q('welcome-target')).toBeNull();
   });
 
   it('sans record : la médiane d’hier ; sans rien : aucune ligne', () => {
-    expect(render({ yesterdayMedian: 1840 }).q('welcome-target')?.textContent).toContain('1840');
+    expect(render({ yesterdayMedian: 1840 }).q('welcome-target')?.textContent).toMatch(/1\s840/);
     const empty = render();
     expect(empty.q('welcome-record')).toBeNull();
     expect(empty.q('welcome-target')).toBeNull();

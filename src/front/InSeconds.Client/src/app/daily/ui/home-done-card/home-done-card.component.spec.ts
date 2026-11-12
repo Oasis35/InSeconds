@@ -24,7 +24,7 @@ describe('HomeDoneCardComponent', () => {
 
   it('montre le score, le compte à rebours et une barre par morceau', () => {
     const { element, q } = render();
-    expect(q('home-score')?.textContent).toContain('2410');
+    expect(q('home-score')?.textContent).toMatch(/2\s410/);
     expect(q('countdown')?.textContent).toContain('06:12:40');
     expect(element.querySelectorAll('[data-testid="track-bar"]').length).toBe(3);
   });
