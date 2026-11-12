@@ -18,7 +18,9 @@ namespace InSeconds.Api.Modules.Runs.Application;
 /// <param name="Record">Son record ; vide s'il n'en a pas.</param>
 /// <param name="Pending">Sa partie en cours la plus récente, à reprendre.</param>
 /// <param name="Shelf">Les disques gagnés par ses parties finies, du moins bon au meilleur ; vide s'il n'en a pas.</param>
-public sealed record RunsMeResponse(bool HasAccess, RunRecordResponse? Record, RunPendingResponse? Pending, IReadOnlyList<RunShelfDiscResponse> Shelf)
+/// <param name="Level">Son niveau (points de niveau, disque, progression vers le suivant) ; vide avant sa première partie finie.</param>
+public sealed record RunsMeResponse(
+    bool HasAccess, RunRecordResponse? Record, RunPendingResponse? Pending, IReadOnlyList<RunShelfDiscResponse> Shelf, RunLevelResponse? Level = null)
 {
     public static RunsMeResponse Nobody { get; } = new(false, null, null, []);
 }
@@ -52,7 +54,8 @@ public static class GetRunsMeEndpoint
             await access.CanPlayAsync(playerId, ct),
             record is null ? null : new RunRecordResponse(record.BestScore, record.BestRoundsPassed, IsNew: false),
             pending is null ? null : new RunPendingResponse(pending.SessionId, pending.ChallengeCode),
-            shelf.Select(d => new RunShelfDiscResponse(new RunDiscResponse(d.Disc.Key, d.Disc.Stars), d.Count)).ToList());
+            shelf.Select(d => new RunShelfDiscResponse(new RunDiscResponse(d.Disc.Key, d.Disc.Stars), d.Count)).ToList(),
+            RunViews.LevelOf(await queries.FindLevelAsync(playerId, ct), rules.Levels, sessionId: null));
     }
 }
 

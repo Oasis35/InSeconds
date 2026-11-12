@@ -122,6 +122,7 @@ public sealed class RunPlayer(
     {
         ArgumentNullException.ThrowIfNull(run);
         var record = run.Session.IsPending ? null : await store.FindRecordAsync(run.Session.PlayerId, ct);
+        var level = run.Session.IsPending ? null : await store.FindLevelAsync(run.Session.PlayerId, ct);
         var themeOffer = run.Session.CanChooseTheme(run.Challenge) ? await themeDealer.OfferAsync(run.Challenge, ct) : null;
         IReadOnlyDictionary<int, byte[]> shapes = new Dictionary<int, byte[]>();
         if (withWaveforms && run.Session.IsPending)
@@ -133,7 +134,7 @@ public sealed class RunPlayer(
         }
 
         return RunViews.Session(run, scoring, rules.Discs, record, shapes, time.GetUtcNow(), await ghosts.OfAsync(run.Session, run.Challenge, ct),
-            themeOffer);
+            themeOffer, RunViews.LevelOf(level, rules.Levels, run.Session.Id));
     }
 
     // Le bilan d'une manche terminée ; la carte qu'elle fait gagner se journalise et se compte ici, une seule fois (la manche ne se termine qu'une fois).
@@ -188,6 +189,18 @@ public sealed class RunPlayer(
         else
             record.Improve(session, time.GetUtcNow());
 
+        // Le niveau : la moyenne glissante des scores des parties finies (même verrou que le record, une partie ne s'y compte qu'une fois).
+        var level = await store.FindLevelAsync(session.PlayerId, ct);
+        if (level is null)
+        {
+            level = RunLevel.Start(session.PlayerId, time.GetUtcNow());
+            store.AddLevel(level);
+        }
+
+        var pointsBefore = level.Points;
+        level.Record(session, rules.Levels.Window, time.GetUtcNow());
+        RunsLog.LevelUpdated(logger, session.Id, level.RunsPlayed, level.Points - pointsBefore);
+
         RunsLog.SessionEnded(logger, session.Id, session.PlayerId, session.Status, session.RoundsPassed, session.TotalScore);
         metrics.SessionEnded(session.Status == RunSessionStatus.Won, DiscLadder.Of(session.RoundsPassed, rules.Discs).Key, session.RoundsPassed);
         // Un duel contre l'ami qui a lancé la playlist (s'il l'a finie) : devant, derrière ou à égalité.
@@ -202,6 +215,21 @@ internal static class RunViews
     /// <summary>Les manches à thème d'une playlist, par manche ; rien quand elle n'en a pas.</summary>
     public static IReadOnlyList<RunRoundThemeResponse>? ThemesOf(RunRules rules) =>
         rules.Themes is { Count: > 0 } themes ? [.. themes.OrderBy(t => t.Round).Select(t => new RunRoundThemeResponse(t.Round, t.Name))] : null;
+
+    /// <summary>
+    /// Le niveau d'un joueur tel que l'écran le montre ; <paramref name="sessionId"/> : la partie dont on veut le gain (« +38 »), rien pour l'accueil.
+    /// Vide quand le joueur n'a encore fini aucune partie.
+    /// </summary>
+    public static RunLevelResponse? LevelOf(RunLevel? level, RunLevelOptions options, int? sessionId)
+    {
+        if (level is null || level.RunsPlayed == 0)
+            return null;
+        var standing = RunLevelPolicy.Standing(level.Points, options.Ladder);
+        return new RunLevelResponse(
+            level.Points, new RunDiscResponse(standing.Current.Disc, 0), standing.Next is null ? null : new RunDiscResponse(standing.Next.Disc, 0),
+            standing.PointsToNext, standing.ProgressPercent, RunLevelPolicy.IsProvisional(level.RunsPlayed, options.ProvisionalRuns), level.RunsPlayed,
+            sessionId is { } id ? level.DeltaOf(id) : null);
+    }
 
     public static string StatusOf(RunSessionStatus status) => status switch
     {
@@ -250,7 +278,7 @@ internal static class RunViews
 
     public static RunSessionResponse Session(
         LoadedRun run, IRunScoringPolicy scoring, IReadOnlyList<string> discs, RunRecord? record, IReadOnlyDictionary<int, byte[]> shapes,
-        DateTimeOffset now, RunGhostResponse? ghost, RunThemeOffer? themeOffer = null)
+        DateTimeOffset now, RunGhostResponse? ghost, RunThemeOffer? themeOffer = null, RunLevelResponse? level = null)
     {
         var (session, challenge, _) = run;
         var rules = challenge.Rules;
@@ -281,7 +309,7 @@ internal static class RunViews
         }
         else
         {
-            finish = Finish(run, scoring, discs, record);
+            finish = Finish(run, scoring, discs, record, level);
         }
 
         return new RunSessionResponse(
@@ -305,7 +333,7 @@ internal static class RunViews
             return new RunDifficultyOptionResponse(RunDifficulties.KeyOf(option.Difficulty), progress.Objective, progress.MaxScore, option.ListenSeconds);
         }).ToList());
 
-    private static RunFinishResponse Finish(LoadedRun run, IRunScoringPolicy scoring, IReadOnlyList<string> discs, RunRecord? record)
+    private static RunFinishResponse Finish(LoadedRun run, IRunScoringPolicy scoring, IReadOnlyList<string> discs, RunRecord? record, RunLevelResponse? level)
     {
         var (session, challenge, _) = run;
         var answers = session.Answers.OrderBy(a => a.Position).ToList();
@@ -326,7 +354,7 @@ internal static class RunViews
             StatusOf(session.Status), DiscOf(disc), session.TotalScore, session.RoundsPassed,
             answers.Count(a => a.ArtistCorrect && a.TitleCorrect), challenge.Tracks.Count, tracks, rounds,
             record is null ? null : new RunRecordResponse(record.BestScore, record.BestRoundsPassed, record.SessionId == session.Id),
-            challenge.Code, shortfall);
+            challenge.Code, shortfall, level);
     }
 
     private static List<RunTrackResponse> PlayedTracks(LoadedRun run, int round) =>

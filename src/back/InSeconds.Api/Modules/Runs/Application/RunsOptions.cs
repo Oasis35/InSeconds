@@ -63,6 +63,9 @@ public sealed class RunsOptions
 
     public int Rounds { get; set; } = DefaultRounds;
 
+    /// <summary>Le niveau du joueur (<c>Runs:Levels:…</c>) : fenêtre de la moyenne, parties provisoires, disques et seuils.</summary>
+    public RunLevelOptions Levels { get; set; } = new();
+
     public int TracksPerRound { get; set; } = DefaultTracksPerRound;
 
     public decimal ListenSeconds { get; set; } = DefaultListenSeconds;
@@ -151,6 +154,53 @@ public sealed class RunDifficultySetting
     public decimal ObjectiveFactor { get; set; } = 1m;
 }
 
+/// <summary>
+/// Le niveau du joueur (<c>Runs:Levels:…</c>, relu à chaud) : ses points de niveau sont la moyenne de ses <see cref="Window"/> dernières parties finies
+/// (<see cref="RunLevelPolicy"/>). **Pas de valeur initiale sur la liste** : le défaut est dans <see cref="EffectiveDiscs"/>.
+/// </summary>
+public sealed class RunLevelOptions
+{
+    public const int DefaultWindow = 10;
+    public const int DefaultProvisionalRuns = 3;
+
+    /// <summary>Le nombre de parties finies (les plus récentes) dont la moyenne donne les points de niveau.</summary>
+    public int Window { get; set; } = DefaultWindow;
+
+    /// <summary>Le niveau reste « provisoire » tant que le joueur a fini moins de parties.</summary>
+    public int ProvisionalRuns { get; set; } = DefaultProvisionalRuns;
+
+    /// <summary>
+    /// Les disques de niveau, du plus bas au plus haut : liste d'objets <c>{ "disc": "runs.discs.gold", "points": 1600 }</c> (clé de traduction et points
+    /// de niveau à partir desquels on l'a ; le premier à 0). Sans valeur : Rayé, Cire, Bronze, Argent, Or, Platine, Double platine, Diamant.
+    /// </summary>
+    public RunLevelDiscSetting[]? Discs { get; set; }
+
+    /// <summary>Une liste neuve à chaque lecture (ses éléments ont des accesseurs).</summary>
+    public static RunLevelDiscSetting[] DefaultDiscs =>
+    [
+        new() { Disc = "runs.discs.scratched", Points = 0 },
+        new() { Disc = "runs.discs.wax", Points = 300 },
+        new() { Disc = "runs.discs.bronze", Points = 700 },
+        new() { Disc = "runs.discs.silver", Points = 1100 },
+        new() { Disc = "runs.discs.gold", Points = 1600 },
+        new() { Disc = "runs.discs.platinum", Points = 2200 },
+        new() { Disc = "runs.discs.double_platinum", Points = 2800 },
+        new() { Disc = "runs.discs.diamond", Points = 3400 },
+    ];
+
+    public IReadOnlyList<RunLevelDiscSetting> EffectiveDiscs => Discs ?? DefaultDiscs;
+
+    public IReadOnlyList<RunLevelStep> Ladder => [.. EffectiveDiscs.Select(d => new RunLevelStep(d.Disc, d.Points))];
+}
+
+/// <summary>Un disque de niveau dans les réglages : sa clé de traduction et les points de niveau qui le donnent.</summary>
+public sealed class RunLevelDiscSetting
+{
+    public string Disc { get; set; } = "";
+
+    public int Points { get; set; }
+}
+
 /// <summary>La cohérence des réglages, partagée par le contrôle du démarrage, <see cref="RunsRules"/> et les tests.</summary>
 public static class RunsOptionsChecks
 {
@@ -218,6 +268,21 @@ public static class RunsOptionsChecks
         var discs = options.EffectiveDiscs;
         if (discs.Count == 0 || discs.Any(string.IsNullOrWhiteSpace))
             problems.Add("Runs:Discs : au moins une clé de traduction, aucune vide.");
+        problems.AddRange(LevelProblems(options.Levels));
+        return problems;
+    }
+
+    private static List<string> LevelProblems(RunLevelOptions levels)
+    {
+        var problems = new List<string>();
+        if (levels.Window is < 1 or > RunLevelPolicy.MaxStoredScores)
+            problems.Add($"Runs:Levels:Window : de 1 à {RunLevelPolicy.MaxStoredScores} parties.");
+        if (levels.ProvisionalRuns < 0 || levels.ProvisionalRuns > levels.Window)
+            problems.Add("Runs:Levels:ProvisionalRuns : de 0 à la fenêtre.");
+        var discs = levels.EffectiveDiscs;
+        if (discs.Count is < 2 or > 12 || discs.Any(d => string.IsNullOrWhiteSpace(d.Disc)) || discs.Select(d => d.Disc).Distinct().Count() != discs.Count
+            || discs[0].Points != 0 || discs.Zip(discs.Skip(1), (a, b) => b.Points <= a.Points).Any(bad => bad))
+            problems.Add("Runs:Levels:Discs : de 2 à 12 disques distincts, le premier à 0 point, les points strictement croissants.");
         return problems;
     }
 

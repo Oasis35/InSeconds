@@ -38,6 +38,9 @@ public interface IRunsQueries
 
     Task<RunRecord?> FindRecordAsync(Guid playerId, CancellationToken ct);
 
+    /// <summary>Le niveau de ce joueur ; vide avant sa première partie finie.</summary>
+    Task<RunLevel?> FindLevelAsync(Guid playerId, CancellationToken ct);
+
     /// <summary>
     /// Les points de chaque morceau de la partie finie (gagnée ou perdue) de ce joueur sur ce défi, par position ; <c>null</c> s'il ne l'a pas finie
     /// (le fantôme d'un ami).

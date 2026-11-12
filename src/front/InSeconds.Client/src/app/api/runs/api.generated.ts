@@ -1408,6 +1408,7 @@ export interface RunFinishResponse {
     record: RunRecordResponse | undefined;
     challengeCode: string;
     shortfall: RunShortfallResponse | undefined;
+    level?: RunLevelResponse | undefined;
 
     [key: string]: any;
 }
@@ -1423,6 +1424,19 @@ export interface RunGhostResponse {
 export interface RunHandCardResponse {
     slot: number;
     card: string;
+
+    [key: string]: any;
+}
+
+export interface RunLevelResponse {
+    points: number;
+    disc: RunDiscResponse;
+    nextDisc: RunDiscResponse | undefined;
+    pointsToNext: number | undefined;
+    progressPercent: number;
+    provisional: boolean;
+    runsPlayed: number;
+    delta: number | undefined;
 
     [key: string]: any;
 }
@@ -1558,6 +1572,7 @@ export interface RunsMeResponse {
     record: RunRecordResponse | undefined;
     pending: RunPendingResponse | undefined;
     shelf: RunShelfDiscResponse[];
+    level?: RunLevelResponse | undefined;
 
     [key: string]: any;
 }

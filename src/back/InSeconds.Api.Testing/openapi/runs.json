@@ -1561,6 +1561,16 @@
                 "$ref": "#/components/schemas/RunShortfallResponse"
               }
             ]
+          },
+          "level": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunLevelResponse"
+              }
+            ]
           }
         }
       },
@@ -1604,6 +1614,63 @@
           },
           "card": {
             "type": "string"
+          }
+        }
+      },
+      "RunLevelResponse": {
+        "required": [
+          "points",
+          "disc",
+          "nextDisc",
+          "pointsToNext",
+          "progressPercent",
+          "provisional",
+          "runsPlayed",
+          "delta"
+        ],
+        "type": "object",
+        "properties": {
+          "points": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "disc": {
+            "$ref": "#/components/schemas/RunDiscResponse"
+          },
+          "nextDisc": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunDiscResponse"
+              }
+            ]
+          },
+          "pointsToNext": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "progressPercent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "provisional": {
+            "type": "boolean"
+          },
+          "runsPlayed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "delta": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -2124,6 +2191,16 @@
             "items": {
               "$ref": "#/components/schemas/RunShelfDiscResponse"
             }
+          },
+          "level": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunLevelResponse"
+              }
+            ]
           }
         }
       },

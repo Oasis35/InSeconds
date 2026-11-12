@@ -100,6 +100,21 @@ public sealed record RunDiscResponse(string Key, int Stars);
 /// <param name="IsNew">Cette partie vient de l'établir (« Nouveau record »).</param>
 public sealed record RunRecordResponse(int BestScore, int BestRoundsPassed, bool IsNew);
 
+/// <summary>
+/// Le niveau du joueur : la moyenne glissante de ses dernières parties finies, son disque de niveau et ce qu'il lui reste pour le suivant. Rien
+/// qui identifie un morceau, aucun classement.
+/// </summary>
+/// <param name="Points">Ses points de niveau.</param>
+/// <param name="Disc">Son disque de niveau (clé <c>runs.discs.*</c>, jamais de texte).</param>
+/// <param name="NextDisc">Le disque suivant ; vide au dernier.</param>
+/// <param name="PointsToNext">Ce qui lui manque pour le disque suivant (« Encore 220 pour l'Or ») ; vide au dernier disque.</param>
+/// <param name="ProgressPercent">Sa progression entre son disque et le suivant, de 0 à 100.</param>
+/// <param name="Provisional">Le niveau est provisoire : il a fini moins de parties que <c>Runs:Levels:ProvisionalRuns</c>.</param>
+/// <param name="RunsPlayed">Les parties finies (gagnées ou perdues) prises en compte.</param>
+/// <param name="Delta">Ce que la partie qui vient de finir a changé aux points (« +38 ») ; vide hors de l'écran de fin de cette partie.</param>
+public sealed record RunLevelResponse(
+    int Points, RunDiscResponse Disc, RunDiscResponse? NextDisc, int? PointsToNext, int ProgressPercent, bool Provisional, int RunsPlayed, int? Delta);
+
 /// <summary>Le résultat d'une partie finie (écran de fin).</summary>
 /// <param name="Status"><c>won</c>, <c>lost</c> ou <c>abandoned</c>.</param>
 /// <param name="FoundCount">Morceaux trouvés (artiste et titre justes).</param>
@@ -112,10 +127,14 @@ public sealed record RunRecordResponse(int BestScore, int BestRoundsPassed, bool
 /// Ce qui a manqué à une partie perdue pour le disque suivant (« Il t'a manqué 12 pts pour le Disque de bronze ») ; vide pour une partie gagnée ou
 /// abandonnée.
 /// </param>
+/// <param name="Level">
+/// Le niveau du joueur après cette partie, avec ce qu'elle lui a fait gagner ou perdre (<c>delta</c>) ; une partie abandonnée ne compte pas
+/// (son niveau est rendu sans <c>delta</c>) ; vide si le joueur n'a encore fini aucune partie.
+/// </param>
 public sealed record RunFinishResponse(
     string Status, RunDiscResponse Disc, int TotalScore, int RoundsPassed, int FoundCount, int TrackCount,
     IReadOnlyList<RunTrackResponse> Tracks, IReadOnlyList<RunRoundScoreResponse> Rounds, RunRecordResponse? Record, string ChallengeCode,
-    RunShortfallResponse? Shortfall);
+    RunShortfallResponse? Shortfall, RunLevelResponse? Level = null);
 
 /// <summary>Les points qui manquaient à l'objectif de la manche ratée, et le disque qu'elle aurait donné.</summary>
 public sealed record RunShortfallResponse(int Points, RunDiscResponse Disc);

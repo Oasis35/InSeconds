@@ -31,6 +31,9 @@ public sealed class RunsRules(IOptionsMonitor<RunsOptions> options, ILogger<Runs
 
     /// <summary>Les clés de traduction des disques, ou celles par défaut si les réglages sont incohérents.</summary>
     public IReadOnlyList<string> Discs => RunsOptionsChecks.Problems(Options).Count == 0 ? Options.EffectiveDiscs : RunsOptions.DefaultDiscs;
+
+    /// <summary>Les réglages du niveau, ou ceux par défaut si les réglages sont incohérents.</summary>
+    public RunLevelOptions Levels => RunsOptionsChecks.Problems(Options).Count == 0 ? Options.Levels : new RunLevelOptions();
 }
 
 /// <summary>Refuse de démarrer avec des réglages <c>Runs:</c> incohérents (lancé après le rechargement des réglages). Au démarrage seulement.</summary>
