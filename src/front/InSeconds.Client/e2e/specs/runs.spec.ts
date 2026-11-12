@@ -105,6 +105,20 @@ test.describe('Mode Setlist', () => {
     await page.getByTestId('daily-left').click();
     await expect(page).toHaveURL(/\/daily$/);
     await game.waitForWelcome();
+
+    // L'historique : un onglet, une page par mode. Rien de joué : chacune le dit, et celle du jeu du jour garde le lien des jours passés,
+    // qui a quitté l'accueil.
+    await expect(page.getByTestId('welcome-archive')).toHaveCount(0);
+    await page.getByTestId('tab-history').click();
+    await expect(page).toHaveURL(/\/daily\/history$/);
+    await expect(page.getByTestId('tab-history')).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByTestId('history-count')).toHaveText('0');
+    await expect(page.getByTestId('history-empty')).toBeVisible();
+    await expect(page.getByTestId('history-archive')).toBeVisible();
+    await page.getByTestId('history-tab-setlist').click();
+    await expect(page).toHaveURL(/\/setlist\/history$/);
+    await expect(page.getByTestId('history-empty')).toBeVisible();
+    await expect(bar).toBeVisible();
   });
 
   test("partie gagnée : 20 bonnes réponses, les 4 manches débloquées, le disque d'or et un nouveau record", async ({ page, api }) => {

@@ -915,6 +915,55 @@
           }
         }
       }
+    },
+    "/api/daily/history": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getDailyHistory",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyHistoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2654,6 +2703,103 @@
             "type": "boolean"
           }
         }
+      },
+      "DailyHistoryGameResponse": {
+        "required": [
+          "date",
+          "score",
+          "tracks"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyHistoryTrackResponse"
+            }
+          }
+        }
+      },
+      "DailyHistoryResponse": {
+        "required": [
+          "month",
+          "previousMonth",
+          "nextMonth",
+          "playedCount",
+          "averageScore",
+          "bestScore",
+          "games"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "previousMonth": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nextMonth": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "playedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "averageScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "bestScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "games": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyHistoryGameResponse"
+            }
+          }
+        }
+      },
+      "DailyHistoryTrackResponse": {
+        "required": [
+          "position",
+          "artistCorrect",
+          "titleCorrect"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "artistCorrect": {
+            "type": "boolean"
+          },
+          "titleCorrect": {
+            "type": "boolean"
+          }
+        }
       }
     }
   },
@@ -2693,6 +2839,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.GetArchivePreviewEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetDailyHistoryEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.RecomputeDayStatsEndpoint"

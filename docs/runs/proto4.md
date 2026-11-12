@@ -50,6 +50,8 @@ Sans le flag, l'accueil et le pied de page restent inchangés (E2E). Passage de 
 
 ## PR 3 : historique
 
+**État : codée (#569).** Une page par mode, les modes ne se connaissant pas : `/daily/history` et `/setlist/history` (`?mois=aaaa-mm`), reliées par deux onglets qui sont des liens, et un seul onglet « Historique » dans la barre du bas. Le détail d'un défi est la page des réponses du jour (`/daily/archive/<date>`, le résultat du jour pour la partie d'aujourd'hui) ; celui d'une setlist est `/setlist/history/<partie>` (par manche, « Tous / Ratés », ▶ par `GET /api/runs/sessions/{id}/tracks/{position}/preview`). Le filtre par difficulté porte sur le mois affiché. Sous la V4, le lien « Réponses des jours passés » quitte l'accueil pour le bas de l'historique. Pas encore : le lien « Revoir » de la fin de run (PR 4).
+
 Deux onglets, Défis du jour et Setlists (écrans 9 et 10) : résumé en haut (nombre, moyenne, meilleur ou record), un mois à la fois avec les flèches, filtre par difficulté pour les setlists, un toucher ouvre le détail des morceaux (écran 11, composant commun aux deux modes : filtre « Tous / Ratés », ▶ par morceau ; le détail du Daily existe déjà, celui des setlists vient de la fin de run et de « Revoir »). Le lien des réponses des jours passés vit ici (il quitte l'accueil). Back : `GET /api/daily/history?month=` (module `Daily`) et `GET /api/runs/history` (module `Runs`), en lecture seule par des ports `I...Queries`, sans nouvelle table. Passage de `gardien-rgpd`.
 
 ## PR 4 : niveau, disques et fin de run

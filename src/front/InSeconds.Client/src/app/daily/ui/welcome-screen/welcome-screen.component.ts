@@ -32,6 +32,8 @@ export class WelcomeScreenComponent {
   readonly hideLoginCta = input(false);
   /** Compte connecté (non invité). */
   readonly linked = input.required<boolean>();
+  /** Sous la V4, le lien des réponses des jours passés vit dans l'historique. */
+  readonly hideArchive = input(false);
   readonly startGame = output<void>();
   /** Toucher sur le relevé de série : la page ouvre le panneau de série. */
   readonly openStreak = output<void>();

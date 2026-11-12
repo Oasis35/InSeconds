@@ -45,4 +45,13 @@ describe('SetlistBottomBarComponent', () => {
     fixture.detectChanges();
     expect(el.querySelector('[data-testid="daily-pending"]')).toBeNull();
   });
+
+  it("l'historique a un seul onglet pour ses deux pages, et n'allume pas celui du mode", async () => {
+    const { el } = await render('/setlist/history/12', {});
+    expect(el.querySelector('[data-testid="tab-history"]')?.getAttribute('aria-current')).toBe('page');
+    expect(el.querySelector('[data-testid="tab-history"]')?.getAttribute('href')).toBe('/daily/history');
+    expect(el.querySelector('[data-testid="tab-setlist"]')?.getAttribute('aria-current')).toBeNull();
+    TestBed.resetTestingModule();
+    expect((await render('/daily/history?mois=2026-10', {})).el.querySelector('[data-testid="tab-daily"]')?.getAttribute('aria-current')).toBeNull();
+  });
 });

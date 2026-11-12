@@ -1330,6 +1330,73 @@ export class DailyClient {
         }
         return _observableOf(null as any);
     }
+
+    /**
+     * @param month (optional) 
+     * @return OK
+     */
+    getDailyHistory(month: string | undefined): Observable<DailyHistoryResponse> {
+        let url_ = this.baseUrl + "/api/daily/history?";
+        if (month === null)
+            throw new globalThis.Error("The parameter 'month' cannot be null.");
+        else if (month !== undefined)
+            url_ += "month=" + encodeURIComponent("" + month) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetDailyHistory(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetDailyHistory(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<DailyHistoryResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<DailyHistoryResponse>;
+        }));
+    }
+
+    protected processGetDailyHistory(response: HttpResponseBase): Observable<DailyHistoryResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as DailyHistoryResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
 }
 
 export interface AdminChallenge {
@@ -1816,6 +1883,34 @@ export interface NextChallengeResponse {
     eligibleCount: number;
     requiredCount: number;
     generated: boolean;
+
+    [key: string]: any;
+}
+
+export interface DailyHistoryGameResponse {
+    date: Date;
+    score: number;
+    tracks: DailyHistoryTrackResponse[];
+
+    [key: string]: any;
+}
+
+export interface DailyHistoryResponse {
+    month: string;
+    previousMonth: string | undefined;
+    nextMonth: string | undefined;
+    playedCount: number;
+    averageScore: number | undefined;
+    bestScore: number | undefined;
+    games: DailyHistoryGameResponse[];
+
+    [key: string]: any;
+}
+
+export interface DailyHistoryTrackResponse {
+    position: number;
+    artistCorrect: boolean;
+    titleCorrect: boolean;
 
     [key: string]: any;
 }

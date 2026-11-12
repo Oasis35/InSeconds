@@ -5,6 +5,7 @@ import { DailyApi } from '../data-access/daily.api';
 import { provideDailyApi } from '../data-access/daily.providers';
 import { ArchivePage } from './archive/archive.page';
 import { DailyPage } from './daily/daily.page';
+import { DailyHistoryPage } from './history/daily-history.page';
 import { leaveGameGuard } from './leave-game.guard';
 
 /** `/daily/archive` : les réponses du jour publié le plus récent, la veille d'ordinaire ; sans jour publié, le jeu du jour. */
@@ -29,6 +30,8 @@ export const DAILY_ROUTES: Routes = [
     children: [
       { path: 'archive', pathMatch: 'full', canActivate: [latestArchiveGuard], children: [] },
       { path: 'archive/:date', component: ArchivePage },
+      // L'historique du joueur sur le défi du jour (V4) ; celui des setlists est la page du mode (`/setlist/history`).
+      { path: 'history', component: DailyHistoryPage },
       { path: '', providers: [provideGameplay()], component: DailyPage, canDeactivate: [leaveGameGuard] },
     ],
   },

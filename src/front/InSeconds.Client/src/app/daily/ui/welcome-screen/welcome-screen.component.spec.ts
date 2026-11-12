@@ -68,6 +68,10 @@ describe('WelcomeScreenComponent', () => {
     expect(render().el.querySelector('[data-testid="welcome-archive"]')?.getAttribute('href')).toBe('/daily/archive');
   });
 
+  it("sous la V4, ce lien n'est plus sur l'accueil (il vit dans l'historique)", () => {
+    expect(render({ hideArchive: true }).el.querySelector('[data-testid="welcome-archive"]')).toBeNull();
+  });
+
   it('invité avec une série protégée : pas de ligne de gel', () => {
     expect(render({ linked: false, streak: PROTECTED }).el.querySelector('[data-testid="frozen-line"]')).toBeNull();
   });
