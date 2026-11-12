@@ -31,7 +31,8 @@ describe('RunPalierComponent', () => {
     const { element, text } = render();
 
     expect(text('run-palier-disc')).toBe('Disque de cire');
-    await vi.waitFor(() => expect(text('run-palier-score')).toBe('250'));
+    // L'animation du score dure 0,65 s (délai compris) : plus que le délai par défaut de `waitFor` (1 s) sur un exécuteur chargé.
+    await vi.waitFor(() => expect(text('run-palier-score')).toBe('250'), { timeout: 5000 });
     expect(text('run-palier-next')).toContain('366');
     expect(text('run-palier-next')).toContain('pts pour');
     // L'étagère : le disque gagné, puis trois emplacements en pointillé.
