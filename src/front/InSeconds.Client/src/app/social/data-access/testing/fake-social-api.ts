@@ -26,38 +26,39 @@ export class FakeSocialApi {
   failLeave = false;
   readonly calls: string[] = [];
 
-  async myGroups(): Promise<MyGroups> {
+  myGroups(): Promise<MyGroups> {
     this.calls.push('myGroups');
-    if (this.failGroups) throw new Error('down');
-    return this.groups;
+    if (this.failGroups) return Promise.reject(new Error('down'));
+    return Promise.resolve(this.groups);
   }
 
-  async ranking(groupId: number): Promise<GroupRanking> {
+  ranking(groupId: number): Promise<GroupRanking> {
     this.calls.push(`ranking:${groupId}`);
     const ranking = this.rankings.get(groupId);
-    if (!ranking) throw new Error('not found');
-    return ranking;
+    if (!ranking) return Promise.reject(new Error('not found'));
+    return Promise.resolve(ranking);
   }
 
-  async create(name: string): Promise<GroupOutcome> {
+  create(name: string): Promise<GroupOutcome> {
     this.calls.push(`create:${name}`);
-    return this.createOutcome;
+    return Promise.resolve(this.createOutcome);
   }
 
-  async join(code: string): Promise<GroupOutcome> {
+  join(code: string): Promise<GroupOutcome> {
     this.calls.push(`join:${code}`);
-    return this.joinOutcome;
+    return Promise.resolve(this.joinOutcome);
   }
 
-  async leave(groupId: number): Promise<void> {
+  leave(groupId: number): Promise<void> {
     this.calls.push(`leave:${groupId}`);
-    if (this.failLeave) throw new Error('down');
+    if (this.failLeave) return Promise.reject(new Error('down'));
     this.groups = { ...this.groups, groups: this.groups.groups.filter(group => group.id !== groupId) };
+    return Promise.resolve();
   }
 
-  async invitation(code: string): Promise<InvitationOutcome> {
+  invitation(code: string): Promise<InvitationOutcome> {
     this.calls.push(`invitation:${code}`);
-    return this.invitationOutcome;
+    return Promise.resolve(this.invitationOutcome);
   }
 }
 
