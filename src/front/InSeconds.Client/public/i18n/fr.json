@@ -81,6 +81,10 @@
       "theme_locked": "Le thème de cette manche est déjà choisi.",
       "track_lock_not_released": "Réponds d'abord au morceau en cours.",
       "track_not_found": "Ce morceau n'existe pas dans cette playlist."
+    },
+    "social": {
+      "invalid_name": "Ce nom de groupe n'est pas valide.",
+      "group_not_found": "Ce groupe n'existe plus."
     }
   },
   "shell": {
@@ -1230,7 +1234,8 @@
       "header": "{{ score }} pts · {{ disc }} · InSeconds Setlist",
       "round": "Manche {{ round }}",
       "duelWon": "J’ai battu {{ name }} de {{ points }} pts.",
-      "beatMe": "Fais mieux sur la même playlist :"
+      "beatMe": "Fais mieux sur la même playlist :",
+      "groupInvite": "Rejoins « {{ name }} » et fais mieux sur ma setlist"
     },
     "palier": {
       "theme": "Manche {{round}} · thème",
@@ -1289,7 +1294,8 @@
         "label": "Navigation",
         "daily": "Aujourd'hui",
         "setlist": "Setlist",
-        "history": "Historique"
+        "history": "Historique",
+        "ranking": "Classement"
       },
       "dailyLeft": "Il te reste le défi du jour"
     },
@@ -1302,6 +1308,89 @@
       "label": "Niveau : {{ disc }}, {{ points }} points",
       "newSetlist": "Nouvelle setlist",
       "challenge": "Défier un ami"
+    },
+    "shareSheet": {
+      "title": "Partager",
+      "challenge": "Défier un ami",
+      "challengeBody": "Il joue tes {{ tracks }} morceaux.",
+      "group": "Inviter dans un groupe",
+      "groupBody": "Il rejoint « {{ name }} » et joue tes {{ tracks }} morceaux.",
+      "groupPick": "Dans quel groupe ?",
+      "noGroup": "Créer un groupe et inviter",
+      "noGroupBody": "Un classement privé entre amis.",
+      "grid": "Ma grille",
+      "gridBody": "Seulement le résultat, sans lien.",
+      "copied": "Copié !",
+      "failed": "Copie impossible"
+    }
+  },
+  "social": {
+    "ranking": {
+      "title": "Classement",
+      "loading": "Chargement…",
+      "error": "Le classement ne répond pas.",
+      "groupsLabel": "Mes groupes",
+      "newGroup": "+ Groupe",
+      "me": "Toi",
+      "unplayed": "Pas encore joué",
+      "privacy": "Seuls les membres du groupe voient ton pseudo."
+    },
+    "empty": {
+      "title": "Joue contre tes amis",
+      "body": "Crée un groupe, envoie le lien : vous vous retrouvez dans le même classement.",
+      "create": "Créer un groupe",
+      "guestBody": "Un classement privé entre amis. Il faut un compte pour en faire partie.",
+      "createAccount": "Créer un compte"
+    },
+    "invite": {
+      "button": "Inviter un ami dans {{ name }}",
+      "copied": "Lien copié !",
+      "failed": "Copie impossible",
+      "text": "Rejoins « {{ name }} » sur InSeconds : on se retrouve dans le même classement."
+    },
+    "leave": {
+      "link": "Quitter le groupe",
+      "title": "Quitter « {{ name }} » ?",
+      "body": "Tu n'apparaîtras plus dans son classement. Le lien d'invitation te permettra d'y revenir.",
+      "confirm": "Quitter",
+      "cancel": "Rester",
+      "failed": "Impossible de quitter le groupe pour le moment."
+    },
+    "create": {
+      "title": "Nouveau groupe",
+      "subtitle": "Un classement privé entre amis, famille ou collègues.",
+      "label": "Nom du groupe",
+      "step1": "Tu crées le groupe",
+      "step2": "Tu envoies le lien à tes amis",
+      "step3": "Chacun apparaît avec ses points après sa première setlist",
+      "privacy": "Seuls les membres voient ton pseudo. Tu peux quitter le groupe quand tu veux.",
+      "submit": "Créer et inviter",
+      "cancel": "Annuler",
+      "tooMany": "Tu as atteint le nombre de groupes possible.",
+      "accountRequired": "Il faut un compte pour créer un groupe.",
+      "failed": "La création n'a pas marché. Réessaie."
+    },
+    "join": {
+      "lead": "Tu es invité dans le groupe",
+      "members": "{{ count }} membres sur {{ max }}",
+      "submit": "Rejoindre",
+      "privacy": "Les membres du groupe verront ton pseudo et tes points.",
+      "already": "Tu es déjà dans ce groupe.",
+      "seeRanking": "Voir le classement",
+      "full": "Ce groupe est complet.",
+      "accountRequired": "Il faut un compte pour rejoindre un groupe. L'invitation t'attendra dans l'onglet Classement.",
+      "failed": "L'adhésion n'a pas marché. Réessaie.",
+      "notFoundTitle": "Invitation introuvable",
+      "notFoundBody": "Ce lien ne mène plus à un groupe. Demande un nouveau lien à ton ami.",
+      "backHome": "Retour au jeu du jour"
+    },
+    "pending": {
+      "line": "Tu es invité dans un groupe"
+    },
+    "strip": {
+      "rank": "n° {{ rank }} sur {{ members }}",
+      "empty": "Joue avec tes amis",
+      "create": "Créer un groupe"
     }
   }
 }

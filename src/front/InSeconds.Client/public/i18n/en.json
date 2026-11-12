@@ -81,6 +81,10 @@
       "theme_locked": "This round's theme is already chosen.",
       "track_lock_not_released": "Answer the current track first.",
       "track_not_found": "This track isn't in this playlist."
+    },
+    "social": {
+      "invalid_name": "That group name isn't valid.",
+      "group_not_found": "This group no longer exists."
     }
   },
   "shell": {
@@ -1230,7 +1234,8 @@
       "header": "{{ score }} pts · {{ disc }} · InSeconds Setlist",
       "round": "Round {{ round }}",
       "duelWon": "I beat {{ name }} by {{ points }} pts.",
-      "beatMe": "Do better on the same playlist:"
+      "beatMe": "Do better on the same playlist:",
+      "groupInvite": "Join “{{ name }}” and beat me on my setlist"
     },
     "palier": {
       "theme": "Round {{round}} · theme",
@@ -1289,7 +1294,8 @@
         "label": "Navigation",
         "daily": "Today",
         "setlist": "Setlist",
-        "history": "History"
+        "history": "History",
+        "ranking": "Ranking"
       },
       "dailyLeft": "Today's challenge is still waiting"
     },
@@ -1302,6 +1308,89 @@
       "label": "Level: {{ disc }}, {{ points }} points",
       "newSetlist": "New setlist",
       "challenge": "Challenge a friend"
+    },
+    "shareSheet": {
+      "title": "Share",
+      "challenge": "Challenge a friend",
+      "challengeBody": "They play your {{ tracks }} tracks.",
+      "group": "Invite to a group",
+      "groupBody": "They join “{{ name }}” and play your {{ tracks }} tracks.",
+      "groupPick": "Which group?",
+      "noGroup": "Create a group and invite",
+      "noGroupBody": "A private ranking between friends.",
+      "grid": "My grid",
+      "gridBody": "Only the result, no link.",
+      "copied": "Copied!",
+      "failed": "Copy failed"
+    }
+  },
+  "social": {
+    "ranking": {
+      "title": "Ranking",
+      "loading": "Loading…",
+      "error": "The ranking is not responding.",
+      "groupsLabel": "My groups",
+      "newGroup": "+ Group",
+      "me": "You",
+      "unplayed": "Not played yet",
+      "privacy": "Only the group's members see your username."
+    },
+    "empty": {
+      "title": "Play against your friends",
+      "body": "Create a group, send the link: you all end up in the same ranking.",
+      "create": "Create a group",
+      "guestBody": "A private ranking between friends. You need an account to be part of one.",
+      "createAccount": "Create an account"
+    },
+    "invite": {
+      "button": "Invite a friend to {{ name }}",
+      "copied": "Link copied!",
+      "failed": "Copy failed",
+      "text": "Join “{{ name }}” on InSeconds: we'll be in the same ranking."
+    },
+    "leave": {
+      "link": "Leave the group",
+      "title": "Leave “{{ name }}”?",
+      "body": "You will no longer appear in its ranking. The invitation link lets you come back.",
+      "confirm": "Leave",
+      "cancel": "Stay",
+      "failed": "Unable to leave the group right now."
+    },
+    "create": {
+      "title": "New group",
+      "subtitle": "A private ranking between friends, family or colleagues.",
+      "label": "Group name",
+      "step1": "You create the group",
+      "step2": "You send the link to your friends",
+      "step3": "Everyone appears with their points after their first setlist",
+      "privacy": "Only members see your username. You can leave the group whenever you want.",
+      "submit": "Create and invite",
+      "cancel": "Cancel",
+      "tooMany": "You have reached the maximum number of groups.",
+      "accountRequired": "You need an account to create a group.",
+      "failed": "The group could not be created. Try again."
+    },
+    "join": {
+      "lead": "You are invited to the group",
+      "members": "{{ count }} members out of {{ max }}",
+      "submit": "Join",
+      "privacy": "The group's members will see your username and your points.",
+      "already": "You are already in this group.",
+      "seeRanking": "See the ranking",
+      "full": "This group is full.",
+      "accountRequired": "You need an account to join a group. The invitation will wait for you in the Ranking tab.",
+      "failed": "Joining did not work. Try again.",
+      "notFoundTitle": "Invitation not found",
+      "notFoundBody": "This link no longer leads to a group. Ask your friend for a new one.",
+      "backHome": "Back to the daily game"
+    },
+    "pending": {
+      "line": "You are invited to a group"
+    },
+    "strip": {
+      "rank": "#{{ rank }} of {{ members }}",
+      "empty": "Play with your friends",
+      "create": "Create a group"
     }
   }
 }

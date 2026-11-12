@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { provideGameplay } from '../../gameplay/feature/provide-gameplay';
 import { provideRunsApi } from '../data-access/runs.providers';
+import { provideSocialApi } from '../../social/data-access/social.providers';
 import { RunHistoryDetailPage } from './history-detail/run-history-detail.page';
 import { RunHistoryPage } from './history/run-history.page';
 import { leaveRunGuard } from './leave-run.guard';
@@ -13,7 +14,8 @@ import { RunsPage } from './runs/runs.page';
 export const RUNS_ROUTES: Routes = [
   {
     path: '',
-    providers: [provideRunsApi(), provideGameplay()],
+    // Le client des groupes suit : la fin d'une partie montre les groupes du joueur et invite dans un groupe.
+    providers: [provideRunsApi(), provideSocialApi(), provideGameplay()],
     children: [
       { path: '', component: RunsPage, canDeactivate: [leaveRunGuard] },
       // L'historique du joueur (V4) et les morceaux d'une de ses parties finies ; avant `:code`, qui prendrait « history » pour un lien.

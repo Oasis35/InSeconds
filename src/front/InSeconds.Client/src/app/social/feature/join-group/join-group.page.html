@@ -1,0 +1,53 @@
+<div class="da-bg min-h-dvh flex flex-col relative" style="color:var(--text-body)">
+  <app-decor-background />
+
+  <main class="relative flex-1 flex flex-col gap-5 px-5 pt-2 pb-5 w-full max-w-lg mx-auto overflow-x-clip">
+    <app-brand [homeLink]="true" />
+
+    @switch (status()) {
+      @case ('loading') {
+        <p class="text-sm text-center animate-pulse py-10" style="color:var(--text-faint)">{{ 'social.ranking.loading' | translate }}</p>
+      }
+      @case ('not_found') {
+        <div class="flex-1 flex flex-col items-center justify-center gap-4 text-center" data-testid="join-not-found">
+          <h1 class="text-xl font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.join.notFoundTitle' | translate }}</h1>
+          <p class="text-sm" style="color:var(--text-muted)">{{ 'social.join.notFoundBody' | translate }}</p>
+          <a routerLink="/daily" class="text-sm underline" style="color:var(--text-muted)">{{ 'social.join.backHome' | translate }}</a>
+        </div>
+      }
+      @case ('error') {
+        <div class="flex-1 flex flex-col items-center justify-center gap-4 text-center" data-testid="join-error">
+          <p class="text-sm" style="color:var(--text-muted)">{{ 'social.ranking.error' | translate }}</p>
+          <button appButton type="button" variant="secondary" (click)="load()">{{ 'common.retry' | translate }}</button>
+        </div>
+      }
+      @case ('ready') {
+        @if (invitation(); as invite) {
+          <div class="flex-1 flex flex-col justify-center gap-5" data-testid="join-group">
+            <div class="space-y-1">
+              <p class="text-sm" style="color:var(--text-light)">{{ 'social.join.lead' | translate }}</p>
+              <h1 class="text-3xl font-extrabold break-words" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="join-name">{{ invite.groupName }}</h1>
+              <p class="text-sm tabular-nums" style="color:var(--text-muted)">{{ 'social.join.members' | translate: { count: invite.memberCount, max: invite.maxMembers } }}</p>
+            </div>
+
+            @if (invite.alreadyMember) {
+              <p class="text-sm" style="color:var(--text-light)" data-testid="join-already">{{ 'social.join.already' | translate }}</p>
+              <a appButton routerLink="/ranking" [block]="true">{{ 'social.join.seeRanking' | translate }}</a>
+            } @else if (invite.isFull) {
+              <p class="text-sm" style="color:var(--text-light)" data-testid="join-full">{{ 'social.join.full' | translate }}</p>
+            } @else if (session.loaded() && session.isLinked()) {
+              <button appButton type="button" size="lg" [block]="true" [disabled]="busy()" (click)="join()" data-testid="join-submit">{{ 'social.join.submit' | translate }}</button>
+              <p class="text-xs" style="color:var(--text-muted)">{{ 'social.join.privacy' | translate }}</p>
+            } @else if (session.loaded()) {
+              <p class="text-sm" style="color:var(--text-light)" data-testid="join-guest">{{ 'social.join.accountRequired' | translate }}</p>
+              <a appButton routerLink="/account/login" [block]="true" data-testid="join-login">{{ 'social.empty.createAccount' | translate }}</a>
+            }
+            @if (error(); as key) {
+              <p class="text-sm" role="alert" style="color:var(--text-error)" data-testid="join-error-message">{{ key | translate }}</p>
+            }
+          </div>
+        }
+      }
+    }
+  </main>
+</div>

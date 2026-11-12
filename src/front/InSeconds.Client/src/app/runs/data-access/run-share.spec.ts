@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import { ShareOutcome, ShareService } from '../../core/share/share.service';
-import { RunShare, playlistUrl, runShareText } from './run-share';
+import { RunShare, playlistGroupUrl, playlistUrl, runShareText } from './run-share';
 import { RunFinish } from '../domain/run';
 import { TRACK } from './testing/fake-runs-api';
 
@@ -46,6 +46,14 @@ describe('runShareText', () => {
 
     expect(runShareText(finish, 'fr', t, { pseudo: 'Léa', gap: -5 })).not.toContain('duelWon');
     expect(runShareText(finish, 'fr', t, { pseudo: 'Léa', gap: 0 })).not.toContain('duelWon');
+  });
+
+  it('« Ma grille » : le score et les manches, sans invitation ni lien', () => {
+    const lines = runShareText(finish, 'fr', t, null, false).split('\n');
+
+    expect(lines).toHaveLength(3);
+    expect(lines.join('\n')).not.toContain('runs.share.beatMe');
+    expect(lines.join('\n')).not.toContain('/setlist/');
   });
 
   it('rien qui identifie un morceau : ni artiste ni titre', () => {
@@ -99,6 +107,32 @@ describe('RunShare', () => {
     expect(shared[0]).toContain('🟩');
     expect(shared[0]).toContain(playlistUrl('K7Q2M9'));
     expect(share.copied()).toBe(true);
+  });
+
+  it('« Inviter dans un groupe » : une phrase avec le nom du groupe et le lien de la playlist qui fait rejoindre le groupe', async () => {
+    outcome = 'copied';
+    const share = create();
+    TestBed.inject(TranslateService).setTranslation('fr', { runs: { share: { groupInvite: 'Rejoins {{ name }}' } } });
+
+    await share.shareGroupInvite('K7Q2M9', { name: 'Potes', inviteCode: 'ABCD2345' });
+
+    expect(shared).toEqual([`Rejoins Potes\n${playlistGroupUrl('K7Q2M9', 'ABCD2345')}`]);
+    expect(playlistGroupUrl('K7Q2M9', 'ABCD2345')).toMatch(/\/setlist\/K7Q2M9\?group=ABCD2345&utm_source=share$/);
+  });
+
+  it('« Ma grille » part sans lien', async () => {
+    outcome = 'copied';
+    const share = create();
+    const finish: RunFinish = {
+      status: 'won', disc: { key: 'runs.discs.gold', stars: 0 }, totalScore: 3000, roundsPassed: 4, foundCount: 1, trackCount: 20,
+      tracks: [TRACK()], rounds: [{ round: 1, score: 100, objective: 50, passed: true, difficulty: 'safe' }], record: null,
+      challengeCode: 'K7Q2M9', shortfall: null, level: null,
+    };
+
+    await share.shareGrid(finish, 'fr');
+
+    expect(shared[0]).toContain('🟩');
+    expect(shared[0]).not.toContain('K7Q2M9');
   });
 
   it('copié ou échec : le bouton le dit quelques secondes', async () => {
