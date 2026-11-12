@@ -3,6 +3,7 @@ using InSeconds.Api.Modules.Players.Contracts;
 using InSeconds.Api.Modules.Runs.Application;
 using InSeconds.Api.Modules.Runs.Domain;
 using InSeconds.Api.Modules.Runs.Persistence;
+using InSeconds.Api.Modules.Social.Contracts;
 
 namespace InSeconds.Api.Modules.Runs;
 
@@ -33,6 +34,8 @@ public static class RunsModule
         services.AddSingleton<RunsMetrics>();
         // L'usage des morceaux : **ajouté**, jamais remplacé (Catalogue réunit l'ITrackUsage de chaque mode).
         services.AddScoped<ITrackUsage, RunsTrackUsage>();
+        // Le classement d'un groupe : la performance des joueurs, **ajoutée** comme celle de chaque mode (Social ne connaît aucun mode).
+        services.AddScoped<IMemberPerformanceSource, RunsMemberPerformance>();
         return services;
     }
 

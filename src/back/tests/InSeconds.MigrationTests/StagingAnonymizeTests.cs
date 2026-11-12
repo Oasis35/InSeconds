@@ -23,6 +23,8 @@ public class StagingAnonymizeTests(ScriptDatabase database)
             UPDATE players.players SET guest_pseudo = 'Léa' WHERE id = '{other}';
             INSERT INTO infra.data_protection_keys (friendly_name, xml) VALUES ('key', '<key/>');
             INSERT INTO infra.backup_runs (finished_at, off_site) VALUES (now(), true);
+            INSERT INTO social.groups (id, name, invite_code, owner_id, created_at) VALUES (1, 'Les copains', 'ABCD2345', '{other}', now());
+            INSERT INTO social.group_members (group_id, player_id, joined_at) VALUES (1, '{other}', now());
             """);
         // Les tables de messaging : créées par Wolverine au premier démarrage de l'API (pas par les migrations), noms compris.
         await using (var api = new TestApi(cs))
@@ -42,6 +44,8 @@ public class StagingAnonymizeTests(ScriptDatabase database)
         var pseudo = "joueur-" + other.ToString("N")[..12];
         Assert.Equal(1L, await Count(cs, $"players.accounts WHERE player_id = '{other}' AND email = 'player-{other}@example.invalid' AND pseudo = '{pseudo}' AND NOT is_admin"));
         Assert.Equal(0L, await Count(cs, "players.accounts WHERE pseudo = 'Joueur'"));
+        // Le nom d'un groupe d'amis est un texte libre : remplacé ; le code d'invitation de la prod ne sert plus.
+        Assert.Equal(1L, await Count(cs, "social.groups WHERE name = 'groupe-1' AND invite_code <> 'ABCD2345'"));
         foreach (var table in new[] { "players.auth_tokens", "players.device_sessions", "players.legacy_tokens", "infra.data_protection_keys", "infra.backup_runs" })
             Assert.Equal(0L, await Count(cs, table));
         foreach (var queue in Queues)

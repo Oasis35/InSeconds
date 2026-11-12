@@ -146,6 +146,43 @@ public class ModuleDependencyTests
     }
 
     /// <summary>
+    /// Social (les groupes entre amis) est un noyau : il ne voit ni Daily, ni Runs, ni Catalogue, ni Gameplay, ni Deezer, et des joueurs que leurs
+    /// <c>Contracts</c>. Il reçoit la performance de chaque mode par un contrat qu'il définit (<c>IMemberPerformanceSource</c>).
+    /// </summary>
+    [Fact]
+    public void Social_NeDependQueDesContratsDesAutresModules_EtDAucunMode()
+    {
+        var social = Types.InAssembly(Api).That().ResideInNamespace($"{ModulesNamespace}.Social");
+        Assert.NotEmpty(social.GetTypes());
+
+        var result = social
+            .ShouldNot().HaveDependencyOnAny(
+                "InSeconds.Deezer", "InSeconds.Waveform", $"{ModulesNamespace}.Daily", $"{ModulesNamespace}.Runs",
+                $"{ModulesNamespace}.Catalogue", $"{ModulesNamespace}.Gameplay",
+                $"{ModulesNamespace}.Players.Domain", $"{ModulesNamespace}.Players.Application", $"{ModulesNamespace}.Players.Persistence",
+                $"{ModulesNamespace}.Players.Auth")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
+    }
+
+    /// <summary>Daily et Runs ne voient de Social que son contrat (<c>Social.Contracts</c>) : jamais ses groupes, sa persistance ni ses routes.</summary>
+    [Fact]
+    public void DailyEtRuns_NeVoientDeSocialQueSesContrats()
+    {
+        foreach (var mode in new[] { "Daily", "Runs" })
+        {
+            var result = Types.InAssembly(Api)
+                .That().ResideInNamespace($"{ModulesNamespace}.{mode}")
+                .ShouldNot().HaveDependencyOnAny(
+                    $"{ModulesNamespace}.Social.Domain", $"{ModulesNamespace}.Social.Application", $"{ModulesNamespace}.Social.Persistence")
+                .GetResult();
+
+            Assert.True(result.IsSuccessful, $"{mode} voit Social : {string.Join(", ", result.FailingTypeNames ?? [])}");
+        }
+    }
+
+    /// <summary>
     /// Runs, comme Daily, lit les morceaux et les joueurs par les contrats de Catalogue et de Players, la manche par ceux de Gameplay :
     /// jamais leur domaine, leur persistance ni Deezer.
     /// </summary>
