@@ -19,13 +19,22 @@ export const RUNS_ROUTES: Routes = [
     providers: [provideRunsApi(), provideSocialApi(), provideGameplay()],
     children: [
       { path: '', component: RunsPage, canDeactivate: [leaveRunGuard] },
-      // L'historique du joueur (V4) et les morceaux d'une de ses parties finies ; avant `:code`, qui prendrait « history » pour un lien.
-      { path: 'history', component: RunHistoryPage },
-      { path: 'history/:id', component: RunHistoryDetailPage },
-      // Les Hits du joueur ; avant `:code` aussi.
+      // Les Hits du joueur ; avant `:code`, qui le prendrait pour un lien.
       { path: 'hits', component: RunHitsPage },
       // Le lien d'une playlist : lien reçu, reprise ou comparaison selon la partie du joueur (le serveur décide).
       { path: ':code', component: RunsPage, canDeactivate: [leaveRunGuard] },
+    ],
+  },
+];
+
+/** L'historique du joueur sur le mode (`/history/setlist`) et les morceaux d'une de ses parties finies (`/history/setlist/<partie>`). */
+export const RUNS_HISTORY_ROUTES: Routes = [
+  {
+    path: '',
+    providers: [provideRunsApi()],
+    children: [
+      { path: '', pathMatch: 'full', component: RunHistoryPage },
+      { path: ':id', component: RunHistoryDetailPage },
     ],
   },
 ];

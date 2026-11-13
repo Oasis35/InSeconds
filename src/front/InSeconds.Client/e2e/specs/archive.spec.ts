@@ -11,10 +11,10 @@ test.describe('Réponses des jours passés', () => {
     await api.reset();
   });
 
-  test('/daily/archive ouvre le dernier jour publié, ses morceaux, et jamais le jour même', async ({ page }) => {
-    await page.goto('/daily/archive');
+  test('/history/daily/latest ouvre le dernier jour publié, ses morceaux, et jamais le jour même', async ({ page }) => {
+    await page.goto('/history/daily/latest');
 
-    await expect(page).toHaveURL(/\/daily\/archive\/\d{4}-\d{2}-\d{2}$/);
+    await expect(page).toHaveURL(/\/history\/daily\/\d{4}-\d{2}-\d{2}$/);
     const shown = page.url().slice(-10);
     expect(shown < gameDay()).toBe(true);
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Blind test du');
@@ -26,29 +26,29 @@ test.describe('Réponses des jours passés', () => {
     await expect(page).toHaveTitle(/^Blind test du .+ : /);
 
     // Le jour même n'est pas publié.
-    await page.goto(`/daily/archive/${gameDay()}`);
+    await page.goto(`/history/daily/${gameDay()}`);
     await expect(page.getByTestId('archive-not-found')).toBeVisible();
   });
 
   test("l'accueil y mène par « Réponses des jours passés », en bas de l'écran (plus de calendrier dans l'en-tête)", async ({ page }) => {
     await page.goto('/daily');
     await expect(page.getByRole('button', { name: 'Commencer' })).toBeVisible();
-    await expect(page.locator('app-account-link a[href="/daily/archive"]')).toHaveCount(0);
+    await expect(page.locator('app-account-link a[href="/history/daily/latest"]')).toHaveCount(0);
 
     await page.getByRole('link', { name: 'Réponses des jours passés' }).click();
-    await expect(page).toHaveURL(/\/daily\/archive\/\d{4}-\d{2}-\d{2}$/);
+    await expect(page).toHaveURL(/\/history\/daily\/\d{4}-\d{2}-\d{2}$/);
   });
 
   test('les flèches sont de vrais liens et le calendrier ouvre un autre jour', async ({ page }) => {
-    await page.goto('/daily/archive');
-    await expect(page).toHaveURL(/\/daily\/archive\/\d{4}-\d{2}-\d{2}$/);
+    await page.goto('/history/daily/latest');
+    await expect(page).toHaveURL(/\/history\/daily\/\d{4}-\d{2}-\d{2}$/);
     const latest = page.url().slice(-10);
 
     const previous = page.getByTestId('archive-previous');
-    await expect(previous).toHaveAttribute('href', /\/daily\/archive\/\d{4}-\d{2}-\d{2}$/);
+    await expect(previous).toHaveAttribute('href', /\/history\/daily\/\d{4}-\d{2}-\d{2}$/);
     await previous.click();
     await expect(page).not.toHaveURL(new RegExp(`${latest}$`));
-    await expect(page.getByTestId('archive-next')).toHaveAttribute('href', `/daily/archive/${latest}`);
+    await expect(page.getByTestId('archive-next')).toHaveAttribute('href', `/history/daily/${latest}`);
 
     await page.getByTestId('archive-date').click();
     // Le calendrier s'ouvre sur le mois du jour affiché : le 1er du mois, la veille est dans le mois d'avant.
@@ -57,14 +57,14 @@ test.describe('Réponses des jours passés', () => {
       await page.getByTestId('archive-calendar').getByRole('button', { name: 'Mois suivant' }).click();
     }
     await page.getByTestId('archive-calendar').locator(`[data-date="${latest}"]`).click();
-    await expect(page).toHaveURL(new RegExp(`/daily/archive/${latest}$`));
+    await expect(page).toHaveURL(new RegExp(`/history/daily/${latest}$`));
 
     await page.getByTestId('archive-play-today').click();
     await expect(page).toHaveURL(/\/daily$/);
   });
 
   test("un morceau s'écoute dans la fenêtre de l'admin, et son nom se déplie au toucher", async ({ page }) => {
-    await page.goto('/daily/archive');
+    await page.goto('/history/daily/latest');
     const track = page.getByTestId('archive-track').first();
     const text = track.getByTestId('archive-track-text');
 
@@ -75,7 +75,7 @@ test.describe('Réponses des jours passés', () => {
     await expect(text).toHaveAttribute('aria-expanded', 'false');
 
     // Une adresse d'extrait neuve, demandée à l'ouverture de la fenêtre.
-    const preview = page.waitForResponse(r => /\/api\/daily\/archive\/[\d-]+\/tracks\/1\/preview$/.test(r.url()) && r.ok());
+    const preview = page.waitForResponse(r => /\/api\/history\/daily\/[\d-]+\/tracks\/1\/preview$/.test(r.url()) && r.ok());
     await track.getByTestId('archive-listen').click();
     await preview;
     await expect(page.getByTestId('preview-toggle')).toBeVisible();

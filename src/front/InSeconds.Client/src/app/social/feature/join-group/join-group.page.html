@@ -12,7 +12,7 @@
         <div class="flex-1 flex flex-col items-center justify-center gap-4 text-center" data-testid="join-not-found">
           <h1 class="text-xl font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.join.notFoundTitle' | translate }}</h1>
           <p class="text-sm" style="color:var(--text-muted)">{{ 'social.join.notFoundBody' | translate }}</p>
-          <a routerLink="/daily" class="text-sm underline" style="color:var(--text-muted)">{{ 'social.join.backHome' | translate }}</a>
+          <a routerLink="/" class="text-sm underline" style="color:var(--text-muted)">{{ 'social.join.backHome' | translate }}</a>
         </div>
       }
       @case ('error') {

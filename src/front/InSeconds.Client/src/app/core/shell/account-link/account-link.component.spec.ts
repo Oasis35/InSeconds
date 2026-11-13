@@ -96,7 +96,7 @@ describe('AccountLinkComponent', () => {
 
   it('ne montre plus le calendrier des jours passés (lien en bas de l’accueil)', () => {
     const { element } = render();
-    expect(element.querySelector('a[href="/daily/archive"]')).toBeNull();
+    expect(element.querySelector('a[href="/history/daily"]')).toBeNull();
   });
 
   it('ajoute le cadenas de l\'admin pour un compte admin seulement', () => {

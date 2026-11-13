@@ -63,7 +63,7 @@ export const SetlistAccessStore = signalStore(
       const session = inject(SessionStore);
       const chrome = inject(ShellChromeStore);
       // Le flag est lu par la coque (barre du bas...), qui ne connaît pas ce domaine.
-      effect(() => chrome.setV4(store.hasAccess()));
+      effect(() => chrome.setV4(store.hasAccess(), store.loaded()));
       // Arrivé directement sur la Setlist, la page du jeu du jour n'a rien dit : on lit si le défi est joué, pour la barre du bas et la fin de Setlist.
       const dailyDone = inject(DAILY_DONE_LOADER);
       let dailyAsked = false;

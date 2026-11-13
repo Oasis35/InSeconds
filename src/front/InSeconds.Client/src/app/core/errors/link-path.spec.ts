@@ -11,11 +11,11 @@ describe('maskLinkCodes', () => {
   it("masque aussi une adresse complète et un chemin en capitales", () => {
     expect(maskLinkCodes('https://api.inseconds.cc/api/social/invitations/ABCD2345/join')).toBe('https://api.inseconds.cc/api/social/invitations/{code}/join');
     expect(maskLinkCodes('/Setlist/K7P2QX')).toBe('/setlist/{code}');
-    expect(maskLinkCodes('https://inseconds.cc/setlist/history')).toBe('https://inseconds.cc/setlist/history');
+    expect(maskLinkCodes('https://inseconds.cc/history/setlist')).toBe('https://inseconds.cc/history/setlist');
   });
 
   it('laisse les autres chemins', () => {
-    for (const path of ['/setlist', '/setlist/history', '/setlist/history/42', '/setlist/hits', '/daily', '/api/social/groups/3']) {
+    for (const path of ['/setlist', '/history/setlist', '/history/setlist/42', '/setlist/hits', '/daily', '/api/social/groups/3']) {
       expect(maskLinkCodes(path)).toBe(path);
     }
   });

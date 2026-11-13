@@ -82,7 +82,7 @@ export class RunsPage implements OnInit {
   /** « Revoir » de la fin de run : la partie dans l'historique. */
   protected readonly reviewLink = computed(() => {
     const sessionId = this.store.session()?.sessionId;
-    return sessionId === undefined ? null : `/setlist/history/${sessionId}`;
+    return sessionId === undefined ? null : `/history/setlist/${sessionId}`;
   });
 
   protected themeOf(round: number): string | null {

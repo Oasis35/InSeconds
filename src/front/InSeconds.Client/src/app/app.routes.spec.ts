@@ -29,8 +29,10 @@ describe('routes', () => {
     return TestBed.inject(Router).url;
   }
 
-  it('envoie l\'accueil sur le défi du jour', async () => {
-    expect(await landOn('/')).toBe('/daily');
+  // La racine et `/daily` sont la même page : c'est elle qui renvoie la racine au défi quand le joueur n'a pas l'accueil de la V4.
+  it('sert l\'accueil sur la racine et le défi sur /daily', async () => {
+    expect(await landOn('/')).toBe('/');
+    expect(await landOn('/daily')).toBe('/daily');
   });
 
   // Anciennes adresses : liens partagés, favoris, liens des emails déjà envoyés.
@@ -43,6 +45,11 @@ describe('routes', () => {
     ['/confidentialite', '/privacy'],
     ['/mentions-legales', '/legal'],
     ['/legal-notice', '/legal'],
+    ['/history', '/history/daily'],
+    ['/daily/history', '/history/daily'],
+    ['/daily/archive/2026-11-10', '/history/daily/2026-11-10'],
+    ['/setlist/history', '/history/setlist'],
+    ['/setlist/history/12', '/history/setlist/12'],
   ];
 
   for (const [from, to] of legacyRedirects) {
@@ -56,7 +63,7 @@ describe('routes', () => {
   });
 
   it('garde la query string et le fragment de l\'accueil', async () => {
-    expect(await landOn('/?from=share&x=1#top')).toBe('/daily?from=share&x=1#top');
+    expect(await landOn('/?from=share&x=1#top')).toBe('/?from=share&x=1#top');
   });
 
   it('garde la query string d\'un lien de confirmation d\'email', async () => {

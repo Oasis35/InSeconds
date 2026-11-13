@@ -122,7 +122,7 @@ describe('RunsPage', () => {
     expect(link()).toBeNull();
 
     await store.begin();
-    expect(link()).toBe(`/setlist/history/${store.session()?.sessionId}`);
+    expect(link()).toBe(`/history/setlist/${store.session()?.sessionId}`);
   });
 
   it('sans accès sur invitation, renvoie au jeu du jour sans écran', async () => {

@@ -112,7 +112,7 @@ describe('DayResultScreenComponent', () => {
 
   it('les réponses d hier en bas, vers la page du jour ; rien sans défi hier', () => {
     const link = render({ yesterday: ARCHIVE_DAY() }).byTestId('yesterday-answers')[0] as HTMLAnchorElement;
-    expect(link.getAttribute('href')).toBe('/daily/archive/2026-10-21');
+    expect(link.getAttribute('href')).toBe('/history/daily/2026-10-21');
     TestBed.resetTestingModule();
     expect(render().byTestId('yesterday-answers')).toHaveLength(0);
   });

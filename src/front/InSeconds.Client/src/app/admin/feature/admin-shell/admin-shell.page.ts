@@ -89,14 +89,14 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
           <section class="relative w-full max-w-2xl mx-auto px-4 pt-16 flex flex-col items-center gap-3 text-center" data-testid="admin-gate">
             <h2 class="text-lg font-semibold" style="color:var(--text-hi)">{{ 'admin.accessDenied' | translate }}</h2>
             <p class="text-sm" style="color:var(--text-muted)">{{ 'admin.accessDeniedBody' | translate }}</p>
-            <a appButton routerLink="/daily" class="mt-2">{{ 'admin.backToGame' | translate }}</a>
+            <a appButton routerLink="/" class="mt-2">{{ 'admin.backToGame' | translate }}</a>
             <div class="pt-4"><app-browser-id /></div>
           </section>
         } @else {
           <!-- Téléphone : une seule ligne en haut, le panneau technique se déplie dessous. -->
           <header class="lg:hidden relative px-4 pt-3 pb-2">
             <div class="flex items-center gap-2">
-              <a routerLink="/daily" [attr.aria-label]="'admin.backToGame' | translate" [title]="'admin.backToGame' | translate"
+              <a routerLink="/" [attr.aria-label]="'admin.backToGame' | translate" [title]="'admin.backToGame' | translate"
                 class="shrink-0 font-extrabold uppercase text-base tracking-[0.14em] px-1" style="font-family:var(--font-display);color:var(--text-hi)">IN<span style="color:var(--text-accent)">//</span></a>
               <span class="flex-1 min-w-0 truncate text-center text-xs" style="color:var(--text-muted)" data-testid="deployed-at-short">
                 @if (system.build.deployedAt; as at) {
@@ -124,7 +124,7 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
                  les onglets alignés sur le contenu. -->
             <div class="hidden lg:grid lg:col-span-2 grid-cols-subgrid items-center sticky top-0 z-10 -mx-6 px-6 py-2" style="background:var(--bg-page)"
               data-testid="admin-top-bar">
-              <a routerLink="/daily" [title]="'admin.backToGame' | translate"
+              <a routerLink="/" [title]="'admin.backToGame' | translate"
                 class="px-4 font-extrabold uppercase text-base tracking-[0.14em]" style="font-family:var(--font-display);color:var(--text-hi)">
                 IN<span style="color:var(--text-accent)">//</span>SECONDS
               </a>

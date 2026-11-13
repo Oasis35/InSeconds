@@ -63,13 +63,14 @@ export class SetlistBottomBarComponent {
 
   private readonly section = computed<'daily' | 'setlist' | 'ranking' | 'history' | 'account' | null>(() => {
     const path = this.url().split(/[?#]/)[0];
-    // L'historique a une page par mode (`/daily/history`, `/setlist/history`) et un seul onglet.
-    if (/^\/(daily|setlist)\/history(\/|$)/.test(path)) return 'history';
+    // L'historique a une page par mode (`/history/daily`, `/history/setlist`) et un seul onglet.
+    if (/^\/history(\/|$)/.test(path)) return 'history';
     // Le classement entre amis ; la création d'un groupe et le lien d'invitation sont des écrans pleins, sans barre.
     if (path === '/ranking') return 'ranking';
     // Mon compte : l'écran du profil existant ; la connexion et le reste du compte sont des écrans pleins, sans barre.
     if (path === '/account/profile') return 'account';
-    if (path === '/daily' || path.startsWith('/daily/')) return 'daily';
+    // L'accueil est la racine ; le défi (`/daily`) et la Setlist (`/setlist`) lui appartiennent.
+    if (path === '/' || path === '/daily' || path.startsWith('/daily/')) return 'daily';
     if (path === '/setlist' || path.startsWith('/setlist/')) return 'setlist';
     return null;
   });
@@ -78,9 +79,9 @@ export class SetlistBottomBarComponent {
 
   /** Quatre entrées : Setlist n'a plus d'onglet (sa carte est sur l'accueil, qui reste allumé sur ses pages). */
   protected readonly tabs = computed(() => [
-    { id: 'daily', link: '/daily', labelKey: 'runs.v4.bar.daily', active: this.section() === 'daily' || this.section() === 'setlist' },
+    { id: 'daily', link: '/', labelKey: 'runs.v4.bar.daily', active: this.section() === 'daily' || this.section() === 'setlist' },
     { id: 'ranking', link: '/ranking', labelKey: 'runs.v4.bar.ranking', active: this.section() === 'ranking' },
-    { id: 'history', link: '/daily/history', labelKey: 'runs.v4.bar.history', active: this.section() === 'history' },
+    { id: 'history', link: '/history', labelKey: 'runs.v4.bar.history', active: this.section() === 'history' },
     this.session.isLinked()
       ? { id: 'account', link: '/account/profile', labelKey: 'runs.v4.bar.account', active: this.section() === 'account' }
       : { id: 'account', link: '/account/login', labelKey: 'runs.v4.bar.login', active: false },

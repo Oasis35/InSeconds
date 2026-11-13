@@ -9,7 +9,7 @@ describe('historique du défi du jour', () => {
   });
 
   it("une ligne mène aux réponses du jour, sauf aujourd'hui (pas encore publiées)", () => {
-    expect(gameLink('2026-11-10', '2026-11-11')).toEqual(['/daily/archive', '2026-11-10']);
+    expect(gameLink('2026-11-10', '2026-11-11')).toEqual(['/history/daily', '2026-11-10']);
     expect(gameLink('2026-11-11', '2026-11-11')).toEqual(['/daily']);
   });
 });

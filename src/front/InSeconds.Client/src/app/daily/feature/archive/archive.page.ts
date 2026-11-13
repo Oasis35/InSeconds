@@ -24,7 +24,7 @@ import { StatusScreenComponent } from '../../ui/status-screen/status-screen.comp
 import { PointsPipe } from '../../../ui/format/points.pipe';
 
 /**
- * La page d'un jour passé (`/daily/archive/aaaa-mm-jj`, #407) : les réponses du défi de ce jour-là, ce qu'en ont fait les joueurs (en
+ * La page d'un jour passé (`/history/daily/aaaa-mm-jj`, #407) : les réponses du défi de ce jour-là, ce qu'en ont fait les joueurs (en
  * pourcentages, à partir de 5 joueurs) et, pour un joueur reconnu par son cookie, ce qu'il y a fait. On y lit des réponses : rien ne s'y rejoue.
  * Le titre et la description de la page nomment le jour et ses artistes (moteurs de recherche) ; ceux du site reviennent en quittant la page.
  */
@@ -99,7 +99,7 @@ export class ArchivePage implements OnInit {
     const ref = this.modal.openSheet<ArchiveCalendarResult, ArchiveCalendarData, ArchiveCalendarSheetComponent>(
       ArchiveCalendarSheetComponent, { data, injector: this.injector });
     ref.closed.subscribe(date => {
-      if (date && date !== day.date) void this.router.navigate(['/daily/archive', date]);
+      if (date && date !== day.date) void this.router.navigate(['/history/daily', date]);
     });
   }
 

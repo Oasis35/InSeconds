@@ -3,7 +3,7 @@
 
   <main class="relative flex-1 flex flex-col gap-4 px-5 pt-4 pb-5 w-full max-w-lg mx-auto overflow-x-clip">
     <header class="relative flex items-center justify-center min-h-11">
-      <a routerLink="/setlist/history" data-testid="detail-back" [attr.aria-label]="'ui.history.setlist.back' | translate"
+      <a routerLink="/history/setlist" data-testid="detail-back" [attr.aria-label]="'ui.history.setlist.back' | translate"
          class="absolute left-0 inline-flex items-center justify-center w-11 h-11 rounded-full text-xl" style="border:1px solid var(--border-neutral);color:var(--text-light)">‹</a>
       @if (status() === 'ready') {
         <h1 class="text-lg font-semibold" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="detail-title">{{ 'ui.history.setlist.detailTitle' | translate: { count: count() } }}</h1>

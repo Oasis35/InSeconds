@@ -65,7 +65,7 @@ describe('WelcomeScreenComponent', () => {
   });
 
   it('donne l’accès aux réponses des jours passés', () => {
-    expect(render().el.querySelector('[data-testid="welcome-archive"]')?.getAttribute('href')).toBe('/daily/archive');
+    expect(render().el.querySelector('[data-testid="welcome-archive"]')?.getAttribute('href')).toBe('/history/daily/latest');
   });
 
   it("sous la V4, ce lien n'est plus sur l'accueil (il vit dans l'historique)", () => {

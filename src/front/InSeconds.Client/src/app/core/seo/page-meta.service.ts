@@ -7,7 +7,7 @@ import { filter } from 'rxjs';
 const SITE_ORIGIN = 'https://inseconds.cc';
 
 /** Les seules adresses que Google doit indexer (le jeu du jour, les réponses d'un jour passé, les deux pages légales). */
-const INDEXABLE = [/^\/daily$/, /^\/daily\/archive\/\d{4}-\d{2}-\d{2}$/, /^\/legal$/, /^\/privacy$/];
+const INDEXABLE = [/^\/daily$/, /^\/history\/daily\/\d{4}-\d{2}-\d{2}$/, /^\/legal$/, /^\/privacy$/];
 
 /** Les pages légales ont leur propre titre et description (clés de traduction) ; les autres gardent ceux de `index.html`. */
 const TEXT_KEYS: Readonly<Record<string, { title: string; description: string }>> = {
