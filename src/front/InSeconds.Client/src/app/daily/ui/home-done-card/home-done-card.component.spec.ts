@@ -51,7 +51,7 @@ describe('HomeDoneCardComponent', () => {
     toggle.click();
     fixture.detectChanges();
     expect(q('home-tracks')).not.toBeNull();
-    expect(element.querySelectorAll('app-track-results-list').length).toBe(1);
+    expect(element.querySelectorAll('app-track-results-list')).toHaveLength(1);
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     toggle.click();
     fixture.detectChanges();
