@@ -35,9 +35,9 @@ import { PendingInvite } from '../../data-access/pending-invite';
                 </span>
               </a>
               @if (standing.moved; as moved) {
-                <p class="text-xs -mt-1.5 pb-1" data-testid="strip-moved" style="color:var(--text-light)">
+                <p class="text-xs -mt-1.5 pb-1 break-words" data-testid="strip-moved" style="color:var(--text-light)">
                   <span aria-hidden="true" style="color:var(--color-accent-3)">↑</span>
-                  {{ 'social.strip.passed' | translate: { name: moved.passed, from: moved.from, to: standing.rank } }}
+                  {{ 'social.strip.passed' | translate: { name: moved.passed } }}
                 </p>
               }
             } @empty {

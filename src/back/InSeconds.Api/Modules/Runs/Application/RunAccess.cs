@@ -23,10 +23,10 @@ public sealed record RunAccessEntry(Guid PlayerId, DateTimeOffset GrantedAt);
 public sealed record RunAccessList(IReadOnlyList<RunAccessEntry> Entries);
 
 /// <summary>La partie d'un joueur sur un défi, telle que le lien et l'accueil la voient.</summary>
+public sealed record RunSessionEntry(int SessionId, string ChallengeCode, RunSessionStatus Status);
+
 /// <summary>Le défi d'ami à rappeler sur l'accueil : la playlist, son auteur et la fin de sa validité.</summary>
 public sealed record RunReceivedEntry(int ChallengeId, string Code, Guid? AuthorId, DateTimeOffset ExpiresAt);
-
-public sealed record RunSessionEntry(int SessionId, string ChallengeCode, RunSessionStatus Status);
 
 public interface IRunsQueries
 {

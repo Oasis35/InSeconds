@@ -5,6 +5,7 @@ import { SessionPlayer, SessionStore } from '../../../core/session/session.store
 import { SETLIST_ACCESS_LOADER } from '../../data-access/setlist-access.store';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { FakeRunsApi, ME, provideFakeRunsApi } from '../../data-access/testing/fake-runs-api';
+import { HomePlaceReader } from '../../../social/data-access/home-place';
 import { FakeSocialApi, provideFakeSocialApi } from '../../../social/data-access/testing/fake-social-api';
 import { RunLevel, RunReceivedChallenge } from '../../domain/run';
 import { RunsHomeEntryComponent } from './runs-home-entry.component';
@@ -30,7 +31,7 @@ describe('RunsHomeEntryComponent', () => {
       providers: [provideTranslateService(), provideRouter([]), { provide: SETLIST_ACCESS_LOADER, useValue: load }],
     });
     // Le client de l'API est fourni par le composant lui-même (chargé à la demande) : le test le remplace là.
-    TestBed.overrideComponent(RunsHomeEntryComponent, { set: { providers: [provideFakeRunsApi(api), provideFakeSocialApi(social)] } });
+    TestBed.overrideComponent(RunsHomeEntryComponent, { set: { providers: [provideFakeRunsApi(api), provideFakeSocialApi(social), HomePlaceReader] } });
     TestBed.inject(ShellChromeStore).setDailyDone(dailyDone);
     const session = TestBed.inject(SessionStore);
     if (signedIn) session.signedIn(signedIn);

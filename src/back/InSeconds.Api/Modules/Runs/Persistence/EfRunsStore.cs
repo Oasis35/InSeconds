@@ -13,6 +13,7 @@ public sealed class EfRunsStore(InSecondsDbContext db) : IRunsStore
     private const int StartLockNamespace = 0x52_53_54_52; // « RSTR »
 
     /// <summary>Premier entier du verrou du record d'un joueur.</summary>
+    private const int ReceivedLockNamespace = 0x52_52_43_56; // « RRCV »
     private const int RecordLockNamespace = 0x52_52_45_43; // « RREC »
 
     /// <summary>Premier entier du verrou d'un défi (le second est son identifiant).</summary>
@@ -24,6 +25,8 @@ public sealed class EfRunsStore(InSecondsDbContext db) : IRunsStore
 
     // hashtext donne un entier de 32 bits à partir de l'identifiant : deux joueurs peuvent partager un verrou (collision rarissime), ils s'attendent
     // alors un instant, sans autre conséquence. Comme EfDailyStore.
+    public Task LockReceivedAsync(Guid playerId, CancellationToken ct) => LockAsync(ReceivedLockNamespace, playerId, "Le défi d'un ami reçu", ct);
+
     public Task LockPlayerStartAsync(Guid playerId, CancellationToken ct) => LockAsync(StartLockNamespace, playerId, "Le démarrage d'une partie", ct);
 
     public Task LockRecordAsync(Guid playerId, CancellationToken ct) => LockAsync(RecordLockNamespace, playerId, "La mise à jour d'un record", ct);

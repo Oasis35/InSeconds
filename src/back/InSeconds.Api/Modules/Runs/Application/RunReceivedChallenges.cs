@@ -25,6 +25,7 @@ internal static class ReceivedLoadSteps
         string code, ICurrentPlayer current, IRunsStore store, IPlayerDirectory players, CancellationToken ct)
     {
         var playerId = current.PlayerId!.Value;
+        await store.LockReceivedAsync(playerId, ct);
         var challenge = await RunChallengeAccess.FindAsync(code, store, ct);
         if (challenge is null)
             return new ReceivedLoad(playerId, null, false, false, null);

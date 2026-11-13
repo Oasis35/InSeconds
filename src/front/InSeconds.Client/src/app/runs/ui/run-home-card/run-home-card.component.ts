@@ -55,7 +55,7 @@ export const DISC_LADDER: readonly string[] = [
           style="background:rgb(var(--rgb-violet) / 0.14);border:1px solid rgb(var(--rgb-violet) / 0.6)">
           <a [routerLink]="['/setlist', challenge.code]" class="min-w-0 flex-1 flex flex-wrap items-baseline gap-x-1.5 min-h-11 py-1.5 text-sm" data-testid="run-home-received-link"
             style="color:var(--text-hi)">
-            <b style="color:var(--color-violet)">{{ (challenge.authorPseudo ? 'runs.home.receivedFrom' : 'runs.home.receivedFromGuest') | translate: { name: challenge.authorPseudo } }}</b>
+            <b class="break-words" style="color:var(--color-violet)">{{ (challenge.authorPseudo ? 'runs.home.receivedFrom' : 'runs.home.receivedFromGuest') | translate: { name: challenge.authorPseudo } }}</b>
             @if (challenge.scoreToBeat !== null) {
               <span class="tabular-nums" data-testid="run-home-received-score">· {{ 'runs.home.receivedScore' | translate: { score: format(challenge.scoreToBeat) } }}</span>
             }
@@ -90,7 +90,7 @@ export const DISC_LADDER: readonly string[] = [
           </div>
           @if (groupPlace() || generalRank() !== null) {
             <!-- « 2e dans Potes · 14e au général » : la place, une seule fois, sous la jauge. -->
-            <p class="text-xs" data-testid="run-home-place" style="color:var(--color-violet)">
+            <p class="text-xs" data-testid="run-home-place" style="color:var(--text-light)">
               @if (groupPlace(); as group) { {{ 'runs.home.placeGroup' | translate: { rank: groupRankText(), group: group.name } }} }
               @if (groupPlace() && generalRank() !== null) { · }
               @if (generalRank() !== null) { {{ 'runs.home.placeGeneral' | translate: { rank: generalRankText() } }} }

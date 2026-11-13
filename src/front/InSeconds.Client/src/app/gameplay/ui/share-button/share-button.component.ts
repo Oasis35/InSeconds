@@ -37,7 +37,7 @@ export class ShareButtonComponent {
       untracked(() => {
         const button = this.host.nativeElement.querySelector('button');
         if (button) pop(button);
-        this.toasts.show('common.copiedToast', { tone: 'success', durationMs: 2500 });
+        this.toasts.show('common.copiedToast', { tone: 'neutral', durationMs: 2500 });
       });
     });
   }

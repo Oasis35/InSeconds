@@ -4,9 +4,8 @@ import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { RunsApi } from '../../data-access/runs.api';
 import { provideRunsApi } from '../../data-access/runs.providers';
 import { SetlistAccessStore } from '../../data-access/setlist-access.store';
-import { SocialApi } from '../../../social/data-access/social.api';
+import { HomePlaceReader } from '../../../social/data-access/home-place';
 import { provideSocialApi } from '../../../social/data-access/social.providers';
-import { bestStanding, generalRankOf, standingOf } from '../../../social/domain/group';
 import { RunLevel, RunReceivedChallenge } from '../../domain/run';
 import { scoreOfDay } from '../../domain/run-history';
 import { RunHomeCardComponent } from '../../ui/run-home-card/run-home-card.component';
@@ -47,7 +46,7 @@ export class RunsHomeEntryComponent {
   protected readonly access = inject(SetlistAccessStore);
   protected readonly chrome = inject(ShellChromeStore);
   private readonly api = inject(RunsApi);
-  private readonly social = inject(SocialApi);
+  private readonly place = inject(HomePlaceReader);
   private readonly language = inject(LanguageService);
 
   protected readonly summary = signal<HomeSummary>({ record: null, level: null, todayScore: null, received: null, groupPlace: null, generalRank: null });
@@ -60,14 +59,14 @@ export class RunsHomeEntryComponent {
   }
 
   private async load(): Promise<void> {
-    const [me, history, places] = await Promise.all([this.api.me().catch(() => null), this.api.history(null).catch(() => null), this.places()]);
+    const [me, history, places] = await Promise.all([this.api.me().catch(() => null), this.api.history(null).catch(() => null), this.place.load().catch(() => null)]);
     this.summary.set({
       record: me?.record?.bestScore ?? null,
       level: me?.level ?? null,
       todayScore: history ? scoreOfDay(history.runs, new Date().toISOString().slice(0, 10)) : null,
       received: me?.received ?? null,
-      groupPlace: places.groupPlace,
-      generalRank: places.generalRank,
+      groupPlace: places?.group ?? null,
+      generalRank: places?.general ?? null,
     });
   }
 
@@ -75,22 +74,5 @@ export class RunsHomeEntryComponent {
   protected dismiss(code: string): void {
     this.summary.update(summary => ({ ...summary, received: null }));
     void this.api.dismissReceived(code).catch(() => undefined);
-  }
-
-  /** Sa place dans ses groupes et au général ; ce sont des plus, une erreur les laisse vides. */
-  private async places(): Promise<Pick<HomeSummary, 'groupPlace' | 'generalRank'>> {
-    const [standings, general] = await Promise.all([this.groupStandings(), this.social.generalRanking().catch(() => null)]);
-    const best = bestStanding(standings);
-    return { groupPlace: best ? { name: best.name, rank: best.rank } : null, generalRank: general ? generalRankOf(general) : null };
-  }
-
-  private async groupStandings() {
-    try {
-      const { groups } = await this.social.myGroups();
-      const rankings = await Promise.all(groups.map(group => this.social.ranking(group.id).catch(() => null)));
-      return rankings.flatMap(ranking => (ranking ? [standingOf(ranking)] : []));
-    } catch {
-      return [];
-    }
   }
 }
