@@ -75,7 +75,7 @@ test.describe('Réponses des jours passés', () => {
     await expect(text).toHaveAttribute('aria-expanded', 'false');
 
     // Une adresse d'extrait neuve, demandée à l'ouverture de la fenêtre.
-    const preview = page.waitForResponse(r => /\/api\/history\/daily\/[\d-]+\/tracks\/1\/preview$/.test(r.url()) && r.ok());
+    const preview = page.waitForResponse(r => /\/api\/daily\/archive\/[\d-]+\/tracks\/1\/preview$/.test(r.url()) && r.ok());
     await track.getByTestId('archive-listen').click();
     await preview;
     await expect(page.getByTestId('preview-toggle')).toBeVisible();
