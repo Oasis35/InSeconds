@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
 import { TrackResultRow } from '../../../gameplay/ui/track-results-list/track-results-list.component';
+import { EMPTY_STREAK } from '../../domain/streak';
 import { HomeDoneCardComponent } from './home-done-card.component';
 
 const row = (position: number, artistCorrect: boolean | null, titleCorrect: boolean | null): TrackResultRow => ({
@@ -29,10 +30,17 @@ describe('HomeDoneCardComponent', () => {
     expect(element.querySelectorAll('[data-testid="track-bar"]')).toHaveLength(3);
   });
 
-  it('le titre est « Défi du jour », sans « fait » ni date, et sans relevé de série', () => {
-    const { element } = render();
+  it('le titre est « Défi du jour », sans « fait » ni date, et la série n\'est pas dans la carte repliée', () => {
+    const { element } = render({ streak: { ...EMPTY_STREAK, streak: 12, freezes: 2, maxFreezes: 2 }, linked: true });
     expect(element.querySelector('h2')?.textContent?.trim()).toBe('daily.home.done');
     expect(element.querySelector('app-streak-pill')).toBeNull();
+  });
+
+  it('la série et les gels apparaissent dans le détail déplié', () => {
+    const { fixture, element, q } = render({ streak: { ...EMPTY_STREAK, streak: 12, freezes: 2, maxFreezes: 2 }, linked: true });
+    (q('home-tracks-toggle') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(element.querySelector('[data-testid="home-tracks"] app-streak-pill')).not.toBeNull();
   });
 
   it('« Détail » déplie les morceaux dans la carte et les replie', () => {

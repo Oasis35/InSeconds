@@ -6,15 +6,17 @@ import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-bu
 import { TrackResultRow, TrackResultsListComponent } from '../../../gameplay/ui/track-results-list/track-results-list.component';
 import { trackBar } from '../day-result-screen/result-rows';
 import { DayHighlightComponent } from '../day-highlight/day-highlight.component';
+import { Streak } from '../../domain/streak';
+import { StreakPillComponent } from '../streak-pill/streak-pill.component';
 
 /**
  * La carte du défi du jour sur l'accueil de la V4, une fois joué : « Défi du jour » (sans « fait » ni date), le score, une petite barre par morceau, le
  * compte à rebours du prochain défi, la phrase du moment fort, « Détail » qui déplie les morceaux sur place et « Partager mon score » en contour orange : la
- * Setlist prend la place principale dessous. Ni série ni gels ici (ils restent comptés, et annoncés par les toasts de fin de partie).
+ * Setlist prend la place principale dessous. La série et les gels ne sont montrés que dans le détail déplié.
  */
 @Component({
   selector: 'app-home-done-card',
-  imports: [TranslatePipe, PointsPipe, ShareButtonComponent, TrackResultsListComponent, DayHighlightComponent],
+  imports: [TranslatePipe, PointsPipe, ShareButtonComponent, TrackResultsListComponent, DayHighlightComponent, StreakPillComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
@@ -53,6 +55,10 @@ import { DayHighlightComponent } from '../day-highlight/day-highlight.component'
       @if (showTracks()) {
         <div class="-mx-5" style="border-top:1px solid var(--border-medium);border-bottom:1px solid var(--border-medium)" data-testid="home-tracks">
           <app-track-results-list [rows]="rows()" [lang]="lang()" />
+          <!-- La série et les gels vivent ici, dans le détail : rien tant qu'aucune série n'est en cours. -->
+          <div class="flex px-5 border-t" style="border-color:var(--border-medium)">
+            <app-streak-pill [streak]="streak()" [linked]="linked()" (open)="openStreak.emit()" />
+          </div>
         </div>
       }
       @if (score() !== null) {
@@ -74,6 +80,9 @@ export class HomeDoneCardComponent {
   readonly score = input.required<number | null>();
   readonly rows = input.required<readonly TrackResultRow[]>();
   readonly countdown = input.required<string>();
+  /** Le relevé de série et de gels, dans le détail déplié (la série est celle du défi). */
+  readonly streak = input<Streak | null>(null);
+  readonly linked = input(false);
   /** « Mieux que X % » quand la partie n'a pas de moment fort ; vide sous 5 joueurs. */
   readonly betterThanPercent = input<number | null>(null);
   /** Langue des badges Deezer de la liste des morceaux. */
@@ -82,6 +91,8 @@ export class HomeDoneCardComponent {
   readonly shareCopied = input(false);
   readonly shareFailed = input(false);
   readonly share = output<void>();
+  readonly openStreak = output<void>();
+
   protected readonly showTracks = signal(false);
 
   protected readonly bar = trackBar;
