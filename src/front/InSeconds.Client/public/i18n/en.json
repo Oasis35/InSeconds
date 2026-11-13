@@ -917,6 +917,7 @@
       "nextChallenge": "Next challenge in",
       "fastIn": "in",
       "fastAfter": ": only {{ percent }}% were as fast.",
+      "soloBefore": "You found",
       "rareBefore": "You found",
       "rareAfter": ", missed by {{ percent }}% of players.",
       "dayScores": "Today's scores",

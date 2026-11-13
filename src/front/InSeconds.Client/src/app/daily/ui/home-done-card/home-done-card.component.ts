@@ -12,7 +12,7 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
 /**
  * La carte du défi du jour sur l'accueil de la V4, une fois joué : « Défi du jour » (sans « fait » ni date), le score, une petite barre par morceau, le
  * compte à rebours du prochain défi, la phrase du moment fort, « Détail » qui déplie les morceaux sur place et « Partager mon score » en contour orange : la
- * Setlist prend la place principale dessous. La série et les gels ne sont montrés que dans le détail déplié.
+ * Setlist prend la place principale dessous. La série et les gels ne sont montrés que dans le détail déplié, centrés au-dessus des morceaux.
  */
 @Component({
   selector: 'app-home-done-card',
@@ -54,11 +54,11 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
       <app-day-highlight [rows]="rows()" [betterThanPercent]="betterThanPercent()" />
       @if (showTracks()) {
         <div class="-mx-5" style="border-top:1px solid var(--border-medium);border-bottom:1px solid var(--border-medium)" data-testid="home-tracks">
-          <app-track-results-list [rows]="rows()" [lang]="lang()" />
-          <!-- La série et les gels vivent ici, dans le détail : rien tant qu'aucune série n'est en cours. -->
-          <div class="flex px-5 border-t" style="border-color:var(--border-medium)">
+          <!-- La série et les gels vivent dans le détail, centrés au-dessus des morceaux : rien tant qu'aucune série n'est en cours. -->
+          <div class="flex justify-center border-b" style="border-color:var(--border-medium)">
             <app-streak-pill [streak]="streak()" [linked]="linked()" (open)="openStreak.emit()" />
           </div>
+          <app-track-results-list [rows]="rows()" [lang]="lang()" />
         </div>
       }
       @if (score() !== null) {

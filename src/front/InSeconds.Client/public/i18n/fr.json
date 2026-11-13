@@ -917,6 +917,7 @@
       "nextChallenge": "Prochain défi dans",
       "fastIn": "en",
       "fastAfter": " : seuls {{ percent }} % ont fait aussi vite.",
+      "soloBefore": "Tu as trouvé",
       "rareBefore": "Tu as trouvé",
       "rareAfter": ", raté par {{ percent }} % des joueurs.",
       "dayScores": "Les scores du jour",
