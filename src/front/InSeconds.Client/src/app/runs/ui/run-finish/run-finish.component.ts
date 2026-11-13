@@ -62,8 +62,8 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
             </div>
             @if (finish().record; as record) {
               @if (record.isNew) {
-                <span class="self-start shrink-0 whitespace-nowrap rounded-(--radius-button) px-2 py-0.5 text-xs font-semibold" data-testid="run-record" data-motion="finish-record"
-                  style="border:1px solid var(--color-accent-3);color:var(--color-accent-3)">{{ 'runs.finished.recordShort' | translate }}</span>
+                <span class="self-start shrink-0 whitespace-nowrap rounded-(--radius-button) px-2.5 py-1 text-sm font-semibold" data-testid="run-record" data-motion="finish-record"
+                  style="border:1px solid var(--color-accent-3);color:var(--color-accent-3)"><span aria-hidden="true">↗</span> {{ 'runs.finished.recordShort' | translate }}</span>
               }
             }
           </div>
@@ -74,7 +74,9 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
             <p class="flex items-center justify-between gap-3 text-sm" style="color:var(--text-light)">
               <span>
                 @if (level.nextDisc && level.pointsToNext !== null) {
-                  <span data-testid="run-next-disc">{{ 'runs.level.encore' | translate: { points: format(level.pointsToNext), disc: (level.nextDisc.key | translate) } }}</span>
+                  <span data-testid="run-next-disc">{{ 'runs.level.encoreBefore' | translate }}
+                    <b class="tabular-nums" style="color:var(--color-accent-3)">{{ 'runs.level.encorePoints' | translate: { points: format(level.pointsToNext) } }}</b>
+                    {{ 'runs.level.encoreAfter' | translate: { disc: lower(level.nextDisc.key | translate) } }}</span>
                 } @else {
                   <span>{{ 'runs.level.top' | translate }}</span>
                 }
@@ -96,27 +98,30 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
 
         <ng-content select="[finishGroups]" />
 
-        @if (canPlayAgain()) {
-          <div class="flex flex-col gap-2" data-motion="finish-late">
-            @if (finish().shortfall; as shortfall) {
-              <p class="text-sm text-center" style="color:var(--text-light)" data-testid="run-shortfall">
-                {{ 'runs.finished.shortfallBefore' | translate }}
-                <span class="font-bold tabular-nums" style="color:var(--color-accent-3)">{{ 'runs.finished.shortfallPoints' | translate: { points: format(shortfall.points) } }}</span>
-                {{ 'runs.finished.shortfallAfter' | translate: { disc: (shortfall.disc.key | translate) + stars(shortfall.disc) } }}
-              </p>
-            }
-            <button appButton type="button" size="lg" [block]="true" (click)="playAgain.emit()" data-testid="run-play-again">
-              <span data-testid="run-play-again-label">{{ (duel() ? 'runs.finished.rematch' : 'runs.finished.playAgain') | translate }}</span>
-            </button>
-          </div>
-        }
-        <app-share-button data-testid="run-share" [copied]="shareCopied()" [failed]="shareFailed()" labelKey="runs.level.challenge"
-          copiedKey="runs.finished.shareCopied" failedKey="runs.finished.shareFailed" [variant]="canPlayAgain() ? 'accent' : 'primary'" (share)="share.emit()" />
-        <button type="button" (click)="compare.emit()" data-testid="run-compare" class="w-full min-h-11 text-sm underline touch-manipulation" style="color:var(--text-muted)">
-          {{ 'runs.finished.compare' | translate }}
-        </button>
-        <!-- Tout en bas, au-dessus de la barre : le défi du jour qui attend, ou le prochain. -->
-        <ng-content select="[finishBottom]" />
+        <!-- Les actions et la bande du défi sont collées en bas de l'écran, au-dessus de la barre (maquette). -->
+        <div class="mt-auto flex flex-col gap-4">
+          @if (canPlayAgain()) {
+            <div class="flex flex-col gap-2" data-motion="finish-late">
+              @if (finish().shortfall; as shortfall) {
+                <p class="text-sm text-center" style="color:var(--text-light)" data-testid="run-shortfall">
+                  {{ 'runs.finished.shortfallBefore' | translate }}
+                  <span class="font-bold tabular-nums" style="color:var(--color-accent-3)">{{ 'runs.finished.shortfallPoints' | translate: { points: format(shortfall.points) } }}</span>
+                  {{ 'runs.finished.shortfallAfter' | translate: { disc: (shortfall.disc.key | translate) + stars(shortfall.disc) } }}
+                </p>
+              }
+              <button appButton type="button" size="lg" [block]="true" (click)="playAgain.emit()" data-testid="run-play-again">
+                <span data-testid="run-play-again-label">{{ (duel() ? 'runs.finished.rematch' : 'runs.finished.playAgain') | translate }}</span>
+              </button>
+            </div>
+          }
+          <app-share-button data-testid="run-share" [glow]="false" [copied]="shareCopied()" [failed]="shareFailed()" labelKey="runs.level.challenge"
+            copiedKey="runs.finished.shareCopied" failedKey="runs.finished.shareFailed" [variant]="canPlayAgain() ? 'accent' : 'primary'" (share)="share.emit()" />
+          <button type="button" (click)="compare.emit()" data-testid="run-compare" class="w-full min-h-11 text-sm underline touch-manipulation" style="color:var(--text-muted)">
+            {{ 'runs.finished.compare' | translate }}
+          </button>
+          <!-- Tout en bas, au-dessus de la barre : le défi du jour qui attend, ou le prochain. -->
+          <ng-content select="[finishBottom]" />
+        </div>
       } @else {
         <section class="flex items-center gap-4">
           <app-run-disc class="shrink-0" data-motion="finish-disc" [disc]="finish().disc.key" [size]="88" />
@@ -253,6 +258,11 @@ export class RunFinishComponent {
   /** Un toucher saute la séquence de fin : tout est posé. */
   protected skipSequence(): void {
     this.skip?.();
+  }
+
+  /** « disque d'or » : le nom d'un disque au milieu d'une phrase. */
+  protected lower(text: string): string {
+    return text.charAt(0).toLowerCase() + text.slice(1);
   }
 
   /** « 2 617 » : les grands nombres au format de la langue. */

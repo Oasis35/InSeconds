@@ -24,7 +24,6 @@ import { DailyGameStore } from '../../data-access/daily-game.store';
 import { DailyShare } from '../../data-access/daily-share';
 import { GuestStreakNotice } from '../../data-access/guest-streak-notice';
 import { LostStreakNotice } from '../../data-access/lost-streak-notice';
-import { ReturnVisit } from '../../data-access/return-visit';
 import { HomeChallengeCardComponent } from '../../ui/home-challenge-card/home-challenge-card.component';
 import { HomeDoneCardComponent } from '../../ui/home-done-card/home-done-card.component';
 import { AbandonedScreenComponent } from '../../ui/abandoned-screen/abandoned-screen.component';
@@ -65,7 +64,7 @@ import { secondsUntilMidnightUtc, timeLeft, todayUtc } from '../../../core/game-
     DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent, StreakPillComponent, ButtonComponent, InstagramLinkComponent,
     HomeChallengeCardComponent, HomeDoneCardComponent,
   ],
-  providers: [DailyGameStore, TrackRoundStore, DailyShare, LostStreakNotice, GuestStreakNotice, ReturnVisit],
+  providers: [DailyGameStore, TrackRoundStore, DailyShare, LostStreakNotice, GuestStreakNotice],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './daily.page.html',
   host: {
@@ -98,9 +97,8 @@ export class DailyPage implements OnInit {
     this.store.screen() === 'done' ? rowsFromResults(this.store.results(), this.store.stats()) : rowsFromStats(this.store.stats()));
   /** La date du jour de jeu (UTC) dans la langue, en tête de l'accueil et de la reprise : « mardi 28 octobre ». */
   protected readonly dateLabel = computed(() => formatGameDate(todayUtc(new Date()), this.language.current(), 'weekday'));
-  /** V4, au retour dans la journée : le temps qu'il reste pour jouer le défi (à la première visite du jour, on accueille sans rappel). */
-  private readonly returning = inject(ReturnVisit).check(todayUtc(new Date()));
-  protected readonly remaining = computed(() => (this.returning ? timeLeft(secondsUntilMidnightUtc(new Date())) : null));
+  /** V4 : le temps qu'il reste pour jouer le défi, dit à côté du score à battre (« plus que 6 h »). */
+  protected readonly remaining = computed(() => timeLeft(secondsUntilMidnightUtc(new Date())));
   /** V4, défi fait : l'accueil montre son résumé, « Voir le résultat » ouvre l'écran complet (`?view=result`, le retour ramène à l'accueil). */
   protected readonly showResult = toSignal(inject(ActivatedRoute).queryParamMap.pipe(map(params => params.get('view') === 'result')), { initialValue: false });
   protected readonly isEnglish = () => this.language.current() === 'en';

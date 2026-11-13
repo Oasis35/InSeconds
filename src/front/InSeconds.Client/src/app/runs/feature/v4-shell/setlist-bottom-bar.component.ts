@@ -18,7 +18,7 @@ import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
   template: `
     @if (visible()) {
       <div class="fixed inset-x-0 bottom-0 z-30" data-testid="bottom-bar" style="background:var(--bg-page);border-top:1px solid var(--border-neutral)">
-        <nav class="flex" style="padding-bottom:env(safe-area-inset-bottom)" [attr.aria-label]="'runs.v4.bar.label' | translate">
+        <nav class="flex w-full max-w-lg mx-auto" style="padding-bottom:env(safe-area-inset-bottom)" [attr.aria-label]="'runs.v4.bar.label' | translate">
           @for (tab of tabs(); track tab.link) {
             <a [routerLink]="tab.link" [attr.data-testid]="'tab-' + tab.id" [attr.aria-current]="tab.active ? 'page' : null"
                class="flex-1 flex flex-col items-center gap-0.5 py-2 text-xs touch-manipulation min-h-11"

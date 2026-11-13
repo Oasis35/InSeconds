@@ -30,8 +30,8 @@
         @if (chrome.v4()) {
           <!-- L'accueil de la V4 : la date, la carte du défi, puis la carte Setlist. -->
           <div class="screen-enter flex flex-col gap-3" data-testid="home-v4">
-            <p class="px-1 text-sm first-letter:uppercase" style="color:var(--text-light)" data-testid="welcome-date">{{ dateLabel() }}</p>
             <app-home-challenge-card
+              [dateLabel]="dateLabel()"
               [trackCount]="store.peekTracksCount()"
               [streak]="store.pillStreak()"
               [bestScore]="store.bestScore()"

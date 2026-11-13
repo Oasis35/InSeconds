@@ -9,6 +9,7 @@ import { provideTranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 
 import { provideAccount } from './account/feature/provide-account';
+import { provideDailyStatus } from './daily/feature/provide-daily-status';
 import { provideRuns } from './runs/feature/provide-runs';
 import { routes } from './app.routes';
 import { provideViewportReporting } from './core/diagnostics/viewport-reporter';
@@ -35,6 +36,7 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => inject(LanguageService).init()),
     provideAppInitializer(() => inject(PageMetaService).init()),
     provideAccount(),
+    provideDailyStatus(),
     provideRuns(),
     // Désactivé en dev (`ng serve`) : un service worker y servirait d'anciens fichiers.
     provideServiceWorker('ngsw-worker.js', {

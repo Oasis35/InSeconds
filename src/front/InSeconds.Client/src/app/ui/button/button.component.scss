@@ -62,12 +62,9 @@
 
 // Une action du joueur qui n'est pas la principale de l'écran : contour orange, sans fond.
 :host(.app-button--accent) {
-  background: rgb(var(--rgb-accent-3) / 0.08);
-  color: var(--text-hi);
+  background: transparent;
+  color: var(--color-accent-3);
   border: 1.5px solid var(--color-accent-3);
-  text-transform: none;
-  letter-spacing: normal;
-  font-family: var(--font-body);
 }
 
 :host(.app-button--danger) {

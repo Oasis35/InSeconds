@@ -79,7 +79,7 @@ describe('RunsHomeEntryComponent', () => {
     const element = await render(player(false), async () => true, false);
     const card = element.querySelector('[data-testid="run-home-card"]');
     expect(card?.getAttribute('data-active')).toBe('false');
-    expect(card?.textContent).toContain('runs.home.levelLine');
+    expect(card?.textContent).toContain('runs.home.levelLabel');
     expect(card?.textContent).toContain('runs.home.play');
   });
 

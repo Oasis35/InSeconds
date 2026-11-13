@@ -14,6 +14,8 @@ import { LeaveGuard } from '../../../gameplay/feature/leave-guard';
 import { ModalService } from '../../../ui/modal/modal.service';
 import { enterCard } from '../../../ui/motion/motion';
 import { motionReduced } from '../../../ui/motion/reduced-motion';
+import { BrandComponent } from '../../../ui/brand/brand.component';
+import { InstagramLinkComponent } from '../../../core/shell/instagram-link/instagram-link.component';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
 import { ResumeScreenComponent } from '../../../gameplay/ui/resume-screen/resume-screen.component';
 import { RunGameStore } from '../../data-access/run-game.store';
@@ -56,7 +58,7 @@ import { RunShareSheetComponent, RunShareSheetData } from '../share-sheet/run-sh
     TranslatePipe, RouterLink, DecorBackgroundComponent, TrackRoundComponent, RunHeaderComponent, RunClockComponent, RunRevealComponent, RunPileComponent,
     RunWithdrawnCardComponent, RunFinishComponent, RunDailyBandComponent, RunWelcomeScreenComponent, RunStatusScreenComponent, ResumeScreenComponent,
     RunLinkScreenComponent, RunThemeScreenComponent, RunPseudoScreenComponent, RunComparisonScreenComponent, RunPalierComponent, RunDifficultyComponent, RunRoundCardsComponent,
-    GroupsStripComponent, RunHitsLineComponent,
+    GroupsStripComponent, RunHitsLineComponent, BrandComponent, InstagramLinkComponent,
   ],
   providers: [RunGameStore, TrackRoundStore, RunShare, RunSounds, GroupsStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
