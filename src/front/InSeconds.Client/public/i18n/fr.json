@@ -838,7 +838,6 @@
     "home": {
       "label": "Défi du jour",
       "done": "Défi du jour",
-      "seeResult": "Voir le résultat",
       "remainingHours": "plus que {{ n }} h",
       "remainingMinutes": "plus que {{ n }} min"
     },

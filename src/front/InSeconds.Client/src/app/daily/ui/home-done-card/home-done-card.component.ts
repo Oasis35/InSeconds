@@ -1,21 +1,20 @@
-import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, inject, input, output, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { PointsPipe } from '../../../ui/format/points.pipe';
 import { enterHomeCard, fillBarsInTurn } from '../../../ui/motion/motion';
 import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-button.component';
-import { TrackResultRow } from '../../../gameplay/ui/track-results-list/track-results-list.component';
+import { TrackResultRow, TrackResultsListComponent } from '../../../gameplay/ui/track-results-list/track-results-list.component';
 import { trackBar } from '../day-result-screen/result-rows';
-import { Streak } from '../../domain/streak';
-import { StreakPillComponent } from '../streak-pill/streak-pill.component';
+import { DayHighlightComponent } from '../day-highlight/day-highlight.component';
 
 /**
  * La carte du défi du jour sur l'accueil de la V4, une fois joué : « Défi du jour » (sans « fait » ni date), le score, une petite barre par morceau, le
- * compte à rebours du prochain défi, « Voir le résultat » (l'écran complet), le relevé de série et « Partager mon score » en contour orange : la Setlist
- * prend la place principale dessous.
+ * compte à rebours du prochain défi, la phrase du moment fort, « Détail » qui déplie les morceaux sur place et « Partager mon score » en contour orange : la
+ * Setlist prend la place principale dessous. Ni série ni gels ici (ils restent comptés, et annoncés par les toasts de fin de partie).
  */
 @Component({
   selector: 'app-home-done-card',
-  imports: [TranslatePipe, PointsPipe, ShareButtonComponent, StreakPillComponent],
+  imports: [TranslatePipe, PointsPipe, ShareButtonComponent, TrackResultsListComponent, DayHighlightComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
@@ -33,20 +32,29 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
             style="font-family:var(--font-clock);font-size:1.25rem;font-weight:600;line-height:1.2;color:var(--core-cyan);text-shadow:0 0 2px rgb(var(--rgb-accent-2)),0 0 9px rgb(var(--rgb-accent-2) / 0.6)">{{ countdown() }}</p>
         </div>
       </div>
-      <div class="flex items-center justify-between gap-3">
-        <span class="flex gap-1" aria-hidden="true">
-          @for (row of rows(); track row.position) {
-            <span class="w-4 h-1.5 rounded-full" [style.background]="bar(row)" data-testid="track-bar" data-motion="score-bar"></span>
-          }
-        </span>
-        <button type="button" (click)="seeResult.emit()" data-testid="home-see-result"
-          class="inline-flex items-center min-h-11 text-[15px] underline underline-offset-4 cursor-pointer touch-manipulation" style="color:var(--text-light)">
-          {{ 'daily.home.seeResult' | translate }}
+      <!-- La partie en un coup d'œil ; un toucher déplie les morceaux sous la phrase (le score d'un morceau ouvre sa pop-up avec le graphique). -->
+      @if (rows().length) {
+        <button type="button" (click)="showTracks.set(!showTracks())" [attr.aria-expanded]="showTracks()" data-testid="home-tracks-toggle"
+          [attr.aria-label]="'daily.result.yourTracks' | translate: { count: rows().length }"
+          class="self-start flex items-center gap-2.5 min-h-11 -my-2 touch-manipulation cursor-pointer">
+          <span class="flex gap-1" aria-hidden="true">
+            @for (row of rows(); track row.position) {
+              <span class="w-4 h-1.5 rounded-full" [style.background]="bar(row)" data-testid="track-bar" data-motion="score-bar"></span>
+            }
+          </span>
+          <span class="flex items-center gap-1 text-[13px]" style="color:var(--text-muted)" aria-hidden="true">
+            {{ (showTracks() ? 'daily.result.hideTracks' : 'daily.result.showTracks') | translate }}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              class="transition-transform" [class.rotate-180]="showTracks()"><path d="M6 9l6 6 6-6" /></svg>
+          </span>
         </button>
-      </div>
-      <div class="flex">
-        <app-streak-pill [streak]="streak()" [linked]="linked()" (open)="openStreak.emit()" />
-      </div>
+      }
+      <app-day-highlight [rows]="rows()" [betterThanPercent]="betterThanPercent()" />
+      @if (showTracks()) {
+        <div class="-mx-5" style="border-top:1px solid var(--border-medium);border-bottom:1px solid var(--border-medium)" data-testid="home-tracks">
+          <app-track-results-list [rows]="rows()" [lang]="lang()" />
+        </div>
+      }
       @if (score() !== null) {
         <app-share-button class="w-full" variant="accent" [copied]="shareCopied()" [failed]="shareFailed()" [disabled]="!canShare()" (share)="share.emit()" />
       }
@@ -66,15 +74,15 @@ export class HomeDoneCardComponent {
   readonly score = input.required<number | null>();
   readonly rows = input.required<readonly TrackResultRow[]>();
   readonly countdown = input.required<string>();
-  /** Le relevé de série et de gels, sous le score (la série est celle du défi). */
-  readonly streak = input<Streak | null>(null);
-  readonly linked = input(false);
+  /** « Mieux que X % » quand la partie n'a pas de moment fort ; vide sous 5 joueurs. */
+  readonly betterThanPercent = input<number | null>(null);
+  /** Langue des badges Deezer de la liste des morceaux. */
+  readonly lang = input<'fr' | 'en'>('fr');
   readonly canShare = input(true);
   readonly shareCopied = input(false);
   readonly shareFailed = input(false);
   readonly share = output<void>();
-  readonly seeResult = output<void>();
-  readonly openStreak = output<void>();
+  protected readonly showTracks = signal(false);
 
   protected readonly bar = trackBar;
 }

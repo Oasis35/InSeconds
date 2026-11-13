@@ -1,9 +1,8 @@
 import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 import { ArchiveDay } from '../../domain/archive';
 import { DayStats } from '../../domain/daily';
-import { Highlight, highlightOf } from '../../domain/highlight';
+import { DayHighlightComponent } from '../day-highlight/day-highlight.component';
 import { trackBar } from './result-rows';
 import { TrackResultRow, TrackResultsListComponent } from '../../../gameplay/ui/track-results-list/track-results-list.component';
 import { ScoreDistributionChartComponent } from '../../../ui/score-distribution-chart/score-distribution-chart.component';
@@ -22,7 +21,7 @@ import { fillBarsInTurn } from '../../../ui/motion/motion';
  */
 @Component({
   selector: 'app-day-result-screen',
-  imports: [PointsPipe, TranslatePipe, SecondsPipe, ShareButtonComponent, TrackResultsListComponent, ScoreDistributionChartComponent, YesterdayAnswersCardComponent, StreakPillComponent],
+  imports: [PointsPipe, TranslatePipe, DayHighlightComponent, ShareButtonComponent, TrackResultsListComponent, ScoreDistributionChartComponent, YesterdayAnswersCardComponent, StreakPillComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './day-result-screen.component.html',
 })
@@ -51,18 +50,6 @@ export class DayResultScreenComponent {
   protected readonly showTracks = signal(false);
 
   protected readonly betterThanPercent = computed(() => this.stats()?.betterThanPercent ?? null);
-
-  protected readonly highlight = computed<Highlight | null>(() =>
-    highlightOf(this.rows()
-      .filter(r => r.listenedSeconds !== null)
-      .map(r => ({
-        position: r.position,
-        artist: r.artist,
-        found: r.artistCorrect === true || r.titleCorrect === true,
-        listenedSeconds: r.listenedSeconds!,
-        distribution: r.distribution,
-        notFoundCount: r.notFoundCount,
-      }))));
 
   protected readonly barOf = trackBar;
 

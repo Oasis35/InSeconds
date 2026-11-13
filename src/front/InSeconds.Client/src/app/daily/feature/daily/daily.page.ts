@@ -1,7 +1,7 @@
 import {
   ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked,
 } from '@angular/core';
-import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -99,8 +99,6 @@ export class DailyPage implements OnInit {
   protected readonly dateLabel = computed(() => formatGameDate(todayUtc(new Date()), this.language.current(), 'weekday'));
   /** V4 : le temps qu'il reste pour jouer le défi, dit à côté du score à battre (« plus que 6 h »). */
   protected readonly remaining = computed(() => timeLeft(secondsUntilMidnightUtc(new Date())));
-  /** V4, défi fait : l'accueil montre son résumé, « Voir le résultat » ouvre l'écran complet (`?view=result`, le retour ramène à l'accueil). */
-  protected readonly showResult = toSignal(inject(ActivatedRoute).queryParamMap.pipe(map(params => params.get('view') === 'result')), { initialValue: false });
   protected readonly isEnglish = () => this.language.current() === 'en';
   /** Cette page sert la racine (l'accueil, avec la carte Setlist) comme `/daily` (le défi seul) : l'adresse dit laquelle. */
   private readonly path = toSignal(
@@ -195,10 +193,6 @@ export class DailyPage implements OnInit {
       tone: 'danger',
     });
     if (confirmed) await this.store.abandon();
-  }
-
-  protected openResult(): void {
-    void this.router.navigate(['/daily'], { queryParams: { view: 'result' }, queryParamsHandling: 'merge' });
   }
 
   protected openStreakSheet(): void {

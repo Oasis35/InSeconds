@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
 import { TrackResultRow } from '../../../gameplay/ui/track-results-list/track-results-list.component';
-import { EMPTY_STREAK } from '../../domain/streak';
 import { HomeDoneCardComponent } from './home-done-card.component';
 
 const row = (position: number, artistCorrect: boolean | null, titleCorrect: boolean | null): TrackResultRow => ({
@@ -30,18 +29,30 @@ describe('HomeDoneCardComponent', () => {
     expect(element.querySelectorAll('[data-testid="track-bar"]')).toHaveLength(3);
   });
 
-  it('le titre est « Défi du jour », sans « fait » ni date, et le relevé de série est dans la carte', () => {
-    const { element } = render({ streak: { ...EMPTY_STREAK, streak: 12, freezes: 2, maxFreezes: 2 }, linked: true });
+  it('le titre est « Défi du jour », sans « fait » ni date, et sans relevé de série', () => {
+    const { element } = render();
     expect(element.querySelector('h2')?.textContent?.trim()).toBe('daily.home.done');
-    expect(element.querySelector('app-streak-pill')).not.toBeNull();
+    expect(element.querySelector('app-streak-pill')).toBeNull();
   });
 
-  it('« Voir le résultat » demande l’écran complet', () => {
-    const { fixture, q } = render();
-    const spy = vi.fn();
-    fixture.componentInstance.seeResult.subscribe(spy);
-    (q('home-see-result') as HTMLButtonElement).click();
-    expect(spy).toHaveBeenCalled();
+  it('« Détail » déplie les morceaux dans la carte et les replie', () => {
+    const { fixture, element, q } = render();
+    const toggle = q('home-tracks-toggle') as HTMLButtonElement;
+    expect(q('home-tracks')).toBeNull();
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    toggle.click();
+    fixture.detectChanges();
+    expect(q('home-tracks')).not.toBeNull();
+    expect(element.querySelectorAll('app-track-results-list').length).toBe(1);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    toggle.click();
+    fixture.detectChanges();
+    expect(q('home-tracks')).toBeNull();
+  });
+
+  it('sans moment fort, la phrase dit « mieux que X % »', () => {
+    const { q } = render({ betterThanPercent: 58 });
+    expect(q('score-better-than')?.textContent).toContain('58 %');
   });
 
   it('le partage part du bouton de la carte', () => {

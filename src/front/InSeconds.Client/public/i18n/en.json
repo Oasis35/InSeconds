@@ -838,7 +838,6 @@
     "home": {
       "label": "Daily challenge",
       "done": "Daily challenge",
-      "seeResult": "See the result",
       "remainingHours": "{{ n }} h left",
       "remainingMinutes": "{{ n }} min left"
     },
