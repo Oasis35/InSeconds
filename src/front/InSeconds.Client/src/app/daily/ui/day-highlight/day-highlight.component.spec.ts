@@ -31,15 +31,9 @@ describe('DayHighlightComponent', () => {
     expect(q('score-better-than')?.textContent).toContain('72 %');
   });
 
-  it('seul à avoir joué : « Tu as trouvé X en N s », sans chiffre sur les autres', () => {
+  it('seul à avoir joué : aucune phrase, la liste dit déjà le temps de chaque morceau', () => {
     const q = render([row(1, true)], null);
     expect(q('day-highlight')).toBeNull();
-    expect(q('day-solo')?.textContent).toContain('Daft Punk');
-  });
-
-  it('« mieux que X % » passe avant la phrase sans comparaison', () => {
-    const q = render([row(1, true)], 72);
-    expect(q('score-better-than')).not.toBeNull();
-    expect(q('day-solo')).toBeNull();
+    expect(q('score-better-than')).toBeNull();
   });
 });

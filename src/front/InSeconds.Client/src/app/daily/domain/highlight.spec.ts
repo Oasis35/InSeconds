@@ -1,4 +1,4 @@
-import { HighlightTrack, highlightOf, soloHighlightOf } from './highlight';
+import { HighlightTrack, highlightOf } from './highlight';
 
 const track = (over: Partial<HighlightTrack> = {}): HighlightTrack => ({
   position: 1, artist: 'Daft Punk', found: true, listenedSeconds: 1,
@@ -34,21 +34,5 @@ describe('highlightOf', () => {
     expect(highlightOf([track({ found: false })])).toBeNull();
     expect(highlightOf([track({ distribution: [{ durationSeconds: 1, count: 1 }], notFoundCount: 3 })])).toBeNull();
     expect(highlightOf([])).toBeNull();
-  });
-});
-
-describe('soloHighlightOf', () => {
-  it('cite le morceau trouvé le plus vite, même seul à avoir joué', () => {
-    const alone = { distribution: [{ durationSeconds: 3, count: 1 }], notFoundCount: 0 };
-    expect(soloHighlightOf([track({ ...alone, position: 1, artist: 'A', listenedSeconds: 3 }), track({ ...alone, position: 2, artist: 'B', listenedSeconds: 1 })]))
-      .toEqual({ artist: 'B', seconds: 1 });
-  });
-
-  it('à égalité de palier, le premier morceau', () => {
-    expect(soloHighlightOf([track({ position: 2, artist: 'B' }), track({ position: 1, artist: 'A' })])).toEqual({ artist: 'A', seconds: 1 });
-  });
-
-  it('rien quand le joueur n\'a rien trouvé', () => {
-    expect(soloHighlightOf([track({ found: false })])).toBeNull();
   });
 });

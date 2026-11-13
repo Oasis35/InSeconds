@@ -21,12 +21,6 @@ export type Highlight =
   | { readonly kind: 'fast'; readonly artist: string; readonly seconds: number; readonly percent: number }
   | { readonly kind: 'rare'; readonly artist: string; readonly percent: number };
 
-/** Sans comparaison possible (moins de 5 joueurs, ou rien de remarquable) : « Tu as trouvé Daft Punk en 1 s. » */
-export interface SoloHighlight {
-  readonly artist: string;
-  readonly seconds: number;
-}
-
 /** Même seuil que « Tu fais mieux que X % » et les réponses des jours passés : rien sous 5 joueurs. */
 export const HIGHLIGHT_MIN_PLAYERS = 5;
 /** Au-delà, « seuls 40 % ont fait aussi vite » ne flatte plus personne. */
@@ -61,15 +55,4 @@ export function highlightOf(tracks: readonly HighlightTrack[]): Highlight | null
     .map(t => ({ track: t, percent: Math.round((t.notFoundCount / playersOf(t)) * 100) }))
     .sort((a, b) => b.percent - a.percent || a.track.position - b.track.position)[0];
   return rarest.percent >= RARE_MIN_PERCENT ? { kind: 'rare', artist: rarest.track.artist, percent: rarest.percent } : null;
-}
-
-/**
- * La phrase quand les autres joueurs ne permettent pas de se comparer : le morceau trouvé le plus vite, sans un chiffre sur les autres
- * (égalité : le premier morceau). Rien si le joueur n'a rien trouvé.
- */
-export function soloHighlightOf(tracks: readonly HighlightTrack[]): SoloHighlight | null {
-  const best = tracks
-    .filter(t => t.found)
-    .sort((a, b) => a.listenedSeconds - b.listenedSeconds || a.position - b.position)[0];
-  return best ? { artist: best.artist, seconds: best.listenedSeconds } : null;
 }
