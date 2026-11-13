@@ -34,7 +34,7 @@
     }
 
     <!-- Une seule phrase : le moment fort quand il y en a un, sinon « mieux que X % » -->
-    <app-day-highlight [rows]="rows()" [betterThanPercent]="betterThanPercent()" />
+    <app-day-highlight [rows]="rows()" [betterThanPercent]="betterThanPercent()" [history]="stats()?.history ?? null" [yourScore]="score()" />
   </section>
 
   @if (showTracks()) {

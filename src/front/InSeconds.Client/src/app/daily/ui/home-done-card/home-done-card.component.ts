@@ -6,6 +6,7 @@ import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-bu
 import { TrackResultRow, TrackResultsListComponent } from '../../../gameplay/ui/track-results-list/track-results-list.component';
 import { trackBar } from '../day-result-screen/result-rows';
 import { DayHighlightComponent } from '../day-highlight/day-highlight.component';
+import { DayHistory } from '../../domain/daily';
 import { Streak } from '../../domain/streak';
 import { StreakPillComponent } from '../streak-pill/streak-pill.component';
 
@@ -51,7 +52,7 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
           </span>
         </button>
       }
-      <app-day-highlight [rows]="rows()" [betterThanPercent]="betterThanPercent()" />
+      <app-day-highlight [rows]="rows()" [betterThanPercent]="betterThanPercent()" [history]="history()" [yourScore]="score()" />
       @if (showTracks()) {
         <div class="-mx-5" style="border-top:1px solid var(--border-medium);border-bottom:1px solid var(--border-medium)" data-testid="home-tracks">
           <!-- La série et les gels vivent dans le détail, centrés au-dessus des morceaux : rien tant qu'aucune série n'est en cours. -->
@@ -85,6 +86,8 @@ export class HomeDoneCardComponent {
   readonly linked = input(false);
   /** « Mieux que X % » quand la partie n'a pas de moment fort ; vide sous 5 joueurs. */
   readonly betterThanPercent = input<number | null>(null);
+  /** Ce que l'historique du joueur permet de dire quand les autres joueurs du jour ne suffisent pas. */
+  readonly history = input<DayHistory | null>(null);
   /** Langue des badges Deezer de la liste des morceaux. */
   readonly lang = input<'fr' | 'en'>('fr');
   readonly canShare = input(true);
