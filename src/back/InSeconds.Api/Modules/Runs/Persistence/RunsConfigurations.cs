@@ -172,3 +172,16 @@ internal sealed class RunAccessConfiguration : IEntityTypeConfiguration<RunAcces
             .HasForeignKey(nameof(RunAccess.PlayerId)).OnDelete(DeleteBehavior.Restrict);
     }
 }
+
+internal sealed class RunReceivedChallengeConfiguration : IEntityTypeConfiguration<RunReceivedChallenge>
+{
+    public void Configure(EntityTypeBuilder<RunReceivedChallenge> builder)
+    {
+        builder.ToTable("received_challenges", DbSchemas.Runs);
+        builder.HasKey(r => new { r.PlayerId, r.ChallengeId });
+        builder.HasOne("InSeconds.Api.Modules.Players.Domain.Player", navigationName: null).WithMany()
+            .HasForeignKey(nameof(RunReceivedChallenge.PlayerId)).OnDelete(DeleteBehavior.Restrict);
+        // Le défi supprime ses rappels avec lui.
+        builder.HasOne<RunChallenge>().WithMany().HasForeignKey(r => r.ChallengeId).OnDelete(DeleteBehavior.Cascade);
+    }
+}

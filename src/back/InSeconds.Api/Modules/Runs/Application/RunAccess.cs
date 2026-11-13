@@ -23,6 +23,9 @@ public sealed record RunAccessEntry(Guid PlayerId, DateTimeOffset GrantedAt);
 public sealed record RunAccessList(IReadOnlyList<RunAccessEntry> Entries);
 
 /// <summary>La partie d'un joueur sur un défi, telle que le lien et l'accueil la voient.</summary>
+/// <summary>Le défi d'ami à rappeler sur l'accueil : la playlist, son auteur et la fin de sa validité.</summary>
+public sealed record RunReceivedEntry(int ChallengeId, string Code, Guid? AuthorId, DateTimeOffset ExpiresAt);
+
 public sealed record RunSessionEntry(int SessionId, string ChallengeCode, RunSessionStatus Status);
 
 public interface IRunsQueries
@@ -32,6 +35,9 @@ public interface IRunsQueries
 
     /// <summary>La partie en cours la plus récente de ce joueur, toutes playlists confondues.</summary>
     Task<RunSessionEntry?> FindPendingSessionAsync(Guid playerId, CancellationToken ct);
+
+    /// <summary>Le défi d'ami reçu le plus récent de ce joueur qui reste à jouer : ni refusé, ni expiré, ni déjà joué.</summary>
+    Task<RunReceivedEntry?> FindPendingReceivedChallengeAsync(Guid playerId, DateTimeOffset now, CancellationToken ct);
 
     /// <summary>La partie de ce joueur sur ce défi.</summary>
     Task<RunSessionEntry?> FindSessionAsync(int challengeId, Guid playerId, CancellationToken ct);

@@ -55,7 +55,15 @@ public sealed class RunsPlayerData(InSecondsDbContext db, Catalogue.Contracts.IT
         var levelRow = await db.Set<RunLevel>().AsNoTracking().FirstOrDefaultAsync(l => l.PlayerId == playerId, ct);
         var level = levelRow is null ? null : new RunLevelExport(levelRow.Points, levelRow.RunsPlayed, levelRow.RecentScores, levelRow.UpdatedAt);
 
-        return new RunsDataExport(games, created, record, access, level);
+        var received = await (
+                from r in db.Set<RunReceivedChallenge>().AsNoTracking()
+                join challenge in db.Set<RunChallenge>().AsNoTracking() on r.ChallengeId equals challenge.Id
+                where r.PlayerId == playerId
+                orderby r.ReceivedAt
+                select new RunReceivedChallengeExport(challenge.Code, r.ReceivedAt, r.DismissedAt))
+            .ToListAsync(ct);
+
+        return new RunsDataExport(games, created, record, access, level, received);
     }
 
     // Exécuté tout de suite, dans la transaction de l'appelant. Le record référence une partie : il part avant elles ; les réponses, les difficultés
@@ -64,6 +72,7 @@ public sealed class RunsPlayerData(InSecondsDbContext db, Catalogue.Contracts.IT
     {
         await db.Set<RunRecord>().Where(r => r.PlayerId == playerId).ExecuteDeleteAsync(ct);
         await db.Set<RunLevel>().Where(l => l.PlayerId == playerId).ExecuteDeleteAsync(ct);
+        await db.Set<RunReceivedChallenge>().Where(r => r.PlayerId == playerId).ExecuteDeleteAsync(ct);
         var games = await db.Set<RunSession>().Where(s => s.PlayerId == playerId).ExecuteDeleteAsync(ct);
         await db.Set<RunAccess>().Where(a => a.PlayerId == playerId).ExecuteDeleteAsync(ct);
         await db.Set<RunChallenge>().Where(c => c.CreatedBy == playerId).ExecuteUpdateAsync(s => s.SetProperty(c => c.CreatedBy, (Guid?)null), ct);

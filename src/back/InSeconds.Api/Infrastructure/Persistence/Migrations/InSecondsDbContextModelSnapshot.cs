@@ -1017,6 +1017,33 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     b.ToTable("player_levels", "runs");
                 });
 
+            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunReceivedChallenge", b =>
+                {
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<int>("ChallengeId")
+                        .HasColumnType("integer")
+                        .HasColumnName("challenge_id");
+
+                    b.Property<DateTimeOffset?>("DismissedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("dismissed_at");
+
+                    b.Property<DateTimeOffset>("ReceivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("received_at");
+
+                    b.HasKey("PlayerId", "ChallengeId")
+                        .HasName("pk_received_challenges");
+
+                    b.HasIndex("ChallengeId")
+                        .HasDatabaseName("ix_received_challenges_challenge_id");
+
+                    b.ToTable("received_challenges", "runs");
+                });
+
             modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunRecord", b =>
                 {
                     b.Property<Guid>("PlayerId")
@@ -1615,6 +1642,23 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_player_levels_players_player_id");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunReceivedChallenge", b =>
+                {
+                    b.HasOne("InSeconds.Api.Modules.Runs.Domain.RunChallenge", null)
+                        .WithMany()
+                        .HasForeignKey("ChallengeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_received_challenges_challenges_challenge_id");
+
+                    b.HasOne("InSeconds.Api.Modules.Players.Domain.Player", null)
+                        .WithMany()
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_received_challenges_players_player_id");
                 });
 
             modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunRecord", b =>

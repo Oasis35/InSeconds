@@ -1164,6 +1164,112 @@
         }
       }
     },
+    "/api/runs/challenges/{code}/received": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "receiveRunChallenge",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/challenges/{code}/received/dismiss": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "dismissRunChallenge",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/runs/sessions/{id}/swap": {
       "post": {
         "tags": [
@@ -2117,6 +2223,37 @@
           }
         }
       },
+      "RunReceivedChallengeResponse": {
+        "required": [
+          "code",
+          "authorPseudo",
+          "scoreToBeat",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "authorPseudo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "scoreToBeat": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "RunRecordResponse": {
         "required": [
           "bestScore",
@@ -2520,6 +2657,16 @@
                 "$ref": "#/components/schemas/RunLevelResponse"
               }
             ]
+          },
+          "received": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunReceivedChallengeResponse"
+              }
+            ]
           }
         }
       },
@@ -2820,6 +2967,12 @@
     },
     {
       "name": "InSeconds.Api.Modules.Runs.Application.GetRunHitsEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.ReceiveRunChallengeEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.DismissRunChallengeEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Runs.Application.SwapRunTrackEndpoint"

@@ -707,4 +707,9 @@ public interface IRunsStore
     void AddAccess(RunAccess access);
 
     void RemoveAccess(RunAccess access);
+
+    /// <summary>Le défi d'ami reçu par ce joueur sur ce défi, s'il en a un (refusé compris).</summary>
+    Task<RunReceivedChallenge?> FindReceivedChallengeAsync(Guid playerId, int challengeId, CancellationToken ct);
+
+    void AddReceivedChallenge(RunReceivedChallenge received);
 }

@@ -105,6 +105,11 @@ public sealed class EfRunsStore(InSecondsDbContext db) : IRunsStore
 
     public void RemoveAccess(RunAccess access) => db.Set<RunAccess>().Remove(access);
 
+    public Task<RunReceivedChallenge?> FindReceivedChallengeAsync(Guid playerId, int challengeId, CancellationToken ct) =>
+        db.Set<RunReceivedChallenge>().FirstOrDefaultAsync(r => r.PlayerId == playerId && r.ChallengeId == challengeId, ct);
+
+    public void AddReceivedChallenge(RunReceivedChallenge received) => db.Set<RunReceivedChallenge>().Add(received);
+
     private async Task LockAsync(int lockNamespace, Guid playerId, string what, CancellationToken ct)
     {
         RequireTransaction(what);
@@ -121,6 +126,20 @@ public sealed class EfRunsStore(InSecondsDbContext db) : IRunsStore
 
 public sealed class EfRunsQueries(InSecondsDbContext db) : IRunsQueries
 {
+    public async Task<RunReceivedEntry?> FindPendingReceivedChallengeAsync(Guid playerId, DateTimeOffset now, CancellationToken ct)
+    {
+        var oldest = now.AddDays(-RunReceivedChallenge.LifetimeDays);
+        var rows = await (
+                from received in db.Set<RunReceivedChallenge>().AsNoTracking()
+                join challenge in db.Set<RunChallenge>().AsNoTracking() on received.ChallengeId equals challenge.Id
+                where received.PlayerId == playerId && received.DismissedAt == null && received.ReceivedAt > oldest
+                      && !db.Set<RunSession>().Any(s => s.ChallengeId == challenge.Id && s.PlayerId == playerId)
+                orderby received.ReceivedAt descending
+                select new { challenge.Id, challenge.Code, challenge.CreatedBy, received.ReceivedAt })
+            .Take(1).ToListAsync(ct);
+        return rows.Count == 0 ? null : new RunReceivedEntry(rows[0].Id, rows[0].Code, rows[0].CreatedBy, rows[0].ReceivedAt.AddDays(RunReceivedChallenge.LifetimeDays));
+    }
+
     public async Task<IReadOnlyList<RunAccessEntry>> ListAccessAsync(CancellationToken ct) =>
         await db.Set<RunAccess>().AsNoTracking().OrderBy(a => a.GrantedAt).ThenBy(a => a.PlayerId)
             .Select(a => new RunAccessEntry(a.PlayerId, a.GrantedAt))
