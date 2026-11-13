@@ -32,7 +32,7 @@ import { DayResultScreenComponent } from '../../ui/day-result-screen/day-result-
 import { rowsFromResults, rowsFromStats, shareTracksOf } from '../../ui/day-result-screen/result-rows';
 import { BrandComponent } from '../../../ui/brand/brand.component';
 import { DailyFooterComponent } from '../../ui/daily-footer/daily-footer.component';
-import { HomeLegalLineComponent } from '../../ui/home-legal-line/home-legal-line.component';
+import { HomeLegalLineComponent } from '../../../ui/legal-line/home-legal-line.component';
 import { DailyProgressComponent } from '../../ui/daily-progress/daily-progress.component';
 import { DeezerBadgeComponent } from '../../../gameplay/ui/deezer-badge/deezer-badge.component';
 import { GelEarnedToastComponent } from '../../ui/gel-earned-toast/gel-earned-toast.component';
@@ -49,7 +49,7 @@ import { WelcomeScreenComponent } from '../../ui/welcome-screen/welcome-screen.c
 import { reloadMomentFor } from '../reload-moment';
 import { StreakPillComponent } from '../../ui/streak-pill/streak-pill.component';
 import { formatGameDate } from '../../domain/archive';
-import { secondsUntilMidnightUtc, timeLeft, todayUtc } from '../../domain/countdown';
+import { secondsUntilMidnightUtc, timeLeft, todayUtc } from '../../../core/game-day/game-day';
 
 /**
  * La page du jeu du jour (`/daily`) : elle affiche l'écran que le `DailyGameStore` indique, et branche ce qui est propre au navigateur :

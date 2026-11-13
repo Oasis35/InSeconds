@@ -3,7 +3,6 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { enterHomeCard } from '../../../ui/motion/motion';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { PointsPipe } from '../../../ui/format/points.pipe';
-import { TimeLeft } from '../../domain/countdown';
 import { Streak, isStreakProtected, pluralKey } from '../../domain/streak';
 import { StreakIconComponent } from '../streak-icon/streak-icon.component';
 import { StreakPillComponent } from '../streak-pill/streak-pill.component';
@@ -78,7 +77,7 @@ export class HomeChallengeCardComponent {
   /** La médiane d'hier, montrée seulement sans record (vide sous 5 joueurs). */
   readonly yesterdayMedian = input<number | null>(null);
   /** Le temps qu'il reste pour jouer le défi, au retour dans la journée ; `null` à la première visite du jour. */
-  readonly remaining = input<TimeLeft | null>(null);
+  readonly remaining = input<{ readonly unit: 'hours' | 'minutes'; readonly value: number } | null>(null);
   readonly startGame = output<void>();
   readonly openStreak = output<void>();
 

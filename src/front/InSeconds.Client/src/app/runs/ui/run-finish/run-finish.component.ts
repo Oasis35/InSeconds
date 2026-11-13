@@ -62,8 +62,8 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
             </div>
             @if (finish().record; as record) {
               @if (record.isNew) {
-                <span class="self-start shrink-0 whitespace-nowrap rounded-[10px] px-2 py-0.5 text-xs font-semibold" data-testid="run-record" data-motion="finish-record"
-                  style="border:1px solid var(--color-accent-3);color:var(--color-accent-3)"><span aria-hidden="true">↗ </span>{{ 'runs.finished.recordShort' | translate }}</span>
+                <span class="self-start shrink-0 whitespace-nowrap rounded-(--radius-button) px-2 py-0.5 text-xs font-semibold" data-testid="run-record" data-motion="finish-record"
+                  style="border:1px solid var(--color-accent-3);color:var(--color-accent-3)">{{ 'runs.finished.recordShort' | translate }}</span>
               }
             }
           </div>

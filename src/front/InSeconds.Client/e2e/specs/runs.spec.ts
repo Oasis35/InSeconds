@@ -177,8 +177,8 @@ test.describe('Mode Setlist', () => {
 
     await expect(run.finished).toHaveAttribute('data-status', 'won');
     await expect(run.disc).toHaveText('Disque d’or !');
-    // La flèche ↗ précède le texte sous la V4 (fin de la maquette 04).
-    await expect(run.record).toContainText('Record');
+    // Sous la V4, le badge « Record » est posé par la fin de run (maquette 04)  ; l'ancien record n'a pas ce badge.
+    await expect(page.locator('[data-motion="finish-record"]')).toContainText('Record');
     await expect(run.found).toHaveText('20 / 20 morceaux trouvés');
     // Nouvelle interface (le joueur a l'accès) : son niveau dans le bloc compact du haut, encore provisoire après une seule partie, « Rejouer » et « Défier un ami ».
     await expect(run.page.getByTestId('run-level')).toBeVisible();

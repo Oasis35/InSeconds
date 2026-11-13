@@ -12,7 +12,7 @@ import { TranslatePipe } from '@ngx-translate/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
-    <nav class="flex flex-wrap justify-center gap-x-4 px-4 pt-3 pb-1 text-xs" data-testid="home-legal-line"
+    <nav class="flex flex-wrap justify-center gap-x-4 px-4 pt-3 pb-1 text-[13px]" data-testid="home-legal-line"
       style="font-family:var(--font-body);color:var(--text-muted)">
       <a routerLink="/legal" class="py-2 whitespace-nowrap hover:underline" style="color:inherit">{{ 'daily.footer.legal' | translate }}</a>
       <a routerLink="/privacy" class="py-2 whitespace-nowrap hover:underline" style="color:inherit">{{ 'daily.footer.privacy' | translate }}</a>

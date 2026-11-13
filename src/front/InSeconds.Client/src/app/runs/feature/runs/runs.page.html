@@ -16,6 +16,7 @@
         <app-run-welcome-screen [record]="store.record()" [level]="chrome.v4() ? store.level() : null" [shelf]="store.shelf()" [lang]="language.current()" (start)="store.begin()" />
         @if (chrome.v4()) {
           <app-run-hits-line class="block pt-3 pb-4" />
+          <app-home-legal-line />
         }
       }
 
@@ -125,7 +126,7 @@
               <app-groups-strip finishGroups data-motion="finish-groups" class="block" [showGroups]="session.isLinked()" />
             }
             @if (chrome.v4()) {
-              <app-run-daily-band finishBottom data-motion="finish-band" [pending]="chrome.dailyDone() === null ? null : !chrome.dailyDone()" />
+              <app-run-daily-band finishBottom data-motion="finish-band" [pending]="chrome.dailyDone() === null ? null : !chrome.dailyDone()" [left]="timeLeftToNextDay()" [clock]="clock()" />
             }
           </app-run-finish>
           @if (chrome.v4()) {
