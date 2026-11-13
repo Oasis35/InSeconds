@@ -50,6 +50,11 @@
   --color-accent-2: rgb(var(--rgb-accent-2));
   --color-accent-3: rgb(var(--rgb-accent-3));
   --color-violet:   rgb(var(--rgb-violet));
+  /* Les pastilles des autres joueurs d'un classement : quatre teintes de la famille du violet, données au pseudo (jamais à une couleur de sens). */
+  --avatar-1: rgb(130 95 215);
+  --avatar-2: rgb(176 140 255);
+  --avatar-3: rgb(110 80 180);
+  --avatar-4: rgb(150 115 235);
 
   /* Waveform du lecteur : couleurs pleines (des couches se superposent, une couleur translucide donnerait deux teintes au pied) */
   --wave-locked:   color-mix(in srgb, rgb(var(--rgb-text)) 14%, rgb(var(--rgb-bg)));     /* pas encore débloqué */
@@ -311,5 +316,5 @@ summary {
 
 /* V4 : la barre du bas (fixe, liens légaux + onglets, ~88px) ; les pages en tiennent compte pour que rien ne passe dessous. */
 html.has-bottom-bar .da-bg {
-  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  padding-bottom: calc(7.5rem + env(safe-area-inset-bottom)); /* liens légaux (sur deux lignes à 320 px) et onglets */
 }

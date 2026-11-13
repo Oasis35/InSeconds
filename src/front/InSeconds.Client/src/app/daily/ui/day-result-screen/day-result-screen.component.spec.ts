@@ -37,7 +37,7 @@ describe('DayResultScreenComponent', () => {
 
   it('affiche le score et le compte à rebours sur la même ligne', () => {
     const { byTestId } = render({ score: 3150 });
-    expect(byTestId('day-score')[0].textContent).toContain('3150');
+    expect(byTestId('day-score')[0].textContent).toMatch(/3\s150/);
     expect(byTestId('countdown')[0].textContent).toContain('01:02:03');
   });
 
@@ -97,7 +97,7 @@ describe('DayResultScreenComponent', () => {
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     const list = element.querySelector('app-track-results-list')!;
     expect(list.textContent).toContain('Eminem - Lose Yourself');
-    expect(list.textContent).toContain('+1000');
+    expect(list.textContent).toMatch(/\+1\s000/);
   });
 
   it('désactive le partage quand canShare est faux, et émet « share » sinon', () => {

@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using InSeconds.Api.Modules.Social.Application;
 using InSeconds.IntegrationTests.Daily;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace InSeconds.IntegrationTests.Social;
 
@@ -160,6 +161,35 @@ public class SocialGroupTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Invitation_LeCodeNEntrePasDansLaTrace()
+    {
+        var alice = await _game.NewPlayerAsync("Alice");
+        var group = await CreateAsync(alice, "Les copains");
+        var activities = new System.Collections.Concurrent.ConcurrentQueue<System.Diagnostics.Activity>();
+        using var listener = new System.Diagnostics.ActivityListener
+        {
+            ShouldListenTo = source => source.Name == "Microsoft.AspNetCore",
+            Sample = (ref System.Diagnostics.ActivityCreationOptions<System.Diagnostics.ActivityContext> _) => System.Diagnostics.ActivitySamplingResult.AllDataAndRecorded,
+            ActivityStopped = activities.Enqueue,
+        };
+        System.Diagnostics.ActivitySource.AddActivityListener(listener);
+
+        (await _game.Api.CreateClient().GetAsync($"/api/social/invitations/{group.InviteCode}", Ct)).EnsureSuccessStatusCode();
+
+        System.Diagnostics.Activity? request = null;
+        for (var i = 0; i < 40 && request is null; i++)
+        {
+            request = activities.FirstOrDefault(a => (a.GetTagItem("url.path") as string)?.StartsWith("/api/social/invitations/", StringComparison.Ordinal) == true);
+            if (request is null)
+                await Task.Delay(50, Ct);
+        }
+        Assert.NotNull(request);
+        Assert.Equal("/api/social/invitations/{code}", request.GetTagItem("url.path"));
+        foreach (var tag in request.TagObjects)
+            Assert.DoesNotContain(group.InviteCode, tag.Value?.ToString() ?? "", StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Invitation_Apercu_AnonymePermis_NomEtPlaceSeulement()
     {
         var alice = await _game.NewPlayerAsync("Alice");
@@ -271,6 +301,28 @@ public class SocialGroupTests(PostgresFixture postgres) : IAsyncLifetime
         var response = await owner.Client.PostAsJsonAsync("/api/social/groups", new CreateGroup(name), Ct);
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<GroupSummaryResponse>(Ct))!;
+    }
+
+    [Fact]
+    public async Task Metriques_EvenementsDesGroupesEtChoixDuClassement_SansIdentifiant()
+    {
+        var factory = _game.Api.Services.GetRequiredService<System.Diagnostics.Metrics.IMeterFactory>();
+        using var groups = new Microsoft.Extensions.Diagnostics.Metrics.Testing.MetricCollector<long>(factory, SocialMetrics.MeterName, SocialMetrics.GroupsName);
+        using var visibility = new Microsoft.Extensions.Diagnostics.Metrics.Testing.MetricCollector<long>(factory, SocialMetrics.MeterName, SocialMetrics.RankingVisibilityName);
+        var alice = await _game.NewPlayerAsync("Alice");
+        var bob = await _game.NewPlayerAsync("Bob");
+        var group = await CreateAsync(alice, "Les copains");
+
+        (await bob.Client.PostAsync($"/api/social/invitations/{group.InviteCode}/join", null, Ct)).EnsureSuccessStatusCode();
+        (await bob.Client.DeleteAsync($"/api/social/groups/{group.Id}/membership", Ct)).EnsureSuccessStatusCode();
+        (await alice.Client.DeleteAsync($"/api/social/groups/{group.Id}/membership", Ct)).EnsureSuccessStatusCode();
+        (await alice.Client.PutAsJsonAsync("/api/social/ranking/visibility", new SetRankingVisibility(true), Ct)).EnsureSuccessStatusCode();
+
+        Assert.Equal(
+            [SocialMetrics.Created, SocialMetrics.Joined, SocialMetrics.Left, SocialMetrics.Emptied],
+            groups.GetMeasurementSnapshot().Select(m => m.Tags["event"] as string));
+        Assert.All(groups.GetMeasurementSnapshot(), m => Assert.Equal(["event"], m.Tags.Keys));
+        Assert.Equal([true], visibility.GetMeasurementSnapshot().Select(m => m.Tags["visible"]));
     }
 
     internal static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>

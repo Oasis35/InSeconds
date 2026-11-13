@@ -3,6 +3,7 @@ import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 import { readProblemDetails } from '../errors/app-error';
 import { ErrorReportingService } from '../errors/error-reporting.service';
+import { maskLinkCodes } from '../errors/link-path';
 
 /**
  * Remonte les appels API en échec réseau (status 0) ou en erreur serveur (5xx), avec le code
@@ -24,7 +25,7 @@ export const httpErrorReportingInterceptor: HttpInterceptorFn = (req, next) => {
           reporting.report({
             source: 'http',
             message: `${req.method} ${pathOf(req.url)} → ${error.status || 'échec réseau'}`,
-            url: req.url,
+            url: maskLinkCodes(req.url),
             httpStatus: error.status,
             relatedTraceId: traceId,
           });
@@ -43,8 +44,8 @@ function shouldReport(url: string, status: number): boolean {
 function pathOf(url: string): string {
   try {
     // Base factice pour résoudre une URL relative ; seul le chemin est gardé.
-    return new URL(url, 'https://inseconds.invalid').pathname;
+    return maskLinkCodes(new URL(url, 'https://inseconds.invalid').pathname);
   } catch {
-    return url;
+    return maskLinkCodes(url);
   }
 }

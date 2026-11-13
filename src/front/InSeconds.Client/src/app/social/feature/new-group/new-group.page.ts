@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { SessionStore } from '../../../core/session/session.store';
-import { BrandComponent } from '../../../gameplay/ui/brand/brand.component';
+import { BrandComponent } from '../../../ui/brand/brand.component';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
 import { GroupShare } from '../../data-access/group-share';

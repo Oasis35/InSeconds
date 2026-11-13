@@ -7,6 +7,7 @@ import { pop, tweenNumber, enterRow, settleLine } from '../../../ui/motion/motio
 import { PileEntry, RunGhostGap } from '../../domain/run';
 import { RunDiscComponent, discColor } from '../run-disc/run-disc.component';
 import { RunWaveComponent } from '../run-wave/run-wave.component';
+import { PointsPipe } from '../../../ui/format/points.pipe';
 
 /** Le temps que les points de la réponse rejoignent le total avant qu'il compte, en secondes. */
 const COUNT_DELAY = 0.9;
@@ -27,7 +28,7 @@ const keyOf = (entry: PileEntry): string => (entry.kind === 'track' ? `t${entry.
  */
 @Component({
   selector: 'app-run-pile',
-  imports: [TranslatePipe, RunDiscComponent, RunWaveComponent],
+  imports: [PointsPipe, TranslatePipe, RunDiscComponent, RunWaveComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
@@ -78,7 +79,7 @@ const keyOf = (entry: PileEntry): string => (entry.kind === 'track' ? `t${entry.
             <app-run-disc data-motion="disc" class="block shrink-0" [disc]="entry.passed.disc.key" [size]="34" [shine]="false" />
             <span data-motion="name" class="text-xl font-black" style="font-family:var(--font-score);color:var(--text-hi)">{{ entry.passed.disc.key | translate }}</span>
             <span data-motion="meta" class="ml-auto text-right text-xs leading-snug tabular-nums" style="font-family:var(--font-clock);color:var(--text-muted)">
-              {{ 'runs.pile.round' | translate: { round: entry.passed.round } }}<br />{{ entry.passed.score }} / {{ entry.passed.objective }}
+              {{ 'runs.pile.round' | translate: { round: entry.passed.round } }}<br />{{ entry.passed.score | appPoints }} / {{ entry.passed.objective | appPoints }}
             </span>
           </div>
         } @else {

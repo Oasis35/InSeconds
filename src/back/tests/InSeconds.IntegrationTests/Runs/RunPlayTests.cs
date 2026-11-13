@@ -225,6 +225,24 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Metrique_NiveauApresUnePartie_DisqueChangementEtProvisoire_SansIdentifiant()
+    {
+        var factory = _run.Api.Services.GetRequiredService<System.Diagnostics.Metrics.IMeterFactory>();
+        using var levels = new Microsoft.Extensions.Diagnostics.Metrics.Testing.MetricCollector<long>(factory, RunsMetrics.MeterName, RunsMetrics.LevelsName);
+        var alice = await _run.NewInvitedAsync("Alice");
+        var start = (await alice.LaunchAsync()).Session;
+
+        await alice.PlayAsync(start.SessionId, start.ChallengeCode, 1, false, false, false, false, false);
+
+        var measure = Assert.Single(levels.GetMeasurementSnapshot());
+        Assert.Equal(["change", "disc", "provisional"], measure.Tags.Keys.Order());
+        Assert.StartsWith("runs.discs.", measure.Tags["disc"] as string);
+        // Une partie ratée à 0 point depuis un niveau neuf : il reste sur le premier disque, provisoire (moins de 3 parties).
+        Assert.Equal(RunsMetrics.LevelSame, measure.Tags["change"]);
+        Assert.Equal(true, measure.Tags["provisional"]);
+    }
+
+    [Fact]
     public async Task UnRecordMoindre_RappelleLeRecord()
     {
         var alice = await _run.NewInvitedAsync("Alice");

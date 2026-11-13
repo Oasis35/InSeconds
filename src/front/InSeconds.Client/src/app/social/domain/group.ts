@@ -85,6 +85,13 @@ export function badgeColor(badge: string | null): string | null {
 /** L'initiale affichée dans la pastille d'un membre. */
 export const initialOf = (pseudo: string): string => (pseudo.trim()[0] ?? '?').toUpperCase();
 
+/** La teinte (de 1 à 4) de la pastille d'un pseudo : toujours la même pour le même pseudo, sans autre sens que de les distinguer. */
+export function avatarOf(pseudo: string): 1 | 2 | 3 | 4 {
+  let sum = 0;
+  for (const char of pseudo.trim().toLowerCase()) sum += char.codePointAt(0) ?? 0;
+  return ((sum % 4) + 1) as 1 | 2 | 3 | 4;
+}
+
 /**
  * Le classement général tel que le joueur le lit : la tête, puis lui et ses voisins s'il y apparaît plus bas. `topPercent` le situe par dizaines
  * (« top 30 % »), vide tant qu'il n'a fini aucune partie ; `canAppear` est faux pour un invité.

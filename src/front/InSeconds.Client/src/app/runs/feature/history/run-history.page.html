@@ -20,6 +20,7 @@
           <button type="button" (click)="store.chooseFilter(filter)" [attr.aria-pressed]="store.filter() === filter" [attr.data-testid]="'history-filter-' + filter"
                   class="px-3 min-h-11 text-sm cursor-pointer touch-manipulation rounded-(--radius-button)"
                   [style.border]="store.filter() === filter ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
+                  [style.background]="store.filter() === filter ? 'rgb(var(--rgb-accent-3) / 0.1)' : null"
                   [style.color]="store.filter() === filter ? 'var(--text-hi)' : 'var(--text-muted)'">{{ filterKey(filter) | translate }}</button>
         }
       </fieldset>

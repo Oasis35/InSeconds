@@ -200,6 +200,11 @@ public sealed class RunPlayer(
         var pointsBefore = level.Points;
         level.Record(session, rules.Levels.Window, time.GetUtcNow());
         RunsLog.LevelUpdated(logger, session.Id, level.RunsPlayed, level.Points - pointsBefore);
+        var ladder = rules.Levels.Ladder;
+        metrics.LevelChanged(
+            RunLevelPolicy.Standing(pointsBefore, ladder).Current.FromPoints,
+            RunLevelPolicy.Standing(level.Points, ladder).Current,
+            RunLevelPolicy.IsProvisional(level.RunsPlayed, rules.Levels.ProvisionalRuns));
 
         RunsLog.SessionEnded(logger, session.Id, session.PlayerId, session.Status, session.RoundsPassed, session.TotalScore);
         metrics.SessionEnded(session.Status == RunSessionStatus.Won, DiscLadder.Of(session.RoundsPassed, rules.Discs).Key, session.RoundsPassed);

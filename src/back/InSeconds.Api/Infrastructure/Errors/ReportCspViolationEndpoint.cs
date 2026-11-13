@@ -1,4 +1,5 @@
 using System.Text.Json;
+using InSeconds.Api.Infrastructure.Hosting;
 using InSeconds.Infrastructure.Http;
 using InSeconds.Infrastructure.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
@@ -159,9 +160,11 @@ public static class ReportCspViolationEndpoint
     {
         if (documentUrl is null)
             return null;
-        return Uri.TryCreate(documentUrl, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp)
+        var path = Uri.TryCreate(documentUrl, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp)
             ? uri.AbsolutePath
             : ReportClientErrorEndpoint.WithoutQuery(documentUrl);
+        // Un code de lien (invitation, playlist) ne part pas dans le journal.
+        return LinkSecrets.Paths.Mask(path);
     }
 
     private static async Task<ReadOnlyMemory<byte>?> ReadBodyAsync(Stream body, CancellationToken cancellationToken)

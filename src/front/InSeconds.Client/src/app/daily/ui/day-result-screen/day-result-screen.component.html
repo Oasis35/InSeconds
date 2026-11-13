@@ -6,7 +6,7 @@
       <div class="min-w-0">
         <h2 class="text-[13px] font-normal" style="font-family:var(--font-body);color:var(--text-muted)">{{ 'daily.result.yourScore' | translate }}</h2>
         <p class="tabular-nums" data-testid="day-score"
-           style="font-family:var(--font-score);font-size:3.1rem;font-weight:900;line-height:0.95;letter-spacing:-0.02em;color:var(--text-hi)">{{ score() ?? '-' }}</p>
+           style="font-family:var(--font-score);font-size:3.1rem;font-weight:900;line-height:0.95;letter-spacing:-0.02em;color:var(--text-hi)">{{ score() !== null ? (score() ?? 0 | appPoints) : '-' }}</p>
       </div>
       <div class="text-right shrink-0">
         <p class="text-[13px]" style="color:var(--text-muted)">{{ 'daily.result.nextChallenge' | translate }}</p>

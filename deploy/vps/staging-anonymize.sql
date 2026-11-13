@@ -13,6 +13,7 @@ UPDATE players.accounts
 UPDATE players.players SET guest_pseudo = NULL WHERE guest_pseudo IS NOT NULL;
 -- Le nom d'un groupe d'amis est un texte libre choisi par un joueur : remplacé, et le code d'invitation (un secret de lien) renouvelé.
 -- La table vient d'une migration de l'API : absente d'une copie d'une prod qui ne l'a pas encore.
+-- Le nouveau code est en hexadécimal, hors de l'alphabet des vrais codes : les liens des groupes copiés ne se rejoignent pas au staging (voulu : ni lien de la prod, ni secret devinable) ; un groupe créé au staging a un vrai code.
 DO $$
 BEGIN
     IF to_regclass('social.groups') IS NOT NULL THEN

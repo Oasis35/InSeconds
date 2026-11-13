@@ -32,8 +32,8 @@ const DOMAIN_DEPENDENCIES: Record<(typeof DOMAINS)[number], string[]> = {
   // Runs réutilise la manche de gameplay ; jamais Daily. Il lit `SessionLoader` du domaine account : le lien d'un ami crée son invité avant la partie.
   // Il montre aussi les groupes du joueur à la fin d'une partie et invite dans un groupe (domaine social, qui ne connaît aucun mode).
   runs: ['domain:gameplay', 'domain:account', 'domain:social'],
-  // Les groupes entre amis : l'en-tête de la manche (le logo), aucun mode.
-  social: ['domain:gameplay'],
+  // Les groupes entre amis : aucun mode, aucun autre domaine (le logo vient de `ui/brand`).
+  social: [],
   account: [],
   // L'admin réutilise l'histogramme « en combien de temps les autres ont trouvé » de la manche (avec les chiffres au-dessus des barres).
   admin: ['domain:account', 'domain:gameplay'],

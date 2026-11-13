@@ -40,7 +40,7 @@
               <div class="flex items-baseline justify-between">
                 <span class="text-sm font-semibold" style="font-family:var(--font-display);color:var(--text-muted)">{{ 'daily.alreadyPlayed.yourScore' | translate }}</span>
                 <span class="font-extrabold tabular-nums leading-none" style="font-family:var(--font-display);font-size:1.75rem;color:var(--color-accent-3)"
-                      data-testid="archive-my-score">{{ store.me().score }}</span>
+                      data-testid="archive-my-score">{{ store.me().score | appPoints }}</span>
               </div>
             } @else if (day.hasStats) {
               <p class="text-sm font-semibold" style="font-family:var(--font-display);color:var(--text-muted)">{{ 'daily.archive.playersScores' | translate }}</p>

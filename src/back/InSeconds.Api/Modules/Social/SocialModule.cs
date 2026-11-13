@@ -16,6 +16,7 @@ public static class SocialModule
     {
         services.AddOptions<SocialOptions>().BindConfiguration(SocialOptions.Section);
         services.AddSingleton<SocialRules>();
+        services.AddSingleton<SocialMetrics>();
         services.AddScoped<IGroupStore, EfGroupStore>();
         services.AddScoped<ISocialQueries, EfSocialQueries>();
         services.AddScoped<IRankingVisibilityStore, EfRankingVisibilityStore>();

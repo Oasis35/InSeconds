@@ -17,10 +17,11 @@ import { ArchiveTrack, answerAt, artistsSummary, formatGameDate } from '../../do
 import { ArchiveCalendarData, ArchiveCalendarResult, ArchiveCalendarSheetComponent } from '../../ui/archive-calendar-sheet/archive-calendar-sheet.component';
 import { ArchiveDayHeaderComponent } from '../../ui/archive-day-header/archive-day-header.component';
 import { ArchiveTrackRowComponent } from '../../ui/archive-track-row/archive-track-row.component';
-import { BrandComponent } from '../../../gameplay/ui/brand/brand.component';
+import { BrandComponent } from '../../../ui/brand/brand.component';
 import { DailyFooterComponent } from '../../ui/daily-footer/daily-footer.component';
 import { ScoreChartData, ScoreDistributionChartComponent } from '../../../ui/score-distribution-chart/score-distribution-chart.component';
 import { StatusScreenComponent } from '../../ui/status-screen/status-screen.component';
+import { PointsPipe } from '../../../ui/format/points.pipe';
 
 /**
  * La page d'un jour passé (`/daily/archive/aaaa-mm-jj`, #407) : les réponses du défi de ce jour-là, ce qu'en ont fait les joueurs (en
@@ -30,7 +31,7 @@ import { StatusScreenComponent } from '../../ui/status-screen/status-screen.comp
 @Component({
   selector: 'app-archive-page',
   imports: [
-    TranslatePipe, RouterLink, DecorBackgroundComponent, BrandComponent, DailyFooterComponent, AccountLinkComponent,
+    PointsPipe, TranslatePipe, RouterLink, DecorBackgroundComponent, BrandComponent, DailyFooterComponent, AccountLinkComponent,
     ArchiveDayHeaderComponent, ArchiveTrackRowComponent, ScoreDistributionChartComponent, StatusScreenComponent, ButtonComponent,
   ],
   providers: [ArchiveStore, AudioPreviewPlayer],

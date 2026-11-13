@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { BrandComponent } from '../../../gameplay/ui/brand/brand.component';
+import { BrandComponent } from '../../../ui/brand/brand.component';
 import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 import { RunLink } from '../../domain/run';
 import { RunDiscComponent } from '../run-disc/run-disc.component';

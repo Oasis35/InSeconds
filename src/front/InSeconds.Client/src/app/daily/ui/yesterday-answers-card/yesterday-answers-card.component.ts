@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ArchiveDay, formatGameDate } from '../../domain/archive';
+import { PointsPipe } from '../../../ui/format/points.pipe';
 
 /**
  * La ligne « Les réponses d'hier » au bas du résultat du jour : les pochettes du défi d'hier et sa date, vers la page du jour ; la médiane
@@ -9,7 +10,7 @@ import { ArchiveDay, formatGameDate } from '../../domain/archive';
  */
 @Component({
   selector: 'app-yesterday-answers-card',
-  imports: [RouterLink, TranslatePipe],
+  imports: [PointsPipe, RouterLink, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a [routerLink]="link()" data-testid="yesterday-answers"
@@ -34,7 +35,7 @@ import { ArchiveDay, formatGameDate } from '../../domain/archive';
           @if (day().hasStats) {
             <span class="text-sm" style="color:var(--text-muted)" data-testid="yesterday-median">
               {{ 'daily.archive.median' | translate }}
-              <b style="font-family:var(--font-display);color:var(--color-violet)">{{ day().medianScore }}</b>
+              <b style="font-family:var(--font-display);color:var(--color-violet)">{{ day().medianScore | appPoints }}</b>
             </span>
           }
         </span>

@@ -115,9 +115,10 @@ public static class DeleteAdminGroupEndpoint
     [WolverineDelete("/api/admin/social/groups/{id}", OperationId = "deleteAdminGroup")]
     [EmptyResponse]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public static void Delete([NotBody] AdminGroupAction action, IGroupStore store, ILogger<Group> logger)
+    public static void Delete([NotBody] AdminGroupAction action, IGroupStore store, [NotBody] SocialMetrics metrics, ILogger<Group> logger)
     {
         store.Remove(action.Group!);
         SocialLog.AdminDeleted(logger, action.Group!.Id, action.AdminId);
+        metrics.Group(SocialMetrics.AdminDeleted);
     }
 }

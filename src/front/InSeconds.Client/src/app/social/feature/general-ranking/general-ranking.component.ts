@@ -30,11 +30,13 @@ import { RankingListComponent } from '../../ui/ranking-list/ranking-list.compone
               </p>
             }
             @if (ranking.top.length) {
-              <app-ranking-list [entries]="ranking.top" [lang]="lang()" />
-              @if (ranking.around.length) {
-                <p class="text-center leading-none" aria-hidden="true" style="color:var(--text-muted)">⋯</p>
-                <app-ranking-list [entries]="ranking.around" [lang]="lang()" data-testid="general-around" />
-              }
+              <div style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)">
+                <app-ranking-list [entries]="ranking.top" [lang]="lang()" [bare]="true" />
+                @if (ranking.around.length) {
+                  <p class="text-center leading-none" aria-hidden="true" style="color:var(--text-muted)">⋯</p>
+                  <app-ranking-list [entries]="ranking.around" [lang]="lang()" [bare]="true" data-testid="general-around" />
+                }
+              </div>
             } @else {
               <p class="text-sm text-center py-6" style="color:var(--text-muted)" data-testid="general-empty">{{ 'social.general.empty' | translate }}</p>
             }

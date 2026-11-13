@@ -43,11 +43,11 @@
               [style.color]="r.score > 0 ? 'var(--color-success)' : 'var(--text-hover)'"
               [title]="'daily.trackList.showChart' | translate"
               [attr.aria-label]="'daily.trackList.showChart' | translate">
-              +{{ r.score }}
+              +{{ r.score | appPoints }}
             </button>
           } @else {
             <span class="text-lg font-bold" style="font-family:var(--font-display)" [style.color]="r.score > 0 ? 'var(--color-success)' : 'var(--text-hover)'">
-              +{{ r.score }}
+              +{{ r.score | appPoints }}
             </span>
           }
         }

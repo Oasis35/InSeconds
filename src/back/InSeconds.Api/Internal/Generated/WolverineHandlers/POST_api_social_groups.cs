@@ -18,6 +18,7 @@ namespace Internal.Generated.WolverineHandlers
     public sealed class POST_api_social_groups : Wolverine.Http.HttpHandler
     {
         private readonly Wolverine.Http.WolverineHttpOptions _wolverineHttpOptions;
+        private readonly InSeconds.Api.Modules.Social.Application.SocialMetrics _socialMetrics;
         private readonly InSeconds.Api.Modules.Social.Application.SocialRules _socialRules;
         private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor;
         private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _serviceScopeFactory;
@@ -26,9 +27,10 @@ namespace Internal.Generated.WolverineHandlers
         private readonly System.TimeProvider _timeProvider;
         private readonly Wolverine.Runtime.IWolverineRuntime _wolverineRuntime;
 
-        public POST_api_social_groups(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Modules.Social.Application.SocialRules socialRules, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Social.Domain.Group> loggerOfGroup, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
+        public POST_api_social_groups(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Modules.Social.Application.SocialMetrics socialMetrics, InSeconds.Api.Modules.Social.Application.SocialRules socialRules, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Social.Domain.Group> loggerOfGroup, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
         {
             _wolverineHttpOptions = wolverineHttpOptions;
+            _socialMetrics = socialMetrics;
             _socialRules = socialRules;
             _httpContextAccessor = httpContextAccessor;
             _serviceScopeFactory = serviceScopeFactory;
@@ -75,7 +77,7 @@ namespace Internal.Generated.WolverineHandlers
 
                 
                 // The actual HTTP request handler execution
-                var groupSummaryResponse_response = await InSeconds.Api.Modules.Social.Application.CreateGroupEndpoint.Post(request, groupCreation, efGroupStore, _socialRules, _timeProvider, _loggerOfGroup, httpContext.RequestAborted).ConfigureAwait(false);
+                var groupSummaryResponse_response = await InSeconds.Api.Modules.Social.Application.CreateGroupEndpoint.Post(request, groupCreation, efGroupStore, _socialRules, _socialMetrics, _timeProvider, _loggerOfGroup, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware
