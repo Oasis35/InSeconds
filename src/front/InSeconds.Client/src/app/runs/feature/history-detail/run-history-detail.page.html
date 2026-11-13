@@ -25,10 +25,12 @@
           <button type="button" (click)="onlyMissed.set(false)" [attr.aria-pressed]="!onlyMissed()" data-testid="detail-all"
                   class="flex-1 min-h-11 text-sm cursor-pointer touch-manipulation rounded-(--radius-button)"
                   [style.border]="!onlyMissed() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
+                  [style.background]="!onlyMissed() ? 'rgb(var(--rgb-accent-3) / 0.1)' : null"
                   [style.color]="!onlyMissed() ? 'var(--text-hi)' : 'var(--text-muted)'">{{ 'ui.history.setlist.allTracks' | translate }}</button>
           <button type="button" (click)="onlyMissed.set(true)" [attr.aria-pressed]="onlyMissed()" data-testid="detail-missed"
                   class="flex-1 min-h-11 text-sm cursor-pointer touch-manipulation rounded-(--radius-button)"
                   [style.border]="onlyMissed() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
+                  [style.background]="onlyMissed() ? 'rgb(var(--rgb-accent-3) / 0.1)' : null"
                   [style.color]="onlyMissed() ? 'var(--text-hi)' : 'var(--text-muted)'">{{ 'ui.history.setlist.missed' | translate: { count: missedCount() } }}</button>
         </fieldset>
 

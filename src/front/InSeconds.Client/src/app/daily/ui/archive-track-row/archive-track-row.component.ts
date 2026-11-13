@@ -3,6 +3,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { GuessTimeChartComponent } from '../../../gameplay/ui/guess-time-chart/guess-time-chart.component';
 import { ArchiveMyAnswer, ArchiveTrack } from '../../domain/archive';
 import { DeezerBadgeComponent } from '../../../gameplay/ui/deezer-badge/deezer-badge.component';
+import { PointsPipe } from '../../../ui/format/points.pipe';
 
 /**
  * Un morceau d'un jour passé : pochette numérotée, artiste (« le plus raté » en rouge), titre et année, chacun sur une ligne (tronqués, déplié au
@@ -13,7 +14,7 @@ import { DeezerBadgeComponent } from '../../../gameplay/ui/deezer-badge/deezer-b
  */
 @Component({
   selector: 'app-archive-track-row',
-  imports: [TranslatePipe, DeezerBadgeComponent, GuessTimeChartComponent],
+  imports: [PointsPipe, TranslatePipe, DeezerBadgeComponent, GuessTimeChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './archive-track-row.component.html',
 })

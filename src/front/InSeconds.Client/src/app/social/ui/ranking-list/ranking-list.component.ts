@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { RankingEntry, badgeColor, initialOf } from '../../domain/group';
+import { RankingEntry, avatarOf, badgeColor, initialOf } from '../../domain/group';
 
 /**
  * Le classement d'un groupe : le rang, la pastille et le pseudo de chaque membre, ses points et son disque à droite. La ligne du joueur est en
@@ -11,7 +11,8 @@ import { RankingEntry, badgeColor, initialOf } from '../../domain/group';
   imports: [TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <ol class="p-1.5" style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)" data-testid="ranking-list">
+    <ol class="p-1.5" [style.background]="bare() ? null : 'var(--bg-surface)'" [style.border]="bare() ? null : '1px solid var(--border-medium)'"
+        [style.border-radius]="bare() ? null : 'var(--radius-card)'" data-testid="ranking-list">
       @for (row of rows(); track $index) {
         <li class="flex items-center gap-3 px-3 py-2.5 min-h-14" data-testid="ranking-row" [attr.data-me]="row.isMe ? 'true' : null"
             [style.border]="row.isMe ? '1px solid var(--color-accent-3)' : '1px solid transparent'"
@@ -19,7 +20,7 @@ import { RankingEntry, badgeColor, initialOf } from '../../domain/group';
             [style.background]="row.isMe ? 'rgb(var(--rgb-accent-3) / 0.1)' : null">
           <span class="w-6 text-sm tabular-nums" [style.color]="row.isMe ? 'var(--color-accent-3)' : 'var(--text-muted)'" data-testid="ranking-rank">{{ row.rank ?? '–' }}</span>
           <span class="flex items-center justify-center w-9 h-9 shrink-0 rounded-full text-sm font-bold" aria-hidden="true"
-                [style.background]="row.isMe ? 'var(--color-accent-3)' : 'rgb(var(--rgb-violet) / 0.35)'"
+                [style.background]="row.isMe ? 'var(--color-accent-3)' : 'var(--avatar-' + row.avatar + ')'"
                 [style.color]="row.isMe ? 'var(--bg-page)' : 'var(--text-hi)'">{{ row.initial }}</span>
           <span class="flex-1 min-w-0 truncate text-base" [class.font-bold]="row.isMe" [style.color]="row.isMe ? 'var(--color-accent-3)' : 'var(--text-hi)'" data-testid="ranking-pseudo">
             @if (row.isMe) { {{ 'social.ranking.me' | translate }} } @else { {{ row.pseudo }} }
@@ -44,6 +45,8 @@ export class RankingListComponent {
   readonly entries = input.required<readonly RankingEntry[]>();
   /** La langue des nombres (« 1 380 »). */
   readonly lang = input('fr');
+  /** Sans cadre : la liste est posée dans une carte qui en réunit plusieurs. */
+  readonly bare = input(false);
 
   protected readonly rows = computed(() => {
     const numbers = new Intl.NumberFormat(this.lang());
@@ -52,6 +55,7 @@ export class RankingListComponent {
       pseudo: entry.pseudo,
       isMe: entry.isMe,
       initial: initialOf(entry.pseudo),
+      avatar: avatarOf(entry.pseudo),
       points: entry.points === null ? null : numbers.format(entry.points),
       badge: entry.badge,
       color: badgeColor(entry.badge),

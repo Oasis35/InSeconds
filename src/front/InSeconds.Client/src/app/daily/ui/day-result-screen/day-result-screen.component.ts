@@ -11,6 +11,7 @@ import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-bu
 import { YesterdayAnswersCardComponent } from '../yesterday-answers-card/yesterday-answers-card.component';
 import { StreakPillComponent } from '../streak-pill/streak-pill.component';
 import { Streak } from '../../domain/streak';
+import { PointsPipe } from '../../../ui/format/points.pipe';
 
 /**
  * Le résultat du jour, juste après la partie comme à chaque visite suivante, toujours dans le même ordre : le score et le compte à rebours,
@@ -20,7 +21,7 @@ import { Streak } from '../../domain/streak';
  */
 @Component({
   selector: 'app-day-result-screen',
-  imports: [TranslatePipe, SecondsPipe, ShareButtonComponent, TrackResultsListComponent, ScoreDistributionChartComponent, YesterdayAnswersCardComponent, StreakPillComponent],
+  imports: [PointsPipe, TranslatePipe, SecondsPipe, ShareButtonComponent, TrackResultsListComponent, ScoreDistributionChartComponent, YesterdayAnswersCardComponent, StreakPillComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './day-result-screen.component.html',
 })

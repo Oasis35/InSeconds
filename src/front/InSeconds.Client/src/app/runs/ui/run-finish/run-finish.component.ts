@@ -7,6 +7,7 @@ import { finishSequence } from '../../../ui/motion/motion';
 import { RunDiscComponent } from '../run-disc/run-disc.component';
 import { RunLevelCardComponent } from '../run-level-card/run-level-card.component';
 import { ButtonComponent } from '../../../ui/button/button.component';
+import { PointsPipe } from '../../../ui/format/points.pipe';
 
 /**
  * La fin du run, victoire comme défaite : la carte du disque (le disque, son nom, « Nouveau record » ou le record, le score final, « 16 / 20
@@ -20,7 +21,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
  */
 @Component({
   selector: 'app-run-finish',
-  imports: [TranslatePipe, RouterLink, ButtonComponent, RunDiscComponent, RunLevelCardComponent, ShareButtonComponent],
+  imports: [PointsPipe, TranslatePipe, RouterLink, ButtonComponent, RunDiscComponent, RunLevelCardComponent, ShareButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex-1 flex flex-col', '(click)': 'skipSequence()' },
   template: `
@@ -84,7 +85,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
             @if (round.score !== null) {
               <!-- Sur un petit écran (320 px), l'objectif passe sous le score. -->
               <p class="flex flex-wrap justify-center gap-x-1 text-sm tabular-nums">
-                <span class="font-extrabold" style="font-family:var(--font-display);color:var(--text-hi)">{{ round.score }}</span>
+                <span class="font-extrabold" style="font-family:var(--font-display);color:var(--text-hi)">{{ round.score | appPoints }}</span>
                 <span class="text-xs whitespace-nowrap self-center" [style.color]="round.passed ? 'var(--text-faint)' : 'var(--color-warn)'">/ {{ round.objective }}</span>
               </p>
             } @else {

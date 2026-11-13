@@ -51,13 +51,13 @@ describe('WelcomeScreenComponent', () => {
   it('montre la date, le record du joueur plutôt que la médiane d’hier', () => {
     const { el } = render({ dateLabel: 'mardi 28 octobre', bestScore: 3200, yesterdayMedian: 1500 });
     expect(el.querySelector('[data-testid="welcome-date"]')?.textContent).toContain('mardi 28 octobre');
-    expect(el.querySelector('[data-testid="welcome-record"]')?.textContent).toContain('3200');
+    expect(el.querySelector('[data-testid="welcome-record"]')?.textContent).toMatch(/3\s200/);
     expect(el.querySelector('[data-testid="welcome-target"]')).toBeNull();
   });
 
   it('sans record : la médiane d’hier en score à battre ; sans l’un ni l’autre : rien', () => {
     const target = render({ yesterdayMedian: 1500 }).el;
-    expect(target.querySelector('[data-testid="welcome-target"]')?.textContent).toContain('1500');
+    expect(target.querySelector('[data-testid="welcome-target"]')?.textContent).toMatch(/1\s500/);
     expect(target.querySelector('[data-testid="welcome-record"]')).toBeNull();
     const none = render().el;
     expect(none.querySelector('[data-testid="welcome-target"]')).toBeNull();

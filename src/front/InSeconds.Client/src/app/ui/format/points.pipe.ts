@@ -7,7 +7,8 @@ import { formatPoints } from './format-points';
 export class PointsPipe implements PipeTransform {
   private readonly translate = inject(TranslateService);
 
-  transform(value: number): string {
+  transform(value: number | null | undefined): string {
+    if (value === null || value === undefined) return '';
     return formatPoints(value, this.translate.getCurrentLang() ?? 'fr');
   }
 }

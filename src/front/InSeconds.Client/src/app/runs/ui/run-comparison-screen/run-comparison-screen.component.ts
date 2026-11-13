@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { TranslatePipe } from '@ngx-translate/core';
 import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-button.component';
 import { RunComparison } from '../../domain/run';
+import { PointsPipe } from '../../../ui/format/points.pipe';
 
 /**
  * La comparaison des joueurs d'une playlist : « Playlist de Clément » (le pseudo de l'auteur, pas le code du lien), « 4 joueurs de cette playlist »,
@@ -10,7 +11,7 @@ import { RunComparison } from '../../domain/run';
  */
 @Component({
   selector: 'app-run-comparison-screen',
-  imports: [TranslatePipe, ShareButtonComponent],
+  imports: [PointsPipe, TranslatePipe, ShareButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex-1 flex flex-col' },
   template: `
@@ -60,11 +61,11 @@ import { RunComparison } from '../../domain/run';
                     @if (score === null) {
                       <span [attr.aria-label]="'runs.finished.notPlayed' | translate">✕</span>
                     } @else {
-                      {{ score }}
+                      {{ score | appPoints }}
                     }
                   </td>
                 }
-                <td class="text-right px-3 py-2" style="font-family:var(--font-score);font-weight:900;color:var(--text-hi)" data-testid="run-comparison-total">{{ row.totalScore }}</td>
+                <td class="text-right px-3 py-2" style="font-family:var(--font-score);font-weight:900;color:var(--text-hi)" data-testid="run-comparison-total">{{ row.totalScore | appPoints }}</td>
               </tr>
             }
           </tbody>

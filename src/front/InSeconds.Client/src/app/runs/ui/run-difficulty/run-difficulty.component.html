@@ -7,7 +7,7 @@
   </p>
   <p class="flex items-baseline gap-3 mt-2">
     <span class="text-[15px]" style="color:var(--text-light)">{{ 'runs.difficulty.yourScore' | translate }}</span>
-    <span class="text-[28px] font-extrabold leading-none" style="font-family:var(--font-score);color:var(--text-hi)" data-testid="run-difficulty-score">{{ totalScore() }}</span>
+    <span class="text-[28px] font-extrabold leading-none" style="font-family:var(--font-score);color:var(--text-hi)" data-testid="run-difficulty-score">{{ totalScore() | appPoints }}</span>
   </p>
 
   <div class="flex-1 min-h-4"></div>
