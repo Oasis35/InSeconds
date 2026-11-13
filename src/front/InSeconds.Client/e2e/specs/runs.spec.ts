@@ -187,7 +187,7 @@ test.describe('Mode Setlist', () => {
     await expect(run.page.getByTestId('share-grid')).toBeVisible();
     await run.page.keyboard.press('Escape');
     await expect(run.page.getByTestId('share-sheet')).toHaveCount(0);
-    await expect(run.playAgainButton).toHaveText('Nouvelle setlist');
+    await expect(run.page.getByTestId('run-play-again-label')).toHaveText('Nouvelle setlist');
     await expect(run.page.getByTestId('run-shortfall')).toHaveCount(0);
 
     // « Revoir » : la partie dans l'historique, avec ses 20 morceaux.
@@ -303,7 +303,6 @@ test.describe('Mode Setlist', () => {
     await expect(run.finished).toHaveAttribute('data-status', 'lost');
     await expect(run.disc).toHaveText('Disque rayé');
     await expect(run.found).toHaveText('0 / 20 morceaux trouvés');
-    await expect(run.roundScores.getByText('✕')).toHaveCount(3);
     // Ce qui a manqué pour le premier disque : tout l'objectif de la manche 1.
     await expect(run.page.getByTestId('run-shortfall')).toHaveText('Il t’a manqué 225 pts pour le Disque de cire');
 

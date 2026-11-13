@@ -165,7 +165,10 @@ describe('RunFinishComponent', () => {
 
       expect(element.querySelector('[data-testid="run-level"]')?.getAttribute('data-disc')).toBe('runs.discs.silver');
       expect(text(element, 'run-level-delta')).toBe('+38');
-      expect(text(element, 'run-play-again')).toBe('runs.level.newSetlist');
+      expect(text(element, 'run-play-again-label')).toBe('runs.level.newSetlist');
+      expect(text(element, 'run-next-disc')).toBe('runs.level.encore');
+      expect(text(element, 'run-found')).toBe('runs.finished.found');
+      expect(element.querySelector('[data-testid="run-round-scores"]')).toBeNull();
       expect(text(element, 'run-share')).toContain('runs.level.challenge');
       expect(element.querySelector('[data-testid="run-level-review"]')?.getAttribute('href')).toBe('/setlist/history/7');
     });

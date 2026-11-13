@@ -72,6 +72,8 @@ export class JoinGroupPage implements OnInit {
       return;
     }
     this.busy.set(false);
+    // Un refus définitif (invitation disparue, groupe complet, trop de groupes) : l'invitation n'est plus proposée.
+    if (outcome.kind === 'invitation_not_found' || outcome.kind === 'group_full' || outcome.kind === 'too_many_groups') this.pending.clear();
     if (outcome.kind === 'invitation_not_found') this.status.set('not_found');
     else this.error.set(REFUSAL_KEYS[outcome.kind] ?? 'social.join.failed');
   }

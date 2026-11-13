@@ -40,7 +40,7 @@ public static class ApiComposition
         if (startsServer)
             builder.AddDatabaseSettings(connectionString);
 
-        builder.AddInSecondsObservability(BuildInfo.BuildUtc ?? "unknown");
+        builder.AddInSecondsObservability(BuildInfo.BuildUtc ?? "unknown", LinkSecrets.Paths);
         builder.Services.AddInSecondsDatabase(connectionString);
         // Enregistré avant Wolverine et Hangfire : les migrations passent avant leur démarrage.
         builder.Services.AddDatabaseMigrationOnStartup();

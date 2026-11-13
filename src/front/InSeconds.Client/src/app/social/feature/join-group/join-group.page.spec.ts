@@ -88,5 +88,7 @@ describe('JoinGroupPage', () => {
 
     expect(find(el, 'join-error-message')?.textContent?.trim()).toBe('social.join.full');
     expect(navigate).not.toHaveBeenCalled();
+    // Le refus est définitif : l'invitation n'est plus proposée ailleurs.
+    expect(TestBed.inject(PendingInvite).get()).toBeNull();
   });
 });

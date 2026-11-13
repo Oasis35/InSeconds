@@ -15,7 +15,7 @@
       <!-- Identité pas encore lue : rien à conclure. -->
     } @else if (!session.isLinked()) {
       <section class="p-5 flex flex-col gap-3" data-testid="ranking-guest"
-               style="background:rgb(var(--rgb-accent-3) / 0.06);border:1px solid var(--color-accent-3);border-radius:var(--radius-card)">
+               style="background:rgb(var(--rgb-accent-3) / 0.1);border:1px solid var(--color-accent-3);border-radius:var(--radius-card)">
         <h2 class="text-lg font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.empty.title' | translate }}</h2>
         <p class="text-sm leading-relaxed" style="color:var(--text-light)">{{ 'social.empty.guestBody' | translate }}</p>
         <a appButton routerLink="/account/login" [block]="true" data-testid="ranking-login">{{ 'social.empty.createAccount' | translate }}</a>
@@ -91,7 +91,7 @@
             }
           } @else {
             <section class="p-5 flex flex-col gap-3" data-testid="ranking-empty"
-                     style="background:rgb(var(--rgb-accent-3) / 0.06);border:1px solid var(--color-accent-3);border-radius:var(--radius-card)">
+                     style="background:rgb(var(--rgb-accent-3) / 0.1);border:1px solid var(--color-accent-3);border-radius:var(--radius-card)">
               <h2 class="text-lg font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.empty.title' | translate }}</h2>
               <p class="text-sm leading-relaxed" style="color:var(--text-light)">{{ 'social.empty.body' | translate }}</p>
               <a appButton routerLink="/ranking/new" [block]="true" data-testid="ranking-create">{{ 'social.empty.create' | translate }}</a>

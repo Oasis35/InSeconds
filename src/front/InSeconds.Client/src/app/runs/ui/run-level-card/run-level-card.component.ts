@@ -7,7 +7,7 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
 /**
  * Le niveau du joueur : son disque et son nom, ses points de niveau, ce que la dernière partie a changé (« +38 » en orange, une baisse en gris), la
  * jauge vers le disque suivant et ce qui manque pour l'avoir (« Disque d'or dans 220 pts »), « provisoire » tant qu'il a fini trop peu de parties.
- * Sur la fin d'un run, « Revoir » ouvre la partie dans l'historique.
+ * Sur la fin d'un run, les morceaux trouvés et « Revoir », qui ouvre la partie dans l'historique.
  */
 @Component({
   selector: 'app-run-level-card',
@@ -33,9 +33,24 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
           }
         </p>
       </div>
-      <div class="h-1.5 rounded-full overflow-hidden" style="background:var(--bg-inactive)" aria-hidden="true">
-        <div class="h-full rounded-full" data-testid="run-level-bar" style="background:var(--color-accent-3)" [style.width.%]="level().progressPercent"></div>
+      <div class="flex items-center gap-3">
+        <div class="flex-1 h-1.5 rounded-full overflow-hidden" style="background:var(--bg-inactive)" aria-hidden="true">
+          <div class="h-full rounded-full" data-testid="run-level-bar" style="background:var(--color-accent-3)" [style.width.%]="level().progressPercent"></div>
+        </div>
+        @if (found() !== null && level().nextDisc; as next) {
+          <span class="shrink-0 text-sm" style="color:var(--text-muted)" data-testid="run-level-next-disc">{{ next.key | translate }}</span>
+        }
       </div>
+      @if (found(); as found) {
+        <!-- Sur la fin d'un run (maquette 4) : les morceaux trouvés et « Revoir », le disque suivant au bout de la jauge. -->
+        <p class="flex items-center gap-2 text-sm" style="color:var(--text-light)">
+          <span data-testid="run-found">{{ found }}</span>
+          @if (reviewLink(); as link) {
+            <span aria-hidden="true">·</span>
+            <a [routerLink]="link" class="underline underline-offset-4 touch-manipulation" style="color:var(--text-hi)" data-testid="run-level-review">{{ 'runs.level.review' | translate }} ›</a>
+          }
+        </p>
+      } @else {
       <div class="flex items-center justify-between gap-3 text-sm" style="color:var(--text-light)">
         <p data-testid="run-level-next">
           @if (level().nextDisc; as next) {
@@ -48,6 +63,7 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
           <a [routerLink]="link" class="shrink-0 underline underline-offset-4 touch-manipulation" style="color:var(--text-hi)" data-testid="run-level-review">{{ 'runs.level.review' | translate }}</a>
         }
       </div>
+      }
     </section>
   `,
 })
@@ -56,6 +72,8 @@ export class RunLevelCardComponent {
   readonly lang = input<'fr' | 'en'>('fr');
   /** Le lien de la partie dans l'historique ; `null` : pas de « Revoir ». */
   readonly reviewLink = input<string | null>(null);
+  /** Sur la fin d'un run : « 17 / 20 morceaux trouvés », montré avec « Revoir » à la place du disque suivant (annoncé par le bouton). */
+  readonly found = input<string | null>(null);
 
   private readonly numbers = computed(() => new Intl.NumberFormat(this.lang()));
   protected readonly delta = computed(() => levelDeltaText(this.level().delta, (value) => this.format(value)));

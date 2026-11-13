@@ -26,15 +26,22 @@ public static class ObservabilityExtensions
     /// <summary>Sources d'activité suivies en plus de l'instrumentation standard.</summary>
     public static readonly string[] TracedSources = ["Wolverine", TelemetrySources.Jobs, TelemetrySources.Catalogue];
 
-    public static WebApplicationBuilder AddInSecondsObservability(this WebApplicationBuilder builder, string serviceVersion)
+    public static WebApplicationBuilder AddInSecondsObservability(this WebApplicationBuilder builder, string serviceVersion, SecretPaths secretPaths)
     {
+        builder.Services.AddSingleton(secretPaths);
         var otel = builder.Services.AddOpenTelemetry()
             .ConfigureResource(resource => resource
                 .AddService(ServiceName, serviceVersion: serviceVersion)
                 .AddAttributes([new("deployment.environment.name", builder.Environment.EnvironmentName)]))
             .WithTracing(tracing => tracing
                 // Pas d'enrichissement ni de capture d'en-têtes : ni cookie ni Authorization ne partent.
-                .AddAspNetCoreInstrumentation(options => options.Filter = IsTracedRequest)
+                .AddAspNetCoreInstrumentation(options =>
+                {
+                    options.Filter = IsTracedRequest;
+                    // Un code de lien (invitation, playlist) ne part pas dans le chemin de la trace.
+                    options.EnrichWithHttpRequest = (activity, request) => MaskPath(activity, secretPaths, request.Path.Value);
+                    options.EnrichWithHttpResponse = (activity, response) => MaskPath(activity, secretPaths, response.HttpContext.Request.Path.Value);
+                })
                 .AddHttpClientInstrumentation()
                 .AddNpgsql()
                 .AddSource(TracedSources))
@@ -55,6 +62,13 @@ public static class ObservabilityExtensions
             otel.UseOtlpExporter();
 
         return builder;
+    }
+
+    private static void MaskPath(System.Diagnostics.Activity activity, SecretPaths secretPaths, string? path)
+    {
+        var masked = secretPaths.Mask(path);
+        if (masked != path)
+            activity.SetTag("url.path", masked);
     }
 
     /// <summary>

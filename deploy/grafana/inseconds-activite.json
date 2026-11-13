@@ -949,7 +949,7 @@
     {
       "id": 22,
       "type": "row",
-      "title": "Platines (mode Run, période choisie)",
+      "title": "Setlist (période choisie)",
       "collapsed": false,
       "gridPos": {
         "x": 0,
@@ -1528,6 +1528,282 @@
         "y": 72,
         "w": 8,
         "h": 9
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Niveau après la partie (disque, changement)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROM}"
+          },
+          "expr": "sum by (disc, change) (increase(inseconds_runs_levels_total{job=~\".*inseconds-api\",provisional=\"false\"}[$__range]))",
+          "legendFormat": "{{disc}} · {{change}}",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "transformations": [
+        {
+          "id": "reduce",
+          "options": {
+            "reducers": [
+              "lastNotNull"
+            ],
+            "mode": "seriesToRows"
+          }
+        }
+      ],
+      "options": {
+        "xField": "Field",
+        "orientation": "auto",
+        "showValue": "auto",
+        "legend": {
+          "showLegend": false
+        }
+      },
+      "id": 35,
+      "gridPos": {
+        "x": 8,
+        "y": 72,
+        "w": 8,
+        "h": 9
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Groupes entre amis",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROM}"
+          },
+          "expr": "sum by (event) (increase(inseconds_social_groups_total{job=~\".*inseconds-api\"}[$__range]))",
+          "legendFormat": "{{event}}",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "transformations": [
+        {
+          "id": "reduce",
+          "options": {
+            "reducers": [
+              "lastNotNull"
+            ],
+            "mode": "seriesToRows"
+          }
+        }
+      ],
+      "options": {
+        "xField": "Field",
+        "orientation": "auto",
+        "showValue": "auto",
+        "legend": {
+          "showLegend": false
+        }
+      },
+      "id": 36,
+      "gridPos": {
+        "x": 16,
+        "y": 72,
+        "w": 8,
+        "h": 9
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Groupes créés",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROM}"
+          },
+          "expr": "sum(increase(inseconds_social_groups_total{job=~\".*inseconds-api\",event=\"created\"}[$__range])) or vector(0)",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "id": 37,
+      "gridPos": {
+        "x": 0,
+        "y": 81,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Groupes rejoints",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROM}"
+          },
+          "expr": "sum(increase(inseconds_social_groups_total{job=~\".*inseconds-api\",event=\"joined\"}[$__range])) or vector(0)",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "id": 38,
+      "gridPos": {
+        "x": 4,
+        "y": 81,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Apparaître au classement général (allumé)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROM}"
+          },
+          "expr": "sum(increase(inseconds_social_ranking_visibility_total{job=~\".*inseconds-api\",visible=\"true\"}[$__range])) or vector(0)",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "id": 39,
+      "gridPos": {
+        "x": 8,
+        "y": 81,
+        "w": 4,
+        "h": 5
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Classement général (éteint)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROM}"
+          },
+          "expr": "sum(increase(inseconds_social_ranking_visibility_total{job=~\".*inseconds-api\",visible=\"false\"}[$__range])) or vector(0)",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "id": 40,
+      "gridPos": {
+        "x": 12,
+        "y": 81,
+        "w": 4,
+        "h": 5
       }
     }
   ],

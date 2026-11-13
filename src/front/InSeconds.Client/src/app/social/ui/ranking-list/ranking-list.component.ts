@@ -33,7 +33,11 @@ import { RankingEntry, avatarOf, badgeColor, initialOf } from '../../domain/grou
           <span class="w-6 h-6 shrink-0 rounded-full flex items-center justify-center" [attr.data-badge]="row.badge" [attr.title]="row.badge ? (row.badge | translate) : null"
                 [style.background]="row.color ?? 'transparent'">
             @if (row.color) {
-              <span class="w-1.5 h-1.5 rounded-full" style="background:var(--bg-page)"></span>
+              <span class="w-1.5 h-1.5 rounded-full" style="background:var(--bg-page)" aria-hidden="true"></span>
+            }
+            @if (row.badge) {
+              <!-- Le niveau ne se lit pas qu'à la couleur : son nom pour un lecteur d'écran. -->
+              <span class="sr-only">{{ row.badge | translate }}</span>
             }
           </span>
         </li>

@@ -1,4 +1,5 @@
 using FluentValidation;
+using InSeconds.Api.Infrastructure.Hosting;
 using InSeconds.Infrastructure.Http;
 using InSeconds.Infrastructure.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
@@ -68,7 +69,7 @@ public static class ReportClientErrorEndpoint
         // puisse pas écrire de fausses lignes dans les journaux texte. Jamais de query string ni de
         // fragment (jeton de lien magique, recherche tapée), même si un client en envoie une.
         var source = ToSingleLine(report.Source, ' ')!;
-        var url = ToSingleLine(WithoutQuery(report.Url), ' ');
+        var url = ToSingleLine(LinkSecrets.Paths.Mask(WithoutQuery(report.Url)), ' ');
         var message = ToSingleLine(report.Message, ' ')!;
         var traceId = ToSingleLine(report.RelatedTraceId, ' ');
         var appVersion = ToSingleLine(report.AppVersion, ' ');
