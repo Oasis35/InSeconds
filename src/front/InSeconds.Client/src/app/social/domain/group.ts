@@ -87,7 +87,7 @@ export function standingOf(ranking: GroupRanking, delta: number | null = null): 
  */
 export function movementOf(ranking: GroupRanking, delta: number | null): RankMovement | null {
   const me = ranking.entries.find(entry => entry.isMe);
-  if (!me || me.points === null || me.rank === null || delta === null || delta <= 0) return null;
+  if (me?.points == null || me.rank === null || delta === null || delta <= 0) return null;
   const before = me.points - delta;
   const passed = ranking.entries
     .filter(entry => !entry.isMe && entry.points !== null && entry.points > before && entry.points < me.points!)
