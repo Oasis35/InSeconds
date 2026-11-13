@@ -63,6 +63,13 @@ describe('RunsHomeEntryComponent', () => {
     expect(element.querySelector('[data-testid="run-home-card"]')).toBeNull();
   });
 
+  it("un visiteur sans identité ne demande rien et ne voit rien", async () => {
+    const load = vi.fn(async () => true);
+    const element = await render(null, load);
+    expect(load).not.toHaveBeenCalled();
+    expect(element.querySelector('[data-testid="run-home-card"]')).toBeNull();
+  });
+
   it("le défi du jour à jouer : la carte discrète, avec le record", async () => {
     api.meResult = ME({ record: { bestScore: 3420, bestRoundsPassed: 4, isNew: false }, level: LEVEL });
     const element = await render(player(false), async () => true, false);

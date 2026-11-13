@@ -9,13 +9,13 @@
         <!-- Le record du joueur (orange : c'est lui) ; jamais le meilleur score des autres, qui découragerait. -->
         <p class="mt-4.5 flex items-baseline gap-2 text-sm" style="color:var(--text-muted)" data-testid="welcome-record">
           {{ 'daily.welcome.record' | translate }}
-          <b class="text-[17px] font-extrabold tabular-nums" style="font-family:var(--font-score);color:var(--color-accent-3)">{{ bestScore() }}</b>
+          <b class="text-[17px] font-extrabold tabular-nums" style="font-family:var(--font-score);color:var(--color-accent-3)">{{ bestScore() ?? 0 | appPoints }}</b>
         </p>
       } @else if (yesterdayMedian() !== null) {
         <!-- La médiane d'hier (violet : les autres joueurs), pour qui n'a pas encore de record. -->
         <p class="mt-4.5 flex items-baseline gap-2 text-sm" style="color:var(--text-muted)" data-testid="welcome-target">
           {{ 'daily.welcome.target' | translate }}
-          <b class="text-[17px] font-extrabold tabular-nums" style="font-family:var(--font-score);color:var(--text-indigo)">{{ yesterdayMedian() }}</b>
+          <b class="text-[17px] font-extrabold tabular-nums" style="font-family:var(--font-score);color:var(--text-indigo)">{{ yesterdayMedian() ?? 0 | appPoints }}</b>
         </p>
       }
     </div>

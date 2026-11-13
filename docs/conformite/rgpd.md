@@ -1,6 +1,6 @@
 # RGPD : ce qui est en place
 
-État au 28/10/2026, après la passe RGPD du 16/10/2026 (PR #351, #349, #352), la partie du mode Run (#363) et la source d'arrivée (#445). Le texte public est la page `/privacy` (traductions `privacy.*` de `public/i18n/fr.json` et `en.json`), les mentions légales (éditeur, hébergeur, Deezer) sont sur `/legal` (`legal.*`) : toute évolution du traitement des données doit y être reportée.
+État au 13/11/2026, après la passe RGPD du 16/10/2026 (PR #351, #349, #352), la partie du mode Run (#363), la source d'arrivée (#445) et le proto 4 de Setlist (groupes, niveau, classement général, Hits). Le texte public est la page `/privacy` (traductions `privacy.*` de `public/i18n/fr.json` et `en.json`), les mentions légales (éditeur, hébergeur, Deezer) sont sur `/legal` (`legal.*`) : toute évolution du traitement des données doit y être reportée.
 
 ## Accès aux données
 
@@ -11,7 +11,9 @@
 
 ## Journaux
 
-Jamais d'email, de pseudo, de réponse saisie, de cookie ni d'`Authorization` (testé) : la recherche Deezer ne journalise que sa longueur (piège 36), les emails que leur sujet, les erreurs du front perdent query string et fragment, l'appareil est un libellé grossier (« Safari · iPhone »). Détail : `CLAUDE.md` § Ce que fait l'application (Observabilité).
+Jamais d'email, de pseudo, de réponse saisie, de cookie ni d'`Authorization` (testé) : la recherche Deezer ne journalise que sa longueur (piège 36), les emails que leur sujet, les erreurs du front perdent query string et fragment, l'appareil est un libellé grossier (« Safari · iPhone »). **Codes de lien masqués** : le code d'invitation d'un groupe et le code d'une playlist (un secret de lien : le lire suffit à rejoindre) sont remplacés par `{code}` dans le chemin du span serveur (`url.path`, `SecretPaths` de `InSeconds.Infrastructure`, préfixes dans `LinkSecrets` de l'API), dans le chemin de la requête joint à chaque log (`RequestPath`, `SecretPathScopeProvider`), dans les adresses complètes comme dans les chemins, dans le chemin des erreurs et des rapports CSP remontés par le front (`maskLinkCodes` côté navigateur, `LinkSecrets` côté API) ; tests `SecretPathsTests`, `SocialGroupTests.Invitation_LeCodeNEntrePasDansLaTrace`, `link-path.spec.ts`.
+
+**Compteurs du mode Setlist** (`RunsMetrics`) et des groupes (`SocialMetrics`) : parties, difficultés, cartes, groupes créés ou rejoints, choix d'apparaître au classement général, comptés sans identifiant de joueur ni de groupe (seules étiquettes : un nom d'événement, de difficulté, de carte ou de disque), exportés vers Grafana en prod seulement. Détail : `CLAUDE.md` § Ce que fait l'application (Observabilité).
 
 ## Mesure d'audience
 
@@ -73,5 +75,3 @@ Le texte saisi déjà stocké a été supprimé par migration ; `VACUUM FULL dai
 ## Reste ouvert
 
 - **Pas de trace des actions de l'admin** (qui a consulté ou modifié quoi). Un seul admin aujourd'hui : à reconsidérer s'il y en a un deuxième.
-
-**Compteurs du mode Setlist** (`RunsMetrics`) : parties, difficultés choisies et cartes jouées, comptés sans identifiant de joueur (le nom de la difficulté ou de la carte est la seule étiquette), exportés vers Grafana en prod seulement.

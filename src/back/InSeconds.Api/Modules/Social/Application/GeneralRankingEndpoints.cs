@@ -68,7 +68,7 @@ public static class SetRankingVisibilityEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     public static void Put(
-        SetRankingVisibility request, [NotBody] RankingVisibilityChoice choice, IRankingVisibilityStore store, TimeProvider time,
+        SetRankingVisibility request, [NotBody] RankingVisibilityChoice choice, IRankingVisibilityStore store, SocialMetrics metrics, TimeProvider time,
         ILogger<RankingVisibility> logger)
     {
         if (request.Visible && choice.Current is null)
@@ -78,5 +78,6 @@ public static class SetRankingVisibilityEndpoint
         else
             return;
         SocialLog.RankingVisibilityChanged(logger, choice.PlayerId, request.Visible);
+        metrics.RankingVisibilityChanged(request.Visible);
     }
 }

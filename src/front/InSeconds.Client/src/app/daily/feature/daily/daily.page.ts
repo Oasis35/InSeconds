@@ -30,7 +30,7 @@ import { HomeDoneCardComponent } from '../../ui/home-done-card/home-done-card.co
 import { AbandonedScreenComponent } from '../../ui/abandoned-screen/abandoned-screen.component';
 import { DayResultScreenComponent } from '../../ui/day-result-screen/day-result-screen.component';
 import { rowsFromResults, rowsFromStats, shareTracksOf } from '../../ui/day-result-screen/result-rows';
-import { BrandComponent } from '../../../gameplay/ui/brand/brand.component';
+import { BrandComponent } from '../../../ui/brand/brand.component';
 import { DailyFooterComponent } from '../../ui/daily-footer/daily-footer.component';
 import { DailyProgressComponent } from '../../ui/daily-progress/daily-progress.component';
 import { DeezerBadgeComponent } from '../../../gameplay/ui/deezer-badge/deezer-badge.component';

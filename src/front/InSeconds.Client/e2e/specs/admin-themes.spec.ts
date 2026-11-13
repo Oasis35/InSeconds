@@ -126,13 +126,13 @@ test.describe('Admin - thèmes', () => {
     await createTheme(page, 'Années 2000', 8);
     await admin.clickTab('Thèmes');
     await card(page, 'Années 2000').click();
-    const all = await page.getByTestId('theme-track').count();
+    // Les morceaux arrivent après l'ouverture du détail : on attend la liste au lieu de la compter tout de suite.
+    await expect(page.getByTestId('theme-track')).toHaveCount(8);
     const title = await page.getByTestId('theme-track').first().locator('span.truncate').first().innerText();
 
     await page.getByTestId('theme-track-search').fill(title);
 
     await expect(page.getByTestId('theme-track')).toHaveCount(1);
-    expect(all).toBe(8);
   });
 
   test('pagine les morceaux du thème par 10, la page vit dans l\'adresse', async ({ page }) => {
@@ -307,8 +307,9 @@ test.describe('Admin - icônes des thèmes', () => {
     await card(page, 'Rock').click();
     await page.getByTestId('theme-icon-open').click();
     const options = page.getByTestId('theme-icon-option');
+    // Le sélecteur se dessine après le clic : on attend la grille avant de la compter.
+    await expect.poll(() => options.count()).toBeGreaterThan(100);
     const total = await options.count();
-    expect(total).toBeGreaterThan(100);
 
     await page.getByTestId('theme-icon-category').filter({ hasText: 'Animaux' }).click();
     // Le filtre s'applique au rendu suivant : on attend le nouveau compte au lieu de le lire tout de suite.

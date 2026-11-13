@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { SessionStore } from '../../../core/session/session.store';
-import { BrandComponent } from '../../../gameplay/ui/brand/brand.component';
+import { BrandComponent } from '../../../ui/brand/brand.component';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
 import { PendingInvite } from '../../data-access/pending-invite';
@@ -72,6 +72,8 @@ export class JoinGroupPage implements OnInit {
       return;
     }
     this.busy.set(false);
+    // Un refus définitif (invitation disparue, groupe complet, trop de groupes) : l'invitation n'est plus proposée.
+    if (outcome.kind === 'invitation_not_found' || outcome.kind === 'group_full' || outcome.kind === 'too_many_groups') this.pending.clear();
     if (outcome.kind === 'invitation_not_found') this.status.set('not_found');
     else this.error.set(REFUSAL_KEYS[outcome.kind] ?? 'social.join.failed');
   }

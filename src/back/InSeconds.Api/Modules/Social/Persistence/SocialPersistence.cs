@@ -176,6 +176,7 @@ public sealed class SocialPlayerData(InSecondsDbContext db) : IPlayerDataContrib
 
     // Exécuté tout de suite, dans la transaction de l'appelant (pas de SaveChanges : la ligne du joueur part juste après). Un groupe qu'il a créé passe
     // au plus ancien des autres membres, ou disparaît s'il n'en a pas ; puis ses adhésions partent.
+    // Sans le verrou consultatif du groupe que prend « rejoindre » : un départ ne fait que baisser l'effectif, la limite de membres tient sans lui.
     public async Task<int> DeleteAsync(Guid playerId, CancellationToken ct)
     {
         var owned = await db.Set<Group>().AsNoTracking()

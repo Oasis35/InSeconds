@@ -162,8 +162,11 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
         var admin = await SeededAdminAsync();
         var before = await ListAsync(admin);
         var todayDate = DateOnly.FromDateTime(DateTime.UtcNow);
-        // Tirés ces 30 derniers jours, avant aujourd'hui : le défi d'aujourd'hui n'en reprend aucun.
-        var cooling = before.Where(t => t.Daily().LastUsedDate is { } d && d < todayDate && d >= todayDate.AddDays(-30)).Select(t => t.Id).ToHashSet();
+        // Le cooldown du pool de test : 50 jouables × 75 % ÷ 5 = 7 jours. Tirés pendant ce cooldown, avant aujourd'hui : le défi d'aujourd'hui
+        // n'en reprend aucun (un morceau tiré il y a 15 ou 30 jours est de nouveau tirable, le test ne doit pas dépendre du tirage du jour).
+        var cooldownDays = InSeconds.Api.Modules.Daily.Domain.TrackCooldown.Days(CatalogueSeed.PlayableCount, 75, 5);
+        var excludedFrom = InSeconds.Api.Modules.Daily.Domain.TrackCooldown.ExcludedFrom(todayDate, cooldownDays);
+        var cooling = before.Where(t => t.Daily().LastUsedDate is { } d && d < todayDate && d >= excludedFrom).Select(t => t.Id).ToHashSet();
         using (var scope = _host.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>();
@@ -175,7 +178,9 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(new GenerateTodayResponse(true, 5), await response.Content.ReadFromJsonAsync<GenerateTodayResponse>(Ct));
         var today = (await ListAsync(admin)).Where(t => t.Daily().InTodayChallenge).ToList();
         Assert.Equal(5, today.Count);
-        Assert.Equal(13, cooling.Count);
+        Assert.Equal(7, cooldownDays);
+        // Avant-hier et hier (10 morceaux), et celui d'il y a 5 jours.
+        Assert.Equal(11, cooling.Count);
         Assert.Empty(today.Select(t => t.Id).Intersect(cooling));
         Assert.All(today, t => Assert.Equal(todayDate, t.Daily().LastUsedDate));
     }

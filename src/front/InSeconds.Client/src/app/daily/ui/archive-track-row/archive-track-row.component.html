@@ -70,7 +70,7 @@
                  [attr.aria-label]="(m.titleCorrect ? 'daily.archive.titleRight' : 'daily.archive.titleWrong') | translate">{{ m.titleCorrect ? '✓' : '✗' }}</b>
             </span>
             <b class="ml-3 text-sm" style="font-family:var(--font-display)" data-testid="archive-mine-score"
-               [style.color]="m.score > 0 ? 'var(--color-accent-3)' : 'var(--text-faint)'">+{{ m.score }}</b>
+               [style.color]="m.score > 0 ? 'var(--color-accent-3)' : 'var(--text-faint)'">+{{ m.score | appPoints }}</b>
           </span>
         </div>
       }

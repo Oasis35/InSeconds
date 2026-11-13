@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
 import { TranslatePipe } from '@ngx-translate/core';
 import { RunDifficulty, RunDifficultyOption } from '../../domain/run';
 import { RunDifficultyColumnsComponent } from '../run-difficulty-columns/run-difficulty-columns.component';
+import { PointsPipe } from '../../../ui/format/points.pipe';
 
 /**
  * L'écran « Difficulté ? » de la première manche (ensuite, le choix est sur l'écran de palier, qui reprend les mêmes colonnes) : Facile, Normal ou Mélomane, avec l'objectif en points et ce que vaut au mieux un morceau (docs/runs/proto3.md). Normal est
@@ -9,7 +10,7 @@ import { RunDifficultyColumnsComponent } from '../run-difficulty-columns/run-dif
  */
 @Component({
   selector: 'app-run-difficulty',
-  imports: [TranslatePipe, RunDifficultyColumnsComponent],
+  imports: [PointsPipe, TranslatePipe, RunDifficultyColumnsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './run-difficulty.component.html',
 })

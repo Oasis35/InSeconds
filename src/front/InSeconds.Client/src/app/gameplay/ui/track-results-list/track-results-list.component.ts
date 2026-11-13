@@ -5,6 +5,7 @@ import { ModalService } from '../../../ui/modal/modal.service';
 import { GuessBucket } from '../../domain/round-result';
 import { DeezerBadgeComponent } from '../deezer-badge/deezer-badge.component';
 import { TrackChartDialogComponent, TrackChartDialogData } from './track-chart-dialog.component';
+import { PointsPipe } from '../../../ui/format/points.pipe';
 
 /** Une ligne de la liste de morceaux d'un défi (récap final / écran « déjà joué »). */
 export interface TrackResultRow {
@@ -32,7 +33,7 @@ export interface TrackResultRow {
  */
 @Component({
   selector: 'app-track-results-list',
-  imports: [TranslatePipe, DeezerBadgeComponent, SecondsPipe],
+  imports: [PointsPipe, TranslatePipe, DeezerBadgeComponent, SecondsPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './track-results-list.component.html',
 })

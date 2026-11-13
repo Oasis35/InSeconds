@@ -2,6 +2,7 @@ import { HttpBackend, HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { DEPLOYED_AT } from '../shell/deployed-at';
+import { maskLinkCodes } from './link-path';
 
 export type ClientErrorSource = 'js' | 'http';
 
@@ -118,5 +119,5 @@ function isOnline(): boolean | null {
 }
 
 function currentPath(): string | null {
-  return typeof window === 'undefined' ? null : window.location.pathname;
+  return typeof window === 'undefined' ? null : maskLinkCodes(window.location.pathname);
 }

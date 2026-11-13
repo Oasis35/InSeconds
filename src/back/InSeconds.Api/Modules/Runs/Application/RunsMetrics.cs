@@ -8,7 +8,8 @@ namespace InSeconds.Api.Modules.Runs.Application;
 /// Métriques OpenTelemetry du mode Run, pour le tableau Grafana « Activité » : des compteurs plutôt que des regex sur le texte des journaux. Aucun
 /// identifiant de joueur, de morceau ni de playlist en étiquette (cardinalité bornée : événement, manche, trouvé ou non, disque, difficulté, carte).
 /// Noms côté Prometheus : <c>inseconds_runs_sessions_total</c>, <c>inseconds_runs_answers_total</c>, <c>inseconds_runs_neutralized_total</c>,
-/// <c>inseconds_runs_discs_total</c>, <c>inseconds_runs_difficulties_total</c>, <c>inseconds_runs_cards_total</c>.
+/// <c>inseconds_runs_discs_total</c>, <c>inseconds_runs_difficulties_total</c>, <c>inseconds_runs_cards_total</c>, <c>inseconds_runs_duels_total</c>,
+/// <c>inseconds_runs_levels_total</c>.
 /// </summary>
 public sealed class RunsMetrics
 {
@@ -21,6 +22,12 @@ public sealed class RunsMetrics
     public const string DifficultiesName = "inseconds.runs.difficulties";
     public const string CardsName = "inseconds.runs.cards";
     public const string DuelsName = "inseconds.runs.duels";
+    public const string LevelsName = "inseconds.runs.levels";
+
+    /// <summary>Étiquette <c>change</c> du niveau après une partie : un disque de plus (<c>up</c>), de moins (<c>down</c>) ou le même (<c>same</c>).</summary>
+    public const string LevelUp = "up";
+    public const string LevelDown = "down";
+    public const string LevelSame = "same";
 
     /// <summary>Étiquette <c>result</c> d'un duel : le joueur devant l'ami (<c>ahead</c>), derrière (<c>behind</c>) ou à égalité (<c>tied</c>).</summary>
     public const string DuelAhead = "ahead";
@@ -45,6 +52,7 @@ public sealed class RunsMetrics
     private readonly Counter<long> _difficulties;
     private readonly Counter<long> _cards;
     private readonly Counter<long> _duels;
+    private readonly Counter<long> _levels;
 
     public RunsMetrics(IMeterFactory meterFactory)
     {
@@ -55,6 +63,7 @@ public sealed class RunsMetrics
         _discs = meter.CreateCounter<long>(DiscsName, description: "Disques obtenus à la fin d'une partie gagnée ou perdue, par clé (disc).");
         _difficulties = meter.CreateCounter<long>(DifficultiesName, description: "Difficultés choisies, par manche (round) et difficulté (difficulty).");
         _cards = meter.CreateCounter<long>(CardsName, description: "Coups de pouce, par action (action : carte gagnée, morceau changé) et carte (card).");
+        _levels = meter.CreateCounter<long>(LevelsName, description: "Niveaux recalculés à la fin d'une partie, par disque de niveau (disc), changement (change) et provisoire (provisional).");
         _duels = meter.CreateCounter<long>(DuelsName, description: "Duels finis contre l'ami qui a lancé la playlist, par résultat (result : devant, derrière, égalité).");
     }
 
@@ -80,6 +89,15 @@ public sealed class RunsMetrics
     /// <summary>La fin d'une partie jouée sur la playlist d'un ami qui l'a finie : le joueur est devant, derrière ou à égalité.</summary>
     public void DuelEnded(int gap) =>
         _duels.Add(1, new KeyValuePair<string, object?>("result", gap > 0 ? DuelAhead : gap < 0 ? DuelBehind : DuelTied));
+
+    /// <summary>
+    /// Le niveau après une partie gagnée ou perdue : son disque, et s'il a gagné ou perdu un disque (comparé au seuil du disque d'avant la partie).
+    /// </summary>
+    public void LevelChanged(int previousDiscFrom, RunLevelStep current, bool provisional) =>
+        _levels.Add(1,
+            new KeyValuePair<string, object?>("disc", current.Disc),
+            new KeyValuePair<string, object?>("change", current.FromPoints > previousDiscFrom ? LevelUp : current.FromPoints < previousDiscFrom ? LevelDown : LevelSame),
+            new KeyValuePair<string, object?>("provisional", provisional));
 
     public void DifficultyChosen(int round, string difficulty) =>
         _difficulties.Add(1, new KeyValuePair<string, object?>("round", round), new KeyValuePair<string, object?>("difficulty", difficulty));

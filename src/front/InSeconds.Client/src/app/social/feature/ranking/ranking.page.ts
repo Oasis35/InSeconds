@@ -8,7 +8,7 @@ import { LanguageService } from '../../../core/i18n/language.service';
 import { SessionStore } from '../../../core/session/session.store';
 import { AccountLinkComponent } from '../../../core/shell/account-link/account-link.component';
 import { InstagramLinkComponent } from '../../../core/shell/instagram-link/instagram-link.component';
-import { BrandComponent } from '../../../gameplay/ui/brand/brand.component';
+import { BrandComponent } from '../../../ui/brand/brand.component';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
 import { ModalService } from '../../../ui/modal/modal.service';

@@ -1,4 +1,4 @@
-import { GroupRanking, badgeColor, groupInviteUrl, initialOf, isGroupNameValid, isInviteCode, standingOf } from './group';
+import { GroupRanking, avatarOf, badgeColor, groupInviteUrl, initialOf, isGroupNameValid, isInviteCode, standingOf } from './group';
 
 describe('group (domaine social)', () => {
   it('accepte un nom de 3 à 40 caractères, aux caractères d\'un pseudo', () => {
@@ -43,5 +43,12 @@ describe('group (domaine social)', () => {
   it('prend l\'initiale d\'un pseudo', () => {
     expect(initialOf(' léa')).toBe('L');
     expect(initialOf('')).toBe('?');
+  });
+});
+
+describe('avatarOf', () => {
+  it('donne toujours la même teinte (de 1 à 4) au même pseudo, sans tenir compte de la casse', () => {
+    expect(avatarOf('Léa')).toBe(avatarOf(' léa '));
+    for (const pseudo of ['Théo', 'Sam', 'Maxime', '', 'Zoé']) expect([1, 2, 3, 4]).toContain(avatarOf(pseudo));
   });
 });

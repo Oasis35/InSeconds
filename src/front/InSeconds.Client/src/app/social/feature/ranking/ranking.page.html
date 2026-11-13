@@ -15,7 +15,7 @@
       <!-- Identité pas encore lue : rien à conclure. -->
     } @else if (!session.isLinked()) {
       <section class="p-5 flex flex-col gap-3" data-testid="ranking-guest"
-               style="background:rgb(var(--rgb-accent-3) / 0.06);border:1px solid var(--color-accent-3);border-radius:var(--radius-card)">
+               style="background:rgb(var(--rgb-accent-3) / 0.1);border:1px solid var(--color-accent-3);border-radius:var(--radius-card)">
         <h2 class="text-lg font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.empty.title' | translate }}</h2>
         <p class="text-sm leading-relaxed" style="color:var(--text-light)">{{ 'social.empty.guestBody' | translate }}</p>
         <a appButton routerLink="/account/login" [block]="true" data-testid="ranking-login">{{ 'social.empty.createAccount' | translate }}</a>
@@ -43,11 +43,13 @@
             <a [routerLink]="['/ranking']" [queryParams]="{ view: 'general' }" [attr.aria-current]="general() ? 'page' : null"
                class="flex items-center px-4 min-h-11 text-sm touch-manipulation rounded-(--radius-button)" data-testid="ranking-general"
                [style.border]="general() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
+               [style.background]="general() ? 'rgb(var(--rgb-accent-3) / 0.1)' : null"
                [style.color]="general() ? 'var(--text-hi)' : 'var(--text-muted)'">{{ 'social.general.tab' | translate }}</a>
             @for (group of store.groups(); track group.id) {
               <a [routerLink]="['/ranking']" [queryParams]="{ group: group.id }" [attr.aria-current]="!general() && group.id === store.selectedId() ? 'page' : null"
                  class="flex items-center px-4 min-h-11 text-sm touch-manipulation rounded-(--radius-button) max-w-full truncate" data-testid="ranking-group"
                  [style.border]="!general() && group.id === store.selectedId() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
+                 [style.background]="!general() && group.id === store.selectedId() ? 'rgb(var(--rgb-accent-3) / 0.1)' : null"
                  [style.color]="!general() && group.id === store.selectedId() ? 'var(--text-hi)' : 'var(--text-muted)'">{{ group.name }}</a>
             }
             @if (store.groups().length && store.canCreate()) {
@@ -73,7 +75,7 @@
 
             @if (store.selected(); as group) {
               <div class="flex flex-col gap-2">
-                <button appButton type="button" variant="neutral" [block]="true" (click)="share.invite(group)" data-testid="ranking-invite">
+                <button appButton type="button" variant="accent" [block]="true" (click)="share.invite(group)" data-testid="ranking-invite">
                   @if (share.copied()) { {{ 'social.invite.copied' | translate }} }
                   @else if (share.failed()) { {{ 'social.invite.failed' | translate }} }
                   @else { {{ 'social.invite.button' | translate: { name: group.name } }} }
@@ -89,7 +91,7 @@
             }
           } @else {
             <section class="p-5 flex flex-col gap-3" data-testid="ranking-empty"
-                     style="background:rgb(var(--rgb-accent-3) / 0.06);border:1px solid var(--color-accent-3);border-radius:var(--radius-card)">
+                     style="background:rgb(var(--rgb-accent-3) / 0.1);border:1px solid var(--color-accent-3);border-radius:var(--radius-card)">
               <h2 class="text-lg font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.empty.title' | translate }}</h2>
               <p class="text-sm leading-relaxed" style="color:var(--text-light)">{{ 'social.empty.body' | translate }}</p>
               <a appButton routerLink="/ranking/new" [block]="true" data-testid="ranking-create">{{ 'social.empty.create' | translate }}</a>

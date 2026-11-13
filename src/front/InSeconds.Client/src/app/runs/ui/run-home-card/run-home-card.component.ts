@@ -47,7 +47,7 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
         <a appButton routerLink="/setlist" size="lg" [block]="true" class="flex-col gap-0!" data-testid="run-home-play">
           <span>{{ 'runs.level.newSetlist' | translate }}</span>
           @if (level()?.nextDisc; as next) {
-            <span class="text-[13px] font-semibold normal-case tracking-normal" data-testid="run-home-next">
+            <span class="text-sm font-semibold normal-case tracking-normal" data-testid="run-home-next">
               {{ 'runs.level.next' | translate: { disc: (next.key | translate), points: format(level()?.pointsToNext ?? 0) } }}
             </span>
           }

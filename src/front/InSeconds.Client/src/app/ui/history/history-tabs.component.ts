@@ -15,6 +15,7 @@ import { TranslatePipe } from '@ngx-translate/core';
            class="flex-1 flex items-center justify-center min-h-11 text-sm touch-manipulation rounded-(--radius-button)"
            [class.font-semibold]="active() === tab.id"
            [style.border]="active() === tab.id ? '1px solid var(--color-accent-3)' : '1px solid transparent'"
+           [style.background]="active() === tab.id ? 'rgb(var(--rgb-accent-3) / 0.1)' : null"
            [style.color]="active() === tab.id ? 'var(--text-hi)' : 'var(--text-muted)'">{{ tab.labelKey | translate }}</a>
       }
     </nav>

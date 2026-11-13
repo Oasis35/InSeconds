@@ -64,13 +64,14 @@ public static class CreateGroupEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     public static async Task<GroupSummaryResponse> Post(
-        CreateGroup request, [NotBody] GroupCreation creation, IGroupStore store, SocialRules rules, TimeProvider time, ILogger<Group> logger,
-        CancellationToken ct)
+        CreateGroup request, [NotBody] GroupCreation creation, IGroupStore store, SocialRules rules, SocialMetrics metrics, TimeProvider time,
+        ILogger<Group> logger, CancellationToken ct)
     {
         var code = await GroupCodes.NewAsync(store, ct);
         var group = Group.Create(request.Name, code, creation.PlayerId, time.GetUtcNow());
         store.Add(group);
         SocialLog.GroupCreated(logger, group.Id, creation.PlayerId);
+        metrics.Group(SocialMetrics.Created);
         return SocialViews.SummaryOf(group, creation.PlayerId, rules.MaxMembers);
     }
 }
@@ -214,13 +215,14 @@ public static class JoinGroupEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
-    public static GroupSummaryResponse Post([NotBody] GroupJoin join, SocialRules rules, TimeProvider time, ILogger<Group> logger)
+    public static GroupSummaryResponse Post([NotBody] GroupJoin join, [NotBody] SocialRules rules, [NotBody] SocialMetrics metrics, TimeProvider time, ILogger<Group> logger)
     {
         var group = join.Group!;
         if (!group.IsMember(join.PlayerId))
         {
             group.Join(join.PlayerId, time.GetUtcNow());
             SocialLog.GroupJoined(logger, group.Id, join.PlayerId);
+            metrics.Group(SocialMetrics.Joined);
         }
 
         return SocialViews.SummaryOf(group, join.PlayerId, rules.MaxMembers);
@@ -268,13 +270,14 @@ public static class LeaveGroupEndpoint
     [EmptyResponse]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public static void Delete([NotBody] GroupAction action, IGroupStore store, ILogger<Group> logger)
+    public static void Delete([NotBody] GroupAction action, IGroupStore store, [NotBody] SocialMetrics metrics, ILogger<Group> logger)
     {
         var group = action.Group!;
         var departure = group.Leave(action.PlayerId);
         if (departure == GroupDeparture.Emptied)
             store.Remove(group);
         SocialLog.GroupLeft(logger, group.Id, action.PlayerId, departure.ToString());
+        metrics.Group(departure == GroupDeparture.Emptied ? SocialMetrics.Emptied : SocialMetrics.Left);
     }
 }
 
@@ -295,10 +298,11 @@ public static class DeleteGroupEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public static void Delete([NotBody] GroupAction action, IGroupStore store, ILogger<Group> logger)
+    public static void Delete([NotBody] GroupAction action, IGroupStore store, [NotBody] SocialMetrics metrics, ILogger<Group> logger)
     {
         store.Remove(action.Group!);
         SocialLog.GroupDeleted(logger, action.Group!.Id, action.PlayerId);
+        metrics.Group(SocialMetrics.Deleted);
     }
 }
 
