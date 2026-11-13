@@ -1,5 +1,6 @@
 {
   "common": {
+    "copiedToast": "Copied, paste it anywhere.",
     "close": "Close",
     "retry": "Try again",
     "previewModal": {
@@ -836,10 +837,10 @@
     },
     "home": {
       "label": "Daily challenge",
-      "done": "Daily challenge · done",
+      "done": "Daily challenge",
       "seeResult": "See the result",
-      "remainingHours": "The daily challenge is still waiting · {{ n }} h left",
-      "remainingMinutes": "The daily challenge is still waiting · {{ n }} min left"
+      "remainingHours": "{{ n }} h left",
+      "remainingMinutes": "{{ n }} min left"
     },
     "welcome": {
       "title": "Today's blind test",
@@ -904,7 +905,7 @@
     },
     "share": {
       "button": "Share my score",
-      "copied": "Copied!",
+      "copied": "Score copied",
       "failed": "Couldn't copy to the clipboard.",
       "header": "{{ score }} pts · InSeconds {{ date }}"
     },
@@ -1097,7 +1098,7 @@
     },
     "data": {
       "title": "Data collected, purposes and legal basis",
-      "body": "No data is required to play: guest mode asks for no name, no email, no registration.\nDepending on how you use the app, the following categories of data may be processed:\n· pseudonymous technical identifier: randomly generated and stored in a cookie, used to recognize your browser from one visit to the next (resuming a game, one game per day, win streak). Purpose: providing the game. Legal basis: performance of the requested service (Article 6.1.b GDPR);\n· connected devices: for each browser you play on, the app keeps the date of first login, the date of the last visit and a rough label of the browser and device (for example \"Safari · iPhone\", never the full technical header). With an account, the list of your devices is shown in your profile, where you can log out each one. Purpose: account security and cross-device login. Legal basis: performance of the requested service (Article 6.1.b);\n· email and pseudo, only if you create an account: an optional account, activated via a login link sent by email (no password), lets you find your history and streak again on any device; the pseudo is a display name you choose freely. Purpose: account management and cross-device login. Legal basis: your consent (Article 6.1.a GDPR), you remain free to play as a guest without ever providing this information;\n· game data: the result of each answer (whether the artist and title were found, without the text you type, which is never kept), chosen listening durations, scores and play dates. Purpose: running the game and computing anonymous global statistics (median score, success rate per track). Legal basis: performance of the requested service (Article 6.1.b). With an account, the publisher can view in the administration area your username, email address, streak and the history of your games over the last 30 days, solely to run the service and answer your requests;\n· Setlist mode (invitation only): for each game, the result of each track (whether the artist and title were found, never the text you type), its points, the difficulty you chose for each round and when you chose it, the boosts you received, dropped or played (on which track, and when), the rounds passed, the score and the dates played; your record (best score and best disc); your Setlist level (your points, the number of games counted and the scores of your last 50 games at most), visible only to you except in a group or in the overall ranking if you chose so; the playlists you launch and their author; the access the publisher granted you. A playlist is shared through a link: whoever opens it sees its author's pseudo (their account pseudo, otherwise their guest pseudo, otherwise \"Guest\"), during their game the author's running total track by track (up to the track they have reached) if the author finished the playlist, and, once their own game is over, the pseudo (account pseudo, otherwise guest pseudo, otherwise \"Guest\"), disc and score of everyone who played it. This is not a public leaderboard: only people with the link can see them. Without an account, you give a guest pseudo at the end of your first game on a friend's playlist: it is required to see the comparison, tied to your technical identifier (so to your browser) so that you find it again on each visit, editable at any time, and never the same as an account's pseudo; if two players of the same comparison share a pseudo, a short mark derived from their identifier tells them apart. It appears in the copy of your data and is erased automatically 91 days after your last visit (and if you create an account, the account's pseudo is the one that counts). If you delete your account, your games are deleted; the playlists you launched stay playable, without an author. Purpose: running this mode and the comparison between people who played the same playlist. Legal basis: performance of the requested service (Article 6.1.b);\n· friend groups (account required): the name of the group you create or join (free text, limited to the characters of a nickname), your role (creator or member) and the date you joined. The members of a group, and only they, see your account nickname and your ranking in the group (your Setlist level disc and points, computed from your recent games); someone who has the invitation link only sees the group name and the number of places left. The overall ranking of the Setlist mode is separate: you only appear in it if you chose to (a switch on the ranking page, off by default); while it is on, your account nickname, your disc and your level points are visible to other players, and you can turn it off at any time. You can leave a group at any time (the creator can delete it), deleting your account removes you from your groups, and the copy of your data includes them. To moderate them, the publisher sees in the administration area the name of each group, its number of members and its creator's nickname (never the invitation link), and can rename or delete a group with an inappropriate name. Purpose: playing with friends and comparing results. Legal basis: performance of the service you asked for (Article 6.1.b);\n· IP address: technically processed on every request, as with any website, for security purposes (limiting the number of login attempts to prevent abuse). Purpose: service security. Legal basis: the controller's legitimate interest (Article 6.1.f);\n· technical logs: for each request, the application records the pseudonymous technical identifier described above, the page or action involved, its duration, its outcome, the browser and device type (for example \"Safari · iPhone\") and, when a bug occurs, the error message, its stack trace, the app version and the connection status (online or not). These logs never contain your email, your pseudo, your submitted answers or your cookie. Purpose: detecting and fixing bugs, monitoring that the service runs properly. Legal basis: the controller's legitimate interest (Article 6.1.f);\n· audience measurement: on each page you view, a small Cloudflare Web Analytics script sends Cloudflare the page address, the site you came from, your browser and device type, and the page load times. Cloudflare turns this into aggregate statistics (visits, page views, countries, referring sites, devices, site speed), without any cookie or identifier that could recognise you; the publisher only sees these statistics. Purpose: knowing how much the site is visited and how fast it is. Legal basis: the controller's legitimate interest (Article 6(1)(f));\n· arrival source: when your guest identifier is created, the app records where you came from: the campaign name carried by the link you followed (for example \"instagram\", or \"share\" for a link shared by a player), otherwise only the domain name of the site you came from (for example \"google.com\", never the full page address), or \"direct\". It is kept in your browser for the duration of the visit, then attached to your pseudonymous identifier; it is included in the copy of your data and deleted with it. Purpose: knowing which channels bring new players (audience measurement). Legal basis: the controller's legitimate interest (Article 6(1)(f));\n· local preferences: your preferred language, whether you muted the Setlist sounds, a record of the information messages already shown and, if you open a group invitation before having an account, the code of that invitation (so it can be offered again once you are signed in) are stored locally in your browser; they never leave your device and are never sent to our servers (the invitation code is only sent if you choose to join the group)."
+      "body": "No data is required to play: guest mode asks for no name, no email, no registration.\nDepending on how you use the app, the following categories of data may be processed:\n· pseudonymous technical identifier: randomly generated and stored in a cookie, used to recognize your browser from one visit to the next (resuming a game, one game per day, win streak). Purpose: providing the game. Legal basis: performance of the requested service (Article 6.1.b GDPR);\n· connected devices: for each browser you play on, the app keeps the date of first login, the date of the last visit and a rough label of the browser and device (for example \"Safari · iPhone\", never the full technical header). With an account, the list of your devices is shown in your profile, where you can log out each one. Purpose: account security and cross-device login. Legal basis: performance of the requested service (Article 6.1.b);\n· email and pseudo, only if you create an account: an optional account, activated via a login link sent by email (no password), lets you find your history and streak again on any device; the pseudo is a display name you choose freely. Purpose: account management and cross-device login. Legal basis: your consent (Article 6.1.a GDPR), you remain free to play as a guest without ever providing this information;\n· game data: the result of each answer (whether the artist and title were found, without the text you type, which is never kept), chosen listening durations, scores and play dates. Purpose: running the game and computing anonymous global statistics (median score, success rate per track). Legal basis: performance of the requested service (Article 6.1.b). With an account, the publisher can view in the administration area your username, email address, streak and the history of your games over the last 30 days, solely to run the service and answer your requests;\n· Setlist mode (invitation only): for each game, the result of each track (whether the artist and title were found, never the text you type), its points, the difficulty you chose for each round and when you chose it, the boosts you received, dropped or played (on which track, and when), the rounds passed, the score and the dates played; your record (best score and best disc); your Setlist level (your points, the number of games counted and the scores of your last 50 games at most), visible only to you except in a group or in the overall ranking if you chose so; the playlists you launch and their author; the access the publisher granted you. A playlist is shared through a link: whoever opens it sees its author's pseudo (their account pseudo, otherwise their guest pseudo, otherwise \"Guest\"), during their game the author's running total track by track (up to the track they have reached) if the author finished the playlist, and, once their own game is over, the pseudo (account pseudo, otherwise guest pseudo, otherwise \"Guest\"), disc and score of everyone who played it. This is not a public leaderboard: only people with the link can see them. Without an account, you give a guest pseudo at the end of your first game on a friend's playlist: it is required to see the comparison, tied to your technical identifier (so to your browser) so that you find it again on each visit, editable at any time, and never the same as an account's pseudo; if two players of the same comparison share a pseudo, a short mark derived from their identifier tells them apart. It appears in the copy of your data and is erased automatically 91 days after your last visit (and if you create an account, the account's pseudo is the one that counts). If you delete your account, your games are deleted; the playlists you launched stay playable, without an author. Purpose: running this mode and the comparison between people who played the same playlist. Legal basis: performance of the requested service (Article 6.1.b);\n· friend challenges received (account required): if you open, with your account, the link to a playlist launched by another player, we keep the link to that playlist, the date you received it and whether you declined it, to remind you of it for 7 days on your home screen, with the author's nickname and their score if they finished the playlist. Purpose: running the game. Legal basis: performance of the service requested (Article 6.1.b). Retention: until the playlist or your account is deleted (the row only says which playlist you opened). You can decline the challenge; this data is part of your export and is erased with your account;\n· friend groups (account required): the name of the group you create or join (free text, limited to the characters of a nickname), your role (creator or member) and the date you joined. The members of a group, and only they, see your account nickname and your ranking in the group (your Setlist level disc and points, computed from your recent games); someone who has the invitation link only sees the group name and the number of places left. The overall ranking of the Setlist mode is separate: you only appear in it if you chose to (a switch on the ranking page, off by default); while it is on, your account nickname, your disc and your level points are visible to other players, and you can turn it off at any time. You can leave a group at any time (the creator can delete it), deleting your account removes you from your groups, and the copy of your data includes them. To moderate them, the publisher sees in the administration area the name of each group, its number of members and its creator's nickname (never the invitation link), and can rename or delete a group with an inappropriate name. Purpose: playing with friends and comparing results. Legal basis: performance of the service you asked for (Article 6.1.b);\n· IP address: technically processed on every request, as with any website, for security purposes (limiting the number of login attempts to prevent abuse). Purpose: service security. Legal basis: the controller's legitimate interest (Article 6.1.f);\n· technical logs: for each request, the application records the pseudonymous technical identifier described above, the page or action involved, its duration, its outcome, the browser and device type (for example \"Safari · iPhone\") and, when a bug occurs, the error message, its stack trace, the app version and the connection status (online or not). These logs never contain your email, your pseudo, your submitted answers or your cookie. Purpose: detecting and fixing bugs, monitoring that the service runs properly. Legal basis: the controller's legitimate interest (Article 6.1.f);\n· audience measurement: on each page you view, a small Cloudflare Web Analytics script sends Cloudflare the page address, the site you came from, your browser and device type, and the page load times. Cloudflare turns this into aggregate statistics (visits, page views, countries, referring sites, devices, site speed), without any cookie or identifier that could recognise you; the publisher only sees these statistics. Purpose: knowing how much the site is visited and how fast it is. Legal basis: the controller's legitimate interest (Article 6(1)(f));\n· arrival source: when your guest identifier is created, the app records where you came from: the campaign name carried by the link you followed (for example \"instagram\", or \"share\" for a link shared by a player), otherwise only the domain name of the site you came from (for example \"google.com\", never the full page address), or \"direct\". It is kept in your browser for the duration of the visit, then attached to your pseudonymous identifier; it is included in the copy of your data and deleted with it. Purpose: knowing which channels bring new players (audience measurement). Legal basis: the controller's legitimate interest (Article 6(1)(f));\n· local preferences: your preferred language, whether you muted the Setlist sounds, a record of the information messages already shown and, if you open a group invitation before having an account, the code of that invitation (so it can be offered again once you are signed in) are stored locally in your browser; they never leave your device and are never sent to our servers (the invitation code is only sent if you choose to join the group)."
     },
     "cookie": {
       "title": "Cookie",
@@ -1153,9 +1154,19 @@
     "home": {
       "record": "Best",
       "anytime": "yours whenever you like",
+      "levelLabel": "Level",
+      "rhythm": "at your own pace",
       "playedToday": "Setlist played",
       "play": "Play",
-      "replay": "Play again"
+      "replay": "Play again",
+      "receivedFrom": "{{ name }} challenged you",
+      "receivedFromGuest": "A friend challenged you",
+      "receivedScore": "{{ score }} to beat",
+      "receivedExpires": "expires in {{ days }} d",
+      "receivedDismiss": "Decline the challenge",
+      "placeGroup": "{{ rank }} in",
+      "takeUp": "Take the challenge",
+      "placeGeneral": "{{ rank }} overall"
     },
     "welcome": {
       "badge": "Early access",
@@ -1197,6 +1208,7 @@
       "found": "{{ found }} / {{ total }} tracks found",
       "won": "{{ disc }}!",
       "disc": "{{ disc }}",
+      "recordShort": "Record",
       "newRecord": "New record",
       "record": "Record: {{ score }}",
       "round": "Round {{ round }}",
@@ -1260,6 +1272,16 @@
       "you": "You",
       "editPseudo": "Change my nickname",
       "share": "Share the playlist"
+    },
+    "discShort": {
+      "scratched": "Scratched",
+      "wax": "Wax",
+      "bronze": "Bronze",
+      "silver": "Silver",
+      "gold": "Gold",
+      "platinum": "Platinum",
+      "double_platinum": "Double platinum",
+      "diamond": "Diamond"
     },
     "discs": {
       "scratched": "Scratched record",
@@ -1367,10 +1389,17 @@
     "v4": {
       "bar": {
         "label": "Navigation",
-        "daily": "Today",
-        "setlist": "Setlist",
+        "daily": "Home",
+        "account": "My account",
+        "login": "Log in",
         "history": "History",
         "ranking": "Ranking"
+      },
+      "band": {
+        "title": "Today’s challenge is waiting",
+        "leftHours": "{{ n }} h left",
+        "leftMinutes": "{{ n }} min left",
+        "done": "Daily challenge done · next in"
       },
       "dailyLeft": "Today's challenge is still waiting"
     },
@@ -1382,7 +1411,9 @@
       "review": "Review",
       "label": "Level: {{ disc }}, {{ points }} points",
       "newSetlist": "New setlist",
-      "encore": "{{ points }} more for {{ disc }}",
+      "encoreBefore": "Just",
+      "encorePoints": "{{ points }} pts",
+      "encoreAfter": "to reach the {{ disc }}",
       "challenge": "Challenge a friend"
     },
     "shareSheet": {
@@ -1473,7 +1504,8 @@
       "line": "You are invited to a group"
     },
     "strip": {
-      "rank": "#{{ rank }} of {{ members }}",
+      "title": "Your groups",
+      "passed": "You pass {{ name }}",
       "empty": "Play with your friends",
       "create": "Create a group"
     }

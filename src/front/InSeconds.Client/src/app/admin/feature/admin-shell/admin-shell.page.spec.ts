@@ -118,7 +118,7 @@ describe('AdminShellPage', () => {
   it('le logo mène au jeu : « IN// » sur téléphone, IN//SECONDS au-dessus des onglets sur PC ; aucun titre « Admin »', async () => {
     const { element } = await open(admin, '/admin/catalogue');
 
-    const logos = Array.from(element.querySelectorAll<HTMLAnchorElement>('a[href="/daily"]')).map(a => text(a).trim());
+    const logos = Array.from(element.querySelectorAll<HTMLAnchorElement>('a[href="/"]')).map(a => text(a).trim());
     expect(logos).toEqual(['IN//', 'IN//SECONDS']);
     expect(element.querySelector('h1')).toBeNull();
   });

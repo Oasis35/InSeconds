@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { SessionPlayer, SessionStore } from '../../core/session/session.store';
+import { DAILY_DONE_LOADER } from '../../core/shell/daily-done-loader';
+import { ShellChromeStore } from '../../core/shell/shell-chrome.store';
 import { SETLIST_ACCESS_LOADER, SetlistAccessStore } from './setlist-access.store';
 
 describe('SetlistAccessStore', () => {
@@ -60,5 +62,28 @@ describe('SetlistAccessStore', () => {
     await store.ensureLoaded(true);
 
     expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it("arrivé directement sur la Setlist, il lit si le défi du jour est joué, sans écraser ce que la page du jeu du jour a dit", async () => {
+    const daily = vi.fn(async () => true);
+    TestBed.configureTestingModule({ providers: [{ provide: SETLIST_ACCESS_LOADER, useValue: async () => true }, { provide: DAILY_DONE_LOADER, useValue: daily }] });
+    const chrome = TestBed.inject(ShellChromeStore);
+    TestBed.inject(SessionStore).signedIn(account);
+    const store = TestBed.inject(SetlistAccessStore);
+    await store.ensureLoaded(true);
+    for (let i = 0; i < 6; i++) { await TestBed.tick(); await Promise.resolve(); }
+
+    expect(daily).toHaveBeenCalledTimes(1);
+    expect(chrome.dailyDone()).toBe(true);
+
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [{ provide: SETLIST_ACCESS_LOADER, useValue: async () => true }, { provide: DAILY_DONE_LOADER, useValue: async () => true }] });
+    const other = TestBed.inject(ShellChromeStore);
+    other.setDailyDone(false);
+    TestBed.inject(SessionStore).signedIn(account);
+    await TestBed.inject(SetlistAccessStore).ensureLoaded(true);
+    for (let i = 0; i < 6; i++) { await TestBed.tick(); await Promise.resolve(); }
+
+    expect(other.dailyDone()).toBe(false);
   });
 });

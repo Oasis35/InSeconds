@@ -32,6 +32,7 @@ public static class RunsModule
         services.AddSingleton<IRunScoringPolicy, ArtistTitleScoring>();
         services.AddScoped<RunPlayer>();
         services.AddScoped<RunGhosts>();
+        services.AddScoped<RunReceivedChallenges>();
         // Compteurs des parties et des réponses, exportés en OpenTelemetry (tableau Grafana « Activité »).
         services.AddSingleton<RunsMetrics>();
         // L'usage des morceaux : **ajouté**, jamais remplacé (Catalogue réunit l'ITrackUsage de chaque mode).

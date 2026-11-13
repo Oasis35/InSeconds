@@ -1,9 +1,9 @@
 import {
   ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { map } from 'rxjs';
+import { filter, map } from 'rxjs';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { VersionService } from '../../../core/version/version.service';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
@@ -24,7 +24,6 @@ import { DailyGameStore } from '../../data-access/daily-game.store';
 import { DailyShare } from '../../data-access/daily-share';
 import { GuestStreakNotice } from '../../data-access/guest-streak-notice';
 import { LostStreakNotice } from '../../data-access/lost-streak-notice';
-import { ReturnVisit } from '../../data-access/return-visit';
 import { HomeChallengeCardComponent } from '../../ui/home-challenge-card/home-challenge-card.component';
 import { HomeDoneCardComponent } from '../../ui/home-done-card/home-done-card.component';
 import { AbandonedScreenComponent } from '../../ui/abandoned-screen/abandoned-screen.component';
@@ -32,6 +31,7 @@ import { DayResultScreenComponent } from '../../ui/day-result-screen/day-result-
 import { rowsFromResults, rowsFromStats, shareTracksOf } from '../../ui/day-result-screen/result-rows';
 import { BrandComponent } from '../../../ui/brand/brand.component';
 import { DailyFooterComponent } from '../../ui/daily-footer/daily-footer.component';
+import { HomeLegalLineComponent } from '../../../ui/legal-line/home-legal-line.component';
 import { DailyProgressComponent } from '../../ui/daily-progress/daily-progress.component';
 import { DeezerBadgeComponent } from '../../../gameplay/ui/deezer-badge/deezer-badge.component';
 import { GelEarnedToastComponent } from '../../ui/gel-earned-toast/gel-earned-toast.component';
@@ -48,7 +48,7 @@ import { WelcomeScreenComponent } from '../../ui/welcome-screen/welcome-screen.c
 import { reloadMomentFor } from '../reload-moment';
 import { StreakPillComponent } from '../../ui/streak-pill/streak-pill.component';
 import { formatGameDate } from '../../domain/archive';
-import { secondsUntilMidnightUtc, timeLeft, todayUtc } from '../../domain/countdown';
+import { secondsUntilMidnightUtc, timeLeft, todayUtc } from '../../../core/game-day/game-day';
 
 /**
  * La page du jeu du jour (`/daily`) : elle affiche l'écran que le `DailyGameStore` indique, et branche ce qui est propre au navigateur :
@@ -58,13 +58,13 @@ import { secondsUntilMidnightUtc, timeLeft, todayUtc } from '../../domain/countd
 @Component({
   selector: 'app-daily-page',
   imports: [
-    TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, BrandComponent, DailyProgressComponent, DailyFooterComponent,
+    TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, BrandComponent, DailyProgressComponent, DailyFooterComponent, HomeLegalLineComponent,
     WelcomeScreenComponent, ResumeScreenComponent, HomeModeEntriesComponent, StatusScreenComponent, AbandonedScreenComponent, DayResultScreenComponent,
     GuestStreakToastComponent, LostStreakToastComponent, GelUsedToastComponent, GelEarnedToastComponent,
     DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent, StreakPillComponent, ButtonComponent, InstagramLinkComponent,
     HomeChallengeCardComponent, HomeDoneCardComponent,
   ],
-  providers: [DailyGameStore, TrackRoundStore, DailyShare, LostStreakNotice, GuestStreakNotice, ReturnVisit],
+  providers: [DailyGameStore, TrackRoundStore, DailyShare, LostStreakNotice, GuestStreakNotice],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './daily.page.html',
   host: {
@@ -97,12 +97,17 @@ export class DailyPage implements OnInit {
     this.store.screen() === 'done' ? rowsFromResults(this.store.results(), this.store.stats()) : rowsFromStats(this.store.stats()));
   /** La date du jour de jeu (UTC) dans la langue, en tête de l'accueil et de la reprise : « mardi 28 octobre ». */
   protected readonly dateLabel = computed(() => formatGameDate(todayUtc(new Date()), this.language.current(), 'weekday'));
-  /** V4, au retour dans la journée : le temps qu'il reste pour jouer le défi (à la première visite du jour, on accueille sans rappel). */
-  private readonly returning = inject(ReturnVisit).check(todayUtc(new Date()));
-  protected readonly remaining = computed(() => (this.returning ? timeLeft(secondsUntilMidnightUtc(new Date())) : null));
+  /** V4 : le temps qu'il reste pour jouer le défi, dit à côté du score à battre (« plus que 6 h »). */
+  protected readonly remaining = computed(() => timeLeft(secondsUntilMidnightUtc(new Date())));
   /** V4, défi fait : l'accueil montre son résumé, « Voir le résultat » ouvre l'écran complet (`?view=result`, le retour ramène à l'accueil). */
   protected readonly showResult = toSignal(inject(ActivatedRoute).queryParamMap.pipe(map(params => params.get('view') === 'result')), { initialValue: false });
   protected readonly isEnglish = () => this.language.current() === 'en';
+  /** Cette page sert la racine (l'accueil, avec la carte Setlist) comme `/daily` (le défi seul) : l'adresse dit laquelle. */
+  private readonly path = toSignal(
+    this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd), map(() => this.router.url.split(/[?#]/)[0])),
+    { initialValue: this.router.url.split(/[?#]/)[0] },
+  );
+  protected readonly isHome = computed(() => this.path() === '/');
 
   constructor() {
     // La coque (barre du bas de la V4) sait si une manche est en cours et si le défi du jour est joué.
@@ -115,6 +120,15 @@ export class DailyPage implements OnInit {
       this.chrome.setDailyDone(done);
     });
     this.destroyRef.onDestroy(() => this.chrome.setImmersive(false));
+    // Sans l'accès Setlist, la racine n'a pas d'accueil à part : c'est le défi. Une partie qui commence passe aussi sur `/daily`.
+    effect(() => {
+      if (!this.isHome()) return;
+      const screen = this.store.screen();
+      const noHome = this.chrome.v4Known() && !this.chrome.v4();
+      if (noHome || screen === 'playing') {
+        void this.router.navigate(['/daily'], { queryParamsHandling: 'preserve', replaceUrl: true });
+      }
+    });
     // Une nouvelle version du site ne recharge jamais la page en pleine manche (cf. `reloadMomentFor`).
     inject(VersionService).allowReload(() => reloadMomentFor(this.store.screen()), this.destroyRef);
 
@@ -184,7 +198,7 @@ export class DailyPage implements OnInit {
   }
 
   protected openResult(): void {
-    void this.router.navigate([], { queryParams: { view: 'result' }, queryParamsHandling: 'merge' });
+    void this.router.navigate(['/daily'], { queryParams: { view: 'result' }, queryParamsHandling: 'merge' });
   }
 
   protected openStreakSheet(): void {

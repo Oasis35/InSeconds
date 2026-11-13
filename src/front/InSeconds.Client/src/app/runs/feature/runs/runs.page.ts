@@ -1,5 +1,5 @@
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, computed, effect, inject, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { SessionStore } from '../../../core/session/session.store';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -14,6 +14,8 @@ import { LeaveGuard } from '../../../gameplay/feature/leave-guard';
 import { ModalService } from '../../../ui/modal/modal.service';
 import { enterCard } from '../../../ui/motion/motion';
 import { motionReduced } from '../../../ui/motion/reduced-motion';
+import { BrandComponent } from '../../../ui/brand/brand.component';
+import { InstagramLinkComponent } from '../../../core/shell/instagram-link/instagram-link.component';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
 import { ResumeScreenComponent } from '../../../gameplay/ui/resume-screen/resume-screen.component';
 import { RunGameStore } from '../../data-access/run-game.store';
@@ -21,6 +23,8 @@ import { RunShare } from '../../data-access/run-share';
 import { RunSounds } from '../../data-access/run-sounds';
 import { RunPseudoScreenComponent } from '../../ui/run-pseudo-screen/run-pseudo-screen.component';
 import { RunComparisonScreenComponent } from '../../ui/run-comparison-screen/run-comparison-screen.component';
+import { HomeLegalLineComponent } from '../../../ui/legal-line/home-legal-line.component';
+import { RunDailyBandComponent } from '../../ui/run-daily-band/run-daily-band.component';
 import { RunFinishComponent } from '../../ui/run-finish/run-finish.component';
 import { RunHeaderComponent } from '../../ui/run-header/run-header.component';
 import { RunThemeScreenComponent } from '../../ui/run-theme-screen/run-theme-screen.component';
@@ -37,6 +41,7 @@ import { RunWithdrawnCardComponent } from '../../ui/run-withdrawn-card/run-withd
 import { GroupsStore } from '../../../social/data-access/groups.store';
 import { PendingInvite } from '../../../social/data-access/pending-invite';
 import { GroupsStripComponent } from '../../../social/feature/groups-strip/groups-strip.component';
+import { formatCountdown, secondsUntilMidnightUtc, timeLeft } from '../../../core/game-day/game-day';
 import { RunFinish } from '../../domain/run';
 import { RunHitsLineComponent } from '../hits-line/run-hits-line.component';
 import { reloadMomentFor } from '../reload-moment';
@@ -49,11 +54,11 @@ import { RunShareSheetComponent, RunShareSheetData } from '../share-sheet/run-sh
  */
 @Component({
   selector: 'app-runs-page',
-  imports: [
+  imports: [HomeLegalLineComponent, 
     TranslatePipe, RouterLink, DecorBackgroundComponent, TrackRoundComponent, RunHeaderComponent, RunClockComponent, RunRevealComponent, RunPileComponent,
-    RunWithdrawnCardComponent, RunFinishComponent, RunWelcomeScreenComponent, RunStatusScreenComponent, ResumeScreenComponent,
+    RunWithdrawnCardComponent, RunFinishComponent, RunDailyBandComponent, RunWelcomeScreenComponent, RunStatusScreenComponent, ResumeScreenComponent,
     RunLinkScreenComponent, RunThemeScreenComponent, RunPseudoScreenComponent, RunComparisonScreenComponent, RunPalierComponent, RunDifficultyComponent, RunRoundCardsComponent,
-    GroupsStripComponent, RunHitsLineComponent,
+    GroupsStripComponent, RunHitsLineComponent, BrandComponent, InstagramLinkComponent,
   ],
   providers: [RunGameStore, TrackRoundStore, RunShare, RunSounds, GroupsStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -77,7 +82,7 @@ export class RunsPage implements OnInit {
   /** « Revoir » de la fin de run : la partie dans l'historique. */
   protected readonly reviewLink = computed(() => {
     const sessionId = this.store.session()?.sessionId;
-    return sessionId === undefined ? null : `/setlist/history/${sessionId}`;
+    return sessionId === undefined ? null : `/history/setlist/${sessionId}`;
   });
 
   protected themeOf(round: number): string | null {
@@ -95,7 +100,18 @@ export class RunsPage implements OnInit {
 
   protected readonly chrome = inject(ShellChromeStore);
 
+  /** Les secondes avant minuit UTC (le prochain défi), pour la bande du défi du jour ; au passage de minuit, un nouveau défi est à jouer. */
+  private readonly secondsLeft = signal(secondsUntilMidnightUtc(new Date()));
+  protected readonly timeLeftToNextDay = computed(() => timeLeft(this.secondsLeft()));
+  protected readonly clock = computed(() => formatCountdown(this.secondsLeft()));
+
   constructor() {
+    const tick = setInterval(() => {
+      const next = secondsUntilMidnightUtc(new Date());
+      if (next > this.secondsLeft()) this.chrome.setDailyDone(false);
+      this.secondsLeft.set(next);
+    }, 1000);
+    inject(DestroyRef).onDestroy(() => clearInterval(tick));
     const chrome = this.chrome;
     effect(() => {
       // La barre ne reste que sur l'accueil, le lien, la fin et la comparaison : jamais au milieu d'un run.

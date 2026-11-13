@@ -67,7 +67,7 @@ test.describe('Mode Setlist', () => {
     await expect(run.homeCard).toBeVisible();
     await expect(run.homeCard).toContainText('Setlist');
     // Le défi du jour n'est pas joué : la carte est discrète (« Jouer » en contour), sous la carte du défi.
-    await expect(run.homeCard).toHaveAttribute('data-size', 'small');
+    await expect(run.homeCard).toHaveAttribute('data-active', 'false');
     await expect(page.getByTestId('home-challenge')).toBeVisible();
     await page.getByTestId('run-home-play').click();
     await expect(page).toHaveURL(/\/setlist$/);
@@ -83,6 +83,8 @@ test.describe('Mode Setlist', () => {
     const playerId = await run.loginAsPlayer('joueur-v4@e2e.test', 'JoueurV4');
     await game.goto();
     await game.waitForWelcome();
+    // Sans l'accueil de la V4, la racine est le défi.
+    await expect(page).toHaveURL(/\/daily$/);
     await expect(page.getByTestId('footer-language')).toBeVisible();
     await expect(bar).toHaveCount(0);
     await expect(page.getByTestId('header-instagram')).toHaveCount(0);
@@ -91,6 +93,8 @@ test.describe('Mode Setlist', () => {
     await api.grantRunAccess(playerId);
     await game.goto();
     await game.waitForWelcome();
+    // L'accueil est la racine ; le défi seul est sur /daily.
+    await expect(page).toHaveURL(/\/$/);
     await expect(bar).toBeVisible();
     await expect(page.getByTestId('footer-language')).toHaveCount(0);
     await expect(page.getByTestId('header-instagram')).toBeVisible();
@@ -98,14 +102,19 @@ test.describe('Mode Setlist', () => {
     await expect(page.getByTestId('daily-pending')).toBeVisible();
     // L'accueil de la maquette : la carte du défi, avec sa série dedans, puis la carte Setlist.
     await expect(page.getByTestId('home-challenge')).toBeVisible();
-    await expect(page.getByTestId('run-home-card')).toHaveAttribute('data-size', 'small');
-    await expect(bar.getByRole('link', { name: 'Confidentialité' })).toBeVisible();
+    await expect(page.getByTestId('run-home-card')).toHaveAttribute('data-active', 'false');
+    // Les liens légaux ont quitté la barre : une ligne discrète sous la carte Setlist, et quatre entrées en bas.
+    await expect(page.getByTestId('home-legal-line').getByRole('link', { name: 'Confidentialité' })).toBeVisible();
+    await expect(bar.getByRole('link', { name: 'Confidentialité' })).toHaveCount(0);
+    await expect(page.getByTestId('tab-setlist')).toHaveCount(0);
+    await expect(page.getByTestId('tab-account')).toBeVisible();
+    await expect(page.getByTestId('header-login')).toHaveCount(0);
 
-    // L'onglet Setlist mène au mode, qui rappelle le défi restant et y ramène.
-    await page.getByTestId('tab-setlist').click();
+    // La carte Setlist mène au mode, qui rappelle le défi restant et y ramène ; l'accueil reste allumé dans la barre.
+    await page.getByTestId('run-home-play').click();
     await expect(page).toHaveURL(/\/setlist$/);
     await expect(run.startButton).toBeVisible();
-    await expect(page.getByTestId('tab-setlist')).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByTestId('tab-daily')).toHaveAttribute('aria-current', 'page');
     await page.getByTestId('daily-left').click();
     await expect(page).toHaveURL(/\/daily$/);
     await game.waitForWelcome();
@@ -114,13 +123,13 @@ test.describe('Mode Setlist', () => {
     // qui a quitté l'accueil.
     await expect(page.getByTestId('welcome-archive')).toHaveCount(0);
     await page.getByTestId('tab-history').click();
-    await expect(page).toHaveURL(/\/daily\/history$/);
+    await expect(page).toHaveURL(/\/history\/daily$/);
     await expect(page.getByTestId('tab-history')).toHaveAttribute('aria-current', 'page');
     await expect(page.getByTestId('history-count')).toHaveText('0');
     await expect(page.getByTestId('history-empty')).toBeVisible();
     await expect(page.getByTestId('history-archive')).toBeVisible();
     await page.getByTestId('history-tab-setlist').click();
-    await expect(page).toHaveURL(/\/setlist\/history$/);
+    await expect(page).toHaveURL(/\/history\/setlist$/);
     await expect(page.getByTestId('history-empty')).toBeVisible();
     await expect(bar).toBeVisible();
   });
@@ -172,10 +181,10 @@ test.describe('Mode Setlist', () => {
 
     await expect(run.finished).toHaveAttribute('data-status', 'won');
     await expect(run.disc).toHaveText('Disque d’or !');
-    // La flèche ↗ précède le texte sous la V4 (fin de la maquette 04).
-    await expect(run.record).toContainText('Nouveau record');
+    // Sous la V4, le badge « Record » est posé par la fin de run (maquette 04)  ; l'ancien record n'a pas ce badge.
+    await expect(page.locator('[data-motion="finish-record"]')).toContainText('Record');
     await expect(run.found).toHaveText('20 / 20 morceaux trouvés');
-    // Nouvelle interface (le joueur a l'accès) : son niveau, encore provisoire après une seule partie, « Nouvelle setlist » et « Défier un ami ».
+    // Nouvelle interface (le joueur a l'accès) : son niveau dans le bloc compact du haut, encore provisoire après une seule partie, « Rejouer » et « Défier un ami ».
     await expect(run.page.getByTestId('run-level')).toBeVisible();
     await expect(run.page.getByTestId('run-level-provisional')).toBeVisible();
     await expect(run.page.getByTestId('run-level-delta')).toHaveText(/^\+/);
@@ -188,12 +197,12 @@ test.describe('Mode Setlist', () => {
     await expect(run.page.getByTestId('share-grid')).toBeVisible();
     await run.page.keyboard.press('Escape');
     await expect(run.page.getByTestId('share-sheet')).toHaveCount(0);
-    await expect(run.page.getByTestId('run-play-again-label')).toHaveText('Nouvelle setlist');
+    await expect(run.page.getByTestId('run-play-again-label')).toHaveText('Rejouer');
     await expect(run.page.getByTestId('run-shortfall')).toHaveCount(0);
 
     // « Revoir » : la partie dans l'historique, avec ses 20 morceaux.
     await run.page.getByTestId('run-level-review').click();
-    await expect(page).toHaveURL(/\/setlist\/history\/\d+$/);
+    await expect(page).toHaveURL(/\/history\/setlist\/\d+$/);
 
     // Le record et le disque d'or apparaissent ensuite sur l'accueil du mode.
     await page.goto('/setlist');

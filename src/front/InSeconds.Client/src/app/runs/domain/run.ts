@@ -294,6 +294,27 @@ export interface RunsMe {
   readonly shelf: readonly RunShelfDisc[];
   /** Son niveau ; `null` avant sa première partie finie. */
   readonly level: RunLevel | null;
+  /** Le défi d'un ami qui attend d'être joué (bandeau violet de la carte Setlist) ; `null` sans défi, refusé ou expiré. */
+  readonly received: RunReceivedChallenge | null;
+}
+
+/** La playlist d'un ami que le joueur a ouverte par son lien et pas encore jouée : « Léa t'a défié · 2 140 à battre · expire dans 6 j ». */
+export interface RunReceivedChallenge {
+  readonly code: string;
+  /** Le pseudo de l'ami ; `null` pour un invité (« Un ami » à l'écran). */
+  readonly authorPseudo: string | null;
+  /** Son total, quand il a fini la playlist ; `null` sinon. */
+  readonly scoreToBeat: number | null;
+  /** Quand le défi expire (7 jours après sa réception), en ISO 8601. */
+  readonly expiresAt: string;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Les jours qui restent à un défi reçu, arrondis au-dessus (« expire dans 1 j » jusqu'au bout) ; jamais moins de 1. */
+export function daysLeft(expiresAt: string, now: Date): number {
+  const left = Math.ceil((new Date(expiresAt).getTime() - now.getTime()) / DAY_MS);
+  return Math.max(1, Number.isFinite(left) ? left : 1);
 }
 
 /** Ce que la barre d'objectif dessine : la part du maximum déjà marquée et l'emplacement du trait de l'objectif. */

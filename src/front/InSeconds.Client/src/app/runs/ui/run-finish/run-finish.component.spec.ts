@@ -155,22 +155,24 @@ describe('RunFinishComponent', () => {
     function renderLevel(value: RunFinish, showLevel: boolean, duel: RunDuel | null = null) {
       const rendered = render(value, true, duel);
       rendered.fixture.componentRef.setInput('showLevel', showLevel);
-      rendered.fixture.componentRef.setInput('reviewLink', '/setlist/history/7');
+      rendered.fixture.componentRef.setInput('reviewLink', '/history/setlist/7');
       rendered.fixture.detectChanges();
       return rendered;
     }
 
-    it('la carte du niveau, « Nouvelle setlist », « Défier un ami » et « Revoir » vers la partie', () => {
+    it('le bloc compact (disque, score, jauge), « Rejouer », « Défier un ami » et « Revoir » vers la partie', () => {
       const { element } = renderLevel(finish({ level }), true);
 
       expect(element.querySelector('[data-testid="run-level"]')?.getAttribute('data-disc')).toBe('runs.discs.silver');
       expect(text(element, 'run-level-delta')).toBe('+38');
-      expect(text(element, 'run-play-again-label')).toBe('runs.level.newSetlist');
-      expect(text(element, 'run-next-disc')).toBe('runs.level.encore');
+      expect(text(element, 'run-play-again-label')).toBe('runs.finished.playAgain');
+      expect(text(element, 'run-next-disc')).toContain('runs.level.encorePoints');
       expect(text(element, 'run-found')).toBe('runs.finished.found');
       expect(element.querySelector('[data-testid="run-round-scores"]')).toBeNull();
       expect(text(element, 'run-share')).toContain('runs.level.challenge');
-      expect(element.querySelector('[data-testid="run-level-review"]')?.getAttribute('href')).toBe('/setlist/history/7');
+      expect((element.querySelector('[data-testid="run-level-bar"]') as HTMLElement).style.width).toBe('56%');
+      expect(element.querySelector('app-run-level-card')).toBeNull();
+      expect(element.querySelector('[data-testid="run-level-review"]')?.getAttribute('href')).toBe('/history/setlist/7');
     });
 
     it('en duel, l\'action principale reste « Revanche »', () => {

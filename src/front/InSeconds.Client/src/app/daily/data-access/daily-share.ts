@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { SHARE_LINK, ShareService } from '../../core/share/share.service';
-import { todayUtc } from '../domain/countdown';
+import { todayUtc } from '../../core/game-day/game-day';
 import { FormatDuration, ShareTrack, dayLabel, shareLines } from '../domain/share-text';
 
 /**

@@ -1202,6 +1202,36 @@ describe('RunGameStore', () => {
       expect(ensureGuest).not.toHaveBeenCalled();
     });
 
+    it("un compte qui ouvre le lien d'un ami le reçoit (défi sur son accueil) ; un échec ne change rien à l'écran", async () => {
+      TestBed.inject(SessionStore).signedIn({ id: 'a1', pseudo: 'Clem', email: 'c@example.com', isGuest: false, isAdmin: false });
+      api.meResult = ME({ hasAccess: false });
+      api.receiveError = new Error('réseau');
+
+      await store.init('ABC234');
+
+      expect(store.screen()).toBe('link');
+      expect(api.calls).toContain('receive:ABC234');
+    });
+
+    it("un invité n'envoie rien : seuls les comptes reçoivent un défi", async () => {
+      TestBed.inject(SessionStore).signedIn({ id: 'g1', pseudo: null, email: null, isGuest: true, isAdmin: false });
+      api.meResult = ME({ hasAccess: false });
+
+      await store.init('ABC234');
+
+      expect(api.calls.some(call => call.startsWith('receive:'))).toBe(false);
+    });
+
+    it("une playlist déjà jouée n'est pas un défi reçu", async () => {
+      TestBed.inject(SessionStore).signedIn({ id: 'a1', pseudo: 'Clem', email: 'c@example.com', isGuest: false, isAdmin: false });
+      api.meResult = ME({ hasAccess: false });
+      api.challengeResult = { kind: 'ok', link: LINK({ myStatus: 'won', mySessionId: 3 }) };
+
+      await store.init('ABC234');
+
+      expect(api.calls.some(call => call.startsWith('receive:'))).toBe(false);
+    });
+
     it("sans accès sur invitation, le lien reste jouable (pas d'écran réservé)", async () => {
       api.meResult = ME({ hasAccess: false });
 

@@ -7,6 +7,7 @@ import { ErrorReportingService } from '../../../core/errors/error-reporting.serv
 import { LanguageService } from '../../../core/i18n/language.service';
 import { AccountLinkComponent } from '../../../core/shell/account-link/account-link.component';
 import { InstagramLinkComponent } from '../../../core/shell/instagram-link/instagram-link.component';
+import { HomeLegalLineComponent } from '../../../ui/legal-line/home-legal-line.component';
 import { BrandComponent } from '../../../ui/brand/brand.component';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
 import { dayLabel, formatScore, isMonthText, utcDayOf } from '../../../ui/format/day-label';
@@ -18,12 +19,12 @@ import { gameLink, verdictOf } from '../../domain/history';
 import { StatusScreenComponent } from '../../ui/status-screen/status-screen.component';
 
 /**
- * L'historique du joueur sur le défi du jour (`/daily/history`, `?mois=aaaa-mm`) : le résumé de toutes ses parties, puis un mois à la fois.
- * Une ligne mène aux réponses du jour. L'onglet « Setlists » est la page du mode Setlist (`/setlist/history`) : les modes ne se connaissent pas.
+ * L'historique du joueur sur le défi du jour (`/history/daily`, `?mois=aaaa-mm`) : le résumé de toutes ses parties, puis un mois à la fois.
+ * Une ligne mène aux réponses du jour. L'onglet « Setlists » est la page du mode Setlist (`/history/setlist`) : les modes ne se connaissent pas.
  */
 @Component({
   selector: 'app-daily-history-page',
-  imports: [
+  imports: [HomeLegalLineComponent, 
     TranslatePipe, RouterLink, DecorBackgroundComponent, BrandComponent, AccountLinkComponent, InstagramLinkComponent,
     HistoryTabsComponent, HistorySummaryComponent, MonthNavComponent, StatusScreenComponent,
   ],

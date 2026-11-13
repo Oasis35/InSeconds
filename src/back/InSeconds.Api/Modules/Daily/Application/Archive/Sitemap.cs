@@ -29,7 +29,7 @@ public static class SitemapEndpoint
     {
         var urls = FixedPages.Select(p => Url(app.Link(p), p == DailyPage ? today : null))
             .Concat(published.Select(d => Url(
-                app.Link("/daily/archive/" + d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
+                app.Link("/history/daily/" + d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
                 frozenAt.TryGetValue(d, out var computedAt) ? DateOnly.FromDateTime(computedAt.UtcDateTime) : today)));
         var document = new XDocument(new XDeclaration("1.0", "UTF-8", null), new XElement(Ns + "urlset", urls));
         return document.Declaration + "\n" + document.Root!.ToString(SaveOptions.DisableFormatting);

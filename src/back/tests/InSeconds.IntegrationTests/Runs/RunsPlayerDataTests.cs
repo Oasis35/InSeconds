@@ -125,7 +125,7 @@ public class RunsPlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
             SELECT array_agg(table_schema || '.' || table_name) FROM information_schema.columns
             WHERE column_name = 'player_id' AND table_schema = 'runs'
             """))!;
-        Assert.Equal(["runs.access", "runs.player_levels", "runs.records", "runs.sessions"], tables.Order(StringComparer.Ordinal));
+        Assert.Equal(["runs.access", "runs.player_levels", "runs.received_challenges", "runs.records", "runs.sessions"], tables.Order(StringComparer.Ordinal));
         foreach (var table in tables)
             Assert.Equal(0L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM {table} WHERE player_id = '{alice.Id}'"));
         // Seules les réponses et la difficulté choisie de Bob restent (cascade depuis la partie) ; son record et son accès aussi.

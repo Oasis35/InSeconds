@@ -314,7 +314,7 @@ summary {
   cursor: pointer;
 }
 
-/* V4 : la barre du bas (fixe, liens légaux + onglets, ~88px) ; les pages en tiennent compte pour que rien ne passe dessous. */
+/* V4 : la barre du bas (fixe, quatre onglets, ~62px) ; les pages en tiennent compte pour que rien ne passe dessous. */
 html.has-bottom-bar .da-bg {
-  padding-bottom: calc(7.5rem + env(safe-area-inset-bottom)); /* liens légaux (sur deux lignes à 320 px) et onglets */
+  padding-bottom: calc(4.25rem + env(safe-area-inset-bottom)); /* les onglets et un souffle : les liens légaux restent collés au-dessus */
 }

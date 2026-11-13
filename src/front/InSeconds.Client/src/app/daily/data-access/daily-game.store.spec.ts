@@ -7,7 +7,7 @@ import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RoundSubmission } from '../../gameplay/domain/track-round';
 import { EMPTY_STREAK, Streak } from '../domain/streak';
 import { DailyGameStore } from './daily-game.store';
-import { yesterdayUtc } from '../domain/countdown';
+import { yesterdayUtc } from '../../core/game-day/game-day';
 import { ANSWERED, ARCHIVE_DAY, FakeDailyApi, SESSION, STATS, TODAY, provideFakeDailyApi } from './testing/fake-daily-api';
 
 const flush = () => new Promise<void>(resolve => setTimeout(resolve, 0));

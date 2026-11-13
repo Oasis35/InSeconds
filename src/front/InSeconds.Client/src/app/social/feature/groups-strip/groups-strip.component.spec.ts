@@ -9,7 +9,7 @@ import { GroupsStripComponent } from './groups-strip.component';
 describe('GroupsStripComponent', () => {
   let api: FakeSocialApi;
 
-  async function render(showGroups: boolean, pending: string | null = null, setup?: (api: FakeSocialApi) => void) {
+  async function render(showGroups: boolean, pending: string | null = null, setup?: (api: FakeSocialApi) => void, levelDelta: number | null = null) {
     api = new FakeSocialApi();
     setup?.(api);
     TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([]), provideFakeSocialApi(api), GroupsStore] });
@@ -18,6 +18,7 @@ describe('GroupsStripComponent', () => {
     if (pending) invite.set(pending);
     const fixture = TestBed.createComponent(GroupsStripComponent);
     fixture.componentRef.setInput('showGroups', showGroups);
+    fixture.componentRef.setInput('levelDelta', levelDelta);
     fixture.detectChanges();
     await new Promise(resolve => setTimeout(resolve));
     await fixture.whenStable();
@@ -33,7 +34,29 @@ describe('GroupsStripComponent', () => {
     const rows = [...el.querySelectorAll('[data-testid="strip-group"]')];
     expect(rows.map(row => row.getAttribute('href'))).toEqual(['/ranking?group=4', '/ranking?group=7']);
     expect(rows[0].textContent).toContain('Potes');
-    expect(rows[0].textContent).toContain('social.strip.rank');
+    expect(rows[0].querySelector('[data-testid="strip-rank"]')?.textContent).toBe('2e');
+  });
+
+  it('un groupe où la partie fait passer devant un ami : « Tu passes devant Léa », sinon rien', async () => {
+    const climbed = (fake: FakeSocialApi) => {
+      fake.rankings.set(4, {
+        groupId: 4, name: 'Potes',
+        entries: [
+          { rank: 1, pseudo: 'Théo', isMe: false, points: 1910, badge: null },
+          { rank: 2, pseudo: 'Moi', isMe: true, points: 1380, badge: null },
+          { rank: 3, pseudo: 'Léa', isMe: false, points: 1300, badge: null },
+        ],
+      });
+    };
+
+    const el = await render(true, null, climbed, 280);
+    const moved = el.querySelectorAll('[data-testid="strip-moved"]');
+    expect(moved).toHaveLength(1);
+    expect(moved[0].textContent).toContain('social.strip.passed');
+    expect(el.querySelector('[data-testid="strip-up"]')?.textContent).toContain('1');
+
+    TestBed.resetTestingModule();
+    expect((await render(true, null, climbed, null)).querySelector('[data-testid="strip-moved"]')).toBeNull();
   });
 
   it('sans groupe : « Joue avec tes amis · Créer un groupe »', async () => {

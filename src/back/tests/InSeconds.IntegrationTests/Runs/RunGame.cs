@@ -134,6 +134,10 @@ internal sealed class RunGamer(RunGame game, Guid id, HttpClient client)
 
     public async Task<RunComparisonResponse> ComparisonAsync(string code) => await ReadAsync<RunComparisonResponse>(await ComparisonRawAsync(code));
 
+    public Task<HttpResponseMessage> ReceiveRawAsync(string code) => Client.PostAsync($"/api/runs/challenges/{code}/received", null, Ct);
+
+    public Task<HttpResponseMessage> DismissRawAsync(string code) => Client.PostAsync($"/api/runs/challenges/{code}/received/dismiss", null, Ct);
+
     public async Task<RunsMeResponse> MeAsync() => await ReadAsync<RunsMeResponse>(await Client.GetAsync("/api/runs/me", Ct));
 
     private static async Task<T> ReadAsync<T>(HttpResponseMessage response)

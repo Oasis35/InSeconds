@@ -21,11 +21,11 @@ const HISTORY = (over: Partial<DailyHistory> = {}): DailyHistory => ({
 describe('DailyHistoryPage', () => {
   let history: ReturnType<typeof vi.fn>;
 
-  async function render(url = '/daily/history', result: () => Promise<DailyHistory> = async () => HISTORY()) {
+  async function render(url = '/history/daily', result: () => Promise<DailyHistory> = async () => HISTORY()) {
     history = vi.fn(result);
     TestBed.configureTestingModule({
       providers: [
-        provideTranslateService(), provideRouter([{ path: 'daily/history', component: DailyHistoryPage }, { path: '**', children: [] }]),
+        provideTranslateService(), provideRouter([{ path: 'history/daily', component: DailyHistoryPage }, { path: '**', children: [] }]),
         providePlayersApiFake(fakePlayersApi()), { provide: DailyApi, useValue: { history } },
       ],
     });
@@ -50,7 +50,7 @@ describe('DailyHistoryPage', () => {
     const { el } = await render();
     const links = [...el.querySelectorAll('[data-testid="history-game"]')].map(a => a.getAttribute('href'));
 
-    expect(links).toEqual(['/daily', '/daily/archive/2026-10-09']);
+    expect(links).toEqual(['/daily', '/history/daily/2026-10-09']);
     expect(el.querySelector('[data-testid="history-game"]')?.textContent).toContain('ui.history.today');
   });
 
@@ -62,23 +62,23 @@ describe('DailyHistoryPage', () => {
   });
 
   it("lit le mois de l'adresse ; un mois mal écrit redevient le mois en cours", async () => {
-    await render('/daily/history?mois=2026-09');
+    await render('/history/daily?mois=2026-09');
     expect(history).toHaveBeenCalledWith('2026-09');
 
     TestBed.resetTestingModule();
-    await render('/daily/history?mois=septembre');
+    await render('/history/daily?mois=septembre');
     expect(history).toHaveBeenCalledWith(null);
   });
 
   it('un mois sans partie le dit, et garde le lien des réponses des jours passés', async () => {
-    const { el } = await render('/daily/history', async () => HISTORY({ games: [] }));
+    const { el } = await render('/history/daily', async () => HISTORY({ games: [] }));
 
     expect(el.querySelector('[data-testid="history-empty"]')).not.toBeNull();
-    expect(el.querySelector('[data-testid="history-archive"]')?.getAttribute('href')).toBe('/daily/archive');
+    expect(el.querySelector('[data-testid="history-archive"]')?.getAttribute('href')).toBe('/history/daily/latest');
   });
 
   it('une lecture en échec propose de réessayer', async () => {
-    const { el, fixture } = await render('/daily/history', () => Promise.reject(new Error('panne')));
+    const { el, fixture } = await render('/history/daily', () => Promise.reject(new Error('panne')));
     expect(el.querySelector('[data-testid="history-games"]')).toBeNull();
 
     history.mockResolvedValue(HISTORY());

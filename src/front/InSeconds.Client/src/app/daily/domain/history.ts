@@ -34,9 +34,9 @@ export function verdictOf(track: HistoryTrack): TrackVerdict {
 }
 
 /**
- * Où mène une ligne : les réponses du jour (`/daily/archive/<date>`), publiées dès le lendemain ; la partie d'aujourd'hui renvoie au résultat
+ * Où mène une ligne : les réponses du jour (`/history/daily/<date>`), publiées dès le lendemain ; la partie d'aujourd'hui renvoie au résultat
  * du jour, ses réponses n'étant pas encore publiées.
  */
 export function gameLink(date: string, today: string): readonly string[] {
-  return date === today ? ['/daily'] : ['/daily/archive', date];
+  return date === today ? ['/daily'] : ['/history/daily', date];
 }

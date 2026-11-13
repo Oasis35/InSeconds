@@ -7,6 +7,7 @@ import { ErrorReportingService } from '../../../core/errors/error-reporting.serv
 import { LanguageService } from '../../../core/i18n/language.service';
 import { AccountLinkComponent } from '../../../core/shell/account-link/account-link.component';
 import { InstagramLinkComponent } from '../../../core/shell/instagram-link/instagram-link.component';
+import { HomeLegalLineComponent } from '../../../ui/legal-line/home-legal-line.component';
 import { BrandComponent } from '../../../ui/brand/brand.component';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
 import { dayLabel, formatScore, isMonthText, utcDayOf } from '../../../ui/format/day-label';
@@ -19,13 +20,13 @@ import { RunDiscComponent } from '../../ui/run-disc/run-disc.component';
 import { RunStatusScreenComponent } from '../../ui/run-status-screen/run-status-screen.component';
 
 /**
- * L'historique du joueur sur le mode Setlist (`/setlist/history`, `?mois=aaaa-mm`) : le résumé de toutes ses parties, un filtre par difficulté,
- * puis un mois à la fois. Une ligne ouvre les morceaux de la partie. L'onglet « Défis du jour » est la page du jeu du jour (`/daily/history`).
+ * L'historique du joueur sur le mode Setlist (`/history/setlist`, `?mois=aaaa-mm`) : le résumé de toutes ses parties, un filtre par difficulté,
+ * puis un mois à la fois. Une ligne ouvre les morceaux de la partie. L'onglet « Défis du jour » est la page du jeu du jour (`/history/daily`).
  * Ce sont ses propres parties : pas d'accès sur invitation à vérifier.
  */
 @Component({
   selector: 'app-run-history-page',
-  imports: [
+  imports: [HomeLegalLineComponent, 
     TranslatePipe, RouterLink, DecorBackgroundComponent, BrandComponent, AccountLinkComponent, InstagramLinkComponent,
     HistoryTabsComponent, HistorySummaryComponent, MonthNavComponent, RunDiscComponent, RunStatusScreenComponent,
   ],

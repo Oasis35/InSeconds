@@ -2,12 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom, retry, throwError, timer } from 'rxjs';
 import {
   RunChallengeResponse, RunComparisonResponse, RunCurrentTrackResponse, RunFinishResponse, RunHistoryResponse, RunNeutralizedResponse, RunPassedRoundResponse, RunPlayResponse, RunRecordResponse, RunRoundResponse, RunRoundScoreResponse,
-  RunRoundSummaryResponse, RunSessionResponse, RunTrackEffectsResponse, RunTrackResponse, RunsClient, RunsMeResponse, RunLevelResponse,
+  RunRoundSummaryResponse, RunSessionResponse, RunTrackEffectsResponse, RunTrackResponse, RunsClient, RunsMeResponse, RunLevelResponse, RunReceivedChallengeResponse,
 } from '../../api/runs/api.generated';
 import { toAppError } from '../../core/errors/app-error';
 import {
   RunComparison, RunCurrentTrack, RunDifficulty, RunFinish, RunLink, RunNeutralized, RunPassedRound, RunPlay, RunRecord, RunRound, RunRoundScore,
-  RunRoundSummary, RunSession, RunStatus, RunTrack, RunsMe, RunLevel,
+  RunRoundSummary, RunSession, RunStatus, RunTrack, RunsMe, RunLevel, RunReceivedChallenge,
 } from '../domain/run';
 import { RunHistory } from '../domain/run-history';
 import { RunHit } from '../domain/run-hits';
@@ -104,6 +104,16 @@ export class RunsApi {
   /** Une adresse neuve pour l'extrait d'un morceau joué d'une partie finie (elle expire en 15 min, piège 14) ; `null` si Deezer n'en a pas. */
   async pastPreviewUrl(sessionId: number, position: number): Promise<string | null> {
     return (await firstValueFrom(this.client.getRunPastPreview(sessionId, position))).previewUrl ?? null;
+  }
+
+  /** Note que ce compte a ouvert la playlist d'un ami : le défi le suit sur son accueil pendant 7 jours. Sans effet pour un invité ou pour l'auteur. */
+  async receive(code: string): Promise<void> {
+    await firstValueFrom(this.client.receiveRunChallenge(code));
+  }
+
+  /** Refuse le défi d'un ami (la croix du bandeau). */
+  async dismissReceived(code: string): Promise<void> {
+    await firstValueFrom(this.client.dismissRunChallenge(code));
   }
 
   /** Lance une playlist neuve et la partie de son auteur ; le thème de la manche à thème se choisit plus tard, juste avant elle. */
@@ -230,7 +240,13 @@ function toMe(me: RunsMeResponse): RunsMe {
     pending: me.pending ? { sessionId: me.pending.sessionId, challengeCode: me.pending.challengeCode } : null,
     shelf: (me.shelf ?? []).map(entry => ({ disc: { key: entry.disc.key, stars: entry.disc.stars }, count: entry.count })),
     level: toLevel(me.level),
+    received: toReceived(me.received),
   };
+}
+
+function toReceived(received: RunReceivedChallengeResponse | undefined): RunReceivedChallenge | null {
+  if (!received) return null;
+  return { code: received.code, authorPseudo: received.authorPseudo ?? null, scoreToBeat: received.scoreToBeat ?? null, expiresAt: toIsoText(received.expiresAt) };
 }
 
 function toLevel(level: RunLevelResponse | undefined): RunLevel | null {
@@ -393,6 +409,12 @@ export function toPlay(play: RunPlayResponse): RunPlay {
     current: toCurrent(play.current),
     isResuming: play.isResuming,
   };
+}
+
+/** Un instant en texte ISO : le client annonce une `Date` mais le JSON livre un texte (sans quoi `toISOString` plantait et la V4 disparaissait). */
+function toIsoText(value: unknown): string {
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString();
 }
 
 /** `aaaa-mm-jj` : le client annonce une `Date` mais le JSON livre un texte (et l'adaptateur ne doit pas dépendre du fuseau du navigateur). */

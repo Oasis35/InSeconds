@@ -25,7 +25,7 @@ describe('DailyFooterComponent', () => {
   it("n'a plus de lien admin ni de lien vers les jours passés", () => {
     const { el } = render();
     expect(el.querySelector('a[href="/admin"]')).toBeNull();
-    expect(el.querySelector('a[href^="/daily/archive"]')).toBeNull();
+    expect(el.querySelector('a[href^="/history/daily"]')).toBeNull();
   });
 
   it('met la langue courante en avant et émet toggleLanguage au clic', () => {

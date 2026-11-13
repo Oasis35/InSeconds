@@ -3,7 +3,7 @@ import { inSequence } from '../fixtures/sequence';
 import { GamePage } from '../pages/game.page';
 import { linkAccount } from '../pages/login.page';
 
-// Anciennes adresses : les routes vivent sous /daily et /account, les liens
+// Anciennes adresses : les routes vivent sous /daily, /history et /account, les liens
 // déjà partagés, mis en favori ou envoyés par email doivent rester valables, query string comprise.
 
 /** `?…` des adresses testées : un paramètre quelconque, qui doit survivre à la redirection. */
@@ -25,6 +25,11 @@ test.describe('Anciennes adresses', () => {
       ['/login/verify?token=jeton-e2e', '/account/login/verify?token=jeton-e2e'],
       ['/profile/confirm-email?token=jeton-e2e', '/account/confirm-email?token=jeton-e2e'],
       [`/confidentialite${QUERY}`, `/privacy${QUERY}`],
+      // L'historique et les réponses des jours passés vivent sous /history (un onglet de la barre du bas).
+      [`/history${QUERY}`, `/history/daily${QUERY}`],
+      [`/daily/history${QUERY}`, `/history/daily${QUERY}`],
+      [`/daily/archive/2026-10-20${QUERY}`, `/history/daily/2026-10-20${QUERY}`],
+      [`/setlist/history${QUERY}`, `/history/setlist${QUERY}`],
     ];
     await inSequence(cases, async ([from, to]) => {
       await page.goto(from);

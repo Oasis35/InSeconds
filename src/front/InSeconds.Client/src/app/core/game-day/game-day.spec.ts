@@ -1,4 +1,4 @@
-import { formatCountdown, secondsUntilMidnightUtc, timeLeft } from './countdown';
+import { formatCountdown, secondsUntilMidnightUtc, timeLeft } from './game-day';
 
 describe('countdown', () => {
   it("compte jusqu'à minuit UTC", () => {

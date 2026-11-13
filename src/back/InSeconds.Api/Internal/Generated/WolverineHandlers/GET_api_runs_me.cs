@@ -21,15 +21,17 @@ namespace Internal.Generated.WolverineHandlers
         private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor;
         private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _serviceScopeFactory;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
+        private readonly System.TimeProvider _timeProvider;
         private readonly Wolverine.Runtime.IWolverineRuntime _wolverineRuntime;
 
-        public GET_api_runs_me(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Modules.Runs.Application.RunsRules runsRules, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
+        public GET_api_runs_me(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Modules.Runs.Application.RunsRules runsRules, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
         {
             _wolverineHttpOptions = wolverineHttpOptions;
             _runsRules = runsRules;
             _httpContextAccessor = httpContextAccessor;
             _serviceScopeFactory = serviceScopeFactory;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
+            _timeProvider = timeProvider;
             _wolverineRuntime = wolverineRuntime;
         }
 
@@ -40,7 +42,9 @@ namespace Internal.Generated.WolverineHandlers
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Wolverine.Runtime.ScopedMessageContextHolder>(serviceScope.ServiceProvider).Context = messageContext;
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
+            var efPlayerDirectory = new InSeconds.Api.Modules.Players.Persistence.EfPlayerDirectory(inSecondsDbContext);
             var efRunsQueries = new InSeconds.Api.Modules.Runs.Persistence.EfRunsQueries(inSecondsDbContext);
+            var runReceivedChallenges = new InSeconds.Api.Modules.Runs.Application.RunReceivedChallenges(efRunsQueries, efPlayerDirectory);
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
             var efRunAccess = new InSeconds.Api.Modules.Runs.Persistence.EfRunAccess(inSecondsDbContext, claimsCurrentPlayer);
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Runs.Application.GetRunsMeEndpoint");
@@ -58,7 +62,7 @@ namespace Internal.Generated.WolverineHandlers
             {
                 
                 // The actual HTTP request handler execution
-                var runsMeResponse_response = await InSeconds.Api.Modules.Runs.Application.GetRunsMeEndpoint.Get(claimsCurrentPlayer, efRunAccess, efRunsQueries, _runsRules, httpContext.RequestAborted).ConfigureAwait(false);
+                var runsMeResponse_response = await InSeconds.Api.Modules.Runs.Application.GetRunsMeEndpoint.Get(claimsCurrentPlayer, efRunAccess, efRunsQueries, _runsRules, runReceivedChallenges, _timeProvider, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

@@ -1,6 +1,7 @@
 import { EnvironmentInjector, InjectionToken, createEnvironmentInjector, effect, inject, untracked } from '@angular/core';
 import { patchState, signalStore, withHooks, withMethods, withState } from '@ngrx/signals';
 import { SessionStore } from '../../core/session/session.store';
+import { DAILY_DONE_LOADER } from '../../core/shell/daily-done-loader';
 import { ShellChromeStore } from '../../core/shell/shell-chrome.store';
 
 /**
@@ -62,7 +63,15 @@ export const SetlistAccessStore = signalStore(
       const session = inject(SessionStore);
       const chrome = inject(ShellChromeStore);
       // Le flag est lu par la coque (barre du bas...), qui ne connaît pas ce domaine.
-      effect(() => chrome.setV4(store.hasAccess()));
+      effect(() => chrome.setV4(store.hasAccess(), store.loaded()));
+      // Arrivé directement sur la Setlist, la page du jeu du jour n'a rien dit : on lit si le défi est joué, pour la barre du bas et la fin de Setlist.
+      const dailyDone = inject(DAILY_DONE_LOADER);
+      let dailyAsked = false;
+      effect(() => {
+        if (!store.hasAccess() || chrome.dailyDone() !== null || dailyAsked) return;
+        dailyAsked = true;
+        untracked(() => void dailyDone().then(done => { if (chrome.dailyDone() === null) chrome.setDailyDone(done); }).catch(() => undefined));
+      });
       effect(() => {
         // L'identité se lit au démarrage de l'app : tant qu'elle n'est pas connue, on ne conclut rien.
         if (!session.loaded()) return;

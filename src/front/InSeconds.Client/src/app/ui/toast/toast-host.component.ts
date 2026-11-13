@@ -6,6 +6,7 @@ const TONE_COLORS: Record<ToastTone, string> = {
   info: 'var(--color-accent-2)',
   success: 'var(--color-success)',
   error: 'var(--color-fail)',
+  neutral: 'var(--border-neutral)',
 };
 
 /**

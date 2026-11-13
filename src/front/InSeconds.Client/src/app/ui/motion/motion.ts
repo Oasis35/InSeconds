@@ -78,6 +78,31 @@ export function enterCard(element: HTMLElement): void {
   gsap.fromTo(element, { y: -14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.38, ease: SETTLE, clearProps: 'transform,opacity' });
 }
 
+/** Une carte de l'accueil qui monte à sa place, l'une après l'autre (`delay` en secondes). Rien en mouvement réduit. */
+export function enterHomeCard(element: HTMLElement, delay = 0): void {
+  if (motionReduced()) return;
+  gsap.from(element, { y: 16, opacity: 0, duration: 0.42, delay, ease: SETTLE, clearProps: MOVED });
+}
+
+/** Les disques de l'échelle de niveau qui s'allument l'un après l'autre (`data-motion="ladder-disc"`), avec un léger rebond. */
+export function lightLadder(root: HTMLElement, delay = 0): void {
+  if (motionReduced()) return;
+  const discs = Array.from(root.querySelectorAll<HTMLElement>('[data-motion="ladder-disc"]'));
+  gsap.from(discs, { scale: 0.2, opacity: 0, duration: 0.35, delay, stagger: 0.07, ease: 'back.out(2)', clearProps: 'transform,opacity' });
+}
+
+/** Un bandeau qui glisse depuis le côté avec un léger rebond (le défi d'un ami sur la carte Setlist). Rien en mouvement réduit. */
+export function slideBanner(element: HTMLElement, delay = 0): void {
+  if (motionReduced()) return;
+  gsap.from(element, { x: -24, opacity: 0, duration: 0.5, delay, ease: 'back.out(1.6)', clearProps: MOVED });
+}
+
+/** Des barres qui se remplissent l'une après l'autre, de gauche à droite (le score qu'on va partager). `delay` en secondes. */
+export function fillBarsInTurn(elements: readonly HTMLElement[], delay = 0): void {
+  if (motionReduced() || elements.length === 0) return;
+  gsap.from(elements, { scaleX: 0, transformOrigin: 'left center', duration: 0.3, delay, stagger: 0.12, ease: SETTLE, clearProps: 'transform' });
+}
+
 /** Une carte qui monte à sa place (un coup de pouce joué entre dans la carte du morceau). */
 export function riseCard(element: HTMLElement): void {
   if (motionReduced()) return;
@@ -99,7 +124,7 @@ export function revealInTurn(elements: readonly HTMLElement[], delay = 0.25): vo
 /**
  * La séquence de fin d'un run, 2,2 s au plus : le disque se pose, le score compte (`data-value` : sa valeur, écrite par `format`), le badge de
  * record se pose, les carrés se remplissent un à un, les cases des manches puis le reste arrivent. Les éléments sont marqués
- * `data-motion="finish-disc"`, `"finish-score"`, `"finish-record"`, `"finish-square"`, `"finish-round"` et `"finish-late"`. Les boutons ne
+ * `data-motion="finish-disc"`, `"finish-score"`, `"finish-record"`, `"finish-square"`, `"finish-round"`, `"finish-bar"` (la jauge du niveau), `"finish-groups"`, `"finish-late"` et `"finish-band"` (la bande du défi du jour). Les boutons ne
  * s'animent pas : ils restent actifs dès le début. Rend la fonction qui saute la séquence (un toucher), ou ne fait rien en mouvement réduit.
  */
 export function finishSequence(root: HTMLElement, format: (value: number) => string): () => void {
@@ -122,7 +147,10 @@ export function finishSequence(root: HTMLElement, format: (value: number) => str
     .from(part('finish-record'), { opacity: 0, scale: 0.6, duration: 0.3, clearProps: 'opacity,transform' }, 1)
     .from(part('finish-square'), { opacity: 0, duration: 0.2, stagger: 0.04, clearProps: 'opacity' }, 0.5)
     .from(part('finish-round'), { opacity: 0, y: 6, duration: 0.35, stagger: 0.1, clearProps: MOVED }, 1.2)
-    .from(part('finish-late'), { opacity: 0, duration: 0.4, clearProps: 'opacity' }, 1.7);
+    .from(part('finish-bar'), { scaleX: 0, transformOrigin: 'left center', duration: 0.7, clearProps: 'transform,transformOrigin' }, 0.6)
+    .from(part('finish-groups'), { opacity: 0, y: 12, duration: 0.35, clearProps: MOVED }, 1.2)
+    .from(part('finish-late'), { opacity: 0, duration: 0.4, clearProps: 'opacity' }, 1.6)
+    .from(part('finish-band'), { opacity: 0, y: 16, duration: 0.4, clearProps: MOVED }, 1.8);
   return () => {
     timeline.progress(1);
     if (score) score.textContent = format(target);

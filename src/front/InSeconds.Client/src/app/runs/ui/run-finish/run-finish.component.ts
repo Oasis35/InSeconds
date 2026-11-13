@@ -2,10 +2,9 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRe
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-button.component';
-import { RunDuel, RunFinish, discStars, finishSquares } from '../../domain/run';
+import { RunDuel, RunFinish, discStars, finishSquares, levelDeltaText } from '../../domain/run';
 import { finishSequence } from '../../../ui/motion/motion';
 import { RunDiscComponent } from '../run-disc/run-disc.component';
-import { RunLevelCardComponent } from '../run-level-card/run-level-card.component';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { PointsPipe } from '../../../ui/format/points.pipe';
 
@@ -16,12 +15,13 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
  * bronze »), et le bloc « Fais mieux » avec « Partager mon score » (la grille et le lien de la même playlist). Un joueur sans accès (venu par un lien)
  * ne peut pas lancer de playlist : le lien vers le jeu du jour remplace « Rejouer », en bas. Quand l'ami qui a lancé la playlist l'a finie, le duel
  * ouvre l'écran (« Tu bats Léa de 126 pts », « Léa gagne de 40 pts »), sur un ton neutre, jamais « perdu ». La fin se joue en 2,2 s au plus, un
- * toucher la saute, et rien n'attend la fin : les boutons sont actifs dès le début (`finishSequence`). Dans la nouvelle interface (`showLevel`), la
- * carte du niveau suit les manches, « Rejouer » devient « Nouvelle setlist » et le partage « Défier un ami ».
+ * toucher la saute, et rien n'attend la fin : les boutons sont actifs dès le début (`finishSequence`). Dans la nouvelle interface (`showLevel`), le haut tient dans un bloc compact (le
+ * disque, le score, le badge « Record », la jauge vers le disque suivant), les groupes suivent (`[finishGroups]`), puis « Rejouer » en principal,
+ * « Défier un ami » en contour orange et, tout en bas, la bande du défi du jour (`[finishBottom]`).
  */
 @Component({
   selector: 'app-run-finish',
-  imports: [PointsPipe, TranslatePipe, RouterLink, ButtonComponent, RunDiscComponent, RunLevelCardComponent, ShareButtonComponent],
+  imports: [PointsPipe, TranslatePipe, RouterLink, ButtonComponent, RunDiscComponent, ShareButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex-1 flex flex-col', '(click)': 'skipSequence()' },
   template: `
@@ -40,62 +40,88 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
       }
 
       @if (level(); as level) {
-        <!-- Nouvelle interface (maquette 4) : le score en grand et le disque à droite, le record, la carte du niveau, les groupes, puis les deux actions. -->
-        <section class="flex items-center gap-4">
-          <div class="min-w-0 flex-1 flex flex-col gap-1">
-            <p class="text-sm" style="color:var(--text-muted)">
-              <span data-testid="run-disc" style="color:var(--text-light)">{{ (finish().status === 'won' ? 'runs.finished.won' : 'runs.finished.disc') | translate: { disc: (finish().disc.key | translate) } }}</span>
-              @if (difficultyKey(); as key) { · {{ key | translate }} }
-            </p>
-            <p class="tabular-nums" data-testid="run-final-score" data-motion="finish-score" [attr.data-value]="finish().totalScore"
-              style="font-family:var(--font-score);font-size:3.6rem;font-weight:900;line-height:0.95;letter-spacing:-0.02em;color:var(--text-hi)">
-              {{ format(finish().totalScore) }}
-            </p>
-            @if (finish().record; as record) {
-              <p class="text-base font-semibold" data-testid="run-record" [attr.data-motion]="record.isNew ? 'finish-record' : null"
-                [style.color]="record.isNew ? 'var(--color-accent-3)' : 'var(--text-muted)'">
-                @if (record.isNew) {
-                  <span aria-hidden="true">↗ </span>{{ 'runs.finished.newRecord' | translate }}
-                } @else {
-                  {{ 'runs.finished.record' | translate: { score: format(record.bestScore) } }}
-                }
+        <!-- Nouvelle interface : un seul bloc compact (le disque, le score, le badge de record, la jauge vers le disque suivant), les groupes, puis les deux actions. -->
+        <section class="rounded-(--radius-card) px-4 py-4 flex flex-col gap-3" data-testid="run-level" [attr.data-disc]="level.disc.key"
+          style="background:rgb(var(--rgb-surface) / 0.55);border:1px solid var(--border-subtle)">
+          <div class="flex items-center gap-4">
+            <app-run-disc class="shrink-0" data-motion="finish-disc" [disc]="finish().disc.key" [size]="72" [shine]="false" />
+            <div class="min-w-0 flex-1">
+              <p class="text-sm" style="color:var(--text-muted)">
+                <span data-testid="run-disc" style="color:var(--text-light)">{{ (finish().status === 'won' ? 'runs.finished.won' : 'runs.finished.disc') | translate: { disc: (finish().disc.key | translate) } }}</span>
+                @if (difficultyKey(); as key) { · {{ key | translate }} }
               </p>
+              <p class="tabular-nums" data-testid="run-final-score" data-motion="finish-score" [attr.data-value]="finish().totalScore"
+                style="font-family:var(--font-score);font-size:2.6rem;font-weight:900;line-height:1;letter-spacing:-0.02em;color:var(--text-hi)">
+                {{ format(finish().totalScore) }}
+              </p>
+              @if (finish().record; as record) {
+                @if (!record.isNew) {
+                  <p class="text-sm" data-testid="run-record" style="color:var(--text-muted)">{{ 'runs.finished.record' | translate: { score: format(record.bestScore) } }}</p>
+                }
+              }
+            </div>
+            @if (finish().record; as record) {
+              @if (record.isNew) {
+                <span class="self-start shrink-0 whitespace-nowrap rounded-(--radius-button) px-2.5 py-1 text-sm font-semibold" data-testid="run-record" data-motion="finish-record"
+                  style="border:1px solid var(--color-accent-3);color:var(--color-accent-3)"><span aria-hidden="true">↗</span> {{ 'runs.finished.recordShort' | translate }}</span>
+              }
             }
           </div>
-          <app-run-disc class="shrink-0" data-motion="finish-disc" [disc]="finish().disc.key" [size]="96" />
+          <div class="flex flex-col gap-1.5">
+            <div class="h-1.5 rounded-full overflow-hidden" style="background:var(--bg-inactive)" aria-hidden="true">
+              <div class="h-full rounded-full" data-testid="run-level-bar" data-motion="finish-bar" style="background:var(--color-accent-3)" [style.width.%]="level.progressPercent"></div>
+            </div>
+            <p class="flex items-center justify-between gap-3 text-sm" style="color:var(--text-light)">
+              <span>
+                @if (level.nextDisc && level.pointsToNext !== null) {
+                  <span data-testid="run-next-disc">{{ 'runs.level.encoreBefore' | translate }}
+                    <b class="tabular-nums" style="color:var(--color-accent-3)">{{ 'runs.level.encorePoints' | translate: { points: format(level.pointsToNext) } }}</b>
+                    {{ 'runs.level.encoreAfter' | translate: { disc: lower(level.nextDisc.key | translate) } }}</span>
+                } @else {
+                  <span>{{ 'runs.level.top' | translate }}</span>
+                }
+                @if (level.provisional) { <span class="text-xs" style="color:var(--text-muted)" data-testid="run-level-provisional"> · {{ 'runs.level.provisional' | translate }}</span> }
+              </span>
+              @if (delta(); as delta) {
+                <span class="shrink-0 tabular-nums" data-testid="run-level-delta" [style.color]="(level.delta ?? 0) > 0 ? 'var(--color-accent-3)' : 'var(--text-muted)'">{{ delta }}</span>
+              }
+            </p>
+            <p class="flex items-center gap-2 text-sm" style="color:var(--text-light)">
+              <span data-testid="run-found">{{ 'runs.finished.found' | translate: { found: finish().foundCount, total: finish().trackCount } }}</span>
+              @if (reviewLink(); as link) {
+                <span aria-hidden="true">·</span>
+                <a [routerLink]="link" class="underline underline-offset-4 touch-manipulation" style="color:var(--text-hi)" data-testid="run-level-review">{{ 'runs.level.review' | translate }} ›</a>
+              }
+            </p>
+          </div>
         </section>
-
-        <app-run-level-card [level]="level" [lang]="lang()" [reviewLink]="reviewLink()"
-          [found]="'runs.finished.found' | translate: { found: finish().foundCount, total: finish().trackCount }" />
 
         <ng-content select="[finishGroups]" />
 
-        @if (canPlayAgain()) {
-          <div class="flex flex-col gap-2" data-motion="finish-late">
-            @if (finish().shortfall; as shortfall) {
-              <p class="text-sm text-center" style="color:var(--text-light)" data-testid="run-shortfall">
-                {{ 'runs.finished.shortfallBefore' | translate }}
-                <span class="font-bold tabular-nums" style="color:var(--color-accent-3)">{{ 'runs.finished.shortfallPoints' | translate: { points: format(shortfall.points) } }}</span>
-                {{ 'runs.finished.shortfallAfter' | translate: { disc: (shortfall.disc.key | translate) + stars(shortfall.disc) } }}
-              </p>
-            }
-            <button appButton type="button" size="lg" [block]="true" (click)="playAgain.emit()" data-testid="run-play-again">
-              <span class="flex flex-col items-center leading-tight">
-                <span data-testid="run-play-again-label">{{ (duel() ? 'runs.finished.rematch' : 'runs.level.newSetlist') | translate }}</span>
-                @if (!duel() && level.nextDisc && level.pointsToNext !== null) {
-                  <span class="text-sm font-semibold normal-case tracking-normal" data-testid="run-next-disc">
-                    {{ 'runs.level.encore' | translate: { points: format(level.pointsToNext), disc: (level.nextDisc.key | translate) } }}
-                  </span>
-                }
-              </span>
-            </button>
-          </div>
-        }
-        <app-share-button data-testid="run-share" [copied]="shareCopied()" [failed]="shareFailed()" labelKey="runs.level.challenge"
-          copiedKey="runs.finished.shareCopied" failedKey="runs.finished.shareFailed" [variant]="canPlayAgain() ? 'accent' : 'primary'" (share)="share.emit()" />
-        <button type="button" (click)="compare.emit()" data-testid="run-compare" class="w-full min-h-11 text-sm underline touch-manipulation" style="color:var(--text-muted)">
-          {{ 'runs.finished.compare' | translate }}
-        </button>
+        <!-- Les actions et la bande du défi sont collées en bas de l'écran, au-dessus de la barre (maquette). -->
+        <div class="mt-auto flex flex-col gap-4">
+          @if (canPlayAgain()) {
+            <div class="flex flex-col gap-2" data-motion="finish-late">
+              @if (finish().shortfall; as shortfall) {
+                <p class="text-sm text-center" style="color:var(--text-light)" data-testid="run-shortfall">
+                  {{ 'runs.finished.shortfallBefore' | translate }}
+                  <span class="font-bold tabular-nums" style="color:var(--color-accent-3)">{{ 'runs.finished.shortfallPoints' | translate: { points: format(shortfall.points) } }}</span>
+                  {{ 'runs.finished.shortfallAfter' | translate: { disc: (shortfall.disc.key | translate) + stars(shortfall.disc) } }}
+                </p>
+              }
+              <button appButton type="button" size="lg" [block]="true" (click)="playAgain.emit()" data-testid="run-play-again">
+                <span data-testid="run-play-again-label">{{ (duel() ? 'runs.finished.rematch' : 'runs.finished.playAgain') | translate }}</span>
+              </button>
+            </div>
+          }
+          <app-share-button data-testid="run-share" [glow]="false" [copied]="shareCopied()" [failed]="shareFailed()" labelKey="runs.level.challenge"
+            copiedKey="runs.finished.shareCopied" failedKey="runs.finished.shareFailed" [variant]="canPlayAgain() ? 'accent' : 'primary'" (share)="share.emit()" />
+          <button type="button" (click)="compare.emit()" data-testid="run-compare" class="w-full min-h-11 text-sm underline touch-manipulation" style="color:var(--text-muted)">
+            {{ 'runs.finished.compare' | translate }}
+          </button>
+          <!-- Tout en bas, au-dessus de la barre : le défi du jour qui attend, ou le prochain. -->
+          <ng-content select="[finishBottom]" />
+        </div>
       } @else {
         <section class="flex items-center gap-4">
           <app-run-disc class="shrink-0" data-motion="finish-disc" [disc]="finish().disc.key" [size]="88" />
@@ -209,6 +235,8 @@ export class RunFinishComponent {
   readonly playAgain = output();
 
   protected readonly level = computed(() => (this.showLevel() ? this.finish().level : null));
+  /** « +38 » : ce que la partie a changé au niveau (rien sans changement). */
+  protected readonly delta = computed(() => levelDeltaText(this.level()?.delta ?? null, value => this.format(value)));
   /** La difficulté de la dernière manche jouée (« Mélomane »), à côté du disque ; `null` sans manche jouée. */
   protected readonly difficultyKey = computed(() => {
     const played = this.finish().rounds.filter(round => round.difficulty !== null);
@@ -230,6 +258,11 @@ export class RunFinishComponent {
   /** Un toucher saute la séquence de fin : tout est posé. */
   protected skipSequence(): void {
     this.skip?.();
+  }
+
+  /** « disque d'or » : le nom d'un disque au milieu d'une phrase. */
+  protected lower(text: string): string {
+    return text.charAt(0).toLowerCase() + text.slice(1);
   }
 
   /** « 2 617 » : les grands nombres au format de la langue. */

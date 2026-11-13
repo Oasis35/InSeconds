@@ -3,11 +3,13 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { filter, map } from 'rxjs';
+import { SessionStore } from '../../../core/session/session.store';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 
 /**
- * La barre du bas de la V4 : les pages du joueur, une ligne de liens légaux au-dessus. Visible seulement sous l'accès Setlist, sur le jeu du
- * jour, sur Setlist et sur le classement, et jamais pendant une manche. « Aujourd'hui » respire en cyan tant que le défi du jour n'est pas joué.
+ * La barre du bas de la V4 : Accueil (le jeu du jour et la carte Setlist), Classement, Historique et Mon compte (« Connexion » pour un invité).
+ * Visible seulement sous l'accès Setlist, sur l'accueil, sur Setlist, sur le classement, l'historique et le profil, et jamais pendant une manche.
+ * « Accueil » respire en cyan tant que le défi du jour n'est pas joué. Les liens légaux ne sont plus dans la barre : ils vivent sous la carte Setlist.
  */
 @Component({
   selector: 'app-setlist-bottom-bar',
@@ -16,12 +18,7 @@ import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
   template: `
     @if (visible()) {
       <div class="fixed inset-x-0 bottom-0 z-30" data-testid="bottom-bar" style="background:var(--bg-page);border-top:1px solid var(--border-neutral)">
-        <nav class="flex flex-wrap justify-center gap-x-4 text-xs" style="font-family:var(--font-body);color:var(--text-muted)">
-          <a routerLink="/legal" class="py-2 whitespace-nowrap hover:underline" style="color:inherit">{{ 'daily.footer.legal' | translate }}</a>
-          <a routerLink="/privacy" class="py-2 whitespace-nowrap hover:underline" style="color:inherit">{{ 'daily.footer.privacy' | translate }}</a>
-          <a href="mailto:contact@inseconds.cc" class="py-2 whitespace-nowrap hover:underline" style="color:inherit">{{ 'daily.footer.contact' | translate }}</a>
-        </nav>
-        <nav class="flex" style="padding-bottom:env(safe-area-inset-bottom)" [attr.aria-label]="'runs.v4.bar.label' | translate">
+        <nav class="flex w-full max-w-lg mx-auto" style="padding-bottom:env(safe-area-inset-bottom)" [attr.aria-label]="'runs.v4.bar.label' | translate">
           @for (tab of tabs(); track tab.link) {
             <a [routerLink]="tab.link" [attr.data-testid]="'tab-' + tab.id" [attr.aria-current]="tab.active ? 'page' : null"
                class="flex-1 flex flex-col items-center gap-0.5 py-2 text-xs touch-manipulation min-h-11"
@@ -32,8 +29,8 @@ import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
                   @if (chrome.dailyDone() === false) {
                     <span class="bar-pulse absolute -top-0.5 -right-1 h-2 w-2 rounded-full" data-testid="daily-pending" style="background:var(--color-accent-2)"></span>
                   }
-                } @else if (tab.id === 'setlist') {
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg>
+                } @else if (tab.id === 'account') {
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-5.5 7-5.5s6 1.5 7 5.5"/></svg>
                 } @else if (tab.id === 'ranking') {
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 20v-6M12 20V5M18 20v-9"/></svg>
                 } @else {
@@ -55,6 +52,7 @@ import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 })
 export class SetlistBottomBarComponent {
   protected readonly chrome = inject(ShellChromeStore);
+  private readonly session = inject(SessionStore);
   private readonly router = inject(Router);
   private readonly doc = inject(DOCUMENT);
 
@@ -63,24 +61,30 @@ export class SetlistBottomBarComponent {
     { initialValue: this.router.url },
   );
 
-  private readonly section = computed<'daily' | 'setlist' | 'ranking' | 'history' | null>(() => {
+  private readonly section = computed<'daily' | 'setlist' | 'ranking' | 'history' | 'account' | null>(() => {
     const path = this.url().split(/[?#]/)[0];
-    // L'historique a une page par mode (`/daily/history`, `/setlist/history`) et un seul onglet.
-    if (/^\/(daily|setlist)\/history(\/|$)/.test(path)) return 'history';
+    // L'historique a une page par mode (`/history/daily`, `/history/setlist`) et un seul onglet.
+    if (/^\/history(\/|$)/.test(path)) return 'history';
     // Le classement entre amis ; la création d'un groupe et le lien d'invitation sont des écrans pleins, sans barre.
     if (path === '/ranking') return 'ranking';
-    if (path === '/daily' || path.startsWith('/daily/')) return 'daily';
+    // Mon compte : l'écran du profil existant ; la connexion et le reste du compte sont des écrans pleins, sans barre.
+    if (path === '/account/profile') return 'account';
+    // L'accueil est la racine ; le défi (`/daily`) et la Setlist (`/setlist`) lui appartiennent.
+    if (path === '/' || path === '/daily' || path.startsWith('/daily/')) return 'daily';
     if (path === '/setlist' || path.startsWith('/setlist/')) return 'setlist';
     return null;
   });
 
   protected readonly visible = computed(() => this.chrome.v4() && !this.chrome.immersive() && this.section() !== null);
 
+  /** Quatre entrées : Setlist n'a plus d'onglet (sa carte est sur l'accueil, qui reste allumé sur ses pages). */
   protected readonly tabs = computed(() => [
-    { id: 'daily', link: '/daily', labelKey: 'runs.v4.bar.daily', active: this.section() === 'daily' },
-    { id: 'setlist', link: '/setlist', labelKey: 'runs.v4.bar.setlist', active: this.section() === 'setlist' },
+    { id: 'daily', link: '/', labelKey: 'runs.v4.bar.daily', active: this.section() === 'daily' || this.section() === 'setlist' },
     { id: 'ranking', link: '/ranking', labelKey: 'runs.v4.bar.ranking', active: this.section() === 'ranking' },
-    { id: 'history', link: '/daily/history', labelKey: 'runs.v4.bar.history', active: this.section() === 'history' },
+    { id: 'history', link: '/history', labelKey: 'runs.v4.bar.history', active: this.section() === 'history' },
+    this.session.isLinked()
+      ? { id: 'account', link: '/account/profile', labelKey: 'runs.v4.bar.account', active: this.section() === 'account' }
+      : { id: 'account', link: '/account/login', labelKey: 'runs.v4.bar.login', active: false },
   ]);
 
   constructor() {

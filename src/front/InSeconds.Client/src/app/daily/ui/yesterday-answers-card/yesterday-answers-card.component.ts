@@ -48,6 +48,6 @@ export class YesterdayAnswersCardComponent {
   readonly day = input.required<ArchiveDay>();
   readonly lang = input<'fr' | 'en'>('fr');
 
-  protected readonly link = computed(() => ['/daily/archive', this.day().date]);
+  protected readonly link = computed(() => ['/history/daily', this.day().date]);
   protected readonly dateLabel = computed(() => formatGameDate(this.day().date, this.lang(), 'weekday'));
 }

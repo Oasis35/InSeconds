@@ -22,7 +22,7 @@
               class="self-start flex items-center gap-2.5 py-1 touch-manipulation">
         <span class="flex gap-1" aria-hidden="true">
           @for (r of rows(); track r.position) {
-            <span class="w-4 h-1.5 rounded-full" [style.background]="barOf(r)" data-testid="track-bar"></span>
+            <span class="w-4 h-1.5 rounded-full" [style.background]="barOf(r)" data-testid="track-bar" data-motion="score-bar"></span>
           }
         </span>
         <span class="flex items-center gap-1 text-[13px]" style="color:var(--text-muted)" aria-hidden="true">
