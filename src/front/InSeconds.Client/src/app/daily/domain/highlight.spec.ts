@@ -1,4 +1,5 @@
-import { HighlightTrack, highlightOf } from './highlight';
+import { DayHistory } from './daily';
+import { HighlightTrack, highlightOf, historyHighlightOf } from './highlight';
 
 const track = (over: Partial<HighlightTrack> = {}): HighlightTrack => ({
   position: 1, artist: 'Daft Punk', found: true, listenedSeconds: 1,
@@ -34,5 +35,29 @@ describe('highlightOf', () => {
     expect(highlightOf([track({ found: false })])).toBeNull();
     expect(highlightOf([track({ distribution: [{ durationSeconds: 1, count: 1 }], notFoundCount: 3 })])).toBeNull();
     expect(highlightOf([])).toBeNull();
+  });
+});
+
+describe('historyHighlightOf', () => {
+  const history = (over: Partial<DayHistory> = {}): DayHistory => ({
+    fastestSeconds: 1, fastestFoundPercent: 9, previousGames: 5, previousBestScore: 3000, previousAverageScore: 2000, ...over,
+  });
+
+  it('un record personnel passe avant tout', () => {
+    expect(historyHighlightOf(history(), 3200)).toEqual({ kind: 'record', previousBest: 3000 });
+  });
+
+  it('sinon la vitesse, quand peu de morceaux sont trouvés aussi vite', () => {
+    expect(historyHighlightOf(history(), 2500)).toEqual({ kind: 'speed', seconds: 1, percent: 9 });
+  });
+
+  it('sinon la moyenne, quand le score la dépasse', () => {
+    expect(historyHighlightOf(history({ fastestFoundPercent: 60 }), 2500)).toEqual({ kind: 'average', average: 2000 });
+  });
+
+  it('rien sans assez de parties passées pour un record ou une moyenne, ni sans comparaison de vitesse', () => {
+    expect(historyHighlightOf(history({ previousGames: 2, fastestFoundPercent: null }), 3200)).toBeNull();
+    expect(historyHighlightOf(history({ fastestFoundPercent: 60 }), 1500)).toBeNull();
+    expect(historyHighlightOf(null, 3200)).toBeNull();
   });
 });

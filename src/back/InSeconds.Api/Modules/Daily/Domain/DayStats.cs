@@ -23,6 +23,36 @@ public sealed record TrackAggregate(
     public int NotFound => Total - Found;
 }
 
+/// <summary>
+/// Les réponses des **jours passés** (parties terminées), pour situer un temps d'écoute sans autre joueur le même jour : <c>Total</c> réponses
+/// données, dont <c>FoundByDuration</c> trouvées (artiste ou titre) par palier d'écoute.
+/// </summary>
+public sealed record AnswerSpeedHistory(int Total, IReadOnlyDictionary<decimal, int> FoundByDuration)
+{
+    /// <summary>Sous ce nombre de réponses, aucun pourcentage : « seuls 9 % » ne voudrait rien dire.</summary>
+    public const int MinAnswers = 100;
+
+    /// <summary>Les jours passés pris en compte (les 30 derniers) : assez pour du volume, assez court pour suivre le niveau des joueurs.</summary>
+    public const int WindowDays = 30;
+
+    public static AnswerSpeedHistory Empty { get; } = new(0, new Dictionary<decimal, int>());
+
+    /// <summary>Part des réponses des jours passés trouvées en <paramref name="seconds"/> ou moins ; vide sous <see cref="MinAnswers"/>.</summary>
+    public int? PercentFoundWithin(decimal seconds) =>
+        Total < MinAnswers
+            ? null
+            : (int)Math.Round(100.0 * FoundByDuration.Where(kv => kv.Key <= seconds).Sum(kv => kv.Value) / Total, MidpointRounding.AwayFromZero);
+}
+
+/// <summary>Les parties **terminées avant aujourd'hui** d'un joueur : de quoi dire « ton meilleur score » sans rien comparer aux autres.</summary>
+public sealed record PersonalHistory(int Games, int? BestScore, int? AverageScore)
+{
+    public static PersonalHistory Of(IReadOnlyCollection<int> previousScores) =>
+        previousScores.Count == 0
+            ? new PersonalHistory(0, null, null)
+            : new PersonalHistory(previousScores.Count, previousScores.Max(), (int)Math.Round(previousScores.Average(), MidpointRounding.AwayFromZero));
+}
+
 /// <summary>Nombre de joueurs dont le score total tombe dans [<c>MinScore</c>, <c>MaxScore</c>].</summary>
 public sealed record ScoreBucket(int MinScore, int MaxScore, int Count);
 

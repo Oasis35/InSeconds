@@ -838,7 +838,6 @@
     "home": {
       "label": "Daily challenge",
       "done": "Daily challenge",
-      "seeResult": "See the result",
       "remainingHours": "{{ n }} h left",
       "remainingMinutes": "{{ n }} min left"
     },
@@ -918,6 +917,10 @@
       "nextChallenge": "Next challenge in",
       "fastIn": "in",
       "fastAfter": ": only {{ percent }}% were as fast.",
+      "historyRecord": "That's your best score, your record was {{ previous }} pts.",
+      "historySpeedBefore": "In",
+      "historySpeedAfter": ": only {{ percent }}% of tracks are found that fast.",
+      "historyAverage": "Above your average ({{ average }} pts).",
       "rareBefore": "You found",
       "rareAfter": ", missed by {{ percent }}% of players.",
       "dayScores": "Today's scores",
@@ -1393,7 +1396,7 @@
         "account": "My account",
         "login": "Log in",
         "history": "History",
-        "ranking": "Ranking"
+        "ranking": "Rankings"
       },
       "band": {
         "title": "Today’s challenge is waiting",

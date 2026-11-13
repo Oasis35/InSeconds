@@ -2447,6 +2447,50 @@
           }
         }
       },
+      "TodayHistoryResponse": {
+        "required": [
+          "fastestSeconds",
+          "fastestFoundPercent",
+          "previousGames",
+          "previousBestScore",
+          "previousAverageScore"
+        ],
+        "type": "object",
+        "properties": {
+          "fastestSeconds": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "fastestFoundPercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "previousGames": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "previousBestScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "previousAverageScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "TodayStatsResponse": {
         "required": [
           "yourScore",
@@ -2526,6 +2570,16 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "history": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TodayHistoryResponse"
+              }
+            ]
           }
         }
       },

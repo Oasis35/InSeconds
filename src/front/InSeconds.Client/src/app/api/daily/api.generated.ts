@@ -1816,6 +1816,16 @@ export interface TodayResponse {
     [key: string]: any;
 }
 
+export interface TodayHistoryResponse {
+    fastestSeconds: number | undefined;
+    fastestFoundPercent: number | undefined;
+    previousGames: number;
+    previousBestScore: number | undefined;
+    previousAverageScore: number | undefined;
+
+    [key: string]: any;
+}
+
 export interface TodayStatsResponse {
     yourScore: number | undefined;
     medianScore: number;
@@ -1829,6 +1839,7 @@ export interface TodayStatsResponse {
     maxPossibleScore: number;
     scoreDistribution: ScoreBucketResponse[];
     betterThanPercent: number | undefined;
+    history?: TodayHistoryResponse | undefined;
 
     [key: string]: any;
 }

@@ -129,6 +129,20 @@ export interface ScoreBucket {
   readonly count: number;
 }
 
+/**
+ * Ce que l'historique dit du joueur (sa partie du jour finie seulement) : de quoi situer sa partie quand trop peu de joueurs ont joué le même jour.
+ * Ses parties comptées sont celles terminées avant aujourd'hui.
+ */
+export interface DayHistory {
+  /** Le palier du morceau trouvé le plus vite aujourd'hui. */
+  readonly fastestSeconds: number | null;
+  /** Part des réponses des 30 derniers jours trouvées aussi vite ; vide quand il n'y en a pas assez. */
+  readonly fastestFoundPercent: number | null;
+  readonly previousGames: number;
+  readonly previousBestScore: number | null;
+  readonly previousAverageScore: number | null;
+}
+
 /** Les statistiques du jour (`GET /api/daily/stats/today`). `tracks` est vide tant que la partie du joueur n'est pas finie (piège 31). */
 export interface DayStats {
   readonly yourScore: number | null;
@@ -143,6 +157,8 @@ export interface DayStats {
   readonly maxPossibleScore: number;
   readonly scoreDistribution: readonly ScoreBucket[];
   readonly betterThanPercent: number | null;
+  /** Vide tant que le joueur n'a pas fini sa partie du jour. */
+  readonly history?: DayHistory | null;
 }
 
 /** Ce que le démarrage d'une partie peut donner (jamais une erreur : les refus du jeu sont des issues). */

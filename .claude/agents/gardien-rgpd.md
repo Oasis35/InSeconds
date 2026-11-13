@@ -1,6 +1,6 @@
 ---
 name: gardien-rgpd
-description: Vérifie qu'un changement InSeconds respecte le RGPD et les conditions Deezer (rien de personnel dans les journaux, effacement et export complets, /privacy et docs/conformite à jour). À lancer sur toute PR qui touche aux données d'un joueur, aux journaux, aux métriques ou à un service tiers.
+description: Vérifie qu'un changement InSeconds respecte le RGPD et les conditions Deezer (rien de personnel dans les journaux, tableaux Grafana à jour, effacement et export complets, /privacy et docs/conformite à jour). À lancer sur toute PR qui touche aux données d'un joueur, aux journaux, aux métriques ou à un service tiers.
 tools: Read, Grep, Glob, Bash
 ---
 
@@ -13,6 +13,7 @@ Lis `docs/conformite/rgpd.md` (ce qui est en place), `docs/conformite/conditions
 ## Règles
 
 - **Journaux, traces, métriques** : jamais d'email, de pseudo, de réponse saisie (ni le texte d'une recherche : sa longueur seulement), de cookie, d'`Authorization`, d'IP en clair, d'adresse d'extrait Deezer. Un joueur se suit par `PlayerId` (identifiant pseudonyme), jamais par autre chose. Une étiquette de métrique ne porte jamais un joueur. Les erreurs du front perdent query string et fragment ; l'appareil reste un libellé grossier, jamais le `User-Agent` brut. Ces règles sont testées : un nouveau champ journalisé doit l'être aussi.
+- **Grafana** : un texte de log ou un nom de métrique lu par `deploy/grafana/*.json` (filtres `|=` / `|~` Loki, `inseconds_*`) qui change ou disparaît impose de mettre le JSON à jour dans la même PR (le hook `grafana-reminder` n'est qu'un filet à l'édition, absent en session cloud). Une métrique ou un log neuf sur un joueur suit les règles ci-dessus.
 - **Stockage** : le texte tapé par le joueur n'est jamais stocké (seule la correction). Aucun audio ni aucune image Deezer stockés, ni en base, ni dans un cache persistant du navigateur (`ngsw-config.json` sans `dataGroups`), ni dans une image générée.
 - **Effacement et export** : toute nouvelle table ou colonne qui référence un joueur (`player_id`, ou une donnée rattachée à son compte) est supprimée par `AccountErasure` via l'`IPlayerDataContributor` du module, et figure dans la copie `GET /api/players/me/export`. Vérifie que `Players/PlayerDataTests` la couvre.
 - **Conservation** : une donnée nouvelle a une durée de conservation, appliquée par la purge nocturne ou justifiée dans `rgpd.md`.

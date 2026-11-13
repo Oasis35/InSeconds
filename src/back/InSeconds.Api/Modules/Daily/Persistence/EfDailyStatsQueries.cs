@@ -234,4 +234,29 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
                orderby c.Date descending
                select new PlayerHistoryRow(c.Date, s.Status, s.TotalScore, s.FreezesUsed, s.FreezeEarned))
             .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<int>> GetPreviousScoresAsync(Guid playerId, DateOnly before, CancellationToken ct) =>
+        await (from s in db.Set<DailySession>().AsNoTracking()
+               join c in db.Set<DailyChallenge>().AsNoTracking() on s.ChallengeId equals c.Id
+               where s.PlayerId == playerId && s.Status == SessionStatus.Completed && c.Date < before
+               select s.TotalScore)
+            .ToListAsync(ct);
+
+    public async Task<AnswerSpeedHistory> GetAnswerSpeedHistoryAsync(DateOnly since, DateOnly before, CancellationToken ct)
+    {
+        var answers = from a in db.Set<SessionAnswer>().AsNoTracking()
+                      join s in db.Set<DailySession>().AsNoTracking() on a.SessionId equals s.Id
+                      join c in db.Set<DailyChallenge>().AsNoTracking() on s.ChallengeId equals c.Id
+                      where s.Status == SessionStatus.Completed && c.Date >= since && c.Date < before
+                      select a;
+
+        var total = await answers.CountAsync(ct);
+        var found = (await answers
+                .Where(a => a.ArtistCorrect || a.TitleCorrect)
+                .GroupBy(a => a.ListenedSeconds)
+                .Select(g => new { Seconds = g.Key, Count = g.Count() })
+                .ToListAsync(ct))
+            .ToDictionary(x => x.Seconds, x => x.Count);
+        return new AnswerSpeedHistory(total, found);
+    }
 }

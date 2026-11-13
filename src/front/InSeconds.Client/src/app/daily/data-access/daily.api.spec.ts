@@ -152,6 +152,20 @@ describe('DailyApi', () => {
     expect(stats.scoreDistribution).toEqual([{ minScore: 0, maxScore: 500, count: 2 }]);
   });
 
+  it("l'historique du joueur : des nombres et des `null`, ou `null` sans partie finie", async () => {
+    const base = {
+      yourScore: 3200, medianScore: 1200, totalPlayers: 1, currentStreak: 2, tracks: [], freezesUsed: 0, freezeMilestone: false,
+      minScore: 3200, maxScore: 3200, maxPossibleScore: 5000, scoreDistribution: [], betterThanPercent: undefined,
+    };
+    client['getTodayStats'].mockReturnValueOnce(of({
+      ...base, history: { fastestSeconds: 1, fastestFoundPercent: undefined, previousGames: 0, previousBestScore: undefined, previousAverageScore: undefined },
+    }));
+    client['getTodayStats'].mockReturnValueOnce(of(base));
+
+    expect((await api.stats()).history).toEqual({ fastestSeconds: 1, fastestFoundPercent: null, previousGames: 0, previousBestScore: null, previousAverageScore: null });
+    expect((await api.stats()).history).toBeNull();
+  });
+
   it("l'extrait d'un jour passé : son adresse, `null` sans extrait", async () => {
     client['getArchivePreview'].mockReturnValueOnce(of({ previewUrl: 'https://preview/2.mp3' })).mockReturnValueOnce(of({}));
 

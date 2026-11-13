@@ -838,7 +838,6 @@
     "home": {
       "label": "Défi du jour",
       "done": "Défi du jour",
-      "seeResult": "Voir le résultat",
       "remainingHours": "plus que {{ n }} h",
       "remainingMinutes": "plus que {{ n }} min"
     },
@@ -918,6 +917,10 @@
       "nextChallenge": "Prochain défi dans",
       "fastIn": "en",
       "fastAfter": " : seuls {{ percent }} % ont fait aussi vite.",
+      "historyRecord": "C'est ton meilleur score, ton record était de {{ previous }} pts.",
+      "historySpeedBefore": "En",
+      "historySpeedAfter": " : seuls {{ percent }} % des morceaux sont trouvés aussi vite.",
+      "historyAverage": "Au-dessus de ta moyenne ({{ average }} pts).",
       "rareBefore": "Tu as trouvé",
       "rareAfter": ", raté par {{ percent }} % des joueurs.",
       "dayScores": "Les scores du jour",
@@ -1393,7 +1396,7 @@
         "account": "Mon compte",
         "login": "Connexion",
         "history": "Historique",
-        "ranking": "Classement"
+        "ranking": "Classements"
       },
       "band": {
         "title": "Le défi du jour t’attend",
@@ -1494,7 +1497,7 @@
       "already": "Tu es déjà dans ce groupe.",
       "seeRanking": "Voir le classement",
       "full": "Ce groupe est complet.",
-      "accountRequired": "Il faut un compte pour rejoindre un groupe. L'invitation t'attendra dans l'onglet Classement.",
+      "accountRequired": "Il faut un compte pour rejoindre un groupe. L'invitation t'attendra dans l'onglet Classements.",
       "failed": "L'adhésion n'a pas marché. Réessaie.",
       "notFoundTitle": "Invitation introuvable",
       "notFoundBody": "Ce lien ne mène plus à un groupe. Demande un nouveau lien à ton ami.",

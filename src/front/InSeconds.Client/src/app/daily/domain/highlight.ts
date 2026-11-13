@@ -1,4 +1,4 @@
-import { GuessBucket } from './daily';
+import { DayHistory, GuessBucket } from './daily';
 
 /** Ce que la phrase du moment fort lit d'un morceau joué : la réponse du joueur et l'histogramme des autres. */
 export interface HighlightTrack {
@@ -55,4 +55,34 @@ export function highlightOf(tracks: readonly HighlightTrack[]): Highlight | null
     .map(t => ({ track: t, percent: Math.round((t.notFoundCount / playersOf(t)) * 100) }))
     .sort((a, b) => b.percent - a.percent || a.track.position - b.track.position)[0];
   return rarest.percent >= RARE_MIN_PERCENT ? { kind: 'rare', artist: rarest.track.artist, percent: rarest.percent } : null;
+}
+
+/**
+ * La phrase tirée de l'historique, pour quand trop peu de joueurs ont joué le même jour (ou que rien n'y est remarquable) :
+ * - `record` : « C'est ton meilleur score, ton record était de 3 100. » ;
+ * - `speed` : « En 1 s : seuls 9 % des morceaux sont trouvés aussi vite. » ;
+ * - `average` : « Au-dessus de ta moyenne (2 400 pts). »
+ */
+export type HistoryHighlight =
+  | { readonly kind: 'record'; readonly previousBest: number }
+  | { readonly kind: 'speed'; readonly seconds: number; readonly percent: number }
+  | { readonly kind: 'average'; readonly average: number };
+
+/** Il faut au moins ce nombre de parties passées pour parler de record ou de moyenne : sans, tout score est « le meilleur ». */
+export const HISTORY_MIN_GAMES = 3;
+
+/** Dans l'ordre : le record, puis la vitesse (`FAST_MAX_PERCENT` % au plus, comme la phrase du jour), puis la moyenne ; rien sinon. */
+export function historyHighlightOf(history: DayHistory | null | undefined, yourScore: number | null): HistoryHighlight | null {
+  if (!history) return null;
+  const enoughGames = history.previousGames >= HISTORY_MIN_GAMES;
+  if (enoughGames && yourScore !== null && history.previousBestScore !== null && yourScore > history.previousBestScore) {
+    return { kind: 'record', previousBest: history.previousBestScore };
+  }
+  if (history.fastestSeconds !== null && history.fastestFoundPercent !== null && history.fastestFoundPercent <= FAST_MAX_PERCENT) {
+    return { kind: 'speed', seconds: history.fastestSeconds, percent: Math.max(1, history.fastestFoundPercent) };
+  }
+  if (enoughGames && yourScore !== null && history.previousAverageScore !== null && yourScore > history.previousAverageScore) {
+    return { kind: 'average', average: history.previousAverageScore };
+  }
+  return null;
 }

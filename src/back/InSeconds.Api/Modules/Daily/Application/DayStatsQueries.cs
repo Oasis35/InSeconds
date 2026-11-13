@@ -90,6 +90,15 @@ public interface IDailyStatsQueries
     /// <summary>La série stockée de ces joueurs ; un joueur sans ligne n'a pas de série.</summary>
     Task<IReadOnlyDictionary<Guid, StreakRow>> GetStreaksAsync(IReadOnlyCollection<Guid> playerIds, CancellationToken ct);
 
+    /// <summary>
+    /// Les réponses des parties **terminées** des défis de <paramref name="since"/> (compris) à <paramref name="before"/> (exclu), tous joueurs non
+    /// supprimés confondus, agrégées par palier d'écoute : une requête de comptes, pas une ligne par réponse.
+    /// </summary>
+    Task<AnswerSpeedHistory> GetAnswerSpeedHistoryAsync(DateOnly since, DateOnly before, CancellationToken ct);
+
+    /// <summary>Les scores des parties **terminées** de ce joueur sur les défis d'avant <paramref name="before"/> (exclu) : tout ce qu'il faut à <c>PersonalHistory</c>.</summary>
+    Task<IReadOnlyList<int>> GetPreviousScoresAsync(Guid playerId, DateOnly before, CancellationToken ct);
+
     /// <summary>Les parties de ce joueur sur les défis de ce jour et des suivants, de la plus récente à la plus ancienne.</summary>
     Task<IReadOnlyList<PlayerHistoryRow>> GetPlayerHistoryAsync(Guid playerId, DateOnly since, CancellationToken ct);
 }

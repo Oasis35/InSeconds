@@ -106,6 +106,27 @@ public class TodayStatsTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Historique_PartieTerminee_DitSonPlusRapide_EtSesPartiesPrecedentes_JamaisPourUnAutre()
+    {
+        await _game.GenerateAsync();
+        var alice = await _game.NewPlayerAsync();
+        var bob = await _game.NewPlayerAsync();
+        await alice.FinishAsync((await alice.StartAsync()).SessionId, seconds: 1);
+        var bobSession = (await bob.StartAsync()).SessionId;
+        await bob.AnswerCorrectlyAsync(bobSession, 1, 1);
+
+        var own = await StatsAsync(alice.Client);
+        var anonymous = await StatsAsync(_game.Api.CreateClient());
+        var unfinished = await StatsAsync(bob.Client);
+
+        // Aucun jour passé : pas de pourcentage de vitesse (sous le seuil) ni de partie précédente.
+        Assert.NotNull(own.History);
+        Assert.Equal((1m, null, 0, null, null), (own.History.FastestSeconds, own.History.FastestFoundPercent, own.History.PreviousGames, own.History.PreviousBestScore, own.History.PreviousAverageScore));
+        Assert.Null(anonymous.History);
+        Assert.Null(unfinished.History);
+    }
+
+    [Fact]
     public async Task PartieAbandonnee_RevelelesMorceaux_SansScore()
     {
         await _game.GenerateAsync();
