@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, inject, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { PointsPipe } from '../../../ui/format/points.pipe';
+import { enterHomeCard } from '../../../ui/motion/motion';
 import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-button.component';
 import { TrackResultRow } from '../../../gameplay/ui/track-results-list/track-results-list.component';
 import { trackBar } from '../day-result-screen/result-rows';
@@ -55,6 +56,12 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
   `,
 })
 export class HomeDoneCardComponent {
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  constructor() {
+    afterNextRender(() => enterHomeCard(this.host.nativeElement));
+  }
+
   readonly score = input.required<number | null>();
   readonly rows = input.required<readonly TrackResultRow[]>();
   readonly countdown = input.required<string>();

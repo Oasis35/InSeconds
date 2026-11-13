@@ -1198,6 +1198,7 @@
       "found": "{{ found }} / {{ total }} tracks found",
       "won": "{{ disc }}!",
       "disc": "{{ disc }}",
+      "recordShort": "Record",
       "newRecord": "New record",
       "record": "Record: {{ score }}",
       "round": "Round {{ round }}",
@@ -1374,6 +1375,12 @@
         "history": "History",
         "ranking": "Ranking"
       },
+      "band": {
+        "title": "Today’s challenge is waiting",
+        "leftHours": "{{ n }} h left",
+        "leftMinutes": "{{ n }} min left",
+        "done": "Daily challenge done · next in"
+      },
       "dailyLeft": "Today's challenge is still waiting"
     },
     "level": {
@@ -1475,6 +1482,7 @@
       "line": "You are invited to a group"
     },
     "strip": {
+      "title": "Your groups",
       "rank": "#{{ rank }} of {{ members }}",
       "empty": "Play with your friends",
       "create": "Create a group"

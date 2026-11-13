@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonComponent } from '../../../ui/button/button.component';
+import { enterHomeCard, lightLadder } from '../../../ui/motion/motion';
 import { RunLevel } from '../../domain/run';
 import { RunDiscComponent } from '../run-disc/run-disc.component';
 
@@ -52,7 +53,7 @@ export const DISC_LADDER: readonly string[] = [
           <!-- La rangée des huit disques : celui du joueur plus gros, les disques à venir éteints. -->
           <div class="flex items-center justify-between gap-1" aria-hidden="true" data-testid="run-home-ladder">
             @for (key of ladder; track key; let i = $index) {
-              <app-run-disc [disc]="key" [size]="i === ladderIndex() ? 22 : 13" [shine]="false" [style.opacity]="i <= ladderIndex() ? 1 : 0.28" />
+              <app-run-disc data-motion="ladder-disc" [disc]="key" [size]="i === ladderIndex() ? 22 : 13" [shine]="false" [style.opacity]="i <= ladderIndex() ? 1 : 0.28" />
             }
           </div>
           <div class="h-1.5 rounded-full overflow-hidden" style="background:var(--bg-inactive)" aria-hidden="true">
@@ -97,6 +98,16 @@ export class RunHomeCardComponent {
   /** Le disque de son niveau ; le disque d'or (ce qu'on vise) tant qu'il n'a pas de niveau. */
   protected readonly disc = computed(() => this.level()?.disc.key ?? 'runs.discs.gold');
   protected readonly ladderIndex = computed(() => DISC_LADDER.indexOf(this.disc()));
+
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  constructor() {
+    // La carte arrive après celle du défi, puis les disques de l'échelle s'allument un à un.
+    afterNextRender(() => {
+      enterHomeCard(this.host.nativeElement, 0.12);
+      lightLadder(this.host.nativeElement, 0.6);
+    });
+  }
 
   protected format(value: number): string {
     return this.numbers().format(value);

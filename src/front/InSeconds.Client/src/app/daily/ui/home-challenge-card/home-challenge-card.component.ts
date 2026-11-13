@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, inject, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
+import { enterHomeCard } from '../../../ui/motion/motion';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { PointsPipe } from '../../../ui/format/points.pipe';
 import { TimeLeft } from '../../domain/countdown';
@@ -63,6 +64,12 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
   `,
 })
 export class HomeChallengeCardComponent {
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  constructor() {
+    afterNextRender(() => enterHomeCard(this.host.nativeElement));
+  }
+
   readonly trackCount = input.required<number>();
   readonly streak = input<Streak | null>(null);
   readonly linked = input.required<boolean>();

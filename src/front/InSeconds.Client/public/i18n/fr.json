@@ -1198,6 +1198,7 @@
       "found": "{{ found }} / {{ total }} morceaux trouvés",
       "won": "{{ disc }} !",
       "disc": "{{ disc }}",
+      "recordShort": "Record",
       "newRecord": "Nouveau record",
       "record": "Record : {{ score }}",
       "round": "Manche {{ round }}",
@@ -1374,6 +1375,12 @@
         "history": "Historique",
         "ranking": "Classement"
       },
+      "band": {
+        "title": "Le défi du jour t’attend",
+        "leftHours": "plus que {{ n }} h",
+        "leftMinutes": "plus que {{ n }} min",
+        "done": "Défi du jour terminé · prochain dans"
+      },
       "dailyLeft": "Il te reste le défi du jour"
     },
     "level": {
@@ -1475,6 +1482,7 @@
       "line": "Tu es invité dans un groupe"
     },
     "strip": {
+      "title": "Tes groupes",
       "rank": "n° {{ rank }} sur {{ members }}",
       "empty": "Joue avec tes amis",
       "create": "Créer un groupe"

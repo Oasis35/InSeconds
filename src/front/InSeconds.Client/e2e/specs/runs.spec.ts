@@ -178,9 +178,9 @@ test.describe('Mode Setlist', () => {
     await expect(run.finished).toHaveAttribute('data-status', 'won');
     await expect(run.disc).toHaveText('Disque d’or !');
     // La flèche ↗ précède le texte sous la V4 (fin de la maquette 04).
-    await expect(run.record).toContainText('Nouveau record');
+    await expect(run.record).toContainText('Record');
     await expect(run.found).toHaveText('20 / 20 morceaux trouvés');
-    // Nouvelle interface (le joueur a l'accès) : son niveau, encore provisoire après une seule partie, « Nouvelle setlist » et « Défier un ami ».
+    // Nouvelle interface (le joueur a l'accès) : son niveau dans le bloc compact du haut, encore provisoire après une seule partie, « Rejouer » et « Défier un ami ».
     await expect(run.page.getByTestId('run-level')).toBeVisible();
     await expect(run.page.getByTestId('run-level-provisional')).toBeVisible();
     await expect(run.page.getByTestId('run-level-delta')).toHaveText(/^\+/);
@@ -193,7 +193,7 @@ test.describe('Mode Setlist', () => {
     await expect(run.page.getByTestId('share-grid')).toBeVisible();
     await run.page.keyboard.press('Escape');
     await expect(run.page.getByTestId('share-sheet')).toHaveCount(0);
-    await expect(run.page.getByTestId('run-play-again-label')).toHaveText('Nouvelle setlist');
+    await expect(run.page.getByTestId('run-play-again-label')).toHaveText('Rejouer');
     await expect(run.page.getByTestId('run-shortfall')).toHaveCount(0);
 
     // « Revoir » : la partie dans l'historique, avec ses 20 morceaux.

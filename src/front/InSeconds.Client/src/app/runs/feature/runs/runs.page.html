@@ -119,13 +119,13 @@
 
       @case ('finished') {
         @if (store.finish(); as finish) {
-          @if (chrome.v4() && chrome.dailyDone() === false) {
-            <a routerLink="/daily" data-testid="daily-left" class="block pt-2 text-center text-sm underline" style="color:var(--text-light)">{{ 'runs.v4.dailyLeft' | translate }}</a>
-          }
           <app-run-finish [finish]="finish" [showLevel]="chrome.v4()" [reviewLink]="reviewLink()" [duel]="store.duel()" [canPlayAgain]="store.canPlayAgain()" [shareCopied]="share.copied()" [shareFailed]="share.failed()"
             [lang]="language.current()" (share)="shareFinish(finish)" (compare)="store.showComparison()" (playAgain)="store.playAgain()">
             @if (chrome.v4()) {
-              <app-groups-strip finishGroups class="block" [showGroups]="session.isLinked()" />
+              <app-groups-strip finishGroups data-motion="finish-groups" class="block" [showGroups]="session.isLinked()" />
+            }
+            @if (chrome.v4()) {
+              <app-run-daily-band finishBottom data-motion="finish-band" [pending]="chrome.dailyDone() === null ? null : !chrome.dailyDone()" />
             }
           </app-run-finish>
           @if (chrome.v4()) {

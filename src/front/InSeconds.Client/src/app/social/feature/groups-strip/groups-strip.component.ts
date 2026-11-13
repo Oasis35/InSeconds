@@ -5,8 +5,8 @@ import { GroupsStore } from '../../data-access/groups.store';
 import { PendingInvite } from '../../data-access/pending-invite';
 
 /**
- * Les groupes du joueur à la fin d'une partie : une ligne par groupe avec sa place (« Potes · 2e sur 5 »), ou « Joue avec tes amis · Créer un
- * groupe » s'il n'en a pas ; au-dessus, l'invitation reçue avec le lien de la playlist (« Rejoindre le groupe »), pour tout joueur. Les places
+ * Les groupes du joueur à la fin d'une partie, dans un bloc violet (la couleur des autres joueurs) titré « Tes groupes » : une ligne par groupe avec
+ * sa place (« Potes · n° 2 sur 5 »), ou « Joue avec tes amis · Créer un groupe » s'il n'en a pas ; au-dessus, l'invitation reçue avec le lien de la playlist (« Rejoindre le groupe »), pour tout joueur. Les places
  * ne se lisent que pour qui a des groupes (`showGroups`) : le store est celui de la page.
  */
 @Component({
@@ -15,28 +15,28 @@ import { PendingInvite } from '../../data-access/pending-invite';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (pendingCode() || showGroups()) {
-      <div class="flex flex-col gap-2 text-sm" data-testid="groups-strip">
+      <section class="flex flex-col gap-2.5 px-4 py-3 text-sm" data-testid="groups-strip"
+        style="background:rgb(var(--rgb-violet) / 0.12);border:1px solid rgb(var(--rgb-violet) / 0.6);border-radius:var(--radius-card)">
+        <h3 class="text-sm font-bold" style="font-family:var(--font-body);color:var(--color-violet)">{{ 'social.strip.title' | translate }}</h3>
         @if (pendingCode(); as code) {
-          <a [routerLink]="['/ranking/join', code]" class="flex items-center justify-between gap-3 px-4 py-3 min-h-11" data-testid="strip-pending"
-             style="border:1px solid var(--color-accent-3);border-radius:var(--radius-button);color:var(--text-hi)">
+          <a [routerLink]="['/ranking/join', code]" class="flex items-center justify-between gap-3 min-h-11" data-testid="strip-pending" style="color:var(--text-hi)">
             <span>{{ 'social.pending.line' | translate }}</span><span aria-hidden="true">›</span>
           </a>
         }
         @if (showGroups()) {
           @if (store.standings(); as standings) {
             @for (standing of standings; track standing.groupId) {
-              <a [routerLink]="['/ranking']" [queryParams]="{ group: standing.groupId }" class="flex items-center justify-between gap-3 px-4 py-3 min-h-11" data-testid="strip-group"
-                 style="border:1px solid var(--border-neutral);border-radius:var(--radius-button);color:var(--text-hi)">
-                <span class="min-w-0 truncate">{{ standing.name }}</span>
+              @if (!$first || pendingCode()) { <div class="h-px" style="background:rgb(var(--rgb-violet) / 0.3)"></div> }
+              <a [routerLink]="['/ranking']" [queryParams]="{ group: standing.groupId }" class="flex items-center justify-between gap-3 min-h-11" data-testid="strip-group" style="color:var(--text-hi)">
+                <span class="min-w-0 truncate font-bold">{{ standing.name }}</span>
                 <span class="shrink-0 tabular-nums" style="color:var(--color-accent-3)">
-                  @if (standing.rank !== null) { {{ 'social.strip.rank' | translate: { rank: standing.rank, members: standing.members } }} }
+                  @if (standing.rank !== null) { <b class="text-[17px]">{{ 'social.strip.rank' | translate: { rank: standing.rank, members: standing.members } }}</b> }
                   <span aria-hidden="true" style="color:var(--text-muted)"> ›</span>
                 </span>
               </a>
             } @empty {
               @if (!pendingCode()) {
-                <a routerLink="/ranking/new" class="flex items-center justify-between gap-3 px-4 py-3 min-h-11" data-testid="strip-create"
-                   style="border:1px solid var(--border-neutral);border-radius:var(--radius-button);color:var(--text-hi)">
+                <a routerLink="/ranking/new" class="flex items-center justify-between gap-3 min-h-11" data-testid="strip-create" style="color:var(--text-hi)">
                   <span>{{ 'social.strip.empty' | translate }}</span>
                   <span class="shrink-0" style="color:var(--color-accent-3)">{{ 'social.strip.create' | translate }} <span aria-hidden="true">›</span></span>
                 </a>
@@ -44,7 +44,7 @@ import { PendingInvite } from '../../data-access/pending-invite';
             }
           }
         }
-      </div>
+      </section>
     }
   `,
 })

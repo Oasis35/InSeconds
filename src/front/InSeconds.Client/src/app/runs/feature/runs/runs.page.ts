@@ -21,6 +21,7 @@ import { RunShare } from '../../data-access/run-share';
 import { RunSounds } from '../../data-access/run-sounds';
 import { RunPseudoScreenComponent } from '../../ui/run-pseudo-screen/run-pseudo-screen.component';
 import { RunComparisonScreenComponent } from '../../ui/run-comparison-screen/run-comparison-screen.component';
+import { RunDailyBandComponent } from '../../ui/run-daily-band/run-daily-band.component';
 import { RunFinishComponent } from '../../ui/run-finish/run-finish.component';
 import { RunHeaderComponent } from '../../ui/run-header/run-header.component';
 import { RunThemeScreenComponent } from '../../ui/run-theme-screen/run-theme-screen.component';
@@ -51,7 +52,7 @@ import { RunShareSheetComponent, RunShareSheetData } from '../share-sheet/run-sh
   selector: 'app-runs-page',
   imports: [
     TranslatePipe, RouterLink, DecorBackgroundComponent, TrackRoundComponent, RunHeaderComponent, RunClockComponent, RunRevealComponent, RunPileComponent,
-    RunWithdrawnCardComponent, RunFinishComponent, RunWelcomeScreenComponent, RunStatusScreenComponent, ResumeScreenComponent,
+    RunWithdrawnCardComponent, RunFinishComponent, RunDailyBandComponent, RunWelcomeScreenComponent, RunStatusScreenComponent, ResumeScreenComponent,
     RunLinkScreenComponent, RunThemeScreenComponent, RunPseudoScreenComponent, RunComparisonScreenComponent, RunPalierComponent, RunDifficultyComponent, RunRoundCardsComponent,
     GroupsStripComponent, RunHitsLineComponent,
   ],
