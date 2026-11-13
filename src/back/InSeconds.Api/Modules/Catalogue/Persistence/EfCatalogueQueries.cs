@@ -16,6 +16,8 @@ public sealed class EfCatalogueQueries(InSecondsDbContext db, TimeProvider time)
                 t.Id, t.DeezerTrackId, t.Artist, t.Title, t.CoverHash, t.ReleaseYear, t.DeezerRank,
                 t.PreviewStatus, t.PreviewCheckedAt, t.DisabledAt != null,
                 t.Genres.OrderBy(g => g.Name).Select(g => g.Name).ToList(), t.Themes.OrderBy(x => x.Id).Select(x => x.Id).ToList(), t.AltTitles))
+            // Deux collections (genres, thèmes) : sans AsSplitQuery, un seul SELECT multiplie genres par thèmes pour chaque morceau du pool.
+            .AsSplitQuery()
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<ThemeItem>> ListThemesAsync(CancellationToken ct) =>
@@ -102,6 +104,8 @@ public sealed class EfTrackDirectory(InSecondsDbContext db, IOptionsMonitor<Cata
                 ThemeIds = t.Themes.OrderBy(x => x.Id).Select(x => x.Id).ToList(),
                 Genres = t.Genres.OrderBy(g => g.Name).Select(g => g.Name).ToList(),
             })
+            // Mêmes deux collections que ListTracksAsync : une requête par collection (EF Core avertit sinon, MultipleCollectionIncludeWarning).
+            .AsSplitQuery()
             .ToListAsync(ct);
 
         var catalogue = options.CurrentValue;

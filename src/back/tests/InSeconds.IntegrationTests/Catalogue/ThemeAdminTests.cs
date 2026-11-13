@@ -97,6 +97,28 @@ public class ThemeAdminTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Lister_UnMorceauAPlusieursGenresEtThemes_ChaqueValeurUneSeuleFois_EnOrdre()
+    {
+        // Deux genres et trois thèmes : un seul SELECT joint les deux collections et en ferait le produit (6 lignes) ;
+        // la requête en deux temps (AsSplitQuery) rend chaque valeur exactement une fois, genres par nom, thèmes par identifiant.
+        var films = await AddAsync("Films");
+        var rap = await AddAsync("Rap");
+        var eighties = await AddAsync("Années 80");
+        await _app.Api.ExecuteAsync("""
+            INSERT INTO catalogue.genres (id, name) VALUES (10, 'Rock'), (11, 'Dance');
+            INSERT INTO catalogue.track_genres (track_id, genre_id) VALUES (1, 10), (1, 11)
+            """);
+        await _app.Admin().PutAsJsonAsync("/api/admin/catalogue/tracks/1/themes", new SetTrackThemes([films.Id, rap.Id, eighties.Id]), Ct);
+
+        var pool = await _app.Admin().GetFromJsonAsync<IReadOnlyList<TrackListItem>>("/api/admin/catalogue/tracks", Ct);
+
+        var track = pool!.Single(t => t.Id == 1);
+        Assert.Equal(["Dance", "Rock"], track.Genres);
+        Assert.Equal(new[] { films.Id, rap.Id, eighties.Id }.Order(), track.ThemeIds!);
+        Assert.Empty(pool!.Single(t => t.Id == 2).Genres);
+    }
+
+    [Fact]
     public async Task Associer_PlusieursThemes_RemplaceCeuxD_Avant()
     {
         var films = await AddAsync("Films");
