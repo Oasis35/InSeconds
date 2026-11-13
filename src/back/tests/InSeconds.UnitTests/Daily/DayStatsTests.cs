@@ -218,4 +218,36 @@ public class DayStatsTests
         // camelCase, comme le reste de l'API.
         Assert.Contains("\"playerCount\":1", DayStatsJson.Write(original), StringComparison.Ordinal);
     }
+
+    // --- l'historique : situer un joueur sans autre joueur le même jour ---
+
+    [Fact]
+    public void HistoriqueDesReponses_PartDesTrouveesAussiVite()
+    {
+        // 200 réponses sur les jours passés : 20 trouvées à 0,5 s, 40 à 1 s, 60 à 3 s, 80 ratées.
+        var history = new AnswerSpeedHistory(200, new Dictionary<decimal, int> { [0.5m] = 20, [1m] = 40, [3m] = 60 });
+
+        Assert.Equal(10, history.PercentFoundWithin(0.5m));
+        Assert.Equal(30, history.PercentFoundWithin(1m));
+        Assert.Equal(30, history.PercentFoundWithin(2m));
+        Assert.Equal(60, history.PercentFoundWithin(10m));
+    }
+
+    [Fact]
+    public void HistoriqueDesReponses_SousLeSeuil_PasDePourcentage()
+    {
+        var history = new AnswerSpeedHistory(AnswerSpeedHistory.MinAnswers - 1, new Dictionary<decimal, int> { [1m] = 10 });
+
+        Assert.Null(history.PercentFoundWithin(1m));
+        Assert.Null(AnswerSpeedHistory.Empty.PercentFoundWithin(10m));
+    }
+
+    [Fact]
+    public void HistoriqueDuJoueur_MeilleurScoreEtMoyenne()
+    {
+        var history = PersonalHistory.Of([1000, 2000, 3501]);
+
+        Assert.Equal((3, 3501, 2167), (history.Games, history.BestScore, history.AverageScore));
+        Assert.Equal(new PersonalHistory(0, null, null), PersonalHistory.Of([]));
+    }
 }

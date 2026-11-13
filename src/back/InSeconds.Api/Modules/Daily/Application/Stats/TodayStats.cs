@@ -27,6 +27,22 @@ public sealed record TrackStatResponse(
     IReadOnlyList<GuessBucketResponse> GuessTimeDistribution,
     int NotFoundCount);
 
+/// <summary>
+/// Ce que l'**historique** permet de dire du joueur quand les autres joueurs du jour ne suffisent pas (sa partie du jour finie seulement, jamais
+/// de chiffre sur un autre joueur). Les parties comptées sont celles terminées avant aujourd'hui.
+/// </summary>
+/// <param name="FastestSeconds">Le palier du morceau qu'il a trouvé le plus vite aujourd'hui (vide s'il n'a rien trouvé).</param>
+/// <param name="FastestFoundPercent">Part des réponses des <see cref="AnswerSpeedHistory.WindowDays"/> derniers jours trouvées aussi vite (vide sous <see cref="AnswerSpeedHistory.MinAnswers"/> réponses).</param>
+/// <param name="PreviousGames">Ses parties terminées avant aujourd'hui.</param>
+/// <param name="PreviousBestScore">Son meilleur score avant aujourd'hui (vide sans partie).</param>
+/// <param name="PreviousAverageScore">Son score moyen avant aujourd'hui (vide sans partie).</param>
+public sealed record TodayHistoryResponse(
+    decimal? FastestSeconds,
+    int? FastestFoundPercent,
+    int PreviousGames,
+    int? PreviousBestScore,
+    int? PreviousAverageScore);
+
 /// <summary>Les statistiques du jour.</summary>
 /// <param name="YourScore">Le score du joueur, vide s'il n'a pas de partie terminée aujourd'hui.</param>
 /// <param name="MedianScore">Médiane des scores (division entière des deux valeurs centrales).</param>
@@ -40,6 +56,7 @@ public sealed record TrackStatResponse(
 /// <param name="MaxPossibleScore">Nombre de morceaux × meilleur palier : la borne haute de l'égaliseur.</param>
 /// <param name="ScoreDistribution">L'égaliseur : dix tranches de même largeur.</param>
 /// <param name="BetterThanPercent">Part des **autres** joueurs battus (vide sans score ou seul).</param>
+/// <param name="History">Vide tant que le joueur n'a pas de partie terminée aujourd'hui (rien sur lui n'est lu avant).</param>
 public sealed record TodayStatsResponse(
     int? YourScore,
     int MedianScore,
@@ -52,7 +69,8 @@ public sealed record TodayStatsResponse(
     int? MaxScore,
     int MaxPossibleScore,
     IReadOnlyList<ScoreBucketResponse> ScoreDistribution,
-    int? BetterThanPercent)
+    int? BetterThanPercent,
+    TodayHistoryResponse? History = null)
 {
     /// <summary>Pas de défi aujourd'hui : tout à zéro.</summary>
     public static TodayStatsResponse Empty { get; } = new(null, 0, 0, 0, [], 0, false, null, null, 0, [], null);
@@ -98,6 +116,7 @@ public static class GetTodayStatsEndpoint
         var best = rules.Options.EffectiveDurationScores.Max(d => d.Score);
         var maxPossible = tracks.Count * best;
         var yourScore = own?.TotalScore;
+        var history = own is null || playerId is not { } historyPlayer ? null : await HistoryAsync(own, historyPlayer, today, stats, ct);
 
         return new TodayStatsResponse(
             yourScore,
@@ -111,7 +130,18 @@ public static class GetTodayStatsEndpoint
             scores.Count == 0 ? null : scores.Max(),
             maxPossible,
             ScoreDistribution.Build(scores, maxPossible).Select(b => new ScoreBucketResponse(b.MinScore, b.MaxScore, b.Count)).ToList(),
-            ScoreDistribution.BetterThanPercent(scores, yourScore));
+            ScoreDistribution.BetterThanPercent(scores, yourScore),
+            history);
+    }
+
+    private static async Task<TodayHistoryResponse> HistoryAsync(PlayerSessionRow own, Guid playerId, DateOnly today, IDailyStatsQueries stats, CancellationToken ct)
+    {
+        var found = own.Answers.Where(a => a.ArtistCorrect || a.TitleCorrect).Select(a => (decimal?)a.ListenedSeconds).Min();
+        var speed = found is null ? null : await stats.GetAnswerSpeedHistoryAsync(today.AddDays(-AnswerSpeedHistory.WindowDays), today, ct);
+
+        var previous = PersonalHistory.Of(await stats.GetPreviousScoresAsync(playerId, today, ct));
+
+        return new TodayHistoryResponse(found, found is { } seconds ? speed?.PercentFoundWithin(seconds) : null, previous.Games, previous.BestScore, previous.AverageScore);
     }
 
     // Compte : le gel que la partie du jour a réellement gagné. Invité : il n'a jamais de stock, on lui dit seulement qu'il aurait atteint le palier.

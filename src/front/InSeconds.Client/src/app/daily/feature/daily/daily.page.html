@@ -84,21 +84,23 @@
       @case ('already_played') {
         @if (store.abandoned()) {
           <app-abandoned-screen [countdown]="store.countdown()" />
-        } @else if (chrome.v4() && !showResult()) {
-          <!-- L'accueil de la V4, défi fait : son résumé (sans date, ni « fait »), l'écran complet derrière « Voir le résultat », la Setlist mise en avant dessous. -->
+        } @else if (chrome.v4()) {
+          <!-- L'accueil de la V4, défi fait : son résumé (sans date, ni « fait ») avec la phrase et le détail des morceaux dans la carte, la Setlist mise en avant dessous. -->
           <div class="screen-enter flex flex-col gap-3" data-testid="home-v4">
             <app-home-done-card
               [score]="store.stats()?.yourScore ?? null"
               [rows]="resultRows()"
               [countdown]="store.countdown()"
+              [betterThanPercent]="store.stats()?.betterThanPercent ?? null"
+              [history]="store.stats()?.history ?? null"
+              [lang]="language.current()"
               [streak]="store.pillStreak()"
               [linked]="store.linked()"
               (openStreak)="openStreakSheet()"
               [shareCopied]="shareCopied()"
               [shareFailed]="shareFailed()"
               [canShare]="store.stats()?.yourScore != null"
-              (share)="share()"
-              (seeResult)="openResult()" />
+              (share)="share()" />
           </div>
         } @else {
           <app-day-result-screen
