@@ -4,15 +4,17 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
 import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-button.component';
 import { TrackResultRow } from '../../../gameplay/ui/track-results-list/track-results-list.component';
 import { trackBar } from '../day-result-screen/result-rows';
+import { Streak } from '../../domain/streak';
+import { StreakPillComponent } from '../streak-pill/streak-pill.component';
 
 /**
- * La carte du défi du jour sur l'accueil de la V4, une fois joué : « Défi du jour · fait », le score, une petite barre par morceau, le
- * compte à rebours du prochain défi, « Voir le résultat » (l'écran complet) et « Partager mon score » en contour orange : la Setlist
+ * La carte du défi du jour sur l'accueil de la V4, une fois joué : « Défi du jour » (sans « fait » ni date), le score, une petite barre par morceau, le
+ * compte à rebours du prochain défi, « Voir le résultat » (l'écran complet), le relevé de série et « Partager mon score » en contour orange : la Setlist
  * prend la place principale dessous.
  */
 @Component({
   selector: 'app-home-done-card',
-  imports: [TranslatePipe, PointsPipe, ShareButtonComponent],
+  imports: [TranslatePipe, PointsPipe, ShareButtonComponent, StreakPillComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
@@ -43,6 +45,9 @@ import { trackBar } from '../day-result-screen/result-rows';
             aria-hidden="true"><polyline points="9 6 15 12 9 18" /></svg>
         </button>
       </div>
+      <div class="flex justify-center">
+        <app-streak-pill [streak]="streak()" [linked]="linked()" (open)="openStreak.emit()" />
+      </div>
       @if (score() !== null) {
         <app-share-button class="w-full" variant="accent" [glow]="false" [copied]="shareCopied()" [failed]="shareFailed()" [disabled]="!canShare()" (share)="share.emit()" />
       }
@@ -53,11 +58,15 @@ export class HomeDoneCardComponent {
   readonly score = input.required<number | null>();
   readonly rows = input.required<readonly TrackResultRow[]>();
   readonly countdown = input.required<string>();
+  /** Le relevé de série et de gels, sous le score (la série est celle du défi). */
+  readonly streak = input<Streak | null>(null);
+  readonly linked = input(false);
   readonly canShare = input(true);
   readonly shareCopied = input(false);
   readonly shareFailed = input(false);
   readonly share = output<void>();
   readonly seeResult = output<void>();
+  readonly openStreak = output<void>();
 
   protected readonly bar = trackBar;
 }

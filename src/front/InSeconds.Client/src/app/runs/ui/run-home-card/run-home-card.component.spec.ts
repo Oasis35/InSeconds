@@ -21,21 +21,33 @@ describe('RunHomeCardComponent', () => {
   }
 
   describe('discrète (le défi du jour reste à jouer)', () => {
-    it('sans partie finie : la promesse, « Jouer », le disque d’or', () => {
+    it('sans partie finie : la promesse, « Jouer » en contour, le disque d’or, pas de rangée', () => {
       const { element, q } = render();
-      expect(q('run-home-card')?.getAttribute('data-size')).toBe('small');
+      expect(q('run-home-card')?.getAttribute('data-active')).toBe('false');
       expect(q('run-home-line')?.textContent).toContain('runs.welcome.tagline');
       expect(q('run-home-play')?.textContent).toContain('runs.home.play');
       expect(q('run-home-play')?.getAttribute('href')).toBe('/setlist');
       expect(element.querySelector('[data-disc]')?.getAttribute('data-disc')).toBe('runs.discs.gold');
+      expect(q('run-home-level')).toBeNull();
     });
 
-    it('avec un record : le record, au format de la langue, et le disque de son niveau', () => {
-      const { element, q } = render({ record: 3420, level: LEVEL });
+    it('avec un record seul : le record, au format de la langue', () => {
+      const { q } = render({ record: 3420 });
       expect(q('run-home-line')?.textContent).toContain('runs.home.record');
       expect(q('run-home-line')?.textContent).toMatch(/3\s420/);
       expect(q('run-home-line')?.textContent).toContain('runs.home.anytime');
+    });
+
+    it('avec un niveau : son disque, la rangée des huit disques où le sien est plus gros, la jauge et ses deux bornes', () => {
+      const { element, q } = render({ record: 3420, level: LEVEL });
       expect(element.querySelector('[data-disc]')?.getAttribute('data-disc')).toBe('runs.discs.silver');
+      expect(q('run-home-line')?.textContent).toContain('runs.home.levelLine');
+      const ladder = [...(q('run-home-ladder')?.querySelectorAll('svg') ?? [])];
+      expect(ladder).toHaveLength(8);
+      expect(ladder.map(svg => svg.getAttribute('width'))).toEqual(['13', '13', '13', '22', '13', '13', '13', '13']);
+      expect((q('run-home-bar') as HTMLElement).style.width).toBe('44%');
+      expect(q('run-home-level')?.textContent).toMatch(/1\s380/);
+      expect(q('run-home-next')?.textContent).toMatch(/1\s600/);
     });
 
     it('une setlist finie aujourd’hui : son score et « Rejouer »', () => {
@@ -46,27 +58,18 @@ describe('RunHomeCardComponent', () => {
     });
   });
 
-  describe('en grand (le défi du jour est joué)', () => {
-    it('le niveau, la jauge et ce qui manque pour le disque suivant', () => {
-      const { q } = render({ big: true, level: LEVEL });
-      expect(q('run-home-card')?.getAttribute('data-size')).toBe('big');
-      expect(q('run-home-level')?.textContent).toContain('runs.discs.silver');
-      expect(q('run-home-level')?.textContent).toMatch(/1\s380/);
-      expect((q('run-home-bar') as HTMLElement).style.width).toBe('44%');
-      expect(q('run-home-play')?.textContent).toContain('runs.level.newSetlist');
-      expect(q('run-home-next')).not.toBeNull();
-      expect(q('run-home-play')?.getAttribute('href')).toBe('/setlist');
+  describe('mise en avant (le défi du jour est joué)', () => {
+    it('contour orange et « Jouer » en bouton principal, la carte reste compacte', () => {
+      const { element, q } = render({ active: true, level: LEVEL });
+      expect(q('run-home-card')?.getAttribute('data-active')).toBe('true');
+      expect((q('run-home-card') as HTMLElement).style.border).toContain('var(--color-accent-3)');
+      expect(q('run-home-play')?.textContent).toContain('runs.home.play');
+      expect(element.querySelectorAll('[data-disc]').length).toBe(9);
     });
 
-    it('au plus haut disque : pas de disque suivant à annoncer', () => {
-      const { q } = render({ big: true, level: { ...LEVEL, nextDisc: null, pointsToNext: null, progressPercent: 100 } });
+    it('au plus haut disque : pas de borne suivante', () => {
+      const { q } = render({ active: true, level: { ...LEVEL, nextDisc: null, pointsToNext: null, progressPercent: 100 } });
       expect(q('run-home-next')).toBeNull();
-    });
-
-    it('sans niveau : la promesse, sans jauge', () => {
-      const { q } = render({ big: true });
-      expect(q('run-home-tagline')).not.toBeNull();
-      expect(q('run-home-bar')).toBeNull();
     });
   });
 });

@@ -67,7 +67,7 @@ test.describe('Mode Setlist', () => {
     await expect(run.homeCard).toBeVisible();
     await expect(run.homeCard).toContainText('Setlist');
     // Le défi du jour n'est pas joué : la carte est discrète (« Jouer » en contour), sous la carte du défi.
-    await expect(run.homeCard).toHaveAttribute('data-size', 'small');
+    await expect(run.homeCard).toHaveAttribute('data-active', 'false');
     await expect(page.getByTestId('home-challenge')).toBeVisible();
     await page.getByTestId('run-home-play').click();
     await expect(page).toHaveURL(/\/setlist$/);
@@ -98,7 +98,7 @@ test.describe('Mode Setlist', () => {
     await expect(page.getByTestId('daily-pending')).toBeVisible();
     // L'accueil de la maquette : la carte du défi, avec sa série dedans, puis la carte Setlist.
     await expect(page.getByTestId('home-challenge')).toBeVisible();
-    await expect(page.getByTestId('run-home-card')).toHaveAttribute('data-size', 'small');
+    await expect(page.getByTestId('run-home-card')).toHaveAttribute('data-active', 'false');
     // Les liens légaux ont quitté la barre : une ligne discrète sous la carte Setlist, et quatre entrées en bas.
     await expect(page.getByTestId('home-legal-line').getByRole('link', { name: 'Confidentialité' })).toBeVisible();
     await expect(bar.getByRole('link', { name: 'Confidentialité' })).toHaveCount(0);

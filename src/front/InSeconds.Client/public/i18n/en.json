@@ -836,7 +836,7 @@
     },
     "home": {
       "label": "Daily challenge",
-      "done": "Daily challenge · done",
+      "done": "Daily challenge",
       "seeResult": "See the result",
       "remainingHours": "The daily challenge is still waiting · {{ n }} h left",
       "remainingMinutes": "The daily challenge is still waiting · {{ n }} min left"
@@ -1153,6 +1153,7 @@
     "home": {
       "record": "Best",
       "anytime": "yours whenever you like",
+      "levelLine": "{{ disc }} · at your own pace",
       "playedToday": "Setlist played",
       "play": "Play",
       "replay": "Play again"

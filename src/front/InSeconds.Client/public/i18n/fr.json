@@ -836,7 +836,7 @@
     },
     "home": {
       "label": "Défi du jour",
-      "done": "Défi du jour · fait",
+      "done": "Défi du jour",
       "seeResult": "Voir le résultat",
       "remainingHours": "Il te reste le défi du jour · plus que {{ n }} h",
       "remainingMinutes": "Il te reste le défi du jour · plus que {{ n }} min"
@@ -1153,6 +1153,7 @@
     "home": {
       "record": "Record",
       "anytime": "à toi quand tu veux",
+      "levelLine": "{{ disc }} · à ton rythme",
       "playedToday": "Setlist jouée",
       "play": "Jouer",
       "replay": "Rejouer"

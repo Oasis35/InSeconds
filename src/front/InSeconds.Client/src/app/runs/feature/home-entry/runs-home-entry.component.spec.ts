@@ -70,13 +70,19 @@ describe('RunsHomeEntryComponent', () => {
     expect(element.querySelector('[data-testid="run-home-card"]')).toBeNull();
   });
 
-  it("le défi du jour à jouer : la carte discrète, avec le record", async () => {
+  it("le défi du jour à jouer : la carte discrète, avec le niveau", async () => {
     api.meResult = ME({ record: { bestScore: 3420, bestRoundsPassed: 4, isNew: false }, level: LEVEL });
     const element = await render(player(false), async () => true, false);
     const card = element.querySelector('[data-testid="run-home-card"]');
-    expect(card?.getAttribute('data-size')).toBe('small');
-    expect(card?.textContent).toMatch(/3\s420/);
+    expect(card?.getAttribute('data-active')).toBe('false');
+    expect(card?.textContent).toContain('runs.home.levelLine');
     expect(card?.textContent).toContain('runs.home.play');
+  });
+
+  it("sans niveau, le record seul : la carte discrète le rappelle", async () => {
+    api.meResult = ME({ record: { bestScore: 3420, bestRoundsPassed: 4, isNew: false }, level: null });
+    const element = await render(player(false), async () => true, false);
+    expect(element.querySelector('[data-testid="run-home-card"]')?.textContent).toMatch(/3\s420/);
   });
 
   it("une setlist finie aujourd'hui : « Rejouer » et son score", async () => {
@@ -91,10 +97,10 @@ describe('RunsHomeEntryComponent', () => {
     expect(card?.textContent).toContain('runs.home.replay');
   });
 
-  it("le défi du jour joué : la carte en grand, avec le niveau", async () => {
+  it("le défi du jour joué : la carte mise en avant, avec le niveau", async () => {
     api.meResult = ME({ level: LEVEL });
     const element = await render(player(false), async () => true, true);
-    expect(element.querySelector('[data-testid="run-home-card"]')?.getAttribute('data-size')).toBe('big');
+    expect(element.querySelector('[data-testid="run-home-card"]')?.getAttribute('data-active')).toBe('true');
     expect(element.querySelector('[data-testid="run-home-level"]')?.textContent).toMatch(/1\s380/);
   });
 
@@ -103,6 +109,6 @@ describe('RunsHomeEntryComponent', () => {
     api.historyResult = new Error('réseau');
     const element = await render(player(false), async () => true, true);
     expect(element.querySelector('[data-testid="run-home-card"]')).not.toBeNull();
-    expect(element.querySelector('[data-testid="run-home-tagline"]')).not.toBeNull();
+    expect(element.querySelector('[data-testid="run-home-line"]')?.textContent).toContain('runs.welcome.tagline');
   });
 });
