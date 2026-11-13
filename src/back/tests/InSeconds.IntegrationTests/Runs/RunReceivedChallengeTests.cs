@@ -26,6 +26,10 @@ public class RunReceivedChallengeTests(PostgresFixture postgres) : IAsyncLifetim
         return start.ChallengeCode;
     }
 
+    /// <summary>Vieillit le défi reçu sur l'horloge du jeu (simulée), pas sur celle de la base.</summary>
+    private Task ReceivedDaysAgoAsync(Guid playerId, int days) =>
+        _run.Api.ExecuteAsync($"UPDATE runs.received_challenges SET received_at = '{_run.Game.Time.GetUtcNow().AddDays(-days):O}' WHERE player_id = '{playerId}'");
+
     [Fact]
     public async Task CompteQuiOuvreLeLien_RetrouveLeDefiSurSonAccueil_AvecLeScoreAbattre()
     {
@@ -117,10 +121,10 @@ public class RunReceivedChallengeTests(PostgresFixture postgres) : IAsyncLifetim
         var bob = await _run.NewPlayerAsync("Bob");
         await bob.ReceiveRawAsync(code);
 
-        await _run.Api.ExecuteAsync($"UPDATE runs.received_challenges SET received_at = now() - interval '6 days' WHERE player_id = '{bob.Id}'");
+        await ReceivedDaysAgoAsync(bob.Id, 6);
         Assert.NotNull((await bob.MeAsync()).Received);
 
-        await _run.Api.ExecuteAsync($"UPDATE runs.received_challenges SET received_at = now() - interval '8 days' WHERE player_id = '{bob.Id}'");
+        await ReceivedDaysAgoAsync(bob.Id, 8);
         Assert.Null((await bob.MeAsync()).Received);
     }
 

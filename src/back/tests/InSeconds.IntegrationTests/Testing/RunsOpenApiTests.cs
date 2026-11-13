@@ -13,8 +13,8 @@ public class RunsOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(p
 
         Assert.Equal(
             [
-                "abandonRun", "chooseRunDifficulty", "chooseRunTheme", "getRunChallenge", "getRunComparison", "getRunHistory", "getRunHits", "getRunPastPreview", "getRunSession", "getRunsMe", "grantRunAccess", "joinRun",
-                "launchRun", "listRunAccess", "refreshRunPreview", "revokeRunAccess", "startRunClock", "submitRunAnswer", "swapRunTrack", "updateRunListening",
+                "abandonRun", "chooseRunDifficulty", "chooseRunTheme", "dismissRunChallenge", "getRunChallenge", "getRunComparison", "getRunHistory", "getRunHits", "getRunPastPreview", "getRunSession", "getRunsMe", "grantRunAccess", "joinRun",
+                "launchRun", "listRunAccess", "receiveRunChallenge", "refreshRunPreview", "revokeRunAccess", "startRunClock", "submitRunAnswer", "swapRunTrack", "updateRunListening",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));
         Assert.All(document["paths"]!.AsObject().Select(p => p.Key), path =>

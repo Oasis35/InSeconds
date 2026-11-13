@@ -32,7 +32,7 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         var response = await _run.Api.CreateClient().GetAsync("/api/runs/me", Ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal("""{"hasAccess":false,"record":null,"pending":null,"shelf":[],"level":null}""", await response.Content.ReadAsStringAsync(Ct));
+        Assert.Equal("""{"hasAccess":false,"record":null,"pending":null,"shelf":[],"level":null,"received":null}""", await response.Content.ReadAsStringAsync(Ct));
         Assert.Equal(players, await _run.Api.ScalarAsync<long>("SELECT count(*) FROM players.players"));
         Assert.False(response.Headers.Contains("Set-Cookie"));
     }
