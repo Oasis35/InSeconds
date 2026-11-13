@@ -17,7 +17,7 @@ interface HomeSummary {
 /**
  * L'entrée de Setlist sur l'accueil du jeu du jour, chargée à la demande : la carte n'apparaît que pour un compte connecté qui a l'accès
  * (lu une fois par `SetlistAccessStore`, jamais pour un invité). Sans accès ou sur une erreur, rien n'est affiché. Discrète tant que le
- * défi du jour reste à jouer, en grand ensuite. Son record, son niveau et sa setlist du jour sont lus ici ; s'ils manquent (réseau), la
+ * défi du jour reste à jouer, mise en avant (contour orange, « Jouer » principal) ensuite. Son record, son niveau et sa setlist du jour sont lus ici ; s'ils manquent (réseau), la
  * carte s'affiche sans eux.
  */
 @Component({
@@ -29,7 +29,7 @@ interface HomeSummary {
   template: `
     @if (access.hasAccess()) {
       <div class="pt-3">
-        <app-run-home-card [big]="chrome.dailyDone() === true" [level]="summary().level" [record]="summary().record"
+        <app-run-home-card [active]="chrome.dailyDone() === true" [level]="summary().level" [record]="summary().record"
           [todayScore]="summary().todayScore" [lang]="lang()" />
       </div>
     }

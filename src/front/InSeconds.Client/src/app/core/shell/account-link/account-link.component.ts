@@ -2,11 +2,13 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { SessionStore } from '../../session/session.store';
+import { ShellChromeStore } from '../shell-chrome.store';
 
 /**
  * Les accès de l'en-tête, à droite du titre IN//SECONDS : le cadenas de l'admin (compte admin seulement), puis l'initiale du compte
  * connecté (mène au profil), ou un bouton « Connexion » (rectangle à contour gris) pour un invité ou un visiteur. Des ronds gris, sans
- * dégradé ni lueur (les jours passés sont un lien en bas de l'accueil). Ni compte ni cadenas tant que l'identité n'est pas lue.
+ * dégradé ni lueur (les jours passés sont un lien en bas de l'accueil). Ni compte ni cadenas tant que l'identité n'est pas lue. Sous la V4, le
+ * compte (et « Connexion ») sont dans la barre du bas (« Mon compte ») : il ne reste ici que le cadenas de l'admin.
  */
 @Component({
   selector: 'app-account-link',
@@ -25,11 +27,13 @@ import { SessionStore } from '../../session/session.store';
           </svg>
         </a>
       }
-      <a routerLink="/account/profile" class="header-round header-initial"
-         [attr.title]="'shell.header.avatarTitle' | translate: { pseudo: pseudo() }" [attr.aria-label]="'shell.header.profile' | translate">
-        {{ initial() }}
-      </a>
-    } @else {
+      @if (!chrome.v4()) {
+        <a routerLink="/account/profile" class="header-round header-initial"
+           [attr.title]="'shell.header.avatarTitle' | translate: { pseudo: pseudo() }" [attr.aria-label]="'shell.header.profile' | translate">
+          {{ initial() }}
+        </a>
+      }
+    } @else if (!chrome.v4()) {
       <a routerLink="/account/login" class="header-login" data-testid="header-login">{{ 'shell.header.login' | translate }}</a>
     }
   `,
@@ -53,6 +57,7 @@ import { SessionStore } from '../../session/session.store';
 })
 export class AccountLinkComponent {
   protected readonly session = inject(SessionStore);
+  protected readonly chrome = inject(ShellChromeStore);
 
   protected readonly pseudo = computed(() => this.session.player()?.pseudo ?? '');
   protected readonly initial = computed(() => [...this.pseudo()][0] ?? '?');

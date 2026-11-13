@@ -836,7 +836,7 @@
     },
     "home": {
       "label": "Daily challenge",
-      "done": "Daily challenge · done",
+      "done": "Daily challenge",
       "seeResult": "See the result",
       "remainingHours": "The daily challenge is still waiting · {{ n }} h left",
       "remainingMinutes": "The daily challenge is still waiting · {{ n }} min left"
@@ -1153,6 +1153,7 @@
     "home": {
       "record": "Best",
       "anytime": "yours whenever you like",
+      "levelLine": "{{ disc }} · at your own pace",
       "playedToday": "Setlist played",
       "play": "Play",
       "replay": "Play again"
@@ -1197,6 +1198,7 @@
       "found": "{{ found }} / {{ total }} tracks found",
       "won": "{{ disc }}!",
       "disc": "{{ disc }}",
+      "recordShort": "Record",
       "newRecord": "New record",
       "record": "Record: {{ score }}",
       "round": "Round {{ round }}",
@@ -1367,10 +1369,17 @@
     "v4": {
       "bar": {
         "label": "Navigation",
-        "daily": "Today",
-        "setlist": "Setlist",
+        "daily": "Home",
+        "account": "My account",
+        "login": "Log in",
         "history": "History",
         "ranking": "Ranking"
+      },
+      "band": {
+        "title": "Today’s challenge is waiting",
+        "leftHours": "{{ n }} h left",
+        "leftMinutes": "{{ n }} min left",
+        "done": "Daily challenge done · next in"
       },
       "dailyLeft": "Today's challenge is still waiting"
     },
@@ -1473,6 +1482,7 @@
       "line": "You are invited to a group"
     },
     "strip": {
+      "title": "Your groups",
       "rank": "#{{ rank }} of {{ members }}",
       "empty": "Play with your friends",
       "create": "Create a group"

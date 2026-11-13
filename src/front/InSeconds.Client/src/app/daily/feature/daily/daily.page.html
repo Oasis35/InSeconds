@@ -85,13 +85,15 @@
         @if (store.abandoned()) {
           <app-abandoned-screen [countdown]="store.countdown()" />
         } @else if (chrome.v4() && !showResult()) {
-          <!-- L'accueil de la V4, défi fait : son résumé, l'écran complet derrière « Voir le résultat », la Setlist en grand dessous. -->
+          <!-- L'accueil de la V4, défi fait : son résumé (sans date, ni « fait »), l'écran complet derrière « Voir le résultat », la Setlist mise en avant dessous. -->
           <div class="screen-enter flex flex-col gap-3" data-testid="home-v4">
-            <p class="px-1 text-sm first-letter:uppercase" style="color:var(--text-light)" data-testid="welcome-date">{{ dateLabel() }}</p>
             <app-home-done-card
               [score]="store.stats()?.yourScore ?? null"
               [rows]="resultRows()"
               [countdown]="store.countdown()"
+              [streak]="store.pillStreak()"
+              [linked]="store.linked()"
+              (openStreak)="openStreakSheet()"
               [shareCopied]="shareCopied()"
               [shareFailed]="shareFailed()"
               [canShare]="store.stats()?.yourScore != null"
@@ -169,9 +171,11 @@
     }
 
   </main>
-  <!-- Sous la V4, les liens légaux sont dans la barre du bas et la langue dans le profil. -->
+  <!-- Sous la V4, les liens légaux sont une ligne discrète sous la carte Setlist (pas pendant une manche) et la langue est dans le profil. -->
   @if (!chrome.v4()) {
     <app-daily-footer class="mt-auto" [lang]="language.current()" (toggleLanguage)="toggleLanguage()" />
+  } @else if (store.screen() !== 'playing') {
+    <app-home-legal-line class="mt-auto" />
   }
 
   <!-- Toasts de fin de partie et d'accueil (série, gels) -->

@@ -6,7 +6,7 @@ import { RoundConfig, RoundSubmission } from '../../gameplay/domain/track-round'
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { AnsweredTrack, DailySettings, DailyToday, DayStats, ResumedTrack, StartedSession, TrackSlot } from '../domain/daily';
 import { DailyScreen, PeekContext, isRecapScreen, refocusContext, screenAfterToday } from '../domain/daily-screen';
-import { formatCountdown, secondsUntilMidnightUtc, yesterdayUtc } from '../domain/countdown';
+import { formatCountdown, secondsUntilMidnightUtc, yesterdayUtc } from '../../core/game-day/game-day';
 import { ArchiveDay } from '../domain/archive';
 import { toRoundResult } from '../domain/round-result';
 import { dailyStake } from '../domain/stake';

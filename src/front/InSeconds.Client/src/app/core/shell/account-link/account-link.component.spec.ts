@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import { SessionStore } from '../../session/session.store';
+import { ShellChromeStore } from '../shell-chrome.store';
 import { AccountLinkComponent } from './account-link.component';
 
 describe('AccountLinkComponent', () => {
@@ -118,5 +119,17 @@ describe('AccountLinkComponent', () => {
     const avatar = element.querySelector<HTMLElement>('a[href="/account/profile"]')!;
     expect(getComputedStyle(avatar).boxShadow).toBe('none');
     expect(getComputedStyle(avatar).backgroundImage).toBe('none');
+  });
+
+  it('sous la V4, le compte et « Connexion » sont dans la barre du bas : seul le cadenas de l’admin reste', () => {
+    const { fixture, element, session } = render();
+    TestBed.inject(ShellChromeStore).setV4(true);
+    fixture.detectChanges();
+    expect(element.querySelector('a[href="/account/login"]')).toBeNull();
+
+    session.signedIn({ id: 'p1', pseudo: 'Alice', email: 'a@example.com', isGuest: false, isAdmin: true });
+    fixture.detectChanges();
+    expect(element.querySelector('a[href="/account/profile"]')).toBeNull();
+    expect(element.querySelector('[data-testid="header-admin"]')).not.toBeNull();
   });
 });
