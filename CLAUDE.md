@@ -207,6 +207,10 @@ VPS OVH (Debian 13, Gravelines, 2 vCores, 4 Go, 40 Go) partagé avec de futurs p
 - Préférer commits atomiques, messages clairs (FR ou EN, peu importe)
 - Branche de travail : `feat/<sujet>` (ex: `feat/redis-cache`), jamais de commit direct sur `main` ni `env/staging`. Cible des PR : `env/staging` (déployée sur le staging pour y être testée), puis une PR `env/staging` → `main` pour la prod ; `main` directement seulement pour un correctif urgent de la prod (cf. [État du dépôt](#état-du-dépôt)). Une demande de suivi = un commit de plus sur la même branche
 
+## Brief de tâche
+
+Un fil démarre sur un brief court, au format du modèle d'issue [`.github/ISSUE_TEMPLATE/brief.md`](.github/ISSUE_TEMPLATE/brief.md) : objectif, nature (correctif ou nouveauté), fichiers touchés et intouchables, données joueur et journaux, tests et doc, critère de fin. Les champs laissés vides prennent leur valeur par défaut (livraison par PR brouillon vers `env/staging`, `relecteur-pr` avant « prêt »). Le brief ne répète pas les règles de ce fichier : il ne dit que ce qui change d'une tâche à l'autre. Une nouveauté ou un écran reste sans code tant que Clément n'a pas donné son « go ».
+
 ## Hooks et sous-agents Claude Code
 
 Versionnés dans `.claude/` (le reste de `.claude/`, dont `settings.local.json`, reste local). Les hooks sont des scripts Node sans dépendance (`.claude/hooks/*.mjs`), branchés dans `.claude/settings.json` ; un hook qui plante laisse passer (il ne bloque que sur une règle enfreinte). Tests : `node --test .claude/hooks/tests/hooks.test.mjs` (dépôts git jetables, pas de CI).
