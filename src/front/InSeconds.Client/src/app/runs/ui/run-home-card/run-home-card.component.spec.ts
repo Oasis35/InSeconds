@@ -64,7 +64,7 @@ describe('RunHomeCardComponent', () => {
       expect(q('run-home-card')?.getAttribute('data-active')).toBe('true');
       expect((q('run-home-card') as HTMLElement).style.border).toContain('var(--color-accent-3)');
       expect(q('run-home-play')?.textContent).toContain('runs.home.play');
-      expect(element.querySelectorAll('[data-disc]').length).toBe(9);
+      expect(element.querySelectorAll('[data-disc]')).toHaveLength(9);
     });
 
     it('au plus haut disque : pas de borne suivante', () => {
