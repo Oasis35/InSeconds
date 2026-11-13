@@ -53,6 +53,6 @@ describe('RunLevelCardComponent', () => {
   });
 
   it('« Revoir » mène à la partie dans l\'historique', () => {
-    expect(find(render(level(), '/setlist/history/7'), 'run-level-review')?.getAttribute('href')).toBe('/setlist/history/7');
+    expect(find(render(level(), '/history/setlist/7'), 'run-level-review')?.getAttribute('href')).toBe('/history/setlist/7');
   });
 });

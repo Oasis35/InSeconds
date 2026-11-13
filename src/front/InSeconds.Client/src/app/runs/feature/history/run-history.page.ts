@@ -20,8 +20,8 @@ import { RunDiscComponent } from '../../ui/run-disc/run-disc.component';
 import { RunStatusScreenComponent } from '../../ui/run-status-screen/run-status-screen.component';
 
 /**
- * L'historique du joueur sur le mode Setlist (`/setlist/history`, `?mois=aaaa-mm`) : le résumé de toutes ses parties, un filtre par difficulté,
- * puis un mois à la fois. Une ligne ouvre les morceaux de la partie. L'onglet « Défis du jour » est la page du jeu du jour (`/daily/history`).
+ * L'historique du joueur sur le mode Setlist (`/history/setlist`, `?mois=aaaa-mm`) : le résumé de toutes ses parties, un filtre par difficulté,
+ * puis un mois à la fois. Une ligne ouvre les morceaux de la partie. L'onglet « Défis du jour » est la page du jeu du jour (`/history/daily`).
  * Ce sont ses propres parties : pas d'accès sur invitation à vérifier.
  */
 @Component({

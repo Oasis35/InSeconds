@@ -14,9 +14,9 @@ describe("pièces communes de l'historique", () => {
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
 
-    expect(el.querySelector('[data-testid="history-tab-daily"]')?.getAttribute('href')).toBe('/daily/history');
+    expect(el.querySelector('[data-testid="history-tab-daily"]')?.getAttribute('href')).toBe('/history/daily');
     expect(el.querySelector('[data-testid="history-tab-daily"]')?.getAttribute('aria-current')).toBeNull();
-    expect(el.querySelector('[data-testid="history-tab-setlist"]')?.getAttribute('href')).toBe('/setlist/history');
+    expect(el.querySelector('[data-testid="history-tab-setlist"]')?.getAttribute('href')).toBe('/history/setlist');
     expect(el.querySelector('[data-testid="history-tab-setlist"]')?.getAttribute('aria-current')).toBe('page');
   });
 

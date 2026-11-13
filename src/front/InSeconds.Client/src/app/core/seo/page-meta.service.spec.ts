@@ -55,8 +55,8 @@ describe('PageMetaService', () => {
     service.apply('/privacy?utm_source=share');
     expect(canonical()).toBe('https://inseconds.cc/privacy');
     expect(ogUrl()).toBe('https://inseconds.cc/privacy');
-    service.apply('/daily/archive/2026-11-08#haut');
-    expect(canonical()).toBe('https://inseconds.cc/daily/archive/2026-11-08');
+    service.apply('/history/daily/2026-11-08#haut');
+    expect(canonical()).toBe('https://inseconds.cc/history/daily/2026-11-08');
   });
 
   it('met noindex et retire la canonique des pages privées ou inconnues', () => {

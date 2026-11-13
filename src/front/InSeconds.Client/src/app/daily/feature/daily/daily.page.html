@@ -54,7 +54,7 @@
           (openStreak)="openStreakSheet()" />
         }
         <!-- Les autres modes (la carte Setlist pour un compte qui y a accès) : rien d'autre ne change sur l'accueil. -->
-        <app-home-mode-entries />
+        @if (isHome()) { <app-home-mode-entries /> }
       }
 
       @case ('resume_prompt') {
@@ -116,7 +116,7 @@
             (share)="share()"
             (openStreak)="openStreakSheet()" />
         }
-        <app-home-mode-entries />
+        @if (isHome()) { <app-home-mode-entries /> }
       }
 
       @case ('playing') {
@@ -166,7 +166,7 @@
           [linked]="store.linked()"
           (share)="share()"
           (openStreak)="openStreakSheet()" />
-        <app-home-mode-entries />
+        @if (isHome()) { <app-home-mode-entries /> }
       }
     }
 

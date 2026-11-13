@@ -1,9 +1,9 @@
 import {
   ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { map } from 'rxjs';
+import { filter, map } from 'rxjs';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { VersionService } from '../../../core/version/version.service';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
@@ -102,6 +102,12 @@ export class DailyPage implements OnInit {
   /** V4, défi fait : l'accueil montre son résumé, « Voir le résultat » ouvre l'écran complet (`?view=result`, le retour ramène à l'accueil). */
   protected readonly showResult = toSignal(inject(ActivatedRoute).queryParamMap.pipe(map(params => params.get('view') === 'result')), { initialValue: false });
   protected readonly isEnglish = () => this.language.current() === 'en';
+  /** Cette page sert la racine (l'accueil, avec la carte Setlist) comme `/daily` (le défi seul) : l'adresse dit laquelle. */
+  private readonly path = toSignal(
+    this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd), map(() => this.router.url.split(/[?#]/)[0])),
+    { initialValue: this.router.url.split(/[?#]/)[0] },
+  );
+  protected readonly isHome = computed(() => this.path() === '/');
 
   constructor() {
     // La coque (barre du bas de la V4) sait si une manche est en cours et si le défi du jour est joué.
@@ -114,6 +120,15 @@ export class DailyPage implements OnInit {
       this.chrome.setDailyDone(done);
     });
     this.destroyRef.onDestroy(() => this.chrome.setImmersive(false));
+    // Sans l'accès Setlist, la racine n'a pas d'accueil à part : c'est le défi. Une partie qui commence passe aussi sur `/daily`.
+    effect(() => {
+      if (!this.isHome()) return;
+      const screen = this.store.screen();
+      const noHome = this.chrome.v4Known() && !this.chrome.v4();
+      if (noHome || screen === 'playing') {
+        void this.router.navigate(['/daily'], { queryParamsHandling: 'preserve', replaceUrl: true });
+      }
+    });
     // Une nouvelle version du site ne recharge jamais la page en pleine manche (cf. `reloadMomentFor`).
     inject(VersionService).allowReload(() => reloadMomentFor(this.store.screen()), this.destroyRef);
 
@@ -183,7 +198,7 @@ export class DailyPage implements OnInit {
   }
 
   protected openResult(): void {
-    void this.router.navigate([], { queryParams: { view: 'result' }, queryParamsHandling: 'merge' });
+    void this.router.navigate(['/daily'], { queryParams: { view: 'result' }, queryParamsHandling: 'merge' });
   }
 
   protected openStreakSheet(): void {

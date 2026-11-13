@@ -14,7 +14,7 @@ import { formatGameDate } from '../../domain/archive';
   template: `
     <div class="flex items-center gap-2" data-testid="archive-day-header">
       @if (previousDate(); as previous) {
-        <a [routerLink]="['/daily/archive', previous]" class="nav" data-testid="archive-previous"
+        <a [routerLink]="['/history/daily', previous]" class="nav" data-testid="archive-previous"
            [attr.aria-label]="'daily.archive.previousDay' | translate">‹</a>
       } @else {
         <span class="nav nav--off" aria-hidden="true">‹</span>
@@ -37,7 +37,7 @@ import { formatGameDate } from '../../domain/archive';
       </h1>
 
       @if (nextDate(); as next) {
-        <a [routerLink]="['/daily/archive', next]" class="nav" data-testid="archive-next"
+        <a [routerLink]="['/history/daily', next]" class="nav" data-testid="archive-next"
            [attr.aria-label]="'daily.archive.nextDay' | translate">›</a>
       } @else {
         <span class="nav nav--off" aria-hidden="true">›</span>

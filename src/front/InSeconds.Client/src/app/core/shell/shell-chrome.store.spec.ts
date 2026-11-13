@@ -16,4 +16,13 @@ describe('ShellChromeStore', () => {
     store.setDailyDone(false);
     expect([store.v4(), store.immersive(), store.dailyDone()]).toEqual([true, true, false]);
   });
+
+  it("sait si le flag de la V4 a été lu", () => {
+    const store = TestBed.inject(ShellChromeStore);
+    expect(store.v4Known()).toBe(false);
+    store.setV4(false, false);
+    expect(store.v4Known()).toBe(false);
+    store.setV4(false);
+    expect(store.v4Known()).toBe(true);
+  });
 });

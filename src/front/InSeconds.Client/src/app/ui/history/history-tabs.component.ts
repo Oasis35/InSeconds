@@ -25,7 +25,7 @@ export class HistoryTabsComponent {
   readonly active = input.required<'daily' | 'setlist'>();
 
   protected readonly tabs = [
-    { id: 'daily', link: '/daily/history', labelKey: 'ui.history.tabs.daily' },
-    { id: 'setlist', link: '/setlist/history', labelKey: 'ui.history.tabs.setlist' },
+    { id: 'daily', link: '/history/daily', labelKey: 'ui.history.tabs.daily' },
+    { id: 'setlist', link: '/history/setlist', labelKey: 'ui.history.tabs.setlist' },
   ] as const;
 }

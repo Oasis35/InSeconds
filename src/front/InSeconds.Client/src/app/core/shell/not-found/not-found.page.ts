@@ -14,7 +14,7 @@ import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-bac
       <p class="relative text-6xl font-extrabold font-display" style="color:var(--color-accent)">404</p>
       <h1 class="relative mt-4 text-xl font-bold" style="color:var(--text-hi)">{{ 'shell.notFound.title' | translate }}</h1>
       <p class="relative mt-2 mb-8 max-w-sm" style="color:var(--text-slate)">{{ 'shell.notFound.body' | translate }}</p>
-      <a appButton class="relative" routerLink="/daily">{{ 'shell.notFound.cta' | translate }}</a>
+      <a appButton class="relative" routerLink="/">{{ 'shell.notFound.cta' | translate }}</a>
     </main>
   `,
 })

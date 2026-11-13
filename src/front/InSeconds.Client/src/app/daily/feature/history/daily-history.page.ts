@@ -19,8 +19,8 @@ import { gameLink, verdictOf } from '../../domain/history';
 import { StatusScreenComponent } from '../../ui/status-screen/status-screen.component';
 
 /**
- * L'historique du joueur sur le défi du jour (`/daily/history`, `?mois=aaaa-mm`) : le résumé de toutes ses parties, puis un mois à la fois.
- * Une ligne mène aux réponses du jour. L'onglet « Setlists » est la page du mode Setlist (`/setlist/history`) : les modes ne se connaissent pas.
+ * L'historique du joueur sur le défi du jour (`/history/daily`, `?mois=aaaa-mm`) : le résumé de toutes ses parties, puis un mois à la fois.
+ * Une ligne mène aux réponses du jour. L'onglet « Setlists » est la page du mode Setlist (`/history/setlist`) : les modes ne se connaissent pas.
  */
 @Component({
   selector: 'app-daily-history-page',

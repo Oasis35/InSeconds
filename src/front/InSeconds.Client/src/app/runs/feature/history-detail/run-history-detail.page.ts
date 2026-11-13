@@ -12,7 +12,7 @@ import { isMissed, tracksByRound } from '../../domain/run-history';
 import { RunStatusScreenComponent } from '../../ui/run-status-screen/run-status-screen.component';
 
 /**
- * Les morceaux d'une setlist finie du joueur (`/setlist/history/<partie>`), rangés par manche : « Tous » ou « Ratés », et ▶ pour réécouter un
+ * Les morceaux d'une setlist finie du joueur (`/history/setlist/<partie>`), rangés par manche : « Tous » ou « Ratés », et ▶ pour réécouter un
  * extrait (une adresse neuve à chaque écoute, piège 14). Rien ne s'y rejoue. Une partie d'un autre joueur, en cours ou inconnue : introuvable.
  */
 @Component({

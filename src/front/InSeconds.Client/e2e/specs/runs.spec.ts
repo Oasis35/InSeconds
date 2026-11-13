@@ -83,6 +83,8 @@ test.describe('Mode Setlist', () => {
     const playerId = await run.loginAsPlayer('joueur-v4@e2e.test', 'JoueurV4');
     await game.goto();
     await game.waitForWelcome();
+    // Sans l'accueil de la V4, la racine est le défi.
+    await expect(page).toHaveURL(/\/daily$/);
     await expect(page.getByTestId('footer-language')).toBeVisible();
     await expect(bar).toHaveCount(0);
     await expect(page.getByTestId('header-instagram')).toHaveCount(0);
@@ -91,6 +93,8 @@ test.describe('Mode Setlist', () => {
     await api.grantRunAccess(playerId);
     await game.goto();
     await game.waitForWelcome();
+    // L'accueil est la racine ; le défi seul est sur /daily.
+    await expect(page).toHaveURL(/\/$/);
     await expect(bar).toBeVisible();
     await expect(page.getByTestId('footer-language')).toHaveCount(0);
     await expect(page.getByTestId('header-instagram')).toBeVisible();
@@ -119,13 +123,13 @@ test.describe('Mode Setlist', () => {
     // qui a quitté l'accueil.
     await expect(page.getByTestId('welcome-archive')).toHaveCount(0);
     await page.getByTestId('tab-history').click();
-    await expect(page).toHaveURL(/\/daily\/history$/);
+    await expect(page).toHaveURL(/\/history\/daily$/);
     await expect(page.getByTestId('tab-history')).toHaveAttribute('aria-current', 'page');
     await expect(page.getByTestId('history-count')).toHaveText('0');
     await expect(page.getByTestId('history-empty')).toBeVisible();
     await expect(page.getByTestId('history-archive')).toBeVisible();
     await page.getByTestId('history-tab-setlist').click();
-    await expect(page).toHaveURL(/\/setlist\/history$/);
+    await expect(page).toHaveURL(/\/history\/setlist$/);
     await expect(page.getByTestId('history-empty')).toBeVisible();
     await expect(bar).toBeVisible();
   });
@@ -198,7 +202,7 @@ test.describe('Mode Setlist', () => {
 
     // « Revoir » : la partie dans l'historique, avec ses 20 morceaux.
     await run.page.getByTestId('run-level-review').click();
-    await expect(page).toHaveURL(/\/setlist\/history\/\d+$/);
+    await expect(page).toHaveURL(/\/history\/setlist\/\d+$/);
 
     // Le record et le disque d'or apparaissent ensuite sur l'accueil du mode.
     await page.goto('/setlist');

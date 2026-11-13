@@ -280,10 +280,10 @@ public class ChallengeArchiveTests(PostgresFixture postgres) : IAsyncLifetime
                 (front.Link("/daily"), $"{Today:yyyy-MM-dd}"),
                 (front.Link("/legal"), null),
                 (front.Link("/privacy"), null),
-                (front.Link($"/daily/archive/{Yesterday:yyyy-MM-dd}"), $"{Today:yyyy-MM-dd}"),
-                (front.Link($"/daily/archive/{Frozen:yyyy-MM-dd}"), $"{Today:yyyy-MM-dd}"),
-                (front.Link($"/daily/archive/{older:yyyy-MM-dd}"), $"{older.AddDays(2):yyyy-MM-dd}"),
-                (front.Link($"/daily/archive/{recomputed:yyyy-MM-dd}"), $"{Today:yyyy-MM-dd}"),
+                (front.Link($"/history/daily/{Yesterday:yyyy-MM-dd}"), $"{Today:yyyy-MM-dd}"),
+                (front.Link($"/history/daily/{Frozen:yyyy-MM-dd}"), $"{Today:yyyy-MM-dd}"),
+                (front.Link($"/history/daily/{older:yyyy-MM-dd}"), $"{older.AddDays(2):yyyy-MM-dd}"),
+                (front.Link($"/history/daily/{recomputed:yyyy-MM-dd}"), $"{Today:yyyy-MM-dd}"),
             ],
             xml.Root!.Elements(ns + "url").Select(u => (u.Element(ns + "loc")!.Value, u.Element(ns + "lastmod")?.Value)));
     }

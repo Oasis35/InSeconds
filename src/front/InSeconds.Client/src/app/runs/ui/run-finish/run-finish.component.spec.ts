@@ -155,7 +155,7 @@ describe('RunFinishComponent', () => {
     function renderLevel(value: RunFinish, showLevel: boolean, duel: RunDuel | null = null) {
       const rendered = render(value, true, duel);
       rendered.fixture.componentRef.setInput('showLevel', showLevel);
-      rendered.fixture.componentRef.setInput('reviewLink', '/setlist/history/7');
+      rendered.fixture.componentRef.setInput('reviewLink', '/history/setlist/7');
       rendered.fixture.detectChanges();
       return rendered;
     }
@@ -172,7 +172,7 @@ describe('RunFinishComponent', () => {
       expect(text(element, 'run-share')).toContain('runs.level.challenge');
       expect((element.querySelector('[data-testid="run-level-bar"]') as HTMLElement).style.width).toBe('56%');
       expect(element.querySelector('app-run-level-card')).toBeNull();
-      expect(element.querySelector('[data-testid="run-level-review"]')?.getAttribute('href')).toBe('/setlist/history/7');
+      expect(element.querySelector('[data-testid="run-level-review"]')?.getAttribute('href')).toBe('/history/setlist/7');
     });
 
     it('en duel, l\'action principale reste « Revanche »', () => {

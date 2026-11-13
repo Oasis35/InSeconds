@@ -27,6 +27,12 @@ describe('SetlistBottomBarComponent', () => {
     expect(document.documentElement.classList.contains('has-bottom-bar')).toBe(true);
   });
 
+  it("l'onglet Accueil mène à la racine et s'allume sur la racine comme sur /daily", async () => {
+    const { el } = await render('/', {});
+    expect(el.querySelector('[data-testid="tab-daily"]')?.getAttribute('href')).toBe('/');
+    expect(el.querySelector('[data-testid="tab-daily"]')?.getAttribute('aria-current')).toBe('page');
+  });
+
   it('ne montre rien sans la V4', async () => {
     const { el } = await render('/daily', { v4: false });
     expect(el.querySelector('[data-testid="bottom-bar"]')).toBeNull();
@@ -48,12 +54,12 @@ describe('SetlistBottomBarComponent', () => {
   });
 
   it("l'historique a un seul onglet pour ses deux pages, et n'allume pas celui du mode", async () => {
-    const { el } = await render('/setlist/history/12', {});
+    const { el } = await render('/history/setlist/12', {});
     expect(el.querySelector('[data-testid="tab-history"]')?.getAttribute('aria-current')).toBe('page');
-    expect(el.querySelector('[data-testid="tab-history"]')?.getAttribute('href')).toBe('/daily/history');
+    expect(el.querySelector('[data-testid="tab-history"]')?.getAttribute('href')).toBe('/history');
     expect(el.querySelector('[data-testid="tab-daily"]')?.getAttribute('aria-current')).toBeNull();
     TestBed.resetTestingModule();
-    expect((await render('/daily/history?mois=2026-10', {})).el.querySelector('[data-testid="tab-daily"]')?.getAttribute('aria-current')).toBeNull();
+    expect((await render('/history/daily?mois=2026-10', {})).el.querySelector('[data-testid="tab-daily"]')?.getAttribute('aria-current')).toBeNull();
   });
 
   it('« Classement » ouvre le classement entre amis et s\'allume sur ses pages', async () => {
