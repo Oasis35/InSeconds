@@ -17,12 +17,12 @@ import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (visible()) {
-      <div class="fixed inset-x-0 bottom-0 z-30" data-testid="bottom-bar" style="background:var(--bg-page);border-top:1px solid var(--border-neutral)">
+      <div class="fixed inset-x-0 bottom-0 z-30" data-testid="bottom-bar" style="background:var(--bg-page);border-top:1px solid rgb(var(--rgb-text) / 0.14)">
         <nav class="flex w-full max-w-lg mx-auto" style="padding-bottom:env(safe-area-inset-bottom)" [attr.aria-label]="'runs.v4.bar.label' | translate">
           @for (tab of tabs(); track tab.link) {
             <a [routerLink]="tab.link" [attr.data-testid]="'tab-' + tab.id" [attr.aria-current]="tab.active ? 'page' : null"
-               class="flex-1 flex flex-col items-center gap-0.5 py-2 text-xs touch-manipulation min-h-11"
-               [style.color]="tab.active ? 'var(--color-accent-3)' : 'var(--text-muted)'">
+               class="bar-tab relative flex-1 flex flex-col items-center gap-0.5 py-2 text-xs touch-manipulation min-h-11"
+               [class.bar-tab--active]="tab.active">
               <span class="relative" aria-hidden="true">
                 @if (tab.id === 'daily') {
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
@@ -45,6 +45,14 @@ import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
     }
   `,
   styles: `
+    /* L'onglet allumé : cœur clair, trait au-dessus (le seul tube de la barre), les autres à 65 %. */
+    .bar-tab { color: rgb(var(--rgb-text) / 0.65); }
+    .bar-tab--active { color: var(--core-orange); text-shadow: 0 0 6px rgb(var(--rgb-accent-3) / 0.8); }
+    .bar-tab--active::before {
+      content: ''; position: absolute; top: -1px; left: 24%; right: 24%; height: 2.5px; border-radius: 0 0 2px 2px;
+      background: var(--core-orange); box-shadow: 0 0 6px rgb(var(--rgb-accent-3)), 0 0 12px rgb(var(--rgb-accent-3) / 0.5);
+    }
+    .bar-tab--active svg { filter: drop-shadow(0 0 3px rgb(var(--rgb-accent-3) / 0.9)); }
     .bar-pulse { animation: bar-pulse 2.4s ease-in-out infinite; }
     @keyframes bar-pulse { 50% { opacity: .35; transform: scale(1.4); } }
     @media (prefers-reduced-motion: reduce) { .bar-pulse { animation: none; } }

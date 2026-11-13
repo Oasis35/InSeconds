@@ -14,6 +14,8 @@ import { RouterLink } from '@angular/router';
   host: { class: 'block' },
   // Titre resserré sous 360 px de large : le titre et les trois accès du compte tiennent côte à côte sur un petit téléphone (320 px).
   styles: `
+    /* Les deux barres allumées comme un tube : cœur clair, halo serré. */
+    .brand-slash { color: var(--core-orange); text-shadow: 0 0 1.5px rgb(var(--rgb-accent-3)), 0 0 6px rgb(var(--rgb-accent-3) / 0.7); }
     .brand-title { font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.1em; }
     @media (min-width: 360px) { .brand-title { font-size: 1rem; line-height: 1.5rem; letter-spacing: 0.14em; } }
   `,

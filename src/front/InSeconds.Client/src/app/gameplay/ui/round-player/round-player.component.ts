@@ -42,7 +42,7 @@ interface StepMark {
   template: `
     <!-- En ligne, le lecteur n'a pas de cadre : il est dans la carte du mode. -->
     <div [class.px-4]="!inline()" [class.py-5]="!inline()" [style.background]="inline() ? null : 'var(--bg-surface)'"
-      [style.border]="inline() ? null : '1px solid var(--border-medium)'" [style.border-radius]="inline() ? null : 'var(--radius-card)'">
+      [style.border]="inline() ? null : '1.5px solid rgb(var(--rgb-accent-2) / 0.8)'" [style.box-shadow]="inline() ? null : 'var(--tube-frame)'" [style.border-radius]="inline() ? null : 'var(--radius-card)'">
       @switch (phase()) {
         @case ('no-preview') {
           <div class="space-y-5">
@@ -148,21 +148,21 @@ interface StepMark {
       <div #wave data-testid="waveform" class="relative w-full overflow-hidden" style="height:46px"
         role="progressbar" [attr.aria-valuenow]="heardTenths()" aria-valuemin="0" [attr.aria-valuemax]="maxStep()"
         [attr.aria-label]="'gameplay.round.waveform' | translate">
-        <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-locked)', heights: flatHeights }" />
+        <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-locked)', shadow: 'var(--tube-wave-off)', heights: flatHeights }" />
         <div data-testid="waveform-unlocked" class="absolute inset-0 overflow-hidden" [class.wave-sweep]="!reduced"
           [style.transform]="layerShift(unlockedRatio(), waveWidth())">
           <div class="absolute inset-0" [class.wave-sweep]="!reduced" [style.transform]="innerShift(unlockedRatio(), waveWidth())">
-            <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-unlocked)', heights: flatHeights }" />
+            <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-unlocked)', shadow: 'var(--tube-wave-lit)', heights: flatHeights }" />
           </div>
         </div>
         <div #seenLayer data-testid="waveform-seen" class="absolute inset-0 overflow-hidden" style="will-change:transform">
           <div #seenInner class="absolute inset-0" style="will-change:transform">
-            <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-unlocked)', heights: heights() }" />
+            <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-unlocked)', shadow: 'var(--tube-wave-lit)', heights: heights() }" />
           </div>
         </div>
         <div #playedLayer data-testid="waveform-played" class="absolute inset-0 overflow-hidden" style="will-change:transform">
           <div #playedInner class="absolute inset-0" style="will-change:transform">
-            <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--color-accent-2)', heights: heights() }" />
+            <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--color-accent-2)', shadow: 'var(--tube-wave-hot)', heights: heights() }" />
           </div>
         </div>
         <!-- La traîne : une fenêtre de 15 % calée à droite sur la tête de lecture, fondue de transparent à opaque. -->
@@ -170,16 +170,16 @@ interface StepMark {
           <div class="wave-trail absolute right-0 top-0 bottom-0 overflow-hidden" style="width:15%">
             <!-- 100 % / 0,15 : exactement la largeur de la waveform, sans arrondi (les barres restent sur celles des autres couches). -->
             <div #trailInner class="absolute right-0 top-0 bottom-0" style="width:calc(100% / 0.15);will-change:transform">
-              <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-trail)', heights: heights() }" />
+              <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-trail)', shadow: 'var(--tube-wave-hot)', heights: heights() }" />
             </div>
           </div>
         </div>
       </div>
     </ng-template>
-    <ng-template #barRow let-color="color" let-heights="heights">
+    <ng-template #barRow let-color="color" let-shadow="shadow" let-heights="heights">
       <div class="absolute inset-0 flex items-end" style="gap:2px" aria-hidden="true">
         @for (height of heights; track $index) {
-          <span class="flex-1" style="min-width:1px;border-radius:2px 2px 1px 1px" [style.height.%]="height * 100" [style.background]="color"></span>
+          <span class="flex-1" style="min-width:1px;border-radius:2px 2px 1px 1px" [style.height.%]="height * 100" [style.background]="color" [style.box-shadow]="shadow"></span>
         }
       </div>
     </ng-template>
@@ -187,15 +187,14 @@ interface StepMark {
       <app-membrane [level]="bass()">
         <button type="button" (click)="replay.emit()" [disabled]="locked()" [title]="'gameplay.round.replay' | translate: { seconds: (chosenSeconds() | appSeconds) }"
           class="relative rounded-full transition active:scale-95 touch-manipulation flex items-center justify-center overflow-hidden disabled:opacity-40 disabled:grayscale disabled:active:scale-100"
-          [style.width.px]="size" [style.height.px]="size" style="background:linear-gradient(145deg,var(--color-accent-3),var(--color-accent));border:none;color:var(--text-on-primary)">
-          <span class="absolute rounded-full pointer-events-none" style="inset:10px;background:radial-gradient(circle, rgb(var(--rgb-text) / 0.16), transparent 70%)" aria-hidden="true"></span>
+          [style.width.px]="size" [style.height.px]="size" style="background:var(--fill-primary);border:1.5px solid var(--core-orange);color:var(--text-on-orange)">
           @if (submitting()) {
             <span data-testid="round-loader" class="relative animate-spin rounded-full"
-              style="width:26px;height:26px;border:3px solid rgb(var(--rgb-text) / 0.35);border-top-color:var(--text-on-primary)"></span>
+              style="width:26px;height:26px;border:3px solid rgb(26 13 0 / 0.3);border-top-color:var(--text-on-orange)"></span>
           } @else if (playing()) {
             <span class="relative flex gap-1" aria-hidden="true">
-              <span style="width:6px;height:19px;background:var(--text-on-primary);border-radius:2px"></span>
-              <span style="width:6px;height:19px;background:var(--text-on-primary);border-radius:2px"></span>
+              <span style="width:6px;height:19px;background:var(--text-on-orange);border-radius:2px"></span>
+              <span style="width:6px;height:19px;background:var(--text-on-orange);border-radius:2px"></span>
             </span>
           } @else {
             <svg class="relative" [attr.width]="icon" [attr.height]="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

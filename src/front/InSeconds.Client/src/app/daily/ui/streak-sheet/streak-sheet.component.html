@@ -78,7 +78,7 @@
         <strong class="font-semibold" style="color:var(--text-hi)">{{ 'daily.streakFreeze.sheet.protectedUse.' + missedKey | translate: { missed: streak().missedDays } }}</strong>
       </p>
       <div class="flex flex-col gap-2.5">
-        <button appButton type="button" [block]="true" [glow]="true" (click)="finish('playNow')">
+        <button appButton type="button" [block]="true" (click)="finish('playNow')">
           {{ 'daily.streakFreeze.sheet.playNow' | translate }}
         </button>
         <button appButton type="button" variant="neutral" [block]="true" (click)="finish('close')">
@@ -98,7 +98,7 @@
         {{ 'daily.streakFreeze.sheet.guestFreeze' | translate }}
       </p>
       <div class="flex flex-col gap-2.5">
-        <button appButton type="button" [block]="true" [glow]="true" (click)="finish('signup')">
+        <button appButton type="button" [block]="true" (click)="finish('signup')">
           {{ 'daily.streakFreeze.sheet.signup' | translate }}
         </button>
         <button appButton type="button" variant="neutral" [block]="true" (click)="finish('close')">
