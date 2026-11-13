@@ -40,13 +40,11 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
           }
         </span>
         <button type="button" (click)="seeResult.emit()" data-testid="home-see-result"
-          class="inline-flex items-center gap-1 min-h-11 text-sm cursor-pointer touch-manipulation" style="color:var(--text-light)">
+          class="inline-flex items-center min-h-11 text-[15px] underline underline-offset-4 cursor-pointer touch-manipulation" style="color:var(--text-light)">
           {{ 'daily.home.seeResult' | translate }}
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-            aria-hidden="true"><polyline points="9 6 15 12 9 18" /></svg>
         </button>
       </div>
-      <div class="flex justify-center">
+      <div class="flex">
         <app-streak-pill [streak]="streak()" [linked]="linked()" (open)="openStreak.emit()" />
       </div>
       @if (score() !== null) {

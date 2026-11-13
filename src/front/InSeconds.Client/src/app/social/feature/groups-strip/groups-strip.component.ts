@@ -1,6 +1,8 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { LanguageService } from '../../../core/i18n/language.service';
+import { formatOrdinal } from '../../../ui/format/ordinal';
 import { GroupsStore } from '../../data-access/groups.store';
 import { PendingInvite } from '../../data-access/pending-invite';
 
@@ -17,7 +19,7 @@ import { PendingInvite } from '../../data-access/pending-invite';
     @if (pendingCode() || showGroups()) {
       <section class="flex flex-col gap-2.5 px-4 py-3 text-sm" data-testid="groups-strip"
         style="background:rgb(var(--rgb-violet) / 0.12);border:1px solid rgb(var(--rgb-violet) / 0.6);border-radius:var(--radius-card)">
-        <h3 class="text-sm font-bold" style="font-family:var(--font-body);color:var(--color-violet)">{{ 'social.strip.title' | translate }}</h3>
+        <h3 class="text-xs font-bold uppercase tracking-widest" style="font-family:var(--font-body);color:var(--color-violet)">{{ 'social.strip.title' | translate }}</h3>
         @if (pendingCode(); as code) {
           <a [routerLink]="['/ranking/join', code]" class="flex items-center justify-between gap-3 min-h-11" data-testid="strip-pending" style="color:var(--text-hi)">
             <span>{{ 'social.pending.line' | translate }}</span><span aria-hidden="true">›</span>
@@ -28,18 +30,23 @@ import { PendingInvite } from '../../data-access/pending-invite';
             @for (standing of standings; track standing.groupId) {
               @if (!$first || pendingCode()) { <div class="h-px" style="background:rgb(var(--rgb-violet) / 0.3)"></div> }
               <a [routerLink]="['/ranking']" [queryParams]="{ group: standing.groupId }" class="flex items-center justify-between gap-3 min-h-11" data-testid="strip-group" style="color:var(--text-hi)">
-                <span class="min-w-0 truncate font-bold">{{ standing.name }}</span>
-                <span class="shrink-0 tabular-nums" style="color:var(--color-accent-3)">
-                  @if (standing.rank !== null) { <b class="text-[17px]">{{ 'social.strip.rank' | translate: { rank: standing.rank, members: standing.members } }}</b> }
-                  <span aria-hidden="true" style="color:var(--text-muted)"> ›</span>
+                <span class="min-w-0">
+                  <span class="block truncate font-bold text-base">{{ standing.name }}</span>
+                  @if (standing.moved; as moved) {
+                    <span class="block text-xs break-words" data-testid="strip-moved" style="color:var(--text-light)">{{ 'social.strip.passed' | translate: { name: moved.passed } }}</span>
+                  }
+                </span>
+                <span class="shrink-0 tabular-nums flex items-baseline gap-1.5" style="color:var(--color-accent-3)">
+                  @if (standing.rank !== null) {
+                    <b class="text-xl" data-testid="strip-rank">{{ ordinal(standing.rank) }}</b>
+                    @if (standing.moved; as moved) {
+                      <span class="text-sm font-bold" data-testid="strip-up" style="color:var(--color-success)"><span aria-hidden="true">↑</span> {{ moved.from - standing.rank }}</span>
+                    } @else if (stable()) {
+                      <span class="text-sm" aria-hidden="true" style="color:var(--text-muted)">=</span>
+                    }
+                  }
                 </span>
               </a>
-              @if (standing.moved; as moved) {
-                <p class="text-xs -mt-1.5 pb-1 break-words" data-testid="strip-moved" style="color:var(--text-light)">
-                  <span aria-hidden="true" style="color:var(--color-accent-3)">↑</span>
-                  {{ 'social.strip.passed' | translate: { name: moved.passed } }}
-                </p>
-              }
             } @empty {
               @if (!pendingCode()) {
                 <a routerLink="/ranking/new" class="flex items-center justify-between gap-3 min-h-11" data-testid="strip-create" style="color:var(--text-hi)">
@@ -61,7 +68,14 @@ export class GroupsStripComponent implements OnInit {
   readonly levelDelta = input<number | null>(null);
 
   protected readonly store = inject(GroupsStore);
+  private readonly language = inject(LanguageService);
+  /** Sa partie n'a pas fait baisser sa place (elle a ajouté des points ou rien) : « = » quand il n'a dépassé personne. */
+  protected readonly stable = computed(() => (this.levelDelta() ?? -1) >= 0);
   protected readonly pendingCode = signal(inject(PendingInvite).get());
+
+  protected ordinal(rank: number): string {
+    return formatOrdinal(rank, this.language.current() === 'en' ? 'en' : 'fr');
+  }
 
   ngOnInit(): void {
     if (this.showGroups()) void this.store.loadStandings(this.levelDelta());

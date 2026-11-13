@@ -120,6 +120,10 @@
 
       @case ('finished') {
         @if (store.finish(); as finish) {
+          @if (chrome.v4()) {
+            <!-- V4 : le logo et Instagram en haut de la fin, comme sur les autres écrans de la barre. -->
+            <header class="pb-4"><app-brand [homeLink]="true"><div brandRight class="flex items-center gap-2"><app-instagram-link /></div></app-brand></header>
+          }
           <app-run-finish [finish]="finish" [showLevel]="chrome.v4()" [reviewLink]="reviewLink()" [duel]="store.duel()" [canPlayAgain]="store.canPlayAgain()" [shareCopied]="share.copied()" [shareFailed]="share.failed()"
             [lang]="language.current()" (share)="shareFinish(finish)" (compare)="store.showComparison()" (playAgain)="store.playAgain()">
             @if (chrome.v4()) {

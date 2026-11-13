@@ -75,6 +75,14 @@ describe('RunsApi', () => {
     expect((await api.me()).received).toEqual({ code: 'ABC234', authorPseudo: 'Léa', scoreToBeat: 2140, expiresAt: '2026-11-20T10:00:00.000Z' });
   });
 
+  it("un défi reçu tel que le JSON le livre (un texte, pas une Date) ne fait pas planter la lecture", async () => {
+    client['getRunsMe'].mockReturnValue(of({
+      hasAccess: true, received: { code: 'ABC234', authorPseudo: 'Léa', scoreToBeat: 2140, expiresAt: '2026-11-20T10:00:00Z' },
+    } as unknown as RunsMeResponse));
+
+    expect((await api.me()).received).toEqual({ code: 'ABC234', authorPseudo: 'Léa', scoreToBeat: 2140, expiresAt: '2026-11-20T10:00:00.000Z' });
+  });
+
   it('recevoir et refuser un défi appellent les deux routes avec le code', async () => {
     client['receiveRunChallenge'].mockReturnValue(of(undefined));
     client['dismissRunChallenge'].mockReturnValue(of(undefined));

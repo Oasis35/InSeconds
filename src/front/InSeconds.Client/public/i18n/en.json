@@ -839,8 +839,8 @@
       "label": "Daily challenge",
       "done": "Daily challenge",
       "seeResult": "See the result",
-      "remainingHours": "The daily challenge is still waiting · {{ n }} h left",
-      "remainingMinutes": "The daily challenge is still waiting · {{ n }} min left"
+      "remainingHours": "{{ n }} h left",
+      "remainingMinutes": "{{ n }} min left"
     },
     "welcome": {
       "title": "Today's blind test",
@@ -1154,7 +1154,8 @@
     "home": {
       "record": "Best",
       "anytime": "yours whenever you like",
-      "levelLine": "{{ disc }} · at your own pace",
+      "levelLabel": "Level",
+      "rhythm": "at your own pace",
       "playedToday": "Setlist played",
       "play": "Play",
       "replay": "Play again",
@@ -1163,7 +1164,8 @@
       "receivedScore": "{{ score }} to beat",
       "receivedExpires": "expires in {{ days }} d",
       "receivedDismiss": "Decline the challenge",
-      "placeGroup": "{{ rank }} in {{ group }}",
+      "placeGroup": "{{ rank }} in",
+      "takeUp": "Take the challenge",
       "placeGeneral": "{{ rank }} overall"
     },
     "welcome": {
@@ -1270,6 +1272,16 @@
       "you": "You",
       "editPseudo": "Change my nickname",
       "share": "Share the playlist"
+    },
+    "discShort": {
+      "scratched": "Scratched",
+      "wax": "Wax",
+      "bronze": "Bronze",
+      "silver": "Silver",
+      "gold": "Gold",
+      "platinum": "Platinum",
+      "double_platinum": "Double platinum",
+      "diamond": "Diamond"
     },
     "discs": {
       "scratched": "Scratched record",
@@ -1399,7 +1411,9 @@
       "review": "Review",
       "label": "Level: {{ disc }}, {{ points }} points",
       "newSetlist": "New setlist",
-      "encore": "{{ points }} more for {{ disc }}",
+      "encoreBefore": "Just",
+      "encorePoints": "{{ points }} pts",
+      "encoreAfter": "to reach the {{ disc }}",
       "challenge": "Challenge a friend"
     },
     "shareSheet": {
@@ -1491,7 +1505,6 @@
     },
     "strip": {
       "title": "Your groups",
-      "rank": "#{{ rank }} of {{ members }}",
       "passed": "You pass {{ name }}",
       "empty": "Play with your friends",
       "create": "Create a group"

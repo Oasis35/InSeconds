@@ -41,7 +41,7 @@ describe('RunHomeCardComponent', () => {
     it('avec un niveau : son disque, la rangée des huit disques où le sien est plus gros, la jauge et ses deux bornes', () => {
       const { element, q } = render({ record: 3420, level: LEVEL });
       expect(element.querySelector('[data-disc]')?.getAttribute('data-disc')).toBe('runs.discs.silver');
-      expect(q('run-home-line')?.textContent).toContain('runs.home.levelLine');
+      expect(q('run-home-line')?.textContent).toContain('runs.home.levelLabel');
       const ladder = [...(q('run-home-ladder')?.querySelectorAll('svg') ?? [])];
       expect(ladder).toHaveLength(8);
       expect(ladder.map(svg => svg.getAttribute('width'))).toEqual(['13', '13', '13', '22', '13', '13', '13', '13']);
@@ -93,6 +93,23 @@ describe('RunHomeCardComponent', () => {
       expect(element.querySelector('[data-testid="run-home-received-days"]')?.textContent).toContain('runs.home.receivedExpires');
       (element.querySelector('[data-testid="run-home-received-dismiss"]') as HTMLButtonElement).click();
       expect(dismissed).toEqual(['ABC234']);
+    });
+
+    it('défi du jour joué : « Relever le défi » mène à la playlist ; sinon « Jouer » reste celui de la Setlist', () => {
+      const inputs = (active: boolean) => {
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
+        const fixture = TestBed.createComponent(RunHomeCardComponent);
+        fixture.componentRef.setInput('received', received);
+        fixture.componentRef.setInput('active', active);
+        fixture.detectChanges();
+        return (fixture.nativeElement as HTMLElement).querySelector('[data-testid="run-home-play"]');
+      };
+
+      const takeUp = inputs(true);
+      expect(takeUp?.textContent).toContain('runs.home.takeUp');
+      expect(takeUp?.getAttribute('href')).toBe('/setlist/ABC234');
+      expect(inputs(false)?.getAttribute('href')).toBe('/setlist');
     });
 
     it('sans défi, pas de bandeau', () => {

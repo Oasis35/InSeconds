@@ -839,8 +839,8 @@
       "label": "Défi du jour",
       "done": "Défi du jour",
       "seeResult": "Voir le résultat",
-      "remainingHours": "Il te reste le défi du jour · plus que {{ n }} h",
-      "remainingMinutes": "Il te reste le défi du jour · plus que {{ n }} min"
+      "remainingHours": "plus que {{ n }} h",
+      "remainingMinutes": "plus que {{ n }} min"
     },
     "welcome": {
       "title": "Blind test du jour",
@@ -1154,7 +1154,8 @@
     "home": {
       "record": "Record",
       "anytime": "à toi quand tu veux",
-      "levelLine": "{{ disc }} · à ton rythme",
+      "levelLabel": "Niveau",
+      "rhythm": "à ton rythme",
       "playedToday": "Setlist jouée",
       "play": "Jouer",
       "replay": "Rejouer",
@@ -1163,7 +1164,8 @@
       "receivedScore": "{{ score }} à battre",
       "receivedExpires": "expire dans {{ days }} j",
       "receivedDismiss": "Refuser le défi",
-      "placeGroup": "{{ rank }} dans {{ group }}",
+      "placeGroup": "{{ rank }} dans",
+      "takeUp": "Relever le défi",
       "placeGeneral": "{{ rank }} au général"
     },
     "welcome": {
@@ -1270,6 +1272,16 @@
       "you": "Toi",
       "editPseudo": "Changer mon pseudo",
       "share": "Partager la playlist"
+    },
+    "discShort": {
+      "scratched": "Rayé",
+      "wax": "Cire",
+      "bronze": "Bronze",
+      "silver": "Argent",
+      "gold": "Or",
+      "platinum": "Platine",
+      "double_platinum": "Double platine",
+      "diamond": "Diamant"
     },
     "discs": {
       "scratched": "Disque rayé",
@@ -1399,7 +1411,9 @@
       "review": "Revoir",
       "label": "Niveau : {{ disc }}, {{ points }} points",
       "newSetlist": "Nouvelle setlist",
-      "encore": "Encore {{ points }} pour {{ disc }}",
+      "encoreBefore": "Encore",
+      "encorePoints": "{{ points }} pts",
+      "encoreAfter": "pour le {{ disc }}",
       "challenge": "Défier un ami"
     },
     "shareSheet": {
@@ -1491,7 +1505,6 @@
     },
     "strip": {
       "title": "Tes groupes",
-      "rank": "n° {{ rank }} sur {{ members }}",
       "passed": "Tu passes devant {{ name }}",
       "empty": "Joue avec tes amis",
       "create": "Créer un groupe"

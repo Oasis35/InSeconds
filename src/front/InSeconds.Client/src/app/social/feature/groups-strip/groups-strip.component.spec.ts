@@ -34,7 +34,7 @@ describe('GroupsStripComponent', () => {
     const rows = [...el.querySelectorAll('[data-testid="strip-group"]')];
     expect(rows.map(row => row.getAttribute('href'))).toEqual(['/ranking?group=4', '/ranking?group=7']);
     expect(rows[0].textContent).toContain('Potes');
-    expect(rows[0].textContent).toContain('social.strip.rank');
+    expect(rows[0].querySelector('[data-testid="strip-rank"]')?.textContent).toBe('2e');
   });
 
   it('un groupe où la partie fait passer devant un ami : « Tu passes devant Léa », sinon rien', async () => {
@@ -53,6 +53,7 @@ describe('GroupsStripComponent', () => {
     const moved = el.querySelectorAll('[data-testid="strip-moved"]');
     expect(moved).toHaveLength(1);
     expect(moved[0].textContent).toContain('social.strip.passed');
+    expect(el.querySelector('[data-testid="strip-up"]')?.textContent).toContain('1');
 
     TestBed.resetTestingModule();
     expect((await render(true, null, climbed, null)).querySelector('[data-testid="strip-moved"]')).toBeNull();

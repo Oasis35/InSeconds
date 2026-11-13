@@ -42,11 +42,12 @@ describe('HomeChallengeCardComponent', () => {
     expect(empty.q('welcome-target')).toBeNull();
   });
 
-  it('première visite du jour : pas de rappel', () => {
+  it('sans temps donné : pas de « plus que » ; la date est dans la carte', () => {
     expect(render().q('home-remaining')).toBeNull();
+    expect(render({ dateLabel: 'vendredi 13 novembre' }).q('welcome-date')?.textContent).toContain('vendredi 13 novembre');
   });
 
-  it('au retour : le rappel en heures, en minutes sous une heure', () => {
+  it('le temps qui reste : en heures, en minutes sous une heure', () => {
     expect(render({ remaining: { unit: 'hours', value: 6 } }).q('home-remaining')?.textContent).toContain('daily.home.remainingHours');
     expect(render({ remaining: { unit: 'minutes', value: 40 } }).q('home-remaining')?.textContent).toContain('daily.home.remainingMinutes');
   });

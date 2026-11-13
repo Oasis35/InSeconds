@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, computed, inject, input, output } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonComponent } from '../../../ui/button/button.component';
@@ -21,7 +22,7 @@ export const DISC_LADDER: readonly string[] = [
  */
 @Component({
   selector: 'app-run-home-card',
-  imports: [TranslatePipe, RouterLink, RunDiscComponent, ButtonComponent],
+  imports: [TranslatePipe, RouterLink, NgTemplateOutlet, RunDiscComponent, ButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
@@ -37,7 +38,7 @@ export const DISC_LADDER: readonly string[] = [
               {{ 'runs.home.playedToday' | translate }}
               <span class="whitespace-nowrap">· <b class="tabular-nums" style="font-family:var(--font-score);color:var(--color-accent-3)">{{ format(todayScore() ?? 0) }}</b></span>
             } @else if (level(); as level) {
-              {{ 'runs.home.levelLine' | translate: { disc: (level.disc.key | translate) } }}
+              {{ 'runs.home.levelLabel' | translate }} <b style="color:var(--text-hi)">{{ shortName(level.disc.key) | translate }}</b> · {{ 'runs.home.rhythm' | translate }}
             } @else if (record() !== null) {
               {{ 'runs.home.record' | translate }}
               <b class="tabular-nums" style="font-family:var(--font-score);color:var(--color-accent-3)">{{ format(record() ?? 0) }}</b>
@@ -51,15 +52,20 @@ export const DISC_LADDER: readonly string[] = [
 
       @if (received(); as challenge) {
         <!-- Le défi d'un ami : violet (les autres joueurs), refusable par la croix. -->
-        <div class="flex items-center gap-1 pl-3.5 rounded-(--radius-button)" data-testid="run-home-received" data-motion="received"
+        <div class="flex items-center gap-1 pl-2.5 rounded-(--radius-button)" data-testid="run-home-received" data-motion="received"
           style="background:rgb(var(--rgb-violet) / 0.14);border:1px solid rgb(var(--rgb-violet) / 0.6)">
-          <a [routerLink]="['/setlist', challenge.code]" class="min-w-0 flex-1 flex flex-wrap items-baseline gap-x-1.5 min-h-11 py-1.5 text-sm" data-testid="run-home-received-link"
-            style="color:var(--text-hi)">
-            <b class="break-words" style="color:var(--color-violet)">{{ (challenge.authorPseudo ? 'runs.home.receivedFrom' : 'runs.home.receivedFromGuest') | translate: { name: challenge.authorPseudo } }}</b>
-            @if (challenge.scoreToBeat !== null) {
-              <span class="tabular-nums" data-testid="run-home-received-score">· {{ 'runs.home.receivedScore' | translate: { score: format(challenge.scoreToBeat) } }}</span>
-            }
-            <span style="color:var(--text-light)" data-testid="run-home-received-days">· {{ 'runs.home.receivedExpires' | translate: { days: days() } }}</span>
+          <a [routerLink]="['/setlist', challenge.code]" class="min-w-0 flex-1 flex items-center gap-3 min-h-14 py-2" data-testid="run-home-received-link" style="color:var(--text-hi)">
+            <span class="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full text-base font-bold" aria-hidden="true"
+              style="background:rgb(var(--rgb-violet) / 0.55);color:var(--text-hi)">{{ initial(challenge.authorPseudo) }}</span>
+            <span class="min-w-0">
+              <span class="block text-[15px] font-bold break-words">
+                {{ (challenge.authorPseudo ? 'runs.home.receivedFrom' : 'runs.home.receivedFromGuest') | translate: { name: challenge.authorPseudo } }}
+                @if (challenge.scoreToBeat !== null) {
+                  <span class="font-bold tabular-nums" data-testid="run-home-received-score">· {{ 'runs.home.receivedScore' | translate: { score: format(challenge.scoreToBeat) } }}</span>
+                }
+              </span>
+              <span class="block text-sm" style="color:var(--text-light)" data-testid="run-home-received-days">{{ 'runs.home.receivedExpires' | translate: { days: days() } }}</span>
+            </span>
           </a>
           <button type="button" (click)="dismissReceived.emit(challenge.code)" data-testid="run-home-received-dismiss"
             class="shrink-0 inline-flex items-center justify-center w-11 h-11 cursor-pointer touch-manipulation" style="color:var(--text-light)"
@@ -83,29 +89,39 @@ export const DISC_LADDER: readonly string[] = [
             <div class="h-full rounded-full" data-testid="run-home-bar" style="background:var(--color-accent-3)" [style.width.%]="level.progressPercent"></div>
           </div>
           <div class="flex justify-between text-xs tabular-nums" style="color:var(--text-light)">
-            <span>{{ level.disc.key | translate }} · {{ format(level.points) }}</span>
+            <span>{{ shortName(level.disc.key) | translate }} · {{ format(level.points) }}</span>
             @if (level.nextDisc; as next) {
-              <span data-testid="run-home-next">{{ next.key | translate }} · {{ format(level.points + (level.pointsToNext ?? 0)) }}</span>
+              <span data-testid="run-home-next">{{ shortName(next.key) | translate }} · {{ format(level.points + (level.pointsToNext ?? 0)) }}</span>
             }
           </div>
-          @if (groupPlace() || generalRank() !== null) {
-            <!-- « 2e dans Potes · 14e au général » : la place, une seule fois, sous la jauge. -->
-            <p class="text-xs" data-testid="run-home-place" style="color:var(--text-light)">
-              @if (groupPlace(); as group) { {{ 'runs.home.placeGroup' | translate: { rank: groupRankText(), group: group.name } }} }
-              @if (groupPlace() && generalRank() !== null) { · }
-              @if (generalRank() !== null) { {{ 'runs.home.placeGeneral' | translate: { rank: generalRankText() } }} }
-            </p>
-          }
         </div>
       }
 
+      <!-- « 2e dans Potes · 14e au général » : la place, une seule fois, sous la jauge ; « Jouer » à sa droite tant que le défi du jour est à jouer. -->
+      <ng-template #place>
+        @if (groupPlace() || generalRank() !== null) {
+          <p class="min-w-0 text-[15px]" data-testid="run-home-place" style="color:var(--text-light)">
+            @if (groupPlace(); as group) { {{ 'runs.home.placeGroup' | translate: { rank: groupRankText() } }} <b style="color:var(--text-hi)">{{ group.name }}</b> }
+            @if (groupPlace() && generalRank() !== null) { · }
+            @if (generalRank() !== null) { {{ 'runs.home.placeGeneral' | translate: { rank: generalRankText() } }} }
+          </p>
+        }
+      </ng-template>
       @if (active()) {
-        <a appButton routerLink="/setlist" size="lg" [block]="true" data-testid="run-home-play">
-          {{ (todayScore() !== null ? 'runs.home.replay' : 'runs.home.play') | translate }}
-        </a>
+        <ng-container [ngTemplateOutlet]="place" />
+        @if (received(); as challenge) {
+          <a appButton [routerLink]="['/setlist', challenge.code]" size="lg" [block]="true" data-testid="run-home-play">
+            {{ 'runs.home.takeUp' | translate }}
+          </a>
+        } @else {
+          <a appButton routerLink="/setlist" size="lg" [block]="true" data-testid="run-home-play">
+            {{ (todayScore() !== null ? 'runs.home.replay' : 'runs.home.play') | translate }}
+          </a>
+        }
       } @else {
-        <div class="flex justify-end">
-          <a appButton variant="neutral" routerLink="/setlist" data-testid="run-home-play">
+        <div class="flex items-center justify-between gap-3">
+          <ng-container [ngTemplateOutlet]="place" />
+          <a appButton variant="neutral" routerLink="/setlist" class="ml-auto" data-testid="run-home-play">
             {{ (todayScore() !== null ? 'runs.home.replay' : 'runs.home.play') | translate }}
           </a>
         </div>
@@ -157,6 +173,15 @@ export class RunHomeCardComponent {
       const banner = this.host.nativeElement.querySelector<HTMLElement>('[data-motion="received"]');
       if (banner) slideBanner(banner, 0.5);
     });
+  }
+
+  /** Le nom court d'un disque (« Argent ») : sa clé de traduction, celle de `runs.discShort`. */
+  protected shortName(key: string): string {
+    return key.replace('runs.discs.', 'runs.discShort.');
+  }
+
+  protected initial(pseudo: string | null): string {
+    return (pseudo?.trim()[0] ?? '?').toUpperCase();
   }
 
   protected format(value: number): string {

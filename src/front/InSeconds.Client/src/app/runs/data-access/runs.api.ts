@@ -246,7 +246,7 @@ function toMe(me: RunsMeResponse): RunsMe {
 
 function toReceived(received: RunReceivedChallengeResponse | undefined): RunReceivedChallenge | null {
   if (!received) return null;
-  return { code: received.code, authorPseudo: received.authorPseudo ?? null, scoreToBeat: received.scoreToBeat ?? null, expiresAt: received.expiresAt.toISOString() };
+  return { code: received.code, authorPseudo: received.authorPseudo ?? null, scoreToBeat: received.scoreToBeat ?? null, expiresAt: toIsoText(received.expiresAt) };
 }
 
 function toLevel(level: RunLevelResponse | undefined): RunLevel | null {
@@ -409,6 +409,12 @@ export function toPlay(play: RunPlayResponse): RunPlay {
     current: toCurrent(play.current),
     isResuming: play.isResuming,
   };
+}
+
+/** Un instant en texte ISO : le client annonce une `Date` mais le JSON livre un texte (sans quoi `toISOString` plantait et la V4 disparaissait). */
+function toIsoText(value: unknown): string {
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString();
 }
 
 /** `aaaa-mm-jj` : le client annonce une `Date` mais le JSON livre un texte (et l'adaptateur ne doit pas dépendre du fuseau du navigateur). */
