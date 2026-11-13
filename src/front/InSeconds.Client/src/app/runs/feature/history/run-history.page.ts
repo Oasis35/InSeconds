@@ -7,7 +7,7 @@ import { ErrorReportingService } from '../../../core/errors/error-reporting.serv
 import { LanguageService } from '../../../core/i18n/language.service';
 import { AccountLinkComponent } from '../../../core/shell/account-link/account-link.component';
 import { InstagramLinkComponent } from '../../../core/shell/instagram-link/instagram-link.component';
-import { BrandComponent } from '../../../gameplay/ui/brand/brand.component';
+import { BrandComponent } from '../../../ui/brand/brand.component';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
 import { dayLabel, formatScore, isMonthText, utcDayOf } from '../../../ui/format/day-label';
 import { HistorySummaryComponent } from '../../../ui/history/history-summary.component';

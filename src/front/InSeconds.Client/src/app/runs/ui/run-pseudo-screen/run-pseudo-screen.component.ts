@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { BrandComponent } from '../../../gameplay/ui/brand/brand.component';
+import { BrandComponent } from '../../../ui/brand/brand.component';
 import { ButtonComponent } from '../../../ui/button/button.component';
 
 /**

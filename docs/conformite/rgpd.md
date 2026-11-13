@@ -75,4 +75,3 @@ Le texte saisi déjà stocké a été supprimé par migration ; `VACUUM FULL dai
 ## Reste ouvert
 
 - **Pas de trace des actions de l'admin** (qui a consulté ou modifié quoi). Un seul admin aujourd'hui : à reconsidérer s'il y en a un deuxième.
-

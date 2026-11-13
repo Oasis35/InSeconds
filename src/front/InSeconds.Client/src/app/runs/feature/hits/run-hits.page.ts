@@ -4,7 +4,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
 import { AccountLinkComponent } from '../../../core/shell/account-link/account-link.component';
 import { InstagramLinkComponent } from '../../../core/shell/instagram-link/instagram-link.component';
-import { BrandComponent } from '../../../gameplay/ui/brand/brand.component';
+import { BrandComponent } from '../../../ui/brand/brand.component';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
 import { pop } from '../../../ui/motion/motion';
 import { RunHitsStore } from '../../data-access/run-hits.store';
