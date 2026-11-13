@@ -7,7 +7,7 @@ import { SessionStore } from '../../../core/session/session.store';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 
 /**
- * La barre du bas de la V4 : Accueil (le jeu du jour et la carte Setlist), Classement, Historique et Mon compte (« Connexion » pour un invité).
+ * La barre du bas de la V4 : Accueil (le jeu du jour et la carte Setlist), Classements, Historique et Mon compte (« Connexion » pour un invité).
  * Visible seulement sous l'accès Setlist, sur l'accueil, sur Setlist, sur le classement, l'historique et le profil, et jamais pendant une manche.
  * « Accueil » respire en cyan tant que le défi du jour n'est pas joué. Les liens légaux ne sont plus dans la barre : ils vivent sous la carte Setlist.
  */

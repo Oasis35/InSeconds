@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/test';
 import { RunPage } from '../pages/run.page';
 
 // Le classement entre amis (`/ranking`) : un compte crée un groupe, l'invitation (`/ranking/join/<code>`) le fait rejoindre, et seuls ses
-// membres voient son classement. L'onglet « Classement » de la barre du bas vient avec l'accès Setlist.
+// membres voient son classement. L'onglet « Classements » de la barre du bas vient avec l'accès Setlist.
 
 test.describe('Groupes entre amis', () => {
   test.beforeEach(async ({ api }) => {
