@@ -85,11 +85,9 @@
   --tube-wave-hot: inset 0 0 0 1.5px var(--core-cyan), 0 0 5px rgb(var(--rgb-accent-2) / 0.8);
   --glow-accent-2: 0 0 12px rgb(var(--rgb-accent-2) / 0.5);
   --glow-success: 0 0 12px rgb(var(--rgb-success) / 0.4);
-  --glow-ice: 0 0 12px rgb(var(--rgb-accent-2) / 0.35);
 
-  /* Gel de série - seul ajout de la maquette : le dégradé « glace » (froid) opposé
-     à l'orange de la série (chaud). */
-  --gradient-ice: linear-gradient(135deg, #BEFAFF, rgb(var(--rgb-accent-2)) 55%, rgb(var(--rgb-violet)));
+  /* Gel de série : un cyan uni (froid), opposé à l'ambre de la série (chaud). */
+  --fill-ice: rgb(var(--rgb-accent-2));
 
   /* Disques du mode Run (Setlist) */
   --disc-diamond:   #BFE9FF;
