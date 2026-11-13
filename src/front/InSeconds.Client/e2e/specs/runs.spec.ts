@@ -172,7 +172,8 @@ test.describe('Mode Setlist', () => {
 
     await expect(run.finished).toHaveAttribute('data-status', 'won');
     await expect(run.disc).toHaveText('Disque d’or !');
-    await expect(run.record).toHaveText('Nouveau record');
+    // La flèche ↗ précède le texte sous la V4 (fin de la maquette 04).
+    await expect(run.record).toContainText('Nouveau record');
     await expect(run.found).toHaveText('20 / 20 morceaux trouvés');
     // Nouvelle interface (le joueur a l'accès) : son niveau, encore provisoire après une seule partie, « Nouvelle setlist » et « Défier un ami ».
     await expect(run.page.getByTestId('run-level')).toBeVisible();
