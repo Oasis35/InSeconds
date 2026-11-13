@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
+import { SessionStore } from '../../../core/session/session.store';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { SetlistBottomBarComponent } from './setlist-bottom-bar.component';
 
@@ -50,7 +51,7 @@ describe('SetlistBottomBarComponent', () => {
     const { el } = await render('/setlist/history/12', {});
     expect(el.querySelector('[data-testid="tab-history"]')?.getAttribute('aria-current')).toBe('page');
     expect(el.querySelector('[data-testid="tab-history"]')?.getAttribute('href')).toBe('/daily/history');
-    expect(el.querySelector('[data-testid="tab-setlist"]')?.getAttribute('aria-current')).toBeNull();
+    expect(el.querySelector('[data-testid="tab-daily"]')?.getAttribute('aria-current')).toBeNull();
     TestBed.resetTestingModule();
     expect((await render('/daily/history?mois=2026-10', {})).el.querySelector('[data-testid="tab-daily"]')?.getAttribute('aria-current')).toBeNull();
   });
@@ -59,6 +60,28 @@ describe('SetlistBottomBarComponent', () => {
     const { el } = await render('/ranking?group=4', {});
     expect(el.querySelector('[data-testid="tab-ranking"]')?.getAttribute('href')).toBe('/ranking');
     expect(el.querySelector('[data-testid="tab-ranking"]')?.getAttribute('aria-current')).toBe('page');
-    expect(el.querySelector('[data-testid="tab-setlist"]')?.getAttribute('aria-current')).toBeNull();
+    expect(el.querySelector('[data-testid="tab-daily"]')?.getAttribute('aria-current')).toBeNull();
+  });
+
+  it("quatre entrées : pas d'onglet Setlist, l'accueil reste allumé sur ses pages et la barre ne porte plus les liens légaux", async () => {
+    const { el } = await render('/setlist', {});
+    expect([...el.querySelectorAll('nav a')].map(a => a.getAttribute('data-testid'))).toEqual(['tab-daily', 'tab-ranking', 'tab-history', 'tab-account']);
+    expect(el.querySelector('[data-testid="tab-daily"]')?.getAttribute('aria-current')).toBe('page');
+    expect(el.querySelector('a[href="/legal"]')).toBeNull();
+  });
+
+  it('« Mon compte » ouvre le profil d\'un compte, « Connexion » est l\'entrée d\'un invité', async () => {
+    const { el } = await render('/daily', {});
+    expect(el.querySelector('[data-testid="tab-account"]')?.getAttribute('href')).toBe('/account/login');
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([{ path: '**', children: [] }])] });
+    TestBed.inject(SessionStore).signedIn({ id: 'p1', pseudo: 'Léa', email: 'l@e.fr', isGuest: false, isAdmin: false });
+    TestBed.inject(ShellChromeStore).setV4(true);
+    await TestBed.inject(Router).navigateByUrl('/account/profile');
+    const fixture = TestBed.createComponent(SetlistBottomBarComponent);
+    fixture.detectChanges();
+    const tab = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="tab-account"]');
+    expect(tab?.getAttribute('href')).toBe('/account/profile');
+    expect(tab?.getAttribute('aria-current')).toBe('page');
   });
 });

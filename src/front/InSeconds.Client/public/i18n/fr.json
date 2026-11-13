@@ -1367,8 +1367,9 @@
     "v4": {
       "bar": {
         "label": "Navigation",
-        "daily": "Aujourd'hui",
-        "setlist": "Setlist",
+        "daily": "Accueil",
+        "account": "Mon compte",
+        "login": "Connexion",
         "history": "Historique",
         "ranking": "Classement"
       },

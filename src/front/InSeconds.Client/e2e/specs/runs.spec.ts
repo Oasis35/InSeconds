@@ -99,13 +99,18 @@ test.describe('Mode Setlist', () => {
     // L'accueil de la maquette : la carte du défi, avec sa série dedans, puis la carte Setlist.
     await expect(page.getByTestId('home-challenge')).toBeVisible();
     await expect(page.getByTestId('run-home-card')).toHaveAttribute('data-size', 'small');
-    await expect(bar.getByRole('link', { name: 'Confidentialité' })).toBeVisible();
+    // Les liens légaux ont quitté la barre : une ligne discrète sous la carte Setlist, et quatre entrées en bas.
+    await expect(page.getByTestId('home-legal-line').getByRole('link', { name: 'Confidentialité' })).toBeVisible();
+    await expect(bar.getByRole('link', { name: 'Confidentialité' })).toHaveCount(0);
+    await expect(page.getByTestId('tab-setlist')).toHaveCount(0);
+    await expect(page.getByTestId('tab-account')).toBeVisible();
+    await expect(page.getByTestId('header-login')).toHaveCount(0);
 
-    // L'onglet Setlist mène au mode, qui rappelle le défi restant et y ramène.
-    await page.getByTestId('tab-setlist').click();
+    // La carte Setlist mène au mode, qui rappelle le défi restant et y ramène ; l'accueil reste allumé dans la barre.
+    await page.getByTestId('run-home-play').click();
     await expect(page).toHaveURL(/\/setlist$/);
     await expect(run.startButton).toBeVisible();
-    await expect(page.getByTestId('tab-setlist')).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByTestId('tab-daily')).toHaveAttribute('aria-current', 'page');
     await page.getByTestId('daily-left').click();
     await expect(page).toHaveURL(/\/daily$/);
     await game.waitForWelcome();

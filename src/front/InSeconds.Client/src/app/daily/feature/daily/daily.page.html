@@ -169,9 +169,11 @@
     }
 
   </main>
-  <!-- Sous la V4, les liens légaux sont dans la barre du bas et la langue dans le profil. -->
+  <!-- Sous la V4, les liens légaux sont une ligne discrète sous la carte Setlist (pas pendant une manche) et la langue est dans le profil. -->
   @if (!chrome.v4()) {
     <app-daily-footer class="mt-auto" [lang]="language.current()" (toggleLanguage)="toggleLanguage()" />
+  } @else if (store.screen() !== 'playing') {
+    <app-home-legal-line class="mt-auto" />
   }
 
   <!-- Toasts de fin de partie et d'accueil (série, gels) -->

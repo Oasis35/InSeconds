@@ -32,6 +32,7 @@ import { DayResultScreenComponent } from '../../ui/day-result-screen/day-result-
 import { rowsFromResults, rowsFromStats, shareTracksOf } from '../../ui/day-result-screen/result-rows';
 import { BrandComponent } from '../../../ui/brand/brand.component';
 import { DailyFooterComponent } from '../../ui/daily-footer/daily-footer.component';
+import { HomeLegalLineComponent } from '../../ui/home-legal-line/home-legal-line.component';
 import { DailyProgressComponent } from '../../ui/daily-progress/daily-progress.component';
 import { DeezerBadgeComponent } from '../../../gameplay/ui/deezer-badge/deezer-badge.component';
 import { GelEarnedToastComponent } from '../../ui/gel-earned-toast/gel-earned-toast.component';
@@ -58,7 +59,7 @@ import { secondsUntilMidnightUtc, timeLeft, todayUtc } from '../../domain/countd
 @Component({
   selector: 'app-daily-page',
   imports: [
-    TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, BrandComponent, DailyProgressComponent, DailyFooterComponent,
+    TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, BrandComponent, DailyProgressComponent, DailyFooterComponent, HomeLegalLineComponent,
     WelcomeScreenComponent, ResumeScreenComponent, HomeModeEntriesComponent, StatusScreenComponent, AbandonedScreenComponent, DayResultScreenComponent,
     GuestStreakToastComponent, LostStreakToastComponent, GelUsedToastComponent, GelEarnedToastComponent,
     DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent, StreakPillComponent, ButtonComponent, InstagramLinkComponent,
