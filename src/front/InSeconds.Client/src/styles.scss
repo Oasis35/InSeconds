@@ -1,6 +1,6 @@
 @use "tailwindcss";
 
-/* ── Palette InSeconds - DA "IN//SECONDS" (ambre/cyan/violet sur bleu nuit ; le terracotta reste l'accent de Setlist et des liens) ──────── */
+/* ── Palette InSeconds - DA "IN//SECONDS" (ambre/cyan/violet sur bleu nuit) ──────── */
 :root {
   /* Canaux RGB bruts (pour rgba() dynamiques) */
   --rgb-bg:       10 6 18;
@@ -8,7 +8,7 @@
   --rgb-panel:    32 44 84;
   --rgb-text:     232 236 244;
   --rgb-border:   74 82 102;
-  --rgb-accent:    240 133 122; /* terracotta */
+  --rgb-accent:    255 160 0;   /* ambre (même teinte que --rgb-accent-3) : l'ancien terracotta est retiré */
   --rgb-accent-2:  0 229 255;   /* cyan */
   --rgb-accent-3:  255 160 0;   /* ambre : l'orange du joueur, du bouton principal et de ce qu'il fait */
   --rgb-violet:    168 85 247;
@@ -301,7 +301,7 @@ h1, h2, h3, .font-display {
 
 .app-input:focus-visible {
   border-color: var(--color-accent-2);
-  box-shadow: var(--glow-accent-2);
+  box-shadow: 0 0 0 1px var(--color-accent-2);
 }
 
 .app-input[aria-invalid='true'] {
