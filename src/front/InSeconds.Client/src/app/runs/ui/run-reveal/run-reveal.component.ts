@@ -25,7 +25,7 @@ import { RunWaveComponent } from '../run-wave/run-wave.component';
           @if (track().coverUrl; as cover) {
             <img [src]="cover" [alt]="'gameplay.reveal.coverAlt' | translate" class="object-cover rounded-full" style="width:52px;height:52px" />
           } @else {
-            <div class="rounded-full" style="width:52px;height:52px;background:var(--gradient-primary);opacity:0.6"></div>
+            <div class="rounded-full" style="width:52px;height:52px;background:var(--fill-primary);opacity:0.6"></div>
           }
         </app-membrane>
       </div>

@@ -7,7 +7,7 @@ import { ButtonComponent } from './button.component';
   template: `
     <button appButton type="button" id="primary">Jouer</button>
     <button appButton type="button" id="danger" variant="danger" size="sm" [block]="true" disabled>Abandonner</button>
-    <button appButton type="button" id="start" size="lg" [glow]="true">Commencer</button>
+    <button appButton type="button" id="start" size="lg">Commencer</button>
     <a appButton id="skip" variant="neutral">Passer</a>
   `,
 })
@@ -38,11 +38,14 @@ describe('ButtonComponent', () => {
     expect(button.disabled).toBe(true);
   });
 
-  it('taille lg et lueur permanente sur demande, jamais par défaut', () => {
+  it('taille lg sur demande, et aucune lueur de bouton principal', () => {
     const root = render();
 
-    expect([...root.querySelector('#start')!.classList]).toEqual(expect.arrayContaining(['app-button--lg', 'app-button--glow']));
-    expect(root.querySelector('#primary')!.classList).not.toContain('app-button--glow');
+    expect(root.querySelector('#start')!.classList).toContain('app-button--lg');
+    expect(root.querySelector('#primary')!.classList).not.toContain('app-button--lg');
+    const primary = getComputedStyle(root.querySelector('#primary')!);
+    expect(primary.boxShadow).toBe('none');
+    expect(primary.backgroundImage).toBe('none');
   });
 
   it('variante neutre, aussi sur un lien', () => {
