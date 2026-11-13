@@ -72,7 +72,7 @@ export class HomeChallengeCardComponent {
   readonly bestScore = input<number | null>(null);
   /** La médiane d'hier, montrée seulement sans record (vide sous 5 joueurs). */
   readonly yesterdayMedian = input<number | null>(null);
-  /** Le temps qu'il reste pour jouer le défi, au retour dans la journée ; `null` à la première visite du jour. */
+  /** Le temps qu'il reste pour jouer le défi, `null` tant qu'il n'est pas calculé. */
   readonly remaining = input<{ readonly unit: 'hours' | 'minutes'; readonly value: number } | null>(null);
   /** La date du jour de jeu, en haut à droite de la carte. */
   readonly dateLabel = input('');

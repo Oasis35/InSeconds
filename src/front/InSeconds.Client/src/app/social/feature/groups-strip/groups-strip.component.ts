@@ -41,8 +41,6 @@ import { PendingInvite } from '../../data-access/pending-invite';
                     <b class="text-xl" data-testid="strip-rank">{{ ordinal(standing.rank) }}</b>
                     @if (standing.moved; as moved) {
                       <span class="text-sm font-bold" data-testid="strip-up" style="color:var(--color-success)"><span aria-hidden="true">↑</span> {{ moved.from - standing.rank }}</span>
-                    } @else if (stable()) {
-                      <span class="text-sm" aria-hidden="true" style="color:var(--text-muted)">=</span>
                     }
                   }
                 </span>
@@ -70,7 +68,6 @@ export class GroupsStripComponent implements OnInit {
   protected readonly store = inject(GroupsStore);
   private readonly language = inject(LanguageService);
   /** Sa partie n'a pas fait baisser sa place (elle a ajouté des points ou rien) : « = » quand il n'a dépassé personne. */
-  protected readonly stable = computed(() => (this.levelDelta() ?? -1) >= 0);
   protected readonly pendingCode = signal(inject(PendingInvite).get());
 
   protected ordinal(rank: number): string {
