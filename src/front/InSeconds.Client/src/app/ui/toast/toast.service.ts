@@ -1,6 +1,6 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 
-export type ToastTone = 'info' | 'success' | 'error';
+export type ToastTone = 'info' | 'success' | 'error' | 'neutral';
 
 export interface Toast {
   readonly id: number;

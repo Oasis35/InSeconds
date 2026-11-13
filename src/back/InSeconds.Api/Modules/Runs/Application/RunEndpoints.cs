@@ -19,8 +19,10 @@ namespace InSeconds.Api.Modules.Runs.Application;
 /// <param name="Pending">Sa partie en cours la plus récente, à reprendre.</param>
 /// <param name="Shelf">Les disques gagnés par ses parties finies, du moins bon au meilleur ; vide s'il n'en a pas.</param>
 /// <param name="Level">Son niveau (points de niveau, disque, progression vers le suivant) ; vide avant sa première partie finie.</param>
+/// <param name="Received">Le défi d'un ami à jouer (reçu en ouvrant son lien, pas refusé, pas expiré) ; vide sans compte ou sans défi.</param>
 public sealed record RunsMeResponse(
-    bool HasAccess, RunRecordResponse? Record, RunPendingResponse? Pending, IReadOnlyList<RunShelfDiscResponse> Shelf, RunLevelResponse? Level = null)
+    bool HasAccess, RunRecordResponse? Record, RunPendingResponse? Pending, IReadOnlyList<RunShelfDiscResponse> Shelf, RunLevelResponse? Level = null,
+    RunReceivedChallengeResponse? Received = null)
 {
     public static RunsMeResponse Nobody { get; } = new(false, null, null, []);
 }
@@ -42,7 +44,8 @@ public static class GetRunsMeEndpoint
     /// </summary>
     [WolverineGet("/api/runs/me", OperationId = "getRunsMe")]
     public static async Task<RunsMeResponse> Get(
-        ICurrentPlayer current, IRunAccess access, IRunsQueries queries, RunsRules rules, CancellationToken ct)
+        ICurrentPlayer current, IRunAccess access, IRunsQueries queries, RunsRules rules, RunReceivedChallenges received, TimeProvider time,
+        CancellationToken ct)
     {
         if (current.PlayerId is not { } playerId)
             return RunsMeResponse.Nobody;
@@ -55,7 +58,8 @@ public static class GetRunsMeEndpoint
             record is null ? null : new RunRecordResponse(record.BestScore, record.BestRoundsPassed, IsNew: false),
             pending is null ? null : new RunPendingResponse(pending.SessionId, pending.ChallengeCode),
             shelf.Select(d => new RunShelfDiscResponse(new RunDiscResponse(d.Disc.Key, d.Disc.Stars), d.Count)).ToList(),
-            RunViews.LevelOf(await queries.FindLevelAsync(playerId, ct), rules.Levels, sessionId: null));
+            RunViews.LevelOf(await queries.FindLevelAsync(playerId, ct), rules.Levels, sessionId: null),
+            await received.PendingAsync(playerId, time.GetUtcNow(), ct));
     }
 }
 

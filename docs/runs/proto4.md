@@ -95,6 +95,10 @@ Un onglet « Groupes » de l'admin : liste, renommer ou supprimer un groupe, rem
 
 **État : codée.** PR 9 : l'accueil des écrans 1 à 3. PR 10 : les nombres au format de la langue partout (`appPoints`), « Inviter un ami » et « Partager mon score » en contour orange (bouton `accent`), pastilles teintées, avatars violets (`--avatar-*`), classement général en une seule carte avec « ⋯ », fin de run de l'écran 4 (disque et difficulté, grand score, record, carte de niveau avec les morceaux trouvés et « Revoir », groupes, « Nouvelle setlist » avec le disque suivant, « Défier un ami »), métriques `inseconds.runs.levels`, `inseconds.social.groups` et `inseconds.social.ranking_visibility` (rangée « Setlist » du tableau Grafana « Activité »), codes des liens de playlist et d'invitation masqués dans les traces. Écart assumé : le « +180 » du record de la maquette n'est pas affiché (l'ancien record n'est pas servi).
 
+## Défi d'ami, place au classement et partage animé
+
+Le défi d'un ami reçu (serveur, lié au compte, 7 jours, refus par la croix) est un bandeau violet dans la carte Setlist de l'accueil. La place « 2e dans Potes · 14e au général » s'y lit une seule fois, sous la jauge. « Tu passes devant Léa » est dans « Tes groupes » de la fin de Setlist. Au partage, les barres du score se remplissent une à une ; quand la grille est copiée, le bouton donne « Score copié », fait un rebond et un toast le confirme (le menu natif n'est pas animé). Détail : `src/back/CLAUDE.md` (module Runs) et `src/front/CLAUDE.md`.
+
 ## Écrans de référence
 
 | | |

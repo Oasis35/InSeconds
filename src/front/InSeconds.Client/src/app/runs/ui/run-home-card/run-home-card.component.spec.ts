@@ -72,4 +72,50 @@ describe('RunHomeCardComponent', () => {
       expect(q('run-home-next')).toBeNull();
     });
   });
+
+  describe("le défi d'un ami", () => {
+    const received = { code: 'ABC234', authorPseudo: 'Léa', scoreToBeat: 2140, expiresAt: '2026-11-19T00:00:00Z' };
+    const now = new Date('2026-11-13T12:00:00Z');
+
+    it('le bandeau lie à la playlist, annonce le score et les jours, et la croix émet le code', () => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
+      const fixture = TestBed.createComponent(RunHomeCardComponent);
+      fixture.componentRef.setInput('received', received);
+      fixture.componentRef.setInput('now', now);
+      const dismissed: string[] = [];
+      fixture.componentInstance.dismissReceived.subscribe(code => dismissed.push(code));
+      fixture.detectChanges();
+      const element = fixture.nativeElement as HTMLElement;
+
+      expect(element.querySelector('[data-testid="run-home-received-link"]')?.getAttribute('href')).toBe('/setlist/ABC234');
+      expect(element.querySelector('[data-testid="run-home-received-score"]')?.textContent).toMatch(/runs\.home\.receivedScore/);
+      expect(element.querySelector('[data-testid="run-home-received-days"]')?.textContent).toContain('runs.home.receivedExpires');
+      (element.querySelector('[data-testid="run-home-received-dismiss"]') as HTMLButtonElement).click();
+      expect(dismissed).toEqual(['ABC234']);
+    });
+
+    it('sans défi, pas de bandeau', () => {
+      expect(render({}).q('run-home-received')).toBeNull();
+    });
+  });
+
+  describe('sa place', () => {
+    it('« 2e dans Potes · 14e au général » en français, « 2nd … » en anglais, sous la jauge', () => {
+      const fr = render({ level: LEVEL, groupPlace: { name: 'Potes', rank: 2 }, generalRank: 14 });
+      expect(fr.q('run-home-place')?.textContent).toContain('runs.home.placeGroup');
+      expect(fr.q('run-home-place')?.textContent).toContain('·');
+      expect(fr.q('run-home-place')?.textContent).toContain('runs.home.placeGeneral');
+    });
+
+    it('une moitié seule : sans séparateur', () => {
+      const onlyGeneral = render({ level: LEVEL, generalRank: 14 });
+      expect(onlyGeneral.q('run-home-place')?.textContent).not.toContain('·');
+      expect(onlyGeneral.q('run-home-place')?.textContent).toContain('runs.home.placeGeneral');
+    });
+
+    it('rien à dire : pas de ligne', () => {
+      expect(render({ level: LEVEL }).q('run-home-place')).toBeNull();
+    });
+  });
 });

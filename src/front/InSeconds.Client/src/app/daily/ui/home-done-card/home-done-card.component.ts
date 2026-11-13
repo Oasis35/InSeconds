@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, inject, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { PointsPipe } from '../../../ui/format/points.pipe';
-import { enterHomeCard } from '../../../ui/motion/motion';
+import { enterHomeCard, fillBarsInTurn } from '../../../ui/motion/motion';
 import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-button.component';
 import { TrackResultRow } from '../../../gameplay/ui/track-results-list/track-results-list.component';
 import { trackBar } from '../day-result-screen/result-rows';
@@ -36,7 +36,7 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
       <div class="flex items-center justify-between gap-3">
         <span class="flex gap-1" aria-hidden="true">
           @for (row of rows(); track row.position) {
-            <span class="w-4 h-1.5 rounded-full" [style.background]="bar(row)" data-testid="track-bar"></span>
+            <span class="w-4 h-1.5 rounded-full" [style.background]="bar(row)" data-testid="track-bar" data-motion="score-bar"></span>
           }
         </span>
         <button type="button" (click)="seeResult.emit()" data-testid="home-see-result"
@@ -59,7 +59,10 @@ export class HomeDoneCardComponent {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   constructor() {
-    afterNextRender(() => enterHomeCard(this.host.nativeElement));
+    afterNextRender(() => {
+      enterHomeCard(this.host.nativeElement);
+      fillBarsInTurn(Array.from(this.host.nativeElement.querySelectorAll<HTMLElement>('[data-motion="score-bar"]')), 0.3);
+    });
   }
 
   readonly score = input.required<number | null>();

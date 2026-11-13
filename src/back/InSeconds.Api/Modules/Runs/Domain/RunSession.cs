@@ -667,6 +667,9 @@ public interface IRunsStore
     /// </summary>
     Task LockPlayerStartAsync(Guid playerId, CancellationToken ct);
 
+    /// <summary>Un seul « défi reçu » à la fois par joueur (deux onglets qui ouvrent le même lien ne se marchent pas dessus). Exige une transaction.</summary>
+    Task LockReceivedAsync(Guid playerId, CancellationToken ct);
+
     /// <summary>
     /// Réserve ce défi jusqu'à la fin de la transaction et en relit l'état (règles, morceaux, réserve) : le thème d'une manche est écrit sur le défi,
     /// partagé par tous ses joueurs, et deux joueurs qui y arrivent ensemble (le créateur qui choisit, un ami qui reçoit le thème mystère) se suivent
@@ -707,4 +710,9 @@ public interface IRunsStore
     void AddAccess(RunAccess access);
 
     void RemoveAccess(RunAccess access);
+
+    /// <summary>Le défi d'ami reçu par ce joueur sur ce défi, s'il en a un (refusé compris).</summary>
+    Task<RunReceivedChallenge?> FindReceivedChallengeAsync(Guid playerId, int challengeId, CancellationToken ct);
+
+    void AddReceivedChallenge(RunReceivedChallenge received);
 }

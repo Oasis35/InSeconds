@@ -91,6 +91,18 @@ export function lightLadder(root: HTMLElement, delay = 0): void {
   gsap.from(discs, { scale: 0.2, opacity: 0, duration: 0.35, delay, stagger: 0.07, ease: 'back.out(2)', clearProps: 'transform,opacity' });
 }
 
+/** Un bandeau qui glisse depuis le côté avec un léger rebond (le défi d'un ami sur la carte Setlist). Rien en mouvement réduit. */
+export function slideBanner(element: HTMLElement, delay = 0): void {
+  if (motionReduced()) return;
+  gsap.from(element, { x: -24, opacity: 0, duration: 0.5, delay, ease: 'back.out(1.6)', clearProps: MOVED });
+}
+
+/** Des barres qui se remplissent l'une après l'autre, de gauche à droite (le score qu'on va partager). `delay` en secondes. */
+export function fillBarsInTurn(elements: readonly HTMLElement[], delay = 0): void {
+  if (motionReduced() || elements.length === 0) return;
+  gsap.from(elements, { scaleX: 0, transformOrigin: 'left center', duration: 0.3, delay, stagger: 0.12, ease: SETTLE, clearProps: 'transform' });
+}
+
 /** Une carte qui monte à sa place (un coup de pouce joué entre dans la carte du morceau). */
 export function riseCard(element: HTMLElement): void {
   if (motionReduced()) return;

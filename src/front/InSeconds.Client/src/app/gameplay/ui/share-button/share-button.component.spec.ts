@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
+import { ToastService } from '../../../ui/toast/toast.service';
 import { ShareButtonComponent } from './share-button.component';
 
 describe('ShareButtonComponent', () => {
@@ -46,5 +47,18 @@ describe('ShareButtonComponent', () => {
     TestBed.resetTestingModule();
     const copied = render({ labelKey: 'runs.finished.share', copiedKey: 'runs.finished.shareCopied', copied: true }).nativeElement as HTMLElement;
     expect(copied.querySelector('button')!.textContent).toContain('runs.finished.shareCopied');
+  });
+
+  it('copié : un message de confirmation, une seule fois ; pas de message tant que rien n\'est copié', () => {
+    const fixture = render({ copied: false });
+    const toasts = TestBed.inject(ToastService);
+    expect(toasts.toasts()).toHaveLength(0);
+
+    fixture.componentRef.setInput('copied', true);
+    fixture.detectChanges();
+    expect(toasts.toasts().map(t => t.messageKey)).toEqual(['common.copiedToast']);
+
+    fixture.detectChanges();
+    expect(toasts.toasts()).toHaveLength(1);
   });
 });
