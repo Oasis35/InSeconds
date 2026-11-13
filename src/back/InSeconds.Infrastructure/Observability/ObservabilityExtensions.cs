@@ -51,12 +51,13 @@ public static class ObservabilityExtensions
                 .AddRuntimeInstrumentation()
                 .AddMeter(TelemetrySources.Meters));
 
-        builder.Logging.AddOpenTelemetry(options =>
+        // Le chemin des scopes passe par SecretPaths (SecretPathScopeProvider) : un code de lien ne part pas non plus dans les logs.
+        SecretPathLogging.WrapLoggerProviders(builder.Services, secretPaths, () => builder.Logging.AddOpenTelemetry(options =>
         {
             // Les scopes porteront le PlayerId : indispensables pour suivre un joueur.
             options.IncludeScopes = true;
             options.IncludeFormattedMessage = true;
-        });
+        }));
 
         if (!string.IsNullOrWhiteSpace(builder.Configuration[OtlpEndpointKey]))
             otel.UseOtlpExporter();

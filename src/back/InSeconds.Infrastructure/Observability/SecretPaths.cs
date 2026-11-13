@@ -14,10 +14,22 @@ public sealed class SecretPaths(IEnumerable<string> prefixes)
     /// <summary>Les sous-chemins qui ne sont pas des codes (« /setlist/history »), laissés tels quels.</summary>
     public IReadOnlySet<string> Keep { get; init; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Masque un chemin (« /setlist/K7P2QX ») ou une adresse complète (« https://api…/api/social/invitations/ABCD2345/join ») : l'origine est gardée.</summary>
     public string? Mask(string? path)
     {
         if (string.IsNullOrEmpty(path))
             return path;
+        if (!path.StartsWith('/') && Uri.TryCreate(path, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp))
+        {
+            var absolutePath = uri.AbsolutePath;
+            var maskedPath = MaskPath(absolutePath);
+            return maskedPath == absolutePath ? path : uri.GetLeftPart(UriPartial.Authority) + maskedPath + uri.Query + uri.Fragment;
+        }
+        return MaskPath(path);
+    }
+
+    private string MaskPath(string path)
+    {
         foreach (var prefix in _prefixes)
         {
             if (!path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) || path.Length == prefix.Length)

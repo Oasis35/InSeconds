@@ -6,9 +6,16 @@ const SECRET_PREFIXES = ['/api/social/invitations/', '/api/runs/challenges/', '/
 /** Les pages qui ne sont pas des codes. */
 const KEPT_SEGMENTS = new Set(['history', 'hits']);
 
+/** Masque un chemin (« /setlist/K7P2QX ») ou une adresse complète (« https://api…/api/social/invitations/ABCD2345/join ») : l'origine est gardée. */
 export function maskLinkCodes(path: string): string {
+  const origin = /^https?:\/\/[^/?#]+/i.exec(path)?.[0] ?? '';
+  return origin + maskPath(path.slice(origin.length));
+}
+
+function maskPath(path: string): string {
+  const lower = path.toLowerCase();
   for (const prefix of SECRET_PREFIXES) {
-    if (!path.startsWith(prefix)) continue;
+    if (!lower.startsWith(prefix)) continue;
     const rest = path.slice(prefix.length);
     const end = rest.indexOf('/');
     const segment = end < 0 ? rest : rest.slice(0, end);

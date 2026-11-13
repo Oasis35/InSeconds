@@ -25,7 +25,7 @@ export const httpErrorReportingInterceptor: HttpInterceptorFn = (req, next) => {
           reporting.report({
             source: 'http',
             message: `${req.method} ${pathOf(req.url)} → ${error.status || 'échec réseau'}`,
-            url: req.url,
+            url: maskLinkCodes(req.url),
             httpStatus: error.status,
             relatedTraceId: traceId,
           });
