@@ -544,6 +544,8 @@ export const RunGameStore = signalStore(
       patchState(store, { link });
       if (link.myStatus === 'none') {
         patchState(store, { screen: 'link' });
+        // Un compte qui ouvre le lien d'un ami le retrouve sur son accueil (défi reçu) ; un invité ou une erreur n'y changent rien.
+        if (session.player()?.isGuest === false) void api.receive(link.code).catch(() => undefined);
       } else if (link.myStatus === 'pending' && link.mySessionId !== null) {
         const pending = await api.session(link.mySessionId);
         patchState(store, { screen: 'resume', resumeCount: playedCount(pending), resumeTotal: pending.rounds * pending.tracksPerRound });

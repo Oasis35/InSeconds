@@ -4,7 +4,7 @@ import { Provider } from '@angular/core';
 import { RunComparison, RunCurrentTrack, RunLink, RunPlay, RunRound, RunSession, RunTrack, RunsMe } from '../../domain/run';
 import { LinkOutcome, RunAnswerToSend, RunsApi, StartOutcome } from '../runs.api';
 
-export const ME = (overrides: Partial<RunsMe> = {}): RunsMe => ({ hasAccess: true, record: null, pending: null, shelf: [], level: null, ...overrides });
+export const ME = (overrides: Partial<RunsMe> = {}): RunsMe => ({ hasAccess: true, record: null, pending: null, shelf: [], level: null, received: null, ...overrides });
 
 export const ROUND = (overrides: Partial<RunRound> = {}): RunRound => ({ round: 1, score: 0, objective: 200, maxScore: 500, ...overrides });
 
@@ -70,6 +70,18 @@ export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge'
   hits(): Promise<RunHit[]> {
     this.calls.push('hits');
     return this.hitsResult instanceof Error ? Promise.reject(this.hitsResult) : Promise.resolve(this.hitsResult);
+  }
+
+  receiveError: Error | null = null;
+
+  receive(code: string): Promise<void> {
+    this.calls.push(`receive:${code}`);
+    return this.receiveError ? Promise.reject(this.receiveError) : Promise.resolve();
+  }
+
+  dismissReceived(code: string): Promise<void> {
+    this.calls.push(`dismissReceived:${code}`);
+    return Promise.resolve();
   }
 
   me(): Promise<RunsMe> {

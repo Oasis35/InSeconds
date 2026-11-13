@@ -46,6 +46,14 @@ export interface GroupStanding {
   readonly name: string;
   readonly rank: number | null;
   readonly members: number;
+  /** Ce que sa dernière partie a changé dans ce groupe : la place d'avant et le membre qu'il vient de dépasser ; `null` si sa place n'a pas monté. */
+  readonly moved?: RankMovement | null;
+}
+
+/** Une montée au classement d'un groupe : « tu passes devant Léa » (de la 3e place à la 2e). */
+export interface RankMovement {
+  readonly from: number;
+  readonly passed: string;
 }
 
 /** Le nom d'un groupe : mêmes caractères qu'un pseudo ; la longueur maximale est un réglage du serveur, qui tranche. */
@@ -66,10 +74,27 @@ export function isInviteCode(value: string | null | undefined): value is string 
 /** Le lien qui fait rejoindre un groupe. */
 export const groupInviteUrl = (appUrl: string, inviteCode: string): string => `${appUrl}/ranking/join/${inviteCode}?utm_source=share`;
 
-/** La place du joueur dans un classement. */
-export function standingOf(ranking: GroupRanking): GroupStanding {
+/** La place du joueur dans un classement ; avec `delta` (les points que sa dernière partie a ajoutés à son niveau), sa montée éventuelle. */
+export function standingOf(ranking: GroupRanking, delta: number | null = null): GroupStanding {
   const me = ranking.entries.find(entry => entry.isMe);
-  return { groupId: ranking.groupId, name: ranking.name, rank: me?.rank ?? null, members: ranking.entries.length };
+  const moved = movementOf(ranking, delta);
+  return { groupId: ranking.groupId, name: ranking.name, rank: me?.rank ?? null, members: ranking.entries.length, ...(moved ? { moved } : {}) };
+}
+
+/**
+ * Sa montée dans un classement, retrouvée des points : avant sa partie il avait `points - delta` ; ceux qu'il a dépassés sont les membres dont les points
+ * sont entre les deux, le plus proche d'abord. `null` sans montée, sans partie ou sans changement de niveau (son premier niveau n'a pas d'avant).
+ */
+export function movementOf(ranking: GroupRanking, delta: number | null): RankMovement | null {
+  const me = ranking.entries.find(entry => entry.isMe);
+  if (!me || me.points === null || me.rank === null || delta === null || delta <= 0) return null;
+  const before = me.points - delta;
+  const passed = ranking.entries
+    .filter(entry => !entry.isMe && entry.points !== null && entry.points > before && entry.points < me.points!)
+    .sort((a, b) => (b.points ?? 0) - (a.points ?? 0))[0];
+  if (!passed) return null;
+  const ahead = ranking.entries.filter(entry => !entry.isMe && entry.points !== null && entry.points > before).length;
+  return { from: ahead + 1, passed: passed.pseudo };
 }
 
 /**
@@ -103,4 +128,19 @@ export interface GeneralRanking {
   readonly visible: boolean;
   readonly canAppear: boolean;
   readonly topPercent: number | null;
+}
+
+/** Sa meilleure place parmi ses groupes (le plus petit rang) ; `null` sans groupe ou tant qu'il n'a fini aucune partie. En cas d'égalité, le premier groupe. */
+export function bestStanding(standings: readonly GroupStanding[]): (GroupStanding & { readonly rank: number }) | null {
+  let best: (GroupStanding & { readonly rank: number }) | null = null;
+  for (const standing of standings) {
+    if (standing.rank !== null && (best === null || standing.rank < best.rank)) best = { ...standing, rank: standing.rank };
+  }
+  return best;
+}
+
+/** Sa place au classement général ; `null` s'il n'y apparaît pas (c'est son choix, éteint par défaut) ou n'a fini aucune partie. */
+export function generalRankOf(ranking: GeneralRanking): number | null {
+  if (!ranking.visible) return null;
+  return [...ranking.top, ...ranking.around].find(entry => entry.isMe)?.rank ?? null;
 }

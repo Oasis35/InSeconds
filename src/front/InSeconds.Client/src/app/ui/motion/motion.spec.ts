@@ -1,5 +1,5 @@
 import { gsap } from 'gsap';
-import { enterCard, enterHomeCard, enterRow, lightLadder, finishSequence, tweenNumber } from './motion';
+import { enterCard, enterHomeCard, enterRow, fillBarsInTurn, lightLadder, finishSequence, slideBanner, tweenNumber } from './motion';
 
 const flag = globalThis.window as { __disableAnimations?: boolean };
 
@@ -116,6 +116,34 @@ describe('motion', () => {
       expect(root.style.transform).toBe('');
       for (const d of Array.from(root.querySelectorAll<HTMLElement>('i'))) expect(d.style.opacity).toBe('');
       root.remove();
+    });
+  });
+
+  describe('défi d\'ami et partage', () => {
+    it('un bandeau et des barres remplies à la suite ne gardent aucun style à la fin', async () => {
+      const root = document.createElement('div');
+      root.innerHTML = '<b data-banner></b><i></i><i></i><i></i>';
+      document.body.append(root);
+
+      slideBanner(root.querySelector<HTMLElement>('[data-banner]')!);
+      fillBarsInTurn(Array.from(root.querySelectorAll<HTMLElement>('i')));
+      await new Promise((r) => setTimeout(r, 50));
+      gsap.globalTimeline.getChildren().forEach((t) => t.progress(1));
+
+      for (const e of Array.from(root.querySelectorAll<HTMLElement>('b,i'))) {
+        expect(e.style.transform).toBe('');
+        expect(e.style.opacity).toBe('');
+      }
+      root.remove();
+    });
+
+    it('en mouvement réduit, rien ne bouge', () => {
+      flag.__disableAnimations = true;
+      const bar = document.createElement('i');
+      slideBanner(bar);
+      fillBarsInTurn([bar]);
+      expect(bar.style.transform).toBe('');
+      expect(bar.style.opacity).toBe('');
     });
   });
 });

@@ -27,7 +27,7 @@ describe('RunsApi', () => {
   let api: RunsApi;
 
   beforeEach(() => {
-    client = { getRunsMe: vi.fn(), getRunChallenge: vi.fn(), getRunComparison: vi.fn(), launchRun: vi.fn(), joinRun: vi.fn(), refreshRunPreview: vi.fn(), submitRunAnswer: vi.fn(), abandonRun: vi.fn(), swapRunTrack: vi.fn(), getRunHistory: vi.fn(), getRunPastPreview: vi.fn(), getRunHits: vi.fn() };
+    client = { getRunsMe: vi.fn(), getRunChallenge: vi.fn(), getRunComparison: vi.fn(), launchRun: vi.fn(), joinRun: vi.fn(), refreshRunPreview: vi.fn(), submitRunAnswer: vi.fn(), abandonRun: vi.fn(), swapRunTrack: vi.fn(), getRunHistory: vi.fn(), getRunPastPreview: vi.fn(), getRunHits: vi.fn(), receiveRunChallenge: vi.fn(), dismissRunChallenge: vi.fn() };
     TestBed.configureTestingModule({ providers: [{ provide: RunsClient, useValue: client }, RunsApi] });
     api = TestBed.inject(RunsApi);
   });
@@ -45,6 +45,7 @@ describe('RunsApi', () => {
       hasAccess: true, record: { bestScore: 900, bestRoundsPassed: 2, isNew: false }, pending: { sessionId: 7, challengeCode: 'ABC234' },
       shelf: [{ disc: { key: 'runs.discs.wax', stars: 0 }, count: 2 }],
       level: { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: { key: 'runs.discs.gold', stars: 0 }, pointsToNext: 220, progressPercent: 56, provisional: false, runsPlayed: 12, delta: null },
+      received: null,
     });
   });
 
@@ -63,7 +64,34 @@ describe('RunsApi', () => {
   it('sans record ni partie en cours : `null` plutôt que `undefined`', async () => {
     client['getRunsMe'].mockReturnValue(of({ hasAccess: false } as RunsMeResponse));
 
-    expect(await api.me()).toEqual({ hasAccess: false, record: null, pending: null, shelf: [], level: null });
+    expect(await api.me()).toEqual({ hasAccess: false, record: null, pending: null, shelf: [], level: null, received: null });
+  });
+
+  it('un défi reçu : son auteur, le score à battre et la date d\'expiration en texte', async () => {
+    client['getRunsMe'].mockReturnValue(of({
+      hasAccess: true, received: { code: 'ABC234', authorPseudo: 'Léa', scoreToBeat: 2140, expiresAt: new Date('2026-11-20T10:00:00Z') },
+    } as RunsMeResponse));
+
+    expect((await api.me()).received).toEqual({ code: 'ABC234', authorPseudo: 'Léa', scoreToBeat: 2140, expiresAt: '2026-11-20T10:00:00.000Z' });
+  });
+
+  it('recevoir et refuser un défi appellent les deux routes avec le code', async () => {
+    client['receiveRunChallenge'].mockReturnValue(of(undefined));
+    client['dismissRunChallenge'].mockReturnValue(of(undefined));
+
+    await api.receive('ABC234');
+    await api.dismissReceived('ABC234');
+
+    expect(client['receiveRunChallenge']).toHaveBeenCalledWith('ABC234');
+    expect(client['dismissRunChallenge']).toHaveBeenCalledWith('ABC234');
+  });
+
+  it('un défi reçu d\'un invité sans score : des null', async () => {
+    client['getRunsMe'].mockReturnValue(of({
+      hasAccess: true, received: { code: 'ABC234', expiresAt: new Date('2026-11-20T10:00:00Z') },
+    } as RunsMeResponse));
+
+    expect((await api.me()).received).toMatchObject({ authorPseudo: null, scoreToBeat: null });
   });
 
   it('rend la partie en types du domaine : `undefined` devient `null`, un extrait vide aussi', async () => {

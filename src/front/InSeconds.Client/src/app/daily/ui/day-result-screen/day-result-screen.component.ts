@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 import { ArchiveDay } from '../../domain/archive';
@@ -12,6 +12,7 @@ import { YesterdayAnswersCardComponent } from '../yesterday-answers-card/yesterd
 import { StreakPillComponent } from '../streak-pill/streak-pill.component';
 import { Streak } from '../../domain/streak';
 import { PointsPipe } from '../../../ui/format/points.pipe';
+import { fillBarsInTurn } from '../../../ui/motion/motion';
 
 /**
  * Le résultat du jour, juste après la partie comme à chaque visite suivante, toujours dans le même ordre : le score et le compte à rebours,
@@ -64,4 +65,11 @@ export class DayResultScreenComponent {
       }))));
 
   protected readonly barOf = trackBar;
+
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  constructor() {
+    // La partie en petites barres se remplit une barre après l'autre : c'est elle qu'on va partager.
+    afterNextRender(() => fillBarsInTurn(Array.from(this.host.nativeElement.querySelectorAll<HTMLElement>('[data-motion="score-bar"]')), 0.2));
+  }
 }

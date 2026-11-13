@@ -1,5 +1,6 @@
 {
   "common": {
+    "copiedToast": "Ta grille est copiée, colle-la où tu veux.",
     "close": "Fermer",
     "retry": "Réessayer",
     "previewModal": {
@@ -904,7 +905,7 @@
     },
     "share": {
       "button": "Partager mon score",
-      "copied": "Copié !",
+      "copied": "Score copié",
       "failed": "Impossible de copier dans le presse-papier.",
       "header": "{{ score }} pts · InSeconds {{ date }}"
     },
@@ -1156,7 +1157,14 @@
       "levelLine": "{{ disc }} · à ton rythme",
       "playedToday": "Setlist jouée",
       "play": "Jouer",
-      "replay": "Rejouer"
+      "replay": "Rejouer",
+      "receivedFrom": "{{ name }} t'a défié",
+      "receivedFromGuest": "Un ami t'a défié",
+      "receivedScore": "{{ score }} à battre",
+      "receivedExpires": "expire dans {{ days }} j",
+      "receivedDismiss": "Refuser le défi",
+      "placeGroup": "{{ rank }} dans {{ group }}",
+      "placeGeneral": "{{ rank }} au général"
     },
     "welcome": {
       "badge": "Accès anticipé",
@@ -1484,6 +1492,7 @@
     "strip": {
       "title": "Tes groupes",
       "rank": "n° {{ rank }} sur {{ members }}",
+      "passed": "Tu passes devant {{ name }} · n° {{ from }} → n° {{ to }}",
       "empty": "Joue avec tes amis",
       "create": "Créer un groupe"
     }

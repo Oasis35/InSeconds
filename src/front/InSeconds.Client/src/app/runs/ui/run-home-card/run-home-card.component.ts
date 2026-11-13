@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, computed, inject, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonComponent } from '../../../ui/button/button.component';
-import { enterHomeCard, lightLadder } from '../../../ui/motion/motion';
-import { RunLevel } from '../../domain/run';
+import { formatOrdinal } from '../../../ui/format/ordinal';
+import { enterHomeCard, lightLadder, slideBanner } from '../../../ui/motion/motion';
+import { RunLevel, RunReceivedChallenge, daysLeft } from '../../domain/run';
 import { RunDiscComponent } from '../run-disc/run-disc.component';
 
 /** L'échelle des disques, du plus bas au plus haut : la rangée de la carte (le disque du joueur y est plus gros). */
@@ -48,6 +49,28 @@ export const DISC_LADDER: readonly string[] = [
         </div>
       </div>
 
+      @if (received(); as challenge) {
+        <!-- Le défi d'un ami : violet (les autres joueurs), refusable par la croix. -->
+        <div class="flex items-center gap-1 pl-3.5 rounded-(--radius-button)" data-testid="run-home-received" data-motion="received"
+          style="background:rgb(var(--rgb-violet) / 0.14);border:1px solid rgb(var(--rgb-violet) / 0.6)">
+          <a [routerLink]="['/setlist', challenge.code]" class="min-w-0 flex-1 flex flex-wrap items-baseline gap-x-1.5 min-h-11 py-1.5 text-sm" data-testid="run-home-received-link"
+            style="color:var(--text-hi)">
+            <b style="color:var(--color-violet)">{{ (challenge.authorPseudo ? 'runs.home.receivedFrom' : 'runs.home.receivedFromGuest') | translate: { name: challenge.authorPseudo } }}</b>
+            @if (challenge.scoreToBeat !== null) {
+              <span class="tabular-nums" data-testid="run-home-received-score">· {{ 'runs.home.receivedScore' | translate: { score: format(challenge.scoreToBeat) } }}</span>
+            }
+            <span style="color:var(--text-light)" data-testid="run-home-received-days">· {{ 'runs.home.receivedExpires' | translate: { days: days() } }}</span>
+          </a>
+          <button type="button" (click)="dismissReceived.emit(challenge.code)" data-testid="run-home-received-dismiss"
+            class="shrink-0 inline-flex items-center justify-center w-11 h-11 cursor-pointer touch-manipulation" style="color:var(--text-light)"
+            [attr.aria-label]="'runs.home.receivedDismiss' | translate">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" />
+            </svg>
+          </button>
+        </div>
+      }
+
       @if (level(); as level) {
         <div class="flex flex-col gap-2" data-testid="run-home-level">
           <!-- La rangée des huit disques : celui du joueur plus gros, les disques à venir éteints. -->
@@ -65,6 +88,14 @@ export const DISC_LADDER: readonly string[] = [
               <span data-testid="run-home-next">{{ next.key | translate }} · {{ format(level.points + (level.pointsToNext ?? 0)) }}</span>
             }
           </div>
+          @if (groupPlace() || generalRank() !== null) {
+            <!-- « 2e dans Potes · 14e au général » : la place, une seule fois, sous la jauge. -->
+            <p class="text-xs" data-testid="run-home-place" style="color:var(--color-violet)">
+              @if (groupPlace(); as group) { {{ 'runs.home.placeGroup' | translate: { rank: groupRankText(), group: group.name } }} }
+              @if (groupPlace() && generalRank() !== null) { · }
+              @if (generalRank() !== null) { {{ 'runs.home.placeGeneral' | translate: { rank: generalRankText() } }} }
+            </p>
+          }
         </div>
       }
 
@@ -92,8 +123,25 @@ export class RunHomeCardComponent {
   /** Le score de sa dernière setlist du jour ; `null` s'il n'en a pas fini aujourd'hui. */
   readonly todayScore = input<number | null>(null);
   readonly lang = input<'fr' | 'en'>('fr');
+  /** Le défi d'un ami en attente ; `null` sans défi. */
+  readonly received = input<RunReceivedChallenge | null>(null);
+  /** L'heure d'aujourd'hui, pour les jours qui restent au défi (injectée pour les tests). */
+  readonly now = input<Date>(new Date());
+  /** Sa meilleure place dans ses groupes (« 2e dans Potes ») ; `null` sans groupe ou sans partie finie. */
+  readonly groupPlace = input<{ readonly name: string; readonly rank: number } | null>(null);
+  /** Sa place au classement général, s'il a choisi d'y apparaître ; `null` sinon. */
+  readonly generalRank = input<number | null>(null);
+  /** Le joueur refuse le défi (la croix) : le code de la playlist. */
+  readonly dismissReceived = output<string>();
 
   protected readonly ladder = DISC_LADDER;
+  protected readonly days = computed(() => {
+    const challenge = this.received();
+    return challenge ? daysLeft(challenge.expiresAt, this.now()) : 0;
+  });
+  protected readonly groupRankText = computed(() => formatOrdinal(this.groupPlace()?.rank ?? 0, this.lang()));
+  protected readonly generalRankText = computed(() => formatOrdinal(this.generalRank() ?? 0, this.lang()));
+
   private readonly numbers = computed(() => new Intl.NumberFormat(this.lang()));
   /** Le disque de son niveau ; le disque d'or (ce qu'on vise) tant qu'il n'a pas de niveau. */
   protected readonly disc = computed(() => this.level()?.disc.key ?? 'runs.discs.gold');
@@ -106,6 +154,8 @@ export class RunHomeCardComponent {
     afterNextRender(() => {
       enterHomeCard(this.host.nativeElement, 0.12);
       lightLadder(this.host.nativeElement, 0.6);
+      const banner = this.host.nativeElement.querySelector<HTMLElement>('[data-motion="received"]');
+      if (banner) slideBanner(banner, 0.5);
     });
   }
 

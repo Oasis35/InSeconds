@@ -1,6 +1,6 @@
 import {
   RunPassedRound, RunPlay, RunRound, RunRoundSummary, RunSession, RunTrack, clockLabel, finishSquares, gainLabel, isFinished, objectiveBar,
-  comboOf, duelOf, levelDeltaText, ghostGap, playSteps, playedCount, pointsToGo, runPile, runSegments, stepPosition,
+  comboOf, daysLeft, duelOf, levelDeltaText, ghostGap, playSteps, playedCount, pointsToGo, runPile, runSegments, stepPosition,
 } from './run';
 
 describe('objectiveBar', () => {
@@ -263,5 +263,20 @@ describe('levelDeltaText', () => {
   it('rien pour un niveau inchangé ou hors de la fin de run', () => {
     expect(levelDeltaText(0, format)).toBeNull();
     expect(levelDeltaText(null, format)).toBeNull();
+  });
+});
+
+describe('daysLeft', () => {
+  const now = new Date('2026-11-13T12:00:00Z');
+
+  it('arrondit au-dessus : « expire dans 6 j » tant qu\'il reste un peu plus de 5 jours', () => {
+    expect(daysLeft('2026-11-19T00:00:00Z', now)).toBe(6);
+    expect(daysLeft('2026-11-20T12:00:00Z', now)).toBe(7);
+  });
+
+  it('jamais moins de 1, même passé l\'heure ou avec une date illisible', () => {
+    expect(daysLeft('2026-11-13T12:30:00Z', now)).toBe(1);
+    expect(daysLeft('2026-11-01T00:00:00Z', now)).toBe(1);
+    expect(daysLeft('n\'importe quoi', now)).toBe(1);
   });
 });

@@ -40,7 +40,7 @@ test.describe('Bouton partager', () => {
     await game.finishGame(new BlindRoundPage(page), 5);
     await game.shareButton.click();
 
-    // Le bouton passe en "Copié !"
+    // Le bouton passe en « Score copié »
     await expect(game.shareCopiedButton).toBeVisible();
 
     const clipText = await page.evaluate(() => navigator.clipboard.readText());

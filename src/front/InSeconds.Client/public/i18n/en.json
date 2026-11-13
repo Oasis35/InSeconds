@@ -1,5 +1,6 @@
 {
   "common": {
+    "copiedToast": "Your grid is copied, paste it anywhere.",
     "close": "Close",
     "retry": "Try again",
     "previewModal": {
@@ -904,7 +905,7 @@
     },
     "share": {
       "button": "Share my score",
-      "copied": "Copied!",
+      "copied": "Score copied",
       "failed": "Couldn't copy to the clipboard.",
       "header": "{{ score }} pts · InSeconds {{ date }}"
     },
@@ -1156,7 +1157,14 @@
       "levelLine": "{{ disc }} · at your own pace",
       "playedToday": "Setlist played",
       "play": "Play",
-      "replay": "Play again"
+      "replay": "Play again",
+      "receivedFrom": "{{ name }} challenged you",
+      "receivedFromGuest": "A friend challenged you",
+      "receivedScore": "{{ score }} to beat",
+      "receivedExpires": "expires in {{ days }} d",
+      "receivedDismiss": "Decline the challenge",
+      "placeGroup": "{{ rank }} in {{ group }}",
+      "placeGeneral": "{{ rank }} overall"
     },
     "welcome": {
       "badge": "Early access",
@@ -1484,6 +1492,7 @@
     "strip": {
       "title": "Your groups",
       "rank": "#{{ rank }} of {{ members }}",
+      "passed": "You pass {{ name }} · #{{ from }} → #{{ to }}",
       "empty": "Play with your friends",
       "create": "Create a group"
     }

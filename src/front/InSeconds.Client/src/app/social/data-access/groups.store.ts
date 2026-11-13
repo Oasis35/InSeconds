@@ -70,13 +70,13 @@ export const GroupsStore = signalStore(
         return true;
       },
 
-      /** Lit mes groupes et ma place dans chacun (la fin d'une partie). Une erreur laisse la liste vide : ces lignes sont un plus. */
-      async loadStandings(): Promise<void> {
+      /** Lit mes groupes et ma place dans chacun (la fin d'une partie, avec ce que la partie a ajouté au niveau pour en tirer une montée). Une erreur laisse la liste vide : ces lignes sont un plus. */
+      async loadStandings(delta: number | null = null): Promise<void> {
         try {
           const { groups, maxGroups } = await api.myGroups();
           patchState(store, { status: 'ready', groups, maxGroups });
           const rankings = await Promise.all(groups.map(group => api.ranking(group.id).catch(() => null)));
-          patchState(store, { standings: rankings.filter((ranking): ranking is GroupRanking => ranking !== null).map(standingOf) });
+          patchState(store, { standings: rankings.filter((ranking): ranking is GroupRanking => ranking !== null).map(ranking => standingOf(ranking, delta)) });
         } catch {
           patchState(store, { status: 'error', standings: [] });
         }
