@@ -1,6 +1,6 @@
 @use "tailwindcss";
 
-/* ── Palette InSeconds - DA "IN//SECONDS" (terracotta/cyan/violet) ──────── */
+/* ── Palette InSeconds - DA "IN//SECONDS" (ambre/cyan/violet sur bleu nuit ; le terracotta reste l'accent de Setlist et des liens) ──────── */
 :root {
   /* Canaux RGB bruts (pour rgba() dynamiques) */
   --rgb-bg:       10 6 18;
@@ -22,7 +22,7 @@
   --bg-surface-2:  rgb(var(--rgb-panel));
   --bg-inactive:   rgb(var(--rgb-panel));
   --bg-primary:    rgb(var(--rgb-accent));
-  --bg-primary-dk: rgb(var(--rgb-accent-3));
+  --bg-primary-dk: var(--fill-primary);
   --bg-danger:     rgb(var(--rgb-danger));
   --bg-warn:       rgb(var(--rgb-warning) / 0.15);
   /* Le plein de l'action principale : un ambre uni (plus de dégradé), texte noir chaud (8:1, le blanc ne faisait que 2,4:1). */
@@ -43,6 +43,7 @@
   --text-indigo:      rgb(var(--rgb-violet));
   --text-on-primary:  #ffffff;
   --text-on-orange:   #1A0D00;
+  --text-on-orange-soft: rgb(26 13 0 / 0.3); /* le filet du spinner sur l'ambre */
 
   /* Sémantiques dynamiques */
   --color-success: rgb(var(--rgb-success));
@@ -277,6 +278,12 @@ h1, h2, h3, .font-display {
 .no-anim .toast-enter,
 .no-anim .screen-enter {
   animation: none;
+}
+
+/* Les deux barres du logo « IN//SECONDS » allumées comme un tube : cœur clair, halo serré (jeu et admin). */
+.brand-slash {
+  color: var(--core-orange);
+  text-shadow: 0 0 1.5px rgb(var(--rgb-accent-3)), 0 0 6px rgb(var(--rgb-accent-3) / 0.7);
 }
 
 /* Champ de saisie de la DA (connexion, profil, réponse de la manche) : posé en classe plutôt qu'en style répété dans chaque template. */

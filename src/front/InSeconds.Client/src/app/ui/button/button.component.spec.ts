@@ -43,7 +43,9 @@ describe('ButtonComponent', () => {
 
     expect(root.querySelector('#start')!.classList).toContain('app-button--lg');
     expect(root.querySelector('#primary')!.classList).not.toContain('app-button--lg');
-    expect(root.querySelector('#start')!.classList).not.toContain('app-button--glow');
+    const primary = getComputedStyle(root.querySelector('#primary')!);
+    expect(primary.boxShadow).toBe('none');
+    expect(primary.backgroundImage).toBe('none');
   });
 
   it('variante neutre, aussi sur un lien', () => {

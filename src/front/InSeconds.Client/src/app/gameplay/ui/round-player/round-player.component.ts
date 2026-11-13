@@ -190,7 +190,7 @@ interface StepMark {
           [style.width.px]="size" [style.height.px]="size" style="background:var(--fill-primary);border:1.5px solid var(--core-orange);color:var(--text-on-orange)">
           @if (submitting()) {
             <span data-testid="round-loader" class="relative animate-spin rounded-full"
-              style="width:26px;height:26px;border:3px solid rgb(26 13 0 / 0.3);border-top-color:var(--text-on-orange)"></span>
+              style="width:26px;height:26px;border:3px solid var(--text-on-orange-soft);border-top-color:var(--text-on-orange)"></span>
           } @else if (playing()) {
             <span class="relative flex gap-1" aria-hidden="true">
               <span style="width:6px;height:19px;background:var(--text-on-orange);border-radius:2px"></span>
