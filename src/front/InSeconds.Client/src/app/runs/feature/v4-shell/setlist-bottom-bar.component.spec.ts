@@ -62,7 +62,7 @@ describe('SetlistBottomBarComponent', () => {
     expect((await render('/history/daily?mois=2026-10', {})).el.querySelector('[data-testid="tab-daily"]')?.getAttribute('aria-current')).toBeNull();
   });
 
-  it('« Classement » ouvre le classement entre amis et s\'allume sur ses pages', async () => {
+  it('« Classements » ouvre le classement entre amis et s\'allume sur ses pages', async () => {
     const { el } = await render('/ranking?group=4', {});
     expect(el.querySelector('[data-testid="tab-ranking"]')?.getAttribute('href')).toBe('/ranking');
     expect(el.querySelector('[data-testid="tab-ranking"]')?.getAttribute('aria-current')).toBe('page');
