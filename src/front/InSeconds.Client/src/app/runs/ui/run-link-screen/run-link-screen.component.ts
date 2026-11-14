@@ -24,7 +24,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
       <h1 class="text-2xl font-extrabold text-center leading-tight" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="run-link-title">
         {{ 'runs.link.title' | translate: { pseudo: link().authorPseudo ?? ('runs.link.guest' | translate) } }}
       </h1>
-      <ul class="w-full space-y-3 rounded-(--radius-card) p-4 text-sm" style="background:var(--bg-surface);border:1px solid var(--border-subtle);color:var(--text-light)"
+      <ul class="w-full space-y-3 rounded-(--radius-card) p-4 text-sm" style="background:rgb(var(--rgb-surface) / 0.55);border:1px solid var(--border-subtle);color:var(--text-light)"
         data-testid="run-link-rules">
         <li>{{ 'runs.link.tracks' | translate: { tracks: link().trackCount } }}</li>
         <li>{{ 'runs.link.rounds' | translate: { rounds: link().rounds } }}</li>

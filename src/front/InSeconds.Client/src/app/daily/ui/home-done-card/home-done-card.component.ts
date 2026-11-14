@@ -22,7 +22,7 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
   host: { class: 'block' },
   template: `
     <section class="rounded-(--radius-card) px-5 py-4 flex flex-col gap-3" data-testid="home-done"
-      style="background:var(--bg-surface);border:1px solid var(--border-subtle)">
+      style="background:rgb(var(--rgb-surface) / 0.55);border:1px solid var(--border-subtle)">
       <div class="flex items-start justify-between gap-3">
         <div class="min-w-0">
           <h2 class="text-sm font-normal" style="font-family:var(--font-body);color:var(--text-light)">{{ 'daily.home.done' | translate }}</h2>
@@ -32,7 +32,7 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
         <div class="text-right shrink-0">
           <p class="text-sm" style="color:var(--text-light)">{{ 'daily.result.nextChallenge' | translate }}</p>
           <p class="tabular-nums" data-testid="countdown"
-            style="font-family:var(--font-clock);font-size:1.25rem;font-weight:600;line-height:1.2;color:var(--core-cyan);text-shadow:0 0 2px rgb(var(--rgb-accent-2)),0 0 9px rgb(var(--rgb-accent-2) / 0.6)">{{ countdown() }}</p>
+            style="font-family:var(--font-clock);font-size:1.25rem;font-weight:600;line-height:1.2;color:var(--color-accent-2);text-shadow:0 0 12px rgb(var(--rgb-accent-2) / 0.45)">{{ countdown() }}</p>
         </div>
       </div>
       <!-- La partie en un coup d'œil ; un toucher déplie les morceaux sous la phrase (le score d'un morceau ouvre sa pop-up avec le graphique). -->
@@ -63,7 +63,7 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
         </div>
       }
       @if (score() !== null) {
-        <app-share-button class="w-full" variant="accent" [copied]="shareCopied()" [failed]="shareFailed()" [disabled]="!canShare()" (share)="share.emit()" />
+        <app-share-button class="w-full" variant="accent" [glow]="false" [copied]="shareCopied()" [failed]="shareFailed()" [disabled]="!canShare()" (share)="share.emit()" />
       }
     </section>
   `,

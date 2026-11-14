@@ -18,7 +18,7 @@ import { PendingInvite } from '../../data-access/pending-invite';
   template: `
     @if (pendingCode() || showGroups()) {
       <section class="flex flex-col gap-2.5 px-4 py-3 text-sm" data-testid="groups-strip"
-        style="background:transparent;border:1px solid rgb(var(--rgb-violet) / 0.5);border-radius:var(--radius-card)">
+        style="background:rgb(var(--rgb-violet) / 0.12);border:1px solid rgb(var(--rgb-violet) / 0.6);border-radius:var(--radius-card)">
         <h3 class="text-xs font-bold uppercase tracking-widest" style="font-family:var(--font-body);color:var(--color-violet)">{{ 'social.strip.title' | translate }}</h3>
         @if (pendingCode(); as code) {
           <a [routerLink]="['/ranking/join', code]" class="flex items-center justify-between gap-3 min-h-11" data-testid="strip-pending" style="color:var(--text-hi)">

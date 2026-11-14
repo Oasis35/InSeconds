@@ -72,7 +72,7 @@ const monthIndex = (date: string) => Number(date.slice(0, 4)) * 12 + Number(date
       font-size: 14px; font-weight: 600; color: var(--text-hi); background: rgb(255 255 255 / 0.06);
     }
     button.day:hover { background: rgb(255 255 255 / 0.12); }
-    .day--current, button.day--current:hover { background: var(--fill-primary); color: var(--text-on-orange); }
+    .day--current, button.day--current:hover { background: var(--gradient-primary); color: var(--text-on-primary); }
     .day--off { background: none; color: var(--text-faint); opacity: 0.45; font-weight: 400; }
   `,
 })

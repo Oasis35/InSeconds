@@ -42,7 +42,7 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
       @if (level(); as level) {
         <!-- Nouvelle interface : un seul bloc compact (le disque, le score, le badge de record, la jauge vers le disque suivant), les groupes, puis les deux actions. -->
         <section class="rounded-(--radius-card) px-4 py-4 flex flex-col gap-3" data-testid="run-level" [attr.data-disc]="level.disc.key"
-          style="background:var(--bg-surface);border:1px solid var(--border-subtle)">
+          style="background:rgb(var(--rgb-surface) / 0.55);border:1px solid var(--border-subtle)">
           <div class="flex items-center gap-4">
             <app-run-disc class="shrink-0" data-motion="finish-disc" [disc]="finish().disc.key" [size]="72" [shine]="false" />
             <div class="min-w-0 flex-1">
@@ -114,7 +114,7 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
               </button>
             </div>
           }
-          <app-share-button data-testid="run-share" [copied]="shareCopied()" [failed]="shareFailed()" labelKey="runs.level.challenge"
+          <app-share-button data-testid="run-share" [glow]="false" [copied]="shareCopied()" [failed]="shareFailed()" labelKey="runs.level.challenge"
             copiedKey="runs.finished.shareCopied" failedKey="runs.finished.shareFailed" [variant]="canPlayAgain() ? 'accent' : 'primary'" (share)="share.emit()" />
           <button type="button" (click)="compare.emit()" data-testid="run-compare" class="w-full min-h-11 text-sm underline touch-manipulation" style="color:var(--text-muted)">
             {{ 'runs.finished.compare' | translate }}
@@ -163,7 +163,7 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
 
         <div class="grid grid-cols-4 gap-1.5" data-testid="run-round-scores">
           @for (round of finish().rounds; track round.round) {
-            <div class="rounded-(--radius-button) px-0.5 py-2 text-center" style="background:var(--bg-surface);border:1px solid var(--border-subtle)"
+            <div class="rounded-(--radius-button) px-0.5 py-2 text-center" style="background:rgb(var(--rgb-surface) / 0.55);border:1px solid var(--border-subtle)"
               data-motion="finish-round" [attr.data-round]="round.round">
               <p class="text-[0.6875rem] whitespace-nowrap" style="color:var(--text-muted)">{{ 'runs.finished.round' | translate: { round: round.round } }}</p>
               @if (round.score !== null) {

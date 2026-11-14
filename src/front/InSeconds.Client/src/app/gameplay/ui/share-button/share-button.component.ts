@@ -25,6 +25,7 @@ export class ShareButtonComponent {
   readonly failedKey = input('daily.share.failed');
   /** Principal (le Daily) ; neutre quand une autre action est la principale de l'écran (« Rejouer » à la fin d'un run). */
   readonly variant = input<ButtonVariant>('primary');
+  readonly glow = input(true);
   readonly share = output<void>();
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);

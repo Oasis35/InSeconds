@@ -60,7 +60,7 @@ const HOLD_CHOSEN_MS = 250;
   styles: `
     .theme-tile {
       display: flex; align-items: center; gap: 0.75rem; padding: 0.875rem 1rem; border-radius: var(--radius-card); width: 100%; min-height: 68px;
-      border: 1px solid var(--border-neutral); background: var(--bg-surface); transition: opacity 0.3s, border-color 0.3s;
+      border: 1px solid var(--border-neutral); background: rgb(var(--rgb-surface) / 0.55); transition: opacity 0.3s, border-color 0.3s;
     }
     .theme-tile.mystery { border-style: dashed; border-color: rgb(var(--rgb-violet) / 0.6); }
     .theme-tile:disabled { cursor: default; }

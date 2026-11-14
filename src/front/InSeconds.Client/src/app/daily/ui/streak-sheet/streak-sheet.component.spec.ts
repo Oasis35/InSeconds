@@ -43,7 +43,7 @@ describe('StreakSheetComponent', () => {
 
   it('linked : progression vers le prochain gel (71 %), fermer renvoie close', () => {
     const { el, buttons, close } = render();
-    expect((el.querySelector('div[style*="fill-ice"]') as HTMLElement).style.width).toBe('71%');
+    expect((el.querySelector('div[style*="gradient-ice"]') as HTMLElement).style.width).toBe('71%');
     buttons()[0].click();
     expect(close).toHaveBeenCalledWith('close');
   });
@@ -72,7 +72,7 @@ describe('StreakSheetComponent', () => {
 
   it('stock au plafond : pas de barre de progression', () => {
     const { el } = render({ streak: { ...ACTIVE, freezes: 2 } });
-    expect(el.querySelector('div[style*="fill-ice"]')).toBeNull();
+    expect(el.querySelector('div[style*="gradient-ice"]')).toBeNull();
   });
 
   it('protected : frise (jours joués, gel, aujourd\'hui) et « Jouer maintenant »', () => {

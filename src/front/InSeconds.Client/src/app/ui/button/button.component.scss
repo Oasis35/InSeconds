@@ -38,14 +38,13 @@
 }
 
 :host(.app-button--primary) {
-  background: var(--fill-primary);
-  color: var(--text-on-orange);
-  // Un filet clair façon tube : seul signe de lumière du bouton, aucune lueur (ni sur l'accueil, ni sur la reprise, ni ailleurs).
-  border: 1.5px solid var(--core-orange);
+  background: var(--gradient-primary);
+  color: var(--text-on-primary);
 }
 
-:host(.app-button--primary:hover:not(:disabled)) {
-  background: color-mix(in srgb, var(--fill-primary) 88%, white);
+:host(.app-button--primary:hover:not(:disabled)),
+:host(.app-button--glow) {
+  box-shadow: var(--glow-primary);
 }
 
 :host(.app-button--secondary) {

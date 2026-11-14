@@ -27,7 +27,7 @@ export const DISC_LADDER: readonly string[] = [
   host: { class: 'block' },
   template: `
     <section class="rounded-(--radius-card) px-5 py-4 flex flex-col gap-3" data-testid="run-home-card" [attr.data-active]="active()"
-      style="background:var(--bg-surface)"
+      style="background:rgb(var(--rgb-surface) / 0.55)"
       [style.border]="active() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-subtle)'">
       <div class="flex items-center gap-3.5">
         <app-run-disc class="shrink-0" [disc]="disc()" [size]="52" [shine]="false" />

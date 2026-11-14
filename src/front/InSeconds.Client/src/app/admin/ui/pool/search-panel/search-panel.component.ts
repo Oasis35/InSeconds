@@ -46,7 +46,7 @@ type AddStatus = 'loading' | 'success' | 'error';
               <button type="button" (click)="preview.emit(track)" [disabled]="!track.previewUrl"
                 [attr.aria-label]="'common.previewModal.title' | translate"
                 class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors text-sm disabled:opacity-30"
-                style="background:var(--bg-primary-dk);color:var(--text-on-orange)">▶</button>
+                style="background:var(--bg-primary-dk);color:var(--text-on-primary)">▶</button>
               <div class="flex-1 min-w-0 flex flex-col gap-0.5">
                 <span class="text-sm truncate" style="color:var(--text-light)">{{ track.artist }} - {{ track.title }}</span>
                 @if (existing().has(track.deezerTrackId)) {
@@ -59,7 +59,7 @@ type AddStatus = 'loading' | 'success' | 'error';
               <button type="button" (click)="add.emit(track)" [disabled]="status === 'loading'"
                 [title]="errorTitle(track) | translate" [attr.aria-label]="addLabel(status) | translate"
                 class="w-8 h-8 rounded-lg flex items-center justify-center text-lg font-semibold transition-colors shrink-0 disabled:opacity-50"
-                style="background:var(--bg-primary-dk);color:var(--text-on-orange)">
+                style="background:var(--bg-primary-dk);color:var(--text-on-primary)">
                 @switch (status) {
                   @case ('loading') { … }
                   @case ('success') { ✓ }

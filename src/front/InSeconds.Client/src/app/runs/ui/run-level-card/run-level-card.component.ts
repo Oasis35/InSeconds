@@ -16,7 +16,7 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
   host: { class: 'block' },
   template: `
     <section class="rounded-(--radius-card) px-4 py-3 flex flex-col gap-2" data-testid="run-level" [attr.data-disc]="level().disc.key"
-      style="background:var(--bg-surface);border:1px solid var(--border-subtle)"
+      style="background:rgb(var(--rgb-surface) / 0.55);border:1px solid var(--border-subtle)"
       [attr.aria-label]="'runs.level.label' | translate: { disc: (level().disc.key | translate), points: format(level().points) }">
       <div class="flex items-center gap-2.5">
         <app-run-disc class="shrink-0" [disc]="level().disc.key" [size]="28" [shine]="false" />
