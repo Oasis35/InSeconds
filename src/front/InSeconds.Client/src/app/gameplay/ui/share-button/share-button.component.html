@@ -1,5 +1,5 @@
 <div class="flex flex-col items-center gap-1.5 w-full">
-  <button appButton type="button" [variant]="variant()" [block]="true" [disabled]="disabled()" (click)="share.emit()">
+  <button appButton type="button" [variant]="variant()" [block]="true" [glow]="glow()" [disabled]="disabled()" (click)="share.emit()">
     {{ (copied() ? copiedKey() : labelKey()) | translate }}
   </button>
   @if (failed()) {

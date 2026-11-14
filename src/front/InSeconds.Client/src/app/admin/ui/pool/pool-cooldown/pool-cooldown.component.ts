@@ -43,7 +43,7 @@ const DAYS_COLOR = { low: 'var(--color-fail)', medium: 'var(--color-warn)', high
         </span>
         <button type="button" (click)="save()" [disabled]="saveDisabled()"
           class="text-sm font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
-          style="background:var(--bg-primary);color:var(--text-on-orange)">
+          style="background:var(--bg-primary);color:var(--text-on-primary)">
           {{ 'admin.pool.cooldownSetting.saveCooldown' | translate }}
         </button>
         @if (status() === 'saved') { <span class="text-xs" role="status" style="color:var(--color-success)">{{ 'admin.pool.cooldownSetting.cooldownSaved' | translate }}</span> }

@@ -26,7 +26,7 @@ import { ChallengePlayer, chipColors, playerLabel, statusDotColor, statusLabelKe
           [style.opacity]="isDimmed(p.playerId) ? '0.3' : null"
           [style.background]="mine ? 'var(--bg-primary)' : col.bg"
           [style.border-color]="mine ? 'var(--bg-primary)' : col.border"
-          [style.color]="mine ? 'var(--text-on-orange)' : col.text"
+          [style.color]="mine ? 'var(--text-on-primary)' : col.text"
           [style.box-shadow]="highlightedId() === p.playerId ? '0 0 0 2px ' + col.text : null">
           @if (copiedId() === p.playerId) {
             {{ 'admin.dashboard.copied' | translate }}

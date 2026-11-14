@@ -97,7 +97,7 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
           <header class="lg:hidden relative px-4 pt-3 pb-2">
             <div class="flex items-center gap-2">
               <a routerLink="/" [attr.aria-label]="'admin.backToGame' | translate" [title]="'admin.backToGame' | translate"
-                class="shrink-0 font-extrabold uppercase text-base tracking-[0.14em] px-1" style="font-family:var(--font-display);color:var(--text-hi)">IN<span class="brand-slash">//</span></a>
+                class="shrink-0 font-extrabold uppercase text-base tracking-[0.14em] px-1" style="font-family:var(--font-display);color:var(--text-hi)">IN<span style="color:var(--text-accent)">//</span></a>
               <span class="flex-1 min-w-0 truncate text-center text-xs" style="color:var(--text-muted)" data-testid="deployed-at-short">
                 @if (system.build.deployedAt; as at) {
                   {{ 'admin.deployedShort' | translate: { date: (at | date: 'dd/MM'), time: (at | date: 'HH:mm') } }}
@@ -126,7 +126,7 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
               data-testid="admin-top-bar">
               <a routerLink="/" [title]="'admin.backToGame' | translate"
                 class="px-4 font-extrabold uppercase text-base tracking-[0.14em]" style="font-family:var(--font-display);color:var(--text-hi)">
-                IN<span class="brand-slash">//</span>SECONDS
+                IN<span style="color:var(--text-accent)">//</span>SECONDS
               </a>
               <nav data-testid="admin-top-nav" class="flex justify-self-start gap-1 rounded-xl p-1.5" style="background:var(--bg-surface)" [attr.aria-label]="'admin.tabsLabel' | translate">
                 @for (tab of tabs; track tab.path) {

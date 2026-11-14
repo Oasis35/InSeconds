@@ -27,7 +27,7 @@ import { RunRound, pointsToGo, runSegments } from '../../domain/run';
           <div class="relative rounded-[4px]" style="height:12px;background:var(--bg-inactive)" [attr.data-state]="segment.state"
             [style.box-shadow]="segment.state === 'current' ? '0 0 0 1.5px var(--color-accent)' : null">
             <div class="h-full rounded-[4px] bar-fill" [style.width.%]="segment.fill * 100"
-              [style.background]="segment.state === 'done' ? 'var(--color-success)' : 'var(--fill-primary)'"></div>
+              [style.background]="segment.state === 'done' ? 'var(--color-success)' : 'var(--gradient-primary)'"></div>
             @if (segment.mark !== null && showStatus()) {
               <div class="absolute" style="top:-3px;width:2px;height:18px;background:var(--text-hi)" [style.left.%]="segment.mark * 100"></div>
             }
