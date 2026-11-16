@@ -2,9 +2,10 @@ import { TestBed } from '@angular/core/testing';
 import { RunWaveComponent } from './run-wave.component';
 
 describe('RunWaveComponent', () => {
-  function render(peaks: readonly number[] | null) {
+  function render(peaks: readonly number[] | null, lit = false) {
     const fixture = TestBed.createComponent(RunWaveComponent);
     fixture.componentRef.setInput('peaks', peaks);
+    fixture.componentRef.setInput('lit', lit);
     fixture.componentRef.setInput('height', 22);
     fixture.detectChanges();
     return fixture.nativeElement as HTMLElement;
@@ -21,6 +22,14 @@ describe('RunWaveComponent', () => {
 
     expect(bars).toHaveLength(60);
     expect(new Set(bars.map(b => b.style.height))).toEqual(new Set(['14%']));
+  });
+
+  it('allumée comme un tube sur demande, éteinte sinon', () => {
+    const lit = render([0.5], true).querySelector<HTMLElement>('i')!;
+    const off = render([0.5]).querySelector<HTMLElement>('i')!;
+
+    expect(lit.style.boxShadow).toContain('--tube-wave-lit');
+    expect(off.style.boxShadow).toBe('');
   });
 
   it('décorative : cachée au lecteur d\'écran', () => {

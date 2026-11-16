@@ -15,7 +15,7 @@ import { RunHitsStore } from '../../data-access/run-hits.store';
   template: `
     @if (store.status() === 'ready' && store.total() > 0) {
       <a routerLink="/setlist/hits" class="flex items-center justify-between gap-3 px-4 min-h-11 w-full max-w-xs mx-auto text-sm" data-testid="run-hits-line"
-         style="border:1px solid var(--border-neutral);border-radius:var(--radius-button);color:var(--text-hi)">
+         style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-button);color:var(--text-hi)">
         <span>{{ 'runs.hits.title' | translate }}</span>
         <span class="flex items-center gap-2">
           @if (store.fresh().length; as count) {

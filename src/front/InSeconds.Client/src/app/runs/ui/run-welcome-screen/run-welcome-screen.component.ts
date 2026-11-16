@@ -28,7 +28,7 @@ import { RunLevelCardComponent } from '../run-level-card/run-level-card.componen
         }
       </div>
       @if (level(); as level) {
-        <app-run-level-card class="w-full max-w-xs text-left" [level]="level" [lang]="lang()" />
+        <app-run-level-card class="w-full max-w-xs text-left" [level]="level" [lang]="lang()" [focus]="false" />
       }
       @if (shelf().length > 0) {
         <section class="w-full max-w-xs" data-testid="run-shelf">

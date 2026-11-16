@@ -11,14 +11,14 @@
 <![endif]-->
 <style>
   /* Fond repris tel quel de src/styles.scss - .da-bg / .da-grid / .scanlines.
-     Les clients qui suppriment <style> (Outlook) retombent sur bgcolor="#0a0612". */
+     Les clients qui suppriment <style> (Outlook) retombent sur bgcolor="#0e0a26". */
   :root{
-    --rgb-bg:10 6 18;
+    --rgb-bg:14 10 38;
     --rgb-accent-2:0 229 255;
     --rgb-violet:168 85 247;
   }
   .da-bg{
-    background:radial-gradient(circle at 50% -8%, rgb(var(--rgb-violet) / 0.12), transparent 55%), rgb(var(--rgb-bg));
+    background:radial-gradient(ellipse 120% 40% at 50% 0%, rgb(70 40 140 / 0.36), transparent 70%), rgb(var(--rgb-bg));
     overflow-x:clip;
   }
   .da-decor{position:relative;}
@@ -26,7 +26,7 @@
     position:absolute;
     inset:0;
     overflow:hidden;
-    opacity:0.5;
+    opacity:1;
     pointer-events:none;
   }
   .da-grid::before{
@@ -34,8 +34,8 @@
     position:absolute;
     inset:0;
     background-image:
-      linear-gradient(rgb(var(--rgb-accent-2) / 0.16) 1px, transparent 1px),
-      linear-gradient(90deg, rgb(var(--rgb-accent-2) / 0.16) 1px, transparent 1px);
+      linear-gradient(rgb(var(--rgb-accent-2) / 0.25) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--rgb-accent-2) / 0.25) 1px, transparent 1px);
     background-size:26px 18px;
     transform:perspective(220px) rotateX(58deg) scale(2.1);
     transform-origin:top;
@@ -48,20 +48,20 @@
     background-image:repeating-linear-gradient(0deg, #fff 0 1px, transparent 1px 3px);
   }
   .da-content{position:relative;}
-  /* Carte reprise des cartes du jeu : surface translucide + backdrop-blur,
-     bordure hairline à 18%, radius asymétrique. Fallback bgcolor pour Outlook. */
+  /* Carte reprise des cartes du jeu : bleu nuit profond presque opaque, filet plat bleuté, coins de 16 px.
+     Fallback bgcolor pour Outlook. */
   .card{
-    background:rgb(19 10 36 / 0.6)!important;
-    backdrop-filter:blur(16px);
-    -webkit-backdrop-filter:blur(16px);
-    border:1px solid rgb(74 82 102 / 0.18)!important;
+    background:rgb(10 12 34 / 0.9)!important;
+    border:1px solid rgb(150 165 230 / 0.32)!important;
   }
+  /* Le bouton principal du jeu : ambre uni, texte noir chaud, filet clair et un seul halo serré. */
   .cta{
-    background:linear-gradient(90deg,#ff8a00,#f0857a)!important;
-    box-shadow:0 0 16px rgb(240 133 122 / 0.55), 0 0 32px rgb(240 133 122 / 0.25);
+    background:#FFC34D!important;
+    border:1.5px solid #FFF6DC;
+    box-shadow:0 0 8px rgb(255 195 77 / 0.6);
   }
-  .panel{background:rgb(28 16 51 / 0.7)!important;}
-  .hairline{background:rgb(74 82 102 / 0.3)!important;}
+  .panel{background:rgb(18 22 52 / 0.7)!important;}
+  .hairline{background:rgb(150 165 230 / 0.22)!important;}
   @media only screen and (max-width:620px){
     .container{width:100%!important}
     .px{padding-left:28px!important;padding-right:28px!important}
@@ -69,10 +69,10 @@
   }
 </style>
 </head>
-<body class="da-bg" bgcolor="#0a0612" style="margin:0;padding:0;background-color:#0a0612;">
+<body class="da-bg" bgcolor="#0e0a26" style="margin:0;padding:0;background-color:#0e0a26;">
 <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;mso-hide:all;">{{SECTION:preheader}}</span>
 
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="da-bg" bgcolor="#0a0612" style="background-color:#0a0612;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="da-bg" bgcolor="#0e0a26" style="background-color:#0e0a26;">
 <tr>
 <td align="center" class="da-decor" style="padding:0;">
 
@@ -83,13 +83,13 @@
 
     <tr>
       <td align="center" style="padding:48px 24px 40px 24px;">
-        <span style="font-family:Tahoma,Verdana,Arial,sans-serif;font-size:15px;font-weight:bold;letter-spacing:3px;color:#e8ecf4;mso-line-height-rule:exactly;line-height:20px;">IN<span style="color:#f0857a;">//</span>SECONDS</span>
+        <span style="font-family:Tahoma,Verdana,Arial,sans-serif;font-size:15px;font-weight:bold;letter-spacing:3px;color:#e8ecf4;mso-line-height-rule:exactly;line-height:20px;">IN<span style="color:#FFC34D;">//</span>SECONDS</span>
       </td>
     </tr>
 
     <tr>
       <td style="padding:0 12px;">
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="card" bgcolor="#130a24" style="width:100%;background-color:#130a24;border:1px solid #2a2542;border-radius:28px 8px 28px 8px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="card" bgcolor="#0a0c22" style="width:100%;background-color:#0a0c22;border:1px solid #373b62;border-radius:16px;">
 {{SECTION:body}}
         </table>
       </td>

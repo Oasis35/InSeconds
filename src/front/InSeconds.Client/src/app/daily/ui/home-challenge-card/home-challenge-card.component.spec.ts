@@ -29,6 +29,10 @@ describe('HomeChallengeCardComponent', () => {
     expect(spy).toHaveBeenCalled();
   });
 
+  it('la carte du défi est la tuile de focus : tube ambre', () => {
+    expect(render().q('home-challenge')?.classList).toContain('tube-amber');
+  });
+
   it('le record du joueur passe avant la médiane des autres', () => {
     const { q } = render({ bestScore: 3120, yesterdayMedian: 1840 });
     expect(q('welcome-record')?.textContent).toMatch(/3\s120/);

@@ -40,8 +40,9 @@
 :host(.app-button--primary) {
   background: var(--fill-primary);
   color: var(--text-on-orange);
-  // Un filet clair façon tube : seul signe de lumière du bouton, aucune lueur (ni sur l'accueil, ni sur la reprise, ni ailleurs).
+  // Un filet clair façon tube et un seul halo serré : le bouton plein est le seul de son écran à briller.
   border: 1.5px solid var(--core-orange);
+  box-shadow: var(--glow-primary);
 }
 
 :host(.app-button--primary:hover:not(:disabled)) {

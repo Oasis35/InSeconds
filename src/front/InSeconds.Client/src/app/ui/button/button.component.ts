@@ -6,7 +6,7 @@ export type ButtonSize = 'lg' | 'md' | 'sm';
 /**
  * Bouton de la DA, posé sur un vrai `<button>` ou `<a>` (le focus, le clavier et `disabled`
  * restent ceux du navigateur) : `<button appButton variant="secondary">`.
- * - `primary` : ambre uni, texte noir chaud et filet clair (jamais de dégradé ni de lueur), action principale de l'écran ;
+ * - `primary` : ambre uni, texte noir chaud, filet clair et un seul halo serré (jamais de dégradé), action principale de l'écran ;
  * - `secondary` : fond de carte et contour, action alternative (« Annuler », « Réessayer » d'un chargement) ;
  * - `neutral` : contour neutre sans fond, action sans sens propre (« Passer », « Abandonner », « Plus tard »…) ;
  * - `accent` : contour orange sans fond, une action du joueur qui n'est pas la principale de l'écran (« Partager mon score » de l'accueil) ;

@@ -38,13 +38,13 @@ describe('ButtonComponent', () => {
     expect(button.disabled).toBe(true);
   });
 
-  it('taille lg sur demande, et aucune lueur de bouton principal', () => {
+  it('taille lg sur demande, et un seul halo sur le bouton principal', () => {
     const root = render();
 
     expect(root.querySelector('#start')!.classList).toContain('app-button--lg');
     expect(root.querySelector('#primary')!.classList).not.toContain('app-button--lg');
     const primary = getComputedStyle(root.querySelector('#primary')!);
-    expect(primary.boxShadow).toBe('none');
+    expect(primary.boxShadow).not.toBe('none');
     expect(primary.backgroundImage).toBe('none');
   });
 

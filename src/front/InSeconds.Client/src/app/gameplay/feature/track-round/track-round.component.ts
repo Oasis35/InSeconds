@@ -134,11 +134,12 @@ import { ButtonComponent } from '../../../ui/button/button.component';
   styles: `
     .inline-frame {
       background: var(--bg-surface);
-      border: 1px solid var(--border-medium);
+      border: 1px solid var(--core-cyan);
       border-radius: var(--radius-card);
-      transition: border-color 300ms;
+      box-shadow: var(--tube-frame);
+      transition: border-color 300ms, box-shadow 300ms;
     }
-    .inline-frame.alert { border-color: rgb(var(--rgb-text) / 0.45); }
+    .inline-frame.alert { border-color: rgb(var(--rgb-text) / 0.45); box-shadow: none; }
   `,
 })
 export class TrackRoundComponent {

@@ -30,7 +30,7 @@ import { RunWaveComponent } from '../run-wave/run-wave.component';
         </app-membrane>
       </div>
       <div class="flex-1 min-w-0 flex flex-col justify-end" style="height:64px">
-        <app-run-wave [peaks]="peaks()" color="var(--color-accent-2)" />
+        <app-run-wave [peaks]="peaks()" color="var(--wave-unlocked)" [lit]="true" />
       </div>
     </div>
 
