@@ -1,6 +1,6 @@
 namespace InSeconds.Api.Modules.Runs.Application;
 
-// Ce que portent les réponses des routes de la partie, dicté par les écrans (docs/runs/conception.md § 3.5). **Rien qui identifie un morceau avant
+// Ce que portent les réponses des routes de la partie, dicté par les écrans (docs/runs/ecrans.md). **Rien qui identifie un morceau avant
 // sa réponse** (piège 31) : ni nom, ni pochette, ni identifiant Deezer d'un morceau à venir, et l'adresse d'extrait du morceau en cours seulement.
 
 /// <summary>
@@ -33,7 +33,7 @@ public sealed record RunRoundResponse(int Round, int Score, decimal ListenSecond
 /// morceau reste en cours.
 /// </param>
 /// <param name="ListenSeconds">
-/// Son écoute fixe, à la difficulté de sa manche (la manche boss est plus courte) : c'est elle qui fait foi.
+/// Son écoute, au palier de sa manche : c'est elle qui fait foi.
 /// </param>
 /// <param name="Waveform">La forme de l'extrait en base64 (cf. <c>TrackSlot</c> du Daily), vide si elle n'est pas calculée : le navigateur calcule la sienne.</param>
 public sealed record RunCurrentTrackResponse(

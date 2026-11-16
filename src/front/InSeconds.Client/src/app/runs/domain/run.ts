@@ -1,6 +1,6 @@
 /**
  * Le mode Run en TypeScript pur : ce que le serveur rend d'une partie (la manche en cours, les morceaux joués, la fin) et les petits calculs que
- * les écrans en tirent (barre d'objectif, pastilles, libellés). Le serveur décide de tout (points, jauge, neutralisation, fin) : le front affiche.
+ * les écrans en tirent (vies, pastilles, libellés). Le serveur décide de tout (points, vies, palier, neutralisation, fin) : le front affiche.
  */
 
 /** Une partie de la Série ne se gagne pas : elle se perd à la dernière vie, ou s'abandonne. */

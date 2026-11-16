@@ -5,7 +5,7 @@ namespace InSeconds.Api.Modules.Runs.Domain;
 /// <summary>Un morceau jouable, tel que le tirage le voit : son identifiant, son rang Deezer (vide s'il n'a jamais été lu) et ses thèmes (vide : aucun).</summary>
 public sealed record RankedTrack(int Id, int? DeezerRank, IReadOnlyList<int>? ThemeIds = null);
 
-/// <summary>Choisit les morceaux d'une manche. Une autre difficulté (taux de réussite réel…) est une autre implémentation.</summary>
+/// <summary>Choisit les morceaux d'une manche. Une autre mesure de notoriété (taux de réussite réel…) est une autre implémentation.</summary>
 public interface IRunTrackSelector
 {
     /// <summary>

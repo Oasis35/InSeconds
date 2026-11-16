@@ -14,7 +14,7 @@ export const playlistGroupUrl = (code: string, inviteCode: string): string => `$
  * Le partage d'un run, par le menu de partage du téléphone ou sinon dans le presse-papier, et l'état du bouton (copié, échec) pour quelques secondes,
  * comme au Daily (un partage natif ou un menu fermé ne change rien au bouton) :
  * - à la fin d'une partie, le score en grille : le score et le disque d'abord (ils se lisent dans l'aperçu d'une conversation), une ligne par manche
- *   jouée (un carré par morceau, la difficulté), puis « Fais mieux » et le lien de la même playlist ;
+ *   jouée (un carré par morceau, l'écoute du palier), puis « Fais mieux » et le lien de la même playlist ;
  * - ailleurs (la comparaison), une phrase et le lien de la playlist ;
  * - depuis la feuille de partage de la V4 : la même grille sans lien (« Ma grille »), ou l'invitation dans un groupe (le lien de la playlist qui
  *   fait aussi rejoindre le groupe).

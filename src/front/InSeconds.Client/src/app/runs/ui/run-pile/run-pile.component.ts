@@ -23,8 +23,7 @@ const keyOf = (entry: PileEntry): string => (entry.kind === 'track' ? `t${entry.
 
 /**
  * Le total du run puis la pile de tous les morceaux joués, le plus récent en haut : pochette, forme de l'extrait, « Artiste - Titre », points.
- * Quand une manche est passée, sa ligne se pose au-dessus de ses morceaux (le disque, son nom en blanc, deux filets de sa couleur, la manche
- * et son score sur son objectif), et ses morceaux ne gardent que pochette, forme et points, grisés. Toucher une ligne ne rejoue rien.
+ * Quand une manche est terminée, sa ligne se pose au-dessus de ses morceaux (« Manche N », deux filets, son score et son écoute), et ses morceaux ne gardent que pochette, forme et points, grisés. Toucher une ligne ne rejoue rien.
  */
 @Component({
   selector: 'app-run-pile',

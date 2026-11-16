@@ -1,6 +1,6 @@
 # InSeconds - Reste à faire
 
-> Mis à jour le 2026-10-27. Ce fichier ne liste que ce qui reste à faire : l'historique de ce qui est livré vit dans git et les PR, et l'état courant dans [`CLAUDE.md`](../CLAUDE.md) (§ Ce que fait l'application). Une tâche terminée est retirée d'ici, pas cochée. Le suivi du mode Run est dans l'epic #368 (cf. [`runs/plan.md`](runs/plan.md)).
+> Mis à jour le 2026-11-16. Ce fichier ne liste que ce qui reste à faire : l'historique de ce qui est livré vit dans git et les PR, et l'état courant dans [`CLAUDE.md`](../CLAUDE.md) (§ Ce que fait l'application). Une tâche terminée est retirée d'ici, pas cochée. Le suivi du mode Run est dans l'epic #368 (cf. [`runs/plan.md`](runs/plan.md)).
 
 ## En cours
 
@@ -11,9 +11,12 @@
 
 ## Mode Setlist
 
-> Le proto 1 est livré sur invitation ([`runs/`](runs/README.md)), le proto 2 ([`runs/proto2.md`](runs/proto2.md), ticket [#497](https://github.com/Oasis35/InSeconds/issues/497)) sur le staging. Le proto 4 (V4 de l'interface, Setlist, niveaux et groupes, [`runs/proto4.md`](runs/proto4.md), epic [#555](https://github.com/Oasis35/InSeconds/issues/555)) est planifié en 8 PR, rien n'est codé. Reste :
+> La Série (vies, manches sans fin, paliers d'écoute, thèmes) est livrée sur le staging, la V4 aussi ([`runs/`](runs/README.md), epic [#368](https://github.com/Oasis35/InSeconds/issues/368)). Reste (détail dans [`runs/plan.md`](runs/plan.md)) :
 
-- [ ] **Parties de test et réglage** - Clément joue sur le staging puis en prod avec quelques comptes, règle les seuils (`Runs:ThresholdPercents`, multiplicateurs, écoute) et la difficulté (tranches de rang Deezer) ; si les parties montrent des abus, un chrono `Runs:AnswerSeconds` (cf. `runs/conception.md` § 9)
+- [ ] **Valider la migration `SerieRules`** - destructive pour les données du mode (parties, défis, records, niveaux), à valider avant la promotion `env/staging` → `main`
+- [ ] **Parties de test et réglage** - Clément joue sur le staging puis en prod avec quelques comptes, règle le barème (`Runs:StepPoints`, `Runs:ListenLadder`, `Runs:RankBands`) et le barème des disques de niveau (`Runs:Levels:Discs`, le score n'étant plus borné)
+- [ ] **Hit « Oreille d'or »** - définir sa condition
+- [ ] **Catalogue épuisé** - le tirage d'une manche renvoie une 500 quand il ne reste plus assez de morceaux libres : cas rare à traiter proprement
 
 ## Mode entraînement (anciens défis)
 
