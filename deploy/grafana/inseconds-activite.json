@@ -998,7 +998,7 @@
       "gridPos": {
         "x": 0,
         "y": 49,
-        "w": 4,
+        "w": 6,
         "h": 5
       }
     },
@@ -1039,52 +1039,9 @@
       },
       "id": 24,
       "gridPos": {
-        "x": 4,
+        "x": 6,
         "y": 49,
-        "w": 4,
-        "h": 5
-      }
-    },
-    {
-      "type": "stat",
-      "title": "Runs gagnés",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROM}"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROM}"
-          },
-          "expr": "sum(increase(inseconds_runs_sessions_total{job=~\".*inseconds-api\",event=\"won\"}[$__range])) or vector(0)",
-          "legendFormat": "",
-          "instant": true,
-          "range": false
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "decimals": 0
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "colorMode": "value",
-        "graphMode": "none"
-      },
-      "id": 25,
-      "gridPos": {
-        "x": 8,
-        "y": 49,
-        "w": 4,
+        "w": 6,
         "h": 5
       }
     },
@@ -1127,7 +1084,7 @@
       "gridPos": {
         "x": 12,
         "y": 49,
-        "w": 4,
+        "w": 6,
         "h": 5
       }
     },
@@ -1168,59 +1125,15 @@
       },
       "id": 27,
       "gridPos": {
-        "x": 16,
+        "x": 18,
         "y": 49,
-        "w": 4,
-        "h": 5
-      }
-    },
-    {
-      "type": "stat",
-      "title": "Perdus à l'objectif (part des runs finis)",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROM}"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROM}"
-          },
-          "expr": "100 * sum(increase(inseconds_runs_sessions_total{job=~\".*inseconds-api\",event=\"lost\"}[$__range])) / clamp_min(sum(increase(inseconds_runs_sessions_total{job=~\".*inseconds-api\",event=~\"won|lost\"}[$__range])), 1)",
-          "legendFormat": "",
-          "instant": true,
-          "range": false
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "decimals": 0,
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "colorMode": "value",
-        "graphMode": "none"
-      },
-      "id": 28,
-      "gridPos": {
-        "x": 20,
-        "y": 49,
-        "w": 4,
+        "w": 6,
         "h": 5
       }
     },
     {
       "type": "barchart",
-      "title": "Manche ratée (runs perdus)",
+      "title": "Manche de la dernière vie perdue (runs perdus)",
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROM}"
@@ -1272,7 +1185,7 @@
     },
     {
       "type": "barchart",
-      "title": "Difficulté choisie, par manche",
+      "title": "Manches terminées, par manche et issue (palier plus court, identique, plus long)",
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROM}"
@@ -1284,8 +1197,8 @@
             "type": "prometheus",
             "uid": "${DS_PROM}"
           },
-          "expr": "sum by (round, difficulty) (increase(inseconds_runs_difficulties_total{job=~\".*inseconds-api\"}[$__range]))",
-          "legendFormat": "manche {{round}} · {{difficulty}}",
+          "expr": "sum by (round, outcome) (increase(inseconds_runs_rounds_total{job=~\".*inseconds-api\"}[$__range]))",
+          "legendFormat": "manche {{round}} · {{outcome}}",
           "instant": true,
           "range": false,
           "format": "table"
@@ -1319,110 +1232,6 @@
         "x": 8,
         "y": 54,
         "w": 8,
-        "h": 9
-      }
-    },
-    {
-      "type": "barchart",
-      "title": "Disques obtenus",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROM}"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROM}"
-          },
-          "expr": "sum by (disc) (increase(inseconds_runs_discs_total{job=~\".*inseconds-api\"}[$__range]))",
-          "legendFormat": "{{disc}}",
-          "instant": true,
-          "range": false,
-          "format": "table"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "reduce",
-          "options": {
-            "reducers": [
-              "lastNotNull"
-            ],
-            "mode": "seriesToRows"
-          }
-        }
-      ],
-      "options": {
-        "xField": "Field",
-        "orientation": "auto",
-        "showValue": "auto",
-        "legend": {
-          "showLegend": false
-        }
-      },
-      "id": 31,
-      "gridPos": {
-        "x": 16,
-        "y": 54,
-        "w": 8,
-        "h": 9
-      }
-    },
-    {
-      "type": "barchart",
-      "title": "Cartes gagnées et Échanges de morceau",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROM}"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROM}"
-          },
-          "expr": "sum by (action, card) (increase(inseconds_runs_cards_total{job=~\".*inseconds-api\"}[$__range]))",
-          "legendFormat": "{{action}} {{card}}",
-          "instant": true,
-          "range": false,
-          "format": "table"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "reduce",
-          "options": {
-            "reducers": [
-              "lastNotNull"
-            ],
-            "mode": "seriesToRows"
-          }
-        }
-      ],
-      "options": {
-        "xField": "Field",
-        "orientation": "auto",
-        "showValue": "auto",
-        "legend": {
-          "showLegend": false
-        }
-      },
-      "id": 32,
-      "gridPos": {
-        "x": 0,
-        "y": 63,
-        "w": 16,
         "h": 9
       }
     },
@@ -1473,7 +1282,7 @@
       "id": 33,
       "gridPos": {
         "x": 16,
-        "y": 63,
+        "y": 54,
         "w": 8,
         "h": 9
       }
@@ -1525,7 +1334,7 @@
       "id": 34,
       "gridPos": {
         "x": 0,
-        "y": 72,
+        "y": 63,
         "w": 8,
         "h": 9
       }
@@ -1577,7 +1386,7 @@
       "id": 35,
       "gridPos": {
         "x": 8,
-        "y": 72,
+        "y": 63,
         "w": 8,
         "h": 9
       }
