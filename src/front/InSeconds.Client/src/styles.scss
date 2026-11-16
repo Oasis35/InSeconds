@@ -3,12 +3,12 @@
 /* ── Palette InSeconds - DA "IN//SECONDS" (ambre/cyan/violet sur bleu nuit) ──────── */
 :root {
   /* Canaux RGB bruts (pour rgba() dynamiques) */
-  --rgb-bg:       11 8 30;    /* bleu nuit violacé, plus sombre : la grille s'y lit sans le laver (retour du 16/11/2026 : trop pâle) */
+  --rgb-bg:       11 8 30;    /* bleu nuit violacé sombre : la grille s'y lit sans laver les couleurs */
   --rgb-surface:  10 11 34;   /* bleu nuit profond : les tuiles se détachent du fond, la grille passe derrière en flou */
   --rgb-panel:    18 22 52;
   --rgb-text:     232 236 244;
   --rgb-border:   74 82 102;
-  --rgb-accent:    255 149 0;    /* ambre vif (même teinte que --rgb-accent-3), plus saturé que #FFC34D qui virait au pastel */
+  --rgb-accent:    255 149 0;    /* ambre vif (même teinte que --rgb-accent-3) : jamais plus clair, il virerait au pastel */
   --rgb-accent-2:  0 229 255;   /* cyan */
   --rgb-accent-3:  255 149 0;    /* ambre vif : l'orange du joueur, du bouton principal et de ce qu'il fait */
   --rgb-violet:    168 85 247;
@@ -241,6 +241,15 @@ h1, h2, h3, .font-display {
 [class*="--bg-surface)"] {
   backdrop-filter: var(--blur-tile);
   -webkit-backdrop-filter: var(--blur-tile);
+}
+
+/* Sans flou (navigateur ancien) ou avec la préférence « moins de transparence » : les tuiles et les barres deviennent presque opaques,
+   pour que la grille ne traverse pas le texte. */
+@supports not (backdrop-filter: blur(1px)) {
+  :root { --bg-surface: rgb(var(--rgb-surface) / 0.92); --bg-bar: rgb(var(--rgb-bg) / 0.96); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root { --bg-surface: rgb(var(--rgb-surface) / 0.94); --bg-bar: rgb(var(--rgb-bg) / 0.98); --blur-tile: none; }
 }
 
 /* ── Modales et panneaux bas (CDK Dialog, cf. ui/modal/modal.service.ts) ── */

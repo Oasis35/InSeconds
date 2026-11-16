@@ -134,6 +134,8 @@ import { ButtonComponent } from '../../../ui/button/button.component';
   styles: `
     .inline-frame {
       background: var(--bg-surface);
+      backdrop-filter: var(--blur-tile);
+      -webkit-backdrop-filter: var(--blur-tile);
       border: 1px solid var(--core-cyan);
       border-radius: var(--radius-card);
       box-shadow: var(--tube-frame);
