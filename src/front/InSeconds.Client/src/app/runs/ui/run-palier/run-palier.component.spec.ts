@@ -37,7 +37,7 @@ describe('RunPalierComponent', () => {
   it('montre les vies qui restent', () => {
     const { element } = render(summary({ livesLeft: 1 }));
 
-    expect(element.querySelectorAll('[data-testid="run-palier-lives"] svg path[fill="none"]').length).toBe(2);
+    expect(element.querySelectorAll('[data-testid="run-palier-lives"] svg path[fill="none"]')).toHaveLength(2);
   });
 
   it('« Manche suivante » émet le geste', () => {

@@ -443,7 +443,7 @@ export interface RunDuel {
  * arrivé au bout) et pour une partie abandonnée.
  */
 export function duelOf(session: Pick<RunSession, 'ghost' | 'totalScore' | 'status'> | null): RunDuel | null {
-  if (!session || session.status !== 'lost') return null;
+  if (session?.status !== 'lost') return null;
   const gap = ghostGap(session);
   return gap ? { pseudo: gap.pseudo, gap: gap.gap } : null;
 }
