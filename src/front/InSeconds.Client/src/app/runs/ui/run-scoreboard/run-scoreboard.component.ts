@@ -146,7 +146,10 @@ export class RunScoreboardComponent {
 
   constructor() {
     let ghostTimer: ReturnType<typeof setTimeout> | null = null;
-    inject(DestroyRef).onDestroy(() => { if (ghostTimer !== null) clearTimeout(ghostTimer); if (this.overtakenTimer !== null) clearTimeout(this.overtakenTimer); });
+    inject(DestroyRef).onDestroy(() => {
+      if (ghostTimer !== null) clearTimeout(ghostTimer);
+      if (this.overtakenTimer !== null) clearTimeout(this.overtakenTimer);
+    });
     effect(() => {
       const ghost = this.ghost();
       untracked(() => {

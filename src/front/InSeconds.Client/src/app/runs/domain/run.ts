@@ -485,7 +485,10 @@ export type RoundDot = RunTrackMark | 'current' | 'upcoming';
 /** Les pastilles de la manche en cours : une par morceau de la manche, dans l'ordre (les morceaux déjà joués, celui en cours, ceux à venir). */
 export function roundDots(session: Pick<RunSession, 'tracksPerRound' | 'roundTracks'>): RoundDot[] {
   const played = [...session.roundTracks].sort((a, b) => a.position - b.position).map(trackMark);
-  return Array.from({ length: session.tracksPerRound }, (_, i) => (i < played.length ? played[i] : i === played.length ? 'current' : 'upcoming'));
+  return Array.from({ length: session.tracksPerRound }, (_, i): RoundDot => {
+    if (i < played.length) return played[i];
+    return i === played.length ? 'current' : 'upcoming';
+  });
 }
 
 /** Une vie perdue : un morceau ni à moitié ni en entier juste, qui n'est pas retiré (« Une vie en moins »). */
