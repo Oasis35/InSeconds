@@ -15,7 +15,7 @@ interface Note {
 }
 
 /** Les sons d'interface du mode Setlist, tous synthétisés ici (Web Audio, aucun fichier, aucun droit à céder). */
-export type RunSound = 'tick' | 'roundPassed' | 'cardTaken' | 'won' | 'record' | 'lost';
+export type RunSound = 'tick' | 'roundPassed' | 'won' | 'record' | 'lost';
 
 /** Une famille de sons doux (triangle et sinusoïde, aucune onde carrée), brefs, sous le niveau d'un extrait, en do majeur. */
 const SOUNDS: Readonly<Record<RunSound, readonly Note[]>> = {
@@ -26,8 +26,6 @@ const SOUNDS: Readonly<Record<RunSound, readonly Note[]>> = {
     { hz: 523.25, at: 0, seconds: 0.12, type: 'triangle', gain: 0.18 },
     { hz: 783.99, at: 0.1, seconds: 0.22, type: 'triangle', gain: 0.18 },
   ],
-  // Un bilan de manche : un petit déclic.
-  cardTaken: [{ hz: 659.25, at: 0, seconds: 0.06, type: 'sine', gain: 0.14 }],
   // Le run gagné : un accord arpégé qui monte.
   won: [
     { hz: 523.25, at: 0, seconds: 0.14, type: 'triangle', gain: 0.18 },

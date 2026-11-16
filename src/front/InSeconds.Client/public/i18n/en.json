@@ -1375,7 +1375,7 @@
     "roundEnd": {
       "title": "Round {{ round }} done",
       "shorter": "No mistake: the listening time gets shorter.",
-      "same": "One mistake: the listening time stays the same.",
+      "same": "The listening time stays the same.",
       "longer": "One mistake: the listening time gets longer.",
       "nextListen": "Round {{ round }}: listen for {{ seconds }}",
       "next": "Next round"

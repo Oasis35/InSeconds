@@ -217,7 +217,7 @@ test.describe('Mode Setlist', () => {
     await inSequence(first.slice(2), track => run.answerRight(track));
 
     await expect(run.palier).toBeVisible();
-    await expect(page.getByTestId('run-palier-outcome')).toHaveText('Une erreur : l’écoute reste la même.');
+    await expect(page.getByTestId('run-palier-outcome')).toHaveText('L’écoute reste la même.');
     await expect(page.getByTestId('run-palier-lives')).toHaveAttribute('aria-label', 'Vies : 2 sur 3');
   });
 

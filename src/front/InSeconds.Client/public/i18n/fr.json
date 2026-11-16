@@ -1375,7 +1375,7 @@
     "roundEnd": {
       "title": "Manche {{ round }} terminée",
       "shorter": "Sans erreur : l’écoute raccourcit.",
-      "same": "Une erreur : l’écoute reste la même.",
+      "same": "L’écoute reste la même.",
       "longer": "Une erreur : l’écoute s’allonge.",
       "nextListen": "Manche {{ round }} : écoute de {{ seconds }}",
       "next": "Manche suivante"

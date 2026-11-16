@@ -4,9 +4,9 @@ const hit = (key: string, earned = false, progress: number | null = null, target
 
 describe('run-hits (domaine)', () => {
   it('range le Hit des groupes après les débuts', () => {
-    const hits = withGroupHit([hit('first_setlist', true), hit('first_risky_round'), hit('ten_setlists')], true);
+    const hits = withGroupHit([hit('first_setlist', true), hit('first_record'), hit('ten_setlists')], true);
 
-    expect(hits.map(h => h.key)).toEqual(['first_setlist', 'first_risky_round', FIRST_GROUP_HIT, 'ten_setlists']);
+    expect(hits.map(h => h.key)).toEqual(['first_setlist', 'first_record', FIRST_GROUP_HIT, 'ten_setlists']);
     expect(hits[2].earned).toBe(true);
     expect(withGroupHit([hit('x')], false).map(h => h.key)).toEqual(['x', FIRST_GROUP_HIT]);
   });
