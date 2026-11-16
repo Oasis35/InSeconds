@@ -150,9 +150,9 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
             <div class="min-w-0 pb-4 lg:pb-10"><router-outlet /></div>
           </div>
 
-          <!-- Téléphone : les onglets en bas, fond opaque (rien ne passe dessous en transparence). -->
+          <!-- Téléphone : les onglets en bas, fond translucide et flou (le contenu qui défile dessous se lit en tache floue, jamais net sous le texte). -->
           <nav class="lg:hidden fixed bottom-0 inset-x-0 z-10 grid grid-cols-4 gap-1 px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
-            style="background:var(--bg-page);border-top:1px solid var(--border-medium)" [attr.aria-label]="'admin.tabsLabel' | translate"
+            style="background:var(--bg-bar);backdrop-filter:var(--blur-tile);-webkit-backdrop-filter:var(--blur-tile);border-top:1px solid var(--border-medium)" [attr.aria-label]="'admin.tabsLabel' | translate"
             data-testid="admin-bottom-nav">
             @for (tab of tabs; track tab.path) {
               <a [routerLink]="['/admin', tab.path]" [class.is-active]="isActive(tab)" [attr.aria-current]="isActive(tab) ? 'page' : null" [replaceUrl]="true"

@@ -3,14 +3,14 @@
 /* ── Palette InSeconds - DA "IN//SECONDS" (ambre/cyan/violet sur bleu nuit) ──────── */
 :root {
   /* Canaux RGB bruts (pour rgba() dynamiques) */
-  --rgb-bg:       14 10 38;   /* bleu nuit violacé : la grille se lit dessus */
-  --rgb-surface:  10 12 34;   /* bleu nuit profond : les tuiles se détachent du fond, la grille passe derrière */
+  --rgb-bg:       11 8 30;    /* bleu nuit violacé sombre : la grille s'y lit sans laver les couleurs */
+  --rgb-surface:  10 11 34;   /* bleu nuit profond : les tuiles se détachent du fond, la grille passe derrière en flou */
   --rgb-panel:    18 22 52;
   --rgb-text:     232 236 244;
   --rgb-border:   74 82 102;
-  --rgb-accent:    255 195 77;   /* ambre (même teinte que --rgb-accent-3) : l'ancien terracotta est retiré */
+  --rgb-accent:    255 149 0;    /* ambre vif (même teinte que --rgb-accent-3) : jamais plus clair, il virerait au pastel */
   --rgb-accent-2:  0 229 255;   /* cyan */
-  --rgb-accent-3:  255 195 77;   /* ambre : l'orange du joueur, du bouton principal et de ce qu'il fait */
+  --rgb-accent-3:  255 149 0;    /* ambre vif : l'orange du joueur, du bouton principal et de ce qu'il fait */
   --rgb-violet:    168 85 247;
   --rgb-success:   16 185 129;
   --rgb-danger:    255 61 90;
@@ -18,7 +18,9 @@
 
   /* Fonds */
   --bg-page:       rgb(var(--rgb-bg));
-  --bg-surface:    rgb(var(--rgb-surface) / 0.9);
+  --bg-surface:    rgb(var(--rgb-surface) / 0.68); /* translucide : le flou (--blur-tile, règle plus bas) cache la grille derrière */
+  --bg-bar:        rgb(var(--rgb-bg) / 0.72);      /* les barres fixes (onglets du bas) : même principe, le contenu défile en flou dessous */
+  --blur-tile:     blur(20px) saturate(1.15);
   --bg-surface-2:  rgb(var(--rgb-panel));
   --bg-inactive:   rgb(var(--rgb-panel));
   --bg-primary:    rgb(var(--rgb-accent));
@@ -66,9 +68,9 @@
   --wave-old:      color-mix(in srgb, rgb(var(--rgb-text)) 30%, rgb(var(--rgb-bg)));     /* un morceau déjà joué (la pile de Setlist) */
 
   /* Bordures / overlays */
-  --border-subtle:  rgb(150 165 230 / 0.22);
-  --border-medium:  rgb(150 165 230 / 0.32);
-  --border-strong:  rgb(150 165 230 / 0.5);
+  --border-subtle:  rgb(150 165 230 / 0.24);
+  --border-medium:  rgb(150 165 230 / 0.36);
+  --border-strong:  rgb(150 165 230 / 0.56);
   /* Le filet des champs de saisie : plus clair que celui des tuiles, sans halo. */
   --border-field:   rgb(150 190 255 / 0.6);
   /* La zone sous un objectif (écran « Difficulté ? » de Setlist) : assombrie. */
@@ -79,7 +81,7 @@
 
   /* Lueurs (glow) */
   /* Tubes néon : un cœur presque blanc teinté et un halo serré (8 à 12 px), un seul tube fort par écran. */
-  --core-orange: #FFF6DC;
+  --core-orange: #FFC46B;
   --core-cyan:   #D6FBFF;
   --tube-frame: 0 0 10px rgb(var(--rgb-accent-2) / 0.45);
   /* Un tube par focus d'écran : le cœur clair en filet, un halo serré. Ambre : ce que le joueur fait ; cyan : le son. */
@@ -198,8 +200,8 @@ h1, h2, h3, .font-display {
 
 .da-bg {
   background:
-    radial-gradient(ellipse 120% 40% at 50% 0%, rgb(70 40 140 / 0.36), transparent 70%),
-    linear-gradient(rgb(26 18 60), var(--bg-page) 60%, rgb(12 8 32));
+    radial-gradient(ellipse 120% 36% at 50% 0%, rgb(80 40 150 / 0.30), transparent 70%),
+    linear-gradient(rgb(24 16 58), var(--bg-page) 55%, var(--bg-page));
   overflow-x: clip;
 }
 
@@ -207,7 +209,7 @@ h1, h2, h3, .font-display {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  opacity: 1;
+  opacity: 0.55;
   pointer-events: none;
 }
 
@@ -221,7 +223,7 @@ h1, h2, h3, .font-display {
   background-size: 26px 18px;
   transform: perspective(220px) rotateX(58deg) scale(2.1);
   transform-origin: top;
-  filter: drop-shadow(0 0 1.5px rgb(var(--rgb-accent-2) / 0.3));
+  filter: drop-shadow(0 0 1px rgb(var(--rgb-accent-2) / 0.25));
 }
 
 .scanlines {
@@ -231,6 +233,23 @@ h1, h2, h3, .font-display {
   opacity: 0.03;
   background-image: repeating-linear-gradient(0deg, #fff 0 1px, transparent 1px 3px);
   animation: inseconds-scan 1s linear infinite;
+}
+
+/* Le flou suit le fond de tuile : tout élément qui prend `--bg-surface` (en style en ligne ou en classe Tailwind) floute ce qui passe derrière,
+   la grille donc, au lieu de la laisser traverser le texte. `--bg-surface-2` (opaque) n'en a pas besoin. Un flou discret, jamais de lueur. */
+[style*="--bg-surface)"],
+[class*="--bg-surface)"] {
+  backdrop-filter: var(--blur-tile);
+  -webkit-backdrop-filter: var(--blur-tile);
+}
+
+/* Sans flou (navigateur ancien) ou avec la préférence « moins de transparence » : les tuiles et les barres deviennent presque opaques,
+   pour que la grille ne traverse pas le texte. */
+@supports not (backdrop-filter: blur(1px)) {
+  :root { --bg-surface: rgb(var(--rgb-surface) / 0.92); --bg-bar: rgb(var(--rgb-bg) / 0.96); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root { --bg-surface: rgb(var(--rgb-surface) / 0.94); --bg-bar: rgb(var(--rgb-bg) / 0.98); --blur-tile: none; }
 }
 
 /* ── Modales et panneaux bas (CDK Dialog, cf. ui/modal/modal.service.ts) ── */
@@ -290,7 +309,7 @@ h1, h2, h3, .font-display {
 /* Les deux barres du logo « IN//SECONDS » allumées comme un tube : cœur clair, halo serré (jeu et admin). */
 .brand-slash {
   color: var(--core-orange);
-  text-shadow: 0 0 1.5px rgb(var(--rgb-accent-3)), 0 0 6px rgb(var(--rgb-accent-3) / 0.7);
+  text-shadow: 0 0 1px rgb(var(--rgb-accent-3)), 0 0 7px rgb(var(--rgb-accent-3) / 0.85);
 }
 
 /* Champ de saisie de la DA (connexion, profil, réponse de la manche) : posé en classe plutôt qu'en style répété dans chaque template. */
