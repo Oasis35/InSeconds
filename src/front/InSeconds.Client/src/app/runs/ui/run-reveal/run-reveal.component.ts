@@ -3,7 +3,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { DeezerBadgeComponent } from '../../../gameplay/ui/deezer-badge/deezer-badge.component';
 import { MembraneComponent } from '../../../gameplay/ui/membrane/membrane.component';
 import { flyTo, revealInTurn } from '../../../ui/motion/motion';
-import { RunTrack, gainLabel } from '../../domain/run';
+import { RunTrack, gainLabel, lostLife } from '../../domain/run';
 import { RunNextButtonComponent } from '../run-next-button/run-next-button.component';
 import { RunWaveComponent } from '../run-wave/run-wave.component';
 
@@ -49,6 +49,11 @@ import { RunWaveComponent } from '../run-wave/run-wave.component';
         style="font-family:var(--font-score)" [style.color]="track().points > 0 ? 'var(--color-accent)' : 'var(--text-faint)'">{{ gainText() }}</span>
     </div>
 
+    @if (lifeLost()) {
+      <!-- Une vie perdue se dit : sans le mot, le cœur qui s'éteint en haut passerait inaperçu. -->
+      <p class="mt-2 text-[13px] font-semibold" style="color:var(--color-fail)" data-testid="run-answer-life-lost">{{ 'runs.reveal.lifeLost' | translate }}</p>
+    }
+
     @if (track().deezerTrackId; as deezerTrackId) {
       <div class="mt-3" data-testid="run-answer-deezer">
         <app-deezer-badge [deezerTrackId]="deezerTrackId" [lang]="lang()" width="98" height="14" />
@@ -74,6 +79,7 @@ export class RunRevealComponent {
   readonly flyTarget = input<HTMLElement | null>(null);
   readonly next = output();
 
+  protected readonly lifeLost = computed(() => lostLife(this.track()));
   protected readonly gainText = computed(() => (this.track().points > 0 ? gainLabel(this.track().points) : '0'));
 
   private readonly verdicts = viewChildren<ElementRef<HTMLElement>>('verdict');

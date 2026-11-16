@@ -87,7 +87,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
             } @else if (round.pendingConfirm(); as kind) {
               <div class="rounded-xl px-4 py-3 space-y-3" style="background:rgb(var(--rgb-accent) / 0.08);border:1px solid rgb(var(--rgb-accent) / 0.35)">
                 <p class="text-sm text-center font-semibold" style="color:var(--color-accent)">
-                  {{ (kind === 'skip' ? 'gameplay.answer.skipConfirm' : 'gameplay.answer.emptyConfirm') | translate }}
+                  {{ (kind === 'skip' ? skipConfirmKey() : emptyConfirmKey()) | translate }}
                 </p>
                 <div class="flex gap-2">
                   <button appButton type="button" variant="secondary" class="flex-1" (click)="round.cancelConfirm()">
@@ -108,7 +108,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
               <div class="flex flex-wrap justify-center gap-x-4">
                 <button type="button" class="inline-flex items-center min-h-11 px-2 text-[15px] underline underline-offset-4 touch-manipulation disabled:opacity-50"
                   style="color:var(--text-light)" [disabled]="phase === 'submitting' || locked()" (click)="round.askSkip()" data-testid="round-skip">
-                  {{ 'gameplay.round.skip' | translate }}
+                  {{ skipLabelKey() | translate }}
                 </button>
                 <!-- Le lien du mode à côté de « Passer » (le mode Run : « Changer de morceau »). -->
                 <ng-content select="[roundLinks]" />
@@ -152,6 +152,11 @@ export class TrackRoundComponent {
   readonly hintPending = input(false);
   /** `inline` : toute la manche dans une carte, le bouton à gauche de la waveform (un mode à écoute fixe) ; `stacked` (défaut) : le Daily. */
   readonly layout = input<'stacked' | 'inline'>('stacked');
+  /** Les textes de « Passer » : le mode qui retire une vie les remplace (« Passer (une vie) »). */
+  readonly skipLabelKey = input('gameplay.round.skip');
+  readonly skipConfirmKey = input('gameplay.answer.skipConfirm');
+  /** Le texte de la confirmation d'une réponse vide ; le mode Run y dit qu'une vie sera perdue. */
+  readonly emptyConfirmKey = input('gameplay.answer.emptyConfirm');
   /** Le bord de la carte s'éclaircit (en ligne seulement) : les dernières secondes du chrono du mode. */
   readonly alert = input(false);
   /** Le temps du mode est écoulé : la saisie part telle quelle, sans confirmation (une seule fois par morceau). */

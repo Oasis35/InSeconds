@@ -1142,8 +1142,19 @@
     "clock": {
       "label": "Time to answer: {{ time }}"
     },
+    "skip": {
+      "label": "Skip (a life)",
+      "confirm": "Skip this track? You'll lose a life"
+    },
+    "reveal": {
+      "lifeLost": "One life less"
+    },
+    "scoreboard": {
+      "score": "Score",
+      "dots": "Tracks of the round",
+      "listen": "Listening (s)"
+    },
     "pile": {
-      "total": "Run total",
       "round": "round {{ round }}",
       "withdrawn": "Track removed"
     },
@@ -1298,6 +1309,7 @@
       "listen": "{{ seconds }} s"
     },
     "ghost": {
+      "overtook": "You just passed {{ name }}!",
       "ahead": "{{ points }} pts ahead",
       "behind": "{{ points }} pts behind",
       "tied": "Tied",
@@ -1378,6 +1390,8 @@
       "failed": "Copy failed"
     },
     "roundEnd": {
+      "worth": "A track found is worth {{ from }} → {{ to }} pts",
+      "nextTheme": "Choose the theme",
       "title": "Round {{ round }} done",
       "shorter": "No mistake: the listening time gets shorter.",
       "same": "The listening time stays the same.",

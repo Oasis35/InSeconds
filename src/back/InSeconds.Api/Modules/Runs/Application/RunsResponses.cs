@@ -50,9 +50,11 @@ public sealed record RunNeutralizedResponse(int Position, int Round);
 /// <param name="Tracks">Ses morceaux, révélés, avec leurs points.</param>
 /// <param name="TotalScore">Le score total de la partie à la fin de cette manche.</param>
 /// <param name="LivesLeft">Les vies qui restent.</param>
+/// <param name="FullPoints">Ce que rapportait un morceau trouvé en entier à l'écoute de la manche qui se termine.</param>
+/// <param name="NextFullPoints">Ce que rapportera un morceau trouvé en entier à l'écoute de la manche suivante.</param>
 public sealed record RunRoundSummaryResponse(
     int Round, int Score, string Outcome, decimal ListenSeconds, decimal NextListenSeconds, IReadOnlyList<RunTrackResponse> Tracks, int TotalScore,
-    int LivesLeft);
+    int LivesLeft, int FullPoints, int NextFullPoints);
 
 /// <summary>Une manche déjà jouée : une ligne de la pile.</summary>
 public sealed record RunPassedRoundResponse(int Round, int Score, decimal ListenSeconds, string? Theme);
@@ -114,12 +116,14 @@ public sealed record RunFinishResponse(
 /// <param name="PassedRounds">Les manches déjà terminées (les lignes de la pile).</param>
 /// <param name="Themes">Les manches à thème de la playlist dont le thème est choisi (jamais la première), pour l'annoncer ; vide : aucune.</param>
 /// <param name="ThemeChoice">Le choix du thème de la manche à venir, tant que personne ne l'a fait (avant son premier son) ; vide sinon.</param>
+/// <param name="ListenLadder">L'échelle des paliers d'écoute de la playlist (règles figées), du plus long au plus court : la rangée de l'écran de jeu.</param>
 /// <param name="Ghost">Le fantôme de l'ami qui a lancé la playlist, s'il l'a finie ; vide sinon. Gardé à la fin de la partie du joueur : c'est le duel de l'écran de fin.</param>
 public sealed record RunSessionResponse(
     int SessionId, string ChallengeCode, string Status, int TracksPerRound, int Lives, int LivesLeft, int TotalScore, int RoundsPassed,
     RunRoundResponse? Round, IReadOnlyList<RunTrackResponse> RoundTracks, RunFinishResponse? Finish,
     int AnswerSeconds, decimal? ClockRemainingSeconds, IReadOnlyList<RunTrackResponse> PlayedTracks, IReadOnlyList<RunPassedRoundResponse> PassedRounds,
-    RunGhostResponse? Ghost = null, IReadOnlyList<RunRoundThemeResponse>? Themes = null, RunThemeChoiceResponse? ThemeChoice = null);
+    RunGhostResponse? Ghost = null, IReadOnlyList<RunRoundThemeResponse>? Themes = null, RunThemeChoiceResponse? ThemeChoice = null,
+    IReadOnlyList<decimal>? ListenLadder = null);
 
 /// <summary>
 /// Le choix du thème de la manche en cours, que seul le créateur de la playlist fait, juste avant de la commencer : deux thèmes proposés, plus le

@@ -311,6 +311,7 @@ function toSession(session: RunSessionResponse): RunSession {
     clockRemainingSeconds: session.clockRemainingSeconds ?? null,
     playedTracks: (session.playedTracks ?? []).map(toTrack),
     passedRounds: (session.passedRounds ?? []).map(toPassedRound),
+    listenLadder: session.listenLadder ?? [],
     themeChoice: session.themeChoice
       ? {
           round: session.themeChoice.round,
@@ -351,6 +352,8 @@ function toSummary(summary: RunRoundSummaryResponse): RunRoundSummary {
     tracks: summary.tracks.map(toTrack),
     totalScore: summary.totalScore,
     livesLeft: summary.livesLeft,
+    fullPoints: summary.fullPoints,
+    nextFullPoints: summary.nextFullPoints,
   };
 }
 

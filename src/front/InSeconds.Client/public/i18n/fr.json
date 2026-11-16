@@ -1142,8 +1142,19 @@
     "clock": {
       "label": "Temps pour répondre : {{ time }}"
     },
+    "skip": {
+      "label": "Passer (une vie)",
+      "confirm": "Passer ce morceau ? Tu perdras une vie"
+    },
+    "reveal": {
+      "lifeLost": "Une vie en moins"
+    },
+    "scoreboard": {
+      "score": "Score",
+      "dots": "Les morceaux de la manche",
+      "listen": "Écoute (s)"
+    },
     "pile": {
-      "total": "Total du run",
       "round": "manche {{ round }}",
       "withdrawn": "Morceau retiré"
     },
@@ -1298,6 +1309,7 @@
       "listen": "{{ seconds }} s"
     },
     "ghost": {
+      "overtook": "Tu viens de dépasser {{ name }} !",
       "ahead": "{{ points }} pts d’avance",
       "behind": "{{ points }} pts de retard",
       "tied": "À égalité",
@@ -1378,6 +1390,8 @@
       "failed": "Copie impossible"
     },
     "roundEnd": {
+      "worth": "Un morceau trouvé vaut {{ from }} → {{ to }} pts",
+      "nextTheme": "Choisir le thème",
       "title": "Manche {{ round }} terminée",
       "shorter": "Sans erreur : l’écoute raccourcit.",
       "same": "L’écoute reste la même.",

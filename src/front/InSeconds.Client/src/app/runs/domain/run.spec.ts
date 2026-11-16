@@ -1,4 +1,5 @@
 import {
+  roundDots, lostLife, overtook,
   RunPassedRound, RunPlay, RunRound, RunRoundSummary, RunSession, RunTrack, clockLabel, finishSquares, gainLabel, isFinished,
   comboOf, daysLeft, duelOf, levelDeltaText, ghostGap, lifeDots, playSteps, roundEndOf, runPile, stepPosition,
 } from './run';
@@ -33,10 +34,10 @@ const round = (overrides: Partial<RunRound> = {}): RunRound => ({ round: 1, scor
 const session = (overrides: Partial<RunSession> = {}): RunSession => ({
   sessionId: 1, challengeCode: 'ABC234', status: 'pending', tracksPerRound: 5, lives: 3, livesLeft: 3, totalScore: 0, roundsPassed: 0,
   round: round(), roundTracks: [], finish: null, answerSeconds: 45, clockRemainingSeconds: null, playedTracks: [], passedRounds: [],
-  ghost: null, themes: [], themeChoice: null, ...overrides,
+  ghost: null, themes: [], themeChoice: null, listenLadder: [10, 5, 3, 2, 1, 0.5], ...overrides,
 });
 const summary = (overrides: Partial<RunRoundSummary> = {}): RunRoundSummary => ({
-  round: 1, score: 400, outcome: 'shorter', listenSeconds: 10, nextListenSeconds: 5, tracks: [], totalScore: 400, livesLeft: 3, ...overrides,
+  round: 1, score: 400, outcome: 'shorter', listenSeconds: 10, nextListenSeconds: 5, tracks: [], totalScore: 400, livesLeft: 3, fullPoints: 100, nextFullPoints: 200, ...overrides,
 });
 const play = (overrides: Partial<RunPlay> = {}): Pick<RunPlay, 'session' | 'revealed' | 'neutralized' | 'roundSummaries' | 'isResuming'> => ({
   session: session(), revealed: null, neutralized: [], roundSummaries: [], isResuming: false, ...overrides,
@@ -212,5 +213,31 @@ describe('daysLeft', () => {
     expect(daysLeft('2026-11-13T12:30:00Z', now)).toBe(1);
     expect(daysLeft('2026-11-01T00:00:00Z', now)).toBe(1);
     expect(daysLeft('n\'importe quoi', now)).toBe(1);
+  });
+});
+
+describe('roundDots, lostLife, overtook', () => {
+  const played = (position: number, artistCorrect: boolean, titleCorrect: boolean, neutralized = false) => ({ position, artistCorrect, titleCorrect, neutralized });
+
+  it('une pastille par morceau de la manche : les joués dans l\'ordre, celui en cours, puis ceux à venir', () => {
+    expect(roundDots({ tracksPerRound: 3, roundTracks: [] } as never)).toEqual(['current', 'upcoming', 'upcoming']);
+    expect(roundDots({ tracksPerRound: 4, roundTracks: [played(2, true, false), played(1, true, true), played(3, false, false, true)] } as never))
+      .toEqual(['found', 'half', 'withdrawn', 'current']);
+    expect(roundDots({ tracksPerRound: 2, roundTracks: [played(1, true, true), played(2, false, false)] } as never)).toEqual(['found', 'missed']);
+  });
+
+  it('une vie perdue : ni une moitié juste ni un morceau retiré', () => {
+    expect(lostLife(played(1, false, false))).toBe(true);
+    expect(lostLife(played(1, true, false))).toBe(false);
+    expect(lostLife(played(1, false, false, true))).toBe(false);
+  });
+
+  it('le dépassement : l\'écart passe de nul ou négatif à positif', () => {
+    const gap = (value: number) => ({ pseudo: 'A', total: 0, gap: value, stoppedAtRound: null });
+    expect(overtook(gap(0), gap(10))).toBe(true);
+    expect(overtook(gap(-5), gap(10))).toBe(true);
+    expect(overtook(gap(5), gap(10))).toBe(false);
+    expect(overtook(null, gap(10))).toBe(false);
+    expect(overtook(gap(-5), null)).toBe(false);
   });
 });

@@ -6,7 +6,7 @@ import { RunPalierComponent } from './run-palier.component';
 
 describe('RunPalierComponent', () => {
   const summary = (over: Partial<RunRoundSummary> = {}): RunRoundSummary => ({
-    round: 2, score: 1250, outcome: 'shorter', listenSeconds: 5, nextListenSeconds: 3, tracks: [], totalScore: 1700, livesLeft: 2, ...over,
+    round: 2, score: 1250, outcome: 'shorter', listenSeconds: 5, nextListenSeconds: 3, tracks: [], totalScore: 1700, livesLeft: 2, fullPoints: 200, nextFullPoints: 350, ...over,
   });
 
   function render(end: RunRoundSummary) {
@@ -48,5 +48,17 @@ describe('RunPalierComponent', () => {
     element.querySelector<HTMLButtonElement>('[data-testid="run-palier-next-button"]')!.click();
 
     expect(clicked).toBe(1);
+  });
+
+  it('le palier qui change en grand, ce que vaut un morceau, et le bouton annonce le thème qui suit', () => {
+    const { fixture, element } = render(summary());
+
+    expect(element.querySelector('[data-testid="run-palier-transition"]')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('5 s→3 s');
+    expect(element.querySelector('[data-testid="run-palier-worth"]')?.textContent?.trim()).toBe('Un morceau trouvé vaut 200 → 350 pts');
+    expect(element.querySelector('[data-testid="run-palier-next-button"]')?.textContent?.trim()).toBe('Manche suivante');
+
+    fixture.componentRef.setInput('themeNext', true);
+    fixture.detectChanges();
+    expect(element.querySelector('[data-testid="run-palier-next-button"]')?.textContent?.trim()).toBe('Choisir le thème');
   });
 });

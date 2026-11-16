@@ -11,7 +11,7 @@ import { waveformFromBlob } from '../../gameplay/domain/waveform';
 import {
   AUTO_NEXT_MS, CLOCK_ALERT_SECONDS, COMBO_MIN, PileEntry, RunComparison, RunCurrentTrack, RunLink, RunPlay, RunRoundSummary, RunSession, RunStep, RunsMe,
   isFinished, lifeDots,
-  comboOf, duelOf, ghostGap, progressKey, playSteps, roundEndOf, runPile, stepPosition,
+  comboOf, duelOf, ghostGap, roundDots, progressKey, playSteps, roundEndOf, runPile, stepPosition,
 } from '../domain/run';
 import { RunSounds } from './run-sounds';
 import { RunsApi, StartOutcome } from './runs.api';
@@ -143,6 +143,10 @@ export const RunGameStore = signalStore(
       combo: computed(() => { const combo = comboOf(store.session()?.playedTracks ?? []); return combo >= COMBO_MIN ? combo : null; }),
       /** L'écart avec le fantôme de l'ami qui a lancé la playlist, au dernier morceau répondu. */
       ghost: computed(() => ghostGap(store.session())),
+      /** Les pastilles de la manche à l'écran, une par morceau. */
+      dots: computed(() => { const session = store.session(); return session ? roundDots(session) : []; }),
+      /** L'échelle des paliers d'écoute de la partie, du plus long au plus court. */
+      ladder: computed(() => store.session()?.listenLadder ?? []),
       /** Le numéro de la manche telle que l'écran la montre : celle de l'étape à l'écran, sinon celle du morceau en cours. */
       shownListenSeconds: computed<number | null>(() => store.session()?.round?.listenSeconds ?? null),
       shownRound: computed<number | null>(() => step()?.round ?? store.session()?.round?.round ?? null),
@@ -191,7 +195,7 @@ export const RunGameStore = signalStore(
         const session = store.session();
         const end = store.roundEnd();
         if (store.screen() !== 'palier' || !session || !end) return null;
-        return { end, nextRound: end.round + 1, lives: lifeDots(session.lives, end.livesLeft), tracksPerRound: session.tracksPerRound };
+        return { end, nextRound: end.round + 1, lives: lifeDots(session.lives, end.livesLeft), tracksPerRound: session.tracksPerRound, themeNext: session.themeChoice !== null };
       }),
     };
   }),

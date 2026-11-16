@@ -2029,7 +2029,9 @@
           "nextListenSeconds",
           "tracks",
           "totalScore",
-          "livesLeft"
+          "livesLeft",
+          "fullPoints",
+          "nextFullPoints"
         ],
         "type": "object",
         "properties": {
@@ -2063,6 +2065,14 @@
             "format": "int32"
           },
           "livesLeft": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fullPoints": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nextFullPoints": {
             "type": "integer",
             "format": "int32"
           }
@@ -2211,6 +2221,16 @@
                 "$ref": "#/components/schemas/RunThemeChoiceResponse"
               }
             ]
+          },
+          "listenLadder": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "number",
+              "format": "double"
+            }
           }
         }
       },
