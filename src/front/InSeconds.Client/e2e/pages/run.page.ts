@@ -189,6 +189,8 @@ export class RunPage {
   /** Passe le bilan de manche (« Manche suivante ») jusqu'à ce que le morceau suivant soit jouable ; un écran de thème, s'il vient, se joue à part. */
   async continueRound(): Promise<void> {
     await expect(async () => {
+      // Horloge simulée : l'écran du thème garde le thème choisi à l'écran par une minuterie, qu'il faut laisser passer.
+      await this.page.clock.fastForward(1500);
       if (await this.palierNextButton.isVisible()) await this.palierNextButton.click();
       await expect(this.answerInput).toBeVisible({ timeout: 1000 });
     }).toPass();
