@@ -20,7 +20,7 @@ import { RunLevelCardComponent } from '../run-level-card/run-level-card.componen
         <h1 class="text-3xl font-extrabold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'runs.welcome.title' | translate }}</h1>
         <p class="text-base" style="color:var(--text-light)">{{ 'runs.welcome.tagline' | translate }}</p>
         @if (record(); as best) {
-          <p class="text-sm" style="color:var(--text-faint)" data-testid="run-record">
+          <p class="text-sm" style="color:var(--color-accent-3)" data-testid="run-record">
             {{ 'runs.welcome.record' | translate: { score: format(best.bestScore) } }}
           </p>
         }

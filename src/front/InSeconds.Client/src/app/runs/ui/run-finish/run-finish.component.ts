@@ -161,7 +161,7 @@ import { SecondsPipe } from '../../../ui/format/seconds.pipe';
                 <!-- Sur un petit écran (320 px), le palier passe sous le score. -->
                 <p class="flex flex-wrap justify-center gap-x-1 text-sm tabular-nums">
                   <span class="font-extrabold" style="font-family:var(--font-display);color:var(--text-hi)">{{ round.score | appPoints }}</span>
-                  <span class="text-xs whitespace-nowrap self-center" style="color:var(--color-cyan, var(--text-faint))">{{ round.listenSeconds | appSeconds }}</span>
+                  <span class="text-xs whitespace-nowrap self-center" style="color:var(--color-accent-2)">{{ round.listenSeconds | appSeconds }}</span>
                 </p>
               } @else {
                 <p class="text-sm font-bold" style="color:var(--text-faint)" [attr.aria-label]="'runs.finished.notPlayed' | translate">✕</p>

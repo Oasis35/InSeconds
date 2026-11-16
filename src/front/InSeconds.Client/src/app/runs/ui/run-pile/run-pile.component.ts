@@ -72,7 +72,7 @@ const keyOf = (entry: PileEntry): string => (entry.kind === 'track' ? `t${entry.
     <div data-testid="run-pile">
       @for (entry of entries(); track key(entry)) {
         @if (entry.kind === 'palier') {
-          @let color = 'var(--core-cyan)';
+          @let color = 'var(--color-accent-2)';
           <div [attr.data-key]="key(entry)" class="relative flex items-center gap-3 py-3 mt-3 mb-1.5" data-testid="run-palier">
             <i data-motion="rule" class="absolute left-0 right-0 top-0 h-px" [style.background]="color" aria-hidden="true"></i>
             <i data-motion="rule" class="absolute left-0 right-0 bottom-0 h-px" [style.background]="color" aria-hidden="true"></i>

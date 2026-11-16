@@ -20,7 +20,7 @@ import { SecondsPipe } from '../../../ui/format/seconds.pipe';
           <path d="M5 5 L19 19 M19 5 L5 19" />
         </svg>
       </button>
-      <div #heartsRow class="flex-1 flex items-center justify-center gap-2" data-testid="run-lives" role="img"
+      <div #heartsRow class="flex-1 flex flex-wrap items-center justify-center gap-2" data-testid="run-lives" role="img"
         [attr.aria-label]="'runs.header.lives' | translate: { left: livesLeft(), total: lives().length }">
         @for (alive of lives(); track $index) {
           <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" [attr.data-alive]="alive">
@@ -51,7 +51,7 @@ import { SecondsPipe } from '../../../ui/format/seconds.pipe';
         }
       </h1>
       @if (listenSeconds() !== null) {
-        <p class="text-[13px]" style="color:var(--color-cyan, var(--text-light))" data-testid="run-listen">{{ 'runs.header.listen' | translate: { seconds: (listenSeconds()! | appSeconds) } }}</p>
+        <p class="text-[13px]" style="color:var(--color-accent-2)" data-testid="run-listen">{{ 'runs.header.listen' | translate: { seconds: (listenSeconds()! | appSeconds) } }}</p>
       }
     </div>
     }

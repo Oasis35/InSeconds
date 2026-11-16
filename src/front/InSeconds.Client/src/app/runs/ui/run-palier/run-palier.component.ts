@@ -26,7 +26,7 @@ import { RunRoundSummary, lifeDots, outcomeKey } from '../../domain/run';
       <div #card class="flex flex-col gap-3 items-center w-full px-4 py-4"
         style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)">
         <p class="text-[15px]" style="color:var(--text-hi)" data-testid="run-palier-outcome">{{ outcomeText() | translate }}</p>
-        <p class="text-[15px]" style="color:var(--color-cyan, var(--text-light))" data-testid="run-palier-next">
+        <p class="text-[15px]" style="color:var(--color-accent-2)" data-testid="run-palier-next">
           {{ 'runs.roundEnd.nextListen' | translate: { round: end().round + 1, seconds: (end().nextListenSeconds | appSeconds) } }}
         </p>
         <p class="flex items-center gap-1.5" data-testid="run-palier-lives" [attr.aria-label]="'runs.header.lives' | translate: { left: end().livesLeft, total: dots().length }">

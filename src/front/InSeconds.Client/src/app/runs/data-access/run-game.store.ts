@@ -373,7 +373,7 @@ export const RunGameStore = signalStore(
       if (play) round.start(configOf(current), null);
     };
 
-    /** Sans difficulté à choisir : le premier morceau de la manche se demande et part. */
+    /** Le premier morceau de la manche se demande et part. */
     const serveRound = async (session: RunSession, play: boolean): Promise<void> => {
       try {
         applyPlay(await api.refreshPreview(session.sessionId), play);
@@ -579,7 +579,7 @@ export const RunGameStore = signalStore(
           await init();
         }
       },
-      /** Le thème est révélé : la manche suit (l'écran de palier ou de difficulté), sans son. */
+      /** Le thème est révélé : la manche suit (l'écran de palier), sans son. */
       continueFromTheme(): void {
         const play = themePlay;
         themePlay = null;

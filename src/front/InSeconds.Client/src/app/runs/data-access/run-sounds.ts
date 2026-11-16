@@ -26,7 +26,7 @@ const SOUNDS: Readonly<Record<RunSound, readonly Note[]>> = {
     { hz: 523.25, at: 0, seconds: 0.12, type: 'triangle', gain: 0.18 },
     { hz: 783.99, at: 0.1, seconds: 0.22, type: 'triangle', gain: 0.18 },
   ],
-  // Une carte prise au palier : un petit déclic.
+  // Un bilan de manche : un petit déclic.
   cardTaken: [{ hz: 659.25, at: 0, seconds: 0.06, type: 'sine', gain: 0.14 }],
   // Le run gagné : un accord arpégé qui monte.
   won: [
@@ -52,7 +52,7 @@ const SOUNDS: Readonly<Record<RunSound, readonly Note[]>> = {
 export const SOUNDS_MUTED_KEY = 'runs.sounds.muted';
 
 /**
- * Les sons d'interface du mode Setlist (le tic du chrono, une manche passée, une carte prise, la fin du run), synthétisés : aucun fichier, des
+ * Les sons d'interface du mode Setlist (le tic du chrono, une manche passée, la fin du run), synthétisés : aucun fichier, des
  * sons à nous. Ils ne sonnent **jamais pendant un extrait** : le service lit lui-même l'état du lecteur (`AudioPort`), aucun appelant n'a à y
  * penser. Le joueur peut les couper (`toggleMuted`, retenu dans ce navigateur). Le contexte audio se crée et se réveille dans un clic du joueur
  * (`unlock`, iPhone : un contexte créé hors d'un geste reste muet, et Safari l'interrompt après un appel ou un passage par une autre appli) ;
