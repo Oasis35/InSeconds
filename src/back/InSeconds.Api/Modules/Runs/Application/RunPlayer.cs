@@ -227,7 +227,7 @@ internal static class RunViews
         var outcome = step.ToStep > step.FromStep ? "shorter" : step.ToStep < step.FromStep ? "longer" : "same";
         return new RunRoundSummaryResponse(
             step.Round, RoundScore(run, step.Round), outcome, rules.ListenAt(step.FromStep), rules.ListenAt(step.ToStep), PlayedTracks(run, step.Round),
-            run.Session.TotalScore, run.Session.LivesLeft(rules));
+            run.Session.TotalScore, run.Session.LivesLeft(rules), rules.PointsAt(step.FromStep), rules.PointsAt(step.ToStep));
     }
 
     public static RunSessionResponse Session(
@@ -264,7 +264,8 @@ internal static class RunViews
             session.TotalScore, session.RoundsPassed, round, roundTracks, finish,
             rules.AnswerSeconds, session.IsPending ? session.ClockRemaining(rules, now) : null, playedTracks, passedRounds, ghost, ThemesOf(rules),
             themeOffer is null ? null : new RunThemeChoiceResponse(
-                themeOffer.Round, [.. themeOffer.Themes.Select(t => new RunThemeOfferItem(t.Id, t.Name, themeOffer.Round, t.Icon))]));
+                themeOffer.Round, [.. themeOffer.Themes.Select(t => new RunThemeOfferItem(t.Id, t.Name, themeOffer.Round, t.Icon))]),
+            [.. rules.ListenLadder]);
     }
 
     private static RunFinishResponse Finish(LoadedRun run, RunRecord? record, RunLevelResponse? level)

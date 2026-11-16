@@ -1142,8 +1142,19 @@
     "clock": {
       "label": "Temps pour répondre : {{ time }}"
     },
+    "skip": {
+      "label": "Passer (une vie)",
+      "confirm": "Passer ce morceau ? Tu perdras une vie"
+    },
+    "reveal": {
+      "lifeLost": "Une vie en moins"
+    },
+    "scoreboard": {
+      "score": "Score",
+      "dots": "Les morceaux de la manche",
+      "listen": "Écoute (s)"
+    },
     "pile": {
-      "total": "Total du run",
       "round": "manche {{ round }}",
       "withdrawn": "Morceau retiré"
     },
@@ -1298,6 +1309,7 @@
       "listen": "{{ seconds }} s"
     },
     "ghost": {
+      "overtook": "Tu viens de dépasser {{ name }} !",
       "ahead": "{{ points }} pts d’avance",
       "behind": "{{ points }} pts de retard",
       "tied": "À égalité",
@@ -1319,6 +1331,11 @@
         "ten_setlists": "10 setlists jouées",
         "fifty_setlists": "50 setlists jouées",
         "perfect_round": "Manche parfaite",
+        "ear_gold": "Oreille d’or",
+        "no_scratch": "Sans une égratignure",
+        "marathon": "Marathon",
+        "mystery_solved": "Mystère résolu",
+        "late_ghost": "Fantôme battu en retard",
         "ten_in_a_row": "10 bonnes réponses d’affilée",
         "friend_played": "Un ami a joué ta setlist",
         "duel_won": "Duel gagné",
@@ -1373,6 +1390,8 @@
       "failed": "Copie impossible"
     },
     "roundEnd": {
+      "worth": "Un morceau trouvé vaut {{ from }} → {{ to }} pts",
+      "nextTheme": "Choisir le thème",
       "title": "Manche {{ round }} terminée",
       "shorter": "Sans erreur : l’écoute raccourcit.",
       "same": "L’écoute reste la même.",

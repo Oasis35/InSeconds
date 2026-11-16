@@ -5,7 +5,7 @@ namespace InSeconds.Api.Modules.Runs.Domain;
 /// <summary>Un morceau jouable, tel que le tirage le voit : son identifiant, son rang Deezer (vide s'il n'a jamais été lu) et ses thèmes (vide : aucun).</summary>
 public sealed record RankedTrack(int Id, int? DeezerRank, IReadOnlyList<int>? ThemeIds = null);
 
-/// <summary>Choisit les morceaux d'une manche. Une autre difficulté (taux de réussite réel…) est une autre implémentation.</summary>
+/// <summary>Choisit les morceaux d'une manche. Une autre mesure de notoriété (taux de réussite réel…) est une autre implémentation.</summary>
 public interface IRunTrackSelector
 {
     /// <summary>
@@ -18,7 +18,7 @@ public interface IRunTrackSelector
 }
 
 /// <summary>
-/// La difficulté par le rang Deezer : les morceaux jouables (Daily compris) sont triés du plus connu au moins connu et coupés en tranches ; la manche
+/// La notoriété par le rang Deezer : les morceaux jouables (Daily compris) sont triés du plus connu au moins connu et coupés en tranches ; la manche
 /// <c>k</c> tire ses morceaux dans la tranche <c>k</c> (la manche 1 : les plus connus), la dernière tranche se répétant au-delà. Les candidats sont
 /// d'abord triés (rang, puis identifiant) : le tirage ne dépend ni de l'ordre rendu par la base, ni d'un doublon, seulement du pool, des morceaux déjà
 /// tirés et de la graine. Une tranche épuisée se complète avec les morceaux restants les moins connus d'abord, puis les plus connus.

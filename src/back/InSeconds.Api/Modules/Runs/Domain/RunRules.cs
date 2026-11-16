@@ -55,7 +55,7 @@ public sealed record RunRules(
 }
 
 /// <summary>Le thème d'une manche à thème : la manche, le thème de la liste de l'admin et son nom quand il a été choisi.</summary>
-public sealed record RunRoundTheme(int Round, int ThemeId, string Name);
+public sealed record RunRoundTheme(int Round, int ThemeId, string Name, bool Mystery = false);
 
 /// <summary>
 /// Ce que devient le palier d'une manche à l'autre. Une manche **sans erreur** (tous ses morceaux trouvés en entier) descend d'un palier (écoute plus

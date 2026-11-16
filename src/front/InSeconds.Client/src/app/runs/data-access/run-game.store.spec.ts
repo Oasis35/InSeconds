@@ -44,7 +44,7 @@ describe('RunGameStore', () => {
   }
 
   const summary = (overrides: Partial<RunRoundSummary> = {}): RunRoundSummary => ({
-    round: 1, score: 320, outcome: 'shorter', listenSeconds: 10, nextListenSeconds: 5, tracks: [], totalScore: 320, livesLeft: 3, ...overrides,
+    round: 1, score: 320, outcome: 'shorter', listenSeconds: 10, nextListenSeconds: 5, tracks: [], totalScore: 320, livesLeft: 3, fullPoints: 100, nextFullPoints: 200, ...overrides,
   });
 
   /** Lance la partie et laisse le lecteur annoncer son extrait prêt. */

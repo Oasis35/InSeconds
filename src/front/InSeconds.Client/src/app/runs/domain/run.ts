@@ -1,6 +1,6 @@
 /**
  * Le mode Run en TypeScript pur : ce que le serveur rend d'une partie (la manche en cours, les morceaux joués, la fin) et les petits calculs que
- * les écrans en tirent (barre d'objectif, pastilles, libellés). Le serveur décide de tout (points, jauge, neutralisation, fin) : le front affiche.
+ * les écrans en tirent (vies, pastilles, libellés). Le serveur décide de tout (points, vies, palier, neutralisation, fin) : le front affiche.
  */
 
 /** Une partie de la Série ne se gagne pas : elle se perd à la dernière vie, ou s'abandonne. */
@@ -122,6 +122,8 @@ export interface RunSession {
   readonly ghost: RunGhost | null;
   /** Les manches à thème de la playlist (jamais la première) ; vide : aucune. */
   readonly themes: readonly RunTheme[];
+  /** L'échelle des paliers d'écoute de la playlist, en secondes, du plus long au plus court (la rangée de l'écran de jeu). */
+  readonly listenLadder: readonly number[];
 }
 
 /** Une manche terminée : son score, le palier d'écoute joué et son thème s'il y en avait un. */
@@ -164,6 +166,9 @@ export interface RunRoundSummary {
   readonly tracks: readonly RunTrack[];
   readonly totalScore: number;
   readonly livesLeft: number;
+  /** Ce que rapportait un morceau trouvé en entier à l'écoute de la manche qui finit, et ce qu'il rapportera à celle de la suivante. */
+  readonly fullPoints: number;
+  readonly nextFullPoints: number;
 }
 
 /** Ce que rendent le lancement, la reprise, la redemande d'extrait et la réponse : l'état à jour, ce qui vient de se passer, le morceau à jouer. */
@@ -473,3 +478,23 @@ export function comboOf(tracks: readonly Pick<RunTrack, 'position' | 'neutralize
  */
 export const progressKey = (session: Pick<RunSession, 'status' | 'playedTracks' | 'themeChoice'>): string =>
   [session.status, session.playedTracks.length, session.themeChoice?.round ?? ''].join('|');
+
+/** L'état d'une pastille de la manche : un morceau trouvé, à moitié, raté ou retiré, celui en cours, ceux à venir. */
+export type RoundDot = RunTrackMark | 'current' | 'upcoming';
+
+/** Les pastilles de la manche en cours : une par morceau de la manche, dans l'ordre (les morceaux déjà joués, celui en cours, ceux à venir). */
+export function roundDots(session: Pick<RunSession, 'tracksPerRound' | 'roundTracks'>): RoundDot[] {
+  const played = [...session.roundTracks].sort((a, b) => a.position - b.position).map(trackMark);
+  return Array.from({ length: session.tracksPerRound }, (_, i): RoundDot => {
+    if (i < played.length) return played[i];
+    return i === played.length ? 'current' : 'upcoming';
+  });
+}
+
+/** Une vie perdue : un morceau ni à moitié ni en entier juste, qui n'est pas retiré (« Une vie en moins »). */
+export const lostLife = (track: Pick<RunTrack, 'neutralized' | 'artistCorrect' | 'titleCorrect'>): boolean => trackMark(track) === 'missed';
+
+/** Le moment où le joueur dépasse son fantôme : l'écart passe de nul ou négatif à positif. */
+export function overtook(before: RunGhostGap | null, after: RunGhostGap | null): boolean {
+  return before !== null && after !== null && before.gap <= 0 && after.gap > 0;
+}

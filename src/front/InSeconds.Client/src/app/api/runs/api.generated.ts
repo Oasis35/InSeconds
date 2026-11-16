@@ -1694,6 +1694,8 @@ export interface RunRoundSummaryResponse {
     tracks: RunTrackResponse[];
     totalScore: number;
     livesLeft: number;
+    fullPoints: number;
+    nextFullPoints: number;
 
     [key: string]: any;
 }
@@ -1724,6 +1726,7 @@ export interface RunSessionResponse {
     ghost?: RunGhostResponse | undefined;
     themes?: RunRoundThemeResponse[] | undefined;
     themeChoice?: RunThemeChoiceResponse | undefined;
+    listenLadder?: number[] | undefined;
 
     [key: string]: any;
 }

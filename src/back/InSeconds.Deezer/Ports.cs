@@ -2,7 +2,7 @@ namespace InSeconds.Deezer;
 
 /// <summary>
 /// Un morceau tel que Deezer le décrit. <see cref="Rank"/> est le rang Deezer (popularité), qui servira à la
-/// difficulté du mode Runs ; <see cref="PreviewUrl"/> est vide quand Deezer n'a pas d'extrait.
+/// tranches de notoriété du mode Runs ; <see cref="PreviewUrl"/> est vide quand Deezer n'a pas d'extrait.
 /// </summary>
 public sealed record DeezerTrack(
     long DeezerTrackId, string Artist, string Title, string? PreviewUrl, string? CoverHash, int? ReleaseYear, int? Rank, long? AlbumId);

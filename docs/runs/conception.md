@@ -1,229 +1,27 @@
-# Run (Setlist) : conception technique du proto 1
+# Setlist : conception technique
 
-17/10/2026, sur la base d'`env/staging` au commit `629ca5c`, revue après une relecture indépendante du plan et après les maquettes. **Livré le 27/10/2026** : ce document décrit le code tel qu'il est ; les écarts avec les maquettes sont à la fin d'[`ecrans.md`](ecrans.md#écarts-entre-les-maquettes-et-lapp-livrée). Règles : [`regles.md`](regles.md). Écrans : [`ecrans.md`](ecrans.md). Découpage en PR (historique) : [`runs-proto1-decoupage.md`](../historique/runs-proto1-decoupage.md).
+La référence du code est [`src/back/CLAUDE.md`](../../src/back/CLAUDE.md) § Module Runs et [`src/front/CLAUDE.md`](../../src/front/CLAUDE.md) § Domaine runs ; ce document donne le principe et les décisions qui ne se lisent pas dans le code. Règles du mode : [`regles.md`](regles.md) ; écrans : [`ecrans.md`](ecrans.md).
 
-## 1. Principe
+## Principe
 
-Setlist est un **second mode**, rangé dans le module back `Runs` et le domaine front `runs/` que l'architecture lui réserve. Il ne voit que les `Contracts` de Players, Catalogue et Gameplay ; **Daily et Runs ne se voient jamais**. Rien n'est modifié dans Daily, sauf là où Players et Catalogue doivent cesser de ne connaître que Daily (§ 6) et où un composant d'écran du Daily devient commun (§ 5.3).
+- **Module `Runs`** (schéma `runs`) dans le monolithe modulaire, à côté de `Daily`. Il n'utilise de Players, Catalogue et Gameplay que leurs `Contracts` ; `Daily` et `Runs` ne se voient pas (tests d'architecture). Le noyau ne connaît aucun mode : Players apprend l'effacement par `IPlayerDataContributor`, Catalogue l'usage d'un morceau par `ITrackUsage`, Social la performance d'un joueur par `IMemberPerformanceSource`, que Runs implémente.
+- **La mécanique d'un morceau** (verrou du morceau en cours, plancher d'écoute, correction artiste et titre) vient de `Gameplay` (`TrackRound`), partagée avec le Daily. Runs lui ajoute l'échelle d'écoute, les vies et le chrono.
+- **Le serveur décide de tout** : points, vies, palier, neutralisation, fin, record. Le front affiche. Rien qui identifie un morceau avant la réponse (piège 31) : l'extrait n'arrive que morceau par morceau.
 
-```
-            Daily ───────✕─────── Runs          (un mode ne voit jamais l'autre)
-              │  \               /  │
-              │   └──► Gameplay ◄┘  │           TrackRound, IAnswerMatcher, ISeededShuffle
-              ▼           ▼         ▼
-     Players/Contracts   Catalogue/Contracts    ICurrentPlayer, IPlayerDirectory, IPlayerDataContributor / ITrackDirectory, ITrackPreviews, ITrackUsage
-```
+## Les décisions qui comptent
 
-Nom technique `Runs` partout (module, schéma, routes, clés de réglage, dossier front) ; « Setlist » n'existe que dans les traductions.
+- **Playlist sans fin, tirée à la volée.** Une playlist n'a pas de nombre de manches fixé : la manche 1 est tirée à la création, chacune des suivantes par le **premier joueur qui y arrive**, sous un verrou consultatif par défi (`IRunsStore.LockChallengeAsync`), puis figée pour tous. Le tirage coupe le catalogue en 8 tranches de rang Deezer (la manche k tire dans la tranche k, la dernière se répète), mélangées par la graine et le numéro de manche, sans jamais reprendre un morceau déjà tiré. Aucune réserve de morceaux n'est gardée : un morceau retiré par Deezer est neutralisé sans conséquence.
+- **Le palier est calculé, jamais stocké.** Il se déduit des réponses des manches terminées (`RunSteps.Next`) : sans erreur il raccourcit, avec une erreur il rallonge (jamais au-dessus de 10 s), des moitiés justes le laissent. Rien à migrer si l'échelle change.
+- **Les règles sont figées dans le défi** (`RunRules` en `jsonb`) : modifier un réglage ne touche que les défis à venir ; deux joueurs d'une même playlist jouent sous les mêmes règles.
+- **Thème par manche fixé par le premier arrivé** : l'offre (deux thèmes) est tirée de la graine et du numéro de manche, donc stable au rechargement ; le choix est écrit une fois pour tous les joueurs de la playlist.
+- **Le dernier palier se répète** : au-delà du sixième, l'écoute reste à 0,5 s et un morceau trouvé rapporte 1 200 points. Le score n'est pas borné ; le barème des disques de niveau (`Runs:Levels:Discs`) est réglable à chaud, jamais figé dans une playlist.
+- **Accès sur invitation** : `runs.access` et son interrupteur dans l'admin ; le lien d'un ami se joue sans accès, cette playlist seulement.
+- **Migration destructive** : la migration `SerieRules` a supprimé les tables de l'ancien mécanisme (`session_rounds`, `session_cards`, `challenge_reserve_tracks`) et vidé les parties, défis, records et niveaux de l'ancien mode, dont les règles étaient incompatibles.
 
-## 2. Ce qui est réutilisé tel quel
+## Données et API
 
-| Besoin | Existant |
-|---|---|
-| Écoute, correction artiste/titre | `Gameplay.Contracts.TrackRound` (`Listen`, `Answer`), `RoundOutcome` sans points. En run, la durée annoncée est toujours la durée fixe : le plancher d'écoute ne joue aucun rôle |
-| Pas d'indice au proto 1 | `HintPolicy.None` |
-| Correction tolérante | `IAnswerMatcher` (`FuzzyAnswerMatcher`) |
-| Tirage | `ISeededShuffle` (`FisherYatesShuffle`), graine tirée par `RandomNumberGenerator`, jamais exposée |
-| Morceaux jouables, noms, pochette | `ITrackDirectory.ListPlayableIdsAsync` / `GetAsync` |
-| Extraits signés | `ITrackPreviews.GetAsync`, **un morceau à la fois** : absent, disponible ou indisponible (§ 3.4) |
-| Joueur courant, invité, pseudo | `ICurrentPlayer`, `IPlayerDirectory` (`HasAccountAsync`, `GetPseudosAsync`) ; un ami sans identité passe par `POST /api/players/guest` comme au Daily |
-| Verrou de démarrage | `pg_advisory_xact_lock` par joueur, comme `EfDailyStore.LockPlayerStartAsync` |
-| Front : la manche | `gameplay/` : `withTrackRound` (phases jusqu'à `revealed`), `app-track-round` et ses emplacements `[roundActions]`, `[roundBadge]`, `[roundScore]`, `[roundNext]`, `RoundPlayerComponent`, `AnswerInputComponent`, `RevealCardComponent` (forme de la pochette) ; `ListenPolicy { steps: [10], extendable: false }` |
-| Front : frontières | `sheriff.config.ts` : `runs: ['domain:gameplay', 'domain:account']` (`account` pour `SessionLoader`, l'invité d'un ami) |
+Tables du schéma `runs` : [`CLAUDE.md`](../../CLAUDE.md) § Modèle de données. Routes, réponses, codes d'erreur (`runs.*`, jamais renommés), métriques et journaux : `src/back/CLAUDE.md`. Les clients NSwag du front sont générés depuis `openapi/runs.json`. L'effacement et l'export du joueur (piège 48) couvrent toutes les tables de `runs` portant un `player_id`.
 
-## 3. Back : le module `Runs`
+## Tests
 
-```
-Modules/Runs/
-├── RunsModule.cs                 AddRuns() / AddRunsPlayerData() : options, store, politiques, contributeurs, contrôle des réglages
-├── Domain/
-│   ├── RunChallenge.cs, RunChallengeCode.cs   le défi (les 20 morceaux tirés, les règles figées) et son code de 6 caractères
-│   ├── RunSession.cs                          la partie d'un joueur sur un défi (verrou, jauge, fin) + les ports IRunsStore
-│   ├── RunRules.cs, RunGauge.cs               photo des règles au départ ; objectif et score d'une manche
-│   ├── DiscLadder.cs                          manches passées → disque (une clé de traduction, jamais un texte)
-│   └── IRunTrackSelector.cs, IRunScoringPolicy.cs   tirage par difficulté, points d'un morceau (ports)
-├── Application/                  endpoints Wolverine.Http (RunEndpoints, RunComparison, RunAccess : LoadAsync / Validate / Post), RunPlayer (avancer une partie), RunChallengePlanner, RunsOptions, RunsRules, RunsErrorCodes / RunsProblems, RunsResponses, RunsMetrics, RunsDataExport
-└── Persistence/                  EF : RunsConfigurations, EfRunsStore, EfRunsQueries, RunsPlayerData (IPlayerDataContributor), RunsTrackUsage (ITrackUsage)
-```
-
-### 3.1 Les agrégats
-Même forme que le Daily (`DailyChallenge` / `DailySession`) :
-- `RunChallenge.Create(rules, tracks, seed, code, createdBy, now)` : immuable une fois créé.
-- `RunSession.Start(challengeId, playerId, now)`, pour l'auteur comme pour un ami : aucun morceau copié. Reçoit les morceaux et les règles du défi pour décider, comme `DailySession` reçoit le défi du jour.
-- **Morceau en cours = le premier sans réponse** (verrou, piège 35) ; `TurnOf(position, count)` comme le Daily.
-- `RoundOfCurrentTrack()` / `KeepRound(TrackRound)` : la manche Gameplay reconstituée depuis `current_listened_seconds`.
-- `Answer(challenge, outcome, scoring, now)` : note, libère le verrou ; à la fin d'une manche, compare le score de la manche (points arrondis, `>=`) à l'objectif **figé dans `RunRules`** → manche suivante, défaite ou victoire. Fin sur le nombre **réel** de morceaux du défi (piège 38).
-- `Abandon(now)`.
-- Statuts : `Pending`, `Won`, `Lost`, `Abandoned`.
-
-`RunRules` est un objet valeur rangé en `jsonb` dans le défi : changer un réglage à chaud ne modifie jamais un défi créé.
-
-### 3.2 Politiques (une responsabilité chacune, remplaçables)
-- `IRunTrackSelector` → `RankBandSelector` : **tous** les morceaux jouables du catalogue (Daily compris), triés par rang Deezer décroissant et coupés en autant de **tranches** que de manches ; la manche *k* tire ses morceaux dans la tranche *k* avec `ISeededShuffle`. Sans rang : tranche la moins connue. Les 20 morceaux sont tirés au départ.
-- Multiplicateur : fixé au tirage selon la manche (×1,0 → ×2,0, interpolation linéaire), enregistré sur le morceau du défi.
-- `IRunScoringPolicy` → `ArtistTitleScoring` : (50 si artiste + 50 si titre) × multiplicateur, arrondi au plus proche (`MidpointRounding.AwayFromZero`) sur le total du morceau. Elle reçoit un multiplicateur **effectif** : celui de la manche, mis à l'échelle par la partie (facteur de la difficulté choisie, puis les coups de pouce). Difficulté et cartes ne sont pas des décorateurs enregistrés dans le conteneur (la politique est unique pour toutes les parties) : la partie passe à chaque appel ce qui s'applique au morceau, et toute jauge passe par elle (`RoundProgressOf`, `RoundProgressAt`).
-- `DiscLadder` : la liste des disques est une liste de **clés** (`runs.discs.scratched`, `…gold`…), traduites par le front ; au-delà, le dernier disque + étoiles.
-
-Pas d'`IBonus` au proto 1 : un contrat naît d'un besoin réel.
-
-### 3.3 Accès
-Runs possède ses autorisations (`runs.access`), **Players n'est pas modifié**. `IRunAccess.CanPlayAsync(playerId)` : admin (`ICurrentPlayer.IsAdmin`) ou ligne dans `runs.access`. Relever un défi existant ne demande pas d'accès : il suffit d'avoir le lien.
-
-### 3.4 Routes (calquées sur celles du Daily)
-| Route | Rôle |
-|---|---|
-| `GET /api/runs/me` | anonyme permis : `hasAccess`, record, partie en cours, étagère des disques (`shelf`) ; sans identité, `hasAccess: false` sans rien créer |
-| `POST /api/runs/challenges` | lance un run : crée le défi et la partie de son auteur, rend la partie (accès requis ; verrou par joueur) |
-| `GET /api/runs/challenges/{code}` | ce que montre un lien (écran « lien reçu ») : pseudo de l'auteur, état de sa propre partie sur ce défi (pas commencée, en cours, finie). **Aucun morceau** (piège 31) |
-| `POST /api/runs/challenges/{code}/sessions` | relève le défi, ou reprend sa partie en cours dessus (comme `POST /api/daily/sessions`) |
-| `GET /api/runs/sessions/{id}` | l'état d'une partie (reprise, fin de manche, écran de fin), en lecture seule : sans extrait, qui arrive avec le démarrage, la reprise, une réponse ou `POST …/preview` |
-| `PATCH /api/runs/sessions/{id}/listening` | note l'écoute du morceau en cours |
-| `POST /api/runs/sessions/{id}/clock` | le premier son du morceau en cours : le chrono part ; rend ce qui lui reste (le navigateur s'y recale) |
-| `POST /api/runs/sessions/{id}/preview` | l'adresse de l'extrait **du morceau en cours seulement** (jamais d'un morceau futur) |
-| `POST /api/runs/sessions/{id}/answers` | répond au morceau en cours (ou le passe) ; révèle le morceau et les points ; une transaction (réponse, manche, fin, record) |
-| `POST /api/runs/sessions/{id}/abandon` | abandon |
-| `GET /api/runs/challenges/{code}/comparison` | les parties terminées du défi, après la fin de sa propre partie |
-| `GET /api/admin/runs/access` | la liste des comptes autorisés (interrupteurs de l'onglet Joueurs en un appel) |
-| `PUT` / `DELETE /api/admin/runs/access/{playerId}` | l'interrupteur (policy Admin automatique sur `/api/admin*`) |
-
-- La partie d'un autre joueur répond comme une partie inconnue (`runs.session_not_found`).
-- L'adresse de l'extrait du premier morceau arrive avec la réponse de démarrage ou de reprise, celle du suivant avec la réponse à `answers` : le clic « Morceau suivant » lance `play()` sans aller-retour, dans le geste du joueur (iPhone, pièges 44 et 46). `POST …/preview` redemande une adresse fraîche (elles expirent).
-- Limites de débit (`RateLimitPolicies`) : lancement d'un run par joueur, lecture d'un lien par IP (`common.too_many_requests`).
-- Document OpenAPI `runs` : préfixes `api/runs` et `api/admin/runs`, client NSwag `runs/api.generated.ts`.
-
-### 3.5 Ce que les réponses doivent porter (dicté par les écrans)
-- **État d'une partie** (démarrage, reprise, `GET /api/runs/sessions/{id}`) : manche en cours et nombre de manches, position dans la manche, score total, score et objectif de la manche, tous les morceaux déjà joués (la pile, avec leurs noms et leurs points ; leur forme d'onde au démarrage et à la reprise seulement), les manches passées (lignes de palier : score, objectif, disque), le chrono restant (`clockRemainingSeconds`) ; l'adresse de l'extrait du morceau en cours arrive avec le démarrage, la reprise, une réponse ou `POST …/preview`, jamais avec le `GET`. Rien sur les morceaux à venir.
-- **Réponse à `answers`** (écran de réponse) : artiste, titre, hash de pochette et lien Deezer du morceau, artiste juste, titre juste, points du morceau, nouveau score de la manche et score total ; si le morceau a été neutralisé, rien sur le morceau mais l'objectif de la manche avant et après (l'écran barre l'ancien) ; si la manche se termine, son résultat (débloquée ou non) ; si le run se termine, le résultat de fin ; sinon l'adresse de l'extrait du morceau suivant.
-- **Résultat de fin** (écran de fin) : disque (clé), score final, nombre de morceaux trouvés sur le total, résultat de chaque morceau (les 20 carrés), score et objectif de chaque manche (`null` pour une manche non jouée), record (« nouveau record » ou valeur du record), code du défi pour le partage.
-- **Lien reçu** (`GET /api/runs/challenges/{code}`) : pseudo de l'auteur (« Invité » à défaut) et état de sa propre partie, de quoi choisir entre l'écran du lien, la reprise et la comparaison ; ni nombre de joueurs ni morceau.
-- **Comparaison** : pseudo de l'auteur, nombre de joueurs, une ligne par partie terminée (pseudo ou « Invité », disque, score de chaque manche ou `null`, total, `isMe`), triée par total.
-
-### 3.6 Codes d'erreur
-Même façon de faire que le reste du projet : `module.raison` en snake_case, une classe de constantes (`RunsErrorCodes`, comme `DailyErrorCodes`), un `ProblemDetails` avec `code` et `traceId`, **le même nom qu'au Daily pour la même situation**, jamais de renommage une fois publié. Chaque code a sa clé dans `ERROR_MESSAGE_KEYS` (front).
-
-| Code | HTTP | Quand | Équivalent Daily |
-|---|---|---|---|
-| `runs.access_denied` | 403 | lancer un run sans accès (invité, compte non autorisé) | - |
-| `runs.no_challenge` | 503 | le pool jouable n'a pas assez de morceaux pour un défi | `daily.no_challenge` |
-| `runs.challenge_not_found` | 404 | code de lien inconnu | - |
-| `runs.session_not_found` | 404 | partie inconnue ou d'un autre joueur | `daily.session_not_found` |
-| `runs.already_played` | 409 | ce joueur a déjà fini ce défi, ou agit sur une partie finie | `daily.already_played` |
-| `runs.abandoned` | 409 | partie abandonnée | `daily.abandoned` |
-| `runs.track_not_found` | 404 | position qui n'existe pas dans le défi | `daily.track_not_found` |
-| `runs.track_lock_not_released` | 409 | un autre morceau que le morceau en cours (piège 35) | `daily.track_lock_not_released` |
-| `runs.already_answered` | 409 | morceau déjà répondu | `daily.already_answered` |
-| `runs.comparison_locked` | 409 | comparaison demandée avant la fin de sa propre partie | (cf. `daily.hint_locked`) |
-
-Génériques existants : `common.unauthorized` (401), `common.bad_request` (400), `common.not_found` (404 des routes admin, joueur inconnu ou invité), `common.too_many_requests` (429), `common.unexpected` (500).
-
-### 3.7 Réglages `Runs:` (relus à chaud, `RunsOptions` + `Effective…`)
-`Rounds` (4), `TracksPerRound` (5), `ListenSeconds` (10), `ThresholdPercents` ([45,55,68,80] ; [40,50,60,70] au proto 1), `MinMultiplier`/`MaxMultiplier` (1,0 / 2,0, moins de 10), `Discs` (liste de clés). Pas de temps de réponse. Contrôlés **au démarrage** (refus, comme `DailyOptionsStartupCheck`) **et à l'usage** : un réglage incohérent changé à chaud est journalisé une fois et le lancement d'un run retombe sur les valeurs par défaut (comme `DailyRules`).
-
-## 4. Données : schéma `runs`
-
-Même forme et même vocabulaire que le Daily : **un défi** = une suite de morceaux, **une partie** = un joueur sur un défi, **une réponse** = une partie sur un morceau.
-
-| Table | Colonnes | Remarques |
-|---|---|---|
-| `challenges` | `id int identity PK`, `code char(6) UNIQUE` (le lien), `seed int`, `rules jsonb` (règles figées), `created_by uuid null FK players.players ON DELETE SET NULL`, `created_at` | le défi survit à la suppression de son auteur |
-| `challenge_tracks` | PK `(challenge_id, position)`, `track_id int FK catalogue.tracks`, `round smallint`, `multiplier numeric(3,2)` | les 20 morceaux, tirés à la création |
-| `sessions` | `id int identity PK`, `challenge_id FK`, `player_id uuid FK players.players`, `status smallint`, `current_position smallint null`, `current_listened_seconds numeric(4,2) null`, `rounds_passed smallint`, `total_score int`, `started_at`, `ended_at null` | **unique `(challenge_id, player_id)`** : un défi se joue une fois par joueur ; index `(player_id, status)` |
-| `answers` | PK `(session_id, position)`, `artist_correct bool`, `title_correct bool`, `points int`, `neutralized bool`, `answered_at` | jamais le texte saisi (RGPD) |
-| `records` | PK `player_id`, `best_score`, `best_rounds_passed`, `session_id`, `achieved_at` | mis à jour dans la transaction de fin |
-| `access` | PK `player_id FK players.players`, `granted_at` | l'interrupteur de l'admin |
-
-- **Code du lien** : 6 caractères tirés par `RandomNumberGenerator` dans `ABCDEFGHJKMNPQRSTUVWXYZ23456789`, en majuscules, saisie insensible à la casse ; existence vérifiée avant l'insertion (pas de réessai dans la transaction Wolverine).
-- « Lancer un run » = créer un défi **et** la partie de son auteur dans la même transaction ; « relever un défi » = créer une partie sur un défi existant.
-- Supprimer un compte efface ses parties et ses réponses ; ses défis restent jouables (`created_by` à `null`).
-- Snake_case, schéma déclaré, rien dans `public`, clés étrangères **par le nom du type**, sans navigation EF entre modules (`PersistenceTests`).
-- Supprimer ou actualiser un morceau qui a servi dans un défi de run est refusé en 409 `catalogue.track_in_use`, grâce à l'usage déclaré par Runs (§ 6).
-- **Morceau sans extrait** : quand Deezer confirme que le morceau en cours n'a plus d'extrait, c'est **le serveur** qui enregistre la réponse comme neutralisée (jamais le client : sinon on « neutraliserait » un morceau difficile) et passe au suivant. Seule une absence définitive neutralise ; une panne ou un quota Deezer (`Unavailable`) laisse le morceau en cours : `ITrackPreviews.GetAsync` distingue les deux cas (`Available`, `Missing`, `Unavailable`).
-- Migration EF classique, sans reprise de données.
-
-## 5. Front : le domaine `runs/`
-
-### 5.1 Organisation
-```
-runs/
-├── domain/       run.ts (jauge, objectif, manche, pile et paliers, étapes, chrono, disque, lien, comparaison : TypeScript pur, testé seul)
-├── data-access/  runs.api.ts (client NSwag runs/api.generated.ts), runs.providers.ts, run-game.store.ts (pilote le TrackRoundStore de gameplay), run-share.ts
-├── feature/      runs.page (la partie, le lien d'un ami et la comparaison : /setlist et /setlist/:code), runs.routes.ts, leave-run.guard.ts, reload-moment.ts, provide-runs.ts, home-entry (carte de l'accueil)
-└── ui/           run-header, run-clock, run-reveal, run-wave, run-next-button, run-withdrawn-card, run-pile, run-finish, run-disc, run-home-card, run-welcome-screen, run-link-screen, run-comparison-screen, run-status-screen
-```
-- Routes **`/setlist`** et **`/setlist/:code`** (ex-`/runs`, qui redirige en gardant la query string) : des adresses qui ne cassent pas les liens partagés si le nom change. `/setlist/*` et `/runs/*` exclus de `robots.txt` et du `sitemap.xml`.
-- Sheriff : `runs` voit `gameplay` et `account` (pour créer l'invité d'un ami), jamais `daily`.
-- Repris du Daily : confirmation avant de quitter une partie (`canDeactivate`), moment sûr de rechargement après une nouvelle version (`ReloadMoment`, une étape de réponse en est un), remontée des erreurs. La synchronisation entre onglets du Daily (relire l'état au retour de l'onglet) n'est pas reprise : cf. [`../taches.md`](../taches.md).
-- Traductions `runs.*` FR/EN (disques compris), mobile first, saisie à 16 px, modales par `ModalService`, boutons par `appButton`.
-
-### 5.2 Les étapes d'une partie
-`link` (lien reçu, [`ecrans.md`](ecrans.md#7-le-lien-reçu) § 7), `welcome` (premier morceau : le clic lance le son) ou `resume` (partie en cours) → par morceau : `playing` / `answering` (carte compacte de `gameplay`, disposition `inline`, avec le chrono) → `revealed` (réponse dans la carte, le morceau entre dans la pile, enchaînement après 2 s ou clic « Morceau suivant »), ou `neutralized` (carte « Morceau retiré de la manche », [`ecrans.md`](ecrans.md#2b-le-morceau-sans-extrait) § 2b, même bouton) → manche suivante (une ligne de palier se pose dans la pile, sans écran de bilan), ou `finished` (écran de fin) après une manche ratée ou la dernière. Reprise : la partie revient au morceau en cours de son état serveur, chrono compris.
-
-Sur `/setlist/<code>`, le serveur choisit l'écran d'après la partie du joueur sur cette playlist (`GET /api/runs/challenges/{code}`) : pas jouée → `link`, en cours → `resume`, finie ou abandonnée → `comparison` (une playlist se joue une seule fois). `RunScreen` (`run-game.store.ts`) : `loading`, `welcome`, `link`, `resume`, `playing`, `finished`, `comparison`, `access_denied`, `no_challenge`, `not_found`, `error`.
-
-Le serveur enchaîne en une réponse ce qu'il peut (la réponse, les morceaux suivants qu'il retire faute d'extrait) : le front en tire une **file d'étapes** (`playSteps`, `domain/run.ts`), montrées une à une, chacune derrière un clic ou l'enchaînement automatique de 2 s (dans le prolongement du geste du joueur ; coupé en mouvement réduit et en E2E). Le son ne part jamais à l'arrivée d'une réponse (un morceau retiré pendant la redemande de son extrait attend le clic « Morceau suivant »).
-
-### 5.3 Composants du Daily à rendre communs
-Un mode n'importe jamais l'autre : ce que les maquettes reprennent du Daily **vit dans `gameplay/ui`** (le Daily l'importe de là) :
-- la ligne de `track-results-list` (pochette, ✓/✗ Artiste et Titre, « Artiste - Titre », points, lien Deezer), avec le clic vers le graphique et la ligne de statistiques en option ;
-- le badge « Écouter sur Deezer » (`deezer-badge`) ;
-- le style du lien « Abandonner » de `daily-progress` (un bouton discret, repris tel quel s'il ne vaut pas un composant) ;
-- l'écran de reprise (`resume-screen`), avec son avertissement d'abandon et son lien de connexion passés en entrée : le Daily garde les siens (série), Runs donne le sien ([`ecrans.md`](ecrans.md#écrans-du-daily-repris-tels-quels-sans-maquette)). L'écran d'état a sa copie dans Runs (`run-status-screen`, mêmes formes, textes du mode).
-
-Aussi dans `gameplay/ui`, pour l'écran du lien d'un ami et ceux de fin : le bandeau IN//SECONDS (`brand`) et le bouton de partage (`share-button`, dont le mode donne les libellés), plus `LeaveGuard` (la confirmation de sortie d'une partie, commune au Daily et au Run).
-
-Les confirmations d'abandon et de sortie (`ModalService.confirm`, `leave-game.guard`) sont déjà communes : Runs les appelle avec ses propres textes.
-
-### 5.4 Entrée sur l'accueil
-- La carte appartient au domaine `runs` ; la page du Daily n'importe pas `runs`. Elle expose un emplacement (`<app-home-mode-entries>` de `core/shell`) que remplit un jeton multiple de `core` (`HOME_MODE_ENTRIES`), fourni par `provideRuns()` : chaque entrée est un composant chargé à la demande (avec le client de l'API du mode, hors du bundle initial). Le domaine `home` réservé dans Sheriff est retiré tant que `/` reste le Daily.
-- Visible seulement si le joueur a un compte **et** l'accès : `GET /api/runs/me` (appelé pour un compte connecté seulement) renvoie `hasAccess`. Invité ou non autorisé : rien affiché, aucune erreur. Jamais pendant une manche.
-- Le « booléen » d'accès = la ligne de `runs.access`, sans mettre une notion de mode dans `players.accounts`.
-
-### 5.5 Admin
-L'interrupteur « Setlist » de l'onglet Joueurs lit `GET /api/admin/runs/access` une fois et appelle `PUT`/`DELETE`.
-
-## 6. Ce qui touche l'existant : Players et Catalogue ne connaissent aucun mode
-
-**Players (effacement et export).**
-- `Players.Contracts.IPlayerDataContributor` (`Module`, `ExportAsync`, `DeleteAsync`) : Players reçoit `IEnumerable<IPlayerDataContributor>` et les appelle tous dans sa transaction. Daily et Runs l'implémentent.
-- L'export a une section par mode (`daily` : série et parties ; `runs` : parties, défis créés, accès). Le profil télécharge le fichier tel quel ; `--export-player` suit.
-- `IStreakGrants` reste propre à Daily (seul Daily a des gels) : exception nommée dans le test d'architecture.
-
-**Catalogue (usage des morceaux).** Sans l'usage déclaré par Runs, un morceau joué seulement en run serait supprimable (erreur 500 par la clé étrangère) ou remplaçable par une autre chanson.
-- Chaque mode **ajoute** son implémentation (`IEnumerable<ITrackUsage>`) ; Catalogue les agrège : un morceau est « utilisé » si un seul mode le dit. Le cooldown, la date de dernier usage et « dans le défi du jour » restent ceux du Daily (Runs répond « aucun »), seul `IsUsed` combine les deux.
-
-**Rang Deezer.** `TrackInfo` (contrat Catalogue) expose `DeezerRank`.
-
-**Pool admin.** Le pool est commun à tous les modes, l'onglet ne montre que le catalogue : compteur neutre, `isUsed` (calculé par le back, jamais déduit côté front d'un compteur propre à un mode), pastilles par mode ayant joué le morceau. Un sélecteur horizontal défilant (Pool · Daily · Run) donne la vue de chaque mode, en lecture, lue dans `usages[]` de la même réponse ; un mode se déclare dans l'admin par une entrée de registre, donc ajouter Runs ne change pas le Pool. `ITrackUsage` porte le nom de son mode, Catalogue garde le détail par mode en plus de l'agrégat.
-
-**Contrôle nocturne.** `catalogue-refresh` contrôle tout le pool jouable, cooldown compris : un run tire n'importe quel morceau. Environ 800 morceaux en lots de 10 toutes les 1,5 s, soit 2 min, dans le quota Deezer (piège 16).
-
-**Tests d'architecture.** Les règles valent pour « un mode » (Daily et Runs) : `UnNoyau_NeVoitDUnModeQueSesContracts`, `CatalogueEtGameplay_NeConnaissentPasDaily`, la liste interdite de Gameplay, et `DailyEtRuns_NeSeVoientPas`.
-
-## 7. SOLID, point par point
-- **S** : `RunSession` garde la partie ; tirage, points, seuils, disques sont chacun une classe ; les endpoints ne font qu'enchaîner (LoadAsync / Validate / Post).
-- **O** : difficulté et coups de pouce = modificateurs que la partie applique (multiplicateur effectif passé à `IRunScoringPolicy`, objectif et écoute de la manche) à partir de règles figées dans `RunRules` ; nouvelle façon de tirer les morceaux (notoriété, thèmes) = nouvelle implémentation de `IRunTrackSelector` ; nouveau mode = nouveau contributeur RGPD et nouvel usage de morceaux, sans toucher Players ni Catalogue.
-- **L** : `HintPolicy.None` et une écoute fixe utilisent `TrackRound` sans cas particulier.
-- **I** : Runs ne reçoit que des contrats étroits, jamais une entité d'un autre module.
-- **D** : le domaine ne voit que ses ports (`IRunsStore`, `IRunTrackSelector`, `TimeProvider`) ; EF et Wolverine restent dans `Persistence/` et `Application/`.
-
-## 8. Tests
-- Unitaires back : `RunSession` (verrou, jauge, fin sur le nombre réel de morceaux, arrondis, neutralisation), `RankBandSelector` (tranches, pool trop petit), `ArtistTitleScoring`, `DiscLadder`, génération du code.
-- Intégration (Testcontainers, base neuve par classe) : parcours gagné, perdu, abandonné ; défi d'ami une seule fois ; accès refusé ; partie d'un autre → 404 ; aucun morceau ni extrait d'un morceau futur avant réponse (piège 31) ; réglage changé en cours de partie sans effet ; réglage incohérent à chaud ; double démarrage simultané ; suppression du compte de l'auteur ; export contenant les parties Runs ; suppression et actualisation d'un morceau joué seulement en run → 409 ; `GET /api/runs/me` sans identité ; limites de débit ; comparaison à plusieurs joueurs, verrouillée avant la fin.
-- Architecture : règles du § 6.
-- Front (Vitest) : domaine `run.ts`, store, chaque écran des maquettes (lien reçu, manche, réponse, morceau sans extrait, fin de manche, fin de run victoire et défaite, comparaison), carte de l'accueil visible ou non, composants descendus dans `gameplay/ui` (le Daily inchangé).
-- E2E Playwright (`runs.spec.ts`) : partie gagnée, partie perdue, morceau retiré, reprise, carte de l'accueil absente sans accès et montrée une fois l'accès ouvert ; lien d'un ami dans deux navigateurs et comparaison.
-- Observabilité : `RunsMetrics` (parties, réponses, neutralisations, disques), logs sans texte saisi ; les panneaux du tableau Grafana « Activité » pour ces métriques restent à faire ([`../taches.md`](../taches.md)).
-
-## 9. Décisions
-1. `TrackInfo.DeezerRank` dans le contrat de Catalogue : validé (Clément, 17/10).
-2. Inversion RGPD (`IPlayerDataContributor`) dès la première PR : validé.
-3. Lien par code court `inseconds.cc/runs/K7Q2M9` : validé (un lien neutre `/d/…` est gardé pour un mode futur qui partagerait aussi des liens).
-4. Tirage par tranches de rang Deezer : validé.
-5. Genre de l'album stocké dès maintenant (#361) : validé et fait (Clément, 20/10) ; `TrackInfo.Genres`, aucun mode ne s'en sert encore.
-6. Usage des morceaux déclaré par chaque mode : proposé après la revue, repris.
-7. Morceau sans extrait au moment de jouer : neutralisé (Clément, 17/10).
-8. Temps de réponse : chrono de 45 s par morceau (`Runs:AnswerSeconds`, Clément, 03/11), réécoute libre dans ce temps ; détail dans [regles.md](regles.md) (règle 5) et `src/back/CLAUDE.md` (`POST …/clock`).
-9. Entrée sur l'accueil : la carte seulement (option A), rien d'autre ne change sur l'accueil ni sur « déjà joué » (Clément, 17/10).
-10. Les maquettes de [`ecrans.md`](ecrans.md) font référence, dont la réponse après chaque morceau dans l'écran de manche (Clément, 17/10).
-11. À l'écran, le défi s'appelle une **playlist** partout (titres, boutons, comparaison) ; le code et cette conception gardent `challenge` / « défi » (Clément, 18/10).
-12. Décision (09/11/2026) : pas de ligne « X % ont échoué » (peu de joueurs par playlist, la comparaison existe).
+`UnitTests/Runs` (règles, partie, tirage, réglages, thèmes, Hits, niveau), `IntegrationTests/Runs` (jeu complet par HTTP : vies, paliers, neutralisation, chrono, fin, record, comparaison, fantôme, historique, effacement), E2E `runs.spec.ts` (accès, parties, thèmes, lien d'un ami), `groups.spec.ts`, `admin-themes.spec.ts`.

@@ -32,6 +32,7 @@ import { RunLinkScreenComponent } from '../../ui/run-link-screen/run-link-screen
 import { RunPalierComponent } from '../../ui/run-palier/run-palier.component';
 import { RunClockComponent } from '../../ui/run-clock/run-clock.component';
 import { RunPileComponent } from '../../ui/run-pile/run-pile.component';
+import { RunScoreboardComponent } from '../../ui/run-scoreboard/run-scoreboard.component';
 import { RunRevealComponent } from '../../ui/run-reveal/run-reveal.component';
 import { RunStatusScreenComponent } from '../../ui/run-status-screen/run-status-screen.component';
 import { RunWelcomeScreenComponent } from '../../ui/run-welcome-screen/run-welcome-screen.component';
@@ -53,7 +54,7 @@ import { RunShareSheetComponent, RunShareSheetData } from '../share-sheet/run-sh
 @Component({
   selector: 'app-runs-page',
   imports: [HomeLegalLineComponent, 
-    TranslatePipe, RouterLink, DecorBackgroundComponent, TrackRoundComponent, RunHeaderComponent, RunClockComponent, RunRevealComponent, RunPileComponent,
+    TranslatePipe, RouterLink, DecorBackgroundComponent, TrackRoundComponent, RunHeaderComponent, RunClockComponent, RunRevealComponent, RunPileComponent, RunScoreboardComponent,
     RunWithdrawnCardComponent, RunFinishComponent, RunDailyBandComponent, RunWelcomeScreenComponent, RunStatusScreenComponent, ResumeScreenComponent,
     RunLinkScreenComponent, RunThemeScreenComponent, RunPseudoScreenComponent, RunComparisonScreenComponent, RunPalierComponent,
     GroupsStripComponent, RunHitsLineComponent, BrandComponent, InstagramLinkComponent,
@@ -90,6 +91,8 @@ export class RunsPage implements OnInit {
   private readonly leaveGuard = new LeaveGuard(inject(ModalService));
   /** La manche en cours, dont la carte arrive à chaque nouveau morceau. */
   private readonly card = viewChild(TrackRoundComponent, { read: ElementRef<HTMLElement> });
+  /** Le bloc du haut : le total que les points de la réponse rejoignent. */
+  protected readonly scoreboard = viewChild(RunScoreboardComponent);
   private readonly route = inject(ActivatedRoute);
   /** Le code du lien ouvert (`/setlist/<code>`), vide sur `/setlist`. */
   private readonly code = this.route.snapshot.paramMap.get('code');

@@ -37,6 +37,12 @@ describe('RunRevealComponent', () => {
     expect(element.querySelector('[data-testid="run-answer-deezer"]')).not.toBeNull();
   });
 
+  it('« Une vie en moins » seulement pour un morceau raté', () => {
+    expect(text(render({ ...TRACK, artistCorrect: false, titleCorrect: false, points: 0 }).element, 'run-answer-life-lost')).toBe('Une vie en moins');
+    TestBed.resetTestingModule();
+    expect(text(render().element, 'run-answer-life-lost')).toBeUndefined();
+  });
+
   it('un morceau sans point affiche 0, grisé', () => {
     const { element } = render({ ...TRACK, artistCorrect: false, points: 0 });
 

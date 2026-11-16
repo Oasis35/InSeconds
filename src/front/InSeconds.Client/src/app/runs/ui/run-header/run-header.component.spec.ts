@@ -4,15 +4,12 @@ import fr from '../../../../../public/i18n/fr.json';
 import { RunHeaderComponent } from './run-header.component';
 
 describe('RunHeaderComponent', () => {
-  function render(lives: boolean[] = [true, true, false], round = 2, listenSeconds: number | null = 5, theme: string | null = null) {
+  function render(lives: boolean[] = [true, true, false]) {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     TestBed.inject(TranslateService).setTranslation('fr', fr);
     TestBed.inject(TranslateService).use('fr');
     const fixture = TestBed.createComponent(RunHeaderComponent);
-    fixture.componentRef.setInput('round', round);
     fixture.componentRef.setInput('lives', lives);
-    fixture.componentRef.setInput('listenSeconds', listenSeconds);
-    fixture.componentRef.setInput('theme', theme);
     fixture.detectChanges();
     return { fixture, element: fixture.nativeElement as HTMLElement };
   }
@@ -25,31 +22,6 @@ describe('RunHeaderComponent', () => {
     expect(element.querySelector('[data-testid="run-lives"]')?.getAttribute('aria-label')).toBe('Vies : 2 sur 3');
   });
 
-  it('« Manche 2 », le thème et le palier d\'écoute, sans score total', () => {
-    const { element } = render([true, true, true], 2, 5, 'Années 80');
-
-    expect(element.querySelector('[data-testid="run-round-title"]')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Manche 2 Années 80');
-    expect(element.querySelector('[data-testid="run-theme-pill"]')?.textContent?.trim()).toBe('Années 80');
-    expect(element.querySelector('[data-testid="run-listen"]')?.textContent?.trim()).toMatch(/^Écoute 5\s*s$/);
-    expect(element.querySelector('[data-testid="run-total-score"]')).toBeNull();
-  });
-
-  it('sans palier ni thème, rien de plus que le titre', () => {
-    const { element } = render([true, true, true], 1, null, null);
-
-    expect(element.querySelector('[data-testid="run-listen"]')).toBeNull();
-    expect(element.querySelector('[data-testid="run-theme-pill"]')).toBeNull();
-  });
-
-  it('l\'écran de bilan et celui du thème ne montrent que les vies', () => {
-    const { fixture, element } = render();
-    fixture.componentRef.setInput('showStatus', false);
-    fixture.detectChanges();
-
-    expect(element.querySelector('[data-testid="run-round-title"]')).toBeNull();
-    expect(element.querySelector('[data-testid="run-lives"]')).not.toBeNull();
-  });
-
   it('✕ est un bouton nommé qui demande l\'abandon à la page', () => {
     const { fixture, element } = render();
     const abandon = vi.fn();
@@ -60,10 +32,6 @@ describe('RunHeaderComponent', () => {
     button.click();
 
     expect(abandon).toHaveBeenCalledTimes(1);
-  });
-
-  it('le titre de la manche est le seul titre de la page', () => {
-    expect(render().element.querySelectorAll('h1')).toHaveLength(1);
   });
 
   it('le haut-parleur coupe ou remet les sons, son libellé suit', () => {

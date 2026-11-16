@@ -1,16 +1,15 @@
 import { ChangeDetectionStrategy, Component, ElementRef, effect, input, output, viewChild } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { pop } from '../../../ui/motion/motion';
-import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 
 /**
  * L'en-tête de la partie : ✕ (abandonner, confirmé par la page), les vies (un cœur plein par vie qui reste, un contour pour celle qui est
- * perdue), puis « Manche 2 », le thème et le palier d'écoute. Pas de score : le total est au-dessus de la pile. À droite, le haut-parleur coupe
+ * perdue), rien de plus : « Manche N », le score et le palier sont dans le bloc du haut (`app-run-scoreboard`). À droite, le haut-parleur coupe
  * ou remet les sons d'interface (son libellé dit ce que fait le toucher).
  */
 @Component({
   selector: 'app-run-header',
-  imports: [TranslatePipe, SecondsPipe],
+  imports: [TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex items-center gap-2.5" style="height:44px">
@@ -42,32 +41,11 @@ import { SecondsPipe } from '../../../ui/format/seconds.pipe';
         </svg>
       </button>
     </div>
-    @if (showStatus()) {
-    <div class="flex justify-between items-baseline mt-2.5" style="min-height:22px">
-      <h1 class="flex items-center gap-2 text-[15px] font-bold" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="run-round-title">
-        {{ 'runs.header.roundShort' | translate: { round: round() } }}
-        @if (theme(); as name) {
-          <span class="px-2.5 py-0.5 rounded-full text-xs font-bold" style="border:1px solid var(--color-accent);color:var(--color-accent)" data-testid="run-theme-pill">{{ name }}</span>
-        }
-      </h1>
-      @if (listenSeconds() !== null) {
-        <p class="text-[13px]" style="color:var(--color-accent-2)" data-testid="run-listen">{{ 'runs.header.listen' | translate: { seconds: (listenSeconds()! | appSeconds) } }}</p>
-      }
-    </div>
-    }
   `,
 })
 export class RunHeaderComponent {
-  /** Le thème de la manche, s'il y en a un : une pastille à côté du titre. */
-  readonly theme = input<string | null>(null);
-  /** Le numéro de la manche affichée. */
-  readonly round = input.required<number>();
   /** Une valeur par vie de départ : vrai pour celle qui reste. */
   readonly lives = input.required<readonly boolean[]>();
-  /** Le palier d'écoute de la manche, en secondes ; `null` : rien à dire. */
-  readonly listenSeconds = input<number | null>(null);
-  /** « Manche N » et le palier, sous les vies ; l'écran de bilan et celui du thème n'en montrent que les vies. */
-  readonly showStatus = input(true);
   readonly abandon = output();
   /** Les sons d'interface sont coupés. */
   readonly muted = input(false);

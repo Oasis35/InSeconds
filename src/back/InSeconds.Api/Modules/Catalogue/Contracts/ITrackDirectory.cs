@@ -6,7 +6,7 @@ namespace InSeconds.Api.Modules.Catalogue.Contracts;
 /// <param name="AltTitles">Autres titres acceptés comme bonne réponse (admin) ; vide : aucun. Jamais montrés au joueur.</param>
 /// <param name="DisplayTitle">Titre montré au joueur (sans parenthèses ni crochets, <see cref="TrackTitles.CleanDisplayTitle"/>).</param>
 /// <param name="CoverUrl">Adresse de la pochette, reconstruite avec <c>Catalogue:CoverUrlTemplate</c>.</param>
-/// <param name="DeezerRank">Rang (popularité) chez Deezer, vide s'il n'a jamais été lu : la difficulté de Runs en tire ses tranches.</param>
+/// <param name="DeezerRank">Rang (popularité) chez Deezer, vide s'il n'a jamais été lu : Runs en tire ses tranches de notoriété.</param>
 /// <param name="Genres">Noms des genres de l'album du morceau (Deezer), par ordre alphabétique ; vide tant qu'ils ne sont pas lus, ou si l'album n'en a pas. Servis par la carte « Genre » et le choix des leurres du « QCM » de Runs.</param>
 /// <param name="ThemeIds">Les thèmes que l'admin a associés au morceau (<see cref="ITrackDirectory.ListThemesAsync"/> en donne les noms), vide : aucun. Runs en tire les playlists à thème.</param>
 public sealed record TrackInfo(

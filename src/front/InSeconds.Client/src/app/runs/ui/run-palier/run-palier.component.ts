@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, input, output, viewChild } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { PointsPipe } from '../../../ui/format/points.pipe';
@@ -13,7 +14,7 @@ import { RunRoundSummary, lifeDots, outcomeKey } from '../../domain/run';
  */
 @Component({
   selector: 'app-run-palier',
-  imports: [TranslatePipe, ButtonComponent, PointsPipe, SecondsPipe],
+  imports: [DecimalPipe, TranslatePipe, ButtonComponent, PointsPipe, SecondsPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="flex flex-col gap-5 items-center text-center pt-6" data-testid="run-palier">
@@ -25,8 +26,18 @@ import { RunRoundSummary, lifeDots, outcomeKey } from '../../domain/run';
       </p>
       <div #card class="flex flex-col gap-3 items-center w-full px-4 py-4"
         style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)">
+        <!-- Le palier qui change, en grand : de combien de secondes on écoutait à combien on écoutera (le temps : cyan). -->
+        <p class="flex items-center justify-center gap-3 text-[34px] font-extrabold leading-none tabular-nums" style="font-family:var(--font-score);color:var(--color-accent-2)"
+          data-testid="run-palier-transition" [attr.aria-label]="'runs.roundEnd.nextListen' | translate: { round: end().round + 1, seconds: (end().nextListenSeconds | appSeconds) }">
+          <span aria-hidden="true">{{ end().listenSeconds | appSeconds }}</span>
+          <span aria-hidden="true" style="color:var(--text-muted)">→</span>
+          <span aria-hidden="true">{{ end().nextListenSeconds | appSeconds }}</span>
+        </p>
         <p class="text-[15px]" style="color:var(--text-hi)" data-testid="run-palier-outcome">{{ outcomeText() | translate }}</p>
-        <p class="text-[15px]" style="color:var(--color-accent-2)" data-testid="run-palier-next">
+        <p class="text-[14px]" style="color:var(--text-light)" data-testid="run-palier-worth">
+          {{ 'runs.roundEnd.worth' | translate: { from: (end().fullPoints | number), to: (end().nextFullPoints | number) } }}
+        </p>
+        <p class="sr-only" data-testid="run-palier-next">
           {{ 'runs.roundEnd.nextListen' | translate: { round: end().round + 1, seconds: (end().nextListenSeconds | appSeconds) } }}
         </p>
         <p class="flex items-center gap-1.5" data-testid="run-palier-lives" [attr.aria-label]="'runs.header.lives' | translate: { left: end().livesLeft, total: dots().length }">
@@ -40,7 +51,7 @@ import { RunRoundSummary, lifeDots, outcomeKey } from '../../domain/run';
       </div>
       <div class="w-full sticky bottom-4 mt-2">
         <button appButton type="button" size="lg" [block]="true" [disabled]="busy()" (click)="next.emit()" data-testid="run-palier-next-button">
-          {{ 'runs.roundEnd.next' | translate }}
+          {{ (themeNext() ? 'runs.roundEnd.nextTheme' : 'runs.roundEnd.next') | translate }}
         </button>
       </div>
     </section>
@@ -53,6 +64,8 @@ export class RunPalierComponent {
   readonly lives = input.required<number>();
   /** « Manche suivante » part : rien d'autre ne se touche. */
   readonly busy = input(false);
+  /** Un choix de thème suit : le bouton l'annonce. */
+  readonly themeNext = input(false);
 
   readonly next = output();
 
