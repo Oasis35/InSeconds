@@ -17,7 +17,7 @@ import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (visible()) {
-      <div class="fixed inset-x-0 bottom-0 z-30" data-testid="bottom-bar" style="background:var(--bg-page);border-top:1px solid rgb(var(--rgb-text) / 0.14)">
+      <div class="fixed inset-x-0 bottom-0 z-30" data-testid="bottom-bar" style="background:var(--bg-bar);backdrop-filter:var(--blur-tile);-webkit-backdrop-filter:var(--blur-tile);border-top:1px solid rgb(var(--rgb-text) / 0.14)">
         <nav class="flex w-full max-w-lg mx-auto" style="padding-bottom:env(safe-area-inset-bottom)" [attr.aria-label]="'runs.v4.bar.label' | translate">
           @for (tab of tabs(); track tab.link) {
             <a [routerLink]="tab.link" [attr.data-testid]="'tab-' + tab.id" [attr.aria-current]="tab.active ? 'page' : null"
