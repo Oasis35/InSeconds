@@ -59,10 +59,10 @@ describe('RunHomeCardComponent', () => {
   });
 
   describe('mise en avant (le défi du jour est joué)', () => {
-    it('contour orange et « Jouer » en bouton principal, la carte reste compacte', () => {
+    it('tube ambre et « Jouer » en bouton principal, la carte reste compacte', () => {
       const { element, q } = render({ active: true, level: LEVEL });
       expect(q('run-home-card')?.getAttribute('data-active')).toBe('true');
-      expect((q('run-home-card') as HTMLElement).style.border).toContain('var(--color-accent-3)');
+      expect((q('run-home-card') as HTMLElement).classList).toContain('tube-amber');
       expect(q('run-home-play')?.textContent).toContain('runs.home.play');
       expect(element.querySelectorAll('[data-disc]')).toHaveLength(9);
     });

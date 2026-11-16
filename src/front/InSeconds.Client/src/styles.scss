@@ -3,14 +3,14 @@
 /* ── Palette InSeconds - DA "IN//SECONDS" (ambre/cyan/violet sur bleu nuit) ──────── */
 :root {
   /* Canaux RGB bruts (pour rgba() dynamiques) */
-  --rgb-bg:       10 6 18;
-  --rgb-surface:  24 32 62;   /* bleu nuit : les tuiles se détachent du fond noir */
-  --rgb-panel:    32 44 84;
+  --rgb-bg:       14 10 38;   /* bleu nuit violacé : la grille se lit dessus */
+  --rgb-surface:  10 12 34;   /* bleu nuit profond : les tuiles se détachent du fond, la grille passe derrière */
+  --rgb-panel:    18 22 52;
   --rgb-text:     232 236 244;
   --rgb-border:   74 82 102;
-  --rgb-accent:    255 160 0;   /* ambre (même teinte que --rgb-accent-3) : l'ancien terracotta est retiré */
+  --rgb-accent:    255 195 77;   /* ambre (même teinte que --rgb-accent-3) : l'ancien terracotta est retiré */
   --rgb-accent-2:  0 229 255;   /* cyan */
-  --rgb-accent-3:  255 160 0;   /* ambre : l'orange du joueur, du bouton principal et de ce qu'il fait */
+  --rgb-accent-3:  255 195 77;   /* ambre : l'orange du joueur, du bouton principal et de ce qu'il fait */
   --rgb-violet:    168 85 247;
   --rgb-success:   16 185 129;
   --rgb-danger:    255 61 90;
@@ -18,7 +18,7 @@
 
   /* Fonds */
   --bg-page:       rgb(var(--rgb-bg));
-  --bg-surface:    rgb(var(--rgb-surface) / 0.92);
+  --bg-surface:    rgb(var(--rgb-surface) / 0.9);
   --bg-surface-2:  rgb(var(--rgb-panel));
   --bg-inactive:   rgb(var(--rgb-panel));
   --bg-primary:    rgb(var(--rgb-accent));
@@ -42,8 +42,8 @@
   --text-light:       rgb(var(--rgb-text) / 0.75);
   --text-indigo:      rgb(var(--rgb-violet));
   --text-on-primary:  #ffffff;
-  --text-on-orange:   #1A0D00;
-  --text-on-orange-soft: rgb(26 13 0 / 0.3); /* le filet du spinner sur l'ambre */
+  --text-on-orange:   #2A1400;
+  --text-on-orange-soft: rgb(42 20 0 / 0.3); /* le filet du spinner sur l'ambre */
 
   /* Sémantiques dynamiques */
   --color-success: rgb(var(--rgb-success));
@@ -66,9 +66,11 @@
   --wave-old:      color-mix(in srgb, rgb(var(--rgb-text)) 30%, rgb(var(--rgb-bg)));     /* un morceau déjà joué (la pile de Setlist) */
 
   /* Bordures / overlays */
-  --border-subtle:  rgb(120 160 230 / 0.24);
-  --border-medium:  rgb(120 160 230 / 0.32);
-  --border-strong:  rgb(120 160 230 / 0.5);
+  --border-subtle:  rgb(150 165 230 / 0.22);
+  --border-medium:  rgb(150 165 230 / 0.32);
+  --border-strong:  rgb(150 165 230 / 0.5);
+  /* Le filet des champs de saisie : plus clair que celui des tuiles, sans halo. */
+  --border-field:   rgb(150 190 255 / 0.6);
   /* La zone sous un objectif (écran « Difficulté ? » de Setlist) : assombrie. */
   --shade-below:    rgb(0 0 0 / 0.28);
   /* Contour des boutons secondaires sans couleur de sens (Passer, indices) */
@@ -77,9 +79,13 @@
 
   /* Lueurs (glow) */
   /* Tubes néon : un cœur presque blanc teinté et un halo serré (8 à 12 px), un seul tube fort par écran. */
-  --core-orange: #FFEBC2;
+  --core-orange: #FFF6DC;
   --core-cyan:   #D6FBFF;
-  --tube-frame: 0 0 9px rgb(var(--rgb-accent-2) / 0.3), inset 0 0 10px rgb(var(--rgb-accent-2) / 0.1);
+  --tube-frame: 0 0 10px rgb(var(--rgb-accent-2) / 0.45);
+  /* Un tube par focus d'écran : le cœur clair en filet, un halo serré.. Ambre : ce que le joueur fait ; cyan : le son. */
+  --tube-amber:  0 0 10px rgb(var(--rgb-accent-3) / 0.45);
+  /* Le seul halo d'un bouton plein : un par écran. */
+  --glow-primary: 0 0 8px rgb(var(--rgb-accent-3) / 0.6);
   --tube-wave-off: inset 0 0 0 1.5px rgb(var(--rgb-text) / 0.3);
   --tube-wave-lit: inset 0 0 0 1.5px var(--core-cyan), 0 0 4px rgb(var(--rgb-accent-2) / 0.65);
   --tube-wave-hot: inset 0 0 0 1.5px var(--core-cyan), 0 0 5px rgb(var(--rgb-accent-2) / 0.8);
@@ -191,7 +197,9 @@ h1, h2, h3, .font-display {
    Voir ui/decor-background/ pour le composant qui rend la grille+scanlines. */
 
 .da-bg {
-  background: radial-gradient(circle at 50% -8%, rgb(var(--rgb-violet) / 0.12), transparent 55%), var(--bg-page);
+  background:
+    radial-gradient(ellipse 120% 40% at 50% 0%, rgb(70 40 140 / 0.36), transparent 70%),
+    linear-gradient(rgb(26 18 60), var(--bg-page) 60%, rgb(12 8 32));
   overflow-x: clip;
 }
 
@@ -199,7 +207,7 @@ h1, h2, h3, .font-display {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  opacity: 0.5;
+  opacity: 1;
   pointer-events: none;
 }
 
@@ -208,11 +216,12 @@ h1, h2, h3, .font-display {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgb(var(--rgb-accent-2) / 0.16) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(var(--rgb-accent-2) / 0.16) 1px, transparent 1px);
+    linear-gradient(rgb(var(--rgb-accent-2) / 0.25) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--rgb-accent-2) / 0.25) 1px, transparent 1px);
   background-size: 26px 18px;
   transform: perspective(220px) rotateX(58deg) scale(2.1);
   transform-origin: top;
+  filter: drop-shadow(0 0 1.5px rgb(var(--rgb-accent-2) / 0.3));
 }
 
 .scanlines {
@@ -289,8 +298,8 @@ h1, h2, h3, .font-display {
   width: 100%;
   padding: 0.875rem 1rem;
   border-radius: 0.75rem;
-  border: 1px solid var(--border-neutral);
-  background: var(--bg-inactive);
+  border: 1.5px solid var(--border-field);
+  background: rgb(8 10 30 / 0.94);
   color: var(--text-body);
   font-size: 0.875rem;
   outline: none;
@@ -301,6 +310,15 @@ h1, h2, h3, .font-display {
   border-color: var(--color-accent-2);
   box-shadow: 0 0 0 1px var(--color-accent-2);
 }
+
+input::placeholder,
+.app-input::placeholder {
+  color: rgb(var(--rgb-text) / 0.65);
+}
+
+/* Un tube : le cœur clair en filet et un halo serré, sur la tuile du focus de l'écran (un seul par écran). */
+.tube-amber { border: 1px solid var(--core-orange); box-shadow: var(--tube-amber); }
+.tube-cyan  { border: 1px solid var(--core-cyan);   box-shadow: var(--tube-frame); }
 
 .app-input[aria-invalid='true'] {
   border-color: var(--text-error);
