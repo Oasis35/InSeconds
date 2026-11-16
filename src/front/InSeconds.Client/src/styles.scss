@@ -82,7 +82,7 @@
   --core-orange: #FFF6DC;
   --core-cyan:   #D6FBFF;
   --tube-frame: 0 0 10px rgb(var(--rgb-accent-2) / 0.45);
-  /* Un tube par focus d'écran : le cœur clair en filet, un halo serré.. Ambre : ce que le joueur fait ; cyan : le son. */
+  /* Un tube par focus d'écran : le cœur clair en filet, un halo serré. Ambre : ce que le joueur fait ; cyan : le son. */
   --tube-amber:  0 0 10px rgb(var(--rgb-accent-3) / 0.45);
   /* Le seul halo d'un bouton plein : un par écran. */
   --glow-primary: 0 0 8px rgb(var(--rgb-accent-3) / 0.6);
@@ -318,7 +318,6 @@ input::placeholder,
 
 /* Un tube : le cœur clair en filet et un halo serré, sur la tuile du focus de l'écran (un seul par écran). */
 .tube-amber { border: 1px solid var(--core-orange); box-shadow: var(--tube-amber); }
-.tube-cyan  { border: 1px solid var(--core-cyan);   box-shadow: var(--tube-frame); }
 
 .app-input[aria-invalid='true'] {
   border-color: var(--text-error);

@@ -22,7 +22,7 @@ npm run generate-api      # régénère les clients NSwag (cf. « Clients de l'A
 
 ## Stack
 
-Angular 22 standalone, **zoneless**, signals, Tailwind v4 + tokens `:root` de la DA dans `styles.scss` (dont les classes `tube-amber` et `tube-cyan`, le tube de la tuile de focus d'un écran : une seule par écran), ngx-translate, Vitest navigateur, plus :
+Angular 22 standalone, **zoneless**, signals, Tailwind v4 + tokens `:root` de la DA dans `styles.scss` (dont la classe `tube-amber`, le tube de la tuile de focus d'un écran : une seule par écran, avec le halo du bouton plein), ngx-translate, Vitest navigateur, plus :
 - **NgRx SignalStore** (`@ngrx/signals`) pour les stores ;
 - **CDK Dialog** (`@angular/cdk`) pour les modales et panneaux bas ;
 - **service worker Angular** (`@angular/service-worker`) : PWA et détection de nouvelle version ;
