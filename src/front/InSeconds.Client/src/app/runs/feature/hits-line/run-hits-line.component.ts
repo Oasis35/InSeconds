@@ -4,7 +4,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { RunHitsStore } from '../../data-access/run-hits.store';
 
 /**
- * La ligne « Hits 4 / 17 › » de l'accueil du mode et de la fin d'une partie : elle mène à l'écran des Hits et dit, à la couleur du joueur, quand
+ * La ligne « Hits 4 / 12 › » de l'accueil du mode et de la fin d'une partie : elle mène à l'écran des Hits et dit, à la couleur du joueur, quand
  * il vient d'en obtenir. Rien tant que les Hits ne sont pas lus : cette ligne est un plus.
  */
 @Component({

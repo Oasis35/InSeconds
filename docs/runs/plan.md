@@ -12,7 +12,7 @@ Ce qui reste pour le mode, les idées pour la suite et les décisions. Règles :
 
 1. **Valider la migration `SerieRules`** (destructive pour les données du mode) avant la promotion `env/staging` → `main`.
 2. **Parties de test et réglage** : barème des paliers, échelle d'écoute, nombre de tranches de rang, et **barème des disques de niveau** (le score n'est plus borné, les seuils actuels ont été pensés pour l'ancien modèle ; fil séparé niveau et ELO).
-3. **Condition du Hit « Oreille d'or »** : à définir.
+3. **Hit « Oreille d'or »** : un Hit à créer, sa condition est à définir.
 4. **Catalogue épuisé** : cas rare où le tirage d'une manche ne trouve plus assez de morceaux libres (500 à ce jour), à traiter proprement.
 5. **Ouverture** : accès pour tous, un accueil qui laisse choisir le mode, statistiques du mode dans l'admin.
 

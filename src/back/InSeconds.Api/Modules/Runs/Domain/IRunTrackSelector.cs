@@ -18,7 +18,7 @@ public interface IRunTrackSelector
 }
 
 /// <summary>
-/// La difficulté par le rang Deezer : les morceaux jouables (Daily compris) sont triés du plus connu au moins connu et coupés en tranches ; la manche
+/// La notoriété par le rang Deezer : les morceaux jouables (Daily compris) sont triés du plus connu au moins connu et coupés en tranches ; la manche
 /// <c>k</c> tire ses morceaux dans la tranche <c>k</c> (la manche 1 : les plus connus), la dernière tranche se répétant au-delà. Les candidats sont
 /// d'abord triés (rang, puis identifiant) : le tirage ne dépend ni de l'ordre rendu par la base, ni d'un doublon, seulement du pool, des morceaux déjà
 /// tirés et de la graine. Une tranche épuisée se complète avec les morceaux restants les moins connus d'abord, puis les plus connus.

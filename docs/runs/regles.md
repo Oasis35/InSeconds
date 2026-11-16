@@ -39,7 +39,7 @@ L'écoute suit une **échelle de paliers** : **10, 5, 3, 2, 1, 0,5 s** (le derni
 Le palier d'une manche se **calcule** depuis les réponses de la manche d'avant, jamais stocké :
 - **manche sans erreur** (que des morceaux trouvés en entier) : le palier **raccourcit** d'un cran ;
 - **manche avec au moins une erreur** : le palier **rallonge** d'un cran, jamais au-dessus de 10 s (une erreur au premier palier le laisse là) ;
-- **manche de moitiés justes** seulement : le palier **ne bouge pas**.
+- **manche sans erreur mais avec au moins une moitié juste** : le palier **ne bouge pas**.
 
 L'écran de bilan entre deux manches le dit : « L'écoute raccourcit », « L'écoute reste la même », « L'écoute rallonge ».
 

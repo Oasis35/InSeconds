@@ -15,7 +15,7 @@
 
 - [ ] **Valider la migration `SerieRules`** - destructive pour les données du mode (parties, défis, records, niveaux), à valider avant la promotion `env/staging` → `main`
 - [ ] **Parties de test et réglage** - Clément joue sur le staging puis en prod avec quelques comptes, règle le barème (`Runs:StepPoints`, `Runs:ListenLadder`, `Runs:RankBands`) et le barème des disques de niveau (`Runs:Levels:Discs`, le score n'étant plus borné)
-- [ ] **Hit « Oreille d'or »** - définir sa condition
+- [ ] **Hit « Oreille d'or »** - un Hit à créer : définir sa condition
 - [ ] **Catalogue épuisé** - le tirage d'une manche renvoie une 500 quand il ne reste plus assez de morceaux libres : cas rare à traiter proprement
 
 ## Mode entraînement (anciens défis)

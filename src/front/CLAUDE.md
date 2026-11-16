@@ -51,7 +51,7 @@ src/front/InSeconds.Client/
     ├── api/{players,catalogue,daily,runs,admin}/   # clients NSwag générés (api.generated.ts), importés seulement par la couche data-access de leur domaine
     ├── account/               # connexion, vérification, profil, appareils, confirmation d'email (cf. § Domaine account)
     ├── daily/                 # le jeu du jour : partie, série et gels, statistiques, partage (cf. § Domaine daily)
-    ├── runs/                  # le mode Run : défi, manches, jauge, disques (cf. § Domaine runs)
+    ├── runs/                  # le mode Run : défi, vies, paliers, disques (cf. § Domaine runs)
     ├── social/                # les groupes entre amis et leur classement (cf. § Domaine social)
     ├── gameplay/              # la manche d'un morceau : machine à états, lecteur audio, saisie, révélation (cf. § Domaine gameplay)
     ├── admin/                 # coquille de l'admin et ses quatre onglets (cf. § Domaine admin)
