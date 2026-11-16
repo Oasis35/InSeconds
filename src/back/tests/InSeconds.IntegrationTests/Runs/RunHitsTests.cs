@@ -32,7 +32,7 @@ public class RunHitsTests(PostgresFixture postgres) : IAsyncLifetime
 
         var hits = await HitsAsync(alice);
 
-        Assert.Equal(11, hits.Hits.Count);
+        Assert.Equal(16, hits.Hits.Count);
         Assert.Equal(0, hits.EarnedCount);
         Assert.Empty(Earned(hits));
     }

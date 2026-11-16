@@ -62,7 +62,12 @@ L'écran de bilan entre deux manches le dit : « L'écoute raccourcit », « L'�
 - **Le fantôme** : en jouant la playlist d'un ami, on voit son total au même morceau et l'écart. **Au-delà de son score figé** (il a perdu ses vies, pas vous), on continue : « Tu bats Léa ».
 - **Duel** : à la fin, quand l'ami a fini la playlist, la première ligne dit « Tu bats Léa de 126 pts » (ou l'écart qui reste) ; « Revanche » relance une partie contre lui.
 - **Comparaison** : après avoir fini sa propre partie (un abandon compte), on voit tous les joueurs de la playlist, manche par manche, avec leur pseudo (« Invité » pour un invité) et leur total. Ce n'est **pas un classement général** : seuls ceux qui ont le lien la voient.
-- **Hits** : 11 jalons calculés à la lecture sur les parties finies (première setlist, record battu, 10 et 50 setlists, manche parfaite, 10 bonnes réponses d'affilée, un ami a joué ta setlist, duel gagné, 5 duels, niveau Or, niveau Diamant), plus un 12e côté groupes (premier groupe).
+- **Hits** : 17 jalons calculés à la lecture sur les parties finies, rien de stocké :
+  - débuts : première setlist, record battu, premier groupe (le seul côté groupes) ;
+  - volume : 10 setlists, 50 setlists, **Marathon** (10 manches jouées en entier dans une même partie) ;
+  - jeu : manche parfaite, **Oreille d'or** (un morceau trouvé en entier à l'écoute de 0,5 s), **Sans une égratignure** (3 manches de suite sans perdre une vie), **Mystère résolu** (une manche au thème mystère, choisi par le joueur, dont tous les morceaux sont trouvés en entier), 10 bonnes réponses d'affilée ;
+  - social : un ami a joué ta setlist, duel gagné, **Fantôme battu en retard** (dépasser l'ami après son arrêt : aller plus loin que lui et faire plus de points que son total), 5 duels ;
+  - niveau : niveau Or, niveau Diamant.
 
 ## L'accès
 

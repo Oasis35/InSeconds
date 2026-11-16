@@ -65,7 +65,7 @@ public sealed class RunRoundDealer(ITrackDirectory tracks, ISeededShuffle shuffl
         var drawn = selector.SelectRound(pool.Candidates, challenge.Rules, challenge.Seed, round, used, chosen);
         if (drawn.Count < challenge.Rules.TracksPerRound)
             throw new InvalidOperationException("Le catalogue n'a plus assez de morceaux pour tirer une manche.");
-        var theme = chosen is { } id ? new RunRoundTheme(round, id, pool.Names[id]) : null;
+        var theme = chosen is { } id ? new RunRoundTheme(round, id, pool.Names[id], Mystery: themeId is null) : null;
         challenge.AppendRound(round, drawn, theme);
         return theme;
     }

@@ -52,4 +52,4 @@ Une partie déjà commencée sur ce lien : l'écran de reprise. Une partie finie
 
 ## Les Hits
 
-`/setlist/hits` : la liste des jalons (12), ceux obtenus en couleur. Un Hit gagné depuis la dernière visite arrive avec un temps fort. La ligne « Hits 4 / 12 » est sur l'accueil du mode et la fin d'une partie.
+`/setlist/hits` : la liste des jalons (17), ceux obtenus en couleur. Un Hit gagné depuis la dernière visite arrive avec un temps fort. La ligne « Hits 4 / 17 » est sur l'accueil du mode et la fin d'une partie.

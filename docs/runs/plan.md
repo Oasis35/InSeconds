@@ -10,11 +10,9 @@ Ce qui reste pour le mode, les idées pour la suite et les décisions. Règles :
 
 ## Reste à faire
 
-1. **Valider la migration `SerieRules`** (destructive pour les données du mode) avant la promotion `env/staging` → `main`.
-2. **Parties de test et réglage** : barème des paliers, échelle d'écoute, nombre de tranches de rang, et **barème des disques de niveau** (le score n'est plus borné, les seuils actuels ont été pensés pour l'ancien modèle ; fil séparé niveau et ELO).
-3. **Hit « Oreille d'or »** : un Hit à créer, sa condition est à définir.
-4. **Catalogue épuisé** : cas rare où le tirage d'une manche ne trouve plus assez de morceaux libres (500 à ce jour), à traiter proprement.
-5. **Ouverture** : accès pour tous, un accueil qui laisse choisir le mode, statistiques du mode dans l'admin.
+1. **Parties de test et réglage** : barème des paliers, échelle d'écoute, nombre de tranches de rang, et **barème des disques de niveau** (le score n'est plus borné, les seuils actuels ont été pensés pour l'ancien modèle ; fil séparé niveau et ELO).
+2. **Catalogue épuisé** : cas rare où le tirage d'une manche ne trouve plus assez de morceaux libres (500 à ce jour), à traiter proprement.
+3. **Ouverture** : accès pour tous, un accueil qui laisse choisir le mode, statistiques du mode dans l'admin.
 
 ## Idées pour la suite (rien n'est décidé)
 
@@ -31,3 +29,4 @@ Ce qui reste pour le mode, les idées pour la suite et les décisions. Règles :
 - **27/10/2026** : proto 1 livré (4 manches, jauge). **03/11** : chrono de 45 s par morceau, écran de jeu en pile.
 - **Novembre 2026** : protos 2 et 3 (difficultés, cartes, Échange), puis la V4 ([`proto4.md`](proto4.md)).
 - **16/11/2026, refonte « la Série »** : plus de fin fixée ni de jauge ; 3 vies, manches de 5 morceaux sans fin, de moins en moins connus, écoute qui raccourcit après une manche sans erreur et rallonge après une erreur, points par palier, thème par manche, fantôme qui continue après le score figé de l'ami. Supprimés : objectifs, difficultés, boss, multiplicateurs, cartes, Échange, réserve. Le chrono de 45 s et le vocabulaire « Manche » sont gardés. Les bonus (ex-PR 4) sont retirés du plan.
+- **16/11/2026, suite** : la migration destructive `SerieRules` est validée par Clément ; cinq Hits s'ajoutent (Oreille d'or, Sans une égratignure, Marathon, Mystère résolu, Fantôme battu en retard).

@@ -42,8 +42,10 @@ public sealed class EfRunHitsQueries(InSecondsDbContext db) : IRunHitsQueries
             return new RunHitRun(
                 session.TotalScore, rules.TracksPerRound,
                 [.. session.Answers.OrderBy(a => a.Position).Select(a => new RunHitAnswer(
-                    a.Position, rules.RoundOf(a.Position), a.ArtistCorrect && a.TitleCorrect, a.Neutralized))],
-                friendPoints.GetValueOrDefault(session.ChallengeId));
+                    a.Position, rules.RoundOf(a.Position), a.ArtistCorrect && a.TitleCorrect, a.Neutralized,
+                    rules.ListenAt(session.StepOf(rules, rules.RoundOf(a.Position))), a.IsFailed))],
+                friendPoints.GetValueOrDefault(session.ChallengeId),
+                rules.Themes?.Where(t => t.Mystery).Select(t => t.Round).ToHashSet());
         }).ToList();
         return new RunHitFacts(runs, friendPlayedMine);
     }
