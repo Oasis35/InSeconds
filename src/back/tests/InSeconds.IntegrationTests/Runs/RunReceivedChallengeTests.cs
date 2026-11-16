@@ -16,13 +16,13 @@ public class RunReceivedChallengeTests(PostgresFixture postgres) : IAsyncLifetim
 
     public ValueTask DisposeAsync() => _run.DisposeAsync();
 
-    /// <summary>Alice lance la playlist, trouve 3 morceaux (300 pts) puis perd à la manche 2 : sa partie est finie.</summary>
+    /// <summary>Alice lance la playlist, passe la manche 1 (500 pts) puis perd ses trois vies dans la 2 : sa partie est finie.</summary>
     private async Task<string> AliceFinishesAsync()
     {
         var alice = await _run.NewInvitedAsync("Alice");
         var start = (await alice.LaunchAsync()).Session;
-        await alice.PlayAsync(start.SessionId, start.ChallengeCode, 1, true, true, true, false, false);
-        await alice.PlayAsync(start.SessionId, start.ChallengeCode, 6, false, false, false, false, false);
+        await alice.PlayAsync(start.SessionId, start.ChallengeCode, 1, true, true, true, true, true);
+        await alice.PlayAsync(start.SessionId, start.ChallengeCode, 6, false, false, false);
         return start.ChallengeCode;
     }
 
@@ -43,7 +43,7 @@ public class RunReceivedChallengeTests(PostgresFixture postgres) : IAsyncLifetim
         Assert.NotNull(received);
         Assert.Equal(code, received.Code);
         Assert.Equal("Alice", received.AuthorPseudo);
-        Assert.Equal(300, received.ScoreToBeat);
+        Assert.Equal(500, received.ScoreToBeat);
     }
 
     [Fact]

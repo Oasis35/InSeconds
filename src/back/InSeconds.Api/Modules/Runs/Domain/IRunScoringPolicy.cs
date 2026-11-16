@@ -3,35 +3,26 @@ using InSeconds.Api.Modules.Gameplay.Contracts;
 namespace InSeconds.Api.Modules.Runs.Domain;
 
 /// <summary>
-/// Les points d'un morceau de run, à un multiplicateur **effectif** : celui de la manche du morceau, mis à l'échelle par la partie (facteur de la
-/// difficulté choisie, puis les coups de pouce). Ce ne sont pas des décorateurs enregistrés dans le conteneur (la politique est unique pour toutes
-/// les parties) : la partie passe à chaque appel ce qui s'applique à ce morceau. La jauge en lit le maximum d'un morceau.
+/// Les points d'un morceau de la Série : ceux du palier de sa manche (<see cref="RunRules.PointsAt"/>) quand artiste et titre sont justes, la moitié
+/// quand un seul l'est, rien sinon. Une politique à part pour que la règle se change (ou se teste) sans toucher la partie.
 /// </summary>
 public interface IRunScoringPolicy
 {
-    /// <summary>Les points de cette réponse, au multiplicateur effectif du morceau.</summary>
-    int Points(RoundOutcome outcome, decimal multiplier);
-
-    /// <summary>Ce qu'un morceau rapporte au plus, à ce multiplicateur.</summary>
-    int MaxPoints(decimal multiplier);
+    /// <summary>Les points de cette réponse, <paramref name="stepPoints"/> étant ce que vaut un morceau trouvé en entier à ce palier.</summary>
+    int Points(RoundOutcome outcome, int stepPoints);
 }
 
-/// <summary>
-/// (50 si l'artiste est juste + 50 si le titre est juste) × multiplicateur, **arrondi au plus proche sur le total du morceau**
-/// (<see cref="MidpointRounding.AwayFromZero"/>) : un morceau trouvé en manche 2 (×1,33) vaut 133, à moitié trouvé 67.
-/// </summary>
+/// <summary>Tout, la moitié (arrondie au plus proche, <see cref="MidpointRounding.AwayFromZero"/>) ou rien.</summary>
 public sealed class ArtistTitleScoring : IRunScoringPolicy
 {
-    public const int ArtistPoints = 50;
-    public const int TitlePoints = 50;
-
-    public int Points(RoundOutcome outcome, decimal multiplier)
+    public int Points(RoundOutcome outcome, int stepPoints)
     {
         ArgumentNullException.ThrowIfNull(outcome);
-        return Round(((outcome.ArtistCorrect ? ArtistPoints : 0) + (outcome.TitleCorrect ? TitlePoints : 0)) * multiplier);
+        return (outcome.ArtistCorrect, outcome.TitleCorrect) switch
+        {
+            (true, true) => stepPoints,
+            (false, false) => 0,
+            _ => (int)decimal.Round(stepPoints / 2m, 0, MidpointRounding.AwayFromZero),
+        };
     }
-
-    public int MaxPoints(decimal multiplier) => Round((ArtistPoints + TitlePoints) * multiplier);
-
-    private static int Round(decimal points) => (int)decimal.Round(points, 0, MidpointRounding.AwayFromZero);
 }

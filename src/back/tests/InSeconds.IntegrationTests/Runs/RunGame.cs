@@ -7,8 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace InSeconds.IntegrationTests.Runs;
 
 /// <summary>
-/// Une partie de run jouée par HTTP, comme le front : un pool de 20 morceaux classés (le 1 est le plus connu, la manche k tire donc dans les morceaux
-/// (k-1)×5+1 à k×5), des joueurs avec ou sans accès. Les morceaux s'appellent « Artiste N » et « Titre N » (N = identifiant), leur identifiant Deezer
+/// Une partie de run jouée par HTTP, comme le front : un pool de morceaux classés (le 1 est le plus connu : les manches, tirées à la volée, descendent le classement), des joueurs avec ou sans accès. Les morceaux s'appellent « Artiste N » et « Titre N » (N = identifiant), leur identifiant Deezer
 /// est 1000 + N.
 /// </summary>
 internal sealed class RunGame : IAsyncDisposable
@@ -20,7 +19,7 @@ internal sealed class RunGame : IAsyncDisposable
     public ApiFactory Api => Game.Api;
 
     public static async Task<RunGame> CreateAsync(
-        string connectionString, int tracks = 20, IReadOnlyDictionary<string, string>? settings = null, Action<IServiceCollection>? configureServices = null)
+        string connectionString, int tracks = 40, IReadOnlyDictionary<string, string>? settings = null, Action<IServiceCollection>? configureServices = null)
     {
         var game = new RunGame(await GameApi.CreateAsync(connectionString, tracks: 0, settings, configureServices));
         if (tracks > 0)
@@ -108,18 +107,12 @@ internal sealed class RunGamer(RunGame game, Guid id, HttpClient client)
 
     public async Task<RunPlayResponse> PreviewAsync(int sessionId) => await ReadAsync<RunPlayResponse>(await PreviewRawAsync(sessionId));
 
-    public Task<HttpResponseMessage> ChooseRawAsync(int sessionId, int round, string difficulty) =>
-        Client.PostAsJsonAsync($"/api/runs/sessions/{sessionId}/difficulty", new ChooseRunDifficulty(round, difficulty), Ct);
+    public Task<HttpResponseMessage> ThemeRawAsync(int sessionId, int round, int? themeId) =>
+        Client.PostAsJsonAsync($"/api/runs/sessions/{sessionId}/theme", new ChooseRunTheme(round, themeId), Ct);
 
-    /// <summary>Choisit la difficulté de la manche en cours (avant son premier son).</summary>
-    public async Task<RunPlayResponse> ChooseAsync(int sessionId, int round, string difficulty) =>
-        await ReadAsync<RunPlayResponse>(await ChooseRawAsync(sessionId, round, difficulty));
-
-    public Task<HttpResponseMessage> SwapRawAsync(int sessionId, int position) =>
-        Client.PostAsJsonAsync($"/api/runs/sessions/{sessionId}/swap", new SwapRunTrack(position), Ct);
-
-    /// <summary>Change le morceau en cours (« Échange ») ; rend la partie et le nouveau morceau.</summary>
-    public async Task<RunPlayResponse> SwapAsync(int sessionId, int position) => await ReadAsync<RunPlayResponse>(await SwapRawAsync(sessionId, position));
+    /// <summary>Choisit le thème de la manche à venir (avant son premier son) ; rend la partie et le premier morceau de la manche.</summary>
+    public async Task<RunPlayResponse> ThemeAsync(int sessionId, int round, int? themeId) =>
+        await ReadAsync<RunPlayResponse>(await ThemeRawAsync(sessionId, round, themeId));
 
     public Task<HttpResponseMessage> AbandonRawAsync(int sessionId) => Client.PostAsync($"/api/runs/sessions/{sessionId}/abandon", null, Ct);
 

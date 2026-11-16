@@ -13,7 +13,7 @@ public class RunLevelApiTests(PostgresFixture postgres) : IAsyncLifetime
     private RunGame _run = null!;
 
     private static readonly bool[] AllFound = [true, true, true, true, true];
-    private static readonly bool[] NoneFound = [false, false, false, false, false];
+    private static readonly bool[] NoneFound = [false, false, false];
 
     public async ValueTask InitializeAsync() => _run = await RunGame.CreateAsync(await postgres.CreateDatabaseAsync());
 

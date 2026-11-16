@@ -5,12 +5,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace InSeconds.Api.Modules.Runs.Persistence;
 
-/// <summary>L'historique d'un joueur : ses parties **finies** (gagnées ou perdues), jamais celles d'un autre (tout part de son identifiant).</summary>
+/// <summary>L'historique d'un joueur : ses parties **finies** (vies épuisées), jamais celles d'un autre (tout part de son identifiant).</summary>
 public sealed class EfRunHistoryQueries(InSecondsDbContext db) : IRunHistoryQueries
 {
     private IQueryable<RunSession> Finished(Guid playerId) =>
         db.Set<RunSession>().AsNoTracking()
-            .Where(s => s.PlayerId == playerId && (s.Status == RunSessionStatus.Won || s.Status == RunSessionStatus.Lost) && s.EndedAt != null);
+            .Where(s => s.PlayerId == playerId && s.Status == RunSessionStatus.Lost && s.EndedAt != null);
 
     public async Task<RunHistorySummary> GetSummaryAsync(Guid playerId, CancellationToken ct)
     {
@@ -43,10 +43,8 @@ public sealed class EfRunHistoryQueries(InSecondsDbContext db) : IRunHistoryQuer
                               session.RoundsPassed,
                               session.TotalScore,
                               EndedAt = session.EndedAt!.Value,
-                              Difficulties = session.Rounds.Select(r => r.Difficulty).ToList(),
                           }).ToListAsync(ct);
         return rows.Select(r => new RunHistoryEntry(
-            r.Id, r.Code, r.Status, r.RoundsPassed, r.TotalScore, DateOnly.FromDateTime(r.EndedAt.UtcDateTime),
-            r.Difficulties.Count == 0 ? RunDifficulty.Safe : r.Difficulties.Max())).ToList();
+            r.Id, r.Code, r.Status, r.RoundsPassed, r.TotalScore, DateOnly.FromDateTime(r.EndedAt.UtcDateTime))).ToList();
     }
 }

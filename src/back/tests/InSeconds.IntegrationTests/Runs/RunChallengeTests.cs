@@ -39,32 +39,17 @@ public class RunChallengeTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Cree_VingtMorceauxEnQuatreManches_DansLOrdreDuJeu()
+    public async Task Cree_LaPremiereMancheSeulement_CinqMorceauxDeLaTrancheLaPlusConnue()
     {
         await AddRankedPoolAsync();
 
         var (plan, id) = await CreateAsync();
 
         Assert.NotNull(plan.Challenge);
-        var rows = await _game.Api.ScalarAsync<string>(
-            $"SELECT string_agg(round || ':' || multiplier, ',' ORDER BY position) FROM runs.challenge_tracks WHERE challenge_id = {id}");
-        Assert.Equal(
-            string.Join(',', Enumerable.Range(1, 4).SelectMany(round => Enumerable.Repeat($"{round}:{new[] { "1.00", "1.33", "1.67", "2.00" }[round - 1]}", 5))),
-            rows);
-        Assert.Equal(20, await _game.Api.ScalarAsync<long>($"SELECT count(DISTINCT track_id) FROM runs.challenge_tracks WHERE challenge_id = {id}"));
-    }
-
-    [Fact]
-    public async Task ChaqueManche_TireDansSaTrancheDeRang()
-    {
-        await AddRankedPoolAsync();
-
-        var (_, id) = await CreateAsync();
-
-        // 100 morceaux, 4 tranches de 25 par rang décroissant : la manche k tire dans les identifiants (k-1)×25+1 à k×25.
-        var outside = await _game.Api.ScalarAsync<long>(
-            $"SELECT count(*) FROM runs.challenge_tracks WHERE challenge_id = {id} AND (track_id - 1) / 25 + 1 <> round");
-        Assert.Equal(0L, outside);
+        Assert.Equal(5L, await _game.Api.ScalarAsync<long>($"SELECT count(DISTINCT track_id) FROM runs.challenge_tracks WHERE challenge_id = {id}"));
+        Assert.Equal("1:1:1:1:1", await _game.Api.ScalarAsync<string>($"SELECT string_agg(round::text, ':' ORDER BY position) FROM runs.challenge_tracks WHERE challenge_id = {id}"));
+        // 100 morceaux, 8 tranches : la première manche tire dans les 13 plus connus.
+        Assert.Equal(0L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.challenge_tracks WHERE challenge_id = {id} AND track_id > 13"));
     }
 
     [Fact]
@@ -81,19 +66,20 @@ public class RunChallengeTests(PostgresFixture postgres) : IAsyncLifetime
         var (plan, id) = await CreateAsync();
 
         Assert.True(plan.EligibleCount == 20, $"{plan.EligibleCount}");
+        // Les cinq plus connus : le désactivé et le sans extrait (très connus) sont absents.
         Assert.Equal(
-            Enumerable.Range(1, 20), (await _game.Api.ScalarAsync<int[]>($"SELECT array_agg(track_id ORDER BY track_id) FROM runs.challenge_tracks WHERE challenge_id = {id}"))!);
+            Enumerable.Range(1, 5), (await _game.Api.ScalarAsync<int[]>($"SELECT array_agg(track_id ORDER BY track_id) FROM runs.challenge_tracks WHERE challenge_id = {id}"))!);
     }
 
     [Fact]
     public async Task PoolInsuffisant_AucunDefi()
     {
-        await AddRankedPoolAsync(19);
+        await AddRankedPoolAsync(4);
 
         var (plan, _) = await CreateAsync();
 
         Assert.Null(plan.Challenge);
-        Assert.Equal((19, 20), (plan.EligibleCount, plan.Requested));
+        Assert.Equal((4, 5), (plan.EligibleCount, plan.Requested));
         Assert.Equal(0L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM runs.challenges"));
     }
 
@@ -110,10 +96,9 @@ public class RunChallengeTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(author.Id, await _game.Api.ScalarAsync<Guid>($"SELECT created_by FROM runs.challenges WHERE id = {id}"));
         var rules = JsonSerializer.Deserialize<RunRules>(
             (await _game.Api.ScalarAsync<string>($"SELECT rules::text FROM runs.challenges WHERE id = {id}"))!, JsonSerializerOptions.Web)!;
-        Assert.Equal(RunsOptions.DefaultRules().Rounds, rules.Rounds);
-        Assert.Equal([45, 55, 68, 80], rules.ThresholdPercents);
-        Assert.Equal(RunsOptions.DefaultRules().OptionsOf(3), rules.OptionsOf(3));
-        Assert.Equal(10m, rules.ListenSeconds);
+        Assert.Equal(3, rules.Lives);
+        Assert.Equal([10m, 5m, 3m, 2m, 1m, 0.5m], rules.ListenLadder);
+        Assert.Equal([100, 200, 350, 550, 800, 1200], rules.StepPoints);
         Assert.Equal("jsonb", await _game.Api.ScalarAsync<string>(
             "SELECT data_type FROM information_schema.columns WHERE table_schema = 'runs' AND table_name = 'challenges' AND column_name = 'rules'"));
     }
@@ -127,9 +112,9 @@ public class RunChallengeTests(PostgresFixture postgres) : IAsyncLifetime
         await _game.SetSettingAsync("Runs:TracksPerRound", "3");
         var (_, second) = await CreateAsync();
 
-        Assert.Equal(20L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.challenge_tracks WHERE challenge_id = {first}"));
+        Assert.Equal(5L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.challenge_tracks WHERE challenge_id = {first}"));
         Assert.Equal(5, await _game.Api.ScalarAsync<int>($"SELECT (rules->>'tracksPerRound')::int FROM runs.challenges WHERE id = {first}"));
-        Assert.Equal(12L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.challenge_tracks WHERE challenge_id = {second}"));
+        Assert.Equal(3L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.challenge_tracks WHERE challenge_id = {second}"));
         Assert.Equal(3, await _game.Api.ScalarAsync<int>($"SELECT (rules->>'tracksPerRound')::int FROM runs.challenges WHERE id = {second}"));
     }
 
@@ -137,12 +122,12 @@ public class RunChallengeTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task UnReglageIncoherentAChaud_RetombeSurLesDefauts()
     {
         await AddRankedPoolAsync();
-        await _game.SetSettingAsync("Runs:Rounds", "0");
+        await _game.SetSettingAsync("Runs:Lives", "0");
 
         var (plan, _) = await CreateAsync();
 
-        Assert.Equal(20, plan.Challenge!.Tracks.Count);
-        Assert.Equal(4, plan.Challenge.Rules.Rounds);
+        Assert.Equal(5, plan.Challenge!.Tracks.Count);
+        Assert.Equal(3, plan.Challenge.Rules.Lives);
     }
 
     [Fact]
@@ -168,7 +153,7 @@ public class RunChallengeTests(PostgresFixture postgres) : IAsyncLifetime
         await _game.Api.ExecuteAsync($"DELETE FROM players.players WHERE id = '{author.Id}'");
 
         Assert.Equal(1L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.challenges WHERE id = {id} AND created_by IS NULL"));
-        Assert.Equal(20L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.challenge_tracks WHERE challenge_id = {id}"));
+        Assert.Equal(5L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.challenge_tracks WHERE challenge_id = {id}"));
     }
 
     [Fact]

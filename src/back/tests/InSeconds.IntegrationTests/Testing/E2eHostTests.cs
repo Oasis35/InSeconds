@@ -312,19 +312,19 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
         var client = _host.CreateClient();
         RunsOptions Current() => _host.Services.GetRequiredService<IOptionsMonitor<RunsOptions>>().CurrentValue;
 
-        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/api/e2e/runs/settings", new RunSettingRequest("Runs:CardsEnabled", "false"), Ct)).StatusCode);
-        Assert.False(Current().CardsEnabled);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/api/e2e/runs/settings", new RunSettingRequest("Runs:Lives", "5"), Ct)).StatusCode);
+        Assert.Equal(5, Current().Lives);
 
-        // Hors du mode Run, JSON invalide, réglages incohérents (pas de « Sûre ») : 400, rien n'est gardé.
+        // Hors du mode Run, JSON invalide, réglages incohérents (plus de points que de paliers) : 400, rien n'est gardé.
         Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/e2e/runs/settings", new RunSettingRequest("Daily:TracksPerChallenge", "3"), Ct)).StatusCode);
-        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/e2e/runs/settings", new RunSettingRequest("Runs:Cards", "[year"), Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/e2e/runs/settings", new RunSettingRequest("Runs:ListenLadder", "[year"), Ct)).StatusCode);
         var incoherent = await client.PostAsJsonAsync(
-            "/api/e2e/runs/settings", new RunSettingRequest("Runs:Difficulties", """[{"difficulty":"easy","pointsFactor":1,"objectiveFactor":1}]"""), Ct);
+            "/api/e2e/runs/settings", new RunSettingRequest("Runs:StepPoints", "[100,200]"), Ct);
         Assert.Equal(HttpStatusCode.BadRequest, incoherent.StatusCode);
-        Assert.Null(Current().Difficulties);
+        Assert.Null(Current().StepPoints);
 
         await client.PostAsync("/api/e2e/reset", null, Ct);
-        Assert.True(Current().CardsEnabled);
+        Assert.Equal(3, Current().Lives);
     }
 
     private sealed record GuestCreated(Guid PlayerId);
