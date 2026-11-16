@@ -1,17 +1,16 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, output, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, effect, input, output, viewChild } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { pop } from '../../../ui/motion/motion';
-import { RunRound, pointsToGo, runSegments } from '../../domain/run';
+import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 
 /**
- * L'en-tête de la partie : ✕ (abandonner, confirmé par la page), la barre du run (un segment par manche : passée en vert, en cours remplie
- * de son score avec le trait de l'objectif, à venir avec un cadenas), puis « Manche 2 » et ce qui manque pour passer. Pas de score : le total
- * est au-dessus de la pile.
- * À droite de la barre, le haut-parleur coupe ou remet les sons d'interface (son libellé dit ce que fait le toucher).
+ * L'en-tête de la partie : ✕ (abandonner, confirmé par la page), les vies (un cœur plein par vie qui reste, un contour pour celle qui est
+ * perdue), puis « Manche 2 », le thème et le palier d'écoute. Pas de score : le total est au-dessus de la pile. À droite, le haut-parleur coupe
+ * ou remet les sons d'interface (son libellé dit ce que fait le toucher).
  */
 @Component({
   selector: 'app-run-header',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, SecondsPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex items-center gap-2.5" style="height:44px">
@@ -21,23 +20,13 @@ import { RunRound, pointsToGo, runSegments } from '../../domain/run';
           <path d="M5 5 L19 19 M19 5 L5 19" />
         </svg>
       </button>
-      <div class="flex-1 grid gap-1" [style.grid-template-columns]="'repeat(' + segments().length + ', 1fr)'" data-testid="run-bar"
-        role="img" [attr.aria-label]="'runs.header.round' | translate: { round: round().round, rounds: rounds() }">
-        @for (segment of segments(); track $index) {
-          <div class="relative rounded-[4px]" style="height:12px;background:var(--bg-inactive)" [attr.data-state]="segment.state"
-            [style.box-shadow]="segment.state === 'current' ? '0 0 0 1.5px var(--color-accent)' : null">
-            <div class="h-full rounded-[4px] bar-fill" [style.width.%]="segment.fill * 100"
-              [style.background]="segment.state === 'done' ? 'var(--color-success)' : 'var(--fill-primary)'"></div>
-            @if (segment.mark !== null && showStatus()) {
-              <div class="absolute" style="top:-3px;width:2px;height:18px;background:var(--text-hi)" [style.left.%]="segment.mark * 100"></div>
-            }
-            @if (segment.state === 'locked') {
-              <svg class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" width="9" height="10" viewBox="0 0 10 12" aria-hidden="true">
-                <rect x="1" y="5" width="8" height="6" rx="1" fill="var(--text-faint)" />
-                <path d="M3 5 V3.5 a2 2 0 0 1 4 0 V5" stroke="var(--text-faint)" stroke-width="1.4" fill="none" />
-              </svg>
-            }
-          </div>
+      <div #heartsRow class="flex-1 flex items-center justify-center gap-2" data-testid="run-lives" role="img"
+        [attr.aria-label]="'runs.header.lives' | translate: { left: livesLeft(), total: lives().length }">
+        @for (alive of lives(); track $index) {
+          <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" [attr.data-alive]="alive">
+            <path d="M12 21 C5 15.5 2.5 12 2.5 8.5 A4.8 4.8 0 0 1 12 6.6 A4.8 4.8 0 0 1 21.5 8.5 C21.5 12 19 15.5 12 21 Z"
+              [attr.fill]="alive ? 'var(--color-accent)' : 'none'" [attr.stroke]="alive ? 'var(--color-accent)' : 'var(--text-faint)'" stroke-width="1.8" stroke-linejoin="round" />
+          </svg>
         }
       </div>
       <button type="button" (click)="toggleSounds.emit()" class="grid place-items-center touch-manipulation shrink-0 -mr-2"
@@ -56,39 +45,28 @@ import { RunRound, pointsToGo, runSegments } from '../../domain/run';
     @if (showStatus()) {
     <div class="flex justify-between items-baseline mt-2.5" style="min-height:22px">
       <h1 class="flex items-center gap-2 text-[15px] font-bold" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="run-round-title">
-        {{ 'runs.header.roundShort' | translate: { round: round().round } }}
+        {{ 'runs.header.roundShort' | translate: { round: round() } }}
         @if (theme(); as name) {
           <span class="px-2.5 py-0.5 rounded-full text-xs font-bold" style="border:1px solid var(--color-accent);color:var(--color-accent)" data-testid="run-theme-pill">{{ name }}</span>
         }
       </h1>
-      <p class="text-[13px]" style="color:var(--text-light)" data-testid="run-to-go">
-        @if (toGo() > 0) {
-          {{ 'runs.header.toGoBefore' | translate }} <b class="font-semibold" style="color:var(--color-accent)">{{ 'runs.header.points' | translate: { points: toGo() } }}</b> {{ 'runs.header.toGoAfter' | translate }}
-        } @else {
-          <span #reached class="inline-flex items-center gap-1 font-semibold" style="color:var(--color-success)" data-testid="run-reached">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M5 12.5 L10 17.5 L19 7" />
-            </svg>
-            {{ 'runs.header.reached' | translate }}
-          </span>
-        }
-      </p>
+      @if (listenSeconds() !== null) {
+        <p class="text-[13px]" style="color:var(--color-cyan, var(--text-light))" data-testid="run-listen">{{ 'runs.header.listen' | translate: { seconds: (listenSeconds()! | appSeconds) } }}</p>
+      }
     </div>
     }
-  `,
-  styles: `
-    .bar-fill { transition: width 700ms cubic-bezier(0.2, 0.8, 0.2, 1), background-color 500ms; }
-    @media (prefers-reduced-motion: reduce) { .bar-fill { transition: none; } }
   `,
 })
 export class RunHeaderComponent {
   /** Le thème de la manche, s'il y en a un : une pastille à côté du titre. */
   readonly theme = input<string | null>(null);
-  /** La manche affichée : son score, son objectif, son maximum. */
-  readonly round = input.required<RunRound>();
-  /** Le nombre de manches de la playlist. */
-  readonly rounds = input.required<number>();
-  /** « Manche N » et ce qui manque pour passer, sous la barre ; les écrans de palier et de difficulté n'en montrent que la barre, sans le repère de l'objectif (il se choisit avec la difficulté). */
+  /** Le numéro de la manche affichée. */
+  readonly round = input.required<number>();
+  /** Une valeur par vie de départ : vrai pour celle qui reste. */
+  readonly lives = input.required<readonly boolean[]>();
+  /** Le palier d'écoute de la manche, en secondes ; `null` : rien à dire. */
+  readonly listenSeconds = input<number | null>(null);
+  /** « Manche N » et le palier, sous les vies ; l'écran de bilan et celui du thème n'en montrent que les vies. */
   readonly showStatus = input(true);
   readonly abandon = output();
   /** Les sons d'interface sont coupés. */
@@ -96,26 +74,20 @@ export class RunHeaderComponent {
   /** Couper ou remettre les sons d'interface. */
   readonly toggleSounds = output();
 
-  protected readonly segments = computed(() => runSegments(this.rounds(), this.round()));
-  protected readonly toGo = computed(() => pointsToGo(this.round()));
+  private readonly livesRow = viewChild<ElementRef<HTMLElement>>('heartsRow');
+  /** Les vies du dernier affichage : le petit temps fort ne se joue que lorsqu'une vie vient de se perdre. */
+  private lastLeft: number | null = null;
 
-  private readonly reached = viewChild<ElementRef<HTMLElement>>('reached');
-  /** Ce qui manquait au dernier affichage : le signal « objectif atteint » ne se joue qu'au passage de « il manque des points » à « atteint ». */
-  private lastToGo: number | null = null;
-  /** L'objectif vient d'être franchi : le signal attend que son repère soit à l'écran. */
-  private justReached = false;
+  protected livesLeft(): number {
+    return this.lives().filter(Boolean).length;
+  }
 
   constructor() {
     effect(() => {
-      const toGo = this.toGo();
-      if (toGo === 0 && this.lastToGo !== null && this.lastToGo > 0) this.justReached = true;
-      if (toGo > 0) this.justReached = false;
-      this.lastToGo = toGo;
-      const element = this.reached()?.nativeElement;
-      if (this.justReached && element) {
-        this.justReached = false;
-        pop(element);
-      }
+      const left = this.livesLeft();
+      const element = this.livesRow()?.nativeElement;
+      if (element && this.lastLeft !== null && left < this.lastLeft) pop(element);
+      this.lastLeft = left;
     });
   }
 }

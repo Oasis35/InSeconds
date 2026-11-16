@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { ShareService } from '../../core/share/share.service';
 import { environment } from '../../../environments/environment';
-import { RUN_SHARE_EMOJI, RunDuel, RunFinish, discStars, shareRounds } from '../domain/run';
+import { RUN_SHARE_EMOJI, RunDuel, RunFinish, shareRounds } from '../domain/run';
 
 /** L'adresse d'une playlist (`/setlist/<code>`), celle que les amis ouvrent, marquée `utm_source=share` comme le partage du score. */
 export const playlistUrl = (code: string): string => `${environment.appUrl}/setlist/${code}?utm_source=share`;
@@ -58,7 +58,7 @@ export class RunShare {
 }
 
 /**
- * Le texte du partage d'une partie finie : « 2 410 pts · Disque d'argent · InSeconds Setlist », puis « 🟩🟩🟨🟩🟥 Manche 1 · Normal » pour chaque
+ * Le texte du partage d'une partie finie : « 2 410 pts · 4 manches · InSeconds Setlist », puis « 🟩🟩🟨🟩🟥 Manche 1 · 10 s » pour chaque
  * manche jouée, puis l'invitation et le lien de la playlist (`utm_source=share`), sauf pour « Ma grille » (`withLink` faux). Rien d'un morceau n'y
  * figure : ni artiste ni titre.
  */
@@ -66,13 +66,13 @@ export function runShareText(
   finish: RunFinish, lang: string, t: (key: string, params?: Record<string, unknown>) => string, duel: RunDuel | null = null, withLink = true,
 ): string {
   const numbers = new Intl.NumberFormat(lang);
-  const lines = [t('runs.share.header', { score: numbers.format(finish.totalScore), disc: t(finish.disc.key) + discStars(finish.disc) })];
+  const lines = [t('runs.share.header', { score: numbers.format(finish.totalScore), rounds: finish.roundsPassed })];
   // Un duel gagné se raconte : « J'ai battu Léa de 126 pts » (jamais une défaite : elle ne se partage pas).
   if (duel && duel.gap > 0) lines.push(t('runs.share.duelWon', { name: duel.pseudo ?? t('runs.link.guest'), points: numbers.format(duel.gap) }));
   for (const round of shareRounds(finish)) {
     const marks = round.marks.map(mark => RUN_SHARE_EMOJI[mark]).join('');
     const name = t('runs.share.round', { round: round.round });
-    lines.push(round.difficulty ? `${marks} ${name} · ${t('runs.difficulty.' + round.difficulty)}` : `${marks} ${name}`);
+    lines.push(`${marks} ${name} · ${t('runs.share.listen', { seconds: round.listenSeconds })}`);
   }
   if (withLink) lines.push(t('runs.share.beatMe'), playlistUrl(finish.challengeCode));
   return lines.join('\n');

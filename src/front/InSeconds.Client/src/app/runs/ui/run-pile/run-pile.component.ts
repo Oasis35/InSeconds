@@ -5,7 +5,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { motionReduced } from '../../../ui/motion/reduced-motion';
 import { pop, tweenNumber, enterRow, settleLine } from '../../../ui/motion/motion';
 import { PileEntry, RunGhostGap } from '../../domain/run';
-import { RunDiscComponent, discColor } from '../run-disc/run-disc.component';
+import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 import { RunWaveComponent } from '../run-wave/run-wave.component';
 import { PointsPipe } from '../../../ui/format/points.pipe';
 
@@ -28,7 +28,7 @@ const keyOf = (entry: PileEntry): string => (entry.kind === 'track' ? `t${entry.
  */
 @Component({
   selector: 'app-run-pile',
-  imports: [PointsPipe, TranslatePipe, RunDiscComponent, RunWaveComponent],
+  imports: [PointsPipe, SecondsPipe, TranslatePipe, RunWaveComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
@@ -72,14 +72,13 @@ const keyOf = (entry: PileEntry): string => (entry.kind === 'track' ? `t${entry.
     <div data-testid="run-pile">
       @for (entry of entries(); track key(entry)) {
         @if (entry.kind === 'palier') {
-          @let color = lineColor(entry.passed.disc.key);
+          @let color = 'var(--core-cyan)';
           <div [attr.data-key]="key(entry)" class="relative flex items-center gap-3 py-3 mt-3 mb-1.5" data-testid="run-palier">
             <i data-motion="rule" class="absolute left-0 right-0 top-0 h-px" [style.background]="color" aria-hidden="true"></i>
             <i data-motion="rule" class="absolute left-0 right-0 bottom-0 h-px" [style.background]="color" aria-hidden="true"></i>
-            <app-run-disc data-motion="disc" class="block shrink-0" [disc]="entry.passed.disc.key" [size]="34" [shine]="false" />
-            <span data-motion="name" class="text-xl font-black" style="font-family:var(--font-score);color:var(--text-hi)">{{ entry.passed.disc.key | translate }}</span>
+            <span data-motion="name" class="text-xl font-black" style="font-family:var(--font-score);color:var(--text-hi)">{{ 'runs.pile.round' | translate: { round: entry.passed.round } }}</span>
             <span data-motion="meta" class="ml-auto text-right text-xs leading-snug tabular-nums" style="font-family:var(--font-clock);color:var(--text-muted)">
-              {{ 'runs.pile.round' | translate: { round: entry.passed.round } }}<br />{{ entry.passed.score | appPoints }} / {{ entry.passed.objective | appPoints }}
+              {{ entry.passed.score | appPoints }}<br />{{ entry.passed.listenSeconds | appSeconds }}
             </span>
           </div>
         } @else {
@@ -148,7 +147,6 @@ export class RunPileComponent {
   readonly totalAnchor = viewChild.required<ElementRef<HTMLElement>>('total');
 
   protected readonly key = keyOf;
-  protected readonly lineColor = discColor;
 
   private readonly host = inject(ElementRef<HTMLElement>);
   private readonly injector = inject(Injector);

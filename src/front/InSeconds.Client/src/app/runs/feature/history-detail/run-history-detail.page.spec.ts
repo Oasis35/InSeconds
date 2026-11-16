@@ -9,7 +9,7 @@ import { RunSession } from '../../domain/run';
 import { RunHistoryDetailPage } from './run-history-detail.page';
 
 const FINISHED = SESSION({
-  status: 'won',
+  status: 'lost',
   playedTracks: [
     TRACK({ position: 1, round: 1, title: 'Un' }),
     TRACK({ position: 2, round: 1, title: 'Deux', titleCorrect: false }),

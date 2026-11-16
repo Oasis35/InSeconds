@@ -1,96 +1,52 @@
 import { TestBed } from '@angular/core/testing';
 import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import fr from '../../../../../public/i18n/fr.json';
-import { RunDifficulty, RunDifficultyOption } from '../../domain/run';
-import { RunCardKey } from '../../domain/run-cards';
+import { RunRoundSummary } from '../../domain/run';
 import { RunPalierComponent } from './run-palier.component';
 
 describe('RunPalierComponent', () => {
-  function render(overrides: { earned?: RunCardKey | null; options?: RunDifficultyOption[] } = {}) {
+  const summary = (over: Partial<RunRoundSummary> = {}): RunRoundSummary => ({
+    round: 2, score: 1250, outcome: 'shorter', listenSeconds: 5, nextListenSeconds: 3, tracks: [], totalScore: 1700, livesLeft: 2, ...over,
+  });
+
+  function render(end: RunRoundSummary) {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     TestBed.inject(TranslateService).setTranslation('fr', fr);
     TestBed.inject(TranslateService).use('fr');
     const fixture = TestBed.createComponent(RunPalierComponent);
-    const set = fixture.componentRef.setInput.bind(fixture.componentRef);
-    set('passed', { round: 1, score: 250, objective: 200, disc: { key: 'runs.discs.wax', stars: 0 } });
-    set('rounds', 4);
-    set('wonDiscs', ['runs.discs.wax']);
-    set('nextRound', 2);
-    set('nextObjective', 366);
-    set('nextDisc', 'runs.discs.bronze');
-    set('earnedCard', overrides.earned === undefined ? 'hint' : overrides.earned);
-    set('values', { extendBonusSeconds: 5, rewardMarginPercent: 25 });
-    if (overrides.options) set('options', overrides.options);
+    fixture.componentRef.setInput('end', end);
+    fixture.componentRef.setInput('lives', 3);
     fixture.detectChanges();
-    const element = fixture.nativeElement as HTMLElement;
-    const text = (testId: string) => element.querySelector(`[data-testid="${testId}"]`)?.textContent?.replace(/\s+/g, ' ').trim();
-    return { fixture, element, text };
+    return { fixture, element: fixture.nativeElement as HTMLElement };
   }
 
-  it('le disque gagné, le score de la manche (qui monte jusqu\'à lui) et l\'objectif suivant', async () => {
-    const { element, text } = render();
+  it('dit la manche, annonce le palier plus court et celui de la manche suivante', () => {
+    const { element } = render(summary());
 
-    expect(text('run-palier-disc')).toBe('Disque de cire');
-    // L'animation du score dure 0,65 s (délai compris) : plus que le délai par défaut de `waitFor` (1 s) sur un exécuteur chargé.
-    await vi.waitFor(() => expect(text('run-palier-score')).toBe('250'), { timeout: 5000 });
-    expect(text('run-palier-next')).toContain('366');
-    expect(text('run-palier-next')).toContain('pts pour');
-    // L'étagère : le disque gagné, puis trois emplacements en pointillé.
-    expect(element.querySelectorAll('ul[aria-label] > li app-run-disc')).toHaveLength(1);
-    expect(element.querySelectorAll('ul[aria-label] > li')).toHaveLength(4);
+    expect(element.querySelector('[data-testid="run-palier-title"]')?.textContent?.trim()).toBe('Manche 2 terminée');
+    expect(element.querySelector('[data-testid="run-palier-outcome"]')?.textContent?.trim()).toBe(fr.runs.roundEnd.shorter);
+    expect(element.querySelector('[data-testid="run-palier-next"]')?.textContent).toContain('3');
   });
 
-  it('la carte gagnée : son signe, son nom et la mention « Carte gagnée »', () => {
-    const { text } = render({ earned: 'extend' });
+  it('une erreur rallonge le palier : le bilan le dit', () => {
+    const { element } = render(summary({ outcome: 'longer', nextListenSeconds: 10 }));
 
-    expect(text('run-palier-earned')).toBe('+5 sCarte gagnéeProlongation');
+    expect(element.querySelector('[data-testid="run-palier-outcome"]')?.textContent?.trim()).toBe(fr.runs.roundEnd.longer);
   });
 
-  it('une manche qui n\'a rien rapporté : pas de carte', () => {
-    const { element } = render({ earned: null });
+  it('montre les vies qui restent', () => {
+    const { element } = render(summary({ livesLeft: 1 }));
 
-    expect(element.querySelector('[data-testid="run-palier-earned"]')).toBeNull();
+    expect(element.querySelectorAll('[data-testid="run-palier-lives"] svg path[fill="none"]').length).toBe(2);
   });
 
-  it('« Suite » : la page reçoit le geste (aucune carte à toucher, aucune offre à passer)', () => {
-    const { fixture, element } = render();
-    let next = 0;
-    fixture.componentInstance.next.subscribe(() => next++);
+  it('« Manche suivante » émet le geste', () => {
+    const { fixture, element } = render(summary());
+    let clicked = 0;
+    fixture.componentInstance.next.subscribe(() => clicked++);
 
     element.querySelector<HTMLButtonElement>('[data-testid="run-palier-next-button"]')!.click();
 
-    expect(next).toBe(1);
-    expect(element.querySelector('[data-testid="run-palier-pass"]')).toBeNull();
-    expect(element.querySelector('[data-card]')).toBeNull();
-  });
-
-  describe('avec les difficultés de la manche suivante (un seul écran)', () => {
-    const OPTIONS: RunDifficultyOption[] = [
-      { difficulty: 'easy', objective: 219, maxScore: 445, listenSeconds: 10 },
-      { difficulty: 'safe', objective: 366, maxScore: 665, listenSeconds: 10 },
-      { difficulty: 'risky', objective: 552, maxScore: 885, listenSeconds: 10 },
-    ];
-
-    it('les trois colonnes remplacent l\'objectif seul, sans bouton : un toucher lance la manche', () => {
-      const { element } = render({ options: OPTIONS });
-
-      expect(element.querySelectorAll('[data-testid="run-difficulty-objective"]')).toHaveLength(3);
-      expect(element.querySelector('[data-testid="run-palier-next"]')).toBeNull();
-      expect(element.querySelector('[data-testid="run-palier-next-button"]')).toBeNull();
-    });
-
-    it('toucher une colonne envoie sa difficulté tout de suite ; « Suite » n\'est pas émis', () => {
-      const { fixture, element } = render({ options: OPTIONS });
-      const chosen: RunDifficulty[] = [];
-      let next = 0;
-      fixture.componentInstance.choose.subscribe(d => chosen.push(d));
-      fixture.componentInstance.next.subscribe(() => next++);
-
-      element.querySelector<HTMLButtonElement>('[data-testid="run-difficulty-risky"]')!.click();
-      element.querySelector<HTMLButtonElement>('[data-testid="run-difficulty-safe"]')!.click();
-
-      expect(chosen).toEqual(['risky', 'safe']);
-      expect(next).toBe(0);
-    });
+    expect(clicked).toBe(1);
   });
 });

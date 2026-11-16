@@ -15,20 +15,17 @@ import { HistorySummaryComponent } from '../../../ui/history/history-summary.com
 import { HistoryTabsComponent } from '../../../ui/history/history-tabs.component';
 import { MonthNavComponent } from '../../../ui/history/month-nav.component';
 import { RunHistoryStore } from '../../data-access/run-history.store';
-import { DIFFICULTY_FILTERS, DifficultyFilter } from '../../domain/run-history';
-import { RunDiscComponent } from '../../ui/run-disc/run-disc.component';
 import { RunStatusScreenComponent } from '../../ui/run-status-screen/run-status-screen.component';
 
 /**
- * L'historique du joueur sur le mode Setlist (`/history/setlist`, `?mois=aaaa-mm`) : le résumé de toutes ses parties, un filtre par difficulté,
- * puis un mois à la fois. Une ligne ouvre les morceaux de la partie. L'onglet « Défis du jour » est la page du jeu du jour (`/history/daily`).
+ * L'historique du joueur sur le mode Setlist (`/history/setlist`, `?mois=aaaa-mm`) : le résumé de toutes ses parties, puis un mois à la fois. Une ligne ouvre les morceaux de la partie. L'onglet « Défis du jour » est la page du jeu du jour (`/history/daily`).
  * Ce sont ses propres parties : pas d'accès sur invitation à vérifier.
  */
 @Component({
   selector: 'app-run-history-page',
   imports: [HomeLegalLineComponent, 
     TranslatePipe, RouterLink, DecorBackgroundComponent, BrandComponent, AccountLinkComponent, InstagramLinkComponent,
-    HistoryTabsComponent, HistorySummaryComponent, MonthNavComponent, RunDiscComponent, RunStatusScreenComponent,
+    HistoryTabsComponent, HistorySummaryComponent, MonthNavComponent, RunStatusScreenComponent,
   ],
   providers: [RunHistoryStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -38,7 +35,6 @@ export class RunHistoryPage {
   protected readonly store = inject(RunHistoryStore);
   protected readonly language = inject(LanguageService);
   protected readonly errorReporting = inject(ErrorReportingService);
-  protected readonly filters = DIFFICULTY_FILTERS;
 
   /** Le mois de l'adresse ; mal écrit ou absent : le mois en cours (le serveur le choisit). */
   private readonly month = toSignal(
@@ -50,10 +46,9 @@ export class RunHistoryPage {
 
   protected readonly rows = computed(() => {
     const lang = this.language.current();
-    return this.store.visibleRuns().map(run => ({
+    return (this.store.history()?.runs ?? []).map(run => ({
       sessionId: run.sessionId,
-      disc: run.disc.key,
-      difficultyKey: `runs.difficulty.${run.difficulty}`,
+      roundsPassed: run.roundsPassed,
       score: formatScore(run.score, lang),
       day: dayLabel(run.date, this.today, lang),
     }));
@@ -65,10 +60,6 @@ export class RunHistoryPage {
       const month = this.month();
       untracked(() => void this.store.load(month));
     });
-  }
-
-  protected filterKey(filter: DifficultyFilter): string {
-    return filter === 'all' ? 'ui.history.setlist.all' : `runs.difficulty.${filter}`;
   }
 
   protected retry(): void {

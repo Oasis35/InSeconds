@@ -15,16 +15,6 @@
       <app-history-summary countKey="ui.history.setlist.count" bestKey="ui.history.setlist.best" [count]="history.playedCount"
                            [average]="history.averageScore" [best]="history.bestScore" [locale]="language.current()" />
 
-      <fieldset class="flex flex-wrap gap-2 border-0 p-0 m-0 min-w-0" [attr.aria-label]="'ui.history.setlist.filterLabel' | translate">
-        @for (filter of filters; track filter) {
-          <button type="button" (click)="store.chooseFilter(filter)" [attr.aria-pressed]="store.filter() === filter" [attr.data-testid]="'history-filter-' + filter"
-                  class="px-3 min-h-11 text-sm cursor-pointer touch-manipulation rounded-(--radius-button)"
-                  [style.border]="store.filter() === filter ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
-                  [style.background]="store.filter() === filter ? 'rgb(var(--rgb-accent-3) / 0.1)' : null"
-                  [style.color]="store.filter() === filter ? 'var(--text-hi)' : 'var(--text-muted)'">{{ filterKey(filter) | translate }}</button>
-        }
-      </fieldset>
-
       @if (history.month) {
         <app-month-nav [month]="history.month" [previous]="history.previousMonth" [next]="history.nextMonth" [lang]="language.current()" />
       }
@@ -47,9 +37,8 @@
           @for (row of rows(); track row.sessionId) {
             <li [style.border-top]="$first ? null : '1px solid var(--border-medium)'">
               <a [routerLink]="['/history/setlist', row.sessionId]" class="flex items-center gap-3 py-3 min-h-14 touch-manipulation" data-testid="history-run">
-                <app-run-disc [disc]="row.disc" [size]="36" [shine]="false" />
                 <span class="flex-1 min-w-0 flex flex-col">
-                  <span class="text-sm font-semibold truncate" style="color:var(--text-hi)">{{ row.difficultyKey | translate }}</span>
+                  <span class="text-sm font-semibold truncate" style="color:var(--text-hi)">{{ 'ui.history.setlist.rounds' | translate: { count: row.roundsPassed } }}</span>
                   <span class="text-xs truncate" style="color:var(--text-muted)">
                     @if (row.day.relative) { {{ 'ui.history.' + row.day.relative | translate }} } @else { {{ row.day.text }} }
                   </span>
@@ -62,7 +51,7 @@
         </ul>
       } @else {
         <p class="text-sm text-center py-6" style="color:var(--text-muted)" data-testid="history-empty">
-          {{ (history.runs.length ? 'ui.history.setlist.emptyFilter' : 'ui.history.setlist.empty') | translate }}
+          {{ 'ui.history.setlist.empty' | translate }}
         </p>
       }
     }
