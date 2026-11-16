@@ -18,7 +18,7 @@ public class RunComparisonTests(PostgresFixture postgres) : IAsyncLifetime
     public ValueTask DisposeAsync() => _run.DisposeAsync();
 
     private static readonly bool[] AllFound = [true, true, true, true, true];
-    private static readonly bool[] NoneFound = [false, false, false, false, false];
+    private static readonly bool[] NoneFound = [false, false, false];
 
     [Fact]
     public async Task Verrouillee_TantQueSaPropreParties_NEstPasFinie_PasDIdentite_OuCodeInconnu()
@@ -46,10 +46,10 @@ public class RunComparisonTests(PostgresFixture postgres) : IAsyncLifetime
         var start = await alice.LaunchAsync();
         var code = start.Session.ChallengeCode;
 
-        // Alice gagne les 4 manches.
-        await alice.PlayAsync(start.Session.SessionId, code, 1, [.. AllFound, .. AllFound, .. AllFound, .. AllFound]);
+        // Alice passe deux manches, puis perd ses trois vies dans la troisième.
+        await alice.PlayAsync(start.Session.SessionId, code, 1, [.. AllFound, .. AllFound, .. NoneFound]);
 
-        // Un invité passe la manche 1, puis rate la 2 : partie perdue, manches 3 et 4 jamais jouées.
+        // Un invité passe la manche 1, puis perd ses trois vies dans la 2 : la manche 3 n'est jamais jouée.
         var guest = await _run.NewPlayerAsync();
         var joined = await guest.JoinAsync(code);
         await guest.PlayAsync(joined.Session.SessionId, code, 1, [.. AllFound, .. NoneFound]);
@@ -62,18 +62,19 @@ public class RunComparisonTests(PostgresFixture postgres) : IAsyncLifetime
         await dave.JoinAsync(code);
 
         var forAlice = await alice.ComparisonAsync(code.ToLowerInvariant());
-        Assert.Equal((code, "Alice", 2, 4), (forAlice.Code, forAlice.AuthorPseudo, forAlice.PlayerCount, forAlice.RoundCount));
+        Assert.Equal((code, "Alice", 2, 3), (forAlice.Code, forAlice.AuthorPseudo, forAlice.PlayerCount, forAlice.RoundCount));
 
         var (first, second) = (forAlice.Rows[0], forAlice.Rows[1]);
-        Assert.Equal(("Alice", "runs.discs.gold", true), (first.Pseudo, first.Disc.Key, first.IsMe));
-        Assert.All(first.Rounds, score => Assert.NotNull(score));
+        Assert.Equal(("Alice", true), (first.Pseudo, first.IsMe));
+        Assert.Equal(2, first.RoundsPassed);
+        Assert.Equal(new int?[] { 500, 1000, 0 }, first.Rounds.ToArray());
         Assert.Equal(first.Rounds.Sum(), first.TotalScore);
 
         Assert.Null(second.Pseudo);
-        Assert.Equal(("runs.discs.wax", false), (second.Disc.Key, second.IsMe));
+        Assert.Equal((1, false), (second.RoundsPassed, second.IsMe));
         Assert.NotNull(second.Rounds[0]);
         Assert.Equal(0, second.Rounds[1]);
-        Assert.Equal(new int?[] { null, null }, second.Rounds.Skip(2).ToArray());
+        Assert.Equal(new int?[] { null }, second.Rounds.Skip(2).ToArray());
         Assert.True(first.TotalScore > second.TotalScore);
         Assert.Equal(second.Rounds[0], second.TotalScore);
 
@@ -97,7 +98,7 @@ public class RunComparisonTests(PostgresFixture postgres) : IAsyncLifetime
 
         var rows = (await bob.ComparisonAsync(code)).Rows;
         Assert.Equal(new[] { "Alice", "Bob" }, rows.Select(r => r.Pseudo).ToArray());
-        Assert.All(rows, row => Assert.Equal((0, "runs.discs.scratched"), (row.TotalScore, row.Disc.Key)));
+        Assert.All(rows, row => Assert.Equal((0, 0), (row.TotalScore, row.RoundsPassed)));
     }
 
     [Fact]

@@ -913,37 +913,6 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     b.ToTable("challenges", "runs");
                 });
 
-            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunChallengeReserveTrack", b =>
-                {
-                    b.Property<int>("ChallengeId")
-                        .HasColumnType("integer")
-                        .HasColumnName("challenge_id");
-
-                    b.Property<short>("Round")
-                        .HasColumnType("smallint")
-                        .HasColumnName("round");
-
-                    b.Property<short>("Rank")
-                        .HasColumnType("smallint")
-                        .HasColumnName("rank");
-
-                    b.Property<int>("TrackId")
-                        .HasColumnType("integer")
-                        .HasColumnName("track_id");
-
-                    b.HasKey("ChallengeId", "Round", "Rank")
-                        .HasName("pk_challenge_reserve_tracks");
-
-                    b.HasIndex("TrackId")
-                        .HasDatabaseName("ix_challenge_reserve_tracks_track_id");
-
-                    b.HasIndex("ChallengeId", "TrackId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_challenge_reserve_tracks_challenge_id_track_id");
-
-                    b.ToTable("challenge_reserve_tracks", "runs");
-                });
-
             modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunChallengeTrack", b =>
                 {
                     b.Property<int>("ChallengeId")
@@ -953,11 +922,6 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     b.Property<short>("Position")
                         .HasColumnType("smallint")
                         .HasColumnName("position");
-
-                    b.Property<decimal>("Multiplier")
-                        .HasPrecision(3, 2)
-                        .HasColumnType("numeric(3,2)")
-                        .HasColumnName("multiplier");
 
                     b.Property<short>("Round")
                         .HasColumnType("smallint")
@@ -1141,96 +1105,7 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
 
                     b.ToTable("sessions", "runs", t =>
                         {
-                            t.HasCheckConstraint("ck_sessions_status", "status IN (0, 1, 2, 3)");
-                        });
-                });
-
-            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunSessionCard", b =>
-                {
-                    b.Property<int>("SessionId")
-                        .HasColumnType("integer")
-                        .HasColumnName("session_id");
-
-                    b.Property<short>("Slot")
-                        .HasColumnType("smallint")
-                        .HasColumnName("slot");
-
-                    b.Property<DateTimeOffset>("AcquiredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("acquired_at");
-
-                    b.Property<short>("AcquiredRound")
-                        .HasColumnType("smallint")
-                        .HasColumnName("acquired_round");
-
-                    b.Property<short>("Card")
-                        .HasColumnType("smallint")
-                        .HasColumnName("card");
-
-                    b.Property<short?>("DroppedAfterRound")
-                        .HasColumnType("smallint")
-                        .HasColumnName("dropped_after_round");
-
-                    b.Property<DateTimeOffset?>("DroppedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("dropped_at");
-
-                    b.Property<short?>("PlayOrder")
-                        .HasColumnType("smallint")
-                        .HasColumnName("play_order");
-
-                    b.Property<DateTimeOffset?>("PlayedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("played_at");
-
-                    b.Property<short?>("PlayedPosition")
-                        .HasColumnType("smallint")
-                        .HasColumnName("played_position");
-
-                    b.Property<short?>("PlayedRound")
-                        .HasColumnType("smallint")
-                        .HasColumnName("played_round");
-
-                    b.Property<int?>("ReplacementTrackId")
-                        .HasColumnType("integer")
-                        .HasColumnName("replacement_track_id");
-
-                    b.HasKey("SessionId", "Slot")
-                        .HasName("pk_session_cards");
-
-                    b.HasIndex("ReplacementTrackId")
-                        .HasDatabaseName("ix_session_cards_replacement_track_id");
-
-                    b.ToTable("session_cards", "runs", t =>
-                        {
-                            t.HasCheckConstraint("ck_session_cards_card", "card BETWEEN 1 AND 10");
-                        });
-                });
-
-            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunSessionRound", b =>
-                {
-                    b.Property<int>("SessionId")
-                        .HasColumnType("integer")
-                        .HasColumnName("session_id");
-
-                    b.Property<short>("Round")
-                        .HasColumnType("smallint")
-                        .HasColumnName("round");
-
-                    b.Property<DateTimeOffset>("ChosenAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("chosen_at");
-
-                    b.Property<short>("Difficulty")
-                        .HasColumnType("smallint")
-                        .HasColumnName("difficulty");
-
-                    b.HasKey("SessionId", "Round")
-                        .HasName("pk_session_rounds");
-
-                    b.ToTable("session_rounds", "runs", t =>
-                        {
-                            t.HasCheckConstraint("ck_session_rounds_difficulty", "difficulty IN (1, 2, 3)");
+                            t.HasCheckConstraint("ck_sessions_status", "status IN (0, 2, 3)");
                         });
                 });
 
@@ -1600,23 +1475,6 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_challenges_players_created_by");
                 });
 
-            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunChallengeReserveTrack", b =>
-                {
-                    b.HasOne("InSeconds.Api.Modules.Runs.Domain.RunChallenge", null)
-                        .WithMany("Reserve")
-                        .HasForeignKey("ChallengeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_challenge_reserve_tracks_challenges_challenge_id");
-
-                    b.HasOne("InSeconds.Api.Modules.Catalogue.Domain.Track", null)
-                        .WithMany()
-                        .HasForeignKey("TrackId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_challenge_reserve_tracks_tracks_track_id");
-                });
-
             modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunChallengeTrack", b =>
                 {
                     b.HasOne("InSeconds.Api.Modules.Runs.Domain.RunChallenge", null)
@@ -1693,32 +1551,6 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_sessions_players_player_id");
-                });
-
-            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunSessionCard", b =>
-                {
-                    b.HasOne("InSeconds.Api.Modules.Catalogue.Domain.Track", null)
-                        .WithMany()
-                        .HasForeignKey("ReplacementTrackId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_session_cards_tracks_replacement_track_id");
-
-                    b.HasOne("InSeconds.Api.Modules.Runs.Domain.RunSession", null)
-                        .WithMany("Cards")
-                        .HasForeignKey("SessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_session_cards_sessions_session_id");
-                });
-
-            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunSessionRound", b =>
-                {
-                    b.HasOne("InSeconds.Api.Modules.Runs.Domain.RunSession", null)
-                        .WithMany("Rounds")
-                        .HasForeignKey("SessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_session_rounds_sessions_session_id");
                 });
 
             modelBuilder.Entity("InSeconds.Api.Modules.Social.Domain.Group", b =>
@@ -1804,18 +1636,12 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunChallenge", b =>
                 {
-                    b.Navigation("Reserve");
-
                     b.Navigation("Tracks");
                 });
 
             modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunSession", b =>
                 {
                     b.Navigation("Answers");
-
-                    b.Navigation("Cards");
-
-                    b.Navigation("Rounds");
                 });
 
             modelBuilder.Entity("InSeconds.Api.Modules.Social.Domain.Group", b =>

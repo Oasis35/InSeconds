@@ -8,10 +8,9 @@ public enum RunSessionStatus : short
     /// <summary>En cours.</summary>
     Pending = 0,
 
-    /// <summary>Les manches sont toutes passées.</summary>
-    Won = 1,
+    // 1 : l'ancienne partie « gagnée » (la Série ne se gagne pas : elle s'arrête quand les vies sont épuisées). La valeur reste libre.
 
-    /// <summary>Une manche n'a pas atteint son objectif.</summary>
+    /// <summary>Terminée : le joueur n'a plus de vie.</summary>
     Lost = 2,
 
     /// <summary>Abandonnée (bouton).</summary>
@@ -30,7 +29,7 @@ public enum RunTrackTurn
     /// <summary>Le morceau en cours n'a pas encore reçu sa réponse : on ne passe pas à un autre.</summary>
     NotYet,
 
-    /// <summary>Ce morceau n'existe pas dans le défi.</summary>
+    /// <summary>Ce morceau n'existe pas dans le défi (pas encore tiré, ou hors de la partie).</summary>
     Unknown,
 }
 
@@ -40,37 +39,34 @@ public enum RunStepOutcome
     /// <summary>La manche continue.</summary>
     Continue,
 
-    /// <summary>Le morceau terminait sa manche, l'objectif est atteint : la manche suivante est débloquée.</summary>
-    RoundPassed,
+    /// <summary>Le morceau terminait sa manche : la suivante commence, à un autre palier ou au même.</summary>
+    RoundDone,
 
-    /// <summary>La dernière manche est passée : la partie est gagnée.</summary>
-    Won,
-
-    /// <summary>Le morceau terminait sa manche, l'objectif n'est pas atteint : la partie est perdue.</summary>
-    Lost,
+    /// <summary>Le joueur n'a plus de vie : la partie est finie.</summary>
+    Over,
 }
 
 /// <param name="Round">La manche du morceau qui vient de recevoir sa réponse.</param>
-public sealed record RunStep(int Round, RunStepOutcome Outcome)
+/// <param name="Outcome">Ce que la réponse a fait de la partie.</param>
+/// <param name="FromStep">Le palier de cette manche.</param>
+/// <param name="ToStep">Le palier de la manche suivante ; égal à <paramref name="FromStep"/> quand la manche ne l'a pas fait bouger ou que la partie est finie.</param>
+public sealed record RunStep(int Round, RunStepOutcome Outcome, int FromStep, int ToStep)
 {
-    /// <summary>Ce morceau terminait sa manche (passée ou non).</summary>
+    /// <summary>Ce morceau terminait sa manche (ou la partie).</summary>
     public bool EndsRound => Outcome != RunStepOutcome.Continue;
 }
 
 /// <summary>
 /// La partie d'un joueur sur un défi (une seule par joueur et par défi : index unique), pour l'auteur comme pour un ami.
 /// <para>
-/// **Le morceau en cours est toujours le premier sans réponse** (le verrou, piège 35) : les morceaux se jouent dans l'ordre. À la fin d'une manche, son
-/// score (points arrondis) est comparé à l'objectif **figé dans les règles du défi** (<c>&gt;=</c>) : manche suivante, défaite ou victoire. Pleine
-/// avant la fin, la jauge n'arrête rien : les morceaux restants se jouent. La partie se termine sur le nombre **réel** de morceaux du défi (piège 38),
-/// jamais sur un réglage.
+/// **Le morceau en cours est toujours le premier sans réponse** (le verrou, piège 35) : les morceaux se jouent dans l'ordre. Une erreur, un morceau
+/// passé ou une réponse tardive coûte une vie ; une moitié juste rapporte la moitié des points sans en coûter. À la fin d'une manche, son palier
+/// décide de celui de la suivante (<see cref="RunSteps"/>). La partie s'arrête à la dernière vie.
 /// </para>
 /// </summary>
 public sealed class RunSession
 {
     private readonly List<RunAnswer> _answers = [];
-    private readonly List<RunSessionRound> _rounds = [];
-    private readonly List<RunSessionCard> _cards = [];
 
     private RunSession()
     {
@@ -98,14 +94,15 @@ public sealed class RunSession
     public DateTimeOffset? CurrentClockAt { get; private set; }
 
     /// <summary>
-    /// Le plus long délai accepté entre l'envoi de l'extrait et le premier son (lire la réponse d'avant, la ligne de palier, toucher « Morceau
-    /// suivant ») : un navigateur qui tarde à annoncer son premier son ne gagne pas plus de temps.
+    /// Le plus long délai accepté entre l'envoi de l'extrait et le premier son (lire la réponse d'avant, « Morceau suivant ») : un navigateur qui tarde
+    /// à annoncer son premier son ne gagne pas plus de temps.
     /// </summary>
     public static readonly TimeSpan MaxClockWait = TimeSpan.FromSeconds(30);
 
     /// <summary>La marge accordée au réseau après la fin du chrono : la réponse envoyée à zéro arrive un peu après.</summary>
     public static readonly TimeSpan ClockGrace = TimeSpan.FromSeconds(5);
 
+    /// <summary>Les manches terminées (toutes leurs réponses données) : ce que la Série a fait « tenir ».</summary>
     public short RoundsPassed { get; private set; }
 
     public int TotalScore { get; private set; }
@@ -116,24 +113,15 @@ public sealed class RunSession
 
     public IReadOnlyList<RunAnswer> Answers => _answers;
 
-    /// <summary>La difficulté de chaque manche jouée ou en cours qui en propose plusieurs (choisie, ou « Sûre » notée à la première réponse sans choix).</summary>
-    public IReadOnlyList<RunSessionRound> Rounds => _rounds;
-
-    /// <summary>La position du morceau en cours : le premier sans réponse (N + 1 une fois tous répondus).</summary>
+    /// <summary>La position du morceau en cours : le premier sans réponse.</summary>
     public int NextPosition => _answers.Count + 1;
 
     public bool IsPending => Status == RunSessionStatus.Pending;
 
-    /// <summary>Les coups de pouce de la partie : en main, lâchés ou joués (une ligne par carte reçue, dans l'ordre).</summary>
-    public IReadOnlyList<RunSessionCard> Cards => _cards;
-
-    /// <summary>La main : les cartes reçues, ni lâchées ni jouées.</summary>
-    public IReadOnlyList<RunSessionCard> Hand => _cards.Where(c => c.InHand).OrderBy(c => c.Slot).ToList();
-
     public static RunSession Start(int challengeId, Guid playerId, DateTimeOffset now) =>
         new() { ChallengeId = challengeId, PlayerId = playerId, Status = RunSessionStatus.Pending, CurrentPosition = 1, StartedAt = now };
 
-    /// <summary>Ce morceau est-il celui qu'on peut jouer maintenant ? <paramref name="trackCount"/> est le nombre **réel** de morceaux du défi.</summary>
+    /// <summary>Ce morceau est-il celui qu'on peut jouer maintenant ? <paramref name="trackCount"/> est le nombre de morceaux **déjà tirés** du défi.</summary>
     public RunTrackTurn TurnOf(int position, int trackCount)
     {
         if (position < 1 || position > trackCount)
@@ -144,152 +132,49 @@ public sealed class RunSession
     }
 
     /// <summary>La manche du morceau en cours ; vide une fois la partie finie.</summary>
-    public int? CurrentRound(RunChallenge challenge)
+    public int? CurrentRound(RunRules rules)
     {
-        ArgumentNullException.ThrowIfNull(challenge);
-        return IsPending ? challenge.Tracks.FirstOrDefault(t => t.Position == NextPosition)?.Round : null;
+        ArgumentNullException.ThrowIfNull(rules);
+        return IsPending ? rules.RoundOf(NextPosition) : null;
+    }
+
+    /// <summary>Le compte des réponses d'une manche (morceaux neutralisés exclus).</summary>
+    public RoundTally TallyOf(RunRules rules, int round)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        var inRound = _answers.Where(a => !a.Neutralized && rules.RoundOf(a.Position) == round).ToList();
+        return new RoundTally(inRound.Count(a => a.IsFull), inRound.Count(a => a.IsHalf), inRound.Count(a => a.IsFailed));
     }
 
     /// <summary>
-    /// La difficulté de la manche <paramref name="round"/> : celle que le joueur a choisie, sinon « Sûre » (la manche d'une playlist du proto 1, la
-    /// première manche, ou une manche jouée sans choix).
+    /// Le palier de la manche <paramref name="round"/> : la première manche au palier le plus long, puis, de manche en manche, ce que le déroulé de la
+    /// précédente décide (<see cref="RunSteps.Next"/>). Une manche pas encore jouée mais dont les précédentes sont finies a son palier ; les suivantes
+    /// se calculent comme si les manches intermédiaires étaient neutres.
     /// </summary>
-    public RunDifficultyOption OptionOf(RunChallenge challenge, int round)
+    public int StepOf(RunRules rules, int round)
     {
-        ArgumentNullException.ThrowIfNull(challenge);
-        var chosen = _rounds.FirstOrDefault(r => r.Round == round);
-        return (chosen is null ? null : challenge.Rules.OptionOf(round, chosen.Difficulty)) ?? challenge.Rules.DefaultOptionOf(round);
+        ArgumentNullException.ThrowIfNull(rules);
+        var step = 0;
+        for (var r = 1; r < round; r++)
+            step = RunSteps.Next(step, TallyOf(rules, r), rules.LastStep);
+        return step;
     }
 
-    /// <summary>
-    /// Le joueur peut encore choisir la difficulté de cette manche : c'est la manche en cours, elle propose un choix qu'il n'a pas fait, et rien n'y
-    /// a commencé (aucune réponse, ni écoute ni chrono du morceau en cours). Choisir après avoir entendu le premier morceau serait tricher : son
-    /// extrait n'est envoyé qu'après le choix (<c>RunPlayer.AdvanceAsync</c>).
-    /// </summary>
-    public bool CanChooseDifficulty(RunChallenge challenge, int round) =>
-        CurrentRound(challenge) == round
-        && challenge.Rules.PendingThemeRound != round
-        && challenge.Rules.HasChoice(round)
-        && _rounds.TrueForAll(r => r.Round != round)
-        && !RoundStarted(challenge, round);
-
-    /// <summary>
-    /// Le créateur de la playlist peut encore choisir le thème de la manche en cours : c'est la manche en attente de thème et rien n'y a commencé.
-    /// Un autre joueur (un ami) ne choisit pas : son arrivée à cette manche la tire pour lui (<c>RunPlayer</c>), le thème devient celui de tous.
-    /// </summary>
-    public bool CanChooseTheme(RunChallenge challenge)
+    /// <summary>Les vies qui restent.</summary>
+    public int LivesLeft(RunRules rules)
     {
-        ArgumentNullException.ThrowIfNull(challenge);
-        return IsPending && challenge.CreatedBy == PlayerId && CurrentRound(challenge) is { } round && challenge.Rules.PendingThemeRound == round
-            && !RoundStarted(challenge, round);
+        ArgumentNullException.ThrowIfNull(rules);
+        return Math.Max(0, rules.Lives - _answers.Count(a => a.IsFailed));
     }
 
-    /// <summary>
-    /// Quelque chose a commencé dans la manche en cours : une réponse (hors morceau neutralisé), une carte jouée, l'écoute ou le chrono du morceau
-    /// en cours. Avant, le joueur est encore au palier : il choisit sa difficulté et prend une carte de l'offre.
-    /// </summary>
-    private bool RoundStarted(RunChallenge challenge, int round) =>
-        _answers.Exists(a => !a.Neutralized && RoundAt(challenge, a.Position) == round)
-        || _cards.Exists(c => c.PlayedRound == round)
-        || CurrentClockAt is not null
-        || RoundOfCurrentTrack().ListenedSeconds > 0;
-
-    private static int RoundAt(RunChallenge challenge, int position) => challenge.Tracks.First(t => t.Position == position).Round;
-
-    /// <summary>
-    /// Le joueur peut changer le morceau en cours (« Échange »), ou rien : la playlist a une réserve, la manche n'en a pas encore fait usage
-    /// (un Échange par manche, qui ne se garde pas) et il reste un morceau de réserve dans cette manche. Jamais tant que la difficulté de la manche
-    /// reste à choisir : son premier morceau n'est pas encore parti.
-    /// </summary>
-    public bool CanSwap(RunChallenge challenge)
+    /// <summary>La durée d'écoute fixe du morceau en cours : celle du palier de sa manche.</summary>
+    public decimal ListenSecondsOf(RunRules rules)
     {
-        ArgumentNullException.ThrowIfNull(challenge);
-        if (!IsPending || !challenge.Rules.HasSwap || CurrentRound(challenge) is not { } round || CanChooseDifficulty(challenge, round)
-            || challenge.Rules.PendingThemeRound == round)
-            return false;
-        // Jamais une fois le morceau écouté ou son chrono parti : le joueur le connaîtrait déjà.
-        if (RoundOfCurrentTrack().ListenedSeconds > 0 || CurrentClockAt is not null)
-            return false;
-        return SwapsIn(round) < RunRules.SwapsPerRound && NextReserveTrack(challenge, round) is not null;
+        ArgumentNullException.ThrowIfNull(rules);
+        return rules.ListenAt(StepOf(rules, rules.RoundOf(NextPosition)));
     }
 
-    /// <summary>Les Échanges déjà faits dans cette manche.</summary>
-    public int SwapsIn(int round) => _cards.Count(c => c.Card == RunCard.Swap && c.PlayedRound == round);
-
-    /// <summary>
-    /// Change le morceau en cours pour le suivant de la réserve de sa manche : tout repart à zéro (écoute, envoi de l'extrait, chrono). Les cartes
-    /// actives agissent sur le nouveau morceau (elles sont celles de la manche).
-    /// </summary>
-    public RunSessionCard Swap(RunChallenge challenge, DateTimeOffset now)
-    {
-        RequirePending();
-        if (!CanSwap(challenge))
-            throw new InvalidOperationException("Le morceau ne se change pas.");
-        var round = CurrentRound(challenge)!.Value;
-        var replacement = NextReserveTrack(challenge, round);
-        CurrentPosition = (short)NextPosition;
-        CurrentListenedSeconds = null;
-        CurrentServedAt = null;
-        CurrentClockAt = null;
-        var swap = RunSessionCard.Create((short)(_cards.Count + 1), RunCard.Swap, (short)round, now);
-        swap.Play((short)(_cards.Count(c => c.PlayOrder is not null) + 1), (short)NextPosition, (short)round, replacement, now);
-        _cards.Add(swap);
-        return swap;
-    }
-
-    /// <summary>
-    /// Les cartes qui agissent sur le morceau de cette position : celle que la manche précédente a offerte (une seule en main, elle sert pour toute
-    /// la manche suivante).
-    /// </summary>
-    public IReadOnlyList<RunCard> ActiveCardsAt(RunChallenge challenge, int position)
-    {
-        ArgumentNullException.ThrowIfNull(challenge);
-        var round = RoundAt(challenge, position);
-        return Hand.Where(c => c.IsEarned && c.AcquiredRound < round).Select(c => c.Card).ToList();
-    }
-
-    /// <summary>Le morceau joué à cette position : celui du défi, ou celui de la réserve qu'un Échange y a mis.</summary>
-    public int TrackIdAt(RunChallenge challenge, int position)
-    {
-        ArgumentNullException.ThrowIfNull(challenge);
-        return _cards.Where(c => c.PlayedPosition == position && c.ReplacementTrackId is not null)
-                   .OrderBy(c => c.PlayOrder).LastOrDefault()?.ReplacementTrackId
-               ?? challenge.Tracks.First(t => t.Position == position).TrackId;
-    }
-
-    // Le prochain morceau de la réserve de la manche que cette partie n'a pas encore sorti.
-    private int? NextReserveTrack(RunChallenge challenge, int round)
-    {
-        var used = _cards.Where(c => c.ReplacementTrackId is not null).Select(c => c.ReplacementTrackId!.Value).ToHashSet();
-        return challenge.ReserveOf(round).Select(r => (int?)r.TrackId).FirstOrDefault(id => !used.Contains(id!.Value));
-    }
-
-    /// <summary>
-    /// Le joueur choisit la difficulté de la manche en cours, avant son premier son. L'extrait du premier morceau de la manche part avec la réponse
-    /// au choix : le chrono ne court qu'à partir de là, les écrans de palier et de difficulté ne mangent pas son temps.
-    /// </summary>
-    public void ChooseDifficulty(RunChallenge challenge, int round, RunDifficulty difficulty, DateTimeOffset now)
-    {
-        RequirePending();
-        if (!CanChooseDifficulty(challenge, round))
-            throw new InvalidOperationException("La difficulté de cette manche ne se choisit plus.");
-        if (challenge.Rules.OptionOf(round, difficulty) is null)
-            throw new ArgumentException("Cette difficulté n'est pas proposée pour cette manche.", nameof(difficulty));
-        _rounds.Add(RunSessionRound.Create((short)round, difficulty, now));
-    }
-
-    /// <summary>
-    /// La durée d'écoute fixe du morceau en cours, à la difficulté de sa manche (la manche boss est plus courte), allongée par « Prolongation ».
-    /// </summary>
-    public decimal ListenSecondsOf(RunChallenge challenge)
-    {
-        if (CurrentRound(challenge) is not { } round)
-            return challenge.Rules.ListenSeconds;
-        var listen = OptionOf(challenge, round).ListenSeconds;
-        return challenge.Rules.Cards is { } cards && ActiveCardsAt(challenge, NextPosition).Contains(RunCard.Extend) ? listen + cards.ExtendBonusSeconds : listen;
-    }
-
-    /// <summary>La manche Gameplay du morceau en cours, reconstituée de la partie (pas d'indice au proto 1).</summary>
+    /// <summary>La manche Gameplay du morceau en cours, reconstituée de la partie (pas d'indice).</summary>
     public TrackRound RoundOfCurrentTrack() =>
         CurrentPosition == NextPosition ? TrackRound.Resume(CurrentListenedSeconds ?? 0, 0) : TrackRound.Start;
 
@@ -336,7 +221,7 @@ public sealed class RunSession
         return Math.Max(0m, decimal.Round(left, 1));
     }
 
-    /// <summary>La réponse arrive après le chrono (« Délai » compris, marge réseau comprise) : elle ne rapporte rien.</summary>
+    /// <summary>La réponse arrive après le chrono (marge réseau comprise) : une vie perdue, aucun point.</summary>
     public bool IsLate(RunRules rules, DateTimeOffset now) =>
         ClockStart(rules) is { } start && now > start.AddSeconds(rules.AnswerSeconds) + ClockGrace;
 
@@ -350,33 +235,29 @@ public sealed class RunSession
     }
 
     /// <summary>
-    /// Note la réponse au morceau en cours (points au multiplicateur de sa manche), libère le verrou, et tranche la manche si c'était son dernier
-    /// morceau. Le verdict seul est gardé, jamais le texte saisi. Une réponse arrivée après le chrono (<see cref="IsLate"/>) compte comme un
-    /// morceau passé : rien de juste, aucun point.
+    /// Note la réponse au morceau en cours (les points du palier de sa manche), libère le verrou, retire une vie si la réponse n'a rien de juste, et
+    /// tranche la manche si c'était son dernier morceau. Le verdict seul est gardé, jamais le texte saisi. Une réponse arrivée après le chrono
+    /// (<see cref="IsLate"/>) compte comme un morceau passé.
     /// </summary>
     public RunStep Answer(RunChallenge challenge, RoundOutcome outcome, IRunScoringPolicy scoring, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(outcome);
         ArgumentNullException.ThrowIfNull(scoring);
         var track = CurrentTrackOf(challenge);
-        var late = IsLate(challenge.Rules, now);
-        if (late)
+        if (IsLate(challenge.Rules, now))
             outcome = outcome with { ArtistCorrect = false, TitleCorrect = false };
-        // Une manche à choix jouée sans choix (navigateur d'avant le proto 2) se joue en « Sûre », sans ligne : seul un vrai choix est noté.
-        var option = OptionOf(challenge, track.Round);
-        var points = scoring.Points(outcome, option.Scale(track.Multiplier));
-
-        return Record(challenge, RunAnswer.Create(track.Position, outcome.ArtistCorrect, outcome.TitleCorrect, points, neutralized: false, now), scoring, now);
+        var points = scoring.Points(outcome, challenge.Rules.PointsAt(StepOf(challenge.Rules, track.Round)));
+        return Record(challenge.Rules, RunAnswer.Create(track.Position, outcome.ArtistCorrect, outcome.TitleCorrect, points, neutralized: false, now), now);
     }
 
     /// <summary>
-    /// Le morceau en cours n'a plus d'extrait (Deezer l'a confirmé, jamais sur demande du client) : il est neutralisé, ne rapporte rien et sort du
-    /// maximum de sa manche, dont l'objectif se recalcule sur les morceaux restants. Une manche entièrement neutralisée est passée.
+    /// Le morceau en cours n'a plus d'extrait (Deezer l'a confirmé, jamais sur demande du client) : il est neutralisé, ne rapporte rien, ne coûte
+    /// aucune vie et ne compte pour rien dans le palier de sa manche.
     /// </summary>
-    public RunStep Neutralize(RunChallenge challenge, IRunScoringPolicy scoring, DateTimeOffset now)
+    public RunStep Neutralize(RunChallenge challenge, DateTimeOffset now)
     {
         var track = CurrentTrackOf(challenge);
-        return Record(challenge, RunAnswer.Create(track.Position, false, false, 0, neutralized: true, now), scoring, now);
+        return Record(challenge.Rules, RunAnswer.Create(track.Position, false, false, 0, neutralized: true, now), now);
     }
 
     public void Abandon(DateTimeOffset now)
@@ -386,33 +267,10 @@ public sealed class RunSession
         End(now);
     }
 
-    /// <summary>La manche <paramref name="round"/> de cette partie (score, objectif, maximum), à sa difficulté.</summary>
-    public RoundProgress RoundProgressOf(RunChallenge challenge, int round, IRunScoringPolicy scoring) =>
-        RoundProgressAt(challenge, round, OptionOf(challenge, round), scoring);
-
-    /// <summary>
-    /// Ce qui a manqué à une partie perdue : la manche ratée (celle qui suit les manches passées : la partie s'y arrête, une fois la manche finie) et les
-    /// points qui manquaient à son objectif. Vide pour une partie gagnée, abandonnée ou en cours.
-    /// </summary>
-    public (int Round, int Points)? ShortfallOf(RunChallenge challenge, IRunScoringPolicy scoring)
+    private RunStep Record(RunRules rules, RunAnswer answer, DateTimeOffset now)
     {
-        if (Status != RunSessionStatus.Lost)
-            return null;
-        var round = RoundsPassed + 1;
-        var progress = RoundProgressOf(challenge, round, scoring);
-        return (round, progress.Objective - progress.Score);
-    }
-
-    /// <summary>
-    /// La manche <paramref name="round"/> de cette partie si elle se jouait à cette difficulté : chaque colonne de l'écran « Difficulté ? ». Toute jauge
-    /// passe par la partie, qui sait ce qui la modifie.
-    /// </summary>
-    public RoundProgress RoundProgressAt(RunChallenge challenge, int round, RunDifficultyOption option, IRunScoringPolicy scoring) =>
-        RunGauge.Of(challenge, _answers, round, scoring, option);
-
-    private RunStep Record(RunChallenge challenge, RunAnswer answer, IRunScoringPolicy scoring, DateTimeOffset now)
-    {
-        var track = challenge.Tracks.First(t => t.Position == answer.Position);
+        var round = rules.RoundOf(answer.Position);
+        var from = StepOf(rules, round);
         _answers.Add(answer);
         TotalScore += answer.Points;
         CurrentPosition = (short)NextPosition;
@@ -420,33 +278,19 @@ public sealed class RunSession
         CurrentServedAt = null;
         CurrentClockAt = null;
 
-        var progress = RoundProgressOf(challenge, track.Round, scoring);
-        if (!progress.Complete)
-            return new RunStep(track.Round, RunStepOutcome.Continue);
-
-        // La carte de cette manche a servi : elle ne se garde pas pour la suivante.
-        foreach (var used in Hand.Where(c => c.AcquiredRound < track.Round))
-            used.Drop(now, track.Round);
-
-        if (!progress.Reached)
+        if (LivesLeft(rules) == 0)
         {
+            // La dernière vie perdue arrête la partie net, au milieu d'une manche s'il le faut : la manche en cours ne compte pas comme tenue.
             Status = RunSessionStatus.Lost;
             End(now);
-            return new RunStep(track.Round, RunStepOutcome.Lost);
+            return new RunStep(round, RunStepOutcome.Over, from, from);
         }
+
+        if (rules.RoundOf(NextPosition) == round)
+            return new RunStep(round, RunStepOutcome.Continue, from, from);
 
         RoundsPassed++;
-        if (_answers.Count < challenge.Tracks.Count)
-        {
-            // Une manche franchie bien au-dessus de son objectif offre une carte pour la suivante.
-            if (challenge.Rules.Cards is { } cards && cards.RewardAfter(track.Round) is { } reward && cards.Earns(progress.Score, progress.Objective))
-                _cards.Add(RunSessionCard.Create((short)(_cards.Count + 1), reward, (short)track.Round, now));
-            return new RunStep(track.Round, RunStepOutcome.RoundPassed);
-        }
-
-        Status = RunSessionStatus.Won;
-        End(now);
-        return new RunStep(track.Round, RunStepOutcome.Won);
+        return new RunStep(round, RunStepOutcome.RoundDone, from, StepOf(rules, round + 1));
     }
 
     private RunChallengeTrack CurrentTrackOf(RunChallenge challenge)
@@ -455,8 +299,7 @@ public sealed class RunSession
         if (challenge.Id != ChallengeId)
             throw new ArgumentException("Ce n'est pas le défi de cette partie.", nameof(challenge));
         RequirePending();
-        return challenge.Tracks.FirstOrDefault(t => t.Position == NextPosition)
-            ?? throw new InvalidOperationException("Tous les morceaux du défi ont déjà une réponse.");
+        return challenge.TrackAt(NextPosition) ?? throw new InvalidOperationException("Le morceau en cours n'est pas encore tiré.");
     }
 
     private void RequirePending()
@@ -492,99 +335,22 @@ public sealed class RunAnswer
 
     public int Points { get; private set; }
 
-    /// <summary>Le morceau n'avait plus d'extrait : retiré du maximum de sa manche, par le serveur.</summary>
+    /// <summary>Le morceau n'avait plus d'extrait : il ne compte pour rien, posé par le serveur.</summary>
     public bool Neutralized { get; private set; }
 
     public DateTimeOffset AnsweredAt { get; private set; }
 
+    /// <summary>Artiste et titre justes.</summary>
+    public bool IsFull => !Neutralized && ArtistCorrect && TitleCorrect;
+
+    /// <summary>Un seul des deux de juste : la moitié des points, pas de vie perdue.</summary>
+    public bool IsHalf => !Neutralized && ArtistCorrect != TitleCorrect;
+
+    /// <summary>Rien de juste (morceau passé, réponse tardive ou fausse) : une vie perdue.</summary>
+    public bool IsFailed => !Neutralized && !ArtistCorrect && !TitleCorrect;
+
     public static RunAnswer Create(short position, bool artistCorrect, bool titleCorrect, int points, bool neutralized, DateTimeOffset now) =>
         new() { Position = position, ArtistCorrect = artistCorrect, TitleCorrect = titleCorrect, Points = points, Neutralized = neutralized, AnsweredAt = now };
-}
-
-/// <summary>
-/// Un coup de pouce d'une partie : la carte gagnée en franchissant une manche (en main pour la suivante, puis usée), ou un Échange fait (jamais en
-/// main : il garde le morceau de la réserve mis à la place).
-/// </summary>
-public sealed class RunSessionCard
-{
-    private RunSessionCard()
-    {
-    }
-
-    public int SessionId { get; private set; }
-
-    /// <summary>Son numéro dans la partie, à partir de 1, dans l'ordre où elle a été reçue.</summary>
-    public short Slot { get; private set; }
-
-    public RunCard Card { get; private set; }
-
-    /// <summary>La manche qui l'a offerte (la carte agit sur la suivante) ; pour un Échange, la manche où il a été fait.</summary>
-    public short AcquiredRound { get; private set; }
-
-    public DateTimeOffset AcquiredAt { get; private set; }
-
-    /// <summary>Quand la carte a servi (la manche qu'elle aidait est finie) : elle n'est plus en main.</summary>
-    public DateTimeOffset? DroppedAt { get; private set; }
-
-    public DateTimeOffset? PlayedAt { get; private set; }
-
-    /// <summary>Échange : la position du morceau changé.</summary>
-    public short? PlayedPosition { get; private set; }
-
-    /// <summary>Échange : la manche où il a été fait.</summary>
-    public short? PlayedRound { get; private set; }
-
-    /// <summary>Échange : le morceau de la réserve joué à la place.</summary>
-    public int? ReplacementTrackId { get; private set; }
-
-    /// <summary>Son rang parmi les cartes jouées de la partie (1, 2…) : l'ordre de jeu, sans dépendre de l'heure.</summary>
-    public short? PlayOrder { get; private set; }
-
-    /// <summary>La dernière manche où la carte a agi (celle qui l'a usée).</summary>
-    public short? DroppedAfterRound { get; private set; }
-
-    public bool InHand => DroppedAt is null && PlayedAt is null;
-
-    /// <summary>Une carte qui se gagne (QCM, Indice, Prolongation) : ni l'Échange, ni une carte d'avant le proto 3.</summary>
-    public bool IsEarned => RunCards.Earnable.Contains(Card);
-
-    public static RunSessionCard Create(short slot, RunCard card, short acquiredRound, DateTimeOffset now) =>
-        new() { Slot = slot, Card = card, AcquiredRound = acquiredRound, AcquiredAt = now };
-
-    internal void Drop(DateTimeOffset now, int? afterRound = null)
-    {
-        DroppedAt = now;
-        DroppedAfterRound = (short?)afterRound;
-    }
-
-    internal void Play(short order, short position, short round, int? replacementTrackId, DateTimeOffset now)
-    {
-        PlayOrder = order;
-        PlayedAt = now;
-        PlayedPosition = position;
-        PlayedRound = round;
-        ReplacementTrackId = replacementTrackId;
-    }
-}
-
-/// <summary>La difficulté d'une manche dans une partie (une ligne par manche à choix), choisie avant son premier son.</summary>
-public sealed class RunSessionRound
-{
-    private RunSessionRound()
-    {
-    }
-
-    public int SessionId { get; private set; }
-
-    /// <summary>La manche, à partir de 1.</summary>
-    public short Round { get; private set; }
-
-    public RunDifficulty Difficulty { get; private set; }
-
-    public DateTimeOffset ChosenAt { get; private set; }
-
-    public static RunSessionRound Create(short round, RunDifficulty difficulty, DateTimeOffset now) =>
-        new() { Round = round, Difficulty = difficulty, ChosenAt = now };
 }
 
 /// <summary>
@@ -671,7 +437,7 @@ public interface IRunsStore
     Task LockReceivedAsync(Guid playerId, CancellationToken ct);
 
     /// <summary>
-    /// Réserve ce défi jusqu'à la fin de la transaction et en relit l'état (règles, morceaux, réserve) : le thème d'une manche est écrit sur le défi,
+    /// Réserve ce défi jusqu'à la fin de la transaction et en relit l'état (règles, morceaux) : le thème d'une manche est écrit sur le défi,
     /// partagé par tous ses joueurs, et deux joueurs qui y arrivent ensemble (le créateur qui choisit, un ami qui reçoit le thème mystère) se suivent
     /// au lieu d'écrire chacun le leur.
     /// </summary>

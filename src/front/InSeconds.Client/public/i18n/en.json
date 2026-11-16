@@ -74,11 +74,9 @@
       "already_played": "You've already played this playlist.",
       "challenge_not_found": "This playlist doesn't exist. Check the link.",
       "comparison_locked": "The comparison opens once your game is over.",
-      "difficulty_locked": "This round's difficulty is already set.",
       "invalid_month": "Invalid month: the expected format is yyyy-mm.",
       "no_challenge": "Not enough tracks for a playlist, try again later.",
       "session_not_found": "This game no longer exists.",
-      "swap_unavailable": "Swapping the track is no longer possible.",
       "theme_locked": "This round's theme is already chosen.",
       "track_lock_not_released": "Answer the current track first.",
       "track_not_found": "This track isn't in this playlist."
@@ -145,9 +143,6 @@
         "count": "Setlists",
         "best": "Record",
         "empty": "No setlist played this month.",
-        "emptyFilter": "No setlist at this difficulty this month.",
-        "all": "All",
-        "filterLabel": "Difficulty",
         "detailTitle": "Your {{count}} tracks",
         "back": "Back to history",
         "allTracks": "All",
@@ -156,7 +151,8 @@
         "listen": "Listen to {{title}}",
         "noMissed": "No missed track.",
         "notFound": "This game cannot be found.",
-        "withdrawn": "Track withdrawn"
+        "withdrawn": "Track withdrawn",
+        "rounds": "Rounds: {{ count }}"
       },
       "loading": "Loading…"
     }
@@ -1133,14 +1129,11 @@
     },
     "header": {
       "abandon": "Give up",
-      "round": "Round {{ round }} / {{ rounds }}",
       "roundShort": "Round {{ round }}",
-      "toGoBefore": "still",
-      "points": "{{ points }} pts",
-      "toGoAfter": "to pass",
-      "reached": "target reached",
       "soundsOff": "Mute sounds",
-      "soundsOn": "Unmute sounds"
+      "soundsOn": "Unmute sounds",
+      "lives": "Lives: {{ left }} of {{ total }}",
+      "listen": "Listen {{ seconds }}"
     },
     "answer": {
       "next": "Next track",
@@ -1176,9 +1169,7 @@
       "title": "Setlist",
       "tagline": "Aim for the gold record.",
       "record": "Your record: {{ score }} pts",
-      "launch": "Start a run",
-      "shelf": "Your discs",
-      "shelfEntry": "{{ disc }}: {{ count }}"
+      "launch": "Start a run"
     },
     "status": {
       "no_challenge": {
@@ -1209,8 +1200,6 @@
     },
     "finished": {
       "found": "{{ found }} / {{ total }} tracks found",
-      "won": "{{ disc }}!",
-      "disc": "{{ disc }}",
       "recordShort": "Record",
       "newRecord": "New record",
       "record": "Record: {{ score }}",
@@ -1228,9 +1217,7 @@
       "duelBehind": "{{ name }} wins by {{ points }} pts",
       "duelTied": "Tied with {{ name }}",
       "rematch": "Rematch",
-      "shortfallBefore": "You were",
-      "shortfallPoints": "{{ points }} pts",
-      "shortfallAfter": "short of the {{ disc }}"
+      "rounds": "{{ count }} rounds done"
     },
     "pseudo": {
       "title": "Your nickname",
@@ -1257,13 +1244,13 @@
     "link": {
       "guest": "Guest",
       "title": "{{ pseudo }} sent you a playlist",
-      "tracks": "{{ tracks }} tracks, the same for all its players: compare your scores at the end",
-      "rounds": "{{ rounds }} rounds, getting harder",
+      "rounds": "Rounds of {{ tracks }} tracks, less and less famous, with no end",
       "theme": "Round {{ round }}: {{ name }} theme",
       "listen": "{{ seconds }} to find the artist and the title",
       "listenAndAnswer": "{{ seconds }} of listening, {{ answer }} to find the artist and the title",
-      "goal": "Clear all {{ rounds }} rounds and earn the gold disc",
-      "play": "Play"
+      "goal": "Last as long as you can, then compare your score with your friends",
+      "play": "Play",
+      "lives": "{{ lives }} lives: a missed track, a skip or a timeout costs one"
     },
     "comparison": {
       "eyebrow": "{{ pseudo }}’s playlist",
@@ -1274,7 +1261,8 @@
       "total": "Total",
       "you": "You",
       "editPseudo": "Change my nickname",
-      "share": "Share the playlist"
+      "share": "Share the playlist",
+      "roundsPassed": "{{ count }} rounds"
     },
     "discShort": {
       "scratched": "Scratched",
@@ -1298,60 +1286,16 @@
     },
     "withdrawn": {
       "title": "Track removed from the round",
-      "body": "We couldn’t get the preview. The track was removed from the playlist and the target lowered to {{ objective }} pts."
+      "body": "The preview could not be fetched. The track is withdrawn: it does not count and you keep your life."
     },
     "share": {
       "text": "I’m sending you a playlist on InSeconds. Can you beat me?",
-      "header": "{{ score }} pts · {{ disc }} · InSeconds Setlist",
+      "header": "{{ score }} pts · {{ rounds }} rounds · InSeconds Setlist",
       "round": "Round {{ round }}",
       "duelWon": "I beat {{ name }} by {{ points }} pts.",
       "beatMe": "Do better on the same playlist:",
-      "groupInvite": "Join “{{ name }}” and beat me on my setlist"
-    },
-    "palier": {
-      "theme": "Round {{round}} · theme",
-      "round": "Round {{round}}",
-      "shelf": "The playlist's discs",
-      "points": "pts",
-      "scoreLabel": "{{score}} points for a target of {{objective}}",
-      "nextRound": "Round {{round}}",
-      "pointsFor": "pts for",
-      "next": "Next",
-      "earned": "Card earned"
-    },
-    "cards": {
-      "three_choices": {
-        "name": "Multiple choice"
-      },
-      "hint": {
-        "name": "Hint"
-      },
-      "extend": {
-        "name": "Extension"
-      }
-    },
-    "difficulty": {
-      "round": "Round {{round}}",
-      "title": "Difficulty?",
-      "yourScore": "Your score",
-      "perTrack": "up to {{points}} pts\nper track",
-      "listen": "{{seconds}} listen",
-      "easy": "Easy",
-      "safe": "Normal",
-      "risky": "Music buff",
-      "columnLabel": "{{name}}: target {{objective}} points, up to {{perTrack}} points per track"
-    },
-    "roundCards": {
-      "hint": {
-        "year": "Year",
-        "artist": "Artist initials",
-        "title": "Title initials",
-        "genre": "Genre"
-      },
-      "extend": "{{seconds}} listen",
-      "choicesHint": "Only one is right",
-      "swap": "Swap track",
-      "refused": "This track couldn't be swapped."
+      "groupInvite": "Join “{{ name }}” and beat me on my setlist",
+      "listen": "{{ seconds }} s"
     },
     "ghost": {
       "ahead": "{{ points }} pts ahead",
@@ -1371,16 +1315,11 @@
       "names": {
         "first_setlist": "First setlist finished",
         "first_record": "First record beaten",
-        "first_card": "First card won",
-        "first_risky_round": "First round in Music buff",
         "first_group": "First group joined",
         "ten_setlists": "10 setlists played",
         "fifty_setlists": "50 setlists played",
         "perfect_round": "Perfect round",
         "ten_in_a_row": "10 right answers in a row",
-        "boss_beaten": "Beat the boss",
-        "setlist_won": "Setlist won",
-        "gold_in_risky": "Gold record in Music buff",
         "friend_played": "A friend played your setlist",
         "duel_won": "Duel won",
         "five_duels": "5 duels won",
@@ -1432,6 +1371,14 @@
       "gridBody": "Only the result, no link.",
       "copied": "Copied!",
       "failed": "Copy failed"
+    },
+    "roundEnd": {
+      "title": "Round {{ round }} done",
+      "shorter": "No mistake: the listening time gets shorter.",
+      "same": "The listening time stays the same.",
+      "longer": "One mistake: the listening time gets longer.",
+      "nextListen": "Round {{ round }}: listen for {{ seconds }}",
+      "next": "Next round"
     }
   },
   "social": {

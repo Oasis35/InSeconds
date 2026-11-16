@@ -7,13 +7,11 @@ public class RunHitsTests
     private static readonly RunLevelStep[] Ladder =
         [new("runs.discs.scratched", 0), new("runs.discs.gold", 1600), new("runs.discs.diamond", 3400)];
 
-    /// <summary>Une partie de 4 manches de 5 morceaux ; <paramref name="found"/> : les morceaux trouvés, dans l'ordre (les autres ne sont pas joués).</summary>
-    private static RunHitRun Run(
-        int score, bool won = false, bool[]? found = null, Dictionary<int, RunDifficulty>? difficulties = null, bool card = false,
-        Dictionary<int, int>? friend = null, int[]? neutralized = null)
+    /// <summary>Une partie finie ; <paramref name="found"/> : les morceaux trouvés, dans l'ordre (les autres ne sont pas joués).</summary>
+    private static RunHitRun Run(int score, bool[]? found = null, Dictionary<int, int>? friend = null, int[]? neutralized = null)
     {
         var answers = (found ?? []).Select((f, i) => new RunHitAnswer(i + 1, i / 5 + 1, f, neutralized?.Contains(i + 1) ?? false)).ToList();
-        return new RunHitRun(won, score, 4, 5, difficulties ?? [], answers, card, friend);
+        return new RunHitRun(score, 5, answers, friend);
     }
 
     private static Dictionary<string, RunHit> Evaluate(bool friendPlayed = false, params RunHitRun[] runs) =>
@@ -22,11 +20,11 @@ public class RunHitsTests
     private static string[] Earned(Dictionary<string, RunHit> hits) => [.. hits.Values.Where(h => h.Earned).Select(h => h.Key)];
 
     [Fact]
-    public void SansPartie_AucunHit_SeizeDansLOrdreDeLEcran()
+    public void SansPartie_AucunHit_OnzeDansLOrdreDeLEcran()
     {
         var hits = RunHits.Evaluate(new RunHitFacts([], false), 10, 3, Ladder);
 
-        Assert.Equal(16, hits.Count);
+        Assert.Equal(11, hits.Count);
         Assert.Equal(RunHits.FirstSetlist, hits[0].Key);
         Assert.Equal(RunHits.LevelDiamond, hits[^1].Key);
         Assert.DoesNotContain(hits, h => h.Earned);
@@ -34,7 +32,7 @@ public class RunHitsTests
     }
 
     [Fact]
-    public void UnePartiePerdue_DonneLaPremiereSetlist_SeulementElle()
+    public void UnePartieFinie_DonneLaPremiereSetlist_SeulementElle()
     {
         Assert.Equal([RunHits.FirstSetlist], Earned(Evaluate(false, Run(200, found: [true, false, false, false, false]))));
     }
@@ -77,25 +75,6 @@ public class RunHitsTests
     }
 
     [Fact]
-    public void Melomane_PremiereManche_Boss_EtDisqueDOr()
-    {
-        var oneRisky = Run(900, difficulties: new() { [2] = RunDifficulty.Risky });
-        Assert.Equal([RunHits.FirstSetlist, RunHits.FirstRiskyRound], Earned(Evaluate(false, oneRisky)));
-
-        var boss = Run(3000, won: true, difficulties: new() { [2] = RunDifficulty.Safe, [4] = RunDifficulty.Risky });
-        var withBoss = Evaluate(false, boss);
-        Assert.True(withBoss[RunHits.BossBeaten].Earned);
-        Assert.True(withBoss[RunHits.SetlistWon].Earned);
-        Assert.False(withBoss[RunHits.GoldInRisky].Earned);
-
-        var lostOnBoss = Run(2000, difficulties: new() { [4] = RunDifficulty.Risky });
-        Assert.False(Evaluate(false, lostOnBoss)[RunHits.BossBeaten].Earned);
-
-        var allRisky = Run(3500, won: true, difficulties: new() { [2] = RunDifficulty.Risky, [3] = RunDifficulty.Risky, [4] = RunDifficulty.Risky });
-        Assert.True(Evaluate(false, allRisky)[RunHits.GoldInRisky].Earned);
-    }
-
-    [Fact]
     public void Duel_GagneSurLesMorceauxJoues_EgaliteNeCompte_CinqPourLeSecond()
     {
         var ahead = Run(300, found: [true, true, true], friend: new() { [1] = 100, [2] = 100, [3] = 50, [4] = 900 });
@@ -109,11 +88,8 @@ public class RunHitsTests
     }
 
     [Fact]
-    public void CarteGagnee_EtAmiQuiAJoueMaSetlist()
-    {
-        Assert.True(Evaluate(false, Run(100, card: true))[RunHits.FirstCard].Earned);
+    public void AmiQuiAJoueMaSetlist() =>
         Assert.True(Evaluate(true)[RunHits.FriendPlayed].Earned);
-    }
 
     [Fact]
     public void Niveau_JugeSurLePlusHautAtteint_JamaisProvisoire()

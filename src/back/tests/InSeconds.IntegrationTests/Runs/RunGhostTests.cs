@@ -18,13 +18,13 @@ public class RunGhostTests(PostgresFixture postgres) : IAsyncLifetime
 
     private static readonly bool[] AllFound = [true, true, true, true, true];
 
-    /// <summary>Alice lance la playlist, trouve 3 morceaux sur 5 (300 pts, manche passée) puis rate la manche 2 : perdue au morceau 10.</summary>
+    /// <summary>Alice lance la playlist, passe la manche 1 (500 pts), trouve le morceau 6 (200 pts) puis rate les trois suivants : perdue au morceau 9.</summary>
     private async Task<(RunGamer Alice, string Code)> AliceLosesAtRoundTwoAsync()
     {
         var alice = await _run.NewInvitedAsync("Alice");
         var start = (await alice.LaunchAsync()).Session;
-        await alice.PlayAsync(start.SessionId, start.ChallengeCode, 1, true, true, true, false, false);
-        var end = await alice.PlayAsync(start.SessionId, start.ChallengeCode, 6, false, false, false, false, false);
+        await alice.PlayAsync(start.SessionId, start.ChallengeCode, 1, AllFound);
+        var end = await alice.PlayAsync(start.SessionId, start.ChallengeCode, 6, true, false, false, false);
         Assert.Equal("lost", end.Session.Status);
         // Pas de fantôme de sa propre partie.
         Assert.Null(end.Session.Ghost);
@@ -42,8 +42,8 @@ public class RunGhostTests(PostgresFixture postgres) : IAsyncLifetime
         var start = (await carole.JoinAsync(code)).Session;
         Assert.Null((await carole.AnswerAsync(start.SessionId, code, 1)).Session.Ghost);
 
-        // Alice finit (perdue d'entrée) : à la réponse suivante de Carole, le fantôme est là.
-        await alice.PlayAsync(aliceStart.SessionId, code, 1, false, false, false, false, false);
+        // Alice finit (trois vies perdues d'entrée) : à la réponse suivante de Carole, le fantôme est là.
+        await alice.PlayAsync(aliceStart.SessionId, code, 1, false, false, false);
         Assert.Equal(new RunGhostResponse("Alice", 0, null), (await carole.AnswerAsync(start.SessionId, code, 2)).Session.Ghost);
     }
 
@@ -126,13 +126,13 @@ public class RunGhostTests(PostgresFixture postgres) : IAsyncLifetime
         await bob.PlayAsync(id, code, 1, AllFound);
         await bob.PlayAsync(id, code, 6, AllFound);
         var eleventh = await bob.AnswerAsync(id, code, 11);
-        Assert.Equal(new RunGhostResponse("Alice", 300, 2), eleventh.Session.Ghost);
+        Assert.Equal(new RunGhostResponse("Alice", 700, 2), eleventh.Session.Ghost);
 
         // Partie finie : le fantôme reste, c'est le duel de l'écran de fin (même total d'Alice : rien de plus qu'au dernier morceau joué).
-        var end = await bob.PlayAsync(id, code, 12, false, false, false, false);
+        var end = await bob.PlayAsync(id, code, 12, false, false, false);
         Assert.Equal("lost", end.Session.Status);
-        Assert.Equal(new RunGhostResponse("Alice", 300, 2), end.Session.Ghost);
-        Assert.Equal(new RunGhostResponse("Alice", 300, 2), (await bob.SessionAsync(id)).Ghost);
+        Assert.Equal(new RunGhostResponse("Alice", 700, 2), end.Session.Ghost);
+        Assert.Equal(new RunGhostResponse("Alice", 700, 2), (await bob.SessionAsync(id)).Ghost);
     }
 
     [Fact]
@@ -148,7 +148,7 @@ public class RunGhostTests(PostgresFixture postgres) : IAsyncLifetime
         await bob.PlayAsync(id, code, 6, AllFound);
         Assert.Empty(duels.GetMeasurementSnapshot());
 
-        var end = await bob.PlayAsync(id, code, 11, false, false, false, false, false);
+        var end = await bob.PlayAsync(id, code, 11, false, false, false);
         var gap = end.Session.TotalScore - end.Session.Ghost!.Total;
         var expected = gap > 0 ? RunsMetrics.DuelAhead : gap < 0 ? RunsMetrics.DuelBehind : RunsMetrics.DuelTied;
         var measurement = Assert.Single(duels.GetMeasurementSnapshot());

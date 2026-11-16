@@ -21,12 +21,11 @@ namespace Internal.Generated.WolverineHandlers
     public sealed class GET_api_runs_sessions_id : Wolverine.Http.HttpHandler
     {
         private readonly Wolverine.Http.WolverineHttpOptions _wolverineHttpOptions;
-        private readonly InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle _seededShuffle1;
-        private readonly InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle _seededShuffle2;
-        private readonly InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle _seededShuffle3;
+        private readonly InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle _seededShuffle;
         private readonly InSeconds.Api.Modules.Runs.Application.RunsMetrics _runsMetrics;
         private readonly InSeconds.Api.Modules.Runs.Application.RunsRules _runsRules;
         private readonly InSeconds.Api.Modules.Runs.Domain.IRunScoringPolicy _runScoringPolicy;
+        private readonly InSeconds.Api.Modules.Runs.Domain.IRunTrackSelector _runTrackSelector;
         private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor;
         private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _serviceScopeFactory;
         private readonly Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms> _loggerOfLoggedTrackWaveforms;
@@ -36,15 +35,14 @@ namespace Internal.Generated.WolverineHandlers
         private readonly System.TimeProvider _timeProvider;
         private readonly Wolverine.Runtime.IWolverineRuntime _wolverineRuntime;
 
-        public GET_api_runs_sessions_id(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle __seededShuffle1, InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle __seededShuffle2, InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle __seededShuffle3, InSeconds.Api.Modules.Runs.Application.RunsMetrics runsMetrics, InSeconds.Api.Modules.Runs.Application.RunsRules runsRules, InSeconds.Api.Modules.Runs.Domain.IRunScoringPolicy runScoringPolicy, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms> loggerOfLoggedTrackWaveforms, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Runs.Application.RunPlayer> loggerOfRunPlayer, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
+        public GET_api_runs_sessions_id(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle seededShuffle, InSeconds.Api.Modules.Runs.Application.RunsMetrics runsMetrics, InSeconds.Api.Modules.Runs.Application.RunsRules runsRules, InSeconds.Api.Modules.Runs.Domain.IRunScoringPolicy runScoringPolicy, InSeconds.Api.Modules.Runs.Domain.IRunTrackSelector runTrackSelector, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms> loggerOfLoggedTrackWaveforms, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Runs.Application.RunPlayer> loggerOfRunPlayer, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
         {
             _wolverineHttpOptions = wolverineHttpOptions;
-            _seededShuffle1 = __seededShuffle1;
-            _seededShuffle2 = __seededShuffle2;
-            _seededShuffle3 = __seededShuffle3;
+            _seededShuffle = seededShuffle;
             _runsMetrics = runsMetrics;
             _runsRules = runsRules;
             _runScoringPolicy = runScoringPolicy;
+            _runTrackSelector = runTrackSelector;
             _httpContextAccessor = httpContextAccessor;
             _serviceScopeFactory = serviceScopeFactory;
             _loggerOfLoggedTrackWaveforms = loggerOfLoggedTrackWaveforms;
@@ -72,9 +70,8 @@ namespace Internal.Generated.WolverineHandlers
             var deezerTrackPreviews = new InSeconds.Api.Modules.Catalogue.Persistence.DeezerTrackPreviews(previewProvider);
             var efTrackDirectory = new InSeconds.Api.Modules.Catalogue.Persistence.EfTrackDirectory(inSecondsDbContext, _optionsMonitorOfCatalogueOptions);
             var efRunsStore = new InSeconds.Api.Modules.Runs.Persistence.EfRunsStore(inSecondsDbContext);
-            var runThemeDealer = new InSeconds.Api.Modules.Runs.Application.RunThemeDealer(efTrackDirectory, _seededShuffle3, efRunsStore);
-            var runChoiceDealer = new InSeconds.Api.Modules.Runs.Application.RunChoiceDealer(efTrackDirectory, _seededShuffle2);
-            var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, _seededShuffle1, runChoiceDealer, runThemeDealer, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, runGhosts, _runScoringPolicy, _runsRules, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
+            var runRoundDealer = new InSeconds.Api.Modules.Runs.Application.RunRoundDealer(efTrackDirectory, _seededShuffle, _runTrackSelector, efRunsStore);
+            var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, runRoundDealer, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, runGhosts, _runScoringPolicy, _runsRules, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Runs.Application.GetRunSessionEndpoint");
             

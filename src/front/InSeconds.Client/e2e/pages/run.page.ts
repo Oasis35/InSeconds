@@ -6,7 +6,7 @@ const BASE = process.env['CI'] ? 'http://localhost:5175' : 'http://localhost:517
 
 /**
  * Le mode Run (« Setlist », `/setlist`) : l'accueil du mode, la partie (la carte du morceau avec son chrono, sa réponse ou le morceau retiré,
- * puis la pile des morceaux joués et des manches passées) et la fin. L'écoute est fixe (10 s) et la saisie est là dès que le son se charge :
+ * puis la pile des morceaux joués et des manches passées, le bilan de chaque manche) et la fin. L'écoute suit l'échelle de la Série (10 s à la manche 1) et la saisie est là dès que le son se charge :
  * on répond sans attendre la fin de l'extrait. Les animations coupées, la partie ne s'enchaîne pas seule : « Morceau suivant » à chaque fois.
  */
 export class RunPage {
@@ -18,7 +18,6 @@ export class RunPage {
   readonly confirmSubmitButton: Locator;
   readonly roundTitle: Locator;
   readonly totalScore: Locator;
-  readonly toGo: Locator;
   readonly clock: Locator;
   readonly pileTracks: Locator;
   readonly paliers: Locator;
@@ -26,6 +25,7 @@ export class RunPage {
   readonly withdrawnCard: Locator;
   readonly nextTrackButton: Locator;
   readonly palier: Locator;
+  readonly lives: Locator;
   readonly palierNextButton: Locator;
   readonly finished: Locator;
   readonly disc: Locator;
@@ -51,9 +51,6 @@ export class RunPage {
   readonly comparisonTitle: Locator;
   readonly comparisonRows: Locator;
   readonly statusScreen: Locator;
-  readonly roundCards: Locator;
-  readonly swapLink: Locator;
-  readonly cardEffects: Locator;
 
   constructor(readonly page: Page) {
     this.homeCard            = page.getByTestId('run-home-card');
@@ -64,14 +61,14 @@ export class RunPage {
     this.confirmSubmitButton = page.getByRole('button', { name: 'Valider quand même' });
     this.roundTitle          = page.getByTestId('run-round-title');
     this.totalScore          = page.getByTestId('run-total-score');
-    this.toGo                = page.getByTestId('run-to-go');
     this.clock               = page.getByTestId('run-clock');
     this.pileTracks          = page.getByTestId('run-pile-track');
     this.paliers             = page.getByTestId('run-palier');
     this.answerCard          = page.getByTestId('run-answer');
     this.withdrawnCard       = page.getByTestId('run-withdrawn');
     this.nextTrackButton     = page.getByTestId('run-next-track');
-    this.palier              = page.getByTestId('run-palier-screen');
+    this.palier              = page.getByTestId('run-palier').and(page.locator('section'));
+    this.lives               = page.getByTestId('run-lives');
     this.palierNextButton    = page.getByTestId('run-palier-next-button');
     this.finished            = page.getByTestId('run-finished');
     this.disc                = page.getByTestId('run-disc');
@@ -93,9 +90,6 @@ export class RunPage {
     this.pseudoEdit          = page.getByTestId('run-comparison-edit-pseudo');
     this.toDailyLink         = page.getByTestId('run-to-daily');
     this.comparison          = page.getByTestId('run-comparison');
-    this.roundCards          = page.getByTestId('run-round-cards');
-    this.swapLink            = page.getByTestId('run-swap');
-    this.cardEffects         = page.getByTestId('run-card-effect');
     this.comparisonEyebrow   = page.getByTestId('run-comparison-eyebrow');
     this.comparisonTitle     = page.getByTestId('run-comparison-title');
     this.comparisonRows      = page.locator('[data-testid="run-comparison-table"] tbody tr');
@@ -170,11 +164,11 @@ export class RunPage {
     await this.nextTrackButton.click();
   }
 
-  /** Rate la première manche (5 réponses vides, 0 point, objectif manqué) : la dernière réponse mène à l'écran de fin d'une partie perdue. */
-  async loseFirstRound(afterFirstAnswer?: () => Promise<void>): Promise<void> {
+  /** Rate trois morceaux de suite (3 vies) : le troisième mène à l'écran de fin d'une partie perdue. */
+  async loseAllLives(afterFirstAnswer?: () => Promise<void>): Promise<void> {
     await this.answerEmpty();
     await afterFirstAnswer?.();
-    await inSequence([2, 3, 4], () => this.answerEmpty());
+    await this.answerEmpty();
     await this.answer(null);
     await expect(this.nextTrackButton).toHaveText(/Voir le résultat/i);
     await this.nextTrackButton.click();
@@ -182,15 +176,23 @@ export class RunPage {
   }
 
   /**
-   * Répond juste à tous les morceaux d'une manche. Sauf à la dernière (qui mène à la fin) : l'écran de palier, les trois difficultés sur le même écran (un toucher sur celle demandée pour la manche suivante lance la manche), puis la ligne de la manche posée dans la pile.
+   * Répond juste aux cinq morceaux de la manche `round` : le bilan de manche s'affiche (ou le choix du thème de la suivante). Le tirage est paresseux : les morceaux d'une manche ne sont connus qu'à son arrivée, donc relus ici.
    */
-  async winRound(tracks: RunTrack[], round: number, difficulty: 'easy' | 'safe' | 'risky' = 'safe'): Promise<void> {
-    await expect(this.roundTitle).toHaveText(`Manche ${round}`);
-    await inSequence(tracks.filter(t => t.round === round), track => this.answerRight(track));
-    if (round === 4) return;
-    await expect(this.palier).toBeVisible();
-    // « Normal » : l'objectif et les points du proto 1 ; un toucher sur la colonne lance le premier morceau de la manche.
-    await this.page.getByTestId(`run-difficulty-${difficulty}`).click();
-    await expect(this.paliers).toHaveCount(round);
+  async winRound(readTracks: () => Promise<RunTrack[]>, round: number): Promise<void> {
+    await expect(this.roundTitle).toContainText(`Manche ${round}`);
+    const tracks = (await readTracks()).filter(t => t.round === round);
+    expect(tracks).toHaveLength(5);
+    await inSequence(tracks, track => this.answerRight(track));
+    await expect(this.palier.or(this.page.getByTestId('run-theme'))).toBeVisible();
+  }
+
+  /** Passe le bilan de manche (« Manche suivante ») jusqu'à ce que le morceau suivant soit jouable ; un écran de thème, s'il vient, se joue à part. */
+  async continueRound(): Promise<void> {
+    await expect(async () => {
+      // Horloge simulée : l'écran du thème garde le thème choisi à l'écran par une minuterie, qu'il faut laisser passer.
+      await this.page.clock.fastForward(1500);
+      if (await this.palierNextButton.isVisible()) await this.palierNextButton.click();
+      await expect(this.answerInput).toBeVisible({ timeout: 1000 });
+    }).toPass();
   }
 }

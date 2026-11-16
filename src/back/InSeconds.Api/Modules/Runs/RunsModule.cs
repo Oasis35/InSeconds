@@ -8,8 +8,8 @@ using InSeconds.Api.Modules.Social.Contracts;
 namespace InSeconds.Api.Modules.Runs;
 
 /// <summary>
-/// Module Runs (nom affiché « Setlist ») : le second mode de jeu, solo, en manches de difficulté croissante, dont le défi (une playlist) se partage
-/// par un lien : son schéma <c>runs</c>, le défi et son tirage, les réglages <c>Runs:</c>, l'accès sur invitation et la partie (jauge, neutralisation,
+/// Module Runs (nom affiché « Setlist ») : le second mode de jeu, solo, en manches de plus en plus courtes (la Série : trois vies), dont le défi (une playlist) se partage
+/// par un lien : son schéma <c>runs</c>, le défi et son tirage, les réglages <c>Runs:</c>, l'accès sur invitation et la partie (vies, paliers, neutralisation,
 /// fin, record). Runs n'utilise des autres modules que leurs <c>Contracts</c> et ne voit jamais Daily.
 /// </summary>
 public static class RunsModule
@@ -20,15 +20,13 @@ public static class RunsModule
         services.AddSingleton<RunsRules>();
         services.AddHostedService<RunsOptionsStartupCheck>();
         services.AddSingleton<IRunTrackSelector, RankBandSelector>();
-        services.AddSingleton<RunCardDealer>();
         services.AddScoped<IRunsStore, EfRunsStore>();
         services.AddScoped<IRunsQueries, EfRunsQueries>();
         services.AddScoped<IRunHistoryQueries, EfRunHistoryQueries>();
         services.AddScoped<IRunHitsQueries, EfRunHitsQueries>();
         services.AddScoped<IRunAccess, EfRunAccess>();
         services.AddScoped<RunChallengePlanner>();
-        services.AddScoped<RunChoiceDealer>();
-        services.AddScoped<RunThemeDealer>();
+        services.AddScoped<RunRoundDealer>();
         services.AddSingleton<IRunScoringPolicy, ArtistTitleScoring>();
         services.AddScoped<RunPlayer>();
         services.AddScoped<RunGhosts>();

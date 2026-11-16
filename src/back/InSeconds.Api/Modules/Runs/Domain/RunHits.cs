@@ -3,18 +3,14 @@ namespace InSeconds.Api.Modules.Runs.Domain;
 /// <summary>Un morceau d'une partie finie, vu par les Hits : sa manche, s'il a été trouvé en entier (artiste et titre), s'il a été retiré.</summary>
 public sealed record RunHitAnswer(int Position, int Round, bool Found, bool Neutralized);
 
-/// <summary>Une partie finie (gagnée ou perdue) du joueur, réduite à ce que les Hits regardent.</summary>
-/// <param name="Rounds">Le nombre de manches de sa playlist.</param>
+/// <summary>Une partie finie (vies épuisées) du joueur, réduite à ce que les Hits regardent.</summary>
 /// <param name="TracksPerRound">Le nombre de morceaux d'une manche de sa playlist.</param>
-/// <param name="Difficulties">La difficulté choisie, par manche (une manche sans choix n'y est pas).</param>
-/// <param name="EarnedCard">Une carte y a été gagnée (l'Échange, offert, ne compte pas).</param>
 /// <param name="FriendPoints">
 /// Sur la playlist d'un ami qui l'a finie : les points de l'ami par position (le duel de l'écran de fin) ; vide sur sa propre playlist, ou si
 /// l'auteur ne l'a pas finie.
 /// </param>
 public sealed record RunHitRun(
-    bool Won, int TotalScore, int Rounds, int TracksPerRound, IReadOnlyDictionary<int, RunDifficulty> Difficulties,
-    IReadOnlyList<RunHitAnswer> Answers, bool EarnedCard, IReadOnlyDictionary<int, int>? FriendPoints);
+    int TotalScore, int TracksPerRound, IReadOnlyList<RunHitAnswer> Answers, IReadOnlyDictionary<int, int>? FriendPoints);
 
 /// <summary>Ce que les Hits d'un joueur lisent : ses parties finies, de la plus ancienne à la plus récente, et si un ami a fini une de ses playlists.</summary>
 public sealed record RunHitFacts(IReadOnlyList<RunHitRun> Runs, bool FriendPlayedMine);
@@ -30,15 +26,10 @@ public static class RunHits
 {
     public const string FirstSetlist = "first_setlist";
     public const string FirstRecord = "first_record";
-    public const string FirstCard = "first_card";
-    public const string FirstRiskyRound = "first_risky_round";
     public const string TenSetlists = "ten_setlists";
     public const string FiftySetlists = "fifty_setlists";
     public const string PerfectRound = "perfect_round";
     public const string TenInARow = "ten_in_a_row";
-    public const string BossBeaten = "boss_beaten";
-    public const string SetlistWon = "setlist_won";
-    public const string GoldInRisky = "gold_in_risky";
     public const string FriendPlayed = "friend_played";
     public const string DuelWon = "duel_won";
     public const string FiveDuels = "five_duels";
@@ -63,15 +54,10 @@ public static class RunHits
         [
             new(FirstSetlist, runs.Count > 0),
             new(FirstRecord, BeatOwnRecord(runs)),
-            new(FirstCard, runs.Any(r => r.EarnedCard)),
-            new(FirstRiskyRound, runs.Any(r => r.Difficulties.Values.Contains(RunDifficulty.Risky))),
             Counted(TenSetlists, runs.Count, 10),
             Counted(FiftySetlists, runs.Count, 50),
             new(PerfectRound, runs.Any(HasPerfectRound)),
             new(TenInARow, runs.Any(r => LongestStreak(r) >= StreakTarget)),
-            new(BossBeaten, runs.Any(BeatBoss)),
-            new(SetlistWon, runs.Any(r => r.Won)),
-            new(GoldInRisky, runs.Any(r => r.Won && r.Rounds > 1 && Enumerable.Range(2, r.Rounds - 1).All(round => IsRisky(r, round)))),
             new(FriendPlayed, facts.FriendPlayedMine),
             new(DuelWon, duels > 0),
             Counted(FiveDuels, duels, DuelsTarget),
@@ -113,11 +99,6 @@ public static class RunHits
 
         return best;
     }
-
-    private static bool IsRisky(RunHitRun run, int round) => run.Difficulties.GetValueOrDefault(round) == RunDifficulty.Risky;
-
-    /// <summary>La dernière manche passée en « Mélomane » : la manche boss.</summary>
-    private static bool BeatBoss(RunHitRun run) => run.Won && run.Rounds > 1 && IsRisky(run, run.Rounds);
 
     /// <summary>Le duel de l'écran de fin, gagné : plus de points que l'ami sur les morceaux que le joueur a joués (<see cref="RunGhost"/>).</summary>
     private static bool WonDuel(RunHitRun run) =>

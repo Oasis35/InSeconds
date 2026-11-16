@@ -13,8 +13,8 @@ public class RunsOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(p
 
         Assert.Equal(
             [
-                "abandonRun", "chooseRunDifficulty", "chooseRunTheme", "dismissRunChallenge", "getRunChallenge", "getRunComparison", "getRunHistory", "getRunHits", "getRunPastPreview", "getRunSession", "getRunsMe", "grantRunAccess", "joinRun",
-                "launchRun", "listRunAccess", "receiveRunChallenge", "refreshRunPreview", "revokeRunAccess", "startRunClock", "submitRunAnswer", "swapRunTrack", "updateRunListening",
+                "abandonRun", "chooseRunTheme", "dismissRunChallenge", "getRunChallenge", "getRunComparison", "getRunHistory", "getRunHits", "getRunPastPreview", "getRunSession", "getRunsMe", "grantRunAccess", "joinRun",
+                "launchRun", "listRunAccess", "receiveRunChallenge", "refreshRunPreview", "revokeRunAccess", "startRunClock", "submitRunAnswer", "updateRunListening",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));
         Assert.All(document["paths"]!.AsObject().Select(p => p.Key), path =>
@@ -52,8 +52,7 @@ public class RunsOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(p
             Assert.Null(Operation(document, id)["requestBody"]);
         Assert.NotNull(Operation(document, "submitRunAnswer")["requestBody"]);
         Assert.NotNull(Operation(document, "updateRunListening")["requestBody"]);
-        Assert.NotNull(Operation(document, "chooseRunDifficulty")["requestBody"]);
-        Assert.NotNull(Operation(document, "swapRunTrack")["requestBody"]);
+        Assert.NotNull(Operation(document, "chooseRunTheme")["requestBody"]);
         Assert.NotNull(Operation(document, "launchRun")["responses"]!["429"]);
         Assert.NotNull(Operation(document, "getRunChallenge")["responses"]!["429"]);
     }

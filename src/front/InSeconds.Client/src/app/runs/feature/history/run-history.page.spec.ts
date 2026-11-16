@@ -6,13 +6,13 @@ import { RunsApi } from '../../data-access/runs.api';
 import { RunHistory, RunHistoryEntry } from '../../domain/run-history';
 import { RunHistoryPage } from './run-history.page';
 
-const run = (sessionId: number, difficulty: RunHistoryEntry['difficulty'], disc = 'runs.discs.silver'): RunHistoryEntry => ({
-  sessionId, date: '2026-10-09', disc: { key: disc, stars: 0 }, score: 2980, difficulty,
+const run = (sessionId: number, roundsPassed = 2): RunHistoryEntry => ({
+  sessionId, date: '2026-10-09', challengeCode: 'ABC234', status: 'lost', roundsPassed, score: 2980,
 });
 
 const HISTORY = (over: Partial<RunHistory> = {}): RunHistory => ({
   month: '2026-10', previousMonth: null, nextMonth: '2026-11', playedCount: 112, averageScore: 2640, bestScore: 3420,
-  runs: [run(7, 'risky', 'runs.discs.gold'), run(6, 'safe'), run(5, 'easy', 'runs.discs.bronze')], ...over,
+  runs: [run(7, 5), run(6), run(5)], ...over,
 });
 
 describe('RunHistoryPage', () => {
@@ -41,23 +41,8 @@ describe('RunHistoryPage', () => {
     expect(el.querySelector('[data-testid="history-count"]')?.textContent).toBe('112');
     const rows = [...el.querySelectorAll('[data-testid="history-run"]')];
     expect(rows.map(a => a.getAttribute('href'))).toEqual(['/history/setlist/7', '/history/setlist/6', '/history/setlist/5']);
-    expect(rows[0].textContent).toContain('runs.difficulty.risky');
-    expect(rows[0].querySelector('[data-disc]')?.getAttribute('data-disc')).toBe('runs.discs.gold');
+    expect(rows[0].textContent).toContain('ui.history.setlist.rounds');
     expect(el.querySelector('[data-testid="history-tab-setlist"]')?.getAttribute('aria-current')).toBe('page');
-  });
-
-  it('filtre par difficulté, et le dit quand rien ne correspond', async () => {
-    const { el, fixture } = await render('/history/setlist', async () => HISTORY({ runs: [run(7, 'risky')] }));
-
-    (el.querySelector('[data-testid="history-filter-risky"]') as HTMLButtonElement).click();
-    fixture.detectChanges();
-    expect(el.querySelectorAll('[data-testid="history-run"]')).toHaveLength(1);
-    expect(el.querySelector('[data-testid="history-filter-risky"]')?.getAttribute('aria-pressed')).toBe('true');
-
-    (el.querySelector('[data-testid="history-filter-easy"]') as HTMLButtonElement).click();
-    fixture.detectChanges();
-    expect(el.querySelectorAll('[data-testid="history-run"]')).toHaveLength(0);
-    expect(el.querySelector('[data-testid="history-empty"]')?.textContent).toContain('ui.history.setlist.emptyFilter');
   });
 
   it("lit le mois de l'adresse", async () => {

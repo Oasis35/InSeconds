@@ -131,17 +131,16 @@ describe('RunPileComponent', () => {
     expect(row.textContent).toContain('+100');
   });
 
-  it('la ligne d\'une manche passée : le disque, son nom, la manche et son score sur son objectif ; ses morceaux grisés, sans titre', () => {
+  it('la ligne d\'une manche passée : la manche, son score et son palier d\'écoute ; ses morceaux grisés, sans titre', () => {
     const { element } = render([
-      { kind: 'palier', passed: { round: 1, score: 400, objective: 200, disc: { key: 'runs.discs.wax', stars: 0 } } },
+      { kind: 'palier', passed: { round: 1, score: 400, listenSeconds: 10, theme: null } },
       { kind: 'track', track: track(1), past: true },
     ]);
 
     const line = element.querySelector<HTMLElement>('[data-testid="run-palier"]')!;
-    expect(line.textContent).toContain('Disque de cire');
     expect(line.textContent).toContain('manche 1');
-    expect(line.textContent).toContain('400 / 200');
-    expect(line.querySelector('app-run-disc')).not.toBeNull();
+    expect(line.textContent).toContain('400');
+    expect(line.textContent).toContain('10');
     const row = element.querySelector<HTMLElement>('[data-testid="run-pile-track"]')!;
     expect(row.hasAttribute('data-past')).toBe(true);
     expect(row.querySelector('.pile-title')?.classList).toContain('gone');

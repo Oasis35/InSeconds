@@ -37,7 +37,7 @@ describe('RunHitsPage', () => {
     api = new FakeRunsApi();
     api.hitsResult = [
       { key: 'first_setlist', earned: true, progress: null, target: null },
-      { key: 'first_risky_round', earned: false, progress: null, target: null },
+      { key: 'first_record', earned: false, progress: null, target: null },
       { key: 'ten_setlists', earned: false, progress: 7, target: 10 },
       { key: 'five_duels', earned: true, progress: 5, target: 5 },
     ];
@@ -49,7 +49,7 @@ describe('RunHitsPage', () => {
     expect(find(el, 'hits-count')?.textContent?.trim()).toBe('3 / 5');
     const rows = [...el.querySelectorAll<HTMLElement>('[data-testid="hit"]')];
     expect(rows.map(row => [row.dataset['hit'], row.dataset['earned']])).toEqual([
-      ['first_setlist', 'true'], ['first_risky_round', 'false'], ['first_group', 'true'], ['ten_setlists', 'false'], ['five_duels', 'true'],
+      ['first_setlist', 'true'], ['first_record', 'false'], ['first_group', 'true'], ['ten_setlists', 'false'], ['five_duels', 'true'],
     ]);
     // La barre et « 7 / 10 » seulement tant que le Hit reste à obtenir.
     expect([...el.querySelectorAll('[data-testid="hit-progress"]')].map(p => p.textContent?.trim())).toEqual(['7 / 10']);

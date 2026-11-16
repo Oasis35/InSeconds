@@ -4,9 +4,9 @@ import { Provider } from '@angular/core';
 import { RunComparison, RunCurrentTrack, RunLink, RunPlay, RunRound, RunSession, RunTrack, RunsMe } from '../../domain/run';
 import { LinkOutcome, RunAnswerToSend, RunsApi, StartOutcome } from '../runs.api';
 
-export const ME = (overrides: Partial<RunsMe> = {}): RunsMe => ({ hasAccess: true, record: null, pending: null, shelf: [], level: null, received: null, ...overrides });
+export const ME = (overrides: Partial<RunsMe> = {}): RunsMe => ({ hasAccess: true, record: null, pending: null, level: null, received: null, ...overrides });
 
-export const ROUND = (overrides: Partial<RunRound> = {}): RunRound => ({ round: 1, score: 0, objective: 200, maxScore: 500, ...overrides });
+export const ROUND = (overrides: Partial<RunRound> = {}): RunRound => ({ round: 1, score: 0, listenSeconds: 10, fullPoints: 100, failed: 0, ...overrides });
 
 export const TRACK = (overrides: Partial<RunTrack> = {}): RunTrack => ({
   position: 1, round: 1, neutralized: false, artistCorrect: true, titleCorrect: true, points: 100,
@@ -14,13 +14,13 @@ export const TRACK = (overrides: Partial<RunTrack> = {}): RunTrack => ({
 });
 
 export const SESSION = (overrides: Partial<RunSession> = {}): RunSession => ({
-  sessionId: 7, challengeCode: 'ABC234', status: 'pending', rounds: 4, tracksPerRound: 5, listenSeconds: 10, totalScore: 0, roundsPassed: 0,
+  sessionId: 7, challengeCode: 'ABC234', status: 'pending', tracksPerRound: 5, lives: 3, livesLeft: 3, totalScore: 0, roundsPassed: 0,
   round: ROUND(), roundTracks: [], finish: null, answerSeconds: 45, clockRemainingSeconds: null, playedTracks: [], passedRounds: [],
-  difficultyChoice: null, themeChoice: null, hand: [], swapAvailable: false, nextDisc: null, cardValues: null, ghost: null, themes: [], ...overrides,
+  themeChoice: null, ghost: null, themes: [], ...overrides,
 });
 
 export const CURRENT = (overrides: Partial<RunCurrentTrack> = {}): RunCurrentTrack => ({
-  position: 1, round: 1, positionInRound: 1, previewUrl: 'https://cdn/preview-1.mp3', ...overrides,
+  position: 1, round: 1, positionInRound: 1, previewUrl: 'https://cdn/preview-1.mp3', listenSeconds: 10, ...overrides,
 });
 
 export const PLAY = (overrides: Partial<RunPlay> = {}): RunPlay => ({
@@ -28,7 +28,7 @@ export const PLAY = (overrides: Partial<RunPlay> = {}): RunPlay => ({
 });
 
 export const LINK = (overrides: Partial<RunLink> = {}): RunLink => ({
-  code: 'ABC234', authorPseudo: 'Clément', trackCount: 20, rounds: 4, tracksPerRound: 5, listenSeconds: 10, answerSeconds: 45, myStatus: 'none', mySessionId: null, themes: [], ...overrides,
+  code: 'ABC234', authorPseudo: 'Clément', lives: 3, tracksPerRound: 5, listenSeconds: 10, answerSeconds: 45, myStatus: 'none', mySessionId: null, themes: [], ...overrides,
 });
 
 export const COMPARISON = (overrides: Partial<RunComparison> = {}): RunComparison => ({
@@ -37,14 +37,14 @@ export const COMPARISON = (overrides: Partial<RunComparison> = {}): RunCompariso
   playerCount: 2,
   roundCount: 4,
   rows: [
-    { pseudo: 'Clément', disc: { key: 'runs.discs.gold', stars: 0 }, rounds: [500, 600, 700, 800], totalScore: 2600, isMe: false, tag: null },
-    { pseudo: null, disc: { key: 'runs.discs.wax', stars: 0 }, rounds: [480, 0, null, null], totalScore: 480, isMe: true, tag: null },
+    { pseudo: 'Clément', roundsPassed: 4, rounds: [500, 600, 700, 800], totalScore: 2600, isMe: false, tag: null },
+    { pseudo: null, roundsPassed: 1, rounds: [480, 0, null, null], totalScore: 480, isMe: true, tag: null },
   ],
   ...overrides,
 });
 
 /** Un faux adaptateur : chaque réponse se règle par une propriété, chaque appel est noté. */
-export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge' | 'comparison' | 'launch' | 'chooseTheme' | 'join' | 'refreshPreview' | 'submitAnswer' | 'startClock' | 'abandon' | 'chooseDifficulty' | 'swap' | 'hits' | 'history'> {
+export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge' | 'comparison' | 'launch' | 'chooseTheme' | 'join' | 'refreshPreview' | 'submitAnswer' | 'startClock' | 'abandon' | 'hits' | 'history'> {
   readonly calls: string[] = [];
   readonly answers: RunAnswerToSend[] = [];
 
@@ -56,8 +56,6 @@ export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge'
   joinResult: StartOutcome = { kind: 'ok', play: PLAY({ isResuming: true }) };
   refreshResult: RunPlay | Error = PLAY();
   answerResult: RunPlay | Error = PLAY();
-  chooseResult: RunPlay | Error = PLAY();
-  swapResult: RunPlay | Error = PLAY();
   abandonError: Error | null = null;
   hitsResult: RunHit[] | Error = [];
   historyResult: RunHistory | Error = { month: '2026-11', previousMonth: null, nextMonth: null, playedCount: 0, averageScore: null, bestScore: null, runs: [] };
@@ -134,16 +132,6 @@ export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge'
 
   /** Ce que le serveur dit rester au chrono à l'annonce du premier son ; `null` : rien à recaler. */
   clockResult: number | null = null;
-
-  chooseDifficulty(sessionId: number, round: number, difficulty: string): Promise<RunPlay> {
-    this.calls.push(`chooseDifficulty:${sessionId}:${round}:${difficulty}`);
-    return this.chooseResult instanceof Error ? Promise.reject(this.chooseResult) : Promise.resolve(this.chooseResult);
-  }
-
-  swap(sessionId: number, position: number): Promise<RunPlay> {
-    this.calls.push(`swap:${sessionId}:${position}`);
-    return this.swapResult instanceof Error ? Promise.reject(this.swapResult) : Promise.resolve(this.swapResult);
-  }
 
   startClock(sessionId: number, position: number): Promise<number | null> {
     this.calls.push(`startClock:${sessionId}:${position}`);

@@ -38,13 +38,12 @@ describe('RunComparisonScreenComponent', () => {
     expect(headers).toEqual(['runs.comparison.player', 'runs.comparison.roundShort', 'runs.comparison.roundShort', 'runs.comparison.roundShort', 'runs.comparison.roundShort', 'runs.comparison.total']);
   });
 
-  it("garde l'ordre reçu, montre « Toi » sur la ligne du joueur, « Invité » sans pseudo, et le disque dessous", () => {
+  it("garde l'ordre reçu, montre « Toi » sur la ligne du joueur, « Invité » sans pseudo", () => {
     const { element } = render();
 
     const [first, second] = rows(element);
     expect(first.querySelector('[data-testid="run-comparison-name"]')?.textContent).toContain('Clément');
     expect(first.getAttribute('data-me')).toBe('false');
-    expect(first.textContent).toContain('runs.discs.gold');
     expect(second.querySelector('[data-testid="run-comparison-name"]')?.textContent).toContain('runs.comparison.you');
     expect(second.getAttribute('data-me')).toBe('true');
   });
@@ -60,12 +59,6 @@ describe('RunComparisonScreenComponent', () => {
 
     const cells = Array.from(rows(element)[1].querySelectorAll('td')).map(cell => cell.textContent?.trim());
     expect(cells).toEqual(['480', '0', '✕', '✕', '480']);
-  });
-
-  it('les étoiles au-delà de la liste des disques', () => {
-    const { element } = render(COMPARISON({ rows: [{ ...COMPARISON().rows[0], disc: { key: 'runs.discs.gold', stars: 2 } }] }));
-
-    expect(rows(element)[0].textContent).toContain('★2');
   });
 
   it("« Partager la playlist » prévient la page ; l'état du bouton suit la copie", () => {

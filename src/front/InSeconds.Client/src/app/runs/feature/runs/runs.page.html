@@ -13,7 +13,7 @@
         @if (chrome.v4() && chrome.dailyDone() === false) {
           <a routerLink="/daily" data-testid="daily-left" class="block pt-2 text-center text-sm underline" style="color:var(--text-light)">{{ 'runs.v4.dailyLeft' | translate }}</a>
         }
-        <app-run-welcome-screen [record]="store.record()" [level]="chrome.v4() ? store.level() : null" [shelf]="store.shelf()" [lang]="language.current()" (start)="store.begin()" />
+        <app-run-welcome-screen [record]="store.record()" [level]="chrome.v4() ? store.level() : null" [lang]="language.current()" (start)="store.begin()" />
         @if (chrome.v4()) {
           <app-run-hits-line class="block pt-3 pb-4" />
           <app-home-legal-line />
@@ -24,7 +24,7 @@
       @case ('theme') {
         @if (store.themeScreen(); as theme) {
           <div class="screen-enter flex-1 flex flex-col pt-1">
-            <app-run-header [round]="theme.headerRound" [rounds]="store.rounds()" [showStatus]="false" [muted]="store.soundsMuted()" (toggleSounds)="store.toggleSounds()" (abandon)="confirmAbandon()" />
+            <app-run-header [round]="theme.round" [lives]="store.lives()" [showStatus]="false" [muted]="store.soundsMuted()" (toggleSounds)="store.toggleSounds()" (abandon)="confirmAbandon()" />
             <app-run-theme-screen class="flex-1 flex flex-col" [choice]="theme.choice" [picked]="theme.picked" [result]="theme.result"
               (choose)="store.chooseTheme($event)" (revealed)="store.continueFromTheme()" />
           </div>
@@ -52,29 +52,19 @@
       @case ('playing') {
         <div class="screen-enter flex-1 flex flex-col pt-1">
           @if (store.shownRound(); as shown) {
-            <app-run-header [round]="shown" [theme]="themeOf(shown.round)" [rounds]="store.rounds()" [muted]="store.soundsMuted()" (toggleSounds)="store.toggleSounds()" (abandon)="confirmAbandon()" />
+            <app-run-header [round]="shown" [theme]="themeOf(shown)" [lives]="store.lives()" [listenSeconds]="store.shownListenSeconds()" [muted]="store.soundsMuted()" (toggleSounds)="store.toggleSounds()" (abandon)="confirmAbandon()" />
           }
 
           <div class="mt-3">
             @if (store.withdrawn(); as withdrawn) {
-              <app-run-withdrawn-card [objective]="withdrawn.round.objective" [endsRun]="store.nextEndsRun()" [auto]="store.autoNext()"
+              <app-run-withdrawn-card [endsRun]="store.nextEndsRun()" [auto]="store.autoNext()"
                 (next)="store.next()" />
             } @else {
               <!-- La carte du morceau : le lecteur (bouton à gauche de la waveform), le chrono dans son coin, la saisie, puis la réponse. -->
-              <app-track-round layout="inline" [alert]="store.clockAlert()" [timeUp]="store.timeUp()" [choices]="store.roundCards()?.effects?.choices ?? null" [locked]="store.cardBusy()"
+              <app-track-round layout="inline" [alert]="store.clockAlert()" [timeUp]="store.timeUp()"
                 (answered)="onAnswered($event)">
                 @if (store.clockShown() !== null) {
                   <app-run-clock roundCorner [seconds]="store.clockShown()!" />
-                }
-                @if (store.roundCards(); as cards) {
-                  <app-run-round-cards roundAids [effects]="cards.effects" [values]="cards.values" [listenSeconds]="cards.listenSeconds" [refused]="cards.refused" />
-                }
-                <!-- L'Échange offert à chaque manche : un lien souligné à côté de « Passer », le même style. -->
-                @if (store.roundCards()?.swapAvailable) {
-                  <button roundLinks type="button" class="inline-flex items-center min-h-11 px-2 text-[15px] underline underline-offset-4 touch-manipulation disabled:opacity-50"
-                    style="color:var(--text-light)" [disabled]="store.cardBusy()" (click)="store.swap()" data-testid="run-swap">
-                    {{ 'runs.roundCards.swap' | translate }}
-                  </button>
                 }
                 @if (store.revealed(); as revealed) {
                   <app-run-reveal roundReveal [track]="revealed" [peaks]="round.waveform()?.peaks ?? store.shapes()[revealed.position] ?? null"
@@ -89,31 +79,14 @@
         </div>
       }
 
-      <!-- Après une manche passée : le disque gagné, la carte gagnée, les difficultés de la suivante, puis « Jouer » (qui lance la manche). -->
+      <!-- Après une manche : son bilan (score, vies, palier de la suivante), puis « Manche suivante » qui lance la manche. -->
       @case ('palier') {
         @if (store.palier(); as palier) {
           <div class="screen-enter flex-1 flex flex-col pt-1">
-            <app-run-header [round]="palier.headerRound" [rounds]="store.rounds()" [showStatus]="false" [muted]="store.soundsMuted()"
+            <app-run-header [round]="palier.end.round" [lives]="palier.lives" [showStatus]="false" [muted]="store.soundsMuted()"
               (toggleSounds)="store.toggleSounds()" (abandon)="confirmAbandon()" />
-            <app-run-palier class="flex-1 flex flex-col" [passed]="palier.passed" [rounds]="store.rounds()" [wonDiscs]="palier.wonDiscs"
-              [nextRound]="palier.nextRound" [theme]="themeOf(palier.nextRound)" [nextObjective]="palier.nextObjective" [nextDisc]="palier.nextDisc" [earnedCard]="palier.earnedCard"
-              [options]="palier.options" [tracksPerRound]="palier.tracksPerRound" [listenSeconds]="palier.listenSeconds"
-              [values]="store.session()?.cardValues ?? null"
-              [busy]="store.palierBusy() || store.difficultyBusy()"
-              (next)="store.continueFromPalier()"
-              (choose)="store.chooseDifficulty($event)" />
-          </div>
-        }
-      }
-
-      <!-- La difficulté de la manche : toucher une colonne choisit et lance le premier morceau, au même toucher. -->
-      @case ('difficulty') {
-        @if (store.difficulty(); as difficulty) {
-          <div class="screen-enter flex-1 flex flex-col pt-1">
-            <app-run-header [round]="difficulty.headerRound" [rounds]="store.rounds()" [showStatus]="false" [muted]="store.soundsMuted()" (toggleSounds)="store.toggleSounds()" (abandon)="confirmAbandon()" />
-            <app-run-difficulty class="flex-1 flex flex-col" [round]="difficulty.round" [totalScore]="difficulty.totalScore"
-              [options]="difficulty.options" [tracksPerRound]="difficulty.tracksPerRound" [listenSeconds]="difficulty.listenSeconds" [busy]="store.difficultyBusy()"
-              (choose)="store.chooseDifficulty($event)" />
+            <app-run-palier class="flex-1 flex flex-col" [end]="palier.end" [lives]="palier.lives.length" [busy]="store.palierBusy()"
+              (next)="store.continueFromPalier()" />
           </div>
         }
       }

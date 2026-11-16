@@ -1,15 +1,18 @@
-import { RunDifficulty, RunDisc, RunTrack } from './run';
+import { RunStatus, RunTrack } from './run';
 
-/** Une setlist que le joueur a finie (gagnée ou perdue) : une ligne de l'historique. */
+/** Une setlist que le joueur a finie (perdue ou abandonnée) : une ligne de l'historique. */
 export interface RunHistoryEntry {
   /** Sa partie : le détail des morceaux se lit avec elle. */
   readonly sessionId: number;
   /** Le jour (`aaaa-mm-jj`, UTC) où elle s'est terminée. */
   readonly date: string;
-  readonly disc: RunDisc;
+  /** Le code de sa playlist. */
+  readonly challengeCode: string;
+  /** Perdue (plus de vie) ou abandonnée. */
+  readonly status: RunStatus;
+  /** Les manches terminées avec au moins une vie. */
+  readonly roundsPassed: number;
   readonly score: number;
-  /** La plus haute difficulté choisie sur ses manches. */
-  readonly difficulty: RunDifficulty;
 }
 
 /** L'historique du joueur sur le mode : le résumé de toutes ses parties, puis celles d'un mois. */
@@ -22,15 +25,6 @@ export interface RunHistory {
   readonly averageScore: number | null;
   readonly bestScore: number | null;
   readonly runs: readonly RunHistoryEntry[];
-}
-
-/** Le filtre de la liste : toutes les setlists, ou celles d'une difficulté. */
-export type DifficultyFilter = 'all' | RunDifficulty;
-
-export const DIFFICULTY_FILTERS: readonly DifficultyFilter[] = ['all', 'easy', 'safe', 'risky'];
-
-export function filterRuns(runs: readonly RunHistoryEntry[], filter: DifficultyFilter): readonly RunHistoryEntry[] {
-  return filter === 'all' ? runs : runs.filter(run => run.difficulty === filter);
 }
 
 /** Un morceau raté : rien de trouvé, ou l'un des deux seulement. Un morceau retiré n'est pas raté (il ne comptait pas). */

@@ -1,64 +1,53 @@
 import { TestBed } from '@angular/core/testing';
 import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import fr from '../../../../../public/i18n/fr.json';
-import { RunRound } from '../../domain/run';
 import { RunHeaderComponent } from './run-header.component';
 
 describe('RunHeaderComponent', () => {
-  function render(round: RunRound = { round: 2, score: 100, objective: 250, maxScore: 500 }) {
+  function render(lives: boolean[] = [true, true, false], round = 2, listenSeconds: number | null = 5, theme: string | null = null) {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     TestBed.inject(TranslateService).setTranslation('fr', fr);
     TestBed.inject(TranslateService).use('fr');
     const fixture = TestBed.createComponent(RunHeaderComponent);
     fixture.componentRef.setInput('round', round);
-    fixture.componentRef.setInput('rounds', 4);
+    fixture.componentRef.setInput('lives', lives);
+    fixture.componentRef.setInput('listenSeconds', listenSeconds);
+    fixture.componentRef.setInput('theme', theme);
     fixture.detectChanges();
     return { fixture, element: fixture.nativeElement as HTMLElement };
   }
 
-  it('la barre du run : la manche passée, la manche en cours remplie de son score, les suivantes fermées', () => {
+  it('un cœur par vie de départ : plein pour celle qui reste, vide pour celle qui est perdue', () => {
     const { element } = render();
 
-    const segments = [...element.querySelectorAll('[data-testid="run-bar"] > div')];
-    expect(segments.map(s => s.getAttribute('data-state'))).toEqual(['done', 'current', 'locked', 'locked']);
-    expect((segments[1].firstElementChild as HTMLElement).style.width).toBe('20%');
-    expect(element.querySelector('[data-testid="run-bar"]')?.getAttribute('aria-label')).toBe('Manche 2 / 4');
+    const hearts = [...element.querySelectorAll('[data-testid="run-lives"] svg')];
+    expect(hearts.map(h => h.getAttribute('data-alive'))).toEqual(['true', 'true', 'false']);
+    expect(element.querySelector('[data-testid="run-lives"]')?.getAttribute('aria-label')).toBe('Vies : 2 sur 3');
   });
 
-  it('« Manche 2 » et ce qui manque pour passer, sans score total', () => {
-    const { element } = render();
+  it('« Manche 2 », le thème et le palier d\'écoute, sans score total', () => {
+    const { element } = render([true, true, true], 2, 5, 'Années 80');
 
-    expect(element.querySelector('[data-testid="run-round-title"]')?.textContent?.trim()).toBe('Manche 2');
-    expect(element.querySelector('[data-testid="run-to-go"]')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('encore 150 pts pour passer');
+    expect(element.querySelector('[data-testid="run-round-title"]')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Manche 2 Années 80');
+    expect(element.querySelector('[data-testid="run-theme-pill"]')?.textContent?.trim()).toBe('Années 80');
+    expect(element.querySelector('[data-testid="run-listen"]')?.textContent?.trim()).toMatch(/^Écoute 5\s*s$/);
     expect(element.querySelector('[data-testid="run-total-score"]')).toBeNull();
   });
 
-  it('l\'objectif atteint le dit', () => {
-    const { element } = render({ round: 1, score: 260, objective: 200, maxScore: 500 });
+  it('sans palier ni thème, rien de plus que le titre', () => {
+    const { element } = render([true, true, true], 1, null, null);
 
-    expect(element.querySelector('[data-testid="run-to-go"]')?.textContent?.trim()).toBe('objectif atteint');
-    expect(element.querySelector('[data-testid="run-reached"] svg')).not.toBeNull();
+    expect(element.querySelector('[data-testid="run-listen"]')).toBeNull();
+    expect(element.querySelector('[data-testid="run-theme-pill"]')).toBeNull();
   });
 
-  it('l\'objectif franchi pendant la manche joue le petit temps fort, une seule fois', () => {
-    const { fixture, element } = render({ round: 1, score: 150, objective: 200, maxScore: 500 });
-    expect(element.querySelector('[data-testid="run-reached"]')).toBeNull();
-
-    fixture.componentRef.setInput('round', { round: 1, score: 230, objective: 200, maxScore: 500 });
-    fixture.detectChanges();
+  it('l\'écran de bilan et celui du thème ne montrent que les vies', () => {
+    const { fixture, element } = render();
+    fixture.componentRef.setInput('showStatus', false);
     fixture.detectChanges();
 
-    const reached = element.querySelector<HTMLElement>('[data-testid="run-reached"]');
-    expect(reached).not.toBeNull();
-    // Le petit temps fort : gsap pose l'échelle de départ, puis l'efface (`clearProps`) à la fin des 0,35 s. Selon la vitesse de la machine,
-    // la pose est encore là ou déjà effacée : seule une autre valeur serait une erreur (rien du tout en mouvement réduit).
-    expect(reached!.style.transform === '' || reached!.style.transform.includes('scale')).toBe(true);
-  });
-
-  it('une manche déjà atteinte à l\'arrivée ne rejoue rien', () => {
-    const { element } = render({ round: 1, score: 260, objective: 200, maxScore: 500 });
-
-    expect(element.querySelector<HTMLElement>('[data-testid="run-reached"]')!.style.transform).toBe('');
+    expect(element.querySelector('[data-testid="run-round-title"]')).toBeNull();
+    expect(element.querySelector('[data-testid="run-lives"]')).not.toBeNull();
   });
 
   it('✕ est un bouton nommé qui demande l\'abandon à la page', () => {

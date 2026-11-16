@@ -44,7 +44,7 @@ describe('RunGameStore', () => {
   }
 
   const summary = (overrides: Partial<RunRoundSummary> = {}): RunRoundSummary => ({
-    round: 1, passed: true, score: 320, objective: 200, totalScore: 320, ...overrides,
+    round: 1, score: 320, outcome: 'shorter', listenSeconds: 10, nextListenSeconds: 5, tracks: [], totalScore: 320, livesLeft: 3, ...overrides,
   });
 
   /** Lance la partie et laisse le lecteur annoncer son extrait prêt. */
@@ -88,8 +88,8 @@ describe('RunGameStore', () => {
 
       expect(store.screen()).toBe('resume');
       expect(api.calls).toEqual(['me', 'session:7']);
-      expect(store.resumeCount()).toBe(6);
-      expect(store.resumeTotal()).toBe(20);
+      expect(store.resumeCount()).toBe(1);
+      expect(store.resumeTotal()).toBe(5);
       expect(store.record()?.bestScore).toBe(900);
       expect(audio.calls).toEqual(['stop']);
     });
@@ -175,15 +175,12 @@ describe('RunGameStore', () => {
   describe('le choix du thème avant la manche', () => {
     const themeChoice = { round: 2, themes: [{ id: 1, name: 'Années 80', round: 2, icon: null }, { id: 2, name: 'Rap français', round: 2, icon: null }] };
     const waitingTheme = (overrides = {}) => SESSION({
-      round: ROUND({ round: 2, score: 0, objective: 366, maxScore: 665 }), roundsPassed: 1, roundTracks: [], themeChoice,
-      passedRounds: [{ round: 1, score: 320, objective: 225, disc: { key: 'runs.discs.wax', stars: 0 } }], ...overrides,
+      round: ROUND({ round: 2, score: 0, listenSeconds: 5 }), roundsPassed: 1, roundTracks: [], themeChoice,
+      passedRounds: [{ round: 1, score: 320, listenSeconds: 10, theme: null }], ...overrides,
     });
     const afterTheme = () => PLAY({
-      current: null,
-      session: waitingTheme({
-        themeChoice: null, themes: [{ round: 2, name: 'Rap français' }],
-        difficultyChoice: { round: 2, options: [{ difficulty: 'safe', objective: 366, maxScore: 665, listenSeconds: 10 }] },
-      }),
+      current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 5 }),
+      session: waitingTheme({ themeChoice: null, themes: [{ round: 2, name: 'Rap français' }] }),
     });
 
     beforeEach(async () => {
@@ -200,7 +197,7 @@ describe('RunGameStore', () => {
       expect(audio.calls.filter(c => c.startsWith('load') || c.startsWith('play'))).toEqual([]);
     });
 
-    it("le choix part au serveur, l'écran garde la partie le temps de révéler le thème, puis la manche suit sans son", async () => {
+    it("le choix part au serveur, l'écran garde la partie le temps de révéler le thème, puis le premier morceau est prêt mais ne part pas seul", async () => {
       api.chooseThemeResult = afterTheme();
 
       await store.chooseTheme(2);
@@ -212,9 +209,8 @@ describe('RunGameStore', () => {
 
       store.continueFromTheme();
 
-      expect(store.screen()).toBe('palier');
+      expect(store.screen()).toBe('playing');
       expect(store.session()!.themes).toEqual([{ round: 2, name: 'Rap français' }]);
-      expect(audio.calls.filter(c => c.startsWith('load') || c.startsWith('playUntil'))).toEqual([]);
     });
 
     it('« Thème mystère » envoie un choix vide, que le serveur tire', async () => {
@@ -251,8 +247,8 @@ describe('RunGameStore', () => {
     });
 
     it("montre la manche, le total du run, une pile vide et le chrono plein tant que le son n'est pas sorti", () => {
-      expect(store.shownRound()).toEqual(ROUND());
-      expect(store.rounds()).toBe(4);
+      expect(store.shownRound()).toBe(1);
+      expect(store.lives()).toEqual([true, true, true]);
       expect(store.totalScore()).toBe(0);
       expect(store.pile()).toEqual([]);
       expect(store.revealed()).toBeNull();
@@ -307,262 +303,98 @@ describe('RunGameStore', () => {
   });
 
   describe('fin de manche', () => {
-    const passedRound = { round: 1, score: 320, objective: 200, disc: { key: 'runs.discs.wax', stars: 0 } };
+    const passedRound = { round: 1, score: 320, listenSeconds: 10, theme: null };
     const lastOfRound = () => PLAY({
       session: SESSION({
-        totalScore: 320, round: ROUND({ round: 2, score: 0, objective: 250, maxScore: 500 }), roundsPassed: 1, roundTracks: [],
+        totalScore: 320, round: ROUND({ round: 2, score: 0, listenSeconds: 5 }), roundsPassed: 1, roundTracks: [],
         playedTracks: [TRACK(), TRACK({ position: 2, points: 100 })], passedRounds: [passedRound],
       }),
       // Une manche de deux morceaux : le second vient d'être répondu.
       revealed: TRACK({ position: 2, points: 100 }),
       roundSummaries: [summary()],
-      current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3' }),
+      current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 5 }),
     });
 
     beforeEach(async () => {
       await startRun();
     });
 
-    it('après la dernière réponse de la manche, l\'en-tête garde cette manche (score et objectif du bilan), la pile attend', async () => {
+    it('après la dernière réponse de la manche, l\'en-tête garde cette manche, la pile attend', async () => {
       api.answerResult = lastOfRound();
 
       await send();
 
-      expect(store.shownRound()).toEqual({ round: 1, score: 320, objective: 200, maxScore: 500 });
+      expect(store.shownRound()).toBe(1);
       expect(store.pile()).toEqual([{ kind: 'track', track: TRACK(), past: false }]);
     });
 
-    it('une manche qui attend sa difficulté : l\'écran de palier, sans son ; toucher une colonne déverrouille le son puis lance le morceau rendu', async () => {
-      api.answerResult = { ...lastOfRound(), current: null, session: { ...lastOfRound().session, difficultyChoice: {
-        round: 2, options: [{ difficulty: 'safe', objective: 366, maxScore: 665, listenSeconds: 10 }, { difficulty: 'risky', objective: 552, maxScore: 885, listenSeconds: 10 }],
-      } } };
-      api.chooseResult = PLAY({ current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }) });
-      await send();
-      store.next();
-      expect(store.screen()).toBe('palier');
-      expect(store.palier()?.options?.map(o => o.difficulty)).toEqual(['safe', 'risky']);
-      expect(api.calls.filter(c => c.startsWith('chooseDifficulty'))).toEqual([]);
-      audio.calls.length = 0;
-
-      void store.chooseDifficulty('risky');
-      expect(audio.calls[0]).toBe('unlock');
-      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
-
-      expect(api.calls).toContain('chooseDifficulty:7:2:risky');
-      expect(audio.calls).toContain('load https://cdn/preview-6.mp3');
-      expect(store.screen()).toBe('playing');
-    });
-
-    it('« Morceau suivant » lance la manche suivante dans le clic ; la ligne de la manche passée se pose sur ses morceaux', async () => {
+    it('la réponse révélée, puis le bilan de la manche (sans son de manche tant qu\'il n\'est pas là), puis le morceau suivant', async () => {
       api.answerResult = lastOfRound();
       await send();
+      expect(store.screen()).toBe('playing');
+      expect(store.palier()).toBeNull();
       audio.calls.length = 0;
 
       store.next();
 
+      expect(store.screen()).toBe('palier');
+      expect(store.palier()).toMatchObject({ nextRound: 2, end: { round: 1, outcome: 'shorter', nextListenSeconds: 5 } });
+      expect(sounds).toHaveBeenCalledWith('roundPassed');
+      expect(audio.calls.filter(c => c.startsWith('load'))).toEqual([]);
+
+      store.continueFromPalier();
+
       expect(audio.calls[0]).toBe('unlock');
       expect(audio.calls).toContain('load https://cdn/preview-6.mp3');
       expect(store.screen()).toBe('playing');
-      expect(store.shownRound()?.round).toBe(2);
+      expect(store.shownRound()).toBe(2);
       expect(store.pile().map(e => e.kind === 'track' ? `${e.track.position}${e.past ? '·' : ''}` : `[${e.passed.round}]`))
         .toEqual(['[1]', '2·', '1·']);
     });
-  });
 
-  describe('écran de palier', () => {
-    const passedRound = { round: 1, score: 320, objective: 225, disc: { key: 'runs.discs.wax', stars: 0 } };
-    const palierSession = (overrides = {}) => SESSION({
-      totalScore: 320, round: ROUND({ round: 2, score: 0, objective: 366, maxScore: 665 }), roundsPassed: 1, roundTracks: [],
-      playedTracks: [TRACK(), TRACK({ position: 2 })], passedRounds: [passedRound], hand: [{ slot: 1, card: 'hint' }],
-      nextDisc: { key: 'runs.discs.bronze', stars: 0 },
-      difficultyChoice: { round: 2, options: [{ difficulty: 'safe', objective: 366, maxScore: 665, listenSeconds: 10 }] },
-      ...overrides,
-    });
-    const lastOfRound = () => PLAY({
-      session: palierSession(), revealed: TRACK({ position: 2 }), roundSummaries: [summary({ objective: 225 })], current: null,
+    it('le bilan montre les vies qui restent', async () => {
+      api.answerResult = PLAY({ ...lastOfRound(), roundSummaries: [summary({ livesLeft: 1 })], session: { ...lastOfRound().session, livesLeft: 1 } });
+      await send();
+      store.next();
+
+      expect(store.palier()?.lives).toEqual([true, false, false]);
     });
 
-    beforeEach(async () => {
-      await startRun();
+    it('deux « Manche suivante » de suite ne lancent qu\'un seul morceau', async () => {
       api.answerResult = lastOfRound();
       await send();
-      audio.calls.length = 0;
       store.next();
-    });
-
-    it("après la manche passée, l'écran de palier, sans aucun extrait : le son d'une manche passée", () => {
-      expect(store.screen()).toBe('palier');
-      expect(audio.calls.filter(c => c.startsWith('load') || c.startsWith('play'))).toEqual([]);
-      expect(sounds).toHaveBeenCalledWith('roundPassed');
-      expect(sounds).toHaveBeenCalledWith('cardTaken');
-      const palier = store.palier()!;
-      expect([palier.passed.round, palier.nextRound, palier.nextObjective, palier.nextDisc]).toEqual([1, 2, 366, 'runs.discs.bronze']);
-      expect(palier.earnedCard).toBe('hint');
-      expect(palier.wonDiscs).toEqual(['runs.discs.wax']);
-    });
-
-    it('les difficultés de la manche sont sur l\'écran de palier : un seul écran, la difficulté se choisit avec « Jouer »', async () => {
-      api.chooseResult = PLAY({
-        session: palierSession({ difficultyChoice: null }),
-        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }),
-      });
-      expect(store.palier()?.options?.map(o => o.difficulty)).toEqual(['safe']);
-      expect(store.palier()?.tracksPerRound).toBe(5);
       audio.calls.length = 0;
 
-      void store.chooseDifficulty('safe');
-      expect(audio.calls[0]).toBe('unlock');
-      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
-
-      expect(api.calls).toContain('chooseDifficulty:7:2:safe');
-      expect(audio.calls).toContain('load https://cdn/preview-6.mp3');
-      expect(store.screen()).toBe('playing');
-    });
-
-    it('deux « Jouer » de suite sur le palier ne choisissent qu\'une fois', async () => {
-      api.chooseResult = PLAY({
-        session: palierSession({ difficultyChoice: null }),
-        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }),
-      });
-
-      void store.chooseDifficulty('safe');
-      void store.chooseDifficulty('safe');
-      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
-
-      expect(api.calls.filter(c => c.startsWith('chooseDifficulty'))).toEqual(['chooseDifficulty:7:2:safe']);
-    });
-
-    it('« Suite » déverrouille le son dans le clic et mène à l\'écran « Difficulté ? »', () => {
+      store.continueFromPalier();
       store.continueFromPalier();
 
-      expect(audio.calls[0]).toBe('unlock');
-      expect(store.screen()).toBe('difficulty');
-      expect(store.difficulty()?.round).toBe(2);
-      expect(store.difficulty()?.totalScore).toBe(320);
+      expect(audio.calls.filter(c => c.startsWith('load'))).toHaveLength(1);
     });
 
-    it('un choix refusé (fait dans un autre onglet) relit la partie au lieu de l\'écran d\'erreur', async () => {
-      store.continueFromPalier();
-      api.chooseResult = new Error('409');
-      api.refreshResult = PLAY({
-        session: palierSession({ difficultyChoice: null }),
-        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }),
-      });
-
-      await store.chooseDifficulty('risky');
-
-      expect(api.calls).toContain('refreshPreview:7');
-      expect(store.screen()).toBe('playing');
-      expect(store.current()?.position).toBe(6);
-    });
-
-    it('une réponse au choix arrivée après un abandon ne relance rien', async () => {
-      store.continueFromPalier();
-      let answer: (play: ReturnType<typeof PLAY>) => void = () => undefined;
-      vi.spyOn(api, 'chooseDifficulty').mockImplementation(() => new Promise(resolve => { answer = resolve; }));
-      const choosing = store.chooseDifficulty('risky');
-      await store.abandon();
-
-      answer(PLAY({ current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3' }) }));
-      await choosing;
-
-      expect(store.screen()).not.toBe('playing');
-      expect(audio.calls).not.toContain('load https://cdn/preview-6.mp3');
-    });
-
-    it('deux touchers sur une colonne ne choisissent qu\'une fois', async () => {
-      api.chooseResult = PLAY({
-        session: palierSession({ difficultyChoice: null }),
-        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }),
-      });
-      store.continueFromPalier();
-
-      void store.chooseDifficulty('easy');
-      void store.chooseDifficulty('easy');
-      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
-
-      expect(api.calls.filter(c => c.startsWith('chooseDifficulty'))).toEqual(['chooseDifficulty:7:2:easy']);
-      expect(store.screen()).toBe('playing');
-    });
-  });
-
-  describe('palier : reprise et manche sans difficulté à choisir', () => {
-    const passedRound = { round: 1, score: 320, objective: 225, disc: { key: 'runs.discs.wax', stars: 0 } };
-    const atPalier = (overrides = {}) => SESSION({
-      totalScore: 320, round: ROUND({ round: 2, score: 0, objective: 366, maxScore: 665 }), roundsPassed: 1, roundTracks: [],
-      playedTracks: [TRACK(), TRACK({ position: 2 })], passedRounds: [passedRound], hand: [{ slot: 1, card: 'hint' }],
-      nextDisc: { key: 'runs.discs.bronze', stars: 0 },
-      difficultyChoice: { round: 2, options: [{ difficulty: 'safe', objective: 366, maxScore: 665, listenSeconds: 10 }] },
-      ...overrides,
-    });
-
-    it('reprendre une partie arrêtée au palier : l\'écran de palier revient, sans son', async () => {
-      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
-      api.sessionResult = atPalier();
-      api.joinResult = { kind: 'ok', play: PLAY({ session: atPalier(), current: null, isResuming: true }) };
-      await store.init();
-
-      await store.begin();
-
+    it('la manche suivante à thème : le bilan, puis l\'écran du choix, sans extrait', async () => {
+      const themeChoice = { round: 2, themes: [{ id: 1, name: 'Années 80', round: 2, icon: null }, { id: 2, name: 'Rap français', round: 2, icon: null }] };
+      api.answerResult = PLAY({ ...lastOfRound(), current: null, session: { ...lastOfRound().session, themeChoice } });
+      await send();
+      store.next();
       expect(store.screen()).toBe('palier');
+      audio.calls.length = 0;
+
+      store.continueFromPalier();
+
+      expect(store.screen()).toBe('theme');
       expect(audio.calls.filter(c => c.startsWith('load'))).toEqual([]);
-      // Ni extrait ni son d'interface : la manche n'a pas été passée maintenant.
-      expect(sounds).not.toHaveBeenCalledWith('roundPassed');
     });
 
-    it('sans difficulté à choisir : pas d\'écran de palier, le morceau de la manche se demande au serveur et part', async () => {
-      api.joinResult = { kind: 'ok', play: PLAY({ session: atPalier({ difficultyChoice: null }), current: null, isResuming: true }) };
+    it('une partie reprise au bilan n\'en rejoue pas le son : le joueur retrouve sa manche', async () => {
       api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
-      api.refreshResult = PLAY({
-        session: atPalier({ difficultyChoice: null }),
-        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }),
-      });
+      api.sessionResult = lastOfRound().session;
+      api.joinResult = { kind: 'ok', play: { ...lastOfRound(), revealed: null, isResuming: true } };
       await store.init();
       await store.begin();
 
-      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
-
-      expect(api.calls).toContain('refreshPreview:7');
-      expect(audio.calls).toContain('load https://cdn/preview-6.mp3');
       expect(store.screen()).toBe('playing');
-    });
-  });
-
-  describe('reprise d\'une partie qui attend sa difficulté', () => {
-    const waiting = (overrides = {}) => SESSION({
-      round: ROUND({ round: 4, score: 0, objective: 750, maxScore: 1000 }), roundsPassed: 3, roundTracks: [],
-      passedRounds: [1, 2, 3].map(round => ({ round, score: 600, objective: 300, disc: { key: 'runs.discs.wax', stars: 0 } })),
-      difficultyChoice: { round: 4, options: [
-        { difficulty: 'safe', objective: 750, maxScore: 1000, listenSeconds: 10 },
-        { difficulty: 'risky', objective: 1125, maxScore: 1330, listenSeconds: 5 },
-      ] },
-      ...overrides,
-    });
-
-    beforeEach(async () => {
-      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
-      api.sessionResult = waiting();
-      api.joinResult = { kind: 'ok', play: PLAY({ session: waiting(), current: null, isResuming: true }) };
-      await store.init();
-      await store.begin();
-    });
-
-    it('la reprise d\'une manche qui attend sa difficulté : l\'écran de palier, sans son ni choix', () => {
-      expect(store.screen()).toBe('palier');
-      expect(audio.calls.filter(c => c.startsWith('load'))).toEqual([]);
-      expect(api.calls.filter(c => c.startsWith('chooseDifficulty'))).toEqual([]);
-    });
-
-    it('la manche boss en Risquée : le morceau se joue sur l\'écoute courte que le serveur donne', async () => {
-      api.chooseResult = PLAY({
-        session: waiting({ difficultyChoice: null }),
-        current: CURRENT({ position: 16, round: 4, positionInRound: 1, previewUrl: 'https://cdn/preview-16.mp3', listenSeconds: 5 }),
-      });
-
-      await store.chooseDifficulty('risky');
-
-      expect(round.maxStep()).toBe(5);
-      expect(store.screen()).toBe('playing');
+      expect(store.palier()).toBeNull();
     });
   });
 
@@ -577,121 +409,6 @@ describe('RunGameStore', () => {
       api.launchResult = { kind: 'ok', play: PLAY({ session: SESSION({ playedTracks: [TRACK({ position: 1 }), TRACK({ position: 2 })] }) }) };
       await startRun();
       expect(store.combo()).toBe(2);
-    });
-  });
-
-  describe('Échange et cartes gagnées', () => {
-    const withSwap = (overrides = {}) => SESSION({ swapAvailable: true, ...overrides });
-    const hintEffects = { cards: ['hint'] as const, year: 1995, artistInitials: ['D', 'P'], titleInitials: ['O', 'M'], choices: null, genre: 'Électro' };
-
-    beforeEach(async () => {
-      api.launchResult = { kind: 'ok', play: PLAY({ session: withSwap() }) };
-      await startRun();
-      audio.calls.length = 0;
-    });
-
-    it('l\'Échange est offert pendant la saisie, et seulement tant qu\'il n\'a pas servi', () => {
-      expect(store.roundCards()?.swapAvailable).toBe(true);
-    });
-
-    it('sans Échange offert, le lien n\'est pas là', async () => {
-      api.launchResult = { kind: 'ok', play: PLAY({ session: SESSION() }) };
-      await startRun();
-
-      expect(store.roundCards()?.swapAvailable).toBe(false);
-    });
-
-    it('« Changer de morceau » : le son se déverrouille dans le toucher, le morceau de réserve part', async () => {
-      api.swapResult = PLAY({ session: withSwap({ swapAvailable: false }), current: CURRENT({ previewUrl: 'https://cdn/preview-reserve.mp3' }) });
-
-      await store.swap();
-
-      expect(audio.calls[0]).toBe('unlock');
-      expect(api.calls).toContain('swap:7:1');
-      expect(audio.calls).toContain('load https://cdn/preview-reserve.mp3');
-      expect(store.roundCards()?.swapAvailable).toBe(false);
-      expect(store.screen()).toBe('playing');
-    });
-
-    it('le morceau de réserve, à la même place, est un autre morceau pour la manche (saisie et forme neuves)', async () => {
-      const before = round.trackKey();
-      api.swapResult = PLAY({ session: withSwap({ swapAvailable: false }), current: CURRENT({ previewUrl: 'https://cdn/preview-reserve.mp3' }) });
-
-      await store.swap();
-
-      expect(round.trackId()).toBe(1);
-      expect(round.trackKey()).not.toBe(before);
-    });
-
-    it('un échange refusé laisse la manche telle quelle, le dit, et relit la partie', async () => {
-      api.swapResult = new Error('409');
-
-      await store.swap();
-
-      expect(api.calls).toContain('session:7');
-      expect(store.roundCards()?.refused).toBe(true);
-      expect(store.screen()).toBe('playing');
-    });
-
-    it('deux touchers ne changent le morceau qu\'une fois', async () => {
-      let answer: (play: ReturnType<typeof PLAY>) => void = () => undefined;
-      vi.spyOn(api, 'swap').mockImplementation(() => new Promise(resolve => { answer = resolve; }));
-
-      const swapping = store.swap();
-      void store.swap();
-      answer(PLAY({ session: withSwap({ swapAvailable: false }) }));
-      await swapping;
-
-      expect(api.swap).toHaveBeenCalledTimes(1);
-      expect(store.cardBusy()).toBe(false);
-    });
-
-    it('une réponse arrivée après un abandon ne change rien, refus compris', async () => {
-      let refuse: (error: Error) => void = () => undefined;
-      vi.spyOn(api, 'swap').mockImplementation(() => new Promise((_, reject) => { refuse = reject; }));
-      const swapping = store.swap();
-      await store.abandon();
-      const afterAbandon = store.session();
-
-      refuse(new Error('409'));
-      await swapping;
-      await new Promise<void>(resolve => setTimeout(resolve, 0));
-
-      expect(store.session()).toBe(afterAbandon);
-      expect(store.screen()).not.toBe('playing');
-    });
-
-    it('pendant l\'envoi d\'une réponse, le morceau ne se change plus', async () => {
-      let answered: (play: ReturnType<typeof PLAY>) => void = () => undefined;
-      vi.spyOn(api, 'submitAnswer').mockImplementation(() => new Promise(resolve => { answered = resolve; }));
-      const sent = round.submit({ artist: 'Daft Punk', title: 'One More Time' });
-      const sending = sent ? store.submit(sent) : Promise.resolve();
-
-      expect(store.roundCards()?.swapAvailable).toBe(false);
-      await store.swap();
-      expect(api.calls.filter(c => c.startsWith('swap'))).toEqual([]);
-
-      answered(PLAY());
-      await sending;
-    });
-
-    it('la carte gagnée agit toute seule : ce que l\'Indice révèle est là dès le premier son', async () => {
-      api.launchResult = { kind: 'ok', play: PLAY({ session: withSwap({ hand: [{ slot: 1, card: 'hint' }] }), current: CURRENT({ effects: hintEffects }) }) };
-      await startRun();
-
-      expect(store.roundCards()?.effects?.year).toBe(1995);
-      expect(store.roundCards()?.effects?.genre).toBe('Électro');
-    });
-
-    it('Prolongation : l\'écoute du morceau est celle que le serveur donne', async () => {
-      api.launchResult = { kind: 'ok', play: PLAY({
-        session: withSwap({ hand: [{ slot: 1, card: 'extend' }] }),
-        current: CURRENT({ listenSeconds: 15, effects: { cards: ['extend'], year: null, artistInitials: null, titleInitials: null, choices: null, genre: null } }),
-      }) };
-      await startRun();
-
-      expect(round.maxStep()).toBe(15);
-      expect(store.roundCards()?.listenSeconds).toBe(15);
     });
   });
 
@@ -713,8 +430,8 @@ describe('RunGameStore', () => {
       api.sessionResult = SESSION({
         status: 'lost', round: null, playedTracks: [1, 2, 3, 4, 5].map(position => TRACK({ position, artistCorrect: false, titleCorrect: false })),
         finish: {
-          status: 'lost', disc: { key: 'runs.discs.scratched', stars: 0 }, totalScore: 0, roundsPassed: 0, foundCount: 0, trackCount: 20,
-          tracks: [], rounds: [], record: null, challengeCode: 'ABC234', shortfall: null, level: null,
+          status: 'lost', totalScore: 0, roundsPassed: 0, foundCount: 0, trackCount: 20,
+          tracks: [], rounds: [], record: null, challengeCode: 'ABC234', level: null,
         },
       });
 
@@ -800,9 +517,9 @@ describe('RunGameStore', () => {
   });
 
   describe('fin de partie', () => {
-    const finish = (status: 'won' | 'lost', isNew = false) => ({
-      status, disc: { key: 'runs.discs.gold', stars: 0 }, totalScore: 2500, roundsPassed: 4, foundCount: 18, trackCount: 20,
-      tracks: [], rounds: [], record: { bestScore: 2500, bestRoundsPassed: 4, isNew }, challengeCode: 'ABC234', shortfall: null, level: null,
+    const finish = (status: 'lost', isNew = false) => ({
+      status, totalScore: 2500, roundsPassed: 4, foundCount: 18, trackCount: 20,
+      tracks: [], rounds: [], record: { bestScore: 2500, bestRoundsPassed: 4, isNew }, challengeCode: 'ABC234', level: null,
     });
 
     beforeEach(async () => {
@@ -811,7 +528,7 @@ describe('RunGameStore', () => {
 
     it('la dernière réponse : sa révélation, dont le bouton annonce le résultat, puis la fin', async () => {
       api.answerResult = PLAY({
-        session: SESSION({ status: 'won', totalScore: 2500, round: null, finish: finish('won') }),
+        session: SESSION({ status: 'lost', totalScore: 2500, round: null, finish: finish('lost') }),
         revealed: TRACK({ position: 20, round: 4 }),
         roundSummaries: [summary({ round: 4 })],
         current: null,
@@ -825,14 +542,14 @@ describe('RunGameStore', () => {
       store.next();
 
       expect(store.screen()).toBe('finished');
-      expect(store.finish()?.disc.key).toBe('runs.discs.gold');
+      expect(store.finish()?.roundsPassed).toBe(4);
       expect(store.revealed()).toBeNull();
-      expect(sounds).toHaveBeenCalledWith('won');
+      expect(sounds).toHaveBeenCalledWith('lost');
     });
 
     it('un nouveau record sonne à la fin, à la place du son de victoire ou de défaite', async () => {
       api.answerResult = PLAY({
-        session: SESSION({ status: 'won', totalScore: 2500, round: null, finish: finish('won', true) }),
+        session: SESSION({ status: 'lost', totalScore: 2500, round: null, finish: finish('lost', true) }),
         revealed: TRACK({ position: 20, round: 4 }),
         roundSummaries: [summary({ round: 4 })],
         current: null,
@@ -842,13 +559,13 @@ describe('RunGameStore', () => {
 
       expect(store.screen()).toBe('finished');
       expect(sounds).toHaveBeenCalledWith('record');
-      expect(sounds).not.toHaveBeenCalledWith('won');
+      expect(sounds).not.toHaveBeenCalledWith('lost');
     });
 
     it('le duel de la fin : l\'avance sur l\'ami qui a lancé la playlist, rien pour une partie abandonnée', async () => {
       api.answerResult = PLAY({
         session: SESSION({
-          status: 'won', totalScore: 2500, round: null, finish: finish('won'), ghost: { pseudo: 'Alice', total: 2374, stoppedAtRound: null },
+          status: 'lost', totalScore: 2500, round: null, finish: finish('lost'), ghost: { pseudo: 'Alice', total: 2374, stoppedAtRound: null },
         }),
         revealed: TRACK({ position: 20, round: 4 }),
         roundSummaries: [summary({ round: 4 })],
@@ -866,7 +583,7 @@ describe('RunGameStore', () => {
           status: 'lost', round: null, finish: finish('lost'), playedTracks: [1, 2, 3, 4, 5].map(position => TRACK({ position })),
         }),
         revealed: TRACK({ position: 5 }),
-        roundSummaries: [summary({ passed: false, score: 150 })],
+        roundSummaries: [summary({ score: 150, livesLeft: 0 })],
         current: null,
       });
       await send();
@@ -883,7 +600,7 @@ describe('RunGameStore', () => {
     });
 
     it('« Rejouer » lance une playlist neuve, le premier son dans le clic', async () => {
-      api.answerResult = PLAY({ session: SESSION({ status: 'won', round: null, finish: finish('won') }), revealed: TRACK(), current: null });
+      api.answerResult = PLAY({ session: SESSION({ status: 'lost', round: null, finish: finish('lost') }), revealed: TRACK(), current: null });
       await send();
       store.next();
       audio.calls.length = 0;
@@ -902,7 +619,7 @@ describe('RunGameStore', () => {
     it('« Rejouer » seulement avec l\'accès', async () => {
       expect(store.canPlayAgain()).toBe(true);
       api.meResult = ME({ hasAccess: false });
-      api.answerResult = PLAY({ session: SESSION({ status: 'won', round: null, finish: finish('won') }), revealed: TRACK(), current: null });
+      api.answerResult = PLAY({ session: SESSION({ status: 'lost', round: null, finish: finish('lost') }), revealed: TRACK(), current: null });
       await send();
 
       store.next();
@@ -958,26 +675,25 @@ describe('RunGameStore', () => {
 
     it('si le serveur a retiré le morceau en route, la carte « Morceau retiré » s\'affiche sans relancer de son', async () => {
       api.refreshResult = PLAY({
-        session: SESSION({ round: ROUND({ objective: 160, maxScore: 400 }), roundTracks: [TRACK({ position: 1, neutralized: true, points: 0 })] }),
+        session: SESSION({ roundTracks: [TRACK({ position: 1, neutralized: true, points: 0 })] }),
         current: CURRENT({ position: 2, positionInRound: 2, previewUrl: 'https://cdn/preview-2.mp3' }),
-        neutralized: [{ position: 1, round: 1, objectiveBefore: 200, objectiveAfter: 160 }],
+        neutralized: [{ position: 1, round: 1 }],
       });
       audio.calls.length = 0;
 
       await refreshFails();
 
       expect(store.screen()).toBe('playing');
-      expect(store.withdrawn()?.objectiveBefore).toBe(200);
-      expect(store.shownRound()?.objective).toBe(160);
+      expect(store.withdrawn()?.position).toBe(1);
       expect(round.trackId()).toBeNull();
       expect(audio.calls.some(c => c.startsWith('load'))).toBe(false);
     });
 
     it('« Morceau suivant » depuis la carte du retrait lance le morceau suivant dans le clic', async () => {
       api.refreshResult = PLAY({
-        session: SESSION({ round: ROUND({ objective: 160, maxScore: 400 }) }),
+        session: SESSION(),
         current: CURRENT({ position: 2, positionInRound: 2, previewUrl: 'https://cdn/preview-2.mp3' }),
-        neutralized: [{ position: 1, round: 1, objectiveBefore: 200, objectiveAfter: 160 }],
+        neutralized: [{ position: 1, round: 1 }],
       });
       await refreshFails();
       audio.calls.length = 0;
@@ -1000,22 +716,20 @@ describe('RunGameStore', () => {
       const withdrawnTrack = TRACK({ position: 2, neutralized: true, points: 0, artist: null, title: null });
       api.answerResult = PLAY({
         session: SESSION({
-          totalScore: 100, round: ROUND({ score: 100, objective: 160, maxScore: 400 }), roundTracks: [TRACK(), withdrawnTrack],
+          totalScore: 100, round: ROUND({ score: 100 }), roundTracks: [TRACK(), withdrawnTrack],
           playedTracks: [TRACK(), withdrawnTrack],
         }),
         revealed: TRACK(),
-        neutralized: [{ position: 2, round: 1, objectiveBefore: 200, objectiveAfter: 160 }],
+        neutralized: [{ position: 2, round: 1 }],
         current: CURRENT({ position: 3, positionInRound: 3, previewUrl: 'https://cdn/preview-3.mp3' }),
       });
       await send();
 
       expect(store.revealed()).not.toBeNull();
-      expect(store.shownRound()?.objective).toBe(200);
 
       store.next();
 
       expect(store.withdrawn()?.position).toBe(2);
-      expect(store.shownRound()?.objective).toBe(160);
       expect(store.pile().map(e => e.kind === 'track' && e.track.position)).toEqual([1]);
 
       store.next();
@@ -1225,7 +939,7 @@ describe('RunGameStore', () => {
     it("une playlist déjà jouée n'est pas un défi reçu", async () => {
       TestBed.inject(SessionStore).signedIn({ id: 'a1', pseudo: 'Clem', email: 'c@example.com', isGuest: false, isAdmin: false });
       api.meResult = ME({ hasAccess: false });
-      api.challengeResult = { kind: 'ok', link: LINK({ myStatus: 'won', mySessionId: 3 }) };
+      api.challengeResult = { kind: 'ok', link: LINK({ myStatus: 'lost', mySessionId: 3 }) };
 
       await store.init('ABC234');
 
@@ -1277,7 +991,7 @@ describe('RunGameStore', () => {
       expect(api.calls.at(-1)).toBe('join:ABC234');
     });
 
-    it.each(['won', 'lost', 'abandoned'] as const)("une partie %s sur ce lien : directement la comparaison", async status => {
+    it.each(['lost', 'abandoned'] as const)("une partie %s sur ce lien : directement la comparaison", async status => {
       api.challengeResult = { kind: 'ok', link: LINK({ myStatus: status, mySessionId: 7 }) };
 
       await store.init('ABC234');
@@ -1300,7 +1014,7 @@ describe('RunGameStore', () => {
       await store.init('ABC234');
       expect(store.screen()).toBe('error');
 
-      api.challengeResult = { kind: 'ok', link: LINK({ myStatus: 'won', mySessionId: 7 }) };
+      api.challengeResult = { kind: 'ok', link: LINK({ myStatus: 'lost', mySessionId: 7 }) };
       api.comparisonResult = new Error('réseau');
       await store.init();
       expect(store.screen()).toBe('error');
@@ -1324,10 +1038,10 @@ describe('RunGameStore', () => {
 
     it("sur /runs, la comparaison d'une partie finie se lit avec le code de la playlist de la fin", async () => {
       const finish = {
-        status: 'won' as const, disc: { key: 'runs.discs.gold', stars: 0 }, totalScore: 2600, roundsPassed: 4, foundCount: 20, trackCount: 20, tracks: [],
-        rounds: [], record: null, challengeCode: 'XYZ789', shortfall: null, level: null,
+        status: 'lost' as const, totalScore: 2600, roundsPassed: 4, foundCount: 20, trackCount: 20, tracks: [],
+        rounds: [], record: null, challengeCode: 'XYZ789', level: null,
       };
-      api.launchResult = { kind: 'ok', play: PLAY({ session: SESSION({ status: 'won', round: null, finish }), current: null }) };
+      api.launchResult = { kind: 'ok', play: PLAY({ session: SESSION({ status: 'lost', round: null, finish }), current: null }) };
       await store.init();
       await store.begin();
 
@@ -1341,7 +1055,7 @@ describe('RunGameStore', () => {
   describe("le pseudo de l'invité", () => {
     const finishedGuest = (pseudo: string | null): void => {
       TestBed.inject(SessionStore).signedIn({ id: 'g1', pseudo, email: null, isGuest: true, isAdmin: false });
-      api.challengeResult = { kind: 'ok', link: LINK({ myStatus: 'won', mySessionId: 7 }) };
+      api.challengeResult = { kind: 'ok', link: LINK({ myStatus: 'lost', mySessionId: 7 }) };
     };
 
     it("un invité sans pseudo qui a fini la playlist d'un ami le donne avant la comparaison", async () => {
@@ -1410,7 +1124,7 @@ describe('RunGameStore', () => {
 
     it('le crayon ne fait rien pour un compte (il passe par son profil)', async () => {
       TestBed.inject(SessionStore).signedIn({ id: 'a1', pseudo: 'Clem', email: 'c@example.com', isGuest: false, isAdmin: false });
-      api.challengeResult = { kind: 'ok', link: LINK({ myStatus: 'won', mySessionId: 7 }) };
+      api.challengeResult = { kind: 'ok', link: LINK({ myStatus: 'lost', mySessionId: 7 }) };
       await store.init('ABC234');
 
       store.editPseudo();

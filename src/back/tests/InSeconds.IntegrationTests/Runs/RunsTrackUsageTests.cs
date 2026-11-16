@@ -26,7 +26,7 @@ public class RunsTrackUsageTests(PostgresFixture postgres) : IAsyncLifetime
         // Un défi de run dont deux des morceaux sont 1 et 2 (les autres lignes seraient sans objet pour ces tests).
         await _game.Api.ExecuteAsync("""
             INSERT INTO runs.challenges (id, code, seed, rules, created_at) VALUES (1, 'K7Q2M9', 1, '{}', now());
-            INSERT INTO runs.challenge_tracks (challenge_id, position, track_id, round, multiplier) VALUES (1, 1, 1, 1, 1.00), (1, 2, 2, 1, 1.00);
+            INSERT INTO runs.challenge_tracks (challenge_id, position, track_id, round) VALUES (1, 1, 1, 1), (1, 2, 2, 1);
             """);
     }
 

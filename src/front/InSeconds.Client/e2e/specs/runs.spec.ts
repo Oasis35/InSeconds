@@ -5,11 +5,11 @@ import { GamePage } from '../pages/game.page';
 import { RunPage } from '../pages/run.page';
 import { inSequence } from '../fixtures/sequence';
 
-// Le mode Run (« Setlist ») : 4 manches de 5 morceaux, écoute fixe de 10 s, 45 s pour répondre, (50 + 50) points par morceau × le multiplicateur
-// de la manche, et une jauge par manche (40, 50, 60 puis 70 % du maximum). Le tirage est aléatoire : l'hôte de test donne les morceaux de la
-// playlist tirée. L'écran : la carte du morceau (chrono dans son coin), puis le total du run et la pile des morceaux joués.
+// Le mode Run (« Setlist », la Série) : 3 vies, des manches de 5 morceaux sans fin, une écoute de 10 s qui raccourcit après une manche sans erreur
+// et s'allonge après une erreur, 45 s pour répondre. Le tirage est paresseux : l'hôte de test donne les morceaux déjà tirés de la playlist.
+// L'écran : la carte du morceau (chrono dans son coin), puis le total du run et la pile des morceaux joués ; un bilan clôt chaque manche.
 
-/** Trois thèmes de 10 morceaux chacun, pris hors de la playlist lancée (de quoi proposer deux thèmes et en tirer un troisième, sans réserve). */
+/** Trois thèmes de 10 morceaux chacun, pris hors de la playlist lancée (de quoi proposer deux thèmes et en tirer un troisième). */
 async function seedThemes(page: Page, tracks: RunTrack[]): Promise<void> {
   const post = async (url: string, data: unknown, method: 'post' | 'put' = 'post'): Promise<{ id: number }> => {
     const res = await page.request[method](url, { data });
@@ -134,243 +134,155 @@ test.describe('Mode Setlist', () => {
     await expect(bar).toBeVisible();
   });
 
-  test("partie gagnée : 20 bonnes réponses, les 4 manches débloquées, le disque d'or et un nouveau record", async ({ page, api }) => {
-    // 20 morceaux répondus un à un, chacun avec sa réponse : plus long qu'une partie du jour.
+  test("manche sans erreur : le bilan raccourcit l'écoute, la série de bonnes réponses se voit, puis trois vies perdues mènent à la fin", async ({ page, api }) => {
     test.slow();
-    // Seul l'Indice se gagne ici : le QCM remplace la saisie, que ce parcours tape (couvert par les tests du store).
-    await api.setRunSetting('Runs:Cards', '["hint"]');
     const run = new RunPage(page);
     await run.loginAsAdmin();
     await run.launch();
-    const tracks = await api.latestRunTracks();
-    expect(tracks).toHaveLength(20);
 
-    await expect(run.roundTitle).toHaveText('Manche 1');
-    await expect(run.toGo).toHaveText(/encore 225 pts pour passer/);
+    // Début : manche 1, trois vies, écoute de 10 s, ni objectif ni total à atteindre.
+    await expect(run.roundTitle).toContainText('Manche 1');
+    await expect(run.lives).toHaveAttribute('aria-label', 'Vies : 3 sur 3');
+    await expect(run.page.getByTestId('run-listen')).toContainText('10');
     await expect(run.clock).toBeVisible();
     await expect(run.pileTracks).toHaveCount(0);
 
-    // Manche 1 : la réponse dans la carte montre le morceau et ses points ; la pile le prend au morceau suivant.
-    const [first] = tracks;
+    // Un morceau : la réponse dans la carte montre le morceau et ses points, la pile le prend au morceau suivant.
+    const [first] = await api.latestRunTracks();
     await run.answer(`${first.artist} - ${first.title}`);
     await expect(run.answerCard.getByTestId('run-answer-artist')).toHaveText(first.artist);
     await expect(run.answerCard.getByTestId('run-answer-title')).toHaveText(first.title);
     await expect(run.answerCard.getByTestId('run-answer-points')).toHaveText('+100');
     await expect(run.totalScore).toHaveText('100');
-    await expect(run.toGo).toHaveText(/encore 125 pts pour passer/);
     await run.nextTrackButton.click();
     await expect(run.pileTracks).toHaveCount(1);
     await expect(run.pileTracks.first()).toContainText(first.artist);
-    await run.winRound(tracks.slice(1), 1);
 
-    // La manche passée : sa ligne se pose dans la pile, ses morceaux ne gardent que pochette, forme et points.
-    await expect(run.paliers.first()).toContainText('Disque de cire');
-    await expect(page.locator('[data-testid="run-pile-track"][data-past]')).toHaveCount(5);
-    // Cinq bonnes réponses d'affilée : la série se voit à côté du total, sans aucun point.
+    // Le reste de la manche : le bilan, sans erreur l'écoute raccourcit (10 s puis 5 s), les vies restent entières.
+    const rest = (await api.latestRunTracks()).filter(t => t.round === 1).slice(1);
+    await inSequence(rest, track => run.answerRight(track));
+    await expect(run.palier).toBeVisible();
+    await expect(page.getByTestId('run-palier-title')).toHaveText('Manche 1 terminée');
+    await expect(page.getByTestId('run-palier-score')).toHaveText('500');
+    await expect(page.getByTestId('run-palier-outcome')).toHaveText('Sans erreur : l’écoute raccourcit.');
+    await expect(page.getByTestId('run-palier-next')).toContainText('5');
+    await expect(page.getByTestId('run-palier-lives')).toHaveAttribute('aria-label', 'Vies : 3 sur 3');
+
+    // « Manche suivante » lance le premier morceau de la manche 2, à l'écoute de 5 s ; la pile garde la ligne de la manche passée.
+    await run.palierNextButton.click();
+    await expect(run.roundTitle).toContainText('Manche 2');
+    await expect(run.page.getByTestId('run-listen')).toContainText('5');
+    await expect(run.paliers).toHaveCount(1);
     await expect(page.getByTestId('run-combo')).toHaveText('5 d’affilée');
 
-    await run.winRound(tracks, 2);
-    await run.winRound(tracks, 3);
-
-    // Dernière manche : la dernière réponse annonce le résultat.
-    const last = tracks.filter(t => t.round === 4);
-    await inSequence(last.slice(0, 4), track => run.answerRight(track));
-    await run.answer(`${last[4].artist} - ${last[4].title}`);
-    await expect(run.nextTrackButton).toHaveText(/Voir le résultat/i);
-    await run.nextTrackButton.click();
-
-    await expect(run.finished).toHaveAttribute('data-status', 'won');
-    await expect(run.disc).toHaveText('Disque d’or !');
-    // Sous la V4, le badge « Record » est posé par la fin de run (maquette 04)  ; l'ancien record n'a pas ce badge.
-    await expect(page.locator('[data-motion="finish-record"]')).toContainText('Record');
-    await expect(run.found).toHaveText('20 / 20 morceaux trouvés');
-    // Nouvelle interface (le joueur a l'accès) : son niveau dans le bloc compact du haut, encore provisoire après une seule partie, « Rejouer » et « Défier un ami ».
+    // Trois morceaux ratés : trois vies perdues, la partie est finie.
+    await run.loseAllLives();
+    await expect(run.disc).toBeVisible();
+    await expect(run.found).toBeVisible();
+    await expect(run.page.getByTestId('run-final-score')).toBeVisible();
+    // Nouvelle interface (le joueur a l'accès) : son niveau, « Rejouer » et « Défier un ami ».
     await expect(run.page.getByTestId('run-level')).toBeVisible();
-    await expect(run.page.getByTestId('run-level-provisional')).toBeVisible();
-    await expect(run.page.getByTestId('run-level-delta')).toHaveText(/^\+/);
     await expect(run.page.getByTestId('run-share')).toContainText('Défier un ami');
-    // « Défier un ami » ouvre la feuille de partage : défier, inviter dans un groupe (ici, en créer un) ou sa grille.
     await run.page.getByTestId('run-share').click();
     await expect(run.page.getByTestId('share-sheet')).toBeVisible();
     await expect(run.page.getByTestId('share-challenge')).toBeVisible();
-    await expect(run.page.getByTestId('share-create-group')).toBeVisible();
     await expect(run.page.getByTestId('share-grid')).toBeVisible();
     await run.page.keyboard.press('Escape');
     await expect(run.page.getByTestId('share-sheet')).toHaveCount(0);
     await expect(run.page.getByTestId('run-play-again-label')).toHaveText('Rejouer');
-    await expect(run.page.getByTestId('run-shortfall')).toHaveCount(0);
 
-    // « Revoir » : la partie dans l'historique, avec ses 20 morceaux.
+    // « Revoir » : la partie dans l'historique.
     await run.page.getByTestId('run-level-review').click();
     await expect(page).toHaveURL(/\/history\/setlist\/\d+$/);
 
-    // Le record et le disque d'or apparaissent ensuite sur l'accueil du mode.
+    // Le record apparaît ensuite sur l'accueil du mode.
     await page.goto('/setlist');
     await expect(run.welcome.getByTestId('run-record')).toBeVisible();
-    await expect(run.welcome.getByTestId('run-level')).toBeVisible();
-    await expect(run.welcome.getByTestId('run-level-delta')).toHaveCount(0);
-    await expect(run.welcome.getByTestId('run-shelf').locator('[data-shelf-disc]')).toContainText(['×1']);
-    await expect(run.welcome.getByTestId('run-shelf').locator('[data-shelf-disc="runs.discs.gold"]')).toHaveCount(1);
   });
 
-  test("playlist à thème : le créateur choisit son thème juste avant la manche (deux thèmes et « Thème mystère »), il est figé dans les règles de la playlist", async ({ page, api }) => {
+  test("une erreur au premier palier garde l'écoute et coûte une vie ; une moitié juste ne coûte rien", async ({ page, api }) => {
     test.slow();
-    // Sans morceaux de réserve : trois thèmes de 10 morceaux, pris hors de la playlist, suffisent (5 morceaux jouables chacun).
-    await api.setRunSetting('Runs:ReservePerRound', '0');
     const run = new RunPage(page);
     await run.loginAsAdmin();
     await run.launch();
-    const tracks = await api.latestRunTracks();
+    const first = (await api.latestRunTracks()).filter(t => t.round === 1);
 
-    await seedThemes(page, tracks);
-    // Le tirage de la manche à thème est aléatoire : on la place à la manche 2.
-    await api.forceThemedRound(2);
+    await run.answerEmpty();
+    await expect(run.lives).toHaveAttribute('aria-label', 'Vies : 2 sur 3');
+    // Seul l'artiste est juste : la moitié des points, aucune vie perdue.
+    await run.answer(`${first[1].artist} - Titre inconnu`);
+    await expect(run.answerCard.getByTestId('run-answer-points')).toHaveText('+50');
+    await run.nextTrackButton.click();
+    await expect(run.lives).toHaveAttribute('aria-label', 'Vies : 2 sur 3');
+    await inSequence(first.slice(2), track => run.answerRight(track));
 
-    // Rien n'est proposé au lancement ni pendant la manche 1 : le choix arrive juste avant la manche à thème.
+    await expect(run.palier).toBeVisible();
+    await expect(page.getByTestId('run-palier-outcome')).toHaveText('L’écoute reste la même.');
+    await expect(page.getByTestId('run-palier-lives')).toHaveAttribute('aria-label', 'Vies : 2 sur 3');
+  });
+
+  test('partie perdue : trois morceaux ratés mènent directement à la fin, « Rejouer » en tire une autre', async ({ page }) => {
+    const run = new RunPage(page);
+    await run.loginAsAdmin();
+    await run.launch();
+
+    await run.loseAllLives();
+    await expect(run.finished).toHaveAttribute('data-status', 'lost');
+
+    // « Rejouer » tire une autre playlist, le premier morceau part dans le clic.
+    await run.playAgainButton.click();
+    await expect(run.roundTitle).toContainText('Manche 1');
+    await expect(run.lives).toHaveAttribute('aria-label', 'Vies : 3 sur 3');
+    await expect(run.pileTracks).toHaveCount(0);
+  });
+
+  test("thème par manche : proposé dès la manche 2 (deux thèmes et « Thème mystère »), choisi par le premier joueur arrivé et figé dans la playlist", async ({ page, api }) => {
+    test.slow();
+    const run = new RunPage(page);
+    await run.loginAsAdmin();
+    await run.launch();
+    await seedThemes(page, await api.latestRunTracks());
+
+    // Rien n'est proposé pendant la manche 1 : le choix arrive avec la manche 2.
     await expect(page.getByTestId('run-theme')).toHaveCount(0);
-    await inSequence(tracks.filter(t => t.round === 1), track => run.answerRight(track));
-    await expect(page.getByTestId('run-theme')).toBeVisible();
+    await run.winRound(() => api.latestRunTracks(), 1);
+    await expect(async () => {
+      if (await run.palierNextButton.isVisible()) await run.palierNextButton.click();
+      await expect(page.getByTestId('run-theme')).toBeVisible({ timeout: 1000 });
+    }).toPass();
     await expect(page.locator('[data-theme-id]')).toHaveCount(3);
     await expect(page.locator('[data-theme-id="mystery"]')).toContainText('Thème mystère');
     await expect(run.answerInput).toHaveCount(0);
 
-    // Un thème proposé : les autres lignes s'éteignent, puis l'écran de la manche (palier) suit.
+    // Un thème proposé : les autres lignes s'éteignent, la manche 2 démarre avec son thème dans l'en-tête.
     const tile = page.locator('[data-theme-id]:not([data-theme-id="mystery"])').first();
     const chosenName = (await tile.locator('span.font-bold').innerText()).trim();
     await tile.click();
-    await expect(run.palier).toBeVisible();
-    await expect(page.getByTestId('run-palier-theme')).toContainText(chosenName);
+    await run.continueRound();
+    await expect(page.getByTestId('run-theme-pill')).toHaveText(chosenName);
 
     // Le thème choisi est figé dans les règles de la playlist, sur la manche 2.
     const link = await page.request.get(`/api/runs/challenges/${await api.latestRunCode()}`);
     expect(((await link.json()) as { themes: { round: number; name: string }[] }).themes).toEqual([{ round: 2, name: chosenName }]);
   });
 
-  test("« Thème mystère » : le tirage mouline puis annonce un thème qui n'était pas proposé", async ({ page, api }) => {
+  test("« Thème mystère » : le tirage annonce un thème qui n'était pas proposé", async ({ page, api }) => {
     test.slow();
-    await api.setRunSetting('Runs:ReservePerRound', '0');
     const run = new RunPage(page);
     await run.loginAsAdmin();
     await run.launch();
-    const tracks = await api.latestRunTracks();
-    await seedThemes(page, tracks);
-    await api.forceThemedRound(2);
-    await inSequence(tracks.filter(t => t.round === 1), track => run.answerRight(track));
+    await seedThemes(page, await api.latestRunTracks());
+    await run.winRound(() => api.latestRunTracks(), 1);
+    await expect(async () => {
+      if (await run.palierNextButton.isVisible()) await run.palierNextButton.click();
+      await expect(page.getByTestId('run-theme')).toBeVisible({ timeout: 1000 });
+    }).toPass();
 
     const offered = (await page.locator('[data-theme-id]:not([data-theme-id="mystery"]) span.font-bold').allInnerTexts()).map(t => t.trim());
     await page.locator('[data-theme-id="mystery"]').click();
-    await expect(run.palier).toBeVisible();
-    const announced = (await page.getByTestId('run-palier-theme').innerText());
-    expect(['Années 80', 'Films', 'Rap'].filter(name => !offered.includes(name)).some(name => announced.includes(name))).toBe(true);
-  });
-
-  test("« Mélomane » avant la dernière manche : le boss annonce une écoute plus courte, et la partie se gagne jusqu'au bout", async ({ page, api }) => {
-    test.slow();
-    await api.setRunSetting('Runs:Cards', '["hint"]');
-    const run = new RunPage(page);
-    await run.loginAsAdmin();
-    await run.launch();
-    const tracks = await api.latestRunTracks();
-
-    await run.winRound(tracks, 1);
-    // Avant la manche 3 : « Mélomane » ne change pas l'écoute, rien n'annonce de boss.
-    await inSequence(tracks.filter(t => t.round === 2), track => run.answerRight(track));
-    await expect(run.palier.getByTestId('run-difficulty-safe')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByTestId('run-difficulty-boss')).toHaveCount(0);
-    await run.palier.getByTestId('run-difficulty-safe').click();
-    await expect(run.roundTitle).toHaveText('Manche 3');
-
-    // Avant la dernière manche : seule la colonne « Mélomane » annonce l'écoute du boss (5 s au lieu de 10 s).
-    await inSequence(tracks.filter(t => t.round === 3), track => run.answerRight(track));
-    await expect(page.getByTestId('run-difficulty-boss')).toHaveCount(1);
-    await expect(page.getByTestId('run-difficulty-boss')).toContainText('5');
-    await page.getByTestId('run-difficulty-risky').click();
-    await expect(run.roundTitle).toHaveText('Manche 4');
-
-    // La manche boss se joue et se gagne comme les autres.
-    const last = tracks.filter(t => t.round === 4);
-    await inSequence(last.slice(0, 4), track => run.answerRight(track));
-    await run.answer(`${last[4].artist} - ${last[4].title}`);
-    await run.nextTrackButton.click();
-    await expect(run.finished).toHaveAttribute('data-status', 'won');
-  });
-
-  test('partie perdue : la première manche ratée mène directement à la fin, avec les manches non jouées', async ({ page }) => {
-    const run = new RunPage(page);
-    await run.loginAsAdmin();
-    await run.launch();
-
-    // 5 réponses vides : 0 point, l'objectif de 225 pts est manqué.
-    await run.answerEmpty();
-    await run.answerEmpty();
-    await run.answerEmpty();
-    await run.answerEmpty();
-    await expect(run.pileTracks).toHaveCount(4);
-    await run.answer(null);
-    await expect(run.nextTrackButton).toHaveText(/Voir le résultat/i);
-    await run.nextTrackButton.click();
-
-    await expect(run.finished).toHaveAttribute('data-status', 'lost');
-    await expect(run.disc).toHaveText('Disque rayé');
-    await expect(run.found).toHaveText('0 / 20 morceaux trouvés');
-    // Ce qui a manqué pour le premier disque : tout l'objectif de la manche 1.
-    await expect(run.page.getByTestId('run-shortfall')).toHaveText('Il t’a manqué 225 pts pour le Disque de cire');
-
-    // « Rejouer » tire une autre playlist, le premier morceau part dans le clic.
-    await run.playAgainButton.click();
-    await expect(run.roundTitle).toHaveText('Manche 1');
-    await expect(run.pileTracks).toHaveCount(0);
-  });
-
-  test("une playlist sans coups de pouce ni choix de difficulté se joue comme au proto 1 : ni palier, ni « Difficulté ? »", async ({ page, api }) => {
-    // Comme une playlist tirée avant le proto 2 : aucune carte, une seule difficulté (« Normal »), donc rien à choisir.
-    await api.setRunSetting('Runs:CardsEnabled', 'false');
-    await api.setRunSetting('Runs:Difficulties', '[{"difficulty":"safe","pointsFactor":1,"objectiveFactor":1}]');
-    const run = new RunPage(page);
-    await run.loginAsAdmin();
-    await run.launch();
-    const tracks = await api.latestRunTracks();
-    await inSequence(tracks.filter(t => t.round === 1), track => run.answerRight(track));
-
-    // La manche passée enchaîne directement sur la suivante : le premier morceau de la manche 2 se joue.
-    await expect(run.roundTitle).toHaveText('Manche 2');
-    await expect(run.palier).toHaveCount(0);
-    await expect(page.getByTestId('run-difficulty')).toHaveCount(0);
-    await expect(run.answerInput).toBeVisible();
-  });
-
-  test('une manche passée bien au-delà de l\'objectif donne une carte, qui agit toute seule sur la manche suivante', async ({ page, api }) => {
-    await api.setRunSetting('Runs:Cards', '["hint"]');
-    const run = new RunPage(page);
-    await run.loginAsAdmin();
-    await run.launch();
-    const tracks = await api.latestRunTracks();
-
-    // Première manche sans aucune carte : rien à afficher sur le morceau.
-    await expect(run.cardEffects).toHaveCount(0);
-    await inSequence(tracks.filter(t => t.round === 1), track => run.answerRight(track));
-
-    // Au palier : la carte gagnée est annoncée, sans rien à toucher ; un toucher sur « Normal » lance la manche.
-    await expect(run.palier).toBeVisible();
-    await expect(page.getByTestId('run-palier-earned')).toContainText('Indice');
-    await run.palier.getByTestId('run-difficulty-safe').click();
-
-    // L'indice s'affiche de lui-même sur le morceau (l'année) ; la carte n'est pas un bouton.
-    await expect(run.roundTitle).toHaveText('Manche 2');
-    await expect(run.cardEffects.and(page.locator('[data-card="hint"]'))).toBeVisible();
-  });
-
-  test('« Changer de morceau » : un seul échange par manche, rendu à la manche suivante', async ({ page }) => {
-    const run = new RunPage(page);
-    await run.loginAsAdmin();
-    await run.launch();
-
-    await expect(run.swapLink).toHaveText('Changer de morceau');
-    await run.swapLink.click();
-
-    // Le morceau de réserve prend la place : l'échange a servi, le lien disparaît jusqu'à la manche suivante.
-    await expect(run.swapLink).toHaveCount(0);
-    await expect(run.answerInput).toBeVisible();
+    await run.continueRound();
+    const announced = await page.getByTestId('run-theme-pill').innerText();
+    expect(['Années 80', 'Films', 'Rap'].filter(name => !offered.includes(name)).includes(announced.trim())).toBe(true);
   });
 
   test('le chrono à zéro envoie ce qui est tapé, sans confirmation', async ({ page }) => {
@@ -389,7 +301,7 @@ test.describe('Mode Setlist', () => {
     await expect(run.confirmSubmitButton).toHaveCount(0);
   });
 
-  test("morceau sans extrait : retiré de la manche, objectif abaissé, la partie continue au clic", async ({ page, api }) => {
+  test("morceau sans extrait : retiré de la manche sans coûter de vie, la partie continue au clic", async ({ page, api }) => {
     const run = new RunPage(page);
     await run.loginAsAdmin();
     await run.launch();
@@ -402,9 +314,8 @@ test.describe('Mode Setlist', () => {
 
     await expect(run.withdrawnCard).toBeVisible();
     await expect(run.withdrawnCard).toContainText('Morceau retiré de la manche');
-    // 45 % des 4 morceaux qui restent : 180 pts au lieu de 225, dont 100 déjà marqués.
-    await expect(run.withdrawnCard).toContainText('l’objectif abaissé à 180 pts');
-    await expect(run.toGo).toHaveText(/encore 80 pts pour passer/);
+    // Un morceau retiré ne coûte pas de vie.
+    await expect(run.lives).toHaveAttribute('aria-label', 'Vies : 3 sur 3');
     await expect(run.answerInput).toHaveCount(0);
 
     // Les animations coupées, rien ne part seul : « Morceau suivant » mène au 3e morceau ; le retrait rejoint la pile.
@@ -442,7 +353,7 @@ test.describe('Mode Setlist', () => {
     const author = new RunPage(page);
     await author.loginAsAdmin();
     await author.launch();
-    await author.loseFirstRound();
+    await author.loseAllLives();
     // Sa propre playlist : pas de duel.
     await expect(page.getByTestId('run-duel')).toHaveCount(0);
     const code = await api.latestRunCode();
@@ -458,18 +369,18 @@ test.describe('Mode Setlist', () => {
     const friend = new RunPage(friendPage);
     await friend.openLink(code);
     await expect(friend.linkTitle).toHaveText('AdminE2E te lance une playlist');
-    await expect(friend.linkRules).toContainText('20 morceaux, les mêmes pour tous ses joueurs');
-    await expect(friend.linkRules).toContainText('4 manches, de plus en plus dures');
-    await expect(friend.linkRules).toContainText('10 s d’écoute, 45 s pour trouver l’artiste et le titre');
+    await expect(friend.linkRules).toContainText('Des manches de 5 morceaux, de moins en moins connus, sans fin');
+    await expect(friend.linkRules).toContainText('3 vies');
+    await expect(friend.linkRules).toContainText('45 s pour trouver l’artiste et le titre');
     await expect(friend.answerInput).toHaveCount(0);
 
     // « Jouer » crée l'invité, relève la playlist du créateur et lance le premier morceau.
     await friend.linkPlayButton.click();
     await friend.answerInput.waitFor({ state: 'visible' });
-    await expect(friend.roundTitle).toHaveText('Manche 1');
+    await expect(friend.roundTitle).toContainText('Manche 1');
     // Le fantôme de l'auteur, qui a fini la playlist : son total au même morceau et l'écart, dès la première réponse.
     await expect(friendPage.getByTestId('run-ghost')).toHaveCount(0);
-    await friend.loseFirstRound(async () => {
+    await friend.loseAllLives(async () => {
       await expect(friendPage.getByTestId('run-ghost')).toContainText('AdminE2E 0');
       await expect(friendPage.getByTestId('run-ghost-gap')).toHaveText('À égalité');
     });
@@ -498,7 +409,6 @@ test.describe('Mode Setlist', () => {
     await expect(friend.comparisonRows).toHaveCount(2);
     await expect(friend.comparison.getByTestId('run-comparison-name').filter({ hasText: 'Toi' })).toHaveCount(1);
     await expect(friend.comparison.getByText('AdminE2E', { exact: true }).first()).toBeVisible();
-    await expect(friend.comparison.getByText('✕')).toHaveCount(6);
 
     // Une playlist se joue une seule fois : le même lien rouvert mène directement à la comparaison.
     await friendPage.goto(`/setlist/${code}`);

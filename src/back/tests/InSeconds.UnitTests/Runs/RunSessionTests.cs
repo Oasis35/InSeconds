@@ -4,7 +4,7 @@ using InSeconds.Api.Modules.Runs.Domain;
 
 namespace InSeconds.UnitTests.Runs;
 
-/// <summary>La partie : verrou du morceau en cours, points, jauge par manche, neutralisation, fin sur le nombre réel de morceaux (piège 38).</summary>
+/// <summary>La partie de la Série : verrou du morceau en cours, points du palier, vies, paliers de manche en manche, neutralisation, chrono.</summary>
 public class RunSessionTests
 {
     private static readonly DateTimeOffset Now = new(2026, 10, 23, 8, 0, 0, TimeSpan.Zero);
@@ -13,23 +13,22 @@ public class RunSessionTests
     private static readonly RoundOutcome Half = new(true, false, 10m, 0);
     private static readonly RoundOutcome Missed = new(false, false, 10m, 0);
 
-    /// <summary>Un défi aux règles par défaut (4 manches de 5, ×1 ; 1,33 ; 1,67 ; 2), d'identifiant 0 comme la partie.</summary>
-    private static RunChallenge Challenge(RunRules? rules = null)
+    /// <summary>Un défi aux règles par défaut, dont <paramref name="rounds"/> manches sont tirées (morceaux 1, 2, 3…), d'identifiant 0 comme la partie.</summary>
+    private static RunChallenge Challenge(int rounds = 4, RunRules? rules = null)
     {
         rules ??= RunsOptions.DefaultRules();
-        var tracks = Enumerable.Range(1, rules.TrackCount)
-            .Select(id => new PlannedTrack(id, (id - 1) / rules.TracksPerRound + 1, rules.MultiplierOf((id - 1) / rules.TracksPerRound + 1)))
-            .ToList();
-        return RunChallenge.Create("K7Q2M9", 1, rules, tracks, null, Now);
+        var challenge = RunChallenge.Create("K7Q2M9", 1, rules, Enumerable.Range(1, rules.TracksPerRound).ToList(), null, Now);
+        for (var round = 2; round <= rounds; round++)
+            challenge.AppendRound(round, Enumerable.Range(rules.FirstPositionOf(round), rules.TracksPerRound).ToList());
+        return challenge;
     }
 
     private static RunSession Start() => RunSession.Start(0, Guid.NewGuid(), Now);
 
-    /// <summary>Les règles d'une playlist du proto 1 : seuils de 40 à 70 %, sans difficultés ni réserve.</summary>
-    private static readonly RunRules Proto1 = new(4, 5, 10m, [40, 50, 60, 70], 1m, 2m, 45);
-
     private static List<RunStep> Play(RunSession session, RunChallenge challenge, params RoundOutcome[] outcomes) =>
         outcomes.Select(o => session.Answer(challenge, o, Scoring, Now)).ToList();
+
+    private static RoundOutcome[] Repeat(RoundOutcome outcome, int count) => [.. Enumerable.Repeat(outcome, count)];
 
     [Fact]
     public void LeMorceauEnCours_EstLePremierSansReponse()
@@ -44,6 +43,14 @@ public class RunSessionTests
         Assert.Equal(RunTrackTurn.Unknown, session.TurnOf(21, 20));
         Assert.Equal(RunTrackTurn.Unknown, session.TurnOf(0, 20));
         Assert.Equal((short)3, session.CurrentPosition);
+    }
+
+    [Fact]
+    public void UnMorceauPasEncoreTire_EstInconnu()
+    {
+        var session = Start();
+
+        Assert.Equal(RunTrackTurn.Unknown, session.TurnOf(6, trackCount: 5));
     }
 
     [Fact]
@@ -62,362 +69,176 @@ public class RunSessionTests
     }
 
     [Fact]
-    public void LesPoints_AuMultiplicateurDeLaManche_ArrondisSurLeTotalDuMorceau()
+    public void LesPoints_SontCeuxDuPalierDeLaManche_MoitieSiUnSeulJuste()
     {
         var challenge = Challenge();
         var session = Start();
-        Play(session, challenge, Found, Found, Found, Found, Found);
 
-        Play(session, challenge, Found, Half);
+        Play(session, challenge, Found, Half, Found);
 
-        Assert.Equal([100, 100, 100, 100, 100, 133, 67], session.Answers.Select(a => a.Points));
+        Assert.Equal([100, 50, 100], session.Answers.Select(a => a.Points));
+        Assert.Equal(250, session.TotalScore);
+        Assert.Equal(3, session.LivesLeft(challenge.Rules));
+    }
+
+    [Fact]
+    public void UneMancheSansErreur_RaccourcitLePalier_PuisLesPointsMontent()
+    {
+        var challenge = Challenge();
+        var session = Start();
+
+        var steps = Play(session, challenge, Repeat(Found, 5));
+        Assert.Equal(RunStepOutcome.RoundDone, steps[^1].Outcome);
+        Assert.Equal((0, 1), (steps[^1].FromStep, steps[^1].ToStep));
+        Assert.Equal(1, session.RoundsPassed);
+        Assert.Equal(5m, session.ListenSecondsOf(challenge.Rules));
+
+        Play(session, challenge, Found);
+        Assert.Equal(200, session.Answers[^1].Points);
         Assert.Equal(700, session.TotalScore);
     }
 
     [Fact]
-    public void JaugePleineAvantLaFin_LaMancheContinue()
+    public void UneMancheAvecUneErreur_AllongeLePalier_JamaisAuDessusDuPremier()
     {
         var challenge = Challenge();
         var session = Start();
 
-        var steps = Play(session, challenge, Found, Found, Found);
+        var first = Play(session, challenge, Found, Found, Found, Found, Missed);
+        Assert.Equal((0, 0), (first[^1].FromStep, first[^1].ToStep));
+        Assert.Equal(10m, session.ListenSecondsOf(challenge.Rules));
+        Assert.Equal(2, session.LivesLeft(challenge.Rules));
 
-        Assert.All(steps, s => Assert.Equal(RunStepOutcome.Continue, s.Outcome));
-        Assert.True(session.IsPending);
-        Assert.Equal(0, session.RoundsPassed);
+        // Une manche sans erreur descend d'un palier, une manche ratée en remonte un.
+        Play(session, challenge, Repeat(Found, 5));
+        Assert.Equal(5m, session.ListenSecondsOf(challenge.Rules));
+        var third = Play(session, challenge, Found, Found, Found, Found, Missed);
+        Assert.Equal((1, 0), (third[^1].FromStep, third[^1].ToStep));
+        Assert.Equal(10m, session.ListenSecondsOf(challenge.Rules));
     }
 
     [Fact]
-    public void ObjectifAtteintPile_LaMancheEstPassee()
-    {
-        var challenge = Challenge(Proto1);
-        var session = Start();
-
-        // Manche 1 d'une playlist du proto 1 : objectif 200 (40 % de 500), atteint avec 200 tout juste (>=).
-        var steps = Play(session, challenge, Found, Found, Missed, Missed, Missed);
-
-        Assert.Equal(new RunStep(1, RunStepOutcome.RoundPassed), steps[^1]);
-        Assert.True(session.IsPending);
-        Assert.Equal(1, session.RoundsPassed);
-        Assert.Equal(6, session.NextPosition);
-    }
-
-    [Fact]
-    public void ObjectifManque_LaPartieEstPerdue_EnFinDeManche()
+    public void UneMancheDeMoities_NeBougePasLePalier_EtNeCouteAucuneVie()
     {
         var challenge = Challenge();
         var session = Start();
 
-        var steps = Play(session, challenge, Found, Half, Missed, Missed, Missed);
+        var steps = Play(session, challenge, Found, Half, Found, Found, Found);
 
-        Assert.Equal(new RunStep(1, RunStepOutcome.Lost), steps[^1]);
+        Assert.Equal((0, 0), (steps[^1].FromStep, steps[^1].ToStep));
+        Assert.Equal(3, session.LivesLeft(challenge.Rules));
+    }
+
+    [Fact]
+    public void LePalierLePlusCourt_SeRepete()
+    {
+        var challenge = Challenge(rounds: 7);
+        var session = Start();
+
+        Play(session, challenge, Repeat(Found, 30));
+
+        Assert.Equal(6, session.RoundsPassed);
+        Assert.Equal(0.5m, session.ListenSecondsOf(challenge.Rules));
+        Assert.Equal(1200, session.Answers[^1].Points);
+    }
+
+    [Fact]
+    public void LaDerniereVie_ArreteLaPartieNet_AuMilieuDUneManche()
+    {
+        var challenge = Challenge();
+        var session = Start();
+
+        var steps = Play(session, challenge, Found, Missed, Missed, Missed);
+
+        Assert.Equal(RunStepOutcome.Over, steps[^1].Outcome);
         Assert.Equal(RunSessionStatus.Lost, session.Status);
-        Assert.Equal(Now, session.EndedAt);
-        Assert.Null(session.CurrentPosition);
+        Assert.False(session.IsPending);
         Assert.Equal(0, session.RoundsPassed);
-        Assert.Throws<InvalidOperationException>(() => session.Answer(challenge, Found, Scoring, Now));
-    }
-
-    [Fact]
-    public void QuatreManchesPassees_LaPartieEstGagnee()
-    {
-        var challenge = Challenge();
-        var session = Start();
-
-        var steps = Play(session, challenge, Enumerable.Repeat(Found, 20).ToArray());
-
-        Assert.Equal(new RunStep(4, RunStepOutcome.Won), steps[^1]);
-        Assert.Equal(RunSessionStatus.Won, session.Status);
-        Assert.Equal(4, session.RoundsPassed);
-        Assert.Equal(3000, session.TotalScore);
-    }
-
-    [Fact]
-    public void LaFin_SeFaitSurLeNombreReelDeMorceauxDuDefi()
-    {
-        // Un défi de 2 manches de 3 : la partie se termine au 6e morceau, quel que soit le réglage du moment (piège 38).
-        var challenge = Challenge(new RunRules(2, 3, 10m, [40, 50], 1m, 2m));
-        var session = Start();
-
-        var steps = Play(session, challenge, Found, Found, Found, Found, Found, Found);
-
-        Assert.Equal(new RunStep(2, RunStepOutcome.Won), steps[^1]);
-        Assert.Equal(RunSessionStatus.Won, session.Status);
-    }
-
-    [Fact]
-    public void UnMorceauNeutralise_SortDuMaximum_EtLObjectifSeRecalcule()
-    {
-        var challenge = Challenge();
-        var session = Start();
-        Assert.Equal(225, session.RoundProgressOf(challenge, 1, Scoring).Objective);
-
-        var step = session.Neutralize(challenge, Scoring, Now);
-
-        Assert.Equal(RunStepOutcome.Continue, step.Outcome);
-        var answer = Assert.Single(session.Answers);
-        Assert.True(answer.Neutralized);
-        Assert.Equal(0, answer.Points);
-        var progress = session.RoundProgressOf(challenge, 1, Scoring);
-        Assert.Equal((400, 180), (progress.MaxScore, progress.Objective));
-    }
-
-    [Fact]
-    public void UneMancheEntierementNeutralisee_EstPassee()
-    {
-        var challenge = Challenge();
-        var session = Start();
-
-        RunStep last = null!;
-        for (var i = 0; i < 5; i++)
-            last = session.Neutralize(challenge, Scoring, Now);
-
-        Assert.Equal(new RunStep(1, RunStepOutcome.RoundPassed), last);
-        Assert.Equal(1, session.RoundsPassed);
-        Assert.Equal(0, session.RoundProgressOf(challenge, 1, Scoring).Objective);
-    }
-
-    [Fact]
-    public void Abandonner_TermineLaPartie_SansManchePassee()
-    {
-        var challenge = Challenge();
-        var session = Start();
-        Play(session, challenge, Found);
-
-        session.Abandon(Now);
-
-        Assert.Equal(RunSessionStatus.Abandoned, session.Status);
+        Assert.Equal(0, session.LivesLeft(challenge.Rules));
+        Assert.NotNull(session.EndedAt);
         Assert.Null(session.CurrentPosition);
-        Assert.Throws<InvalidOperationException>(() => session.Abandon(Now));
     }
 
     [Fact]
-    public void LeDefiDUneAutrePartie_EstRefuse()
+    public void UneReponseApresLeChrono_CompteCommeUnMorceauPasse()
     {
-        var session = RunSession.Start(42, Guid.NewGuid(), Now);
+        var challenge = Challenge();
+        var session = Start();
+        session.ServeCurrent(Now);
+        session.StartClock(Now);
 
-        Assert.Throws<ArgumentException>(() => session.Answer(Challenge(), Found, Scoring, Now));
+        session.Answer(challenge, Found, Scoring, Now.AddSeconds(challenge.Rules.AnswerSeconds + 6));
+
+        Assert.Equal(0, session.Answers[0].Points);
+        Assert.True(session.Answers[0].IsFailed);
+        Assert.Equal(2, session.LivesLeft(challenge.Rules));
     }
 
-    private static RunChallenge ClockedChallenge() => Challenge(RunsOptions.DefaultRules());
+    [Fact]
+    public void UnMorceauNeutralise_NeRapporteRien_NeCouteAucuneVie_NeCompteDansAucunPalier()
+    {
+        var challenge = Challenge();
+        var session = Start();
+
+        session.Neutralize(challenge, Now);
+        var steps = Play(session, challenge, Found, Found, Found, Found);
+
+        Assert.True(session.Answers[0].Neutralized);
+        Assert.Equal(0, session.Answers[0].Points);
+        Assert.Equal(3, session.LivesLeft(challenge.Rules));
+        // Les quatre autres morceaux, tous justes : la manche descend d'un palier malgré le morceau retiré.
+        Assert.Equal((0, 1), (steps[^1].FromStep, steps[^1].ToStep));
+    }
 
     [Fact]
-    public void LeChrono_PartAuPremierSon_UneSeuleFois()
+    public void UneMancheEntiereNeutralisee_LaisseLePalier()
     {
-        var challenge = ClockedChallenge();
+        var challenge = Challenge();
+        var session = Start();
+
+        for (var i = 0; i < 5; i++)
+            session.Neutralize(challenge, Now);
+
+        Assert.Equal(1, session.RoundsPassed);
+        Assert.Equal(10m, session.ListenSecondsOf(challenge.Rules));
+    }
+
+    [Fact]
+    public void LeChrono_PartAuPremierSon_UneSeuleFois_EtPasPlusTardQueLaLimite()
+    {
+        var challenge = Challenge();
         var session = Start();
         session.ServeCurrent(Now);
 
-        session.StartClock(Now.AddSeconds(3));
-        session.StartClock(Now.AddSeconds(20));
+        Assert.Null(session.ClockRemaining(challenge.Rules, Now));
+        session.StartClock(Now.AddSeconds(2));
+        session.StartClock(Now.AddSeconds(9));
 
-        Assert.Equal(Now.AddSeconds(3), session.CurrentClockAt);
-        Assert.Equal(45m - 7m, session.ClockRemaining(challenge.Rules, Now.AddSeconds(10)));
+        Assert.Equal(43m, session.ClockRemaining(challenge.Rules, Now.AddSeconds(4)));
         Assert.Equal(0m, session.ClockRemaining(challenge.Rules, Now.AddMinutes(5)));
     }
 
     [Fact]
-    public void LeChrono_NePartJamaisPlusTardQueLaLimiteApresLEnvoi()
+    public void UnePartieFinie_NAcceptePlusDeReponse()
     {
+        var challenge = Challenge();
         var session = Start();
-        session.ServeCurrent(Now);
-        session.ServeCurrent(Now.AddMinutes(1));
+        session.Abandon(Now);
 
-        session.StartClock(Now.AddMinutes(2));
-
-        Assert.Equal(Now + RunSession.MaxClockWait, session.CurrentClockAt);
+        Assert.Equal(RunSessionStatus.Abandoned, session.Status);
+        Assert.Throws<InvalidOperationException>(() => session.Answer(challenge, Found, Scoring, Now));
+        Assert.Throws<InvalidOperationException>(() => session.Abandon(Now));
     }
 
     [Fact]
-    public void UneReponseTardive_CommeUnMorceauPasse_LaMargeReseauComprise()
+    public void LePalierDUneMancheFuture_SeCalculeSurLesMancheEntieres()
     {
-        var challenge = ClockedChallenge();
+        var challenge = Challenge();
         var session = Start();
-        session.ServeCurrent(Now);
-        session.StartClock(Now);
+        Play(session, challenge, Repeat(Found, 10));
 
-        Assert.False(session.IsLate(challenge.Rules, Now.AddSeconds(50)));
-        Assert.True(session.IsLate(challenge.Rules, Now.AddSeconds(51)));
-        session.Answer(challenge, Found, Scoring, Now.AddSeconds(51));
-
-        var answer = Assert.Single(session.Answers);
-        Assert.Equal((false, false, 0), (answer.ArtistCorrect, answer.TitleCorrect, answer.Points));
-        // Le morceau suivant repart sans envoi ni chrono.
-        Assert.Null(session.CurrentServedAt);
-        Assert.Null(session.CurrentClockAt);
+        Assert.Equal(0, session.StepOf(challenge.Rules, 1));
+        Assert.Equal(1, session.StepOf(challenge.Rules, 2));
+        Assert.Equal(2, session.StepOf(challenge.Rules, 3));
     }
-
-    [Fact]
-    public void SansPremierSonAnnonce_LeChronoPartALaLimiteApresLEnvoi()
-    {
-        var challenge = ClockedChallenge();
-        var session = Start();
-        session.ServeCurrent(Now);
-
-        Assert.Null(session.ClockRemaining(challenge.Rules, Now.AddSeconds(10)));
-        // La limite passée, le chrono tourne pour le joueur qui revient.
-        Assert.Equal(35m, session.ClockRemaining(challenge.Rules, Now.AddSeconds(40)));
-        Assert.False(session.IsLate(challenge.Rules, Now.AddSeconds(80)));
-        Assert.True(session.IsLate(challenge.Rules, Now.AddSeconds(81)));
-    }
-
-    [Fact]
-    public void SansChronoDansLesRegles_RienNEstJamaisEnRetard()
-    {
-        var challenge = Challenge(RunsOptions.DefaultRules() with { AnswerSeconds = 0 });
-        var session = Start();
-        session.ServeCurrent(Now);
-        session.StartClock(Now);
-
-        Assert.False(session.IsLate(challenge.Rules, Now.AddHours(1)));
-        Assert.Null(session.ClockRemaining(challenge.Rules, Now));
-        session.Answer(challenge, Found, Scoring, Now.AddHours(1));
-        Assert.Equal(100, session.Answers[0].Points);
-    }
-}
-
-public class RunGaugeTests
-{
-    [Theory]
-    [InlineData(1, 500, 225)]
-    [InlineData(2, 665, 366)]
-    [InlineData(3, 835, 568)]
-    [InlineData(4, 1000, 800)]
-    public void Objectif_PourcentageDuMaximum_ArrondiAuPlusProche(int round, int max, int expected) =>
-        Assert.Equal(expected, RunGauge.Objective(RunsOptions.DefaultRules().DefaultOptionOf(round).ObjectivePercent, max));
-
-    [Fact]
-    public void MancheInconnue_Refusee() =>
-        Assert.Throws<ArgumentOutOfRangeException>(() => RunsOptions.DefaultRules().OptionsOf(5));
-}
-
-public class ArtistTitleScoringTests
-{
-    private static readonly ArtistTitleScoring Scoring = new();
-
-    [Theory]
-    [InlineData(true, true, "1", 100)]
-    [InlineData(true, false, "1", 50)]
-    [InlineData(false, true, "1.33", 67)]
-    [InlineData(true, true, "1.33", 133)]
-    [InlineData(true, false, "1.67", 84)]
-    [InlineData(true, true, "1.67", 167)]
-    [InlineData(false, false, "2", 0)]
-    [InlineData(true, true, "2", 200)]
-    public void Points_ArtistePlusTitre_FoisLeMultiplicateur(bool artist, bool title, string multiplier, int expected) =>
-        Assert.Equal(expected, Scoring.Points(new RoundOutcome(artist, title, 10m, 0), decimal.Parse(multiplier, System.Globalization.CultureInfo.InvariantCulture)));
-
-    [Fact]
-    public void Maximum_DesQuatreManches() =>
-        Assert.Equal([500, 665, 835, 1000], new[] { 1m, 1.33m, 1.67m, 2m }.Select(m => Scoring.MaxPoints(m) * 5));
-}
-
-public class DiscLadderTests
-{
-    private static readonly IReadOnlyList<string> Discs = RunsOptions.DefaultDiscs;
-
-    [Theory]
-    [InlineData(0, "runs.discs.scratched")]
-    [InlineData(1, "runs.discs.wax")]
-    [InlineData(2, "runs.discs.bronze")]
-    [InlineData(3, "runs.discs.silver")]
-    [InlineData(4, "runs.discs.gold")]
-    public void ManchesPassees_DonnentLeDisque(int rounds, string expected) =>
-        Assert.Equal(new RunDisc(expected, 0), DiscLadder.Of(rounds, Discs));
-
-    [Theory]
-    [InlineData(5, 2)]
-    [InlineData(6, 3)]
-    public void AuDelaDeLEchelle_LeDernierDisquePrendDesEtoiles(int rounds, int stars) =>
-        Assert.Equal(new RunDisc("runs.discs.gold", stars), DiscLadder.Of(rounds, Discs));
-}
-
-public class RunGhostTests
-{
-    [Fact]
-    public void Total_SurLesSeulsMorceauxJouesParLeJoueur_UnMorceauNonJoueParLAuteurNeRapporteRien()
-    {
-        var points = new Dictionary<int, int> { [1] = 100, [2] = 50, [3] = 0, [4] = 200 };
-
-        Assert.Equal(150, RunGhost.TotalOver(points, [1, 2]));
-        // Le morceau 2 retiré au joueur : les 50 points de l'auteur n'y comptent pas.
-        Assert.Equal(300, RunGhost.TotalOver(points, [1, 3, 4]));
-        Assert.Equal(300, RunGhost.TotalOver(points, [1, 4, 5]));
-        Assert.Equal(0, RunGhost.TotalOver(points, []));
-    }
-
-    [Fact]
-    public void LAuteurArreteAvantLeJoueur_SaDernierePosition_RienTantQueLeJoueurNeLADepassePas()
-    {
-        var points = new Dictionary<int, int> { [1] = 100, [2] = 0 };
-
-        Assert.Null(RunGhost.StoppedAt(points, 2));
-        Assert.Equal(2, RunGhost.StoppedAt(points, 3));
-    }
-
-    [Fact]
-    public void LAuteurHanteLesAutres_JamaisLuiMeme_NiUnePlaylistSansAuteur()
-    {
-        var author = Guid.NewGuid();
-
-        Assert.True(RunGhost.Haunts(author, Guid.NewGuid()));
-        Assert.False(RunGhost.Haunts(author, author));
-        Assert.False(RunGhost.Haunts(null, Guid.NewGuid()));
-    }
-}
-
-public class DiscShelfTests
-{
-    private static readonly IReadOnlyList<string> Discs = RunsOptions.DefaultDiscs;
-
-    [Fact]
-    public void DuMoinsBonAuMeilleur_SansLePremierDisque_NiUneLigneVide()
-    {
-        var shelf = DiscShelf.Of(new Dictionary<int, int> { [4] = 1, [0] = 7, [1] = 3, [2] = 0 }, Discs);
-
-        Assert.Equal([new RunShelfDisc(new RunDisc("runs.discs.wax", 0), 3), new RunShelfDisc(new RunDisc("runs.discs.gold", 0), 1)], shelf);
-    }
-
-    [Fact]
-    public void AuDelaDeLEchelle_LesEtoilesFontUnAutreDisque() =>
-        Assert.Equal(
-            [new RunShelfDisc(new RunDisc("runs.discs.gold", 0), 1), new RunShelfDisc(new RunDisc("runs.discs.gold", 2), 2)],
-            DiscShelf.Of(new Dictionary<int, int> { [4] = 1, [5] = 2 }, Discs));
-}
-
-public class RunRecordTests
-{
-    private static readonly DateTimeOffset Now = new(2026, 10, 23, 8, 0, 0, TimeSpan.Zero);
-
-    [Fact]
-    public void UnScoreMeilleur_DevientLeRecord_PlusDeManches_AmeliorentLeDisque()
-    {
-        var player = Guid.NewGuid();
-        var record = RunRecord.Create(player, 1200, 2, sessionId: 1, Now);
-        var challenge = RunChallenge.Create("K7Q2M9", 1, RunsOptions.DefaultRules(),
-            Enumerable.Range(1, 20).Select(id => new PlannedTrack(id, (id - 1) / 5 + 1, 1m)).ToList(), null, Now);
-        var session = RunSession.Start(0, player, Now);
-        for (var i = 0; i < 15; i++)
-            session.Answer(challenge, new RoundOutcome(true, i < 12, 10m, 0), new ArtistTitleScoring(), Now);
-
-        // 12 × 100 + 3 × 50 = 1 350 : meilleur score, 3 manches passées (350 sur 500 à la 3e, objectif 60 % : 300).
-        record.Improve(session, Now.AddHours(1));
-
-        Assert.Equal((1350, (short)3, Now.AddHours(1)), (record.BestScore, record.BestRoundsPassed, record.AchievedAt));
-    }
-
-    [Fact]
-    public void UnScoreMoindre_NeChangeRien()
-    {
-        var player = Guid.NewGuid();
-        var record = RunRecord.Create(player, 2000, 4, sessionId: 1, Now);
-
-        record.Improve(RunSession.Start(0, player, Now), Now.AddHours(1));
-
-        Assert.Equal((2000, (short)4, 1, Now), (record.BestScore, record.BestRoundsPassed, record.SessionId, record.AchievedAt));
-    }
-
-    [Fact]
-    public void LaPartieDUnAutreJoueur_EstRefusee() =>
-        Assert.Throws<ArgumentException>(() => RunRecord.Create(Guid.NewGuid(), 0, 0, 1, Now).Improve(RunSession.Start(0, Guid.NewGuid(), Now), Now));
 }

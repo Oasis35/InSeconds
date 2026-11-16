@@ -18,26 +18,24 @@ public class RunHistoryTests(PostgresFixture postgres) : IAsyncLifetime
     public ValueTask DisposeAsync() => _run.DisposeAsync();
 
     private static readonly bool[] AllFound = [true, true, true, true, true];
-    private static readonly bool[] NoneFound = [false, false, false, false, false];
+    private static readonly bool[] NoneFound = [false, false, false];
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     private static async Task<RunHistoryResponse> HistoryAsync(RunGamer gamer, string? month = null) =>
         (await gamer.Client.GetFromJsonAsync<RunHistoryResponse>(month is null ? "/api/runs/history" : $"/api/runs/history?month={month}", Ct))!;
 
-    /// <summary>Alice gagne une partie (rangée au 20 septembre), en perd une autre (le jour de jeu) et en abandonne une troisième.</summary>
-    private async Task<(RunGamer Alice, int Won, int Lost, string LostCode)> SeedAsync()
+    /// <summary>Alice perd une partie après deux manches (rangée au 20 septembre), une autre après une manche (le jour de jeu) et en abandonne une troisième.</summary>
+    private async Task<(RunGamer Alice, int Long, int Short, string ShortCode)> SeedAsync()
     {
         var alice = await _run.NewInvitedAsync("Alice");
 
         var first = await alice.LaunchAsync();
-        await alice.PlayAsync(first.Session.SessionId, first.Session.ChallengeCode, 1, [.. AllFound, .. AllFound, .. AllFound, .. AllFound]);
+        await alice.PlayAsync(first.Session.SessionId, first.Session.ChallengeCode, 1, [.. AllFound, .. AllFound, false, false, false]);
         await _run.Api.ExecuteAsync($"UPDATE runs.sessions SET ended_at = '2026-09-20 10:00:00+00' WHERE id = {first.Session.SessionId}");
 
         var second = await alice.LaunchAsync();
-        await alice.PlayAsync(second.Session.SessionId, second.Session.ChallengeCode, 1, [.. AllFound, .. NoneFound]);
-        await _run.Api.ExecuteAsync(
-            $"INSERT INTO runs.session_rounds (session_id, round, difficulty, chosen_at) VALUES ({second.Session.SessionId}, 2, 3, now()) ON CONFLICT DO NOTHING");
+        await alice.PlayAsync(second.Session.SessionId, second.Session.ChallengeCode, 1, [.. AllFound, false, false, false]);
 
         var third = await alice.LaunchAsync();
         await alice.AbandonRawAsync(third.Session.SessionId);
@@ -46,7 +44,7 @@ public class RunHistoryTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task LeMoisEnCours_LaPartiePerdue_LAbandonNEstPasLa_LeResumeCompteTout()
+    public async Task LeMoisEnCours_LaPartieCourte_LAbandonNEstPasLa_LeResumeCompteTout()
     {
         var (alice, _, lost, code) = await SeedAsync();
 
@@ -55,16 +53,15 @@ public class RunHistoryTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(("2026-10", "2026-09", (string?)null), (history.Month, history.PreviousMonth, history.NextMonth));
         Assert.Equal(2, history.PlayedCount);
         var run = Assert.Single(history.Runs);
-        Assert.Equal((lost, code, "lost", "risky", 1), (run.SessionId, run.ChallengeCode, run.Status, run.Difficulty, run.RoundsPassed));
+        Assert.Equal((lost, code, "lost", 1), (run.SessionId, run.ChallengeCode, run.Status, run.RoundsPassed));
         Assert.Equal(DailyApi.Today, run.Date);
-        Assert.Equal("runs.discs.wax", run.Disc.Key);
         // Le résumé porte sur les deux parties : le record est celle de septembre.
         Assert.True(history.BestScore > run.Score);
         Assert.Equal((int)Math.Round((history.BestScore!.Value + run.Score) / 2.0, MidpointRounding.AwayFromZero), history.AverageScore);
     }
 
     [Fact]
-    public async Task UnMoisPasse_LaPartieGagnee_EtLesFleches()
+    public async Task UnMoisPasse_LaPartieLongue_EtLesFleches()
     {
         var (alice, won, _, _) = await SeedAsync();
 
@@ -72,8 +69,8 @@ public class RunHistoryTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal(("2026-09", (string?)null, "2026-10"), (history.Month, history.PreviousMonth, history.NextMonth));
         var run = Assert.Single(history.Runs);
-        Assert.Equal((won, "won", new DateOnly(2026, 9, 20), "safe"), (run.SessionId, run.Status, run.Date, run.Difficulty));
-        Assert.Equal(4, run.RoundsPassed);
+        Assert.Equal((won, "lost", new DateOnly(2026, 9, 20)), (run.SessionId, run.Status, run.Date));
+        Assert.Equal(2, run.RoundsPassed);
         Assert.Empty((await HistoryAsync(alice, "2026-07")).Runs);
     }
 
@@ -128,7 +125,7 @@ public class RunHistoryTests(PostgresFixture postgres) : IAsyncLifetime
         // Un morceau pas joué de cette partie perdue, une partie en cours, la partie d'un autre joueur, un morceau hors playlist : tous 404.
         foreach (var (client, path) in new[]
         {
-            (alice.Client, $"/api/runs/sessions/{lost}/tracks/20/preview"),
+            (alice.Client, $"/api/runs/sessions/{lost}/tracks/30/preview"),
             (alice.Client, $"/api/runs/sessions/{pending.Session.SessionId}/tracks/1/preview"),
             (other.Client, $"/api/runs/sessions/{lost}/tracks/1/preview"),
             (alice.Client, $"/api/runs/sessions/{lost}/tracks/99/preview"),

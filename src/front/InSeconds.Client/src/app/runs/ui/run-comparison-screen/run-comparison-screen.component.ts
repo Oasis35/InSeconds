@@ -53,7 +53,7 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
                     }
                   </span>
                   <span class="block text-xs" style="color:var(--text-faint)">
-                    {{ row.disc.key | translate }}@if (row.disc.stars > 0) { ★{{ row.disc.stars }} }
+                    {{ 'runs.comparison.roundsPassed' | translate: { count: row.roundsPassed } }}
                   </span>
                 </th>
                 @for (score of row.rounds; track $index) {

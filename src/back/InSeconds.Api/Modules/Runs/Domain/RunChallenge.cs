@@ -1,19 +1,20 @@
 namespace InSeconds.Api.Modules.Runs.Domain;
 
 /// <summary>
-/// Le défi d'un run : les morceaux tirés une fois pour toutes (4 manches de 5 au proto 1), les règles figées au moment du tirage, le code qui sert de
-/// lien. Il ne dépend d'aucun joueur et ne change plus une fois créé. Sa graine est tirée au hasard et n'est jamais exposée.
+/// Le défi d'une Série : une playlist qui se tire **à la volée**, manche après manche, à partir d'une graine, et que tous ses joueurs jouent dans le
+/// même ordre (c'est ce qui rend le fantôme possible). La première manche est tirée à la création ; la suivante l'est quand le premier joueur y arrive
+/// (<see cref="AppendRound"/>), avec le thème qu'il a choisi, et ne change plus : les joueurs qui arrivent après jouent les mêmes morceaux. Il porte les
+/// règles figées au moment de la création et le code qui sert de lien. Sa graine est tirée au hasard et n'est jamais exposée.
 /// </summary>
 public sealed class RunChallenge
 {
     private readonly List<RunChallengeTrack> _tracks = [];
-    private readonly List<RunChallengeReserveTrack> _reserve = [];
 
     private RunChallenge()
     {
     }
 
-    /// <summary>Attribué dès l'ajout (séquence), pour que la création d'un run puisse le porter avant l'enregistrement.</summary>
+    /// <summary>Attribué dès l'ajout (séquence), pour que la création d'une Série puisse le porter avant l'enregistrement.</summary>
     public int Id { get; private set; }
 
     /// <summary>Le lien du défi (6 caractères, <see cref="RunChallengeCode"/>), unique.</summary>
@@ -28,99 +29,64 @@ public sealed class RunChallenge
 
     public DateTimeOffset CreatedAt { get; private set; }
 
-    /// <summary>Les morceaux, par position (de 1 à N).</summary>
+    /// <summary>Les morceaux tirés jusqu'ici, par position (de 1 à N, N croît d'une manche à chaque fois que quelqu'un va plus loin que les autres).</summary>
     public IReadOnlyList<RunChallengeTrack> Tracks => _tracks;
 
-    /// <summary>
-    /// Les morceaux de réserve de chaque manche, dans l'ordre où le coup de pouce « Échange » les sort : tirés avec la playlist, les mêmes pour tous ses
-    /// joueurs. Ils ne comptent pas dans les morceaux du défi (<see cref="Tracks"/>) tant qu'aucun Échange ne les fait jouer.
-    /// </summary>
-    public IReadOnlyList<RunChallengeReserveTrack> Reserve => _reserve;
+    /// <summary>Les manches déjà tirées.</summary>
+    public int RoundsDrawn => _tracks.Count / Math.Max(1, Rules.TracksPerRound);
 
-    /// <summary>Tous les morceaux de la playlist : ceux du défi et ceux de la réserve.</summary>
-    public IEnumerable<int> AllTrackIds() => _tracks.Select(t => t.TrackId).Concat(_reserve.Select(r => r.TrackId));
+    /// <summary>Cette manche est déjà tirée (le premier joueur qui l'a atteinte l'a fixée pour tous).</summary>
+    public bool HasRound(int round) => round <= RoundsDrawn;
 
-    /// <summary>La réserve d'une manche, dans l'ordre du tirage.</summary>
-    public IEnumerable<RunChallengeReserveTrack> ReserveOf(int round) => _reserve.Where(r => r.Round == round).OrderBy(r => r.Rank);
+    /// <summary>Le morceau de cette position, vide s'il n'est pas encore tiré.</summary>
+    public RunChallengeTrack? TrackAt(int position) => _tracks.Find(t => t.Position == position);
 
     /// <summary>
-    /// Le créateur a choisi le thème de la manche en attente (<see cref="RunRules.PendingThemeRound"/>) : ses morceaux et sa réserve sont tirés dans ce
-    /// thème, à la place de ceux de sa tranche de rang, et le thème est figé avec la playlist. Rien n'a été joué dans cette manche (le choix précède
-    /// son premier son), donc aucune réponse ne désigne ces morceaux.
+    /// Ajoute la manche suivante : ses morceaux (autant que <see cref="RunRules.TracksPerRound"/>) et, s'il y en a un, son thème, figé avec la playlist.
+    /// Les manches se tirent dans l'ordre, une seule fois.
     /// </summary>
-    /// <param name="trackIds">Les morceaux de la manche, dans l'ordre du jeu (autant que de morceaux par manche).</param>
-    /// <param name="reserveIds">Les morceaux de réserve de la manche, dans l'ordre de l'Échange (autant que la réserve actuelle de la manche).</param>
-    public void ApplyTheme(RunRoundTheme theme, IReadOnlyList<int> trackIds, IReadOnlyList<int> reserveIds)
+    public void AppendRound(int round, IReadOnlyList<int> trackIds, RunRoundTheme? theme = null)
     {
-        ArgumentNullException.ThrowIfNull(theme);
         ArgumentNullException.ThrowIfNull(trackIds);
-        ArgumentNullException.ThrowIfNull(reserveIds);
-        if (Rules.PendingThemeRound != theme.Round)
-            throw new InvalidOperationException("Cette manche n'attend pas de thème.");
-        var slots = _tracks.Where(t => t.Round == theme.Round).OrderBy(t => t.Position).ToList();
-        var reserve = _reserve.Where(r => r.Round == theme.Round).OrderBy(r => r.Rank).ToList();
-        if (trackIds.Count != slots.Count || reserveIds.Count != reserve.Count)
-            throw new ArgumentException("Le thème doit donner autant de morceaux que la manche en a, réserve comprise.");
-        var others = _tracks.Where(t => t.Round != theme.Round).Select(t => t.TrackId).Concat(_reserve.Where(r => r.Round != theme.Round).Select(r => r.TrackId));
-        if (trackIds.Concat(reserveIds).Distinct().Count() != trackIds.Count + reserveIds.Count || trackIds.Concat(reserveIds).Intersect(others).Any())
-            throw new ArgumentException("Un morceau ne figure qu'une fois dans un défi, réserve comprise.");
-        for (var i = 0; i < slots.Count; i++)
-            slots[i].ReplaceTrack(trackIds[i]);
-        for (var i = 0; i < reserve.Count; i++)
-            reserve[i].ReplaceTrack(reserveIds[i]);
-        Rules = Rules with { Themes = [.. (Rules.Themes ?? []), theme], PendingThemeRound = null };
+        if (round != RoundsDrawn + 1)
+            throw new InvalidOperationException("Les manches se tirent dans l'ordre : la suivante est la manche " + (RoundsDrawn + 1) + ".");
+        if (trackIds.Count != Rules.TracksPerRound)
+            throw new ArgumentException("Une manche a exactement les morceaux que les règles demandent.", nameof(trackIds));
+        if (trackIds.Distinct().Count() != trackIds.Count || trackIds.Any(id => _tracks.Exists(t => t.TrackId == id)))
+            throw new ArgumentException("Un morceau ne figure qu'une fois dans un défi.", nameof(trackIds));
+        if (theme is not null && theme.Round != round)
+            throw new ArgumentException("Ce thème n'est pas celui de cette manche.", nameof(theme));
+
+        for (var i = 0; i < trackIds.Count; i++)
+            _tracks.Add(new RunChallengeTrack((short)(Rules.FirstPositionOf(round) + i), trackIds[i], (short)round));
+        if (theme is not null)
+            Rules = Rules with { Themes = [.. (Rules.Themes ?? []), theme] };
     }
 
-    /// <summary>La manche en attente de thème se joue sans thème (pas assez de thèmes fournis au moment du choix) : ses morceaux de rang restent.</summary>
-    public void DropPendingTheme() => Rules = Rules with { PendingThemeRound = null };
-
-    /// <param name="tracks">Les morceaux dans l'ordre du jeu, avec leur manche et leur multiplicateur.</param>
-    /// <param name="reserve">
-    /// Les morceaux de réserve, manche par manche (aucun pour une playlist du proto 1). Leur multiplicateur n'est pas gardé : un morceau sorti par
-    /// un Échange prend la place, et donc le multiplicateur, du morceau qu'il remplace (le même : celui de la manche).
-    /// </param>
-    public static RunChallenge Create(
-        string code, int seed, RunRules rules, IReadOnlyList<PlannedTrack> tracks, Guid? createdBy, DateTimeOffset now,
-        IReadOnlyList<PlannedTrack>? reserve = null)
+    /// <param name="firstRound">Les morceaux de la première manche, dans l'ordre du jeu.</param>
+    public static RunChallenge Create(string code, int seed, RunRules rules, IReadOnlyList<int> firstRound, Guid? createdBy, DateTimeOffset now)
     {
-        reserve ??= [];
         ArgumentNullException.ThrowIfNull(rules);
         if (RunChallengeCode.Normalize(code) != code)
             throw new ArgumentException("Code de défi invalide.", nameof(code));
-        if (tracks.Count != rules.TrackCount)
-            throw new ArgumentException("Un défi a exactement les morceaux que ses règles demandent.", nameof(tracks));
-        if (tracks.Concat(reserve).Select(t => t.TrackId).Distinct().Count() != tracks.Count + reserve.Count)
-            throw new ArgumentException("Un morceau ne figure qu'une fois dans un défi, réserve comprise.", nameof(tracks));
-        if (reserve.Any(r => r.Round < 1 || r.Round > rules.Rounds))
-            throw new ArgumentException("Un morceau de réserve appartient à une manche du défi.", nameof(reserve));
-
         var challenge = new RunChallenge { Code = code, Seed = seed, Rules = rules, CreatedBy = createdBy, CreatedAt = now };
-        for (var i = 0; i < tracks.Count; i++)
-            challenge._tracks.Add(new RunChallengeTrack((short)(i + 1), tracks[i].TrackId, (short)tracks[i].Round, tracks[i].Multiplier));
-        foreach (var round in reserve.GroupBy(r => r.Round))
-        {
-            var rank = 0;
-            foreach (var track in round)
-                challenge._reserve.Add(new RunChallengeReserveTrack((short)round.Key, (short)++rank, track.TrackId));
-        }
-
+        challenge.AppendRound(1, firstRound);
         return challenge;
     }
 }
 
-/// <summary>Un morceau d'un défi, à sa position : sa manche et le multiplicateur de points de cette manche. Il désigne le morceau par son identifiant (Catalogue).</summary>
+/// <summary>Un morceau d'un défi, à sa position : sa manche. Il désigne le morceau par son identifiant (Catalogue).</summary>
 public sealed class RunChallengeTrack
 {
     private RunChallengeTrack()
     {
     }
 
-    internal RunChallengeTrack(short position, int trackId, short round, decimal multiplier)
+    internal RunChallengeTrack(short position, int trackId, short round)
     {
         Position = position;
         TrackId = trackId;
         Round = round;
-        Multiplier = multiplier;
     }
 
     public int ChallengeId { get; private set; }
@@ -131,41 +97,4 @@ public sealed class RunChallengeTrack
 
     /// <summary>La manche, à partir de 1.</summary>
     public short Round { get; private set; }
-
-    public decimal Multiplier { get; private set; }
-
-    internal void ReplaceTrack(int trackId) => TrackId = trackId;
 }
-
-/// <summary>
-/// Un morceau de réserve d'un défi : sa manche et son rang dans la réserve de la manche (de 1 à N). Sans multiplicateur : celui de la position
-/// qu'un Échange lui fait prendre.
-/// </summary>
-public sealed class RunChallengeReserveTrack
-{
-    private RunChallengeReserveTrack()
-    {
-    }
-
-    internal RunChallengeReserveTrack(short round, short rank, int trackId)
-    {
-        Round = round;
-        Rank = rank;
-        TrackId = trackId;
-    }
-
-    public int ChallengeId { get; private set; }
-
-    /// <summary>La manche, à partir de 1.</summary>
-    public short Round { get; private set; }
-
-    /// <summary>Son rang dans la réserve de la manche, à partir de 1 : le premier Échange sort le rang 1.</summary>
-    public short Rank { get; private set; }
-
-    public int TrackId { get; private set; }
-
-    internal void ReplaceTrack(int trackId) => TrackId = trackId;
-}
-
-/// <summary>Un morceau tiré, avant que le défi n'existe.</summary>
-public sealed record PlannedTrack(int TrackId, int Round, decimal Multiplier);

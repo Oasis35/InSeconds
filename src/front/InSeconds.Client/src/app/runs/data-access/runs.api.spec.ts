@@ -12,13 +12,13 @@ const track = {
 
 const play = {
   session: {
-    sessionId: 7, challengeCode: 'ABC234', status: 'pending', rounds: 4, tracksPerRound: 5, listenSeconds: 10, totalScore: 50, roundsPassed: 0,
-    round: { round: 1, score: 50, objective: 200, maxScore: 500 }, roundTracks: [track], finish: undefined,
+    sessionId: 7, challengeCode: 'ABC234', status: 'pending', lives: 3, livesLeft: 3, tracksPerRound: 5, totalScore: 50, roundsPassed: 0,
+    round: { round: 1, score: 50, listenSeconds: 10, fullPoints: 100, failed: 0 }, roundTracks: [track], finish: undefined,
   },
   revealed: track,
-  neutralized: [{ position: 2, round: 1, objectiveBefore: 200, objectiveAfter: 160 }],
+  neutralized: [{ position: 2, round: 1 }],
   roundSummaries: [],
-  current: { position: 2, round: 1, positionInRound: 2, previewUrl: '' },
+  current: { position: 2, round: 1, positionInRound: 2, previewUrl: '', listenSeconds: 10 },
   isResuming: false,
 } as unknown as RunPlayResponse;
 
@@ -27,7 +27,7 @@ describe('RunsApi', () => {
   let api: RunsApi;
 
   beforeEach(() => {
-    client = { getRunsMe: vi.fn(), getRunChallenge: vi.fn(), getRunComparison: vi.fn(), launchRun: vi.fn(), joinRun: vi.fn(), refreshRunPreview: vi.fn(), submitRunAnswer: vi.fn(), abandonRun: vi.fn(), swapRunTrack: vi.fn(), getRunHistory: vi.fn(), getRunPastPreview: vi.fn(), getRunHits: vi.fn(), receiveRunChallenge: vi.fn(), dismissRunChallenge: vi.fn() };
+    client = { getRunsMe: vi.fn(), getRunChallenge: vi.fn(), getRunComparison: vi.fn(), launchRun: vi.fn(), joinRun: vi.fn(), refreshRunPreview: vi.fn(), submitRunAnswer: vi.fn(), abandonRun: vi.fn(), getRunHistory: vi.fn(), getRunPastPreview: vi.fn(), getRunHits: vi.fn(), receiveRunChallenge: vi.fn(), dismissRunChallenge: vi.fn() };
     TestBed.configureTestingModule({ providers: [{ provide: RunsClient, useValue: client }, RunsApi] });
     api = TestBed.inject(RunsApi);
   });
@@ -37,34 +37,20 @@ describe('RunsApi', () => {
   it('lit mon accès, mon record, ma partie en cours et mon étagère', async () => {
     client['getRunsMe'].mockReturnValue(of({
       hasAccess: true, record: { bestScore: 900, bestRoundsPassed: 2, isNew: false }, pending: { sessionId: 7, challengeCode: 'ABC234' },
-      shelf: [{ disc: { key: 'runs.discs.wax', stars: 0 }, count: 2 }],
       level: { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: { key: 'runs.discs.gold', stars: 0 }, pointsToNext: 220, progressPercent: 56, provisional: false, runsPlayed: 12, delta: undefined },
     } as RunsMeResponse));
 
     expect(await api.me()).toEqual({
       hasAccess: true, record: { bestScore: 900, bestRoundsPassed: 2, isNew: false }, pending: { sessionId: 7, challengeCode: 'ABC234' },
-      shelf: [{ disc: { key: 'runs.discs.wax', stars: 0 }, count: 2 }],
       level: { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: { key: 'runs.discs.gold', stars: 0 }, pointsToNext: 220, progressPercent: 56, provisional: false, runsPlayed: 12, delta: null },
       received: null,
     });
   });
 
-  it('« Changer de morceau » : le morceau de réserve et ses effets en types du domaine, une carte inconnue ignorée', async () => {
-    client['swapRunTrack'].mockReturnValue(of({ ...play, session: { ...play.session, swapAvailable: false }, current: { ...play.current, effects: {
-      cards: ['hint', 'futureCard'], year: 1995, artistInitials: undefined, titleInitials: ['G', 'L'], choices: undefined,
-    } } } as unknown as RunPlayResponse));
-
-    const result = await api.swap(7, 3);
-
-    expect(client['swapRunTrack']).toHaveBeenCalledWith(7, { position: 3 });
-    expect(result.session.swapAvailable).toBe(false);
-    expect(result.current?.effects).toEqual({ cards: ['hint'], year: 1995, artistInitials: null, titleInitials: ['G', 'L'], choices: null, genre: null });
-  });
-
   it('sans record ni partie en cours : `null` plutôt que `undefined`', async () => {
     client['getRunsMe'].mockReturnValue(of({ hasAccess: false } as RunsMeResponse));
 
-    expect(await api.me()).toEqual({ hasAccess: false, record: null, pending: null, shelf: [], level: null, received: null });
+    expect(await api.me()).toEqual({ hasAccess: false, record: null, pending: null, level: null, received: null });
   });
 
   it('un défi reçu : son auteur, le score à battre et la date d\'expiration en texte', async () => {
@@ -109,12 +95,12 @@ describe('RunsApi', () => {
 
     expect(outcome.kind).toBe('ok');
     if (outcome.kind !== 'ok') return;
-    expect(outcome.play.session.round).toEqual({ round: 1, score: 50, objective: 200, maxScore: 500 });
+    expect(outcome.play.session.round).toEqual({ round: 1, score: 50, listenSeconds: 10, fullPoints: 100, failed: 0 });
     expect(outcome.play.session.finish).toBeNull();
     expect(outcome.play.session.ghost).toBeNull();
     expect(outcome.play.revealed).toMatchObject({ artist: 'Daft Punk', title: null, coverUrl: null, deezerTrackId: 3135553 });
-    expect(outcome.play.current).toEqual({ position: 2, round: 1, positionInRound: 2, previewUrl: null, waveform: null, effects: null });
-    expect(outcome.play.neutralized).toEqual([{ position: 2, round: 1, objectiveBefore: 200, objectiveAfter: 160 }]);
+    expect(outcome.play.current).toEqual({ position: 2, round: 1, positionInRound: 2, previewUrl: null, listenSeconds: 10, waveform: null });
+    expect(outcome.play.neutralized).toEqual([{ position: 2, round: 1 }]);
   });
 
   it('reprend une partie par le code de sa playlist', async () => {
@@ -188,7 +174,7 @@ describe('RunsApi', () => {
 
   describe("le lien d'une playlist", () => {
     const link = {
-      code: 'ABC234', authorPseudo: undefined, trackCount: 20, rounds: 4, tracksPerRound: 5, listenSeconds: 10, answerSeconds: 45, myStatus: 'none', mySessionId: undefined,
+      code: 'ABC234', authorPseudo: undefined, lives: 3, tracksPerRound: 5, listenSeconds: 10, answerSeconds: 45, myStatus: 'none', mySessionId: undefined,
     } as RunChallengeResponse;
 
     it('rend les règles de la playlist et la partie du joueur dessus, en types du domaine', async () => {
@@ -196,14 +182,14 @@ describe('RunsApi', () => {
 
       expect(await api.challenge('abc234')).toEqual({
         kind: 'ok',
-        link: { code: 'ABC234', authorPseudo: null, trackCount: 20, rounds: 4, tracksPerRound: 5, listenSeconds: 10, answerSeconds: 45, myStatus: 'none', mySessionId: null, themes: [] },
+        link: { code: 'ABC234', authorPseudo: null, lives: 3, tracksPerRound: 5, listenSeconds: 10, answerSeconds: 45, myStatus: 'none', mySessionId: null, themes: [] },
       });
       expect(client['getRunChallenge']).toHaveBeenCalledWith('abc234');
     });
 
     it('une partie finie ou en cours garde son identifiant ; un statut inconnu vaut « en cours »', async () => {
-      client['getRunChallenge'].mockReturnValue(of({ ...link, authorPseudo: 'Clément', myStatus: 'won', mySessionId: 7 }));
-      expect(await api.challenge('ABC234')).toMatchObject({ link: { authorPseudo: 'Clément', myStatus: 'won', mySessionId: 7 } });
+      client['getRunChallenge'].mockReturnValue(of({ ...link, authorPseudo: 'Clément', myStatus: 'lost', mySessionId: 7 }));
+      expect(await api.challenge('ABC234')).toMatchObject({ link: { authorPseudo: 'Clément', myStatus: 'lost', mySessionId: 7 } });
 
       client['getRunChallenge'].mockReturnValue(of({ ...link, myStatus: 'autre' }));
       expect(await api.challenge('ABC234')).toMatchObject({ link: { myStatus: 'pending' } });
@@ -223,14 +209,14 @@ describe('RunsApi', () => {
       client['getRunComparison'].mockReturnValue(of({
         code: 'ABC234', authorPseudo: 'Clément', playerCount: 2, roundCount: 4,
         rows: [
-          { pseudo: 'Clément', disc: { key: 'runs.discs.gold', stars: 0 }, rounds: [500, 600, 700, 800], totalScore: 2600, isMe: false },
-          { pseudo: undefined, disc: { key: 'runs.discs.wax', stars: 0 }, rounds: [480, 0, undefined, undefined], totalScore: 480, isMe: true },
+          { pseudo: 'Clément', roundsPassed: 4, rounds: [500, 600, 700, 800], totalScore: 2600, isMe: false },
+          { pseudo: undefined, roundsPassed: 1, rounds: [480, 0, undefined, undefined], totalScore: 480, isMe: true },
         ],
       } as RunComparisonResponse));
 
       const comparison = await api.comparison('ABC234');
 
-      expect(comparison.rows[1]).toEqual({ pseudo: null, disc: { key: 'runs.discs.wax', stars: 0 }, rounds: [480, 0, null, null], totalScore: 480, isMe: true, tag: null });
+      expect(comparison.rows[1]).toEqual({ pseudo: null, roundsPassed: 1, rounds: [480, 0, null, null], totalScore: 480, isMe: true, tag: null });
       expect(comparison).toMatchObject({ code: 'ABC234', authorPseudo: 'Clément', playerCount: 2, roundCount: 4 });
     });
 
@@ -253,7 +239,7 @@ describe('RunsApi', () => {
     it('lit un mois en types du domaine', async () => {
       client['getRunHistory'].mockReturnValue(of({
         month: '2026-11', previousMonth: undefined, nextMonth: undefined, playedCount: 2, averageScore: 2640, bestScore: 3420,
-        runs: [{ sessionId: 7, challengeCode: 'ABC234', date: '2026-11-11', status: 'won', disc: { key: 'runs.discs.gold', stars: 0 }, roundsPassed: 4, score: 3420, difficulty: 'risky' }],
+        runs: [{ sessionId: 7, challengeCode: 'ABC234', date: '2026-11-11', status: 'lost', roundsPassed: 4, score: 3420 }],
       }));
 
       const history = await api.history('2026-11');
@@ -261,7 +247,7 @@ describe('RunsApi', () => {
       expect(client['getRunHistory']).toHaveBeenCalledWith('2026-11');
       expect(history).toEqual({
         month: '2026-11', previousMonth: null, nextMonth: null, playedCount: 2, averageScore: 2640, bestScore: 3420,
-        runs: [{ sessionId: 7, date: '2026-11-11', disc: { key: 'runs.discs.gold', stars: 0 }, score: 3420, difficulty: 'risky' }],
+        runs: [{ sessionId: 7, date: '2026-11-11', challengeCode: 'ABC234', status: 'lost', roundsPassed: 4, score: 3420 }],
       });
     });
 

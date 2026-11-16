@@ -86,18 +86,21 @@ public class RunLevelTests
     private static readonly DateTimeOffset Now = new(2026, 11, 11, 8, 0, 0, TimeSpan.Zero);
     private static int _nextId = 100;
 
-    /// <summary>Une partie finie : <paramref name="roundsFound"/> manches entièrement trouvées (500, 665, 835, 1000), puis la suivante ratée (perdue) ; 4 : gagnée.</summary>
+    /// <summary>
+    /// Une partie finie : <paramref name="roundsFound"/> manches entièrement trouvées (500, 1 000, 1 750, 2 750 points : le palier raccourcit à chacune),
+    /// puis la suivante ratée jusqu'à la dernière vie.
+    /// </summary>
     private static RunSession Finished(Guid player, int roundsFound)
     {
         var rules = RunsOptions.DefaultRules();
-        var challenge = RunChallenge.Create("K7Q2M9", 1, rules,
-            Enumerable.Range(1, rules.TrackCount).Select(id => new PlannedTrack(id, (id - 1) / 5 + 1, rules.MultiplierOf((id - 1) / 5 + 1))).ToList(), null, Now);
+        var challenge = RunChallenge.Create("K7Q2M9", 1, rules, Enumerable.Range(1, 5).ToList(), null, Now);
+        for (var round = 2; round <= roundsFound + 1; round++)
+            challenge.AppendRound(round, Enumerable.Range(rules.FirstPositionOf(round), 5).ToList());
         var session = RunSession.Start(0, player, Now);
         typeof(RunSession).GetProperty(nameof(RunSession.Id))!.SetValue(session, _nextId++);
         while (session.IsPending)
         {
-            var round = challenge.Tracks.First(t => t.Position == session.NextPosition).Round;
-            var found = round <= roundsFound;
+            var found = rules.RoundOf(session.NextPosition) <= roundsFound;
             session.Answer(challenge, new RoundOutcome(found, found, 10m, 0), new ArtistTitleScoring(), Now);
         }
 
@@ -113,8 +116,8 @@ public class RunLevelTests
 
         level.Record(session, 10, Now);
 
-        Assert.Equal((3000, 1, 3000), (level.Points, level.RunsPlayed, level.LastDelta));
-        Assert.Equal(3000, level.DeltaOf(session.Id));
+        Assert.Equal((6000, 1, 6000), (level.Points, level.RunsPlayed, level.LastDelta));
+        Assert.Equal(6000, level.DeltaOf(session.Id));
     }
 
     [Fact]
@@ -128,8 +131,8 @@ public class RunLevelTests
         level.Record(bad, 10, Now);
 
         Assert.Equal(0, bad.TotalScore);
-        Assert.Equal(1500, level.Points);
-        Assert.Equal(-1500, level.DeltaOf(bad.Id));
+        Assert.Equal(3000, level.Points);
+        Assert.Equal(-3000, level.DeltaOf(bad.Id));
         Assert.Equal(2, level.RunsPlayed);
     }
 
@@ -140,12 +143,12 @@ public class RunLevelTests
         var level = RunLevel.Start(player, Now);
         level.Record(Finished(player, 0), 2, Now);
         level.Record(Finished(player, 4), 2, Now);
-        Assert.Equal(1500, level.Points);
-
-        // La fenêtre de 2 : la première partie (0) sort, il reste 3000 et 3000.
-        level.Record(Finished(player, 4), 2, Now);
         Assert.Equal(3000, level.Points);
-        Assert.Equal(1500, level.LastDelta);
+
+        // La fenêtre de 2 : la première partie (0) sort, il reste 6000 et 6000.
+        level.Record(Finished(player, 4), 2, Now);
+        Assert.Equal(6000, level.Points);
+        Assert.Equal(3000, level.LastDelta);
     }
 
     [Fact]
@@ -159,7 +162,7 @@ public class RunLevelTests
         level.Record(session, 10, Now);
 
         Assert.Equal(1, level.RunsPlayed);
-        Assert.Equal([3000], level.RecentScores);
+        Assert.Equal([6000], level.RecentScores);
     }
 
     [Fact]

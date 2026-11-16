@@ -9,17 +9,16 @@ describe('RunWithdrawnCardComponent', () => {
     TestBed.inject(TranslateService).setTranslation('fr', fr);
     TestBed.inject(TranslateService).use('fr');
     const fixture = TestBed.createComponent(RunWithdrawnCardComponent);
-    fixture.componentRef.setInput('objective', 266);
     fixture.componentRef.setInput('endsRun', endsRun);
     fixture.detectChanges();
     return { fixture, element: fixture.nativeElement as HTMLElement };
   }
 
-  it('dit que le morceau est retiré et donne le nouvel objectif, sans rien révéler du morceau', () => {
+  it('dit que le morceau est retiré et qu\'aucune vie n\'est perdue, sans rien révéler du morceau', () => {
     const { element } = render();
 
     expect(element.textContent).toContain('Morceau retiré de la manche');
-    expect(element.querySelector('[data-testid="run-withdrawn-body"]')?.textContent).toContain('266 pts');
+    expect(element.querySelector('[data-testid="run-withdrawn-body"]')?.textContent).toContain('tu ne perds pas de vie');
     expect(element.querySelector('img')).toBeNull();
   });
 
