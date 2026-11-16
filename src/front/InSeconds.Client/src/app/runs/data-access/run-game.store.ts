@@ -565,6 +565,9 @@ export const RunGameStore = signalStore(
         const session = store.session();
         const choice = session?.themeChoice;
         if (!session || !choice || store.screen() !== 'theme' || store.themePicked() !== null) return;
+        // Le toucher sur un thème est le geste qui déverrouille le son : le premier morceau de la manche part à la fin de la révélation.
+        round.unlockAudio();
+        sounds.unlock();
         patchState(store, { themePicked: themeId ?? 'mystery', themeResult: null });
         try {
           const play = await api.chooseTheme(session.sessionId, choice.round, themeId);
@@ -579,12 +582,12 @@ export const RunGameStore = signalStore(
           await init();
         }
       },
-      /** Le thème est révélé : la manche suit (l'écran de palier), sans son. */
+      /** Le thème est révélé : le premier morceau de la manche part (le son a été déverrouillé par le toucher sur le thème). */
       continueFromTheme(): void {
         const play = themePlay;
         themePlay = null;
         patchState(store, { themePicked: null, themeResult: null });
-        if (play && store.screen() === 'theme') applyPlay(play, false);
+        if (play && store.screen() === 'theme') applyPlay(play, true);
       },
       /**
        * « Jouer » depuis le lien reçu d'un ami (un clic) : crée l'invité si ce navigateur n'a pas d'identité, relève la playlist et lance le premier
