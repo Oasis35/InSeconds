@@ -204,7 +204,7 @@ import { SecondsPipe } from '../../../ui/format/seconds.pipe';
       }
 
       @if (!canPlayAgain()) {
-        <a appButton variant="neutral" [block]="true" routerLink="/daily" data-testid="run-to-daily">
+        <a appButton variant="neutral" [block]="true" routerLink="/" data-testid="run-to-daily">
           {{ 'runs.finished.toDaily' | translate }}
         </a>
       }

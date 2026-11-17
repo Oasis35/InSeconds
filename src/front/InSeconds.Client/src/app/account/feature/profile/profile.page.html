@@ -2,11 +2,14 @@
   <app-decor-background />
 
   <div class="relative flex w-full max-w-sm flex-col gap-6 py-8">
-    <div class="-mb-2 flex items-center justify-between">
-      <a routerLink="/" class="py-1 text-sm hover:underline" style="color:var(--text-muted)" data-testid="back-to-game">
-        ← {{ 'account.profile.backToGame' | translate }}
-      </a>
-    </div>
+    <!-- Sous la V4, la barre du bas ramène au jeu : pas de second retour. -->
+    @if (!chrome.v4()) {
+      <div class="-mb-2 flex items-center justify-between">
+        <a routerLink="/" class="py-1 text-sm hover:underline" style="color:var(--text-muted)" data-testid="back-to-game">
+          ← {{ 'account.profile.backToGame' | translate }}
+        </a>
+      </div>
+    }
 
     <h1 class="text-center text-2xl font-bold" style="font-family:var(--font-display);color:var(--text-hi)">
       {{ 'account.profile.title' | translate }}

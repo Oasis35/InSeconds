@@ -120,7 +120,7 @@ describe('RunFinishComponent', () => {
     const { element } = render(finish(), false);
 
     expect(element.querySelector('[data-testid="run-play-again"]')).toBeNull();
-    expect(element.querySelector('[data-testid="run-to-daily"]')?.getAttribute('href')).toBe('/daily');
+    expect(element.querySelector('[data-testid="run-to-daily"]')?.getAttribute('href')).toBe('/');
   });
   it('un duel ouvre l\'écran, sur un ton neutre : avance, retard ou égalité, et « Revanche » à la place de « Rejouer »', () => {
     for (const gap of [126, -40, 0]) {
