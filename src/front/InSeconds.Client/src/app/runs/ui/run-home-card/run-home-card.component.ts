@@ -18,7 +18,7 @@ export const DISC_LADDER: readonly string[] = [
  * La carte Setlist de l'accueil (V4), **toujours compacte** : le disque du joueur, « Setlist » et son niveau (« Disque d'argent · à ton rythme »,
  * sinon la promesse), la rangée des huit disques où le sien est plus gros, la jauge vers le disque suivant avec ses deux bornes, et « Jouer »
  * (« Rejouer » après une setlist du jour). Tant que le défi du jour reste à jouer, la carte est discrète (contour neutre, bouton en contour) ;
- * **une fois le défi joué (`active`), c'est la prochaine action** : tube ambre et « Jouer » en bouton principal. Ouvre `/setlist`.
+ * **une fois le défi joué (`active`), c'est la prochaine action** : tube ambre et « Jouer » en bouton principal. Ouvre `/survie`.
  */
 @Component({
   selector: 'app-run-home-card',
@@ -55,7 +55,7 @@ export const DISC_LADDER: readonly string[] = [
         <!-- Le défi d'un ami : violet (les autres joueurs), refusable par la croix. -->
         <div class="flex items-center gap-1 pl-2.5 rounded-(--radius-button)" data-testid="run-home-received" data-motion="received"
           style="background:rgb(var(--rgb-violet) / 0.14);border:1px solid rgb(var(--rgb-violet) / 0.6)">
-          <a [routerLink]="['/setlist', challenge.code]" class="min-w-0 flex-1 flex items-center gap-3 min-h-14 py-2" data-testid="run-home-received-link" style="color:var(--text-hi)">
+          <a [routerLink]="['/survie', challenge.code]" class="min-w-0 flex-1 flex items-center gap-3 min-h-14 py-2" data-testid="run-home-received-link" style="color:var(--text-hi)">
             <span class="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full text-base font-bold" aria-hidden="true"
               style="background:rgb(var(--rgb-violet) / 0.55);color:var(--text-hi)">{{ initial(challenge.authorPseudo) }}</span>
             <span class="min-w-0">
@@ -111,18 +111,18 @@ export const DISC_LADDER: readonly string[] = [
       @if (active()) {
         <ng-container [ngTemplateOutlet]="place" />
         @if (received(); as challenge) {
-          <a appButton [routerLink]="['/setlist', challenge.code]" size="lg" [block]="true" data-testid="run-home-play">
+          <a appButton [routerLink]="['/survie', challenge.code]" size="lg" [block]="true" data-testid="run-home-play">
             {{ 'runs.home.takeUp' | translate }}
           </a>
         } @else {
-          <a appButton routerLink="/setlist" size="lg" [block]="true" data-testid="run-home-play">
+          <a appButton routerLink="/survie" size="lg" [block]="true" data-testid="run-home-play">
             {{ (todayScore() !== null ? 'runs.home.replay' : 'runs.home.play') | translate }}
           </a>
         }
       } @else {
         <div class="flex items-center justify-between gap-3">
           <ng-container [ngTemplateOutlet]="place" />
-          <a appButton variant="neutral" routerLink="/setlist" class="ml-auto" data-testid="run-home-play">
+          <a appButton variant="neutral" routerLink="/survie" class="ml-auto" data-testid="run-home-play">
             {{ (todayScore() !== null ? 'runs.home.replay' : 'runs.home.play') | translate }}
           </a>
         </div>

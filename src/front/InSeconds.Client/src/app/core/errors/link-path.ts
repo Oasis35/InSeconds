@@ -2,11 +2,11 @@
  * Les chemins qui portent un code de lien (invitation d'un groupe, playlist d'un ami) : le code est remplacé par `{code}` avant d'être remonté
  * (un code lu dans Grafana suffirait à rejoindre le groupe). Les mêmes préfixes sont masqués par l'API (`LinkSecrets`).
  */
-const SECRET_PREFIXES = ['/api/social/invitations/', '/api/runs/challenges/', '/ranking/join/', '/setlist/', '/runs/'];
+const SECRET_PREFIXES = ['/api/social/invitations/', '/api/runs/challenges/', '/ranking/join/', '/survie/', '/setlist/', '/runs/'];
 /** Les pages qui ne sont pas des codes. */
 const KEPT_SEGMENTS = new Set(['history', 'hits']);
 
-/** Masque un chemin (« /setlist/K7P2QX ») ou une adresse complète (« https://api…/api/social/invitations/ABCD2345/join ») : l'origine est gardée. */
+/** Masque un chemin (« /survie/K7P2QX ») ou une adresse complète (« https://api…/api/social/invitations/ABCD2345/join ») : l'origine est gardée. */
 export function maskLinkCodes(path: string): string {
   const origin = /^https?:\/\/[^/?#]+/i.exec(path)?.[0] ?? '';
   return origin + maskPath(path.slice(origin.length));

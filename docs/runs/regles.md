@@ -1,4 +1,4 @@
-# Setlist (mode Run) : les règles de la Série
+# Survie (mode Run) : les règles de la Série
 
 Règles validées par Clément en novembre 2026 (refonte « la Série », qui remplace le modèle à jauge, difficultés et cartes ; l'ancien modèle est archivé dans [`../historique/runs-ancien-modele/`](../historique/runs-ancien-modele/)). Les écrans : [`ecrans.md`](ecrans.md). Leur traduction technique : [`conception.md`](conception.md). Toutes les valeurs ci-dessous sont les défauts de `Runs:` (relus à chaud, cf. [Réglages](#réglages)).
 
@@ -73,7 +73,7 @@ L'écran de bilan entre deux manches le dit : « L'écoute raccourcit », « L'�
 ## L'accès
 
 - **Sur invitation** : réservé aux comptes autorisés par l'admin (onglet Joueurs), admins d'office. Un invité sans compte n'a pas l'accès. L'interrupteur est distinct du rôle admin.
-- Sans accès, rien ne change pour le joueur : pas de carte Setlist, et `/setlist` renvoie vers le Daily.
+- Sans accès, rien ne change pour le joueur : pas de carte Survie, et `/survie` renvoie vers le Daily.
 - **Lien reçu** : un ami sans accès qui ouvre le lien d'une playlist peut jouer **cette playlist-là seulement**, invité compris ; à la fin, une invitation à jouer au Daily remplace « Rejouer ».
 - Retirer l'accès n'interrompt pas une partie en cours ; cela empêche seulement d'en lancer une nouvelle.
 

@@ -18,7 +18,7 @@ const HISTORY = (over: Partial<RunHistory> = {}): RunHistory => ({
 describe('RunHistoryPage', () => {
   let history: ReturnType<typeof vi.fn>;
 
-  async function render(url = '/history/setlist', result: () => Promise<RunHistory> = async () => HISTORY()) {
+  async function render(url = '/history/survie', result: () => Promise<RunHistory> = async () => HISTORY()) {
     history = vi.fn(result);
     TestBed.configureTestingModule({
       providers: [
@@ -40,25 +40,25 @@ describe('RunHistoryPage', () => {
     expect(history).toHaveBeenCalledWith(null);
     expect(el.querySelector('[data-testid="history-count"]')?.textContent).toBe('112');
     const rows = [...el.querySelectorAll('[data-testid="history-run"]')];
-    expect(rows.map(a => a.getAttribute('href'))).toEqual(['/history/setlist/7', '/history/setlist/6', '/history/setlist/5']);
+    expect(rows.map(a => a.getAttribute('href'))).toEqual(['/history/survie/7', '/history/survie/6', '/history/survie/5']);
     expect(rows[0].textContent).toContain('ui.history.setlist.rounds');
     expect(el.querySelector('[data-testid="history-tab-setlist"]')?.getAttribute('aria-current')).toBe('page');
   });
 
   it("lit le mois de l'adresse", async () => {
-    await render('/history/setlist?mois=2026-09');
+    await render('/history/survie?mois=2026-09');
 
     expect(history).toHaveBeenCalledWith('2026-09');
   });
 
   it('un mois sans setlist le dit', async () => {
-    const { el } = await render('/history/setlist', async () => HISTORY({ runs: [] }));
+    const { el } = await render('/history/survie', async () => HISTORY({ runs: [] }));
 
     expect(el.querySelector('[data-testid="history-empty"]')?.textContent).toContain('ui.history.setlist.empty');
   });
 
   it('une lecture en échec propose de réessayer', async () => {
-    const { el, fixture } = await render('/history/setlist', () => Promise.reject(new Error('panne')));
+    const { el, fixture } = await render('/history/survie', () => Promise.reject(new Error('panne')));
 
     history.mockResolvedValue(HISTORY());
     (el.querySelector('[data-testid="run-retry"]') as HTMLButtonElement).click();

@@ -26,7 +26,7 @@ describe('RunHomeCardComponent', () => {
       expect(q('run-home-card')?.getAttribute('data-active')).toBe('false');
       expect(q('run-home-line')?.textContent).toContain('runs.welcome.tagline');
       expect(q('run-home-play')?.textContent).toContain('runs.home.play');
-      expect(q('run-home-play')?.getAttribute('href')).toBe('/setlist');
+      expect(q('run-home-play')?.getAttribute('href')).toBe('/survie');
       expect(element.querySelector('[data-disc]')?.getAttribute('data-disc')).toBe('runs.discs.gold');
       expect(q('run-home-level')).toBeNull();
     });
@@ -88,7 +88,7 @@ describe('RunHomeCardComponent', () => {
       fixture.detectChanges();
       const element = fixture.nativeElement as HTMLElement;
 
-      expect(element.querySelector('[data-testid="run-home-received-link"]')?.getAttribute('href')).toBe('/setlist/ABC234');
+      expect(element.querySelector('[data-testid="run-home-received-link"]')?.getAttribute('href')).toBe('/survie/ABC234');
       expect(element.querySelector('[data-testid="run-home-received-score"]')?.textContent).toMatch(/runs\.home\.receivedScore/);
       expect(element.querySelector('[data-testid="run-home-received-days"]')?.textContent).toContain('runs.home.receivedExpires');
       (element.querySelector('[data-testid="run-home-received-dismiss"]') as HTMLButtonElement).click();
@@ -108,8 +108,8 @@ describe('RunHomeCardComponent', () => {
 
       const takeUp = inputs(true);
       expect(takeUp?.textContent).toContain('runs.home.takeUp');
-      expect(takeUp?.getAttribute('href')).toBe('/setlist/ABC234');
-      expect(inputs(false)?.getAttribute('href')).toBe('/setlist');
+      expect(takeUp?.getAttribute('href')).toBe('/survie/ABC234');
+      expect(inputs(false)?.getAttribute('href')).toBe('/survie');
     });
 
     it('sans défi, pas de bandeau', () => {

@@ -904,7 +904,7 @@ describe('RunGameStore', () => {
     });
   });
 
-  describe("le lien d'un ami (/setlist/<code>)", () => {
+  describe("le lien d'un ami (/survie/<code>)", () => {
     it("une playlist pas encore jouée : l'écran du lien, sans rien lancer ni créer d'invité", async () => {
       api.meResult = ME({ hasAccess: false });
 

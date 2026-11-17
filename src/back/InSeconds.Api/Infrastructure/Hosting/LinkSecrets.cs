@@ -8,7 +8,7 @@ namespace InSeconds.Api.Infrastructure.Hosting;
 /// </summary>
 public static class LinkSecrets
 {
-    public static readonly SecretPaths Paths = new(["/api/social/invitations", "/api/runs/challenges", "/ranking/join", "/setlist", "/runs"])
+    public static readonly SecretPaths Paths = new(["/api/social/invitations", "/api/runs/challenges", "/ranking/join", "/survie", "/setlist", "/runs"])
     {
         Keep = new HashSet<string>(["history", "hits"], StringComparer.OrdinalIgnoreCase),
     };

@@ -104,13 +104,13 @@ test.describe('Groupes entre amis', () => {
     await expect(page).toHaveURL(/\/ranking\?view=general$/);
 
     // Les Hits : la ligne de l'accueil du mode ouvre la liste, rien n'est obtenu sans partie finie.
-    await page.goto('/setlist');
+    await page.goto('/survie');
     await expect(page.getByTestId('run-hits-count')).toHaveText('0 / 17');
     await page.getByTestId('run-hits-line').click();
-    await expect(page).toHaveURL(/\/setlist\/hits$/);
+    await expect(page).toHaveURL(/\/survie\/hits$/);
     await expect(page.getByTestId('hit')).toHaveCount(17);
     await expect(page.getByTestId('hits-count')).toHaveText('0 / 17');
     await page.getByTestId('hits-back').click();
-    await expect(page).toHaveURL(/\/setlist$/);
+    await expect(page).toHaveURL(/\/survie$/);
   });
 });

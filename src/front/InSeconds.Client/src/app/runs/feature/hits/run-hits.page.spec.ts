@@ -53,7 +53,7 @@ describe('RunHitsPage', () => {
     ]);
     // La barre et « 7 / 10 » seulement tant que le Hit reste à obtenir.
     expect([...el.querySelectorAll('[data-testid="hit-progress"]')].map(p => p.textContent?.trim())).toEqual(['7 / 10']);
-    expect(find(el, 'hits-back')?.getAttribute('href')).toBe('/setlist');
+    expect(find(el, 'hits-back')?.getAttribute('href')).toBe('/survie');
   });
 
   it('fête un Hit obtenu depuis la dernière visite, une seule fois', async () => {

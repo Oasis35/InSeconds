@@ -34,7 +34,7 @@ export const DAILY_ROUTES: Routes = [
 
 /**
  * L'historique du joueur sur le défi du jour (`/history/daily`) et les réponses d'un jour passé (`/history/daily/aaaa-mm-jj`, sans lecteur ;
- * `/history/daily/latest` ouvre le dernier jour publié). L'historique des setlists est la page du mode (`/history/setlist`).
+ * `/history/daily/latest` ouvre le dernier jour publié). L'historique des setlists est la page du mode (`/history/survie`).
  */
 export const DAILY_HISTORY_ROUTES: Routes = [
   {

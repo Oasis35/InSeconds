@@ -36,7 +36,7 @@
         <ul class="px-4" style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)" data-testid="history-runs">
           @for (row of rows(); track row.sessionId) {
             <li [style.border-top]="$first ? null : '1px solid var(--border-medium)'">
-              <a [routerLink]="['/history/setlist', row.sessionId]" class="flex items-center gap-3 py-3 min-h-14 touch-manipulation" data-testid="history-run">
+              <a [routerLink]="['/history/survie', row.sessionId]" class="flex items-center gap-3 py-3 min-h-14 touch-manipulation" data-testid="history-run">
                 <span class="flex-1 min-w-0 flex flex-col">
                   <span class="text-sm font-semibold truncate" style="color:var(--text-hi)">{{ 'ui.history.setlist.rounds' | translate: { count: row.roundsPassed } }}</span>
                   <span class="text-xs truncate" style="color:var(--text-muted)">
