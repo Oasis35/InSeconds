@@ -13,7 +13,7 @@
         @if (chrome.v4() && chrome.dailyDone() === false) {
           <a routerLink="/" data-testid="daily-left" class="block pt-2 text-center text-sm underline" style="color:var(--text-light)">{{ 'runs.v4.dailyLeft' | translate }}</a>
         }
-        <app-run-welcome-screen [record]="store.record()" [level]="chrome.v4() ? store.level() : null" [lang]="language.current()" (start)="store.begin()" />
+        <app-run-welcome-screen [record]="store.record()" [level]="chrome.v4() ? store.level() : null" [overlay]="chrome.v4()" [lang]="language.current()" (start)="store.begin()" />
         @if (chrome.v4()) {
           <app-run-hits-line class="block pt-3 pb-4" />
           <app-home-legal-line />

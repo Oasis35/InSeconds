@@ -16,12 +16,11 @@ export const redirectRunsLink: RedirectFunction = ({ params, queryParams, fragme
   inject(Router).createUrlTree(['/survie', params['code']], { queryParams, fragment: fragment ?? undefined });
 
 /**
- * La racine (l'accueil) et `/daily` (le défi) sont la même page : un compte qui y commence une partie passe de `/` à `/daily` sans la
- * quitter. Sans l'accès Setlist, la racine renvoie à `/daily` (la page s'en charge).
+ * La racine (l'accueil) et `/daily` (le défi) vont au même domaine, qui a deux pages sous une coquille commune : le matcher n'en consomme pas
+ * le chemin, ce sont ses routes enfants (`''` et `daily`) qui le lisent. Sans l'accès Survie, la racine renvoie à `/daily` (la coquille s'en charge).
  */
 export function homeOrDailyMatcher(segments: UrlSegment[]): UrlMatchResult | null {
-  if (segments.length === 0) return { consumed: [] };
-  return segments[0].path === 'daily' ? { consumed: [segments[0]] } : null;
+  return segments.length === 0 || segments[0].path === 'daily' ? { consumed: [] } : null;
 }
 
 /** `/daily/archive/<jour>` et `/setlist/history/<partie>` : mêmes pages sous `/history`, query string et fragment gardés. */

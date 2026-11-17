@@ -20,7 +20,7 @@ Sans écran du tout : l'accès refusé (`/survie` renvoie au Daily) et le lien d
 
 ## Le fil d'une partie
 
-1. **Accueil du mode** (`/survie`) : le niveau et l'échelle des disques, le record, « Lancer une partie », la reprise d'une partie en cours, le lien « Hits ».
+1. **Accueil du mode** (`/survie`) : le niveau et l'échelle des disques, le record, « Lancer une partie » (sous la V4 : « Commencer », qui recouvre le cadre de la partie, flou derrière), la reprise d'une partie en cours, le lien « Hits ».
 2. **Manche** : un seul écran en pile.
    - **En-tête** : ✕ (abandonner), les **vies** en cœurs (3), le haut-parleur.
    - **Bloc du haut** (`run-scoreboard`) : le score (« Score », et à côté les bonnes réponses d'affilée), « Manche N » avec la pastille du thème et une pastille par morceau de la manche (trouvé, à moitié, raté, retiré, en cours, à venir), pour qui joue la playlist d'un ami son **fantôme** (son pseudo, son total au même morceau, l'écart ; « Tu viens de dépasser Léa ! » quelques secondes au moment du dépassement ; « Tu bats Léa » au-delà de son score figé), et la rangée des paliers d'écoute (10 à 0,5 s) avec celui de la manche en ambre (repliée sur un écran bas, le clavier ouvert).
