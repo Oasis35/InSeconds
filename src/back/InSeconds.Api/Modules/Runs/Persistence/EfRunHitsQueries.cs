@@ -9,7 +9,7 @@ namespace InSeconds.Api.Modules.Runs.Persistence;
 public sealed class EfRunHitsQueries(InSecondsDbContext db) : IRunHitsQueries
 {
     private IQueryable<RunSession> Finished() =>
-        db.Set<RunSession>().AsNoTracking().Where(s => s.Status == RunSessionStatus.Lost && s.EndedAt != null);
+        db.Set<RunSession>().AsNoTracking().Where(s => (s.Status == RunSessionStatus.Lost || s.Status == RunSessionStatus.Completed) && s.EndedAt != null);
 
     public async Task<RunHitFacts> GetFactsAsync(Guid playerId, CancellationToken ct)
     {

@@ -48,7 +48,7 @@ public sealed class RunPlayer(
         var summaries = new List<RunRoundSummaryResponse>();
         if (answered is { Outcome: RunStepOutcome.RoundDone })
             AddSummary(run, answered, summaries);
-        var ended = answered is { Outcome: RunStepOutcome.Over };
+        var ended = answered is { EndsRun: true };
 
         RunCurrentTrackResponse? current = null;
         while (session.IsPending)
@@ -88,6 +88,7 @@ public sealed class RunPlayer(
             metrics.TrackNeutralized();
             if (step.Outcome == RunStepOutcome.RoundDone)
                 AddSummary(run, step, summaries);
+            ended |= step.EndsRun;
         }
 
         if (ended)
@@ -134,7 +135,7 @@ public sealed class RunPlayer(
         metrics.RoundEnded(step.Round, summary.Outcome);
     }
 
-    // Le record (partie perdue), dans la transaction de fin : une partie abandonnée ne compte pas.
+    // Le record (partie finie : perdue ou Série complète), dans la transaction de fin : une partie abandonnée ne compte pas.
     private async Task EndAsync(RunSession session, RunChallenge challenge, CancellationToken ct)
     {
         await store.LockRecordAsync(session.PlayerId, ct);
@@ -194,6 +195,7 @@ internal static class RunViews
     public static string StatusOf(RunSessionStatus status) => status switch
     {
         RunSessionStatus.Pending => "pending",
+        RunSessionStatus.Completed => "completed",
         RunSessionStatus.Lost => "lost",
         _ => "abandoned",
     };
@@ -227,7 +229,8 @@ internal static class RunViews
         var outcome = step.ToStep > step.FromStep ? "shorter" : step.ToStep < step.FromStep ? "longer" : "same";
         return new RunRoundSummaryResponse(
             step.Round, RoundScore(run, step.Round), outcome, rules.ListenAt(step.FromStep), rules.ListenAt(step.ToStep), PlayedTracks(run, step.Round),
-            run.Session.TotalScore, run.Session.LivesLeft(rules), rules.PointsAt(step.FromStep), rules.PointsAt(step.ToStep));
+            run.Session.TotalScore, run.Session.LivesLeft(rules), rules.PointsAt(step.FromStep), rules.PointsAt(step.ToStep),
+            run.Session.RegainedLife(rules, step.Round));
     }
 
     public static RunSessionResponse Session(
@@ -265,7 +268,7 @@ internal static class RunViews
             rules.AnswerSeconds, session.IsPending ? session.ClockRemaining(rules, now) : null, playedTracks, passedRounds, ghost, ThemesOf(rules),
             themeOffer is null ? null : new RunThemeChoiceResponse(
                 themeOffer.Round, [.. themeOffer.Themes.Select(t => new RunThemeOfferItem(t.Id, t.Name, themeOffer.Round, t.Icon))]),
-            [.. rules.ListenLadder]);
+            [.. rules.ListenLadder], rules.MaxRounds);
     }
 
     private static RunFinishResponse Finish(LoadedRun run, RunRecord? record, RunLevelResponse? level)
@@ -280,7 +283,9 @@ internal static class RunViews
         return new RunFinishResponse(
             StatusOf(session.Status), session.TotalScore, session.RoundsPassed, answers.Count(a => a.IsFull), answers.Count(a => !a.Neutralized), tracks,
             rounds, record is null ? null : new RunRecordResponse(record.BestScore, record.BestRoundsPassed, record.SessionId == session.Id),
-            challenge.Code, level);
+            challenge.Code, level, session.LivesLeft(rules),
+            session.Status == RunSessionStatus.Completed ? session.LivesLeft(rules) * rules.LifeBonus : 0,
+            session.Status == RunSessionStatus.Completed ? rules.CompleteBonus : 0);
     }
 
     // Les points d'une manche : la somme des points de ses réponses.

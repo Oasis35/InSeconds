@@ -16,7 +16,7 @@ public class RunChallengeTests(PostgresFixture postgres) : IAsyncLifetime
 {
     private GameApi _game = null!;
 
-    public async ValueTask InitializeAsync() => _game = await GameApi.CreateAsync(await postgres.CreateDatabaseAsync(), tracks: 0);
+    public async ValueTask InitializeAsync() => _game = await GameApi.CreateAsync(await postgres.CreateDatabaseAsync(), tracks: 0, new Dictionary<string, string>(RunGame.LegacyRules));
 
     public ValueTask DisposeAsync() => _game.DisposeAsync();
 
@@ -126,7 +126,7 @@ public class RunChallengeTests(PostgresFixture postgres) : IAsyncLifetime
 
         var (plan, _) = await CreateAsync();
 
-        Assert.Equal(5, plan.Challenge!.Tracks.Count);
+        Assert.Equal(3, plan.Challenge!.Tracks.Count);
         Assert.Equal(3, plan.Challenge.Rules.Lives);
     }
 

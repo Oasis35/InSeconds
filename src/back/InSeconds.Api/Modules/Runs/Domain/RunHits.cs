@@ -44,7 +44,7 @@ public static class RunHits
 
     private const int StreakTarget = 10;
     private const int DuelsTarget = 5;
-    private const int MarathonTarget = 10;
+    private const int MarathonTarget = 8;
     private const int NoScratchTarget = 3;
     private const decimal EarGoldSeconds = 0.5m;
 

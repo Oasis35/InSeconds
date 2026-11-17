@@ -44,7 +44,7 @@ public sealed record RunNeutralizedResponse(int Position, int Round);
 
 /// <summary>Le bilan d'une manche qui vient de se terminer (écran de fin de manche).</summary>
 /// <param name="Score">Les points de la manche.</param>
-/// <param name="Outcome"><c>shorter</c> (sans erreur : le palier raccourcit), <c>same</c> (le palier ne bouge pas) ou <c>longer</c> (une erreur : il s'allonge).</param>
+/// <param name="Outcome"><c>shorter</c> (sans vie perdue : le palier raccourcit), <c>same</c> (le palier ne bouge pas) ou <c>longer</c> (une erreur : il s'allonge).</param>
 /// <param name="ListenSeconds">L'écoute de la manche qui se termine.</param>
 /// <param name="NextListenSeconds">L'écoute de la manche suivante.</param>
 /// <param name="Tracks">Ses morceaux, révélés, avec leurs points.</param>
@@ -52,9 +52,10 @@ public sealed record RunNeutralizedResponse(int Position, int Round);
 /// <param name="LivesLeft">Les vies qui restent.</param>
 /// <param name="FullPoints">Ce que rapportait un morceau trouvé en entier à l'écoute de la manche qui se termine.</param>
 /// <param name="NextFullPoints">Ce que rapportera un morceau trouvé en entier à l'écoute de la manche suivante.</param>
+/// <param name="LifeRegained">Cette manche, finie sans vie perdue, vient de rendre une vie (<c>livesLeft</c> la compte déjà).</param>
 public sealed record RunRoundSummaryResponse(
     int Round, int Score, string Outcome, decimal ListenSeconds, decimal NextListenSeconds, IReadOnlyList<RunTrackResponse> Tracks, int TotalScore,
-    int LivesLeft, int FullPoints, int NextFullPoints);
+    int LivesLeft, int FullPoints, int NextFullPoints, bool LifeRegained = false);
 
 /// <summary>Une manche déjà jouée : une ligne de la pile.</summary>
 public sealed record RunPassedRoundResponse(int Round, int Score, decimal ListenSeconds, string? Theme);
@@ -96,13 +97,16 @@ public sealed record RunLevelResponse(
 /// <param name="Level">
 /// Le niveau du joueur après cette partie, avec ce qu'elle lui a fait gagner ou perdre (<c>delta</c>) ; vide si le joueur n'a encore fini aucune partie.
 /// </param>
+/// <param name="LivesLeft">Les vies restantes à la fin (celles qui rapportent le bonus d'une Série complète).</param>
+/// <param name="LifeBonus">Les points de bonus des vies restantes, déjà dans le score ; 0 hors Série complète.</param>
+/// <param name="CompleteBonus">Les points de la Série complète, déjà dans le score ; 0 sinon.</param>
 public sealed record RunFinishResponse(
     string Status, int TotalScore, int RoundsPassed, int FoundCount, int TrackCount,
     IReadOnlyList<RunTrackResponse> Tracks, IReadOnlyList<RunRoundScoreResponse> Rounds, RunRecordResponse? Record, string ChallengeCode,
-    RunLevelResponse? Level = null);
+    RunLevelResponse? Level = null, int LivesLeft = 0, int LifeBonus = 0, int CompleteBonus = 0);
 
 /// <summary>L'état d'une partie : en-tête (vies, score), manche en cours, ou le résultat de fin.</summary>
-/// <param name="Status"><c>pending</c>, <c>lost</c> ou <c>abandoned</c>.</param>
+/// <param name="Status"><c>pending</c>, <c>completed</c> (Série complète), <c>lost</c> ou <c>abandoned</c>.</param>
 /// <param name="TracksPerRound">Les morceaux d'une manche.</param>
 /// <param name="Lives">Les vies au départ.</param>
 /// <param name="LivesLeft">Les vies qui restent.</param>
@@ -117,13 +121,14 @@ public sealed record RunFinishResponse(
 /// <param name="Themes">Les manches à thème de la playlist dont le thème est choisi (jamais la première), pour l'annoncer ; vide : aucune.</param>
 /// <param name="ThemeChoice">Le choix du thème de la manche à venir, tant que personne ne l'a fait (avant son premier son) ; vide sinon.</param>
 /// <param name="ListenLadder">L'échelle des paliers d'écoute de la playlist (règles figées), du plus long au plus court : la rangée de l'écran de jeu.</param>
+/// <param name="MaxRounds">Le plafond de manches de la playlist (règles figées) ; 0 : pas de plafond.</param>
 /// <param name="Ghost">Le fantôme de l'ami qui a lancé la playlist, s'il l'a finie ; vide sinon. Gardé à la fin de la partie du joueur : c'est le duel de l'écran de fin.</param>
 public sealed record RunSessionResponse(
     int SessionId, string ChallengeCode, string Status, int TracksPerRound, int Lives, int LivesLeft, int TotalScore, int RoundsPassed,
     RunRoundResponse? Round, IReadOnlyList<RunTrackResponse> RoundTracks, RunFinishResponse? Finish,
     int AnswerSeconds, decimal? ClockRemainingSeconds, IReadOnlyList<RunTrackResponse> PlayedTracks, IReadOnlyList<RunPassedRoundResponse> PassedRounds,
     RunGhostResponse? Ghost = null, IReadOnlyList<RunRoundThemeResponse>? Themes = null, RunThemeChoiceResponse? ThemeChoice = null,
-    IReadOnlyList<decimal>? ListenLadder = null);
+    IReadOnlyList<decimal>? ListenLadder = null, int MaxRounds = 0);
 
 /// <summary>
 /// Le choix du thème de la manche en cours, que seul le créateur de la playlist fait, juste avant de la commencer : deux thèmes proposés, plus le

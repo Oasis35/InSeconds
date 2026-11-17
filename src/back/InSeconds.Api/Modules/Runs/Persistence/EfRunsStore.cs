@@ -165,7 +165,7 @@ public sealed class EfRunsQueries(InSecondsDbContext db) : IRunsQueries
     public async Task<IReadOnlyDictionary<int, int>?> FindFinishedPointsAsync(int challengeId, Guid playerId, CancellationToken ct)
     {
         var answers = await db.Set<RunSession>().AsNoTracking()
-            .Where(s => s.ChallengeId == challengeId && s.PlayerId == playerId && s.Status == RunSessionStatus.Lost)
+            .Where(s => s.ChallengeId == challengeId && s.PlayerId == playerId && (s.Status == RunSessionStatus.Lost || s.Status == RunSessionStatus.Completed))
             .Select(s => s.Answers.Select(a => new { a.Position, a.Points }).ToList())
             .FirstOrDefaultAsync(ct);
         return answers?.ToDictionary(a => (int)a.Position, a => a.Points);
@@ -173,7 +173,7 @@ public sealed class EfRunsQueries(InSecondsDbContext db) : IRunsQueries
 
     public async Task<IReadOnlyList<RunSession>> ListFinishedSessionsAsync(int challengeId, CancellationToken ct) =>
         await db.Set<RunSession>().AsNoTracking().Include(s => s.Answers)
-            .Where(s => s.ChallengeId == challengeId && s.Status == RunSessionStatus.Lost)
+            .Where(s => s.ChallengeId == challengeId && (s.Status == RunSessionStatus.Lost || s.Status == RunSessionStatus.Completed))
             .ToListAsync(ct);
 }
 

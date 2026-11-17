@@ -13,7 +13,10 @@ public sealed class RunsOptions
     public const string Section = "Runs";
 
     public const int DefaultLives = 3;
-    public const int DefaultTracksPerRound = 5;
+    public const int DefaultTracksPerRound = 3;
+    public const int DefaultMaxRounds = 8;
+    public const int DefaultLifeBonus = 250;
+    public const int DefaultCompleteBonus = 500;
     public const int DefaultAnswerSeconds = 45;
     public const int DefaultRankBands = 8;
 
@@ -21,6 +24,8 @@ public sealed class RunsOptions
     public const int MaxLives = 10;
     public const int MaxTracksPerRound = 20;
     public const int MaxRankBands = 20;
+    public const int MaxMaxRounds = 50;
+    public const int MaxBonus = 100_000;
 
     /// <summary>Le chrono le plus long accepté (10 minutes) ; 0 coupe le chrono des nouvelles playlists.</summary>
     public const int MaxAnswerSeconds = 600;
@@ -51,13 +56,30 @@ public sealed class RunsOptions
     /// <summary>En combien de tranches de notoriété le catalogue est coupé : la manche k tire dans la tranche k, la dernière se répète.</summary>
     public int RankBands { get; set; } = DefaultRankBands;
 
+    /// <summary>Une manche finie sans vie perdue rend une vie (jamais au-dessus de <see cref="Lives"/>).</summary>
+    public bool RegainLife { get; set; } = true;
+
+    /// <summary>L'écoute raccourcit dès qu'une manche se termine sans vie perdue (une moitié juste ne gêne plus).</summary>
+    public bool ShortenOnNoLifeLost { get; set; } = true;
+
+    /// <summary>Le plafond de manches : la partie s'arrête en « Série complète » ; 0 : pas de plafond.</summary>
+    public int MaxRounds { get; set; } = DefaultMaxRounds;
+
+    /// <summary>Les points de chaque vie restante à la fin d'une Série complète.</summary>
+    public int LifeBonus { get; set; } = DefaultLifeBonus;
+
+    /// <summary>Les points d'une Série complète.</summary>
+    public int CompleteBonus { get; set; } = DefaultCompleteBonus;
+
     public IReadOnlyList<decimal> EffectiveListenLadder => ListenLadder ?? DefaultListenLadder;
 
     public IReadOnlyList<int> EffectiveStepPoints => StepPoints ?? DefaultStepPoints;
 
     /// <summary>Les règles que ces réglages décrivent (à ne figer qu'une fois <see cref="RunsOptionsChecks.Problems"/> vide).</summary>
     public RunRules ToRules() =>
-        new(Lives, TracksPerRound, [.. EffectiveListenLadder], [.. EffectiveStepPoints], AnswerSeconds, Themes: null, RankBands);
+        new(
+            Lives, TracksPerRound, [.. EffectiveListenLadder], [.. EffectiveStepPoints], AnswerSeconds, Themes: null, RankBands,
+            RegainLife, MaxRounds, LifeBonus, CompleteBonus, ShortenOnNoLifeLost);
 
     public static RunRules DefaultRules() => new RunsOptions().ToRules();
 }
@@ -122,6 +144,10 @@ public static class RunsOptionsChecks
             problems.Add($"Runs:TracksPerRound : de 1 à {RunsOptions.MaxTracksPerRound} morceaux par manche.");
         if (options.RankBands is < 1 or > RunsOptions.MaxRankBands)
             problems.Add($"Runs:RankBands : de 1 à {RunsOptions.MaxRankBands} tranches.");
+        if (options.MaxRounds is < 0 or > RunsOptions.MaxMaxRounds)
+            problems.Add($"Runs:MaxRounds : de 0 (pas de plafond) à {RunsOptions.MaxMaxRounds} manches.");
+        if (options.LifeBonus is < 0 or > RunsOptions.MaxBonus || options.CompleteBonus is < 0 or > RunsOptions.MaxBonus)
+            problems.Add($"Runs:LifeBonus et Runs:CompleteBonus : de 0 à {RunsOptions.MaxBonus} points.");
 
         // Chaque durée est stockée avec le palier de la réponse (numeric(4,2)) : positive, moins de 100 s, deux décimales au plus, et l'échelle descend.
         var ladder = options.EffectiveListenLadder;

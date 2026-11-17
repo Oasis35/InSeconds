@@ -16,12 +16,39 @@ internal sealed class RunGame : IAsyncDisposable
 
     public GameApi Game { get; }
 
+    /// <summary>Les réglages qui redonnent les règles d'avant l'équilibrage de la Série.</summary>
+    internal static readonly IReadOnlyDictionary<string, string> LegacyRules = new Dictionary<string, string>
+    {
+        ["Runs:TracksPerRound"] = "5",
+        ["Runs:RegainLife"] = "false",
+        ["Runs:ShortenOnNoLifeLost"] = "false",
+        ["Runs:MaxRounds"] = "0",
+        ["Runs:LifeBonus"] = "0",
+        ["Runs:CompleteBonus"] = "0",
+    };
+
+    /// <summary>Les règles d'aujourd'hui : manches de 3, une vie regagnée, l'écoute raccourcit sans vie perdue, 8 manches, bonus.</summary>
+    internal static readonly IReadOnlyDictionary<string, string> SeriesRules = new Dictionary<string, string>
+    {
+        ["Runs:TracksPerRound"] = "3",
+        ["Runs:RegainLife"] = "true",
+        ["Runs:ShortenOnNoLifeLost"] = "true",
+        ["Runs:MaxRounds"] = "8",
+        ["Runs:LifeBonus"] = "250",
+        ["Runs:CompleteBonus"] = "500",
+    };
+
     public ApiFactory Api => Game.Api;
 
     public static async Task<RunGame> CreateAsync(
         string connectionString, int tracks = 40, IReadOnlyDictionary<string, string>? settings = null, Action<IServiceCollection>? configureServices = null)
     {
-        var game = new RunGame(await GameApi.CreateAsync(connectionString, tracks: 0, settings, configureServices));
+        // Les tests existants jouent les règles d'avant l'équilibrage (manches de 5, ni vie regagnée, ni plafond, ni bonus) ; ceux de la Série d'aujourd'hui
+        // les remplacent par les réglages qu'ils passent (RunSeriesRulesTests).
+        var merged = new Dictionary<string, string>(LegacyRules);
+        foreach (var (key, value) in settings ?? new Dictionary<string, string>())
+            merged[key] = value;
+        var game = new RunGame(await GameApi.CreateAsync(connectionString, tracks: 0, merged, configureServices));
         if (tracks > 0)
         {
             await game.Game.App.AddPlayableTracksAsync(tracks);

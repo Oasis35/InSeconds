@@ -57,7 +57,7 @@ internal static class RunsProblems
     public static ProblemDetails SessionNotFound() =>
         ApiProblem.Of(StatusCodes.Status404NotFound, RunsErrorCodes.SessionNotFound, "Partie introuvable.");
 
-    /// <summary>Une partie qui n'est plus en cours : gagnée ou perdue (<c>runs.already_played</c>), ou abandonnée.</summary>
+    /// <summary>Une partie qui n'est plus en cours : terminée, Série complète ou perdue (<c>runs.already_played</c>), ou abandonnée.</summary>
     public static ProblemDetails NotPending(RunSessionStatus status) =>
         status == RunSessionStatus.Abandoned
             ? ApiProblem.Of(StatusCodes.Status409Conflict, RunsErrorCodes.Abandoned, "Tu as abandonné cette playlist.")

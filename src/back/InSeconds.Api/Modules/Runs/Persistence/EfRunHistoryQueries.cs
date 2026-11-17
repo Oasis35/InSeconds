@@ -10,7 +10,7 @@ public sealed class EfRunHistoryQueries(InSecondsDbContext db) : IRunHistoryQuer
 {
     private IQueryable<RunSession> Finished(Guid playerId) =>
         db.Set<RunSession>().AsNoTracking()
-            .Where(s => s.PlayerId == playerId && s.Status == RunSessionStatus.Lost && s.EndedAt != null);
+            .Where(s => s.PlayerId == playerId && (s.Status == RunSessionStatus.Lost || s.Status == RunSessionStatus.Completed) && s.EndedAt != null);
 
     public async Task<RunHistorySummary> GetSummaryAsync(Guid playerId, CancellationToken ct)
     {

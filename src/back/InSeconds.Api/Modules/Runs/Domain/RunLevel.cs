@@ -106,8 +106,8 @@ public sealed class RunLevel
         ArgumentNullException.ThrowIfNull(session);
         if (session.PlayerId != PlayerId)
             throw new ArgumentException("Ce n'est pas une partie de ce joueur.", nameof(session));
-        if (session.Status != RunSessionStatus.Lost)
-            throw new InvalidOperationException("Seule une partie terminée (vies épuisées) compte pour le niveau.");
+        if (!session.IsFinished)
+            throw new InvalidOperationException("Seule une partie terminée (vies épuisées ou Série complète) compte pour le niveau.");
         if (LastSessionId == session.Id)
             return;
 
