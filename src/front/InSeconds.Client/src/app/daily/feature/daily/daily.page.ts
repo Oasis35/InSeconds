@@ -83,6 +83,10 @@ export class DailyPage {
   }
 
   /** Garde de sortie : en cours de partie, une fenêtre demande confirmation. */
+  isPlaying(): boolean {
+    return this.store.screen() === 'playing';
+  }
+
   canLeave(): boolean | Promise<boolean> {
     if (this.store.screen() !== 'playing') return true;
     const data: ConfirmDialogData = {

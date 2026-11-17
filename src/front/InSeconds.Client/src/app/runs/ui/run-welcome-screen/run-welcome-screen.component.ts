@@ -16,7 +16,7 @@ import { RunLevelCardComponent } from '../run-level-card/run-level-card.componen
   template: `
     @if (overlay()) {
       <!-- Le cadre de la partie, tel qu'il sera, flou derrière : « Commencer » le recouvre et lance le premier son dans ce clic (iPhone). -->
-      <div class="absolute inset-x-0 top-0 p-5 pt-6 w-full max-w-lg mx-auto pointer-events-none select-none" aria-hidden="true" style="filter:blur(6px);opacity:.55">
+      <div class="absolute inset-x-0 top-0 p-5 pt-6 w-full max-w-lg mx-auto pointer-events-none select-none" inert aria-hidden="true" style="filter:blur(6px);opacity:.55">
         <app-run-header [lives]="startLives" />
       </div>
     }
