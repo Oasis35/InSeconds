@@ -142,13 +142,13 @@ public class RunHitsTests
     }
 
     [Fact]
-    public void Marathon_CompteLesManchesJoueesEnEntier_EtPlafonneA10()
+    public void Marathon_CompteLesManchesJoueesEnEntier_EtPlafonneA8()
     {
         var hits = Evaluate(false, Answers(100, Enumerable.Range(1, 23).Select(p => Ans(p, true))));
-        Assert.Equal((false, 4, 10), (hits[RunHits.Marathon].Earned, hits[RunHits.Marathon].Progress, hits[RunHits.Marathon].Target));
+        Assert.Equal((false, 4, 8), (hits[RunHits.Marathon].Earned, hits[RunHits.Marathon].Progress, hits[RunHits.Marathon].Target));
 
         var done = Evaluate(false, Answers(100, Enumerable.Range(1, 55).Select(p => Ans(p, true))))[RunHits.Marathon];
-        Assert.Equal((true, 10, 10), (done.Earned, done.Progress, done.Target));
+        Assert.Equal((true, 8, 8), (done.Earned, done.Progress, done.Target));
     }
 
     [Fact]

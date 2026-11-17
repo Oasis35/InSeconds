@@ -1552,6 +1552,21 @@
                 "$ref": "#/components/schemas/RunLevelResponse"
               }
             ]
+          },
+          "livesLeft": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
+          },
+          "lifeBonus": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
+          },
+          "completeBonus": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
           }
         }
       },
@@ -2075,6 +2090,10 @@
           "nextFullPoints": {
             "type": "integer",
             "format": "int32"
+          },
+          "lifeRegained": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -2231,6 +2250,11 @@
               "type": "number",
               "format": "double"
             }
+          },
+          "maxRounds": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
           }
         }
       },

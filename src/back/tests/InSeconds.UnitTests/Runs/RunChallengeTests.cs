@@ -12,7 +12,7 @@ public class RunChallengeTests
     [Fact]
     public void Cree_LaPremiereManche_EtGardeLesReglesFigees()
     {
-        var challenge = RunChallenge.Create("K7Q2M9", 123, RunsOptions.DefaultRules(), FirstRound, Guid.NewGuid(), Now);
+        var challenge = RunChallenge.Create("K7Q2M9", 123, TestRules.Legacy(), FirstRound, Guid.NewGuid(), Now);
 
         Assert.Equal("K7Q2M9", challenge.Code);
         Assert.Equal(Enumerable.Range(1, 5), challenge.Tracks.Select(t => (int)t.Position));
@@ -27,7 +27,7 @@ public class RunChallengeTests
     [Fact]
     public void AppendRound_AjouteLaMancheSuivante_AvecSonTheme()
     {
-        var challenge = RunChallenge.Create("K7Q2M9", 1, RunsOptions.DefaultRules(), FirstRound, null, Now);
+        var challenge = RunChallenge.Create("K7Q2M9", 1, TestRules.Legacy(), FirstRound, null, Now);
 
         challenge.AppendRound(2, [6, 7, 8, 9, 10], new RunRoundTheme(2, 12, "Années 80"));
 
@@ -42,7 +42,7 @@ public class RunChallengeTests
     [Fact]
     public void AppendRound_PasDansLOrdre_Refuse()
     {
-        var challenge = RunChallenge.Create("K7Q2M9", 1, RunsOptions.DefaultRules(), FirstRound, null, Now);
+        var challenge = RunChallenge.Create("K7Q2M9", 1, TestRules.Legacy(), FirstRound, null, Now);
 
         Assert.Throws<InvalidOperationException>(() => challenge.AppendRound(3, [6, 7, 8, 9, 10], null));
     }
@@ -50,18 +50,18 @@ public class RunChallengeTests
     [Fact]
     public void AppendRound_UnMorceauDejaTire_Refuse()
     {
-        var challenge = RunChallenge.Create("K7Q2M9", 1, RunsOptions.DefaultRules(), FirstRound, null, Now);
+        var challenge = RunChallenge.Create("K7Q2M9", 1, TestRules.Legacy(), FirstRound, null, Now);
 
         Assert.Throws<ArgumentException>(() => challenge.AppendRound(2, [5, 7, 8, 9, 10], null));
     }
 
     [Fact]
     public void PasLeBonNombreDeMorceaux_Refuse() =>
-        Assert.Throws<ArgumentException>(() => RunChallenge.Create("K7Q2M9", 1, RunsOptions.DefaultRules(), [1, 2, 3, 4], null, Now));
+        Assert.Throws<ArgumentException>(() => RunChallenge.Create("K7Q2M9", 1, TestRules.Legacy(), [1, 2, 3, 4], null, Now));
 
     [Fact]
     public void UnMorceauDeuxFois_Refuse() =>
-        Assert.Throws<ArgumentException>(() => RunChallenge.Create("K7Q2M9", 1, RunsOptions.DefaultRules(), [1, 2, 3, 3, 5], null, Now));
+        Assert.Throws<ArgumentException>(() => RunChallenge.Create("K7Q2M9", 1, TestRules.Legacy(), [1, 2, 3, 3, 5], null, Now));
 
     [Theory]
     [InlineData("k7q2m9")]
@@ -69,7 +69,7 @@ public class RunChallengeTests
     [InlineData("K7Q2M0")]
     [InlineData("")]
     public void UnCodeInvalideOuEnMinuscules_Refuse(string code) =>
-        Assert.Throws<ArgumentException>(() => RunChallenge.Create(code, 1, RunsOptions.DefaultRules(), FirstRound, null, Now));
+        Assert.Throws<ArgumentException>(() => RunChallenge.Create(code, 1, TestRules.Legacy(), FirstRound, null, Now));
 }
 
 public class RunChallengeCodeTests

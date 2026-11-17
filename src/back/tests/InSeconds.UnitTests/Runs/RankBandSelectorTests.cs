@@ -9,7 +9,7 @@ public class RankBandSelectorTests
 {
     private readonly RankBandSelector _selector = new(new FisherYatesShuffle());
 
-    private static readonly RunRules Rules = RunsOptions.DefaultRules();
+    private static readonly RunRules Rules = TestRules.Legacy();
 
     private static readonly IReadOnlySet<int> None = new HashSet<int>();
 
@@ -73,7 +73,7 @@ public class RankBandSelectorTests
         // 10 morceaux pour 2 tranches de 5 : le morceau sans rang tombe dans la dernière.
         var pool = Pool(9).Append(new RankedTrack(500, null)).ToList();
 
-        var last = _selector.SelectRound(pool, RunsOptions.DefaultRules() with { RankBands = 2 }, seed: 3, round: 2, None, themeId: null);
+        var last = _selector.SelectRound(pool, TestRules.Legacy() with { RankBands = 2 }, seed: 3, round: 2, None, themeId: null);
 
         Assert.Contains(500, last);
     }
@@ -137,7 +137,7 @@ public class RankBandSelectorTests
     [Fact]
     public void ReglesPersonnalisees_UneMancheDeTroisMorceaux()
     {
-        var rules = RunsOptions.DefaultRules() with { TracksPerRound = 3 };
+        var rules = TestRules.Legacy() with { TracksPerRound = 3 };
 
         Assert.Equal(3, _selector.SelectRound(Pool(10), rules, seed: 1, round: 1, None, themeId: null).Count);
     }

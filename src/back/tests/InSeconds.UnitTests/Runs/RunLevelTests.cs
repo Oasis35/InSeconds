@@ -92,7 +92,7 @@ public class RunLevelTests
     /// </summary>
     private static RunSession Finished(Guid player, int roundsFound)
     {
-        var rules = RunsOptions.DefaultRules();
+        var rules = TestRules.Legacy();
         var challenge = RunChallenge.Create("K7Q2M9", 1, rules, Enumerable.Range(1, 5).ToList(), null, Now);
         for (var round = 2; round <= roundsFound + 1; round++)
             challenge.AppendRound(round, Enumerable.Range(rules.FirstPositionOf(round), 5).ToList());

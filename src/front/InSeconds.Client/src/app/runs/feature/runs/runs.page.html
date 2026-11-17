@@ -54,7 +54,7 @@
           <app-run-header [lives]="store.lives()" [muted]="store.soundsMuted()" (toggleSounds)="store.toggleSounds()" (abandon)="confirmAbandon()" />
 
           @if (store.shownRound(); as shown) {
-            <app-run-scoreboard class="mt-2" [total]="store.totalScore()" [round]="shown" [theme]="themeOf(shown)" [dots]="store.dots()" [ladder]="store.ladder()"
+            <app-run-scoreboard class="mt-2" [total]="store.totalScore()" [round]="shown" [maxRounds]="store.session()?.maxRounds ?? 0" [theme]="themeOf(shown)" [dots]="store.dots()" [ladder]="store.ladder()"
               [listenSeconds]="store.shownListenSeconds() ?? 0" [ghost]="store.ghost()" [combo]="store.combo()" [lang]="language.current()" />
           }
 

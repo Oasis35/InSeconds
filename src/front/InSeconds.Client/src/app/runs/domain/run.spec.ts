@@ -32,12 +32,12 @@ const withdrawn = (position: number): RunTrack => track(position, {
 });
 const round = (overrides: Partial<RunRound> = {}): RunRound => ({ round: 1, score: 0, listenSeconds: 10, fullPoints: 100, failed: 0, ...overrides });
 const session = (overrides: Partial<RunSession> = {}): RunSession => ({
-  sessionId: 1, challengeCode: 'ABC234', status: 'pending', tracksPerRound: 5, lives: 3, livesLeft: 3, totalScore: 0, roundsPassed: 0,
+  sessionId: 1, challengeCode: 'ABC234', status: 'pending', tracksPerRound: 5, lives: 3, livesLeft: 3, maxRounds: 0, totalScore: 0, roundsPassed: 0,
   round: round(), roundTracks: [], finish: null, answerSeconds: 45, clockRemainingSeconds: null, playedTracks: [], passedRounds: [],
   ghost: null, themes: [], themeChoice: null, listenLadder: [10, 5, 3, 2, 1, 0.5], ...overrides,
 });
 const summary = (overrides: Partial<RunRoundSummary> = {}): RunRoundSummary => ({
-  round: 1, score: 400, outcome: 'shorter', listenSeconds: 10, nextListenSeconds: 5, tracks: [], totalScore: 400, livesLeft: 3, fullPoints: 100, nextFullPoints: 200, ...overrides,
+  round: 1, score: 400, outcome: 'shorter', listenSeconds: 10, nextListenSeconds: 5, tracks: [], totalScore: 400, livesLeft: 3, lifeRegained: false, fullPoints: 100, nextFullPoints: 200, ...overrides,
 });
 const play = (overrides: Partial<RunPlay> = {}): Pick<RunPlay, 'session' | 'revealed' | 'neutralized' | 'roundSummaries' | 'isResuming'> => ({
   session: session(), revealed: null, neutralized: [], roundSummaries: [], isResuming: false, ...overrides,

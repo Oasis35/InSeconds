@@ -63,10 +63,10 @@ internal sealed class RunSessionConfiguration : IEntityTypeConfiguration<RunSess
 
     public void Configure(EntityTypeBuilder<RunSession> builder)
     {
-        builder.ToTable("sessions", DbSchemas.Runs, table => table.HasCheckConstraint("ck_sessions_status", "status IN (0, 2, 3)"));
+        builder.ToTable("sessions", DbSchemas.Runs, table => table.HasCheckConstraint("ck_sessions_status", "status IN (0, 1, 2, 3)"));
         builder.HasKey(s => s.Id);
         builder.Property(s => s.Id).UseHiLo("sessions_hilo", DbSchemas.Runs);
-        // status : 0 en cours, 2 perdue (plus de vie), 3 abandonnée ; 1 (gagnée) n'existe plus.
+        // status : 0 en cours, 1 Série complète, 2 perdue (plus de vie), 3 abandonnée.
         builder.Property(s => s.Status).HasConversion<short>();
         builder.Property(s => s.CurrentListenedSeconds).HasPrecision(4, 2);
         builder.HasIndex(s => new { s.ChallengeId, s.PlayerId }).IsUnique().HasDatabaseName(ChallengePlayerIndex);

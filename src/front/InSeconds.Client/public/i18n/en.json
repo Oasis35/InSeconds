@@ -1130,6 +1130,7 @@
     "header": {
       "abandon": "Give up",
       "roundShort": "Round {{ round }}",
+      "roundOf": "Round {{ round }}/{{ max }}",
       "soundsOff": "Mute sounds",
       "soundsOn": "Unmute sounds",
       "lives": "Lives: {{ left }} of {{ total }}",
@@ -1228,6 +1229,9 @@
       "duelBehind": "{{ name }} wins by {{ points }} pts",
       "duelTied": "Tied with {{ name }}",
       "rematch": "Rematch",
+      "complete": "Series complete",
+      "bonusLives": "Lives left ({{ count }}): +{{ points }} pts",
+      "bonusComplete": "Series complete: +{{ points }} pts",
       "rounds": "{{ count }} rounds done"
     },
     "pseudo": {
@@ -1393,10 +1397,11 @@
       "worth": "A track found is worth {{ from }} → {{ to }} pts",
       "nextTheme": "Choose the theme",
       "title": "Round {{ round }} done",
-      "shorter": "No mistake: the listening time gets shorter.",
+      "shorter": "No life lost: the listening time gets shorter.",
       "same": "The listening time stays the same.",
-      "longer": "One mistake: the listening time gets longer.",
+      "longer": "A life lost: the listening time gets longer.",
       "nextListen": "Round {{ round }}: listen for {{ seconds }}",
+      "lifeRegained": "Life regained",
       "next": "Next round"
     }
   },

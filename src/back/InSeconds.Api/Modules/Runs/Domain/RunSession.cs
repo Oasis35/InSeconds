@@ -8,7 +8,8 @@ public enum RunSessionStatus : short
     /// <summary>En cours.</summary>
     Pending = 0,
 
-    // 1 : l'ancienne partie « gagnée » (la Série ne se gagne pas : elle s'arrête quand les vies sont épuisées). La valeur reste libre.
+    /// <summary>Terminée en « Série complète » : toutes les manches du plafond jouées avec au moins une vie (1 : l'ancienne partie « gagnée », vidée par la migration <c>SerieRules</c>).</summary>
+    Completed = 1,
 
     /// <summary>Terminée : le joueur n'a plus de vie.</summary>
     Lost = 2,
@@ -44,6 +45,9 @@ public enum RunStepOutcome
 
     /// <summary>Le joueur n'a plus de vie : la partie est finie.</summary>
     Over,
+
+    /// <summary>La dernière manche du plafond est jouée avec au moins une vie : la Série est complète, la partie est finie.</summary>
+    Complete,
 }
 
 /// <param name="Round">La manche du morceau qui vient de recevoir sa réponse.</param>
@@ -54,6 +58,9 @@ public sealed record RunStep(int Round, RunStepOutcome Outcome, int FromStep, in
 {
     /// <summary>Ce morceau terminait sa manche (ou la partie).</summary>
     public bool EndsRound => Outcome != RunStepOutcome.Continue;
+
+    /// <summary>Ce morceau termine la partie (vies épuisées, ou Série complète).</summary>
+    public bool EndsRun => Outcome is RunStepOutcome.Over or RunStepOutcome.Complete;
 }
 
 /// <summary>
@@ -118,6 +125,9 @@ public sealed class RunSession
 
     public bool IsPending => Status == RunSessionStatus.Pending;
 
+    /// <summary>La partie est finie : vies épuisées ou Série complète (pas un abandon).</summary>
+    public bool IsFinished => Status is RunSessionStatus.Lost or RunSessionStatus.Completed;
+
     public static RunSession Start(int challengeId, Guid playerId, DateTimeOffset now) =>
         new() { ChallengeId = challengeId, PlayerId = playerId, Status = RunSessionStatus.Pending, CurrentPosition = 1, StartedAt = now };
 
@@ -156,15 +166,43 @@ public sealed class RunSession
         ArgumentNullException.ThrowIfNull(rules);
         var step = 0;
         for (var r = 1; r < round; r++)
-            step = RunSteps.Next(step, TallyOf(rules, r), rules.LastStep);
+            step = RunSteps.Next(step, TallyOf(rules, r), rules.LastStep, rules.ShortenOnNoLifeLost);
         return step;
     }
 
-    /// <summary>Les vies qui restent.</summary>
+    /// <summary>Les vies qui restent : celles du départ, moins une par morceau raté, plus une (jamais au-dessus du départ) par manche finie sans vie perdue.</summary>
     public int LivesLeft(RunRules rules)
     {
         ArgumentNullException.ThrowIfNull(rules);
-        return Math.Max(0, rules.Lives - _answers.Count(a => a.IsFailed));
+        return Math.Max(0, LifeTimeline(rules).LastOrDefault()?.LivesAfter ?? rules.Lives);
+    }
+
+    /// <summary>Cette manche, finie sans vie perdue, a rendu une vie (la partie n'en avait pas déjà le maximum).</summary>
+    public bool RegainedLife(RunRules rules, int round)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        return LifeTimeline(rules).Any(r => r.Round == round && r.Regained);
+    }
+
+    private sealed record LifeRound(int Round, int LivesAfter, bool Regained);
+
+    // Les vies manche après manche, rejouées dans l'ordre des réponses : un raté en retire une tout de suite, la fin d'une manche sans raté en rend une.
+    private List<LifeRound> LifeTimeline(RunRules rules)
+    {
+        var timeline = new List<LifeRound>();
+        var lives = rules.Lives;
+        foreach (var round in _answers.GroupBy(a => rules.RoundOf(a.Position)).OrderBy(g => g.Key))
+        {
+            var failed = round.Count(a => a.IsFailed);
+            lives -= failed;
+            var finished = round.Count() >= rules.TracksPerRound;
+            var regained = rules.RegainLife && finished && failed == 0 && lives > 0 && lives < rules.Lives;
+            if (regained)
+                lives++;
+            timeline.Add(new LifeRound(round.Key, lives, regained));
+        }
+
+        return timeline;
     }
 
     /// <summary>La durée d'écoute fixe du morceau en cours : celle du palier de sa manche.</summary>
@@ -290,7 +328,23 @@ public sealed class RunSession
             return new RunStep(round, RunStepOutcome.Continue, from, from);
 
         RoundsPassed++;
+        if (rules.HasCap && round >= rules.MaxRounds)
+        {
+            // La dernière manche du plafond, jouée avec au moins une vie : Série complète, avec ses bonus (par vie restante, et pour la complétion).
+            Status = RunSessionStatus.Completed;
+            TotalScore += BonusOf(rules);
+            End(now);
+            return new RunStep(round, RunStepOutcome.Complete, from, from);
+        }
+
         return new RunStep(round, RunStepOutcome.RoundDone, from, StepOf(rules, round + 1));
+    }
+
+    /// <summary>Les points de bonus d'une Série complète : une vie restante rapporte <see cref="RunRules.LifeBonus"/>, la complétion <see cref="RunRules.CompleteBonus"/>.</summary>
+    public int BonusOf(RunRules rules)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        return Status == RunSessionStatus.Completed ? (LivesLeft(rules) * rules.LifeBonus) + rules.CompleteBonus : 0;
     }
 
     private RunChallengeTrack CurrentTrackOf(RunChallenge challenge)

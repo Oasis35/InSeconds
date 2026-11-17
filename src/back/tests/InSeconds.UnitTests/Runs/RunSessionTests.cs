@@ -16,7 +16,7 @@ public class RunSessionTests
     /// <summary>Un défi aux règles par défaut, dont <paramref name="rounds"/> manches sont tirées (morceaux 1, 2, 3…), d'identifiant 0 comme la partie.</summary>
     private static RunChallenge Challenge(int rounds = 4, RunRules? rules = null)
     {
-        rules ??= RunsOptions.DefaultRules();
+        rules ??= TestRules.Legacy();
         var challenge = RunChallenge.Create("K7Q2M9", 1, rules, Enumerable.Range(1, rules.TracksPerRound).ToList(), null, Now);
         for (var round = 2; round <= rounds; round++)
             challenge.AppendRound(round, Enumerable.Range(rules.FirstPositionOf(round), rules.TracksPerRound).ToList());
@@ -240,5 +240,167 @@ public class RunSessionTests
         Assert.Equal(0, session.StepOf(challenge.Rules, 1));
         Assert.Equal(1, session.StepOf(challenge.Rules, 2));
         Assert.Equal(2, session.StepOf(challenge.Rules, 3));
+    }
+
+    // Les règles d'aujourd'hui : manches de 3, une vie regagnée par manche sans vie perdue, l'écoute raccourcit sans vie perdue, 8 manches au plus, bonus.
+    private static RunRules Today() => RunsOptions.DefaultRules();
+
+    [Fact]
+    public void SansVieRegagnee_LesPartiesDAvant_GardentLeurRegle()
+    {
+        var challenge = Challenge();
+        var session = Start();
+
+        Play(session, challenge, Missed, Found, Found, Found, Found);
+        Play(session, challenge, Repeat(Found, 5));
+
+        Assert.Equal(2, session.LivesLeft(challenge.Rules));
+        Assert.False(session.RegainedLife(challenge.Rules, 2));
+    }
+
+    [Fact]
+    public void UneMancheSansVieRendueMoins_UneMoitieJusteFaitRaccourcirLEcoute()
+    {
+        var challenge = Challenge(rules: Today());
+        var session = Start();
+
+        var steps = Play(session, challenge, Found, Half, Found);
+
+        Assert.Equal((0, 1), (steps[^1].FromStep, steps[^1].ToStep));
+        Assert.Equal(5m, session.ListenSecondsOf(challenge.Rules));
+        Assert.Equal(3, session.LivesLeft(challenge.Rules));
+    }
+
+    [Fact]
+    public void UneMancheSansVieRegagneeEnMoins_RendUneVie_JamaisAuDessusDuDepart()
+    {
+        var challenge = Challenge(rules: Today());
+        var session = Start();
+
+        Play(session, challenge, Missed, Found, Found);
+        Assert.Equal(2, session.LivesLeft(challenge.Rules));
+        Assert.False(session.RegainedLife(challenge.Rules, 1));
+
+        Play(session, challenge, Repeat(Found, 3));
+        Assert.Equal(3, session.LivesLeft(challenge.Rules));
+        Assert.True(session.RegainedLife(challenge.Rules, 2));
+
+        // Déjà au maximum : rien de plus, et la manche n'est pas marquée comme ayant rendu une vie.
+        Play(session, challenge, Repeat(Found, 3));
+        Assert.Equal(3, session.LivesLeft(challenge.Rules));
+        Assert.False(session.RegainedLife(challenge.Rules, 3));
+    }
+
+    [Fact]
+    public void UneMancheAvecUneVieDePerdue_NeRendRienEtLEcouteRemonte()
+    {
+        var challenge = Challenge(rules: Today());
+        var session = Start();
+
+        Play(session, challenge, Repeat(Found, 3));
+        var steps = Play(session, challenge, Found, Missed, Found);
+
+        Assert.Equal((1, 0), (steps[^1].FromStep, steps[^1].ToStep));
+        Assert.Equal(2, session.LivesLeft(challenge.Rules));
+        Assert.False(session.RegainedLife(challenge.Rules, 2));
+    }
+
+    [Fact]
+    public void LaDerniereVie_ArreteLaPartie_MemeAvecUneVieRegagneeAvant()
+    {
+        var challenge = Challenge(rules: Today());
+        var session = Start();
+
+        // Manche 1 : 2 vies perdues ; manche 2 propre rend une vie (2 restantes) ; manche 3 : deux ratés de plus, fin.
+        Play(session, challenge, Missed, Missed, Found);
+        Play(session, challenge, Repeat(Found, 3));
+        Assert.Equal(2, session.LivesLeft(challenge.Rules));
+        var steps = Play(session, challenge, Missed, Missed);
+
+        Assert.Equal(RunStepOutcome.Over, steps[^1].Outcome);
+        Assert.Equal(RunSessionStatus.Lost, session.Status);
+        Assert.Equal(0, session.LivesLeft(challenge.Rules));
+    }
+
+    [Fact]
+    public void HuitMancheJouees_SerieComplete_AvecLesBonusDesViesRestantes()
+    {
+        var challenge = Challenge(rounds: 8, rules: Today());
+        var session = Start();
+        Play(session, challenge, Missed, Found, Found);
+
+        var steps = Play(session, challenge, Repeat(Found, 21));
+
+        Assert.Equal(RunStepOutcome.Complete, steps[^1].Outcome);
+        Assert.True(steps[^1].EndsRun);
+        Assert.Equal(RunSessionStatus.Completed, session.Status);
+        Assert.True(session.IsFinished);
+        Assert.Equal(8, session.RoundsPassed);
+        Assert.Null(session.CurrentPosition);
+        // Une vie perdue puis rendue à la manche 2 : 3 vies à la fin.
+        Assert.Equal(3, session.LivesLeft(challenge.Rules));
+        Assert.Equal((3 * 250) + 500, session.BonusOf(challenge.Rules));
+        var played = session.Answers.Sum(a => a.Points);
+        Assert.Equal(played + session.BonusOf(challenge.Rules), session.TotalScore);
+        Assert.Throws<InvalidOperationException>(() => session.Answer(challenge, Found, Scoring, Now));
+    }
+
+    [Fact]
+    public void UneSerieComplete_AvecUneSeuleVie_RapporteLeBonusDUneVie()
+    {
+        var challenge = Challenge(rounds: 8, rules: Today());
+        var session = Start();
+        // Deux vies perdues d'entrée, puis des manches parfaites : une vie revient à chaque manche, jusqu'au départ.
+        Play(session, challenge, Missed, Missed, Found);
+        Play(session, challenge, Repeat(Found, 18));
+        Assert.Equal(3, session.LivesLeft(challenge.Rules));
+
+        // La dernière manche coûte deux vies mais on y arrive vivant : Série complète, avec une seule vie de bonus.
+        var steps = Play(session, challenge, Found, Missed, Missed);
+
+        Assert.Equal(RunStepOutcome.Complete, steps[^1].Outcome);
+        Assert.Equal(1, session.LivesLeft(challenge.Rules));
+        Assert.Equal(250 + 500, session.BonusOf(challenge.Rules));
+    }
+
+    [Fact]
+    public void SansPlafond_LesPartiesDAvant_NeFinissentJamaisEnSerieComplete()
+    {
+        var challenge = Challenge(rounds: 9);
+        var session = Start();
+
+        Play(session, challenge, Repeat(Found, 45));
+
+        Assert.Equal(RunSessionStatus.Pending, session.Status);
+        Assert.Equal(0, session.BonusOf(challenge.Rules));
+    }
+
+    [Fact]
+    public void UnMorceauNeutraliseALaFinDuPlafond_TermineAussiLaSerie()
+    {
+        var challenge = Challenge(rounds: 8, rules: Today());
+        var session = Start();
+        Play(session, challenge, Repeat(Found, 21));
+
+        Play(session, challenge, Found, Found);
+        var step = session.Neutralize(challenge, Now);
+
+        Assert.Equal(RunStepOutcome.Complete, step.Outcome);
+        Assert.Equal(RunSessionStatus.Completed, session.Status);
+    }
+
+    [Fact]
+    public void LesRegles_SontRelueDuJson_AvecLeursValeursParDefautPourLesAnciennesPlaylists()
+    {
+        var web = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web);
+        const string legacy = "{\"lives\":3,\"tracksPerRound\":5,\"listenLadder\":[10,5],\"stepPoints\":[100,200],\"answerSeconds\":45,\"rankBands\":8}";
+
+        var rules = System.Text.Json.JsonSerializer.Deserialize<RunRules>(legacy, web)!;
+
+        Assert.Equal((false, 0, 0, 0, false), (rules.RegainLife, rules.MaxRounds, rules.LifeBonus, rules.CompleteBonus, rules.ShortenOnNoLifeLost));
+        Assert.False(rules.HasCap);
+
+        var today = System.Text.Json.JsonSerializer.Deserialize<RunRules>(System.Text.Json.JsonSerializer.Serialize(Today(), web), web)!;
+        Assert.Equal((true, 8, 250, 500, true), (today.RegainLife, today.MaxRounds, today.LifeBonus, today.CompleteBonus, today.ShortenOnNoLifeLost));
     }
 }

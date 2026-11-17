@@ -3,8 +3,8 @@
  * les écrans en tirent (vies, pastilles, libellés). Le serveur décide de tout (points, vies, palier, neutralisation, fin) : le front affiche.
  */
 
-/** Une partie de la Série ne se gagne pas : elle se perd à la dernière vie, ou s'abandonne. */
-export type RunStatus = 'pending' | 'lost' | 'abandoned';
+/** Une partie de la Série se perd à la dernière vie, se complète à la dernière manche du plafond (« Série complète »), ou s'abandonne. */
+export type RunStatus = 'pending' | 'lost' | 'completed' | 'abandoned';
 
 /** Un morceau joué (ou neutralisé) : ce que la carte de réponse montre. Les noms ne viennent qu'avec la réponse (piège 31). */
 export interface RunTrack {
@@ -66,6 +66,10 @@ export interface RunFinish {
   readonly rounds: readonly RunRoundScore[];
   readonly record: RunRecord | null;
   readonly challengeCode: string;
+  /** Les vies restantes à la fin et les bonus ajoutés au score d'une Série complète (0 sinon) : 250 points par vie, puis la complétion. */
+  readonly livesLeft: number;
+  readonly lifeBonus: number;
+  readonly completeBonus: number;
   /** Le niveau du joueur après cette partie ; `null` pour une partie abandonnée ou un serveur qui ne l'envoie pas. */
   readonly level: RunLevel | null;
 }
@@ -100,6 +104,8 @@ export interface RunSession {
   /** Les vies de départ et celles qui restent : un morceau raté, passé ou arrivé au bout du chrono en coûte une. */
   readonly lives: number;
   readonly livesLeft: number;
+  /** Le plafond de manches de la playlist (« Manche 3/8 ») ; 0 : sans plafond (playlist d'avant). */
+  readonly maxRounds: number;
   readonly totalScore: number;
   /** Les manches terminées avec au moins une vie. */
   readonly roundsPassed: number;
@@ -166,6 +172,8 @@ export interface RunRoundSummary {
   readonly tracks: readonly RunTrack[];
   readonly totalScore: number;
   readonly livesLeft: number;
+  /** Une vie a été rendue par cette manche (terminée sans vie perdue, sous les vies de départ). */
+  readonly lifeRegained: boolean;
   /** Ce que rapportait un morceau trouvé en entier à l'écoute de la manche qui finit, et ce qu'il rapportera à celle de la suivante. */
   readonly fullPoints: number;
   readonly nextFullPoints: number;
@@ -448,7 +456,7 @@ export interface RunDuel {
  * arrivé au bout) et pour une partie abandonnée.
  */
 export function duelOf(session: Pick<RunSession, 'ghost' | 'totalScore' | 'status'> | null): RunDuel | null {
-  if (session?.status !== 'lost') return null;
+  if (session?.status !== 'lost' && session?.status !== 'completed') return null;
   const gap = ghostGap(session);
   return gap ? { pseudo: gap.pseudo, gap: gap.gap } : null;
 }

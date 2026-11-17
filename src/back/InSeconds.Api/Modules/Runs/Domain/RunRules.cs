@@ -20,10 +20,22 @@ namespace InSeconds.Api.Modules.Runs.Domain;
 /// juste ; une manche qui n'y figure pas est tirée sans thème.
 /// </param>
 /// <param name="RankBands">En combien de tranches de notoriété le catalogue est coupé : la manche k tire dans la tranche k (la dernière se répète).</param>
+/// <param name="RegainLife">Une manche terminée sans vie perdue rend une vie (jamais au-dessus de <paramref name="Lives"/>). Faux pour les playlists d'avant.</param>
+/// <param name="MaxRounds">Le plafond de manches : la partie s'arrête en « Série complète » à la fin de cette manche ; 0 : pas de plafond (playlists d'avant).</param>
+/// <param name="LifeBonus">Les points de chaque vie restante à la fin d'une Série complète.</param>
+/// <param name="CompleteBonus">Les points d'une Série complète.</param>
+/// <param name="ShortenOnNoLifeLost">
+/// L'écoute raccourcit dès qu'une manche se termine sans vie perdue (une moitié juste ne gêne plus). Faux : seulement une manche où tout est trouvé en
+/// entier (playlists d'avant).
+/// </param>
 public sealed record RunRules(
     int Lives, int TracksPerRound, IReadOnlyList<decimal> ListenLadder, IReadOnlyList<int> StepPoints, int AnswerSeconds = 0,
-    IReadOnlyList<RunRoundTheme>? Themes = null, int RankBands = 8)
+    IReadOnlyList<RunRoundTheme>? Themes = null, int RankBands = 8,
+    bool RegainLife = false, int MaxRounds = 0, int LifeBonus = 0, int CompleteBonus = 0, bool ShortenOnNoLifeLost = false)
 {
+    /// <summary>La Série a un plafond de manches.</summary>
+    public bool HasCap => MaxRounds > 0;
+
     /// <summary>Le thème de cette manche, vide si elle n'en a pas.</summary>
     public RunRoundTheme? ThemeOf(int round) => Themes?.FirstOrDefault(t => t.Round == round);
 
@@ -58,17 +70,19 @@ public sealed record RunRules(
 public sealed record RunRoundTheme(int Round, int ThemeId, string Name, bool Mystery = false);
 
 /// <summary>
-/// Ce que devient le palier d'une manche à l'autre. Une manche **sans erreur** (tous ses morceaux trouvés en entier) descend d'un palier (écoute plus
-/// courte, points plus gros) ; une manche avec une **erreur** (une vie perdue) en remonte un, jamais au-dessus du premier ; une manche où l'on n'a fait
-/// que des moitiés justes en plus du reste ne bouge pas. Une règle unique, la même à tous les paliers.
+/// Ce que devient le palier d'une manche à l'autre. Une manche avec une **erreur** (une vie perdue) remonte d'un palier (jamais au-dessus du premier) ;
+/// une manche **sans vie perdue** descend d'un palier (écoute plus courte, points plus gros). Avec <c>shortenOnNoLifeLost</c> (les playlists d'aujourd'hui)
+/// une moitié juste ne gêne pas ; sans lui (les playlists d'avant), il faut que tous les morceaux soient trouvés en entier, sinon le palier ne bouge pas.
+/// Un morceau retiré ne compte pour rien : une manche sans aucune réponse comptée ne bouge pas. Une règle unique, la même à tous les paliers.
 /// </summary>
 public static class RunSteps
 {
-    public static int Next(int step, RoundTally tally, int lastStep)
+    public static int Next(int step, RoundTally tally, int lastStep, bool shortenOnNoLifeLost = false)
     {
         if (tally.Failed > 0)
             return Math.Max(0, step - 1);
-        return tally is { Half: 0, Full: > 0 } ? Math.Min(lastStep, step + 1) : step;
+        var clean = shortenOnNoLifeLost ? tally.Answered > 0 : tally is { Half: 0, Full: > 0 };
+        return clean ? Math.Min(lastStep, step + 1) : step;
     }
 }
 

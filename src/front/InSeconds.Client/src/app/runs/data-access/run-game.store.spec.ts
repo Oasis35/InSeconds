@@ -44,7 +44,7 @@ describe('RunGameStore', () => {
   }
 
   const summary = (overrides: Partial<RunRoundSummary> = {}): RunRoundSummary => ({
-    round: 1, score: 320, outcome: 'shorter', listenSeconds: 10, nextListenSeconds: 5, tracks: [], totalScore: 320, livesLeft: 3, fullPoints: 100, nextFullPoints: 200, ...overrides,
+    round: 1, score: 320, outcome: 'shorter', listenSeconds: 10, nextListenSeconds: 5, tracks: [], totalScore: 320, livesLeft: 3, lifeRegained: false, fullPoints: 100, nextFullPoints: 200, ...overrides,
   });
 
   /** Lance la partie et laisse le lecteur annoncer son extrait prêt. */
@@ -431,7 +431,7 @@ describe('RunGameStore', () => {
         status: 'lost', round: null, playedTracks: [1, 2, 3, 4, 5].map(position => TRACK({ position, artistCorrect: false, titleCorrect: false })),
         finish: {
           status: 'lost', totalScore: 0, roundsPassed: 0, foundCount: 0, trackCount: 20,
-          tracks: [], rounds: [], record: null, challengeCode: 'ABC234', level: null,
+          tracks: [], rounds: [], record: null, challengeCode: 'ABC234', livesLeft: 0, lifeBonus: 0, completeBonus: 0, level: null,
         },
       });
 
@@ -519,7 +519,7 @@ describe('RunGameStore', () => {
   describe('fin de partie', () => {
     const finish = (status: 'lost', isNew = false) => ({
       status, totalScore: 2500, roundsPassed: 4, foundCount: 18, trackCount: 20,
-      tracks: [], rounds: [], record: { bestScore: 2500, bestRoundsPassed: 4, isNew }, challengeCode: 'ABC234', level: null,
+      tracks: [], rounds: [], record: { bestScore: 2500, bestRoundsPassed: 4, isNew }, challengeCode: 'ABC234', livesLeft: 0, lifeBonus: 0, completeBonus: 0, level: null,
     });
 
     beforeEach(async () => {
@@ -1039,7 +1039,7 @@ describe('RunGameStore', () => {
     it("sur /runs, la comparaison d'une partie finie se lit avec le code de la playlist de la fin", async () => {
       const finish = {
         status: 'lost' as const, totalScore: 2600, roundsPassed: 4, foundCount: 20, trackCount: 20, tracks: [],
-        rounds: [], record: null, challengeCode: 'XYZ789', level: null,
+        rounds: [], record: null, challengeCode: 'XYZ789', livesLeft: 0, lifeBonus: 0, completeBonus: 0, level: null,
       };
       api.launchResult = { kind: 'ok', play: PLAY({ session: SESSION({ status: 'lost', round: null, finish }), current: null }) };
       await store.init();

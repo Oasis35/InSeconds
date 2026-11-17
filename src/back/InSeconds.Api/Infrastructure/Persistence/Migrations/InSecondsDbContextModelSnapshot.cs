@@ -1105,7 +1105,7 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
 
                     b.ToTable("sessions", "runs", t =>
                         {
-                            t.HasCheckConstraint("ck_sessions_status", "status IN (0, 2, 3)");
+                            t.HasCheckConstraint("ck_sessions_status", "status IN (0, 1, 2, 3)");
                         });
                 });
 

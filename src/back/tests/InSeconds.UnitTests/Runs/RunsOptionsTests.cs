@@ -19,7 +19,7 @@ public class RunsOptionsTests
         Assert.Null(options.StepPoints);
         Assert.Equal([10m, 5m, 3m, 2m, 1m, 0.5m], options.EffectiveListenLadder);
         Assert.Equal([100, 200, 350, 550, 800, 1200], options.EffectiveStepPoints);
-        Assert.Equal((3, 5, 45), (options.Lives, options.TracksPerRound, options.AnswerSeconds));
+        Assert.Equal((3, 3, 45), (options.Lives, options.TracksPerRound, options.AnswerSeconds));
     }
 
     public static TheoryData<RunsOptions, string> Incoherent => new()
@@ -39,6 +39,10 @@ public class RunsOptionsTests
         { new RunsOptions { AnswerSeconds = 10 }, "Runs:AnswerSeconds" },
         { new RunsOptions { AnswerSeconds = 601 }, "Runs:AnswerSeconds" },
         { new RunsOptions { AnswerSeconds = -1 }, "Runs:AnswerSeconds" },
+        { new RunsOptions { MaxRounds = -1 }, "Runs:MaxRounds" },
+        { new RunsOptions { MaxRounds = 51 }, "Runs:MaxRounds" },
+        { new RunsOptions { LifeBonus = -1 }, "Runs:LifeBonus" },
+        { new RunsOptions { CompleteBonus = 100_001 }, "Runs:LifeBonus" },
     };
 
     [Theory]

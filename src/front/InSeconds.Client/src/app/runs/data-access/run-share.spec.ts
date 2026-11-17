@@ -18,7 +18,7 @@ describe('runShareText', () => {
       { round: 2, score: 150, listenSeconds: 5, theme: null },
       { round: 3, score: null, listenSeconds: 3, theme: null },
     ],
-    record: null, challengeCode: 'K7Q2M9', level: null,
+    record: null, challengeCode: 'K7Q2M9', livesLeft: 0, lifeBonus: 0, completeBonus: 0, level: null,
   };
   const t = (key: string, params?: Record<string, unknown>) => (params ? `${key}${JSON.stringify(params)}` : key);
 
@@ -91,7 +91,7 @@ describe('RunShare', () => {
     const finish: RunFinish = {
       status: 'lost', totalScore: 3000, roundsPassed: 4, foundCount: 1, trackCount: 20,
       tracks: [TRACK()], rounds: [{ round: 1, score: 100, listenSeconds: 10, theme: null }], record: null,
-      challengeCode: 'K7Q2M9', level: null,
+      challengeCode: 'K7Q2M9', livesLeft: 0, lifeBonus: 0, completeBonus: 0, level: null,
     };
 
     await share.shareScore(finish, 'fr');
@@ -120,7 +120,7 @@ describe('RunShare', () => {
     const finish: RunFinish = {
       status: 'lost', totalScore: 3000, roundsPassed: 4, foundCount: 1, trackCount: 20,
       tracks: [TRACK()], rounds: [{ round: 1, score: 100, listenSeconds: 10, theme: null }], record: null,
-      challengeCode: 'K7Q2M9', level: null,
+      challengeCode: 'K7Q2M9', livesLeft: 0, lifeBonus: 0, completeBonus: 0, level: null,
     };
 
     await share.shareGrid(finish, 'fr');

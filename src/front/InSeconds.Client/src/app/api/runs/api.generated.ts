@@ -1545,6 +1545,9 @@ export interface RunFinishResponse {
     record: RunRecordResponse | undefined;
     challengeCode: string;
     level?: RunLevelResponse | undefined;
+    livesLeft?: number;
+    lifeBonus?: number;
+    completeBonus?: number;
 
     [key: string]: any;
 }
@@ -1696,6 +1699,7 @@ export interface RunRoundSummaryResponse {
     livesLeft: number;
     fullPoints: number;
     nextFullPoints: number;
+    lifeRegained?: boolean;
 
     [key: string]: any;
 }
@@ -1727,6 +1731,7 @@ export interface RunSessionResponse {
     themes?: RunRoundThemeResponse[] | undefined;
     themeChoice?: RunThemeChoiceResponse | undefined;
     listenLadder?: number[] | undefined;
+    maxRounds?: number;
 
     [key: string]: any;
 }
