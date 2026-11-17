@@ -100,6 +100,8 @@ export class RunsPage implements OnInit {
   private readonly injector = inject(Injector);
 
   protected readonly chrome = inject(ShellChromeStore);
+  /** L'écran affiché : l'accueil du mode attend que le flag de la V4 soit lu (pas d'ancien accueil qui change de forme ensuite). */
+  protected readonly screen = computed(() => (!this.chrome.v4Known() && this.store.screen() === 'welcome' ? 'loading' : this.store.screen()));
 
   /** Les secondes avant minuit UTC (le prochain défi), pour la bande du défi du jour ; au passage de minuit, un nouveau défi est à jouer. */
   private readonly secondsLeft = signal(secondsUntilMidnightUtc(new Date()));

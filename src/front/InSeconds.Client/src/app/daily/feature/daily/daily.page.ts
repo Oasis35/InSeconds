@@ -106,6 +106,11 @@ export class DailyPage implements OnInit {
     { initialValue: this.router.url.split(/[?#]/)[0] },
   );
   protected readonly isHome = computed(() => this.path() === '/');
+  /**
+   * L'écran affiché. Tant que le flag de la V4 n'est pas lu (l'accès se lit après l'identité, puis l'appel API), rien du jeu n'est montré, sauf
+   * une manche en cours : un chargement neutre, jamais l'ancien accueil qui change de forme une seconde plus tard.
+   */
+  protected readonly screen = computed(() => (!this.chrome.v4Known() && this.store.screen() !== 'playing' ? 'loading' : this.store.screen()));
 
   constructor() {
     // La coque (barre du bas de la V4) sait si une manche est en cours et si le défi du jour est joué.

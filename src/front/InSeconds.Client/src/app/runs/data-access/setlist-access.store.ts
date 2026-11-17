@@ -50,6 +50,8 @@ export const SetlistAccessStore = signalStore(
         }
         if (asked) return;
         asked = true;
+        // Un compte qui vient de se connecter : le « non » d'avant n'est plus une réponse, les pages attendent la nouvelle.
+        patchState(store, { loaded: false });
         try {
           patchState(store, { hasAccess: await loader(), loaded: true });
         } catch {
