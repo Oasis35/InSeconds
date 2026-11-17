@@ -52,7 +52,7 @@ describe('RunWelcomeScreenComponent', () => {
     const { element } = render({ overlay: true });
 
     expect(element.querySelector('[data-testid="run-start"]')?.textContent).toContain('runs.welcome.begin');
-    expect(element.querySelectorAll('[data-testid="run-lives"] svg').length).toBe(3);
+    expect(element.querySelectorAll('[data-testid="run-lives"] svg')).toHaveLength(3);
   });
 
   it('sans la nouvelle interface, aucun cadre derrière', () => {
