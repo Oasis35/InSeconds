@@ -6,13 +6,14 @@ import { RoundDot, RunGhostGap } from '../../domain/run';
 import { RunScoreboardComponent } from './run-scoreboard.component';
 
 describe('RunScoreboardComponent', () => {
-  function render(opts: { total?: number; ghost?: RunGhostGap | null; combo?: number | null; theme?: string | null; dots?: RoundDot[]; ladder?: number[]; listen?: number } = {}) {
+  function render(opts: { total?: number; ghost?: RunGhostGap | null; combo?: number | null; theme?: string | null; dots?: RoundDot[]; ladder?: number[]; listen?: number; maxRounds?: number } = {}) {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     TestBed.inject(TranslateService).setTranslation('fr', fr);
     TestBed.inject(TranslateService).use('fr');
     const fixture = TestBed.createComponent(RunScoreboardComponent);
     fixture.componentRef.setInput('total', opts.total ?? 300);
     fixture.componentRef.setInput('round', 2);
+    fixture.componentRef.setInput('maxRounds', opts.maxRounds ?? 0);
     fixture.componentRef.setInput('theme', opts.theme ?? null);
     fixture.componentRef.setInput('ghost', opts.ghost ?? null);
     fixture.componentRef.setInput('combo', opts.combo ?? null);
@@ -31,6 +32,12 @@ describe('RunScoreboardComponent', () => {
     expect(text(element.querySelector('[data-testid="run-round-title"]'))).toBe('Manche 2 Années 80');
     expect(element.querySelectorAll('h1')).toHaveLength(1);
     expect(element.querySelector('[data-testid="run-theme-pill"]')?.textContent?.trim()).toBe('Années 80');
+  });
+
+  it('avec un plafond de manches, « Manche 2/8 »', () => {
+    const { element } = render({ maxRounds: 8 });
+
+    expect(text(element.querySelector('[data-testid="run-round-title"]'))).toBe('Manche 2/8');
   });
 
   it('une pastille par morceau, avec son état', () => {

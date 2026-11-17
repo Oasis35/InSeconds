@@ -36,6 +36,7 @@ public sealed class RunsMetrics
     public const string Launched = "launched";
     public const string Joined = "joined";
     public const string Lost = "lost";
+    public const string Completed = "completed";
     public const string Abandoned = "abandoned";
 
     private readonly Counter<long> _sessions;
@@ -63,11 +64,11 @@ public sealed class RunsMetrics
     public void SessionAbandoned() => Session(Abandoned);
 
     /// <summary>
-    /// La fin d'une partie perdue (plus de vie), avec le nombre de manches terminées (<c>round</c> : la manche où la dernière vie est tombée), pour
-    /// régler les paliers.
+    /// La fin d'une partie : perdue (plus de vie ; <c>round</c> : la manche où la dernière vie est tombée) ou « Série complète » (<c>completed</c>,
+    /// le plafond de manches atteint ; <c>round</c> : la dernière manche), avec le nombre de manches terminées, pour régler les paliers.
     /// </summary>
-    public void SessionEnded(int roundsPassed) =>
-        _sessions.Add(1, new KeyValuePair<string, object?>("event", Lost), new KeyValuePair<string, object?>("round", roundsPassed + 1));
+    public void SessionEnded(int roundsPassed, bool completed = false) =>
+        _sessions.Add(1, new KeyValuePair<string, object?>("event", completed ? Completed : Lost), new KeyValuePair<string, object?>("round", completed ? roundsPassed : roundsPassed + 1));
 
     /// <summary>Une manche terminée : son numéro et ce qu'elle a fait du palier (<c>shorter</c>, <c>same</c>, <c>longer</c>).</summary>
     public void RoundEnded(int round, string outcome) =>

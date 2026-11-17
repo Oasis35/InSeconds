@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using InSeconds.Api.Modules.Runs.Application;
 using InSeconds.IntegrationTests.Daily;
@@ -113,6 +114,8 @@ public class RunSeriesRulesTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task UneSerieComplete_AvecUneSeuleVie_RapporteLeBonusDUneVie()
     {
+        using var sessions = new Microsoft.Extensions.Diagnostics.Metrics.Testing.MetricCollector<long>(
+            _run.Api.Services.GetRequiredService<System.Diagnostics.Metrics.IMeterFactory>(), RunsMetrics.MeterName, RunsMetrics.SessionsName);
         var alice = await _run.NewInvitedAsync("Alice");
         var start = (await alice.LaunchAsync()).Session;
         var (id, code) = (start.SessionId, start.ChallengeCode);
@@ -124,6 +127,9 @@ public class RunSeriesRulesTests(PostgresFixture postgres) : IAsyncLifetime
 
         var finish = last.Session.Finish!;
         Assert.Equal(("completed", 1, 250, 500), (finish.Status, finish.LivesLeft, finish.LifeBonus, finish.CompleteBonus));
+        // Le compteur de parties dit « completed » (jamais « lost »), avec la dernière manche.
+        var ended = sessions.GetMeasurementSnapshot().Single(m => Convert.ToString(m.Tags["event"], System.Globalization.CultureInfo.InvariantCulture) == RunsMetrics.Completed);
+        Assert.Equal(8, Convert.ToInt32(ended.Tags["round"], System.Globalization.CultureInfo.InvariantCulture));
     }
 
     [Fact]

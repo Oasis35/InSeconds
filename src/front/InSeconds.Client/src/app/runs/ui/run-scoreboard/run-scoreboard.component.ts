@@ -44,7 +44,7 @@ const GHOST_DELAY_MS = (COUNT_DELAY + 0.45) * 1000;
         </div>
         <div class="flex flex-col items-end gap-1.5 shrink-0">
           <h1 class="flex items-center gap-2 text-[15px] font-bold leading-none" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="run-round-title">
-            {{ 'runs.header.roundShort' | translate: { round: round() } }}
+            {{ (maxRounds() > 0 ? 'runs.header.roundOf' : 'runs.header.roundShort') | translate: { round: round(), max: maxRounds() } }}
             @if (theme(); as name) {
               <span class="px-2 py-0.5 rounded-full text-[11px] font-bold truncate max-w-[9rem]" style="border:1px solid var(--border-neutral);color:var(--text-light)" data-testid="run-theme-pill">{{ name }}</span>
             }
@@ -114,6 +114,8 @@ export class RunScoreboardComponent {
   readonly round = input.required<number>();
   /** Le thème de la manche, s'il y en a un : une pastille à côté du titre. */
   readonly theme = input<string | null>(null);
+  /** Le plafond de manches de la playlist (« Manche 3/8 ») ; 0 : sans plafond, « Manche 3 ». */
+  readonly maxRounds = input(0);
   /** Les pastilles de la manche. */
   readonly dots = input<readonly RoundDot[]>([]);
   /** L'échelle des paliers d'écoute, en secondes, du plus long au plus court. */

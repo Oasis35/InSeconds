@@ -70,7 +70,6 @@ public sealed record RunRules(
 public sealed record RunRoundTheme(int Round, int ThemeId, string Name, bool Mystery = false);
 
 /// <summary>
-/// <summary>
 /// Ce que devient le palier d'une manche à l'autre. Une manche avec une **erreur** (une vie perdue) remonte d'un palier (jamais au-dessus du premier) ;
 /// une manche **sans vie perdue** descend d'un palier (écoute plus courte, points plus gros). Avec <c>shortenOnNoLifeLost</c> (les playlists d'aujourd'hui)
 /// une moitié juste ne gêne pas ; sans lui (les playlists d'avant), il faut que tous les morceaux soient trouvés en entier, sinon le palier ne bouge pas.

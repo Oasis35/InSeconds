@@ -163,7 +163,7 @@ public sealed class RunPlayer(
             RunLevelPolicy.IsProvisional(level.RunsPlayed, rules.Levels.ProvisionalRuns));
 
         RunsLog.SessionEnded(logger, session.Id, session.PlayerId, session.Status, session.RoundsPassed, session.TotalScore);
-        metrics.SessionEnded(session.RoundsPassed);
+        metrics.SessionEnded(session.RoundsPassed, session.Status == RunSessionStatus.Completed);
         // Un duel contre l'ami qui a lancé la playlist (s'il l'a finie) : devant, derrière ou à égalité.
         if (await ghosts.OfAsync(session, challenge, ct) is { } ghost)
             metrics.DuelEnded(session.TotalScore - ghost.Total);

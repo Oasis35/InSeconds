@@ -332,7 +332,7 @@ public sealed class RunSession
         {
             // La dernière manche du plafond, jouée avec au moins une vie : Série complète, avec ses bonus (par vie restante, et pour la complétion).
             Status = RunSessionStatus.Completed;
-            TotalScore += (LivesLeft(rules) * rules.LifeBonus) + rules.CompleteBonus;
+            TotalScore += BonusOf(rules);
             End(now);
             return new RunStep(round, RunStepOutcome.Complete, from, from);
         }
