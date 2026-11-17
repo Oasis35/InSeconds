@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/test';
 import { RunPage } from '../pages/run.page';
 
 // Le classement entre amis (`/ranking`) : un compte crée un groupe, l'invitation (`/ranking/join/<code>`) le fait rejoindre, et seuls ses
-// membres voient son classement. L'onglet « Classements » de la barre du bas vient avec l'accès Setlist.
+// membres voient son classement. L'onglet « Classements » de la barre du bas vient avec l'accès Survie.
 
 test.describe('Groupes entre amis', () => {
   test.beforeEach(async ({ api }) => {
@@ -80,7 +80,7 @@ test.describe('Groupes entre amis', () => {
     await expect(page.getByTestId('ranking-row')).toHaveCount(1);
   });
 
-  test("le classement général : personne n'y figure sans l'avoir choisi, le choix est gardé ; les Hits se lisent depuis la Setlist", async ({ page, api }) => {
+  test("le classement général : personne n'y figure sans l'avoir choisi, le choix est gardé ; les Hits se lisent depuis la Survie", async ({ page, api }) => {
     const player = new RunPage(page);
     const playerId = await player.loginAsPlayer('zoe-general@e2e.test', 'ZoeGeneral');
     await api.grantRunAccess(playerId);

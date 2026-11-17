@@ -5,7 +5,7 @@ import type { RunTrack } from '../fixtures/api-client';
 const BASE = process.env['CI'] ? 'http://localhost:5175' : 'http://localhost:5177';
 
 /**
- * Le mode Run (« Setlist », `/survie`) : l'accueil du mode, la partie (la carte du morceau avec son chrono, sa réponse ou le morceau retiré,
+ * Le mode Run (« Survie », `/survie`) : l'accueil du mode, la partie (la carte du morceau avec son chrono, sa réponse ou le morceau retiré,
  * puis la pile des morceaux joués et des manches passées, le bilan de chaque manche) et la fin. L'écoute suit l'échelle de la Série (10 s à la manche 1) et la saisie est là dès que le son se charge :
  * on répond sans attendre la fin de l'extrait. Les animations coupées, la partie ne s'enchaîne pas seule : « Morceau suivant » à chaque fois.
  */

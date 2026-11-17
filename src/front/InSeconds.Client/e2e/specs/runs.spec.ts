@@ -5,7 +5,7 @@ import { GamePage } from '../pages/game.page';
 import { RunPage } from '../pages/run.page';
 import { inSequence } from '../fixtures/sequence';
 
-// Le mode Run (« Setlist », la Série) : 3 vies, des manches sans fin (ici de 5 morceaux : les règles d'avant l'équilibrage, `useLegacyRunRules`), une écoute de 10 s qui raccourcit après une manche sans erreur
+// Le mode Run (« Survie », la Série) : 3 vies, des manches sans fin (ici de 5 morceaux : les règles d'avant l'équilibrage, `useLegacyRunRules`), une écoute de 10 s qui raccourcit après une manche sans erreur
 // et s'allonge après une erreur, 45 s pour répondre. Le tirage est paresseux : l'hôte de test donne les morceaux déjà tirés de la playlist.
 // L'écran : la carte du morceau (chrono dans son coin), puis le total du run et la pile des morceaux joués ; un bilan clôt chaque manche.
 
@@ -66,7 +66,7 @@ test.describe('Mode Setlist', () => {
     await game.goto();
     await game.waitForWelcome();
     await expect(run.homeCard).toBeVisible();
-    await expect(run.homeCard).toContainText('Setlist');
+    await expect(run.homeCard).toContainText('Survie');
     // Le défi du jour n'est pas joué : la carte est discrète (« Jouer » en contour), sous la carte du défi.
     await expect(run.homeCard).toHaveAttribute('data-active', 'false');
     await expect(page.getByTestId('home-challenge')).toBeVisible();
@@ -101,17 +101,17 @@ test.describe('Mode Setlist', () => {
     await expect(page.getByTestId('header-instagram')).toBeVisible();
     await expect(page.getByTestId('tab-daily')).toHaveAttribute('aria-current', 'page');
     await expect(page.getByTestId('daily-pending')).toBeVisible();
-    // L'accueil de la maquette : la carte du défi, avec sa série dedans, puis la carte Setlist.
+    // L'accueil de la maquette : la carte du défi, avec sa série dedans, puis la carte Survie.
     await expect(page.getByTestId('home-challenge')).toBeVisible();
     await expect(page.getByTestId('run-home-card')).toHaveAttribute('data-active', 'false');
-    // Les liens légaux ont quitté la barre : une ligne discrète sous la carte Setlist, et quatre entrées en bas.
+    // Les liens légaux ont quitté la barre : une ligne discrète sous la carte Survie, et quatre entrées en bas.
     await expect(page.getByTestId('home-legal-line').getByRole('link', { name: 'Confidentialité' })).toBeVisible();
     await expect(bar.getByRole('link', { name: 'Confidentialité' })).toHaveCount(0);
     await expect(page.getByTestId('tab-setlist')).toHaveCount(0);
     await expect(page.getByTestId('tab-account')).toBeVisible();
     await expect(page.getByTestId('header-login')).toHaveCount(0);
 
-    // La carte Setlist mène au mode, qui rappelle le défi restant et y ramène ; l'accueil reste allumé dans la barre.
+    // La carte Survie mène au mode, qui rappelle le défi restant et y ramène ; l'accueil reste allumé dans la barre.
     await page.getByTestId('run-home-play').click();
     await expect(page).toHaveURL(/\/survie$/);
     await expect(run.startButton).toBeVisible();
