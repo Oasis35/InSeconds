@@ -30,7 +30,7 @@ export type RunScreen =
 
 interface RunState {
   screen: RunScreen;
-  /** La playlist du lien ouvert (`/setlist/<code>`) ; `null` sur `/setlist`. */
+  /** La playlist du lien ouvert (`/survie/<code>`) ; `null` sur `/survie`. */
   code: string | null;
   link: RunLink | null;
   comparison: RunComparison | null;
@@ -451,7 +451,7 @@ export const RunGameStore = signalStore(
       await loadComparison(code);
     };
 
-    /** L'écran d'un lien d'ami (`/setlist/<code>`) : « lien reçu » si la playlist n'est pas jouée, la reprise si elle est en cours, la comparaison si elle est finie. */
+    /** L'écran d'un lien d'ami (`/survie/<code>`) : « lien reçu » si la playlist n'est pas jouée, la reprise si elle est en cours, la comparaison si elle est finie. */
     const openLink = async (code: string): Promise<void> => {
       const outcome = await api.challenge(code);
       if (outcome.kind !== 'ok') {
@@ -474,7 +474,7 @@ export const RunGameStore = signalStore(
 
     /**
      * Premier chargement, ou « Réessayer » d'un écran d'erreur : mon accès, mon record, ma partie en cours (l'écran de reprise). Avec le code d'un
-     * lien (`/setlist/<code>`), l'écran de ce lien. Sans argument, le code déjà ouvert est gardé (« Réessayer », retour d'un abandon).
+     * lien (`/survie/<code>`), l'écran de ce lien. Sans argument, le code déjà ouvert est gardé (« Réessayer », retour d'un abandon).
      */
     async function init(code?: string | null): Promise<void> {
       round.reset();

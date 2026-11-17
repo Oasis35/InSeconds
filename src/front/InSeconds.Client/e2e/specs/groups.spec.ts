@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/test';
 import { RunPage } from '../pages/run.page';
 
 // Le classement entre amis (`/ranking`) : un compte crée un groupe, l'invitation (`/ranking/join/<code>`) le fait rejoindre, et seuls ses
-// membres voient son classement. L'onglet « Classements » de la barre du bas vient avec l'accès Setlist.
+// membres voient son classement. L'onglet « Classements » de la barre du bas vient avec l'accès Survie.
 
 test.describe('Groupes entre amis', () => {
   test.beforeEach(async ({ api }) => {
@@ -80,7 +80,7 @@ test.describe('Groupes entre amis', () => {
     await expect(page.getByTestId('ranking-row')).toHaveCount(1);
   });
 
-  test("le classement général : personne n'y figure sans l'avoir choisi, le choix est gardé ; les Hits se lisent depuis la Setlist", async ({ page, api }) => {
+  test("le classement général : personne n'y figure sans l'avoir choisi, le choix est gardé ; les Hits se lisent depuis la Survie", async ({ page, api }) => {
     const player = new RunPage(page);
     const playerId = await player.loginAsPlayer('zoe-general@e2e.test', 'ZoeGeneral');
     await api.grantRunAccess(playerId);
@@ -104,13 +104,13 @@ test.describe('Groupes entre amis', () => {
     await expect(page).toHaveURL(/\/ranking\?view=general$/);
 
     // Les Hits : la ligne de l'accueil du mode ouvre la liste, rien n'est obtenu sans partie finie.
-    await page.goto('/setlist');
+    await page.goto('/survie');
     await expect(page.getByTestId('run-hits-count')).toHaveText('0 / 17');
     await page.getByTestId('run-hits-line').click();
-    await expect(page).toHaveURL(/\/setlist\/hits$/);
+    await expect(page).toHaveURL(/\/survie\/hits$/);
     await expect(page.getByTestId('hit')).toHaveCount(17);
     await expect(page.getByTestId('hits-count')).toHaveText('0 / 17');
     await page.getByTestId('hits-back').click();
-    await expect(page).toHaveURL(/\/setlist$/);
+    await expect(page).toHaveURL(/\/survie$/);
   });
 });

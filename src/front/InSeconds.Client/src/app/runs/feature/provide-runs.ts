@@ -6,7 +6,7 @@ import { SetlistAccessStore } from '../data-access/setlist-access.store';
 /**
  * Ce que le domaine `runs` branche dans l'app dès le démarrage : son entrée sur l'accueil du jeu du jour (la carte Setlist), la barre du bas de
  * la V4, toutes deux chargées à la demande, et la lecture de l'accès (le flag de la V4). Le client de l'API et le lecteur sont fournis par la
- * route `/setlist` et par les composants eux-mêmes.
+ * route `/survie` et par les composants eux-mêmes.
  */
 export function provideRuns(): EnvironmentProviders {
   return makeEnvironmentProviders([

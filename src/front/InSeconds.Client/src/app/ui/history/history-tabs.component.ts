@@ -26,6 +26,6 @@ export class HistoryTabsComponent {
 
   protected readonly tabs = [
     { id: 'daily', link: '/history/daily', labelKey: 'ui.history.tabs.daily' },
-    { id: 'setlist', link: '/history/setlist', labelKey: 'ui.history.tabs.setlist' },
+    { id: 'setlist', link: '/history/survie', labelKey: 'ui.history.tabs.setlist' },
   ] as const;
 }

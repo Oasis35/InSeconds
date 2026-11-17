@@ -1,4 +1,4 @@
-# Setlist : les écrans
+# Survie : les écrans
 
 Format : téléphone d'abord (390 × 844). Les textes sont dans les traductions (`runs.*`, FR et EN). Les écrans de la V4 (accueil, barre du bas, historique, classement, groupes) ont leurs 16 maquettes dans [`maquettes/proto4/`](maquettes/proto4/) et leur description dans [`proto4.md`](proto4.md). Ce document décrit les écrans de **la partie** ; règles : [`regles.md`](regles.md).
 
@@ -16,11 +16,11 @@ Un écran qui existe déjà au Daily se reprend tel quel, seuls les textes chang
 | Extrait illisible | phase `audio-error` | « Réessayer / Passer » |
 | Erreur avec code, pool trop petit, service indisponible | `status-screen`, overlay commun | textes `runs.*` |
 
-Sans écran du tout : l'accès refusé (`/setlist` renvoie au Daily) et le lien d'une playlist déjà jouée (directement la comparaison).
+Sans écran du tout : l'accès refusé (`/survie` renvoie au Daily) et le lien d'une playlist déjà jouée (directement la comparaison).
 
 ## Le fil d'une partie
 
-1. **Accueil du mode** (`/setlist`) : le niveau et l'échelle des disques, le record, « Lancer une partie », la reprise d'une partie en cours, le lien « Hits ».
+1. **Accueil du mode** (`/survie`) : le niveau et l'échelle des disques, le record, « Lancer une partie », la reprise d'une partie en cours, le lien « Hits ».
 2. **Manche** : un seul écran en pile.
    - **En-tête** : ✕ (abandonner), les **vies** en cœurs (3), le haut-parleur.
    - **Bloc du haut** (`run-scoreboard`) : le score (« Score », et à côté les bonnes réponses d'affilée), « Manche N » avec la pastille du thème et une pastille par morceau de la manche (trouvé, à moitié, raté, retiré, en cours, à venir), pour qui joue la playlist d'un ami son **fantôme** (son pseudo, son total au même morceau, l'écart ; « Tu viens de dépasser Léa ! » quelques secondes au moment du dépassement ; « Tu bats Léa » au-delà de son score figé), et la rangée des paliers d'écoute (10 à 0,5 s) avec celui de la manche en ambre (repliée sur un écran bas, le clavier ouvert).
@@ -53,4 +53,4 @@ Une partie déjà commencée sur ce lien : l'écran de reprise. Une partie finie
 
 ## Les Hits
 
-`/setlist/hits` : la liste des jalons (17), ceux obtenus en couleur. Un Hit gagné depuis la dernière visite arrive avec un temps fort. La ligne « Hits 4 / 17 » est sur l'accueil du mode et la fin d'une partie.
+`/survie/hits` : la liste des jalons (17), ceux obtenus en couleur. Un Hit gagné depuis la dernière visite arrive avec un temps fort. La ligne « Hits 4 / 17 » est sur l'accueil du mode et la fin d'une partie.

@@ -10,7 +10,7 @@ import { RunsPage } from './runs/runs.page';
 
 /**
  * Le mode Run, chargé à la demande avec son lecteur et son client d'API, qui ne sont jamais chargés pour les autres pages. La page fournit ses
- * stores ; `/setlist/<code>` est le lien d'un ami (sans accès sur invitation : il suffit d'avoir le lien) ; l'accès sur invitation est vérifié par le serveur (sans accès, la page renvoie au jeu du jour), jamais par un garde du front.
+ * stores ; `/survie/<code>` est le lien d'un ami (sans accès sur invitation : il suffit d'avoir le lien) ; l'accès sur invitation est vérifié par le serveur (sans accès, la page renvoie au jeu du jour), jamais par un garde du front.
  */
 export const RUNS_ROUTES: Routes = [
   {
@@ -27,7 +27,7 @@ export const RUNS_ROUTES: Routes = [
   },
 ];
 
-/** L'historique du joueur sur le mode (`/history/setlist`) et les morceaux d'une de ses parties finies (`/history/setlist/<partie>`). */
+/** L'historique du joueur sur le mode (`/history/survie`) et les morceaux d'une de ses parties finies (`/history/survie/<partie>`). */
 export const RUNS_HISTORY_ROUTES: Routes = [
   {
     path: '',

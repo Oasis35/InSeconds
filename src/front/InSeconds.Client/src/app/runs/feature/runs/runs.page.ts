@@ -47,7 +47,7 @@ import { reloadMomentFor } from '../reload-moment';
 import { RunShareSheetComponent, RunShareSheetData } from '../share-sheet/run-share-sheet.component';
 
 /**
- * La page du mode Run (`/setlist`, et `/setlist/<code>` pour le lien d'un ami) : elle affiche l'écran que le `RunGameStore` indique et branche ce qui est propre au navigateur : les fenêtres
+ * La page du mode Run (`/survie`, et `/survie/<code>` pour le lien d'un ami) : elle affiche l'écran que le `RunGameStore` indique et branche ce qui est propre au navigateur : les fenêtres
  * (abandon, sortie de partie), la fermeture de l'onglet, la nouvelle version du site, le renvoi au jeu du jour sans accès sur invitation. Les stores `RunGameStore` et `TrackRoundStore` sont ceux de
  * cette page ; l'adaptateur de l'API et le lecteur sont fournis par la route.
  */
@@ -81,7 +81,7 @@ export class RunsPage implements OnInit {
   /** « Revoir » de la fin de run : la partie dans l'historique. */
   protected readonly reviewLink = computed(() => {
     const sessionId = this.store.session()?.sessionId;
-    return sessionId === undefined ? null : `/history/setlist/${sessionId}`;
+    return sessionId === undefined ? null : `/history/survie/${sessionId}`;
   });
 
   protected themeOf(round: number): string | null {
@@ -94,7 +94,7 @@ export class RunsPage implements OnInit {
   /** Le bloc du haut : le total que les points de la réponse rejoignent. */
   protected readonly scoreboard = viewChild(RunScoreboardComponent);
   private readonly route = inject(ActivatedRoute);
-  /** Le code du lien ouvert (`/setlist/<code>`), vide sur `/setlist`. */
+  /** Le code du lien ouvert (`/survie/<code>`), vide sur `/survie`. */
   private readonly code = this.route.snapshot.paramMap.get('code');
   private readonly pendingInvite = inject(PendingInvite);
   private readonly injector = inject(Injector);
@@ -138,7 +138,7 @@ export class RunsPage implements OnInit {
         if (card instanceof HTMLElement) enterCard(card);
       }, { injector });
     });
-    // Sans accès sur invitation, le mode n'a pas d'écran : retour au jeu du jour, sans laisser `/setlist` dans l'historique.
+    // Sans accès sur invitation, le mode n'a pas d'écran : retour au jeu du jour, sans laisser `/survie` dans l'historique.
     effect(() => {
       if (this.store.screen() === 'access_denied') void this.router.navigateByUrl('/daily', { replaceUrl: true });
     });

@@ -127,7 +127,7 @@ describe('RunsHomeEntryComponent', () => {
       expect(banner?.textContent).toContain('runs.home.receivedFrom');
       expect(banner?.textContent).toContain('runs.home.receivedScore');
       expect(banner?.textContent).toContain('runs.home.receivedExpires');
-      expect(element.querySelector('[data-testid="run-home-received-link"]')?.getAttribute('href')).toBe('/setlist/ABC234');
+      expect(element.querySelector('[data-testid="run-home-received-link"]')?.getAttribute('href')).toBe('/survie/ABC234');
     });
 
     it("sans score (l'ami n'a pas fini) ni pseudo (invité) : ni « à battre », un nom générique", async () => {
