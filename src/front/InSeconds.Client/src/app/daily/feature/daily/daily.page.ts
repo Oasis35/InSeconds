@@ -128,6 +128,11 @@ export class DailyPage implements OnInit {
         void this.router.navigate(['/daily'], { queryParamsHandling: 'preserve', replaceUrl: true });
       }
     });
+    // Sous la V4, la fin d'une partie se lit sur l'accueil (la carte « défi fait »), pas sur `/daily`, qui ne sert qu'à la manche.
+    effect(() => {
+      if (this.isHome() || !this.chrome.v4() || this.store.screen() !== 'done') return;
+      void this.router.navigate(['/'], { queryParamsHandling: 'preserve', replaceUrl: true });
+    });
     // Une nouvelle version du site ne recharge jamais la page en pleine manche (cf. `reloadMomentFor`).
     inject(VersionService).allowReload(() => reloadMomentFor(this.store.screen()), this.destroyRef);
 

@@ -174,6 +174,25 @@
       }
 
       @case ('done') {
+        @if (chrome.v4()) {
+          <!-- V4 : la fin du défi est la carte « défi fait » de l'accueil (le score monte), la Survie dessous. -->
+          <div class="screen-enter flex flex-col gap-3" data-testid="home-v4" data-fresh="true">
+            <app-home-done-card
+              [score]="displayedTotal()"
+              [rows]="resultRows()"
+              [countdown]="store.countdown()"
+              [betterThanPercent]="store.stats()?.betterThanPercent ?? null"
+              [history]="store.stats()?.history ?? null"
+              [lang]="language.current()"
+              [streak]="store.pillStreak()"
+              [linked]="store.linked()"
+              (openStreak)="openStreakSheet()"
+              [shareCopied]="shareCopied()"
+              [shareFailed]="shareFailed()"
+              [canShare]="store.canShare()"
+              (share)="share()" />
+          </div>
+        } @else {
         <app-day-result-screen
           [fresh]="true"
           [score]="displayedTotal()"
@@ -189,6 +208,7 @@
           [linked]="store.linked()"
           (share)="share()"
           (openStreak)="openStreakSheet()" />
+        }
         @if (isHome()) { <app-home-mode-entries /> }
       }
     }
