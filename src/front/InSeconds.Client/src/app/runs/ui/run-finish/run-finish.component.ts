@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, inject, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -21,10 +22,20 @@ import { SecondsPipe } from '../../../ui/format/seconds.pipe';
  */
 @Component({
   selector: 'app-run-finish',
-  imports: [PointsPipe, SecondsPipe, TranslatePipe, RouterLink, ButtonComponent, RunDiscComponent, ShareButtonComponent],
+  imports: [NgTemplateOutlet, PointsPipe, SecondsPipe, TranslatePipe, RouterLink, ButtonComponent, RunDiscComponent, ShareButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex-1 flex flex-col', '(click)': 'skipSequence()' },
   template: `
+    <ng-template #bonus>
+      @if (completed()) {
+        <div class="flex flex-col gap-0.5 text-sm tabular-nums" data-testid="run-bonus" style="color:var(--color-accent-3)">
+          @if (finish().lifeBonus > 0) {
+            <span data-testid="run-bonus-lives">{{ 'runs.finished.bonusLives' | translate: { count: finish().livesLeft, points: format(finish().lifeBonus) } }}</span>
+          }
+          <span data-testid="run-bonus-complete">{{ 'runs.finished.bonusComplete' | translate: { points: format(finish().completeBonus) } }}</span>
+        </div>
+      }
+    </ng-template>
     <div class="screen-enter flex-1 flex flex-col gap-4 pt-2" data-testid="run-finished" [attr.data-status]="finish().status">
       @if (duel(); as duel) {
         <!-- Le duel : la première ligne quand un ami a lancé la playlist. -->
@@ -47,12 +58,13 @@ import { SecondsPipe } from '../../../ui/format/seconds.pipe';
             <app-run-disc class="shrink-0" data-motion="finish-disc" [disc]="level.disc.key" [size]="72" [shine]="false" />
             <div class="min-w-0 flex-1">
               <p class="text-sm" style="color:var(--text-muted)">
-                <span data-testid="run-disc" style="color:var(--text-light)">{{ 'runs.finished.rounds' | translate: { count: finish().roundsPassed } }}</span>
+                <span data-testid="run-disc" style="color:var(--text-light)">{{ roundsKey() | translate: { count: finish().roundsPassed } }}</span>
               </p>
               <p class="tabular-nums" data-testid="run-final-score" data-motion="finish-score" [attr.data-value]="finish().totalScore"
                 style="font-family:var(--font-score);font-size:2.6rem;font-weight:900;line-height:1;letter-spacing:-0.02em;color:var(--text-hi)">
                 {{ format(finish().totalScore) }}
               </p>
+              <ng-container [ngTemplateOutlet]="bonus" />
               @if (finish().record; as record) {
                 @if (!record.isNew) {
                   <p class="text-sm" data-testid="run-record" style="color:var(--text-muted)">{{ 'runs.finished.record' | translate: { score: format(record.bestScore) } }}</p>
@@ -118,7 +130,7 @@ import { SecondsPipe } from '../../../ui/format/seconds.pipe';
         <section class="flex items-center gap-4">
           <div class="min-w-0 flex-1 space-y-1.5">
             <h2 class="text-xl font-bold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="run-disc">
-              {{ 'runs.finished.rounds' | translate: { count: finish().roundsPassed } }}
+              {{ roundsKey() | translate: { count: finish().roundsPassed } }}
             </h2>
             @if (finish().record; as record) {
               <span class="inline-block px-2 py-0.5 rounded-md text-xs font-semibold" data-testid="run-record" [attr.data-motion]="record.isNew ? 'finish-record' : null"
@@ -135,6 +147,7 @@ import { SecondsPipe } from '../../../ui/format/seconds.pipe';
               style="font-family:var(--font-score);font-size:3.1rem;font-weight:900;line-height:0.95;letter-spacing:-0.02em;color:var(--text-hi)">
               {{ format(finish().totalScore) }}
             </p>
+            <ng-container [ngTemplateOutlet]="bonus" />
             <p class="text-sm pt-1" style="color:var(--text-light)" data-testid="run-found">
               {{ 'runs.finished.found' | translate: { found: finish().foundCount, total: finish().trackCount } }}
             </p>
@@ -220,6 +233,9 @@ export class RunFinishComponent {
   protected readonly level = computed(() => (this.showLevel() ? this.finish().level : null));
   /** « +38 » : ce que la partie a changé au niveau (rien sans changement). */
   protected readonly delta = computed(() => levelDeltaText(this.level()?.delta ?? null, value => this.format(value)));
+  /** Une Série complète : les 8 manches jouées, avec ses bonus. */
+  protected readonly completed = computed(() => this.finish().status === 'completed');
+  protected readonly roundsKey = computed(() => (this.completed() ? 'runs.finished.complete' : 'runs.finished.rounds'));
   protected readonly squares = computed(() => finishSquares(this.finish()));
   private readonly numbers = computed(() => new Intl.NumberFormat(this.lang()));
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);

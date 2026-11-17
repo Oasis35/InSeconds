@@ -53,7 +53,7 @@ export class RunHeaderComponent {
   readonly toggleSounds = output();
 
   private readonly livesRow = viewChild<ElementRef<HTMLElement>>('heartsRow');
-  /** Les vies du dernier affichage : le petit temps fort ne se joue que lorsqu'une vie vient de se perdre. */
+  /** Les vies du dernier affichage : le petit temps fort ne se joue que lorsqu'une vie vient de se perdre ou d'être rendue. */
   private lastLeft: number | null = null;
 
   protected livesLeft(): number {
@@ -64,7 +64,7 @@ export class RunHeaderComponent {
     effect(() => {
       const left = this.livesLeft();
       const element = this.livesRow()?.nativeElement;
-      if (element && this.lastLeft !== null && left < this.lastLeft) pop(element);
+      if (element && this.lastLeft !== null && left !== this.lastLeft) pop(element);
       this.lastLeft = left;
     });
   }

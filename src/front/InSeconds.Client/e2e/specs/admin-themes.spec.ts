@@ -251,6 +251,7 @@ test.describe('Admin - thèmes', () => {
 test.describe('Admin - icônes des thèmes', () => {
   test.beforeEach(async ({ api }) => {
     await api.reseed();
+    await api.useLegacyRunRules();
   });
 
   test('choisit une icône : elle s\'affiche dans le détail et la liste, et reste après rechargement', async ({ page }) => {

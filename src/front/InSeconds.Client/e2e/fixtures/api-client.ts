@@ -197,6 +197,19 @@ export class ApiTestClient {
     if (!res.ok) throw new Error(`runs/settings failed: ${res.status}`);
   }
 
+  /**
+   * Les règles d'avant l'équilibrage de novembre 2026 (manches de 5, pas de vie rendue, l'écoute ne raccourcit que sur une manche entièrement
+   * trouvée, ni plafond ni bonus) : les parcours qui jouent des manches de 5 morceaux les gardent ; les nouvelles règles ont leurs tests d'intégration.
+   */
+  async useLegacyRunRules(): Promise<void> {
+    await this.setRunSetting('Runs:TracksPerRound', '5');
+    await this.setRunSetting('Runs:RegainLife', 'false');
+    await this.setRunSetting('Runs:ShortenOnNoLifeLost', 'false');
+    await this.setRunSetting('Runs:MaxRounds', '0');
+    await this.setRunSetting('Runs:LifeBonus', '0');
+    await this.setRunSetting('Runs:CompleteBonus', '0');
+  }
+
   /** L'admin ouvre le mode Run à ce joueur (interrupteur de l'onglet Joueurs). */
   async grantRunAccess(playerId: string): Promise<void> {
     // Le compte admin des tests, connecté hors du navigateur : son cookie ne touche pas celui de la page.

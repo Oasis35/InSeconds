@@ -6,7 +6,7 @@ import { RunPalierComponent } from './run-palier.component';
 
 describe('RunPalierComponent', () => {
   const summary = (over: Partial<RunRoundSummary> = {}): RunRoundSummary => ({
-    round: 2, score: 1250, outcome: 'shorter', listenSeconds: 5, nextListenSeconds: 3, tracks: [], totalScore: 1700, livesLeft: 2, fullPoints: 200, nextFullPoints: 350, ...over,
+    round: 2, score: 1250, outcome: 'shorter', listenSeconds: 5, nextListenSeconds: 3, tracks: [], totalScore: 1700, livesLeft: 2, lifeRegained: false, fullPoints: 200, nextFullPoints: 350, ...over,
   });
 
   function render(end: RunRoundSummary) {
@@ -32,6 +32,16 @@ describe('RunPalierComponent', () => {
     const { element } = render(summary({ outcome: 'longer', nextListenSeconds: 10 }));
 
     expect(element.querySelector('[data-testid="run-palier-outcome"]')?.textContent?.trim()).toBe(fr.runs.roundEnd.longer);
+  });
+
+  it('une vie rendue par la manche se dit', () => {
+    const { element } = render(summary({ lifeRegained: true }));
+
+    expect(element.querySelector('[data-testid="run-palier-regained"]')?.textContent?.trim()).toBe(fr.runs.roundEnd.lifeRegained);
+  });
+
+  it('sans vie rendue, la ligne n\'existe pas', () => {
+    expect(render(summary()).element.querySelector('[data-testid="run-palier-regained"]')).toBeNull();
   });
 
   it('montre les vies qui restent', () => {

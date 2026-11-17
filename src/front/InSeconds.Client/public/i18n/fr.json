@@ -1228,6 +1228,9 @@
       "duelBehind": "{{ name }} gagne de {{ points }} pts",
       "duelTied": "Égalité avec {{ name }}",
       "rematch": "Revanche",
+      "complete": "Série complète",
+      "bonusLives": "Vies restantes ({{ count }}) : +{{ points }} pts",
+      "bonusComplete": "Série complète : +{{ points }} pts",
       "rounds": "{{ count }} manches terminées"
     },
     "pseudo": {
@@ -1393,10 +1396,11 @@
       "worth": "Un morceau trouvé vaut {{ from }} → {{ to }} pts",
       "nextTheme": "Choisir le thème",
       "title": "Manche {{ round }} terminée",
-      "shorter": "Sans erreur : l’écoute raccourcit.",
+      "shorter": "Aucune vie perdue : l’écoute raccourcit.",
       "same": "L’écoute reste la même.",
-      "longer": "Une erreur : l’écoute s’allonge.",
+      "longer": "Une vie perdue : l’écoute s’allonge.",
       "nextListen": "Manche {{ round }} : écoute de {{ seconds }}",
+      "lifeRegained": "Vie regagnée",
       "next": "Manche suivante"
     }
   },

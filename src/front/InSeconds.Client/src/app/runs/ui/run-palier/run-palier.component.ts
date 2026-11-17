@@ -37,6 +37,9 @@ import { RunRoundSummary, lifeDots, outcomeKey } from '../../domain/run';
         <p class="text-[14px]" style="color:var(--text-light)" data-testid="run-palier-worth">
           {{ 'runs.roundEnd.worth' | translate: { from: (end().fullPoints | number), to: (end().nextFullPoints | number) } }}
         </p>
+        @if (end().lifeRegained) {
+          <p class="text-[14px] font-semibold" style="color:var(--color-accent-3)" data-testid="run-palier-regained">{{ 'runs.roundEnd.lifeRegained' | translate }}</p>
+        }
         <p class="sr-only" data-testid="run-palier-next">
           {{ 'runs.roundEnd.nextListen' | translate: { round: end().round + 1, seconds: (end().nextListenSeconds | appSeconds) } }}
         </p>

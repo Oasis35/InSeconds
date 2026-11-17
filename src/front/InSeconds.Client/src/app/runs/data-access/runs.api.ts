@@ -183,7 +183,7 @@ function isRetryable(error: unknown): boolean {
 }
 
 function toStatus(status: string): RunStatus {
-  return status === 'lost' || status === 'abandoned' ? status : 'pending';
+  return status === 'lost' || status === 'completed' || status === 'abandoned' ? status : 'pending';
 }
 
 function toLink(link: RunChallengeResponse): RunLink {
@@ -290,6 +290,9 @@ function toFinish(finish: RunFinishResponse | undefined): RunFinish | null {
     rounds: finish.rounds.map(toRoundScore),
     record: toRecord(finish.record),
     challengeCode: finish.challengeCode,
+    livesLeft: finish.livesLeft ?? 0,
+    lifeBonus: finish.lifeBonus ?? 0,
+    completeBonus: finish.completeBonus ?? 0,
     level: toLevel(finish.level),
   };
 }
@@ -302,6 +305,7 @@ function toSession(session: RunSessionResponse): RunSession {
     tracksPerRound: session.tracksPerRound,
     lives: session.lives,
     livesLeft: session.livesLeft,
+    maxRounds: session.maxRounds ?? 0,
     totalScore: session.totalScore,
     roundsPassed: session.roundsPassed,
     round: toRound(session.round),
@@ -352,6 +356,7 @@ function toSummary(summary: RunRoundSummaryResponse): RunRoundSummary {
     tracks: summary.tracks.map(toTrack),
     totalScore: summary.totalScore,
     livesLeft: summary.livesLeft,
+    lifeRegained: summary.lifeRegained ?? false,
     fullPoints: summary.fullPoints,
     nextFullPoints: summary.nextFullPoints,
   };

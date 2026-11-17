@@ -5,7 +5,7 @@ import { GamePage } from '../pages/game.page';
 import { RunPage } from '../pages/run.page';
 import { inSequence } from '../fixtures/sequence';
 
-// Le mode Run (« Setlist », la Série) : 3 vies, des manches de 5 morceaux sans fin, une écoute de 10 s qui raccourcit après une manche sans erreur
+// Le mode Run (« Setlist », la Série) : 3 vies, des manches sans fin (ici de 5 morceaux : les règles d'avant l'équilibrage, `useLegacyRunRules`), une écoute de 10 s qui raccourcit après une manche sans erreur
 // et s'allonge après une erreur, 45 s pour répondre. Le tirage est paresseux : l'hôte de test donne les morceaux déjà tirés de la playlist.
 // L'écran : la carte du morceau (chrono dans son coin), puis le total du run et la pile des morceaux joués ; un bilan clôt chaque manche.
 
@@ -28,6 +28,7 @@ async function seedThemes(page: Page, tracks: RunTrack[]): Promise<void> {
 test.describe('Mode Setlist', () => {
   test.beforeEach(async ({ api }) => {
     await api.reseed();
+    await api.useLegacyRunRules();
   });
 
   test("sans accès, pas de carte sur l'accueil et /setlist renvoie au jeu du jour ; l'accès ouvert par l'admin la montre", async ({ page, api }) => {

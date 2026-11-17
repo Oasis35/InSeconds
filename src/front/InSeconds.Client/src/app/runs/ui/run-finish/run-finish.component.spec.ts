@@ -12,7 +12,7 @@ describe('RunFinishComponent', () => {
   afterEach(() => { delete flag.__disableAnimations; });
 
   const finish = (overrides: Partial<RunFinish> = {}): RunFinish => ({
-    status: 'lost', totalScore: 1284, roundsPassed: 2, foundCount: 2, trackCount: 20,
+    status: 'lost', totalScore: 1284, roundsPassed: 2, foundCount: 2, trackCount: 20, livesLeft: 0, lifeBonus: 0, completeBonus: 0,
     tracks: [TRACK({ position: 1 }), TRACK({ position: 2 }), TRACK({ position: 6, round: 2, titleCorrect: false })],
     rounds: [
       { round: 1, score: 400, listenSeconds: 10, theme: null },
@@ -46,6 +46,18 @@ describe('RunFinishComponent', () => {
     expect(text(element, 'run-found')).toBe('runs.finished.found');
     expect(element.querySelectorAll('[data-testid="run-squares"] [data-state]')).toHaveLength(20);
     expect(element.querySelectorAll('[data-testid="run-squares"] [data-state="found"]')).toHaveLength(2);
+  });
+
+  it('une Série complète : le titre et le détail des bonus (vies restantes, complétion)', () => {
+    const { element } = render(finish({ status: 'completed', livesLeft: 2, lifeBonus: 500, completeBonus: 500, roundsPassed: 8 }));
+
+    expect(text(element, 'run-disc')).toBe('runs.finished.complete');
+    expect(text(element, 'run-bonus-lives')).toBe('runs.finished.bonusLives');
+    expect(text(element, 'run-bonus-complete')).toBe('runs.finished.bonusComplete');
+  });
+
+  it('une partie perdue n\'a aucun bonus', () => {
+    expect(render(finish()).element.querySelector('[data-testid="run-bonus"]')).toBeNull();
   });
 
   it('un nouveau record se dit', () => {

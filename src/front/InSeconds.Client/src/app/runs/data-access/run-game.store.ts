@@ -318,7 +318,9 @@ export const RunGameStore = signalStore(
       round.reset();
       stopClock();
       patchState(store, { screen: 'finished' });
-      if (justEnded && session.status === 'lost') sounds.play(session.finish?.record?.isNew ? 'record' : 'lost');
+      if (justEnded && (session.status === 'lost' || session.status === 'completed')) {
+        sounds.play(session.finish?.record?.isNew || session.status === 'completed' ? 'record' : 'lost');
+      }
       void refreshMe();
     };
 
@@ -522,7 +524,7 @@ export const RunGameStore = signalStore(
         const fresh = await api.session(session.sessionId);
         // Comparée à l'état d'avant la lecture, et seulement si rien n'a bougé ici pendant : sinon, c'est cet onglet qui a avancé.
         if (store.session() !== session || store.screen() !== screen || !settled() || progressKey(fresh) === progressKey(session)) return;
-        if (fresh.status === 'lost') {
+        if (fresh.status === 'lost' || fresh.status === 'completed') {
           round.reset();
           cancelAutoNext();
           stopClock();
