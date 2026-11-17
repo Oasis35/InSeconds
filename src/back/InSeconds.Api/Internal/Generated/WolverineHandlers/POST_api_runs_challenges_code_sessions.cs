@@ -75,6 +75,7 @@ namespace Internal.Generated.WolverineHandlers
             var runRoundDealer = new InSeconds.Api.Modules.Runs.Application.RunRoundDealer(efTrackDirectory, _seededShuffle, _runTrackSelector, efRunsStore);
             var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, runRoundDealer, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, runGhosts, _runScoringPolicy, _runsRules, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
+            var efRunAccess = new InSeconds.Api.Modules.Runs.Persistence.EfRunAccess(inSecondsDbContext, claimsCurrentPlayer);
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Runs.Application.JoinRunEndpoint");
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -95,7 +96,7 @@ namespace Internal.Generated.WolverineHandlers
                     return;
                 }
 
-                var runJoin = await InSeconds.Api.Modules.Runs.Application.JoinRunEndpoint.LoadAsync(code, claimsCurrentPlayer, efRunsStore, httpContext.RequestAborted).ConfigureAwait(false);
+                var runJoin = await InSeconds.Api.Modules.Runs.Application.JoinRunEndpoint.LoadAsync(code, claimsCurrentPlayer, efRunAccess, efRunsStore, httpContext.RequestAborted).ConfigureAwait(false);
                 var problemDetails1 = InSeconds.Api.Modules.Runs.Application.JoinRunEndpoint.Validate(runJoin);
                 // Evaluate whether the processing should stop if there are any problems
                 if (!(ReferenceEquals(problemDetails1, Wolverine.Http.WolverineContinue.NoProblems)))

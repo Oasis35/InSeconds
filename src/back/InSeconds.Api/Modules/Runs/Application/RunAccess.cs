@@ -8,7 +8,7 @@ namespace InSeconds.Api.Modules.Runs.Application;
 
 /// <summary>
 /// Qui peut lancer un run : un admin d'office (le rôle est relu en base par la validation du cookie), ou un compte que l'admin a autorisé
-/// (<c>runs.access</c>). Relever un défi existant ne demande pas d'accès : il suffit d'avoir le lien. Players n'est pas modifié : l'accès est une
+/// (<c>runs.access</c>). Relever un défi existant demande le même accès : le lien d'un ami ne le remplace pas. Players n'est pas modifié : l'accès est une
 /// affaire du mode.
 /// </summary>
 public interface IRunAccess
@@ -111,7 +111,7 @@ public static class RevokeRunAccessEndpoint
 
     /// <summary>
     /// <c>DELETE /api/admin/runs/access/{playerId}</c> : retire l'autorisation. Idempotent. Une partie en cours n'est pas touchée : l'accès ne
-    /// se vérifie qu'au lancement d'un run.
+    /// se vérifie au lancement d'un run et au départ sur une playlist.
     /// </summary>
     [WolverineDelete("/api/admin/runs/access/{playerId}", OperationId = "revokeRunAccess")]
     [EmptyResponse]

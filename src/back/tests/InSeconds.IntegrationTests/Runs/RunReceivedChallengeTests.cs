@@ -81,7 +81,7 @@ public class RunReceivedChallengeTests(PostgresFixture postgres) : IAsyncLifetim
     public async Task PlaylistDejaJouee_PasDeDefi()
     {
         var code = await AliceFinishesAsync();
-        var bob = await _run.NewPlayerAsync("Bob");
+        var bob = await _run.NewInvitedAsync("Bob");
         await bob.JoinAsync(code);
 
         await bob.ReceiveRawAsync(code);
@@ -92,7 +92,7 @@ public class RunReceivedChallengeTests(PostgresFixture postgres) : IAsyncLifetim
     public async Task DefiRecu_DisparaitQuandOnLaJoue()
     {
         var code = await AliceFinishesAsync();
-        var bob = await _run.NewPlayerAsync("Bob");
+        var bob = await _run.NewInvitedAsync("Bob");
         await bob.ReceiveRawAsync(code);
         Assert.NotNull((await bob.MeAsync()).Received);
 

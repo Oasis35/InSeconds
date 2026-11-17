@@ -152,24 +152,29 @@ public static class GetRunChallengeEndpoint
 }
 
 /// <summary>Ce que le démarrage sur une playlist a trouvé : le défi et la partie du joueur dessus, s'il en a une.</summary>
-public sealed record RunJoin(Guid PlayerId, RunChallenge? Challenge, RunSession? Session);
+public sealed record RunJoin(Guid PlayerId, bool HasAccess, RunChallenge? Challenge, RunSession? Session);
 
 public static class JoinRunEndpoint
 {
-    public static async Task<RunJoin> LoadAsync(string code, ICurrentPlayer current, IRunsStore store, CancellationToken ct)
+    public static async Task<RunJoin> LoadAsync(string code, ICurrentPlayer current, IRunAccess access, IRunsStore store, CancellationToken ct)
     {
         var playerId = current.PlayerId!.Value;
+        if (!await access.CanPlayAsync(playerId, ct))
+            return new RunJoin(playerId, false, null, null);
+
         var challenge = await RunChallengeAccess.FindAsync(code, store, ct);
         if (challenge is null)
-            return new RunJoin(playerId, null, null);
+            return new RunJoin(playerId, true, null, null);
 
         // Deux démarrages simultanés (double clic, deux onglets) se suivent : le second reprend la partie que le premier a créée.
         await store.LockPlayerStartAsync(playerId, ct);
-        return new RunJoin(playerId, challenge, await store.FindSessionAsync(challenge.Id, playerId, ct));
+        return new RunJoin(playerId, true, challenge, await store.FindSessionAsync(challenge.Id, playerId, ct));
     }
 
     public static ProblemDetails Validate(RunJoin join)
     {
+        if (!join.HasAccess)
+            return RunsProblems.AccessDenied();
         if (join.Challenge is null)
             return RunsProblems.ChallengeNotFound();
         return join.Session is { IsPending: false } session ? RunsProblems.NotPending(session.Status) : WolverineContinue.NoProblems;
@@ -177,12 +182,14 @@ public static class JoinRunEndpoint
 
     /// <summary>
     /// <c>POST /api/runs/challenges/{code}/sessions</c> : relève la playlist, ou reprend sa partie en cours dessus (comme <c>POST /api/daily/sessions</c>).
-    /// Aucun accès demandé : il suffit d'avoir le lien ; le navigateur a d'abord une identité (<c>POST /api/players/guest</c>), 401 sinon. Une playlist
-    /// se joue une fois : 409 <c>runs.already_played</c> / <c>runs.abandoned</c> si la partie est finie.
+    /// Comme le lancement, elle exige l'accès au mode (admin, ou compte autorisé) : le lien d'un ami ne l'ouvre plus à un invité ni à un compte sans
+    /// accès, 403 <c>runs.access_denied</c> ; sans identité, 401. Une playlist se joue une fois : 409 <c>runs.already_played</c> / <c>runs.abandoned</c>
+    /// si la partie est finie.
     /// </summary>
     [Authorize]
     [WolverinePost("/api/runs/challenges/{code}/sessions", OperationId = "joinRun")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public static async Task<RunPlayResponse> Post(

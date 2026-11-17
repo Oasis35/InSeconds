@@ -139,6 +139,10 @@
         <app-run-status-screen kind="not_found" />
       }
 
+      @case ('link_blocked') {
+        <app-run-status-screen kind="link_blocked" />
+      }
+
       @case ('error') {
         <app-run-status-screen kind="error" [errorCode]="errorReporting.lastErrorCode()" (retry)="store.init()" />
       }

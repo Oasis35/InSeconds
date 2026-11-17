@@ -1196,6 +1196,11 @@
         "title": "Playlist introuvable",
         "body": "Ce lien ne mène à aucune playlist.\nVérifie-le auprès de la personne qui te l’a envoyé."
       },
+      "link_blocked": {
+        "title": "Survie n’est pas encore ouverte",
+        "body": "Ce lien mène à un mode de jeu qui n’est pas encore ouvert à tout le monde.\nEn attendant, le défi du jour t’attend.",
+        "play": "Jouer le défi du jour"
+      },
       "backToDaily": "Retour au jeu du jour"
     },
     "leave": {

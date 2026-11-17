@@ -58,8 +58,8 @@ internal sealed class RunGame : IAsyncDisposable
         return game;
     }
 
-    /// <summary>Un compte que l'admin a autorisé à lancer des runs.</summary>
-    public async Task<RunGamer> NewInvitedAsync(string pseudo)
+    /// <summary>Un joueur que l'admin a autorisé (accès au mode : lancer, comme relever le lien d'un ami).</summary>
+    public async Task<RunGamer> NewInvitedAsync(string? pseudo = null)
     {
         var gamer = await Game.NewPlayerAsync(pseudo);
         await Api.ExecuteAsync($"INSERT INTO runs.access (player_id, granted_at) VALUES ('{gamer.Id}', now())");
