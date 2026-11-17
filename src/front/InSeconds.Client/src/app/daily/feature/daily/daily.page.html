@@ -58,6 +58,22 @@
       }
 
       @case ('resume_prompt') {
+        @if (chrome.v4()) {
+          <!-- V4 : la partie en pause est un état de la carte du défi, la Survie reste dessous. -->
+          <div class="screen-enter flex flex-col gap-3" data-testid="home-v4">
+            <app-home-challenge-card
+              [dateLabel]="dateLabel()"
+              [trackCount]="store.peekTracksCount()"
+              [streak]="store.pillStreak()"
+              [linked]="store.linked()"
+              [completedCount]="store.peekCompletedCount()"
+              [abandonLoading]="store.abandonLoading()"
+              (startGame)="store.begin()"
+              (abandon)="confirmAbandonFromResume()"
+              (openStreak)="openStreakSheet()" />
+          </div>
+          @if (isHome()) { <app-home-mode-entries /> }
+        } @else {
         <app-resume-screen
           [completedCount]="store.peekCompletedCount()"
           [trackCount]="store.peekTracksCount()"
@@ -71,6 +87,7 @@
             <app-streak-pill [streak]="store.pillStreak()" [linked]="store.linked()" (open)="openStreakSheet()" />
           </div>
         </app-resume-screen>
+        }
       }
 
       @case ('no_challenge') {
@@ -82,7 +99,11 @@
       }
 
       @case ('already_played') {
-        @if (store.abandoned()) {
+        @if (store.abandoned() && chrome.v4()) {
+          <div class="screen-enter flex flex-col gap-3" data-testid="home-v4">
+            <app-home-abandoned-card [countdown]="store.countdown()" />
+          </div>
+        } @else if (store.abandoned()) {
           <app-abandoned-screen [countdown]="store.countdown()" />
         } @else if (chrome.v4()) {
           <!-- L'accueil de la V4, défi fait : son résumé (sans date, ni « fait ») avec la phrase et le détail des morceaux dans la carte, la Setlist mise en avant dessous. -->

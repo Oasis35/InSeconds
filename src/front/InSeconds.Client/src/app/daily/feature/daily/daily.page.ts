@@ -25,6 +25,7 @@ import { DailyShare } from '../../data-access/daily-share';
 import { GuestStreakNotice } from '../../data-access/guest-streak-notice';
 import { LostStreakNotice } from '../../data-access/lost-streak-notice';
 import { HomeChallengeCardComponent } from '../../ui/home-challenge-card/home-challenge-card.component';
+import { HomeAbandonedCardComponent } from '../../ui/home-abandoned-card/home-abandoned-card.component';
 import { HomeDoneCardComponent } from '../../ui/home-done-card/home-done-card.component';
 import { AbandonedScreenComponent } from '../../ui/abandoned-screen/abandoned-screen.component';
 import { DayResultScreenComponent } from '../../ui/day-result-screen/day-result-screen.component';
@@ -62,7 +63,7 @@ import { secondsUntilMidnightUtc, timeLeft, todayUtc } from '../../../core/game-
     WelcomeScreenComponent, ResumeScreenComponent, HomeModeEntriesComponent, StatusScreenComponent, AbandonedScreenComponent, DayResultScreenComponent,
     GuestStreakToastComponent, LostStreakToastComponent, GelUsedToastComponent, GelEarnedToastComponent,
     DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent, StreakPillComponent, ButtonComponent, InstagramLinkComponent,
-    HomeChallengeCardComponent, HomeDoneCardComponent,
+    HomeChallengeCardComponent, HomeDoneCardComponent, HomeAbandonedCardComponent,
   ],
   providers: [DailyGameStore, TrackRoundStore, DailyShare, LostStreakNotice, GuestStreakNotice],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -193,6 +194,18 @@ export class DailyPage implements OnInit {
       tone: 'danger',
     });
     if (confirmed) await this.store.abandon();
+  }
+
+  /** Abandonner depuis la carte en pause : la même confirmation que l'écran de reprise (la progression et la série sont perdues). */
+  protected async confirmAbandonFromResume(): Promise<void> {
+    const confirmed = await this.modal.confirm({
+      title: this.translate.instant('daily.resume.warningTitle'),
+      body: this.translate.instant(this.store.linked() ? 'daily.resume.warningBodyLinked' : 'daily.resume.warningBody'),
+      confirmLabel: this.translate.instant('daily.resume.confirmAbandon'),
+      cancelLabel: this.translate.instant('daily.resume.cancelAbandon'),
+      tone: 'danger',
+    });
+    if (confirmed) await this.store.abandonFromResume();
   }
 
   protected openStreakSheet(): void {
