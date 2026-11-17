@@ -27,6 +27,7 @@ import { StatusScreenComponent } from '../../ui/status-screen/status-screen.comp
 import { WelcomeScreenComponent } from '../../ui/welcome-screen/welcome-screen.component';
 import { StreakPillComponent } from '../../ui/streak-pill/streak-pill.component';
 import { formatGameDate } from '../../domain/archive';
+import { isHomeScreen } from '../../domain/daily-screen';
 import { todayUtc } from '../../../core/game-day/game-day';
 
 /**
@@ -66,7 +67,7 @@ export class DailyPage {
    */
   protected readonly screen = computed(() => {
     const screen = this.flagged();
-    return this.chrome.v4() && (screen === 'welcome' || screen === 'resume_prompt' || screen === 'already_played' || screen === 'done') ? 'loading' : screen;
+    return this.chrome.v4() && isHomeScreen(screen) ? 'loading' : screen;
   });
 
   constructor() {
