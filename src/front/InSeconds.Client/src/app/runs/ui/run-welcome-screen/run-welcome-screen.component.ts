@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { TranslatePipe } from '@ngx-translate/core';
 import { RunLevel, RunRecord } from '../../domain/run';
 import { ButtonComponent } from '../../../ui/button/button.component';
+import { RunHeaderComponent } from '../run-header/run-header.component';
 import { RunLevelCardComponent } from '../run-level-card/run-level-card.component';
 
 /**
@@ -10,9 +11,15 @@ import { RunLevelCardComponent } from '../run-level-card/run-level-card.componen
  */
 @Component({
   selector: 'app-run-welcome-screen',
-  imports: [TranslatePipe, ButtonComponent, RunLevelCardComponent],
+  imports: [TranslatePipe, ButtonComponent, RunLevelCardComponent, RunHeaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    @if (overlay()) {
+      <!-- Le cadre de la partie, tel qu'il sera, flou derrière : « Commencer » le recouvre et lance le premier son dans ce clic (iPhone). -->
+      <div class="absolute inset-x-0 top-0 p-5 pt-6 w-full max-w-lg mx-auto pointer-events-none select-none" aria-hidden="true" style="filter:blur(6px);opacity:.55">
+        <app-run-header [lives]="startLives" />
+      </div>
+    }
     <div class="screen-enter flex-1 flex flex-col items-center justify-center gap-6 text-center px-4" data-testid="run-welcome">
       <div class="space-y-3">
         <span class="inline-block px-3 py-1 rounded-full text-[0.8125rem] font-bold"
@@ -29,7 +36,7 @@ import { RunLevelCardComponent } from '../run-level-card/run-level-card.componen
         <app-run-level-card class="w-full max-w-xs text-left" [level]="level" [lang]="lang()" [focus]="false" />
       }
       <button appButton type="button" size="lg" [block]="true" class="max-w-xs" (click)="start.emit()" data-testid="run-start">
-        {{ 'runs.welcome.launch' | translate }}
+        {{ (overlay() ? 'runs.welcome.begin' : 'runs.welcome.launch') | translate }}
       </button>
     </div>
   `,
@@ -41,6 +48,10 @@ export class RunWelcomeScreenComponent {
   /** Le niveau du joueur (nouvelle interface) ; `null` : pas de carte de niveau. */
   readonly level = input<RunLevel | null>(null);
   private readonly numbers = computed(() => new Intl.NumberFormat(this.lang()));
+  /** Nouvelle interface : l'écran recouvre le cadre de la partie au lieu d'être un accueil à part. */
+  readonly overlay = input(false);
+  /** Les vies du cadre montré derrière (les trois du départ ; la partie réelle les lit dans ses règles). */
+  protected readonly startLives: readonly boolean[] = [true, true, true];
   readonly start = output();
 
   /** « 2 617 » : les grands nombres au format de la langue. */

@@ -1181,7 +1181,8 @@
       "title": "Survival",
       "tagline": "Aim for the gold record.",
       "record": "Your record: {{ score }} pts",
-      "launch": "Start a run"
+      "launch": "Start a run",
+      "begin": "Start"
     },
     "status": {
       "no_challenge": {

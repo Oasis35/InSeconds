@@ -1181,7 +1181,8 @@
       "title": "Survie",
       "tagline": "Vise le disque d’or.",
       "record": "Ton record : {{ score }} pts",
-      "launch": "Lancer une partie"
+      "launch": "Lancer une partie",
+      "begin": "Commencer"
     },
     "status": {
       "no_challenge": {

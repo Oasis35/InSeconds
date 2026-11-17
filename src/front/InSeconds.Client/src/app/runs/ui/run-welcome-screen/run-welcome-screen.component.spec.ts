@@ -5,11 +5,12 @@ import { RunLevel, RunRecord } from '../../domain/run';
 import { RunWelcomeScreenComponent } from './run-welcome-screen.component';
 
 describe('RunWelcomeScreenComponent', () => {
-  function render(inputs: { record?: RunRecord | null; level?: RunLevel | null } = {}) {
+  function render(inputs: { record?: RunRecord | null; level?: RunLevel | null; overlay?: boolean } = {}) {
     TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
     const fixture = TestBed.createComponent(RunWelcomeScreenComponent);
     fixture.componentRef.setInput('record', inputs.record ?? null);
     fixture.componentRef.setInput('level', inputs.level ?? null);
+    fixture.componentRef.setInput('overlay', inputs.overlay ?? false);
     fixture.detectChanges();
     return { fixture, element: fixture.nativeElement as HTMLElement };
   }
@@ -45,5 +46,16 @@ describe('RunWelcomeScreenComponent', () => {
     (element.querySelector('[data-testid="run-start"]') as HTMLButtonElement).click();
 
     expect(start).toHaveBeenCalledTimes(1);
+  });
+
+  it("sous la nouvelle interface, « Commencer » recouvre le cadre de la partie (les vies, floues derrière)", () => {
+    const { element } = render({ overlay: true });
+
+    expect(element.querySelector('[data-testid="run-start"]')?.textContent).toContain('runs.welcome.begin');
+    expect(element.querySelectorAll('[data-testid="run-lives"] svg').length).toBe(3);
+  });
+
+  it('sans la nouvelle interface, aucun cadre derrière', () => {
+    expect(render().element.querySelector('[data-testid="run-lives"]')).toBeNull();
   });
 });
