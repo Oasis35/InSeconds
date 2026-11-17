@@ -348,18 +348,14 @@ test.describe('Mode Setlist', () => {
     await expect(run.pileTracks).toHaveCount(2);
   });
 
-  test("lien d'un ami : lien reçu, partie sans accès jouée une seule fois, comparaison dans deux navigateurs", async ({ page, api, browser }) => {
-    // Deux parties perdues à jouer : le temps de deux navigateurs.
-    test.slow();
+  test("lien d'un ami : sans l'accès au mode (visiteur sans identité), un écran de blocage avec un seul bouton vers le défi du jour", async ({ page, api, browser }) => {
     const author = new RunPage(page);
     await author.loginAsAdmin();
     await author.launch();
     await author.loseAllLives();
-    // Sa propre playlist : pas de duel.
-    await expect(page.getByTestId('run-duel')).toHaveCount(0);
     const code = await api.latestRunCode();
 
-    // Un ami, dans son propre navigateur, sans identité ni accès : le lien reçu, ses règles, « Jouer ».
+    // Un ami, dans son propre navigateur, sans identité ni accès : le mode n'est pas ouvert à tous, le lien ne le remplace pas.
     const friendContext = await browser.newContext();
     const friendPage = await friendContext.newPage();
     await friendPage.addInitScript(() => {
@@ -368,72 +364,19 @@ test.describe('Mode Setlist', () => {
       localStorage.setItem('lang', 'fr');
     });
     const friend = new RunPage(friendPage);
-    await friend.openLink(code);
-    await expect(friend.linkTitle).toHaveText('AdminE2E te lance une playlist');
-    await expect(friend.linkRules).toContainText('Des manches de 5 morceaux, de moins en moins connus, sans fin');
-    await expect(friend.linkRules).toContainText('3 vies');
-    await expect(friend.linkRules).toContainText('45 s pour trouver l’artiste et le titre');
-    await expect(friend.answerInput).toHaveCount(0);
-
-    // « Jouer » crée l'invité, relève la playlist du créateur et lance le premier morceau.
-    await friend.linkPlayButton.click();
-    await friend.answerInput.waitFor({ state: 'visible' });
-    await expect(friend.roundTitle).toContainText('Manche 1');
-    // Le fantôme de l'auteur, qui a fini la playlist : son total au même morceau et l'écart, dès la première réponse.
-    await expect(friendPage.getByTestId('run-ghost')).toHaveCount(0);
-    await friend.loseAllLives(async () => {
-      await expect(friendPage.getByTestId('run-ghost')).toContainText('AdminE2E 0');
-      await expect(friendPage.getByTestId('run-ghost-gap')).toHaveText('À égalité');
-    });
-
-    // Le duel ouvre l'écran de fin (les deux à 0 : égalité), sur un ton neutre.
-    await expect(friendPage.getByTestId('run-duel')).toHaveText('Égalité avec AdminE2E');
-
-    // Sans accès, pas de « Rejouer » : le jeu du jour à la place.
-    await expect(friend.playAgainButton).toHaveCount(0);
-    await expect(friend.toDailyLink).toBeVisible();
-
-    // La comparaison : les deux joueurs, « Toi » sur sa propre ligne, le pseudo de l'auteur en surtitre.
-    await friend.compareButton.click();
-
-    // Un invité sans pseudo le donne avant de voir la comparaison : obligatoire (pas de « Passer »), jamais celui d'un compte (sans tenir compte de la casse).
-    await expect(friend.pseudoScreen).toBeVisible();
-    await expect(friend.pseudoCancel).toHaveCount(0);
-    await friend.pseudoInput.fill('admine2e');
-    await friend.pseudoSave.click();
-    await expect(friend.pseudoError).toContainText('déjà pris');
-    await friend.pseudoInput.fill('Léa');
-    await friend.pseudoSave.click();
-
-    await expect(friend.comparisonTitle).toHaveText('2 joueurs de cette playlist');
-    await expect(friend.comparisonEyebrow).toHaveText('Playlist de AdminE2E');
-    await expect(friend.comparisonRows).toHaveCount(2);
-    await expect(friend.comparison.getByTestId('run-comparison-name').filter({ hasText: 'Toi' })).toHaveCount(1);
-    await expect(friend.comparison.getByText('AdminE2E', { exact: true }).first()).toBeVisible();
-
-    // Une playlist se joue une seule fois : le même lien rouvert mène directement à la comparaison.
     await friendPage.goto(`/survie/${code}`);
-    await expect(friend.comparisonTitle).toHaveText('2 joueurs de cette playlist');
+    await expect(friend.statusScreen).toContainText("Survie n’est pas encore ouverte");
     await expect(friend.linkScreen).toHaveCount(0);
+    await expect(friendPage.getByTestId('run-retry')).toHaveCount(0);
+    await expect(friendPage.getByRole('link', { name: /Créer un compte/i })).toHaveCount(0);
 
-    // Le pseudo est retrouvé à la visite suivante (rien à ressaisir) ; le crayon le change, et l'auteur voit le nouveau.
-    await expect(friend.pseudoScreen).toHaveCount(0);
-    await friend.pseudoEdit.click();
-    await expect(friend.pseudoInput).toHaveValue('Léa');
-    await friend.pseudoInput.fill('Léo');
-    await friend.pseudoSave.click();
-    await expect(friend.comparisonTitle).toHaveText('2 joueurs de cette playlist');
+    // Un seul bouton : le défi du jour.
+    await friendPage.getByTestId('run-blocked-daily').click();
+    await expect(friendPage).toHaveURL(/\/daily$/);
 
-    // L'auteur voit l'invité de l'ami dans le même tableau.
-    await page.goto(`/survie/${code}`);
-    await expect(author.comparisonRows).toHaveCount(2);
-    await expect(author.comparison.getByText('Léo', { exact: true })).toBeVisible();
-    // Le compte garde son pseudo de compte : son crayon existe aussi, il mène à son profil.
-    await expect(author.comparison.getByTestId('run-comparison-edit-pseudo')).toBeVisible();
-
-    // Un lien inconnu le dit, sans proposer de réessayer.
+    // Un lien inconnu : même écran de blocage (l'accès se vérifie avant de lire la playlist).
     await friendPage.goto('/survie/ZZZZZZ');
-    await expect(friend.statusScreen).toContainText('Playlist introuvable');
+    await expect(friend.statusScreen).toContainText("Survie n’est pas encore ouverte");
     await friendContext.close();
   });
 

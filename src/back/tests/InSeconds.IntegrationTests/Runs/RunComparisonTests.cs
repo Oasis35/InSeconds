@@ -50,15 +50,15 @@ public class RunComparisonTests(PostgresFixture postgres) : IAsyncLifetime
         await alice.PlayAsync(start.Session.SessionId, code, 1, [.. AllFound, .. AllFound, .. NoneFound]);
 
         // Un invité passe la manche 1, puis perd ses trois vies dans la 2 : la manche 3 n'est jamais jouée.
-        var guest = await _run.NewPlayerAsync();
+        var guest = await _run.NewInvitedAsync();
         var joined = await guest.JoinAsync(code);
         await guest.PlayAsync(joined.Session.SessionId, code, 1, [.. AllFound, .. NoneFound]);
 
         // Un compte abandonne, un autre joueur est encore en cours : ni l'un ni l'autre n'est dans le tableau.
-        var carol = await _run.NewPlayerAsync("Carol");
+        var carol = await _run.NewInvitedAsync("Carol");
         var carolSession = await carol.JoinAsync(code);
         await carol.AbandonRawAsync(carolSession.Session.SessionId);
-        var dave = await _run.NewPlayerAsync("Dave");
+        var dave = await _run.NewInvitedAsync("Dave");
         await dave.JoinAsync(code);
 
         var forAlice = await alice.ComparisonAsync(code.ToLowerInvariant());
@@ -92,7 +92,7 @@ public class RunComparisonTests(PostgresFixture postgres) : IAsyncLifetime
         var code = start.Session.ChallengeCode;
         await alice.PlayAsync(start.Session.SessionId, code, 1, NoneFound);
 
-        var bob = await _run.NewPlayerAsync("Bob");
+        var bob = await _run.NewInvitedAsync("Bob");
         var joined = await bob.JoinAsync(code);
         await bob.PlayAsync(joined.Session.SessionId, code, 1, NoneFound);
 
@@ -110,8 +110,8 @@ public class RunComparisonTests(PostgresFixture postgres) : IAsyncLifetime
         await alice.PlayAsync(start.Session.SessionId, code, 1, NoneFound);
 
         // Deux invités se sont donné le même pseudo (aucune unicité entre invités, sans tenir compte de la casse).
-        var lea1 = await _run.NewPlayerAsync();
-        var lea2 = await _run.NewPlayerAsync();
+        var lea1 = await _run.NewInvitedAsync();
+        var lea2 = await _run.NewInvitedAsync();
         await _run.Api.ExecuteAsync($"UPDATE players.players SET guest_pseudo = 'Léa' WHERE id = '{lea1.Id}'");
         await _run.Api.ExecuteAsync($"UPDATE players.players SET guest_pseudo = 'léa' WHERE id = '{lea2.Id}'");
         foreach (var lea in new[] { lea1, lea2 })

@@ -1196,6 +1196,11 @@
         "title": "Playlist not found",
         "body": "This link doesn’t lead to any playlist.\nCheck it with whoever sent it to you."
       },
+      "link_blocked": {
+        "title": "Survival isn’t open yet",
+        "body": "This link leads to a game mode that isn’t open to everyone yet.\nIn the meantime, today’s challenge is waiting for you.",
+        "play": "Play today’s challenge"
+      },
       "backToDaily": "Back to the daily game"
     },
     "leave": {

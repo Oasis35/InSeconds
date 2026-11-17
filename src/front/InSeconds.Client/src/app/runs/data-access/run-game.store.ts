@@ -22,11 +22,11 @@ const CLOCK_TICK_MS = 200;
 /**
  * L'écran affiché : le chargement, l'accueil du mode (lancer), le lien reçu d'un ami, la reprise d'une partie en cours, la partie (la carte du
  * morceau, sa réponse ou le morceau retiré, et la pile du run), la fin, la comparaison des joueurs d'une playlist, et les refus (pas d'accès sur
- * invitation, que la page traduit en retour au jeu du jour ; pas de playlist ; playlist inconnue ; erreur).
+ * invitation, que la page traduit en retour au jeu du jour, et le lien d'un ami ouvert sans accès au mode ; pas de playlist ; playlist inconnue ; erreur).
  */
 export type RunScreen =
   | 'loading' | 'welcome' | 'theme' | 'link' | 'resume' | 'playing' | 'palier' | 'finished' | 'pseudo' | 'comparison' | 'access_denied' | 'no_challenge'
-  | 'not_found' | 'error';
+  | 'not_found' | 'link_blocked' | 'error';
 
 interface RunState {
   screen: RunScreen;
@@ -490,6 +490,11 @@ export const RunGameStore = signalStore(
         const me = await api.me();
         patchState(store, { me });
         if (target) {
+          // Le mode est réservé aux comptes qui y ont accès, liens d'ami compris : les autres voient un écran de blocage.
+          if (!me.hasAccess) {
+            patchState(store, { screen: 'link_blocked' });
+            return;
+          }
           await openLink(target);
           return;
         }
