@@ -1,11 +1,10 @@
 /**
  * Le mode Run en TypeScript pur : ce que le serveur rend d'une partie (la manche en cours, les morceaux joués, la fin) et les petits calculs que
- * les écrans en tirent (barre d'objectif, pastilles, libellés). Le serveur décide de tout (points, jauge, neutralisation, fin) : le front affiche.
+ * les écrans en tirent (vies, pastilles, libellés). Le serveur décide de tout (points, vies, palier, neutralisation, fin) : le front affiche.
  */
 
-import { RunCardKey, RunTrackEffects, RunCardValues } from './run-cards';
-
-export type RunStatus = 'pending' | 'won' | 'lost' | 'abandoned';
+/** Une partie de la Série se perd à la dernière vie, se complète à la dernière manche du plafond (« Série complète »), ou s'abandonne. */
+export type RunStatus = 'pending' | 'lost' | 'completed' | 'abandoned';
 
 /** Un morceau joué (ou neutralisé) : ce que la carte de réponse montre. Les noms ne viennent qu'avec la réponse (piège 31). */
 export interface RunTrack {
@@ -24,12 +23,16 @@ export interface RunTrack {
   readonly waveform: string | null;
 }
 
-/** La manche en cours : le score déjà marqué, l'objectif à atteindre pour la débloquer suivante, et le maximum possible. */
+/**
+ * La manche en cours : le score déjà marqué, l'écoute de ses morceaux (le palier), ce qu'un morceau trouvé en entier rapporte ici et combien de
+ * morceaux y ont été ratés.
+ */
 export interface RunRound {
   readonly round: number;
   readonly score: number;
-  readonly objective: number;
-  readonly maxScore: number;
+  readonly listenSeconds: number;
+  readonly fullPoints: number;
+  readonly failed: number;
 }
 
 export interface RunDisc {
@@ -45,31 +48,16 @@ export interface RunRecord {
   readonly isNew: boolean;
 }
 
-/** Le score et l'objectif d'une manche à la fin de la partie ; vides si elle n'a pas été jouée. */
+/** Le score d'une manche à la fin de la partie, son palier d'écoute et son thème ; vide si elle n'a pas été jouée. */
 export interface RunRoundScore {
   readonly round: number;
   readonly score: number | null;
-  readonly objective: number | null;
-  readonly passed: boolean;
-  /** La difficulté jouée ; `null` pour une manche non jouée. */
-  readonly difficulty: RunDifficulty | null;
-}
-
-/** Ce qui a manqué à une partie perdue pour le disque suivant : les points qui manquaient à l'objectif de la manche ratée. */
-export interface RunShortfall {
-  readonly points: number;
-  readonly disc: RunDisc;
-}
-
-/** Un disque de l'étagère de l'accueil du mode, et les parties qui l'ont donné. */
-export interface RunShelfDisc {
-  readonly disc: RunDisc;
-  readonly count: number;
+  readonly listenSeconds: number;
+  readonly theme: string | null;
 }
 
 export interface RunFinish {
   readonly status: RunStatus;
-  readonly disc: RunDisc;
   readonly totalScore: number;
   readonly roundsPassed: number;
   readonly foundCount: number;
@@ -78,8 +66,10 @@ export interface RunFinish {
   readonly rounds: readonly RunRoundScore[];
   readonly record: RunRecord | null;
   readonly challengeCode: string;
-  /** Ce qui a manqué pour le disque suivant ; `null` pour une partie gagnée ou abandonnée. */
-  readonly shortfall: RunShortfall | null;
+  /** Les vies restantes à la fin et les bonus ajoutés au score d'une Série complète (0 sinon) : 250 points par vie, puis la complétion. */
+  readonly livesLeft: number;
+  readonly lifeBonus: number;
+  readonly completeBonus: number;
   /** Le niveau du joueur après cette partie ; `null` pour une partie abandonnée ou un serveur qui ne l'envoie pas. */
   readonly level: RunLevel | null;
 }
@@ -110,10 +100,14 @@ export interface RunSession {
   readonly sessionId: number;
   readonly challengeCode: string;
   readonly status: RunStatus;
-  readonly rounds: number;
   readonly tracksPerRound: number;
-  readonly listenSeconds: number;
+  /** Les vies de départ et celles qui restent : un morceau raté, passé ou arrivé au bout du chrono en coûte une. */
+  readonly lives: number;
+  readonly livesLeft: number;
+  /** Le plafond de manches de la playlist (« Manche 3/8 ») ; 0 : sans plafond (playlist d'avant). */
+  readonly maxRounds: number;
   readonly totalScore: number;
+  /** Les manches terminées avec au moins une vie. */
   readonly roundsPassed: number;
   /** La manche en cours ; vide une fois la partie finie. */
   readonly round: RunRound | null;
@@ -126,58 +120,24 @@ export interface RunSession {
   readonly clockRemainingSeconds: number | null;
   /** Tous les morceaux déjà joués de la partie, dans l'ordre (la pile), neutralisés compris. */
   readonly playedTracks: readonly RunTrack[];
-  /** Les manches passées, dans l'ordre, avec le disque gagné à chacune (les lignes de palier de la pile). */
+  /** Les manches terminées, dans l'ordre, avec leur score et le palier d'écoute joué (les lignes de manche de la pile). */
   readonly passedRounds: readonly RunPassedRound[];
-  /**
-   * La difficulté de la manche en cours, tant qu'elle reste à choisir (avant son premier son) ; `null` sinon. Son premier morceau n'arrive
-   * qu'avec le choix.
-   */
-  readonly difficultyChoice: RunDifficultyChoice | null;
-  /** Le thème de la manche en cours, tant qu'il reste à choisir (le créateur seulement, avant la difficulté) ; `null` sinon. */
+  /** Le thème de la manche en cours, tant qu'il reste à choisir (le premier joueur qui y arrive) ; `null` sinon. */
   readonly themeChoice: RunThemeChoice | null;
-  /** La carte gagnée à la manche passée, qui agit sur la manche en cours (au plus une ; vide sinon). */
-  readonly hand: readonly RunHandCard[];
-  /** « Changer de morceau » est offert : l'Échange de la manche n'a pas servi et le morceau en cours n'a pas encore été écouté. */
-  readonly swapAvailable: boolean;
-  /** Le disque que la manche en cours fait gagner si elle est passée ; `null` une fois la partie finie. */
-  readonly nextDisc: RunDisc | null;
-  /** Ce que valent les cartes de la playlist (règles figées). */
-  readonly cardValues: RunCardValues | null;
   /** Le fantôme de l'ami qui a lancé la playlist, s'il l'a finie ; `null` sinon (sa propre playlist, rien encore répondu). */
   readonly ghost: RunGhost | null;
   /** Les manches à thème de la playlist (jamais la première) ; vide : aucune. */
   readonly themes: readonly RunTheme[];
+  /** L'échelle des paliers d'écoute de la playlist, en secondes, du plus long au plus court (la rangée de l'écran de jeu). */
+  readonly listenLadder: readonly number[];
 }
 
-/** La carte tenue : son numéro dans la partie et la carte. */
-export interface RunHandCard {
-  readonly slot: number;
-  readonly card: RunCardKey;
-}
-
-/** Une difficulté de manche : objectif et plafond plus ou moins hauts. */
-export type RunDifficulty = 'easy' | 'safe' | 'risky';
-
-/** Les difficultés proposées pour la manche en cours (l'écran « Difficulté ? »). */
-export interface RunDifficultyChoice {
-  readonly round: number;
-  readonly options: readonly RunDifficultyOption[];
-}
-
-/** Une colonne de l'écran « Difficulté ? » : l'objectif (le cadenas), le plafond (la hauteur), l'écoute d'un morceau. */
-export interface RunDifficultyOption {
-  readonly difficulty: RunDifficulty;
-  readonly objective: number;
-  readonly maxScore: number;
-  readonly listenSeconds: number;
-}
-
-/** Une manche passée : son score, son objectif et le disque qu'elle donne. */
+/** Une manche terminée : son score, le palier d'écoute joué et son thème s'il y en avait un. */
 export interface RunPassedRound {
   readonly round: number;
   readonly score: number;
-  readonly objective: number;
-  readonly disc: RunDisc;
+  readonly listenSeconds: number;
+  readonly theme: string | null;
 }
 
 /** Le morceau à jouer : l'extrait de ce seul morceau (jamais celui des suivants). */
@@ -187,28 +147,36 @@ export interface RunCurrentTrack {
   /** Sa place dans la manche, à partir de 1 (« Morceau 3 sur 5 »). */
   readonly positionInRound: number;
   readonly previewUrl: string | null;
-  /** Son écoute fixe (la difficulté de la manche la change : la manche boss est plus courte) ; absente, celle de la partie. */
-  readonly listenSeconds?: number;
-  /** Ce que les cartes jouées sur ce morceau révèlent ou changent ; absent sans carte jouée. */
-  readonly effects?: RunTrackEffects | null;
+  /** Son écoute fixe : le palier de la manche. */
+  readonly listenSeconds: number;
   /** La forme de l'extrait calculée par l'API (blob en base64) ; `null` si elle n'est pas prête : le navigateur calcule la sienne. */
   readonly waveform?: string | null;
 }
 
+/** Un morceau retiré de la manche par le serveur (extrait introuvable). */
 export interface RunNeutralized {
   readonly position: number;
   readonly round: number;
-  readonly objectiveBefore: number;
-  readonly objectiveAfter: number;
 }
 
-/** Le bilan d'une manche qui vient de se terminer. */
+/** Comment une manche s'est terminée : son palier raccourci (sans erreur), gardé (une erreur au premier palier) ou rallongé (une erreur). */
+export type RunRoundOutcome = 'shorter' | 'same' | 'longer';
+
+/** Le bilan d'une manche qui vient de se terminer, avec ce qui attend le joueur : le palier de la suivante. */
 export interface RunRoundSummary {
   readonly round: number;
-  readonly passed: boolean;
   readonly score: number;
-  readonly objective: number;
+  readonly outcome: RunRoundOutcome;
+  readonly listenSeconds: number;
+  readonly nextListenSeconds: number;
+  readonly tracks: readonly RunTrack[];
   readonly totalScore: number;
+  readonly livesLeft: number;
+  /** Une vie a été rendue par cette manche (terminée sans vie perdue, sous les vies de départ). */
+  readonly lifeRegained: boolean;
+  /** Ce que rapportait un morceau trouvé en entier à l'écoute de la manche qui finit, et ce qu'il rapportera à celle de la suivante. */
+  readonly fullPoints: number;
+  readonly nextFullPoints: number;
 }
 
 /** Ce que rendent le lancement, la reprise, la redemande d'extrait et la réponse : l'état à jour, ce qui vient de se passer, le morceau à jouer. */
@@ -249,9 +217,9 @@ export interface RunLink {
   readonly code: string;
   /** Le pseudo de son auteur ; `null` pour un invité (« Invité » à l'écran). */
   readonly authorPseudo: string | null;
-  readonly trackCount: number;
-  readonly rounds: number;
+  readonly lives: number;
   readonly tracksPerRound: number;
+  /** Le palier de la première manche. */
   readonly listenSeconds: number;
   /** Le chrono de chaque morceau ; 0 : pas de chrono. */
   readonly answerSeconds: number;
@@ -266,7 +234,8 @@ export interface RunLink {
 export interface RunComparisonRow {
   /** `null` pour un invité. */
   readonly pseudo: string | null;
-  readonly disc: RunDisc;
+  /** Les manches terminées avant la dernière vie perdue. */
+  readonly roundsPassed: number;
   /** Le score de chaque manche de la playlist ; `null` pour une manche non jouée (✕). */
   readonly rounds: readonly (number | null)[];
   readonly totalScore: number;
@@ -290,8 +259,6 @@ export interface RunsMe {
   readonly record: RunRecord | null;
   /** Une partie en cours : le joueur la reprend. */
   readonly pending: { readonly sessionId: number; readonly challengeCode: string } | null;
-  /** Les disques gagnés par ses parties finies, du moins bon au meilleur. */
-  readonly shelf: readonly RunShelfDisc[];
   /** Son niveau ; `null` avant sa première partie finie. */
   readonly level: RunLevel | null;
   /** Le défi d'un ami qui attend d'être joué (bandeau violet de la carte Setlist) ; `null` sans défi, refusé ou expiré. */
@@ -317,19 +284,6 @@ export function daysLeft(expiresAt: string, now: Date): number {
   return Math.max(1, Number.isFinite(left) ? left : 1);
 }
 
-/** Ce que la barre d'objectif dessine : la part du maximum déjà marquée et l'emplacement du trait de l'objectif. */
-export interface ObjectiveBar {
-  readonly scoreRatio: number;
-  readonly objectiveRatio: number;
-}
-
-const clampRatio = (value: number): number => Math.min(1, Math.max(0, value));
-
-export function objectiveBar(round: Pick<RunRound, 'score' | 'objective' | 'maxScore'>): ObjectiveBar {
-  if (round.maxScore <= 0) return { scoreRatio: 0, objectiveRatio: 0 };
-  return { scoreRatio: clampRatio(round.score / round.maxScore), objectiveRatio: clampRatio(round.objective / round.maxScore) };
-}
-
 /** « +67 » : les points gagnés sur un morceau. */
 export const gainLabel = (points: number): string => `+${points}`;
 
@@ -339,103 +293,43 @@ export const isFinished = (session: Pick<RunSession, 'status'>): boolean => sess
 
 /**
  * Une étape à montrer avant de reprendre la partie, dans l'ordre où le serveur l'a jouée : la réponse au morceau (révélée dans la carte), un
- * morceau retiré de la manche (carte « Morceau retiré »). Chacune porte la manche telle que l'en-tête la montre à ce moment-là : les étapes
- * suivantes ne se voient pas avant leur tour. La fin d'une manche n'est pas une étape : sa ligne de palier se pose dans la pile.
+ * morceau retiré de la manche (carte « Morceau retiré »). Chacune porte sa manche. La fin d'une manche n'est pas une étape : son bilan s'affiche
+ * ensuite (`roundEndOf`) et sa ligne se pose dans la pile.
  */
 export type RunStep =
-  | { readonly kind: 'revealed'; readonly track: RunTrack; readonly round: RunRound }
-  | {
-    readonly kind: 'neutralized';
-    readonly position: number;
-    /** L'objectif de la manche avant le retrait du morceau. */
-    readonly objectiveBefore: number;
-    readonly round: RunRound;
-  };
+  | { readonly kind: 'revealed'; readonly track: RunTrack; readonly round: number }
+  | { readonly kind: 'neutralized'; readonly position: number; readonly round: number };
 
 /** La position du morceau d'une étape. */
 export const stepPosition = (step: RunStep): number => (step.kind === 'revealed' ? step.track.position : step.position);
 
 /**
- * Les étapes qu'une réponse du serveur (lancement, reprise, extrait redemandé, réponse) fait passer au joueur. `before` est la manche affichée
- * avant la requête (elle donne le maximum de points de la manche, que le bilan et les retraits ne portent pas).
- *
- * Le serveur enchaîne en une fois ce qu'il peut : la réponse, puis les morceaux suivants qu'il retire faute d'extrait. Le maximum d'une manche
- * dont on a retiré un morceau se déduit de son objectif (l'objectif est une part fixe du maximum).
+ * Les étapes qu'une réponse du serveur (lancement, reprise, extrait redemandé, réponse) fait passer au joueur : la réponse, puis les morceaux
+ * suivants que le serveur retire faute d'extrait, dans l'ordre des positions.
  */
-export function playSteps(
-  play: Pick<RunPlay, 'session' | 'revealed' | 'neutralized' | 'roundSummaries'>,
-  before: RunRound | null,
-): RunStep[] {
-  const { session } = play;
-  const summaryOf = (round: number) => play.roundSummaries.find(s => s.round === round);
-  const sessionRound = (round: number) => (session.round?.round === round ? session.round : null);
-  /** Une manche dont on connaît le maximum : celle où la partie en est, ou celle qu'on affichait. */
-  const baseOf = (round: number) => sessionRound(round) ?? (before?.round === round ? before : null);
-  const maxFor = (round: number, objective: number): number => {
-    const base = baseOf(round);
-    if (!base) return 0;
-    return base.objective > 0 ? Math.round((objective * base.maxScore) / base.objective) : base.maxScore;
-  };
-  const scoreOf = (round: number) => summaryOf(round)?.score ?? sessionRound(round)?.score ?? (before?.round === round ? before.score : 0);
-
-  const events = [
-    ...(play.revealed ? [{ position: play.revealed.position, round: play.revealed.round, item: null }] : []),
-    ...play.neutralized.map(item => ({ position: item.position, round: item.round, item })),
-  ].sort((a, b) => a.position - b.position);
-
-  return events.map((event): RunStep => {
-    const roundNumber = event.round;
-    if (event.item) {
-      const objective = event.item.objectiveAfter;
-      const round = { round: roundNumber, score: scoreOf(roundNumber), objective, maxScore: maxFor(roundNumber, objective) };
-      return { kind: 'neutralized', position: event.position, objectiveBefore: event.item.objectiveBefore, round };
-    }
-    // La réponse se montre avec l'objectif d'avant les retraits qui la suivent dans la même manche.
-    const objective = play.neutralized.find(n => n.round === roundNumber)?.objectiveBefore
-      ?? summaryOf(roundNumber)?.objective ?? sessionRound(roundNumber)?.objective ?? before?.objective ?? 0;
-    const maxScore = before?.round === roundNumber ? before.maxScore : maxFor(roundNumber, objective);
-    return { kind: 'revealed', track: play.revealed!, round: { round: roundNumber, score: scoreOf(roundNumber), objective, maxScore } };
-  });
-}
-
-/** Un segment de la barre du run (une manche) : passée, en cours (remplie de son score, avec le trait de l'objectif), ou pas encore ouverte. */
-export interface RunSegment {
-  readonly state: 'done' | 'current' | 'locked';
-  /** La part remplie, de 0 à 1. */
-  readonly fill: number;
-  /** L'emplacement du trait de l'objectif, de 0 à 1 ; seulement sur la manche en cours. */
-  readonly mark: number | null;
-}
-
-/** La barre du run : un segment par manche. */
-export function runSegments(rounds: number, shown: Pick<RunRound, 'round' | 'score' | 'objective' | 'maxScore'> | null): RunSegment[] {
-  return Array.from({ length: rounds }, (_, index): RunSegment => {
-    const number = index + 1;
-    if (!shown || number > shown.round) return { state: 'locked', fill: 0, mark: null };
-    if (number < shown.round) return { state: 'done', fill: 1, mark: null };
-    const bar = objectiveBar(shown);
-    return { state: 'current', fill: bar.scoreRatio, mark: bar.objectiveRatio };
-  });
+export function playSteps(play: Pick<RunPlay, 'revealed' | 'neutralized'>): RunStep[] {
+  const events: RunStep[] = [
+    ...(play.revealed ? [{ kind: 'revealed', track: play.revealed, round: play.revealed.round } as const] : []),
+    ...play.neutralized.map((item): RunStep => ({ kind: 'neutralized', position: item.position, round: item.round })),
+  ];
+  return events.sort((a, b) => stepPosition(a) - stepPosition(b));
 }
 
 /**
- * L'écran de palier est dû : la manche précédente vient d'être passée et la manche en cours attend encore sa difficulté (rien n'y a commencé),
- * sauf si le joueur l'a déjà quitté (`dismissedFor`, la manche qu'il a ouverte).
+ * Le bilan de la manche que cette réponse vient de finir, à montrer après ses étapes et avant la manche suivante ; `null` quand aucune manche ne
+ * s'est terminée ou que la partie est finie (la fin s'affiche à sa place). À la reprise (`isResuming`), rien : le joueur retrouve sa manche.
  */
-export function palierDue(session: RunSession, dismissedFor: number | null): boolean {
-  const round = session.round;
-  if (session.status !== 'pending' || !round || round.round < 2 || dismissedFor === round.round) return false;
-  return session.difficultyChoice !== null && session.roundTracks.length === 0
-    && session.passedRounds.some(p => p.round === round.round - 1);
+export function roundEndOf(play: Pick<RunPlay, 'session' | 'roundSummaries' | 'isResuming'>): RunRoundSummary | null {
+  if (play.isResuming || play.session.status !== 'pending') return null;
+  return play.roundSummaries.at(-1) ?? null;
 }
 
-/** L'objectif de la manche à venir montré au palier : celui de « Normal » (quand la difficulté ne se choisit pas sur l'écran), sinon celui de la manche. */
-export function nextObjective(session: RunSession): number {
-  return session.difficultyChoice?.options.find(o => o.difficulty === 'safe')?.objective ?? session.round?.objective ?? 0;
-}
+/** Les vies de la barre du run : une pastille par vie de départ, pleine tant qu'elle reste. */
+export const lifeDots = (lives: number, livesLeft: number): boolean[] =>
+  Array.from({ length: Math.max(0, lives) }, (_, index) => index < livesLeft);
 
-/** Les points qui manquent pour passer la manche (0 : objectif atteint). */
-export const pointsToGo = (round: Pick<RunRound, 'score' | 'objective'>): number => Math.max(0, round.objective - round.score);
+/** Ce que le bilan d'une manche dit du palier suivant : plus court, le même, plus long. */
+export const outcomeKey = (outcome: RunRoundOutcome): string => `runs.roundEnd.${outcome}`;
 
 /** Une ligne de la pile : un morceau joué (sous une ligne de palier, il ne garde que pochette, forme et points), ou la ligne d'une manche passée. */
 export type PileEntry =
@@ -475,10 +369,6 @@ export const AUTO_NEXT_MS = 2000;
 /** Les dernières secondes du chrono : gros chiffre blanc, bord de la carte éclairci, tic. */
 export const CLOCK_ALERT_SECONDS = 5;
 
-/** Combien de morceaux de la partie sont déjà joués (l'écran de reprise) : les manches passées, puis ceux de la manche en cours. */
-export const playedCount = (session: Pick<RunSession, 'round' | 'tracksPerRound' | 'roundTracks'>): number =>
-  session.round ? (session.round.round - 1) * session.tracksPerRound + session.roundTracks.length : 0;
-
 /** Un carré de l'écran de fin : morceau trouvé (artiste et titre), joué sans être trouvé, retiré de la manche, ou pas joué. */
 export type FinishSquare = 'found' | 'played' | 'neutralized' | 'unplayed';
 
@@ -512,31 +402,21 @@ export function trackMark(track: Pick<RunTrack, 'neutralized' | 'artistCorrect' 
 export const tracksOfRound = <T extends Pick<RunTrack, 'round' | 'position'>>(tracks: readonly T[], round: number): T[] =>
   tracks.filter(track => track.round === round).sort((a, b) => a.position - b.position);
 
-/** Les étoiles d'un disque au-delà de l'échelle, à la suite de son nom (« ★2 ») ; rien en deçà. */
-export const discStars = (disc: RunDisc): string => (disc.stars > 0 ? ` ★${disc.stars}` : '');
-
 /** Les cases du partage, comme le partage du Daily : un carré par morceau. */
 export const RUN_SHARE_EMOJI: Readonly<Record<RunTrackMark, string>> = { found: '🟩', half: '🟨', missed: '🟥', withdrawn: '⬜' };
 
-/** Une ligne du partage : une manche jouée, sa difficulté et un carré par morceau joué. */
+/** Une ligne du partage : une manche jouée, son palier d'écoute et un carré par morceau joué. */
 export interface RunShareRound {
   readonly round: number;
-  readonly difficulty: RunDifficulty | null;
+  readonly listenSeconds: number;
   readonly marks: readonly RunTrackMark[];
 }
 
-/**
- * Les lignes du partage en grille : les manches jouées seulement, dans l'ordre, chaque morceau joué à sa place. La première manche n'a jamais de
- * choix de difficulté : sa ligne ne porte pas de nom de difficulté.
- */
+/** Les lignes du partage en grille : les manches jouées seulement, dans l'ordre, chaque morceau joué à sa place. */
 export function shareRounds(finish: Pick<RunFinish, 'tracks' | 'rounds'>): RunShareRound[] {
   return finish.rounds
     .filter(round => round.score !== null)
-    .map(round => ({
-      round: round.round,
-      difficulty: round.round === 1 ? null : round.difficulty,
-      marks: tracksOfRound(finish.tracks, round.round).map(trackMark),
-    }));
+    .map(round => ({ round: round.round, listenSeconds: round.listenSeconds, marks: tracksOfRound(finish.tracks, round.round).map(trackMark) }));
 }
 
 /** Le fantôme d'un ami sur la même playlist : son total sur les morceaux que le joueur a joués, jusqu'au dernier répondu (rien d'avance). */
@@ -576,7 +456,7 @@ export interface RunDuel {
  * arrivé au bout) et pour une partie abandonnée.
  */
 export function duelOf(session: Pick<RunSession, 'ghost' | 'totalScore' | 'status'> | null): RunDuel | null {
-  if (!session || (session.status !== 'won' && session.status !== 'lost')) return null;
+  if (session?.status !== 'lost' && session?.status !== 'completed') return null;
   const gap = ghostGap(session);
   return gap ? { pseudo: gap.pseudo, gap: gap.gap } : null;
 }
@@ -601,9 +481,28 @@ export function comboOf(tracks: readonly Pick<RunTrack, 'position' | 'neutralize
 }
 
 /**
- * Où en est une partie, vu du serveur : son statut, ses morceaux joués, le choix de difficulté en attente, sa main. Deux relectures
+ * Où en est une partie, vu du serveur : son statut, ses morceaux joués, le choix de thème en attente. Deux relectures
  * différentes disent qu'elle a avancé ailleurs (un autre onglet) ; la même relecture, que rien n'a bougé.
  */
-export const progressKey = (session: Pick<RunSession, 'status' | 'playedTracks' | 'difficultyChoice' | 'themeChoice' | 'hand'>): string =>
-  [session.status, session.playedTracks.length, session.difficultyChoice?.round ?? '', session.themeChoice?.round ?? '',
-    session.hand.map(c => `${c.slot}:${c.card}`).join(',')].join('|');
+export const progressKey = (session: Pick<RunSession, 'status' | 'playedTracks' | 'themeChoice'>): string =>
+  [session.status, session.playedTracks.length, session.themeChoice?.round ?? ''].join('|');
+
+/** L'état d'une pastille de la manche : un morceau trouvé, à moitié, raté ou retiré, celui en cours, ceux à venir. */
+export type RoundDot = RunTrackMark | 'current' | 'upcoming';
+
+/** Les pastilles de la manche en cours : une par morceau de la manche, dans l'ordre (les morceaux déjà joués, celui en cours, ceux à venir). */
+export function roundDots(session: Pick<RunSession, 'tracksPerRound' | 'roundTracks'>): RoundDot[] {
+  const played = [...session.roundTracks].sort((a, b) => a.position - b.position).map(trackMark);
+  return Array.from({ length: session.tracksPerRound }, (_, i): RoundDot => {
+    if (i < played.length) return played[i];
+    return i === played.length ? 'current' : 'upcoming';
+  });
+}
+
+/** Une vie perdue : un morceau ni à moitié ni en entier juste, qui n'est pas retiré (« Une vie en moins »). */
+export const lostLife = (track: Pick<RunTrack, 'neutralized' | 'artistCorrect' | 'titleCorrect'>): boolean => trackMark(track) === 'missed';
+
+/** Le moment où le joueur dépasse son fantôme : l'écart passe de nul ou négatif à positif. */
+export function overtook(before: RunGhostGap | null, after: RunGhostGap | null): boolean {
+  return before !== null && after !== null && before.gap <= 0 && after.gap > 0;
+}

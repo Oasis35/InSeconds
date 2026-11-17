@@ -9,8 +9,8 @@ using Microsoft.Extensions.Logging;
 namespace InSeconds.IntegrationTests.Runs;
 
 /// <summary>
-/// La partie d'un run par HTTP : lancement (accès requis), lien d'un ami, verrou du morceau en cours, jauge et fin de manche, neutralisation d'un
-/// morceau sans extrait, fin, record, abandon, et ce que portent les réponses pour les écrans (rien d'un morceau à venir, piège 31).
+/// La partie de la Série par HTTP : lancement (accès requis), lien d'un ami, verrou du morceau en cours, vies, paliers d'écoute, manches tirées à la volée,
+/// neutralisation d'un morceau sans extrait, fin, record, abandon, et ce que portent les réponses pour les écrans (rien d'un morceau à venir, piège 31).
 /// </summary>
 public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
 {
@@ -23,6 +23,7 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
     public ValueTask DisposeAsync() => _run.DisposeAsync();
 
     private static readonly bool[] AllFound = [true, true, true, true, true];
+    private static readonly bool[] OneMissed = [true, true, false, true, true];
 
     [Fact]
     public async Task Me_SansIdentite_SansAcces_EtNeCreeRien()
@@ -32,7 +33,7 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         var response = await _run.Api.CreateClient().GetAsync("/api/runs/me", Ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal("""{"hasAccess":false,"record":null,"pending":null,"shelf":[],"level":null,"received":null}""", await response.Content.ReadAsStringAsync(Ct));
+        Assert.Equal("""{"hasAccess":false,"record":null,"pending":null,"level":null,"received":null}""", await response.Content.ReadAsStringAsync(Ct));
         Assert.Equal(players, await _run.Api.ScalarAsync<long>("SELECT count(*) FROM players.players"));
         Assert.False(response.Headers.Contains("Set-Cookie"));
     }
@@ -44,7 +45,6 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         var bob = await _run.NewPlayerAsync("Bob");
         var nobody = await bob.MeAsync();
         Assert.Equal((false, null, null), (nobody.HasAccess, nobody.Record, nobody.Pending));
-        Assert.Empty(nobody.Shelf);
 
         var first = await alice.LaunchAsync();
         var me = await alice.MeAsync();
@@ -52,36 +52,10 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Null(me.Record);
         Assert.Equal(new RunPendingResponse(first.Session.SessionId, first.Session.ChallengeCode), me.Pending);
 
-        await alice.PlayAsync(first.Session.SessionId, first.Session.ChallengeCode, 1, false, false, false, false, false);
+        await alice.PlayAsync(first.Session.SessionId, first.Session.ChallengeCode, 1, false, false, false);
         me = await alice.MeAsync();
         Assert.Null(me.Pending);
         Assert.Equal(new RunRecordResponse(0, 0, false), me.Record);
-    }
-
-    [Fact]
-    public async Task Me_EtagereDesDisques_ParPartieFinie_SansLePremierDisqueNiUnAbandon()
-    {
-        var alice = await _run.NewInvitedAsync("Alice");
-
-        // Un run raté d'entrée (aucune manche passée) ne pose rien sur l'étagère.
-        var lost = (await alice.LaunchAsync()).Session;
-        await alice.PlayAsync(lost.SessionId, lost.ChallengeCode, 1, false, false, false, false, false);
-        Assert.Empty((await alice.MeAsync()).Shelf);
-
-        // Deux runs à une manche passée : deux disques de cire.
-        foreach (var _ in Enumerable.Range(0, 2))
-        {
-            var run = (await alice.LaunchAsync()).Session;
-            await alice.PlayAsync(run.SessionId, run.ChallengeCode, 1, AllFound);
-            await alice.PlayAsync(run.SessionId, run.ChallengeCode, 6, false, false, false, false, false);
-        }
-
-        // Un abandon après une manche passée ne compte pas.
-        var abandoned = (await alice.LaunchAsync()).Session;
-        await alice.PlayAsync(abandoned.SessionId, abandoned.ChallengeCode, 1, AllFound);
-        Assert.Equal(HttpStatusCode.NoContent, (await alice.AbandonRawAsync(abandoned.SessionId)).StatusCode);
-
-        Assert.Equal([new RunShelfDiscResponse(new RunDiscResponse("runs.discs.wax", 0), 2)], (await alice.MeAsync()).Shelf);
     }
 
     [Fact]
@@ -105,7 +79,7 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task Lancer_PoolInsuffisant_503()
     {
-        await _run.Api.ExecuteAsync("UPDATE catalogue.tracks SET disabled_at = now() WHERE id = 20");
+        await _run.Api.ExecuteAsync("UPDATE catalogue.tracks SET disabled_at = now() WHERE id > 4");
         var alice = await _run.NewInvitedAsync("Alice");
 
         await GameAsserts.ProblemAsync(await alice.LaunchRawAsync(), HttpStatusCode.ServiceUnavailable, RunsErrorCodes.NoChallenge);
@@ -123,15 +97,17 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         var play = JsonSerializer.Deserialize<RunPlayResponse>(json, JsonSerializerOptions.Web)!;
 
         var session = play.Session;
-        Assert.Equal(("pending", 4, 5, 10m, 0), (session.Status, session.Rounds, session.TracksPerRound, session.ListenSeconds, session.TotalScore));
-        Assert.Equal(new RunRoundResponse(1, 0, 225, 500, "safe"), session.Round);
+        Assert.Equal(("pending", 5, 3, 3, 0), (session.Status, session.TracksPerRound, session.Lives, session.LivesLeft, session.TotalScore));
+        Assert.Equal(new RunRoundResponse(1, 0, 10m, 100, 0), session.Round);
         Assert.Empty(session.RoundTracks);
         Assert.Null(session.Finish);
         Assert.False(play.IsResuming);
-        Assert.Equal((1, 1, 1), (play.Current!.Position, play.Current.Round, play.Current.PositionInRound));
+        Assert.Equal((1, 1, 1, 10m), (play.Current!.Position, play.Current.Round, play.Current.PositionInRound, play.Current.ListenSeconds));
         Assert.NotNull(play.Current.PreviewUrl);
         Assert.Equal(1L, await _run.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.sessions WHERE player_id = '{alice.Id}' AND status = 0"));
         Assert.Equal(alice.Id, await _run.Api.ScalarAsync<Guid>($"SELECT created_by FROM runs.challenges WHERE code = '{session.ChallengeCode}'"));
+        // Seule la première manche est tirée : les suivantes le seront quand un joueur y arrivera.
+        Assert.Equal(5L, await _run.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.challenge_tracks t JOIN runs.challenges c ON c.id = t.challenge_id WHERE c.code = '{session.ChallengeCode}'"));
 
         // Piège 31 : rien qui identifie un morceau, et Deezer n'a été interrogé que pour le premier.
         Assert.DoesNotContain("Artiste", json, StringComparison.Ordinal);
@@ -141,87 +117,119 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task PartieGagnee_BilanDeChaqueManche_RésultatDeFin_EtNouveauRecord()
+    public async Task MancheSansErreur_LePalierRaccourcit_LesPointsMontent_LaMancheSuivanteEstTiree()
     {
         var alice = await _run.NewInvitedAsync("Alice");
         var start = (await alice.LaunchAsync()).Session;
         var (id, code) = (start.SessionId, start.ChallengeCode);
 
-        // Manche 1 : la réponse révèle le morceau, ses points et la jauge à jour, puis l'extrait du suivant.
+        // La réponse révèle le morceau et ses points, puis l'extrait du suivant.
         var first = await alice.AnswerAsync(id, code, 1);
         var track = await _run.TrackAtAsync(code, 1);
         Assert.Equal(new RunTrackResponse(1, 1, false, true, true, 100, $"Artiste {track}", $"Titre {track}", null, 1000 + track), first.Revealed);
-        Assert.Equal(new RunRoundResponse(1, 100, 225, 500, "safe"), first.Session.Round);
+        Assert.Equal(new RunRoundResponse(1, 100, 10m, 100, 0), first.Session.Round);
         Assert.Equal([first.Revealed!], first.Session.RoundTracks);
         Assert.Equal(2, first.Current!.Position);
         Assert.Empty(first.RoundSummaries);
 
         var endOfRound = await alice.PlayAsync(id, code, 2, true, true, true, true);
+
         var summary = Assert.Single(endOfRound.RoundSummaries);
-        Assert.Equal((1, true, 500, 225, 500), (summary.Round, summary.Passed, summary.Score, summary.Objective, summary.TotalScore));
+        Assert.Equal((1, 500, "shorter", 10m, 5m, 500, 3), (summary.Round, summary.Score, summary.Outcome, summary.ListenSeconds, summary.NextListenSeconds, summary.TotalScore, summary.LivesLeft));
         Assert.Equal([1, 2, 3, 4, 5], summary.Tracks.Select(t => t.Position));
         Assert.All(summary.Tracks, t => Assert.NotNull(t.Artist));
-        Assert.Equal(new RunRoundResponse(2, 0, 366, 665, "safe"), endOfRound.Session.Round);
+        Assert.Equal(new RunRoundResponse(2, 0, 5m, 200, 0), endOfRound.Session.Round);
         Assert.Empty(endOfRound.Session.RoundTracks);
-        // La manche 2 attend sa difficulté : son premier morceau ne part qu'avec le choix (sans choix, elle se joue en Sûre).
-        Assert.Null(endOfRound.Current);
-        Assert.Equal(2, endOfRound.Session.DifficultyChoice!.Round);
-
-        await alice.PlayAsync(id, code, 6, AllFound);
-        await alice.PlayAsync(id, code, 11, AllFound);
-        var last = await alice.PlayAsync(id, code, 16, AllFound);
-
-        Assert.Null(last.Current);
-        Assert.Equal((4, true), (last.RoundSummaries.Single().Round, last.RoundSummaries.Single().Passed));
-        var finish = last.Session.Finish!;
-        Assert.Equal(("won", "runs.discs.gold", 0, 3000, 4, 20, 20), (finish.Status, finish.Disc.Key, finish.Disc.Stars, finish.TotalScore, finish.RoundsPassed, finish.FoundCount, finish.TrackCount));
-        Assert.Null(finish.Shortfall);
-        Assert.Equal(Enumerable.Range(1, 20), finish.Tracks.Select(t => t.Position));
-        Assert.Equal(
-            [new RunRoundScoreResponse(1, 500, 225, true, "safe"), new(2, 665, 366, true, "safe"), new(3, 835, 568, true, "safe"),
-                new(4, 1000, 800, true, "safe")],
-            finish.Rounds);
-        Assert.Equal(new RunRecordResponse(3000, 4, true), finish.Record);
-        Assert.Equal(code, finish.ChallengeCode);
-        Assert.Null(last.Session.Round);
-        Assert.Equal((1, 3000, (short)4), (await _run.Api.ScalarAsync<short>($"SELECT status FROM runs.sessions WHERE id = {id}"),
-            await _run.Api.ScalarAsync<int>($"SELECT best_score FROM runs.records WHERE player_id = '{alice.Id}'"),
-            await _run.Api.ScalarAsync<short>($"SELECT best_rounds_passed FROM runs.records WHERE player_id = '{alice.Id}'")));
-
-        // L'état relu donne le même résultat de fin.
-        Assert.Equal(JsonSerializer.Serialize(last.Session), JsonSerializer.Serialize(await alice.SessionAsync(id)));
+        Assert.Equal((6, 2, 5m), (endOfRound.Current!.Position, endOfRound.Current.Round, endOfRound.Current.ListenSeconds));
+        Assert.Equal([new RunPassedRoundResponse(1, 500, 10m, null)], endOfRound.Session.PassedRounds);
+        Assert.Equal(1, endOfRound.Session.RoundsPassed);
+        Assert.Equal(10L, await _run.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.challenge_tracks t JOIN runs.challenges c ON c.id = t.challenge_id WHERE c.code = '{code}'"));
     }
 
     [Fact]
-    public async Task PartiePerdue_EnFinDeManche_LesMorceauxRestantsNeSeJouentPas()
+    public async Task LesPaliers_DescendentSansErreur_RemontentApresUneErreur_JamaisAuDessusDeDixSecondes()
     {
         var alice = await _run.NewInvitedAsync("Alice");
         var start = (await alice.LaunchAsync()).Session;
         var (id, code) = (start.SessionId, start.ChallengeCode);
 
-        // Jauge pleine dès le 2e morceau de la manche 1 : les morceaux restants se jouent quand même.
         await alice.PlayAsync(id, code, 1, AllFound);
-        // Manche 2 : 133 + 67 = 200 points, objectif 366.
-        await alice.AnswerAsync(id, code, 6);
-        await alice.AnswerAsync(id, code, 7, artist: true, title: false);
-        var last = await alice.PlayAsync(id, code, 8, false, false, false);
+        await alice.PlayAsync(id, code, 6, AllFound);
+        var third = await alice.PlayAsync(id, code, 11, OneMissed);
 
-        var summary = Assert.Single(last.RoundSummaries);
-        Assert.Equal((2, false, 200, 366, 700), (summary.Round, summary.Passed, summary.Score, summary.Objective, summary.TotalScore));
+        var summary = Assert.Single(third.RoundSummaries);
+        // Manche 3 au palier de 3 s (350 points) : quatre morceaux trouvés, un raté (une vie perdue), le palier s'allonge.
+        Assert.Equal((3, 1400, "longer", 3m, 5m, 2, 2900), (summary.Round, summary.Score, summary.Outcome, summary.ListenSeconds, summary.NextListenSeconds, summary.LivesLeft, summary.TotalScore));
+        Assert.Equal((5m, 1), (third.Current!.ListenSeconds, third.Session.Round!.Round - 3));
+        Assert.Equal(2, third.Session.LivesLeft);
+
+        // Une erreur au premier palier le laisse à 10 s.
+        var second = (await alice.LaunchAsync()).Session;
+        var after = await alice.PlayAsync(second.SessionId, second.ChallengeCode, 1, OneMissed);
+        Assert.Equal(("same", 10m, 10m), (after.RoundSummaries.Single().Outcome, after.RoundSummaries.Single().ListenSeconds, after.RoundSummaries.Single().NextListenSeconds));
+    }
+
+    [Fact]
+    public async Task UneMoitieJuste_ValeLaMoitieDesPoints_SansPerdreDeVie_EtLaisseLePalier()
+    {
+        var alice = await _run.NewInvitedAsync("Alice");
+        var start = (await alice.LaunchAsync()).Session;
+        var (id, code) = (start.SessionId, start.ChallengeCode);
+
+        var first = await alice.AnswerAsync(id, code, 1, artist: true, title: false);
+        Assert.Equal((true, false, 50, 3), (first.Revealed!.ArtistCorrect, first.Revealed.TitleCorrect, first.Revealed.Points, first.Session.LivesLeft));
+
+        var end = await alice.PlayAsync(id, code, 2, [.. Enumerable.Repeat(true, 4)]);
+        var summary = Assert.Single(end.RoundSummaries);
+        Assert.Equal(("same", 10m, 10m, 450), (summary.Outcome, summary.ListenSeconds, summary.NextListenSeconds, summary.Score));
+    }
+
+    [Fact]
+    public async Task TroisVies_UneErreurOuUnPasser_ChacunEnCouteUne_LaTroisiemeFinitLaPartie()
+    {
+        var alice = await _run.NewInvitedAsync("Alice");
+        var start = (await alice.LaunchAsync()).Session;
+        var (id, code) = (start.SessionId, start.ChallengeCode);
+
+        var wrong = await alice.AnswerAsync(id, code, 1, artist: false, title: false);
+        Assert.Equal(2, wrong.Session.LivesLeft);
+        var passed = await alice.AnswerRawAsync(id, 2, null, null);
+        Assert.Equal(1, (await passed.Content.ReadFromJsonAsync<RunPlayResponse>(Ct))!.Session.LivesLeft);
+
+        var last = await alice.AnswerAsync(id, code, 3, artist: false, title: false);
+
+        Assert.Equal(0, last.Session.LivesLeft);
+        Assert.Null(last.Current);
+        Assert.Null(last.Session.Round);
+        var finish = last.Session.Finish!;
+        Assert.Equal(("lost", 0, 0, 0, 3, code), (finish.Status, finish.TotalScore, finish.RoundsPassed, finish.FoundCount, finish.TrackCount, finish.ChallengeCode));
+        Assert.Equal(3, finish.Tracks.Count);
+        await GameAsserts.ProblemAsync(await alice.AnswerRawAsync(id, 4, "a", "b"), HttpStatusCode.Conflict, RunsErrorCodes.AlreadyPlayed);
+        await GameAsserts.ProblemAsync(await alice.JoinRawAsync(code), HttpStatusCode.Conflict, RunsErrorCodes.AlreadyPlayed);
+    }
+
+    [Fact]
+    public async Task PartiePerdueEnCoursDeManche_LeScoreEtLeRecord_ContentLesManchesTenues()
+    {
+        var alice = await _run.NewInvitedAsync("Alice");
+        var start = (await alice.LaunchAsync()).Session;
+        var (id, code) = (start.SessionId, start.ChallengeCode);
+
+        await alice.PlayAsync(id, code, 1, AllFound);
+        // Manche 2 (5 s, 200 points) : un morceau trouvé, puis trois ratés.
+        var last = await alice.PlayAsync(id, code, 6, true, false, false, false);
+
         Assert.Null(last.Current);
         var finish = last.Session.Finish!;
-        Assert.Equal(("lost", "runs.discs.wax", 700, 1, 6, 20), (finish.Status, finish.Disc.Key, finish.TotalScore, finish.RoundsPassed, finish.FoundCount, finish.TrackCount));
-        Assert.Equal(10, finish.Tracks.Count);
-        Assert.Equal(
-            [new RunRoundScoreResponse(1, 500, 225, true, "safe"), new(2, 200, 366, false, "safe"), new(3, null, null, false, null),
-                new(4, null, null, false, null)],
-            finish.Rounds);
+        Assert.Equal(("lost", 700, 1, 6, 9), (finish.Status, finish.TotalScore, finish.RoundsPassed, finish.FoundCount, finish.TrackCount));
         Assert.Equal(new RunRecordResponse(700, 1, true), finish.Record);
-        // 366 - 200 : ce qui manquait à la manche 2 pour le disque de bronze.
-        Assert.Equal(new RunShortfallResponse(166, new RunDiscResponse("runs.discs.bronze", 0)), finish.Shortfall);
+        Assert.Equal(9, finish.Tracks.Count);
+        Assert.Equal(2, await _run.Api.ScalarAsync<short>($"SELECT status FROM runs.sessions WHERE id = {id}"));
+        Assert.Equal(700, await _run.Api.ScalarAsync<int>($"SELECT best_score FROM runs.records WHERE player_id = '{alice.Id}'"));
+        Assert.Equal(1, await _run.Api.ScalarAsync<short>($"SELECT best_rounds_passed FROM runs.records WHERE player_id = '{alice.Id}'"));
 
-        await GameAsserts.ProblemAsync(await alice.AnswerRawAsync(id, 11, "a", "b"), HttpStatusCode.Conflict, RunsErrorCodes.AlreadyPlayed);
-        await GameAsserts.ProblemAsync(await alice.JoinRawAsync(code), HttpStatusCode.Conflict, RunsErrorCodes.AlreadyPlayed);
+        // L'état relu donne le même résultat de fin.
+        Assert.Equal(JsonSerializer.Serialize(last.Session), JsonSerializer.Serialize(await alice.SessionAsync(id)));
     }
 
     [Fact]
@@ -232,7 +240,7 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         var alice = await _run.NewInvitedAsync("Alice");
         var start = (await alice.LaunchAsync()).Session;
 
-        await alice.PlayAsync(start.SessionId, start.ChallengeCode, 1, false, false, false, false, false);
+        await alice.PlayAsync(start.SessionId, start.ChallengeCode, 1, false, false, false);
 
         var measure = Assert.Single(levels.GetMeasurementSnapshot());
         Assert.Equal(["change", "disc", "provisional"], measure.Tags.Keys.Order());
@@ -248,10 +256,10 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         var alice = await _run.NewInvitedAsync("Alice");
         var good = (await alice.LaunchAsync()).Session;
         await alice.PlayAsync(good.SessionId, good.ChallengeCode, 1, AllFound);
-        await alice.PlayAsync(good.SessionId, good.ChallengeCode, 6, false, false, false, false, false);
+        await alice.PlayAsync(good.SessionId, good.ChallengeCode, 6, false, false, false);
 
         var bad = (await alice.LaunchAsync()).Session;
-        var last = await alice.PlayAsync(bad.SessionId, bad.ChallengeCode, 1, false, false, false, false, false);
+        var last = await alice.PlayAsync(bad.SessionId, bad.ChallengeCode, 1, false, false, false);
 
         Assert.Equal(new RunRecordResponse(500, 1, false), last.Session.Finish!.Record);
         Assert.Equal(good.SessionId, await _run.Api.ScalarAsync<int>($"SELECT session_id FROM runs.records WHERE player_id = '{alice.Id}'"));
@@ -267,7 +275,7 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.NoContent, (await alice.AbandonRawAsync(start.SessionId)).StatusCode);
 
         var state = await alice.SessionAsync(start.SessionId);
-        Assert.Equal(("abandoned", "runs.discs.scratched", 100), (state.Status, state.Finish!.Disc.Key, state.Finish.TotalScore));
+        Assert.Equal(("abandoned", 100), (state.Status, state.Finish!.TotalScore));
         Assert.Null(state.Finish.Record);
         Assert.Equal(0L, await _run.Api.ScalarAsync<long>("SELECT count(*) FROM runs.records"));
         await GameAsserts.ProblemAsync(await alice.AnswerRawAsync(start.SessionId, 2, "a", "b"), HttpStatusCode.Conflict, RunsErrorCodes.Abandoned);
@@ -283,7 +291,7 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         var friend = await _run.NewPlayerAsync();
 
         var link = await friend.ChallengeAsync(code.ToLowerInvariant());
-        Assert.Equal(new RunChallengeResponse(code, "Alice", 20, 4, 5, 10m, "none", null, 45), link);
+        Assert.Equal(new RunChallengeResponse(code, "Alice", 3, 5, 10m, "none", null, 45), link);
 
         var joined = await friend.JoinAsync(code.ToLowerInvariant());
         Assert.False(joined.IsResuming);
@@ -299,6 +307,24 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(2, resumed.Current!.Position);
         Assert.Single(resumed.Session.RoundTracks);
         Assert.Equal(1L, await _run.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.sessions WHERE player_id = '{friend.Id}'"));
+    }
+
+    [Fact]
+    public async Task UnAmiQuiVaPlusLoin_TireLesManchesSuivantes_QueLAuteurRetrouveIdentiques()
+    {
+        var alice = await _run.NewInvitedAsync("Alice");
+        var start = (await alice.LaunchAsync()).Session;
+        var friend = await _run.NewPlayerAsync();
+        var joined = (await friend.JoinAsync(start.ChallengeCode)).Session;
+
+        await friend.PlayAsync(joined.SessionId, start.ChallengeCode, 1, AllFound);
+        var tracksOfRound2 = await _run.Api.ScalarAsync<string>($"SELECT string_agg(track_id::text, ',' ORDER BY position) FROM runs.challenge_tracks t JOIN runs.challenges c ON c.id = t.challenge_id WHERE c.code = '{start.ChallengeCode}' AND t.round = 2");
+        var second = await alice.PlayAsync(start.SessionId, start.ChallengeCode, 1, AllFound);
+
+        // La manche tirée par l'ami n'est pas retirée : l'auteur joue les mêmes morceaux.
+        Assert.Equal(tracksOfRound2, await _run.Api.ScalarAsync<string>($"SELECT string_agg(track_id::text, ',' ORDER BY position) FROM runs.challenge_tracks t JOIN runs.challenges c ON c.id = t.challenge_id WHERE c.code = '{start.ChallengeCode}' AND t.round = 2"));
+        Assert.Equal(6, second.Current!.Position);
+        Assert.Equal(10L, await _run.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.challenge_tracks t JOIN runs.challenges c ON c.id = t.challenge_id WHERE c.code = '{start.ChallengeCode}'"));
     }
 
     [Fact]
@@ -344,25 +370,30 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
 
         await GameAsserts.ProblemAsync(await alice.AnswerRawAsync(id, 2, "a", "b"), HttpStatusCode.Conflict, RunsErrorCodes.TrackLockNotReleased);
         await GameAsserts.ProblemAsync(await alice.ListenRawAsync(id, 2, 10), HttpStatusCode.Conflict, RunsErrorCodes.TrackLockNotReleased);
-        await GameAsserts.ProblemAsync(await alice.AnswerRawAsync(id, 21, "a", "b"), HttpStatusCode.NotFound, RunsErrorCodes.TrackNotFound);
         await alice.AnswerAsync(id, start.ChallengeCode, 1);
         await GameAsserts.ProblemAsync(await alice.AnswerRawAsync(id, 1, "a", "b"), HttpStatusCode.Conflict, RunsErrorCodes.AlreadyAnswered);
     }
 
     [Fact]
-    public async Task LEcoute_EstNotee_JusquALaDureeFixe()
+    public async Task LEcoute_EstNotee_JusquAuPalierDeLaManche()
     {
         var alice = await _run.NewInvitedAsync("Alice");
-        var id = (await alice.LaunchAsync()).Session.SessionId;
+        var start = (await alice.LaunchAsync()).Session;
+        var id = start.SessionId;
 
         Assert.Equal(HttpStatusCode.NoContent, (await alice.ListenRawAsync(id, 1, 10)).StatusCode);
         Assert.Equal(10m, await _run.Api.ScalarAsync<decimal>($"SELECT current_listened_seconds FROM runs.sessions WHERE id = {id}"));
         await GameAsserts.ProblemAsync(await alice.ListenRawAsync(id, 1, 10.5m), HttpStatusCode.BadRequest, "common.bad_request");
         Assert.Equal(HttpStatusCode.BadRequest, (await alice.ListenRawAsync(id, 1, 0)).StatusCode);
+
+        // À la manche 2, le palier est de 5 s : 10 s est refusé.
+        await alice.PlayAsync(id, start.ChallengeCode, 1, AllFound);
+        Assert.Equal(HttpStatusCode.NoContent, (await alice.ListenRawAsync(id, 6, 5)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await alice.ListenRawAsync(id, 6, 10)).StatusCode);
     }
 
     [Fact]
-    public async Task PasserLeMorceau_ZeroPoint()
+    public async Task PasserLeMorceau_ZeroPoint_UneVieDeMoins()
     {
         var alice = await _run.NewInvitedAsync("Alice");
         var id = (await alice.LaunchAsync()).Session.SessionId;
@@ -371,6 +402,7 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(0, await _run.Api.ScalarAsync<int>($"SELECT points FROM runs.answers WHERE session_id = {id} AND position = 1"));
+        Assert.Equal(2, (await alice.SessionAsync(id)).LivesLeft);
     }
 
     [Fact]
@@ -390,7 +422,7 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task MorceauSansExtrait_Neutralise_ObjectifAvantEtApres_PuisLExtraitDuSuivant()
+    public async Task MorceauSansExtrait_Neutralise_NeCompteNiPointNiVie_PuisLExtraitDuSuivant()
     {
         var alice = await _run.NewInvitedAsync("Alice");
         var start = (await alice.LaunchAsync()).Session;
@@ -399,9 +431,10 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
 
         var answer = await alice.AnswerAsync(id, code, 1);
 
-        Assert.Equal([new RunNeutralizedResponse(2, 1, 225, 180)], answer.Neutralized);
+        Assert.Equal([new RunNeutralizedResponse(2, 1)], answer.Neutralized);
         Assert.Equal(3, answer.Current!.Position);
-        Assert.Equal(new RunRoundResponse(1, 100, 180, 400, "safe"), answer.Session.Round);
+        Assert.Equal(new RunRoundResponse(1, 100, 10m, 100, 0), answer.Session.Round);
+        Assert.Equal(3, answer.Session.LivesLeft);
         Assert.Equal(
             [new RunTrackResponse(2, 1, true, false, false, 0, null, null, null, null)], answer.Session.RoundTracks.Where(t => t.Neutralized));
         Assert.True(await _run.Api.ScalarAsync<bool>($"SELECT neutralized FROM runs.answers WHERE session_id = {id} AND position = 2"));
@@ -409,28 +442,23 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task UneMancheEntierementNeutralisee_EstPassee_EtLeBilanSuit()
+    public async Task UneMancheEntierementNeutralisee_EstPassee_SansChangerLePalier_EtLaSuivanteSeTire()
     {
         var alice = await _run.NewInvitedAsync("Alice");
         var start = (await alice.LaunchAsync()).Session;
         var (id, code) = (start.SessionId, start.ChallengeCode);
-        await alice.PlayAsync(id, code, 1, true, true, true, true);
-        for (var position = 6; position <= 10; position++)
-            await _run.RemovePreviewAsync(await _run.TrackAtAsync(code, position));
+        // La manche 2 tire dans la deuxième tranche de rang : les morceaux 6 à 10 du pool de test.
+        foreach (var trackId in Enumerable.Range(6, 5))
+            await _run.RemovePreviewAsync(trackId);
 
-        // Le 5e morceau termine la manche 1 ; la manche 2 attend sa difficulté, rien n'est neutralisé avant le choix.
-        Assert.Empty((await alice.AnswerAsync(id, code, 5)).Neutralized);
+        var last = await alice.PlayAsync(id, code, 1, AllFound);
 
-        // Le choix : les 5 morceaux de la manche 2 neutralisés, son bilan, et la manche 3 qui attend à son tour sa difficulté.
-        var last = await alice.ChooseAsync(id, 2, "safe");
-
-        Assert.Equal([2], last.RoundSummaries.Select(s => s.Round));
-        Assert.Equal((true, 0, 0), (last.RoundSummaries[0].Passed, last.RoundSummaries[0].Score, last.RoundSummaries[0].Objective));
         Assert.Equal([6, 7, 8, 9, 10], last.Neutralized.Select(n => n.Position));
-        Assert.Equal((366, 0), (last.Neutralized[0].ObjectiveBefore, last.Neutralized[^1].ObjectiveAfter));
-        Assert.Null(last.Current);
-        Assert.Equal(3, last.Session.DifficultyChoice!.Round);
+        Assert.Equal([1, 2], last.RoundSummaries.Select(s => s.Round));
+        Assert.Equal((0, "same", 5m), (last.RoundSummaries[1].Score, last.RoundSummaries[1].Outcome, last.RoundSummaries[1].ListenSeconds));
         Assert.Equal(2, last.Session.RoundsPassed);
+        Assert.Equal(11, last.Current!.Position);
+        Assert.Equal(3, last.Session.LivesLeft);
     }
 
     [Fact]
@@ -476,15 +504,16 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         var alice = await _run.NewInvitedAsync("Alice");
         var start = (await alice.LaunchAsync()).Session;
         await _run.Game.SetSettingAsync("Runs:TracksPerRound", "3");
-        await _run.Game.SetSettingAsync("Runs:ThresholdPercents", "[90,90,90,90]");
-        await _run.Game.SetSettingAsync("Runs:ListenSeconds", "5");
+        await _run.Game.SetSettingAsync("Runs:Lives", "1");
+        await _run.Game.SetSettingAsync("Runs:ListenLadder", "[8,4]");
+        await _run.Game.SetSettingAsync("Runs:StepPoints", "[10,20]");
 
-        var last = await alice.PlayAsync(start.SessionId, start.ChallengeCode, 1, true, true, true, false, false);
+        var last = await alice.PlayAsync(start.SessionId, start.ChallengeCode, 1, AllFound);
 
         var summary = Assert.Single(last.RoundSummaries);
-        Assert.Equal((true, 225), (summary.Passed, summary.Objective));
-        Assert.Equal((5, 10m), (last.Session.TracksPerRound, last.Session.ListenSeconds));
-        Assert.Equal(HttpStatusCode.NoContent, (await alice.ListenRawAsync(start.SessionId, 6, 10)).StatusCode);
+        Assert.Equal((500, 10m, 5m), (summary.Score, summary.ListenSeconds, summary.NextListenSeconds));
+        Assert.Equal((5, 3, 3), (last.Session.TracksPerRound, last.Session.Lives, last.Session.LivesLeft));
+        Assert.Equal(HttpStatusCode.NoContent, (await alice.ListenRawAsync(start.SessionId, 6, 5)).StatusCode);
     }
 
     [Fact]
@@ -566,16 +595,17 @@ public class RunsMetricsTests(PostgresFixture postgres) : IAsyncLifetime
         m.Tags.TryGetValue(key, out var value) ? Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) : null;
 
     [Fact]
-    public async Task Parties_Reponses_Neutralisations_EtDisques()
+    public async Task Parties_Reponses_Neutralisations_ManchesEtDefaite()
     {
         using var sessions = Collect(RunsMetrics.SessionsName);
         using var answers = Collect(RunsMetrics.AnswersName);
         using var neutralized = Collect(RunsMetrics.NeutralizedName);
-        using var discs = Collect(RunsMetrics.DiscsName);
+        using var rounds = Collect(RunsMetrics.RoundsName);
         var alice = await _run.NewInvitedAsync("Alice");
         var start = (await alice.LaunchAsync()).Session;
-        await _run.RemovePreviewAsync(await _run.TrackAtAsync(start.ChallengeCode, 5));
-        await alice.PlayAsync(start.SessionId, start.ChallengeCode, 1, false, false, false, false);
+        await _run.RemovePreviewAsync(await _run.TrackAtAsync(start.ChallengeCode, 3));
+        await alice.PlayAsync(start.SessionId, start.ChallengeCode, 1, false, false);
+        await alice.AnswerAsync(start.SessionId, start.ChallengeCode, 4, artist: false, title: false);
         var friend = await _run.NewPlayerAsync();
         var joined = (await friend.JoinAsync(start.ChallengeCode)).Session;
         await friend.JoinAsync(start.ChallengeCode);
@@ -584,14 +614,28 @@ public class RunsMetricsTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(
             [RunsMetrics.Launched, RunsMetrics.Lost, RunsMetrics.Joined, RunsMetrics.Abandoned],
             sessions.GetMeasurementSnapshot().Select(m => Tag(m, "event")));
-        Assert.Equal(4, answers.GetMeasurementSnapshot().Count);
+        Assert.Equal(3, answers.GetMeasurementSnapshot().Count);
         Assert.All(answers.GetMeasurementSnapshot(), m => Assert.Equal(["artist_found", "round", "title_found"], m.Tags.Keys.Order()));
         Assert.Single(neutralized.GetMeasurementSnapshot());
-        Assert.Equal(["runs.discs.scratched"], discs.GetMeasurementSnapshot().Select(m => Tag(m, "disc")));
-        // Une partie perdue dit la manche ratée (l'objectif manqué), pour régler les seuils.
+        // Une partie perdue dit la manche où elle s'est arrêtée, pour régler les paliers ; la manche perdue en route n'est pas un bilan de manche.
         var lost = sessions.GetMeasurementSnapshot().Single(m => Tag(m, "event") == RunsMetrics.Lost);
         Assert.Equal("1", Tag(lost, "round"));
         Assert.Equal(["event", "round"], lost.Tags.Keys.Order());
+        Assert.Empty(rounds.GetMeasurementSnapshot());
+    }
+
+    [Fact]
+    public async Task UneMancheTerminee_DitSonIssue_RaccourcieAllongeeOuIdentique()
+    {
+        using var rounds = Collect(RunsMetrics.RoundsName);
+        var alice = await _run.NewInvitedAsync("Alice");
+        var start = (await alice.LaunchAsync()).Session;
+
+        await alice.PlayAsync(start.SessionId, start.ChallengeCode, 1, true, true, true, true, true);
+        await alice.PlayAsync(start.SessionId, start.ChallengeCode, 6, true, true, false, true, true);
+
+        var measures = rounds.GetMeasurementSnapshot();
+        Assert.Equal([("1", "shorter"), ("2", "longer")], measures.Select(m => (Tag(m, "round")!, Tag(m, "outcome")!)));
     }
 }
 

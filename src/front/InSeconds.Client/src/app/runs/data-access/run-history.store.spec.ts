@@ -3,11 +3,11 @@ import { RunHistory, RunHistoryEntry } from '../domain/run-history';
 import { RunHistoryStore } from './run-history.store';
 import { RunsApi } from './runs.api';
 
-const run = (sessionId: number, difficulty: RunHistoryEntry['difficulty']): RunHistoryEntry => ({
-  sessionId, date: '2026-11-10', disc: { key: 'runs.discs.gold', stars: 0 }, score: 2000, difficulty,
+const run = (sessionId: number): RunHistoryEntry => ({
+  sessionId, date: '2026-11-10', challengeCode: 'ABC234', status: 'lost', roundsPassed: 2, score: 2000,
 });
 const HISTORY = (month: string): RunHistory => ({
-  month, previousMonth: null, nextMonth: null, playedCount: 2, averageScore: 2000, bestScore: 2000, runs: [run(1, 'easy'), run(2, 'risky')],
+  month, previousMonth: null, nextMonth: null, playedCount: 2, averageScore: 2000, bestScore: 2000, runs: [run(1), run(2)],
 });
 
 describe('RunHistoryStore', () => {
@@ -16,23 +16,14 @@ describe('RunHistoryStore', () => {
     return TestBed.inject(RunHistoryStore);
   }
 
-  it('lit le mois demandé et montre tout', async () => {
+  it('lit le mois demandé', async () => {
     const store = create(async month => HISTORY(month ?? '2026-11'));
 
     await store.load('2026-10');
 
     expect(store.status()).toBe('ready');
     expect(store.history()?.month).toBe('2026-10');
-    expect(store.visibleRuns()).toHaveLength(2);
-  });
-
-  it('filtre par difficulté', async () => {
-    const store = create(async () => HISTORY('2026-11'));
-    await store.load(null);
-
-    store.chooseFilter('risky');
-
-    expect(store.visibleRuns().map(r => r.sessionId)).toEqual([2]);
+    expect(store.history()?.runs).toHaveLength(2);
   });
 
   it('passe en erreur quand la lecture échoue', async () => {

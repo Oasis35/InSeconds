@@ -7,33 +7,27 @@ import { TRACK } from './testing/fake-runs-api';
 
 describe('runShareText', () => {
   const finish: RunFinish = {
-    status: 'lost', disc: { key: 'runs.discs.wax', stars: 0 }, totalScore: 2410, roundsPassed: 1, foundCount: 4, trackCount: 20,
+    status: 'lost', totalScore: 2410, roundsPassed: 1, foundCount: 4, trackCount: 20,
     tracks: [
       TRACK({ position: 1 }), TRACK({ position: 2, titleCorrect: false }), TRACK({ position: 3, artistCorrect: false, titleCorrect: false }),
       TRACK({ position: 4, neutralized: true }), TRACK({ position: 5 }),
       TRACK({ position: 7, round: 2 }), TRACK({ position: 6, round: 2, artistCorrect: false }),
     ],
     rounds: [
-      { round: 1, score: 400, objective: 200, passed: true, difficulty: 'safe' },
-      { round: 2, score: 150, objective: 333, passed: false, difficulty: 'risky' },
-      { round: 3, score: null, objective: null, passed: false, difficulty: null },
+      { round: 1, score: 400, listenSeconds: 10, theme: null },
+      { round: 2, score: 150, listenSeconds: 5, theme: null },
+      { round: 3, score: null, listenSeconds: 3, theme: null },
     ],
-    record: null, challengeCode: 'K7Q2M9', shortfall: { points: 183, disc: { key: 'runs.discs.bronze', stars: 0 } }, level: null,
+    record: null, challengeCode: 'K7Q2M9', livesLeft: 0, lifeBonus: 0, completeBonus: 0, level: null,
   };
   const t = (key: string, params?: Record<string, unknown>) => (params ? `${key}${JSON.stringify(params)}` : key);
 
-  it('au-delà de l\'échelle, le disque garde ses étoiles', () => {
-    const header = runShareText({ ...finish, disc: { key: 'runs.discs.gold', stars: 2 } }, 'fr', t).split('\n')[0];
-
-    expect(header).toContain('"disc":"runs.discs.gold ★2"');
-  });
-
-  it('le score et le disque d\'abord, une ligne par manche jouée (un carré par morceau, dans l\'ordre), puis « Fais mieux » et le lien', () => {
+  it('le score et les manches d\'abord, une ligne par manche jouée (un carré par morceau, dans l\'ordre), puis « Fais mieux » et le lien', () => {
     const lines = runShareText(finish, 'fr', t).split('\n');
 
-    expect(lines[0]).toBe('runs.share.header{"score":"2\u202f410","disc":"runs.discs.wax"}');
-    expect(lines[1]).toBe('🟩🟨🟥⬜🟩 runs.share.round{"round":1}');
-    expect(lines[2]).toBe('🟨🟩 runs.share.round{"round":2} · runs.difficulty.risky');
+    expect(lines[0]).toBe('runs.share.header{"score":"2\u202f410","rounds":1}');
+    expect(lines[1]).toBe('🟩🟨🟥⬜🟩 runs.share.round{"round":1} · runs.share.listen{"seconds":10}');
+    expect(lines[2]).toBe('🟨🟩 runs.share.round{"round":2} · runs.share.listen{"seconds":5}');
     expect(lines.slice(3)).toEqual(['runs.share.beatMe', playlistUrl('K7Q2M9')]);
   });
 
@@ -95,9 +89,9 @@ describe('RunShare', () => {
     outcome = 'copied';
     const share = create();
     const finish: RunFinish = {
-      status: 'won', disc: { key: 'runs.discs.gold', stars: 0 }, totalScore: 3000, roundsPassed: 4, foundCount: 1, trackCount: 20,
-      tracks: [TRACK()], rounds: [{ round: 1, score: 100, objective: 50, passed: true, difficulty: 'safe' }], record: null,
-      challengeCode: 'K7Q2M9', shortfall: null, level: null,
+      status: 'lost', totalScore: 3000, roundsPassed: 4, foundCount: 1, trackCount: 20,
+      tracks: [TRACK()], rounds: [{ round: 1, score: 100, listenSeconds: 10, theme: null }], record: null,
+      challengeCode: 'K7Q2M9', livesLeft: 0, lifeBonus: 0, completeBonus: 0, level: null,
     };
 
     await share.shareScore(finish, 'fr');
@@ -124,9 +118,9 @@ describe('RunShare', () => {
     outcome = 'copied';
     const share = create();
     const finish: RunFinish = {
-      status: 'won', disc: { key: 'runs.discs.gold', stars: 0 }, totalScore: 3000, roundsPassed: 4, foundCount: 1, trackCount: 20,
-      tracks: [TRACK()], rounds: [{ round: 1, score: 100, objective: 50, passed: true, difficulty: 'safe' }], record: null,
-      challengeCode: 'K7Q2M9', shortfall: null, level: null,
+      status: 'lost', totalScore: 3000, roundsPassed: 4, foundCount: 1, trackCount: 20,
+      tracks: [TRACK()], rounds: [{ round: 1, score: 100, listenSeconds: 10, theme: null }], record: null,
+      challengeCode: 'K7Q2M9', livesLeft: 0, lifeBonus: 0, completeBonus: 0, level: null,
     };
 
     await share.shareGrid(finish, 'fr');

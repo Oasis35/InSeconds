@@ -15,47 +15,34 @@ public class RunsOptionsTests
     {
         var options = new RunsOptions();
 
-        Assert.Null(options.ThresholdPercents);
-        Assert.Null(options.Difficulties);
-        Assert.Equal([45, 55, 68, 80], options.EffectiveThresholdPercents);
-        Assert.Equal(["easy", "safe", "risky"], options.EffectiveDifficulties.Select(d => d.Difficulty));
-        Assert.Equal(5, options.EffectiveDiscs.Count);
-        Assert.All(options.EffectiveDiscs, key => Assert.StartsWith("runs.discs.", key, StringComparison.Ordinal));
+        Assert.Null(options.ListenLadder);
+        Assert.Null(options.StepPoints);
+        Assert.Equal([10m, 5m, 3m, 2m, 1m, 0.5m], options.EffectiveListenLadder);
+        Assert.Equal([100, 200, 350, 550, 800, 1200], options.EffectiveStepPoints);
+        Assert.Equal((3, 3, 45), (options.Lives, options.TracksPerRound, options.AnswerSeconds));
     }
 
     public static TheoryData<RunsOptions, string> Incoherent => new()
     {
-        { new RunsOptions { Rounds = 0, ThresholdPercents = [] }, "Runs:Rounds" },
-        { new RunsOptions { Rounds = 21, ThresholdPercents = new int[21] }, "Runs:Rounds" },
+        { new RunsOptions { Lives = 0 }, "Runs:Lives" },
+        { new RunsOptions { Lives = 11 }, "Runs:Lives" },
         { new RunsOptions { TracksPerRound = 0 }, "Runs:TracksPerRound" },
-        { new RunsOptions { ListenSeconds = 0 }, "Runs:ListenSeconds" },
-        { new RunsOptions { ListenSeconds = 100 }, "Runs:ListenSeconds" },
-        { new RunsOptions { ListenSeconds = 10.123m }, "Runs:ListenSeconds" },
-        { new RunsOptions { Rounds = 3 }, "Runs:ThresholdPercents" },
-        { new RunsOptions { ThresholdPercents = [40, 50, 60, 0] }, "Runs:ThresholdPercents" },
-        { new RunsOptions { ThresholdPercents = [40, 50, 60, 101] }, "Runs:ThresholdPercents" },
-        { new RunsOptions { MinMultiplier = 3, MaxMultiplier = 2 }, "Runs:MinMultiplier" },
-        { new RunsOptions { MinMultiplier = 0 }, "Runs:MinMultiplier" },
-        { new RunsOptions { MaxMultiplier = 10 }, "Runs:MinMultiplier" },
-        { new RunsOptions { MaxMultiplier = 2.005m }, "Runs:MinMultiplier" },
-        { new RunsOptions { Discs = [] }, "Runs:Discs" },
-        { new RunsOptions { Discs = ["runs.discs.gold", " "] }, "Runs:Discs" },
+        { new RunsOptions { TracksPerRound = 21 }, "Runs:TracksPerRound" },
+        { new RunsOptions { RankBands = 0 }, "Runs:RankBands" },
+        { new RunsOptions { ListenLadder = [10m] }, "Runs:ListenLadder" },
+        { new RunsOptions { ListenLadder = [10m, 10m], StepPoints = [1, 2] }, "Runs:ListenLadder" },
+        { new RunsOptions { ListenLadder = [5m, 10m], StepPoints = [1, 2] }, "Runs:ListenLadder" },
+        { new RunsOptions { ListenLadder = [10m, 0m], StepPoints = [1, 2] }, "Runs:ListenLadder" },
+        { new RunsOptions { ListenLadder = [10m, 0.123m], StepPoints = [1, 2] }, "Runs:ListenLadder" },
+        { new RunsOptions { StepPoints = [100, 200] }, "Runs:StepPoints" },
+        { new RunsOptions { StepPoints = [100, 200, 350, 550, 800, 0] }, "Runs:StepPoints" },
         { new RunsOptions { AnswerSeconds = 10 }, "Runs:AnswerSeconds" },
         { new RunsOptions { AnswerSeconds = 601 }, "Runs:AnswerSeconds" },
         { new RunsOptions { AnswerSeconds = -1 }, "Runs:AnswerSeconds" },
-        { new RunsOptions { Difficulties = [] }, "Runs:Difficulties" },
-        { new RunsOptions { Difficulties = [new() { Difficulty = "easy" }] }, "Runs:Difficulties" },
-        { new RunsOptions { Difficulties = [new() { Difficulty = "safe" }, new() { Difficulty = "safe" }] }, "Runs:Difficulties" },
-        { new RunsOptions { Difficulties = [new() { Difficulty = "safe" }, new() { Difficulty = "hard" }] }, "Runs:Difficulties" },
-        { new RunsOptions { Difficulties = [new() { Difficulty = "safe", PointsFactor = 0 }] }, "Runs:Difficulties" },
-        { new RunsOptions { Difficulties = [new() { Difficulty = "safe", ObjectiveFactor = 3.5m }] }, "Runs:Difficulties" },
-        { new RunsOptions { Difficulties = [new() { Difficulty = "safe", ObjectiveFactor = 0.001m }] }, "Runs:Difficulties" },
-        { new RunsOptions { Difficulties = [new() { Difficulty = "safe" }, new() { Difficulty = "risky", PointsFactor = 1m, ObjectiveFactor = 1.5m }] }, "plafond" },
-        { new RunsOptions { BossListenSeconds = 11 }, "Runs:BossListenSeconds" },
-        { new RunsOptions { BossListenSeconds = -1 }, "Runs:BossListenSeconds" },
-        { new RunsOptions { BossListenSeconds = 2.005m }, "Runs:BossListenSeconds" },
-        { new RunsOptions { ReservePerRound = -1 }, "Runs:ReservePerRound" },
-        { new RunsOptions { ReservePerRound = 6 }, "Runs:ReservePerRound" },
+        { new RunsOptions { MaxRounds = -1 }, "Runs:MaxRounds" },
+        { new RunsOptions { MaxRounds = 51 }, "Runs:MaxRounds" },
+        { new RunsOptions { LifeBonus = -1 }, "Runs:LifeBonus" },
+        { new RunsOptions { CompleteBonus = 100_001 }, "Runs:LifeBonus" },
     };
 
     [Theory]
@@ -66,29 +53,30 @@ public class RunsOptionsTests
     [Fact]
     public void UneAutreConfiguration_Coherente_EstAcceptee()
     {
-        var options = new RunsOptions { Rounds = 2, TracksPerRound = 3, ListenSeconds = 7.5m, ThresholdPercents = [30, 60], MinMultiplier = 1.5m, MaxMultiplier = 3m };
+        var options = new RunsOptions { Lives = 5, TracksPerRound = 3, ListenLadder = [8m, 4m, 1m], StepPoints = [10, 20, 40], AnswerSeconds = 0 };
 
         Assert.Empty(RunsOptionsChecks.Problems(options));
         var rules = options.ToRules();
-        Assert.Equal((2, 3, 6, 7.5m), (rules.Rounds, rules.TracksPerRound, rules.TrackCount, rules.ListenSeconds));
+        Assert.Equal((5, 3, 2), (rules.Lives, rules.TracksPerRound, rules.LastStep));
+        Assert.False(rules.HasClock);
     }
 
     [Fact]
     public void DesReglagesIncoherentsALUsage_RetombentSurLesDefauts_ErreurJournaleeUneFoisParValeur()
     {
-        var monitor = new MutableOptions(new RunsOptions { Rounds = 0 });
+        var monitor = new MutableOptions(new RunsOptions { Lives = 0 });
         var logger = new CapturingLogger<RunsRules>();
         var rules = new RunsRules(monitor, logger);
 
-        Assert.Equal(RunsOptions.DefaultRules().TrackCount, rules.Current().TrackCount);
-        Assert.Equal(RunsOptions.DefaultRules().TrackCount, rules.Current().TrackCount);
+        Assert.Equal(3, rules.Current().Lives);
+        Assert.Equal(3, rules.Current().Lives);
         var logged = Assert.Single(logger.Entries);
         Assert.Equal((Microsoft.Extensions.Logging.LogLevel.Error, 1400), (logged.Level, logged.EventId.Id));
 
         // Corrigé, puis de nouveau faux : le problème est signalé de nouveau.
-        monitor.Value = new RunsOptions { Rounds = 2, ThresholdPercents = [40, 50] };
-        Assert.Equal(10, rules.Current().TrackCount);
-        monitor.Value = new RunsOptions { Rounds = 0 };
+        monitor.Value = new RunsOptions { Lives = 5 };
+        Assert.Equal(5, rules.Current().Lives);
+        monitor.Value = new RunsOptions { Lives = 0 };
         rules.Current();
         Assert.Equal(2, logger.Entries.Count);
     }
@@ -99,18 +87,18 @@ public class RunsOptionsTests
         var monitor = new MutableOptions(new RunsOptions { TracksPerRound = 3 });
         var rules = new RunsRules(monitor, new CapturingLogger<RunsRules>());
 
-        Assert.Equal(12, rules.Current().TrackCount);
+        Assert.Equal(3, rules.Current().TracksPerRound);
         monitor.Value = new RunsOptions { TracksPerRound = 4 };
-        Assert.Equal(16, rules.Current().TrackCount);
+        Assert.Equal(4, rules.Current().TracksPerRound);
     }
 
     [Fact]
     public async Task ContrôleDuDemarrage_RefuseDesReglagesIncoherents()
     {
-        var check = new RunsOptionsStartupCheck(new MutableOptions(new RunsOptions { Rounds = 0 }));
+        var check = new RunsOptionsStartupCheck(new MutableOptions(new RunsOptions { Lives = 0 }));
 
         var exception = await Assert.ThrowsAsync<OptionsValidationException>(() => check.StartAsync(TestContext.Current.CancellationToken));
-        Assert.Contains("Runs:Rounds", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Runs:Lives", exception.Message, StringComparison.Ordinal);
         await new RunsOptionsStartupCheck(new MutableOptions(new RunsOptions())).StartAsync(TestContext.Current.CancellationToken);
     }
 

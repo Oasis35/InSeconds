@@ -30,10 +30,9 @@ import { RunHeaderComponent } from '../../ui/run-header/run-header.component';
 import { RunThemeScreenComponent } from '../../ui/run-theme-screen/run-theme-screen.component';
 import { RunLinkScreenComponent } from '../../ui/run-link-screen/run-link-screen.component';
 import { RunPalierComponent } from '../../ui/run-palier/run-palier.component';
-import { RunDifficultyComponent } from '../../ui/run-difficulty/run-difficulty.component';
-import { RunRoundCardsComponent } from '../../ui/run-round-cards/run-round-cards.component';
 import { RunClockComponent } from '../../ui/run-clock/run-clock.component';
 import { RunPileComponent } from '../../ui/run-pile/run-pile.component';
+import { RunScoreboardComponent } from '../../ui/run-scoreboard/run-scoreboard.component';
 import { RunRevealComponent } from '../../ui/run-reveal/run-reveal.component';
 import { RunStatusScreenComponent } from '../../ui/run-status-screen/run-status-screen.component';
 import { RunWelcomeScreenComponent } from '../../ui/run-welcome-screen/run-welcome-screen.component';
@@ -55,9 +54,9 @@ import { RunShareSheetComponent, RunShareSheetData } from '../share-sheet/run-sh
 @Component({
   selector: 'app-runs-page',
   imports: [HomeLegalLineComponent, 
-    TranslatePipe, RouterLink, DecorBackgroundComponent, TrackRoundComponent, RunHeaderComponent, RunClockComponent, RunRevealComponent, RunPileComponent,
+    TranslatePipe, RouterLink, DecorBackgroundComponent, TrackRoundComponent, RunHeaderComponent, RunClockComponent, RunRevealComponent, RunPileComponent, RunScoreboardComponent,
     RunWithdrawnCardComponent, RunFinishComponent, RunDailyBandComponent, RunWelcomeScreenComponent, RunStatusScreenComponent, ResumeScreenComponent,
-    RunLinkScreenComponent, RunThemeScreenComponent, RunPseudoScreenComponent, RunComparisonScreenComponent, RunPalierComponent, RunDifficultyComponent, RunRoundCardsComponent,
+    RunLinkScreenComponent, RunThemeScreenComponent, RunPseudoScreenComponent, RunComparisonScreenComponent, RunPalierComponent,
     GroupsStripComponent, RunHitsLineComponent, BrandComponent, InstagramLinkComponent,
   ],
   providers: [RunGameStore, TrackRoundStore, RunShare, RunSounds, GroupsStore],
@@ -92,6 +91,8 @@ export class RunsPage implements OnInit {
   private readonly leaveGuard = new LeaveGuard(inject(ModalService));
   /** La manche en cours, dont la carte arrive à chaque nouveau morceau. */
   private readonly card = viewChild(TrackRoundComponent, { read: ElementRef<HTMLElement> });
+  /** Le bloc du haut : le total que les points de la réponse rejoignent. */
+  protected readonly scoreboard = viewChild(RunScoreboardComponent);
   private readonly route = inject(ActivatedRoute);
   /** Le code du lien ouvert (`/setlist/<code>`), vide sur `/setlist`. */
   private readonly code = this.route.snapshot.paramMap.get('code');
@@ -116,7 +117,7 @@ export class RunsPage implements OnInit {
     effect(() => {
       // La barre ne reste que sur l'accueil, le lien, la fin et la comparaison : jamais au milieu d'un run.
       const screen = this.store.screen();
-      chrome.setImmersive(screen === 'playing' || screen === 'theme' || screen === 'palier' || screen === 'difficulty' || screen === 'pseudo' || screen === 'resume');
+      chrome.setImmersive(screen === 'playing' || screen === 'theme' || screen === 'palier' || screen === 'pseudo' || screen === 'resume');
     });
     inject(DestroyRef).onDestroy(() => chrome.setImmersive(false));
     // Une nouvelle version du site ne recharge jamais la page en pleine manche (cf. `reloadMomentFor`).

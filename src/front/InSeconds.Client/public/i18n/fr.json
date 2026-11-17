@@ -74,11 +74,9 @@
       "already_played": "Tu as déjà joué cette playlist.",
       "challenge_not_found": "Cette playlist n'existe pas. Vérifie le lien.",
       "comparison_locked": "La comparaison s'ouvre une fois ta partie terminée.",
-      "difficulty_locked": "La difficulté de cette manche est déjà fixée.",
       "invalid_month": "Mois invalide : le format attendu est aaaa-mm.",
       "no_challenge": "Pas assez de morceaux pour une playlist, réessaie plus tard.",
       "session_not_found": "Cette partie n'existe plus.",
-      "swap_unavailable": "Le changement de morceau n'est plus possible.",
       "theme_locked": "Le thème de cette manche est déjà choisi.",
       "track_lock_not_released": "Réponds d'abord au morceau en cours.",
       "track_not_found": "Ce morceau n'existe pas dans cette playlist."
@@ -145,9 +143,6 @@
         "count": "Setlists",
         "best": "Record",
         "empty": "Aucune setlist jouée ce mois-ci.",
-        "emptyFilter": "Aucune setlist à cette difficulté ce mois-ci.",
-        "all": "Toutes",
-        "filterLabel": "Difficulté",
         "detailTitle": "Tes {{count}} morceaux",
         "back": "Retour à l'historique",
         "allTracks": "Tous",
@@ -156,7 +151,8 @@
         "listen": "Écouter {{title}}",
         "noMissed": "Aucun morceau raté.",
         "notFound": "Cette partie est introuvable.",
-        "withdrawn": "Morceau retiré"
+        "withdrawn": "Morceau retiré",
+        "rounds": "Manches : {{ count }}"
       },
       "loading": "Chargement…"
     }
@@ -1133,14 +1129,12 @@
     },
     "header": {
       "abandon": "Abandonner",
-      "round": "Manche {{ round }} / {{ rounds }}",
       "roundShort": "Manche {{ round }}",
-      "toGoBefore": "encore",
-      "points": "{{ points }} pts",
-      "toGoAfter": "pour passer",
-      "reached": "objectif atteint",
+      "roundOf": "Manche {{ round }}/{{ max }}",
       "soundsOff": "Couper les sons",
-      "soundsOn": "Remettre les sons"
+      "soundsOn": "Remettre les sons",
+      "lives": "Vies : {{ left }} sur {{ total }}",
+      "listen": "Écoute {{ seconds }}"
     },
     "answer": {
       "next": "Morceau suivant",
@@ -1149,8 +1143,19 @@
     "clock": {
       "label": "Temps pour répondre : {{ time }}"
     },
+    "skip": {
+      "label": "Passer (une vie)",
+      "confirm": "Passer ce morceau ? Tu perdras une vie"
+    },
+    "reveal": {
+      "lifeLost": "Une vie en moins"
+    },
+    "scoreboard": {
+      "score": "Score",
+      "dots": "Les morceaux de la manche",
+      "listen": "Écoute (s)"
+    },
     "pile": {
-      "total": "Total du run",
       "round": "manche {{ round }}",
       "withdrawn": "Morceau retiré"
     },
@@ -1176,9 +1181,7 @@
       "title": "Setlist",
       "tagline": "Vise le disque d’or.",
       "record": "Ton record : {{ score }} pts",
-      "launch": "Lancer une partie",
-      "shelf": "Tes disques",
-      "shelfEntry": "{{ disc }} : {{ count }}"
+      "launch": "Lancer une partie"
     },
     "status": {
       "no_challenge": {
@@ -1209,8 +1212,6 @@
     },
     "finished": {
       "found": "{{ found }} / {{ total }} morceaux trouvés",
-      "won": "{{ disc }} !",
-      "disc": "{{ disc }}",
       "recordShort": "Record",
       "newRecord": "Nouveau record",
       "record": "Record : {{ score }}",
@@ -1228,9 +1229,10 @@
       "duelBehind": "{{ name }} gagne de {{ points }} pts",
       "duelTied": "Égalité avec {{ name }}",
       "rematch": "Revanche",
-      "shortfallBefore": "Il t’a manqué",
-      "shortfallPoints": "{{ points }} pts",
-      "shortfallAfter": "pour le {{ disc }}"
+      "complete": "Série complète",
+      "bonusLives": "Vies restantes ({{ count }}) : +{{ points }} pts",
+      "bonusComplete": "Série complète : +{{ points }} pts",
+      "rounds": "{{ count }} manches terminées"
     },
     "pseudo": {
       "title": "Ton pseudo",
@@ -1257,13 +1259,13 @@
     "link": {
       "guest": "Invité",
       "title": "{{ pseudo }} te lance une playlist",
-      "tracks": "{{ tracks }} morceaux, les mêmes pour tous ses joueurs : comparez vos scores à la fin",
-      "rounds": "{{ rounds }} manches, de plus en plus dures",
+      "rounds": "Des manches de {{ tracks }} morceaux, de moins en moins connus, sans fin",
       "theme": "Manche {{ round }} : thème {{ name }}",
       "listen": "{{ seconds }} pour trouver l’artiste et le titre",
       "listenAndAnswer": "{{ seconds }} d’écoute, {{ answer }} pour trouver l’artiste et le titre",
-      "goal": "Passe les {{ rounds }} manches et deviens disque d’or",
-      "play": "Jouer"
+      "goal": "Tiens le plus longtemps possible, puis compare ton score à celui de tes amis",
+      "play": "Jouer",
+      "lives": "{{ lives }} vies : un morceau raté, passé ou arrivé au bout du chrono en coûte une"
     },
     "comparison": {
       "eyebrow": "Playlist de {{ pseudo }}",
@@ -1274,7 +1276,8 @@
       "total": "Total",
       "you": "Toi",
       "editPseudo": "Changer mon pseudo",
-      "share": "Partager la playlist"
+      "share": "Partager la playlist",
+      "roundsPassed": "{{ count }} manches"
     },
     "discShort": {
       "scratched": "Rayé",
@@ -1298,62 +1301,19 @@
     },
     "withdrawn": {
       "title": "Morceau retiré de la manche",
-      "body": "Impossible de récupérer l’extrait. Le morceau a été retiré de la playlist et l’objectif abaissé à {{ objective }} pts."
+      "body": "Impossible de récupérer l’extrait. Le morceau est retiré : il ne compte pas, et tu ne perds pas de vie."
     },
     "share": {
       "text": "Je te lance une playlist sur InSeconds. Tu fais mieux que moi ?",
-      "header": "{{ score }} pts · {{ disc }} · InSeconds Setlist",
+      "header": "{{ score }} pts · {{ rounds }} manches · InSeconds Setlist",
       "round": "Manche {{ round }}",
       "duelWon": "J’ai battu {{ name }} de {{ points }} pts.",
       "beatMe": "Fais mieux sur la même playlist :",
-      "groupInvite": "Rejoins « {{ name }} » et fais mieux sur ma setlist"
-    },
-    "palier": {
-      "theme": "Manche {{round}} · thème",
-      "round": "Manche {{round}}",
-      "shelf": "Les disques de la playlist",
-      "points": "pts",
-      "scoreLabel": "{{score}} points pour un objectif de {{objective}}",
-      "nextRound": "Manche {{round}}",
-      "pointsFor": "pts pour",
-      "next": "Suite",
-      "earned": "Carte gagnée"
-    },
-    "cards": {
-      "three_choices": {
-        "name": "QCM"
-      },
-      "hint": {
-        "name": "Indice"
-      },
-      "extend": {
-        "name": "Prolongation"
-      }
-    },
-    "difficulty": {
-      "round": "Manche {{round}}",
-      "title": "Difficulté ?",
-      "yourScore": "Ton score",
-      "perTrack": "{{points}} pts max\npar morceau",
-      "listen": "écoute {{seconds}}",
-      "easy": "Facile",
-      "safe": "Normal",
-      "risky": "Mélomane",
-      "columnLabel": "{{name}} : objectif {{objective}} points, jusqu'à {{perTrack}} points par morceau"
-    },
-    "roundCards": {
-      "hint": {
-        "year": "Année",
-        "artist": "Initiales de l’artiste",
-        "title": "Initiales du titre",
-        "genre": "Genre"
-      },
-      "extend": "Écoute de {{seconds}}",
-      "choicesHint": "Une seule est juste",
-      "swap": "Changer de morceau",
-      "refused": "Ce morceau n'a pas pu être changé."
+      "groupInvite": "Rejoins « {{ name }} » et fais mieux sur ma setlist",
+      "listen": "{{ seconds }} s"
     },
     "ghost": {
+      "overtook": "Tu viens de dépasser {{ name }} !",
       "ahead": "{{ points }} pts d’avance",
       "behind": "{{ points }} pts de retard",
       "tied": "À égalité",
@@ -1371,16 +1331,16 @@
       "names": {
         "first_setlist": "Première setlist terminée",
         "first_record": "Premier record battu",
-        "first_card": "Première carte gagnée",
-        "first_risky_round": "Première manche en Mélomane",
         "first_group": "Premier groupe rejoint",
         "ten_setlists": "10 setlists jouées",
         "fifty_setlists": "50 setlists jouées",
         "perfect_round": "Manche parfaite",
+        "ear_gold": "Oreille d’or",
+        "no_scratch": "Sans une égratignure",
+        "marathon": "Marathon",
+        "mystery_solved": "Mystère résolu",
+        "late_ghost": "Fantôme battu en retard",
         "ten_in_a_row": "10 bonnes réponses d’affilée",
-        "boss_beaten": "Battre le boss",
-        "setlist_won": "Setlist gagnée",
-        "gold_in_risky": "Disque d’or en Mélomane",
         "friend_played": "Un ami a joué ta setlist",
         "duel_won": "Duel gagné",
         "five_duels": "5 duels gagnés",
@@ -1432,6 +1392,17 @@
       "gridBody": "Seulement le résultat, sans lien.",
       "copied": "Copié !",
       "failed": "Copie impossible"
+    },
+    "roundEnd": {
+      "worth": "Un morceau trouvé vaut {{ from }} → {{ to }} pts",
+      "nextTheme": "Choisir le thème",
+      "title": "Manche {{ round }} terminée",
+      "shorter": "Aucune vie perdue : l’écoute raccourcit.",
+      "same": "L’écoute reste la même.",
+      "longer": "Une vie perdue : l’écoute s’allonge.",
+      "nextListen": "Manche {{ round }} : écoute de {{ seconds }}",
+      "lifeRegained": "Vie regagnée",
+      "next": "Manche suivante"
     }
   },
   "social": {

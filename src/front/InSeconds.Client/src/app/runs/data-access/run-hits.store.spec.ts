@@ -7,7 +7,7 @@ import { FakeRunsApi, provideFakeRunsApi } from './testing/fake-runs-api';
 
 const HITS: RunHit[] = [
   { key: 'first_setlist', earned: true, progress: null, target: null },
-  { key: 'first_risky_round', earned: false, progress: null, target: null },
+  { key: 'first_record', earned: false, progress: null, target: null },
   { key: 'ten_setlists', earned: false, progress: 7, target: 10 },
 ];
 
@@ -33,7 +33,7 @@ describe('RunHitsStore', () => {
     const store = create();
     await store.load(false);
 
-    expect(store.hits().map(hit => hit.key)).toEqual(['first_setlist', 'first_risky_round', 'first_group', 'ten_setlists']);
+    expect(store.hits().map(hit => hit.key)).toEqual(['first_setlist', 'first_record', 'first_group', 'ten_setlists']);
     expect([store.earnedCount(), store.total()]).toEqual([2, 4]);
   });
 

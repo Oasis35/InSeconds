@@ -5,7 +5,7 @@ namespace InSeconds.Api.Modules.Runs.Application;
 
 /// <summary>
 /// Le fantôme de l'ami qui a lancé la playlist, pour la partie en cours d'un autre joueur (<see cref="RunGhost"/>) : les points de l'auteur s'il
-/// l'a finie (gagnée ou perdue) et son pseudo. Il suit le joueur jusqu'à l'écran de fin, où il fait le duel (« Tu bats Léa de 126 pts »), mais
+/// l'a finie (vies épuisées) et son pseudo. Il suit le joueur jusqu'à l'écran de fin, où il fait le duel (« Tu bats Léa de 126 pts »), mais
 /// rien avant son premier morceau joué.
 /// </summary>
 public sealed class RunGhosts(IRunsQueries queries, IPlayerDirectory players)
@@ -23,7 +23,7 @@ public sealed class RunGhosts(IRunsQueries queries, IPlayerDirectory players)
             return null;
 
         var stopped = RunGhost.StoppedAt(points, session.Answers.Max(a => (int)a.Position));
-        var stoppedRound = stopped is { } position ? challenge.Tracks.FirstOrDefault(t => t.Position == position)?.Round : null;
+        var stoppedRound = stopped is { } position ? (int?)challenge.Rules.RoundOf(position) : null;
         var pseudos = await players.GetDisplayNamesAsync([author], ct);
         return new RunGhostResponse(pseudos.GetValueOrDefault(author), RunGhost.TotalOver(points, played), stoppedRound);
     }

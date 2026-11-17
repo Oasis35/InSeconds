@@ -15,7 +15,7 @@ import { TranslatePipe } from '@ngx-translate/core';
   template: `
     @if (pending()) {
       <a routerLink="/daily" data-testid="daily-left" class="flex items-center justify-between gap-3 px-4 py-4 touch-manipulation"
-        style="border:2px solid var(--color-accent-2);background:rgb(var(--rgb-accent-2) / 0.10);border-radius:var(--radius-card)">
+        style="border:1px solid var(--border-medium);background:var(--bg-surface);border-radius:var(--radius-card)">
         <span class="min-w-0">
           <span class="block text-base font-extrabold" style="color:var(--text-hi)">{{ 'runs.v4.band.title' | translate }}</span>
           <span class="block text-sm" style="color:var(--color-accent-2)" data-testid="daily-left-time">
@@ -26,7 +26,7 @@ import { TranslatePipe } from '@ngx-translate/core';
       </a>
     } @else if (pending() === false) {
       <p class="flex items-center justify-between gap-3 px-4 py-3 text-sm" data-testid="daily-done-band"
-        style="border:1px solid var(--border-subtle);border-radius:var(--radius-card);color:var(--text-light)">
+        style="border:1px solid var(--border-medium);background:var(--bg-surface);border-radius:var(--radius-card);color:var(--text-light)">
         <span class="min-w-0">{{ 'runs.v4.band.done' | translate }}</span>
         <span class="tabular-nums" style="font-family:var(--font-clock);font-weight:600;font-size:1.05rem;color:var(--color-accent-2)">{{ clock() }}</span>
       </p>

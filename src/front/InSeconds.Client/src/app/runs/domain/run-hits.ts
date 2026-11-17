@@ -10,7 +10,7 @@ export interface RunHit {
 /** Le Hit des groupes : le seul que le mode ne connaît pas, il vient des groupes du joueur. */
 export const FIRST_GROUP_HIT = 'first_group';
 /** Il se range après ce Hit, avec les débuts. */
-const FIRST_GROUP_AFTER = 'first_risky_round';
+const FIRST_GROUP_AFTER = 'first_record';
 
 /** Les Hits du mode avec celui des groupes à sa place. */
 export function withGroupHit(hits: readonly RunHit[], hasGroup: boolean): RunHit[] {

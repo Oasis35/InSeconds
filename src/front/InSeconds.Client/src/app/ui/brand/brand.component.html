@@ -3,11 +3,11 @@
 <div class="flex items-center justify-between gap-3 min-h-11">
   @if (homeLink()) {
     <a routerLink="/" class="brand-title font-extrabold uppercase whitespace-nowrap" style="font-family:var(--font-display);color:var(--text-hi)">
-      IN<span style="color:var(--text-accent)">//</span>SECONDS
+      IN<span class="brand-slash">//</span>SECONDS
     </a>
   } @else {
     <h1 class="brand-title font-extrabold uppercase whitespace-nowrap" style="font-family:var(--font-display);color:var(--text-hi)">
-      IN<span style="color:var(--text-accent)">//</span>SECONDS
+      IN<span class="brand-slash">//</span>SECONDS
     </h1>
   }
   <div class="flex items-center justify-end gap-2" data-testid="brand-right"><ng-content select="[brandRight]" /></div>

@@ -93,7 +93,7 @@ describe('RunsHomeEntryComponent', () => {
     const today = new Date().toISOString().slice(0, 10);
     api.historyResult = {
       month: today.slice(0, 7), previousMonth: null, nextMonth: null, playedCount: 1, averageScore: 2980, bestScore: 2980,
-      runs: [{ sessionId: 9, date: today, disc: { key: 'runs.discs.gold', stars: 4 }, score: 2980, difficulty: 'safe' }],
+      runs: [{ sessionId: 9, date: today, challengeCode: 'ABC234', status: 'lost', roundsPassed: 3, score: 2980 }],
     };
     const element = await render(player(false), async () => true, false);
     const card = element.querySelector('[data-testid="run-home-card"]');

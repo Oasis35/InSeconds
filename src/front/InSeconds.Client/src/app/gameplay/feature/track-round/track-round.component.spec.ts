@@ -29,7 +29,7 @@ const MUSE: AnswerSuggestion = { artist: 'Muse', title: 'Uprising' };
 @Component({
   imports: [TrackRoundComponent],
   template: `
-    <app-track-round [result]="result()" [hintPending]="hintPending()" [layout]="layout()" [alert]="alert()" [timeUp]="timeUp()"
+    <app-track-round [result]="result()" [hintPending]="hintPending()" [layout]="layout()" [skipLabelKey]="skipLabelKey()" [alert]="alert()" [timeUp]="timeUp()"
       [choices]="choices()" [locked]="locked()" (answered)="answered.push($event)" (hintRequested)="hints.push($event)">
       <span roundCorner>0:45</span>
       <p roundAids>Cartes du mode</p>
@@ -43,6 +43,7 @@ class Host {
   readonly result = signal<RoundResult | null>(null);
   readonly hintPending = signal(false);
   readonly layout = signal<'stacked' | 'inline'>('stacked');
+  readonly skipLabelKey = signal('gameplay.round.skip');
   readonly alert = signal(false);
   readonly timeUp = signal(false);
   readonly choices = signal<readonly { artist: string; title: string }[] | null>(null);
@@ -168,6 +169,15 @@ describe('TrackRoundComponent', () => {
       fixture.componentInstance.locked.set(false);
       refresh();
       expect(fixture.componentInstance.answered).toHaveLength(1);
+    });
+
+    it('le mode peut remplacer le libellé de « Passer » (Run : une vie) ; le Daily garde le sien', () => {
+      start();
+      expect(element.querySelector('[data-testid="round-skip"]')?.textContent?.trim()).toBe('gameplay.round.skip');
+
+      fixture.componentInstance.skipLabelKey.set('runs.skip.label');
+      refresh();
+      expect(element.querySelector('[data-testid="round-skip"]')?.textContent?.trim()).toBe('runs.skip.label');
     });
 
     it.each(['stacked', 'inline'] as const)('« Passer » est le même lien discret sous « Valider » (disposition %s)', (layout) => {

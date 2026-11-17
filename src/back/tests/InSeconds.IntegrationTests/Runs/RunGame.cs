@@ -7,8 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace InSeconds.IntegrationTests.Runs;
 
 /// <summary>
-/// Une partie de run jouée par HTTP, comme le front : un pool de 20 morceaux classés (le 1 est le plus connu, la manche k tire donc dans les morceaux
-/// (k-1)×5+1 à k×5), des joueurs avec ou sans accès. Les morceaux s'appellent « Artiste N » et « Titre N » (N = identifiant), leur identifiant Deezer
+/// Une partie de run jouée par HTTP, comme le front : un pool de morceaux classés (le 1 est le plus connu : les manches, tirées à la volée, descendent le classement), des joueurs avec ou sans accès. Les morceaux s'appellent « Artiste N » et « Titre N » (N = identifiant), leur identifiant Deezer
 /// est 1000 + N.
 /// </summary>
 internal sealed class RunGame : IAsyncDisposable
@@ -17,12 +16,39 @@ internal sealed class RunGame : IAsyncDisposable
 
     public GameApi Game { get; }
 
+    /// <summary>Les réglages qui redonnent les règles d'avant l'équilibrage de la Série.</summary>
+    internal static readonly IReadOnlyDictionary<string, string> LegacyRules = new Dictionary<string, string>
+    {
+        ["Runs:TracksPerRound"] = "5",
+        ["Runs:RegainLife"] = "false",
+        ["Runs:ShortenOnNoLifeLost"] = "false",
+        ["Runs:MaxRounds"] = "0",
+        ["Runs:LifeBonus"] = "0",
+        ["Runs:CompleteBonus"] = "0",
+    };
+
+    /// <summary>Les règles d'aujourd'hui : manches de 3, une vie regagnée, l'écoute raccourcit sans vie perdue, 8 manches, bonus.</summary>
+    internal static readonly IReadOnlyDictionary<string, string> SeriesRules = new Dictionary<string, string>
+    {
+        ["Runs:TracksPerRound"] = "3",
+        ["Runs:RegainLife"] = "true",
+        ["Runs:ShortenOnNoLifeLost"] = "true",
+        ["Runs:MaxRounds"] = "8",
+        ["Runs:LifeBonus"] = "250",
+        ["Runs:CompleteBonus"] = "500",
+    };
+
     public ApiFactory Api => Game.Api;
 
     public static async Task<RunGame> CreateAsync(
-        string connectionString, int tracks = 20, IReadOnlyDictionary<string, string>? settings = null, Action<IServiceCollection>? configureServices = null)
+        string connectionString, int tracks = 40, IReadOnlyDictionary<string, string>? settings = null, Action<IServiceCollection>? configureServices = null)
     {
-        var game = new RunGame(await GameApi.CreateAsync(connectionString, tracks: 0, settings, configureServices));
+        // Les tests existants jouent les règles d'avant l'équilibrage (manches de 5, ni vie regagnée, ni plafond, ni bonus) ; ceux de la Série d'aujourd'hui
+        // les remplacent par les réglages qu'ils passent (RunSeriesRulesTests).
+        var merged = new Dictionary<string, string>(LegacyRules);
+        foreach (var (key, value) in settings ?? new Dictionary<string, string>())
+            merged[key] = value;
+        var game = new RunGame(await GameApi.CreateAsync(connectionString, tracks: 0, merged, configureServices));
         if (tracks > 0)
         {
             await game.Game.App.AddPlayableTracksAsync(tracks);
@@ -108,18 +134,12 @@ internal sealed class RunGamer(RunGame game, Guid id, HttpClient client)
 
     public async Task<RunPlayResponse> PreviewAsync(int sessionId) => await ReadAsync<RunPlayResponse>(await PreviewRawAsync(sessionId));
 
-    public Task<HttpResponseMessage> ChooseRawAsync(int sessionId, int round, string difficulty) =>
-        Client.PostAsJsonAsync($"/api/runs/sessions/{sessionId}/difficulty", new ChooseRunDifficulty(round, difficulty), Ct);
+    public Task<HttpResponseMessage> ThemeRawAsync(int sessionId, int round, int? themeId) =>
+        Client.PostAsJsonAsync($"/api/runs/sessions/{sessionId}/theme", new ChooseRunTheme(round, themeId), Ct);
 
-    /// <summary>Choisit la difficulté de la manche en cours (avant son premier son).</summary>
-    public async Task<RunPlayResponse> ChooseAsync(int sessionId, int round, string difficulty) =>
-        await ReadAsync<RunPlayResponse>(await ChooseRawAsync(sessionId, round, difficulty));
-
-    public Task<HttpResponseMessage> SwapRawAsync(int sessionId, int position) =>
-        Client.PostAsJsonAsync($"/api/runs/sessions/{sessionId}/swap", new SwapRunTrack(position), Ct);
-
-    /// <summary>Change le morceau en cours (« Échange ») ; rend la partie et le nouveau morceau.</summary>
-    public async Task<RunPlayResponse> SwapAsync(int sessionId, int position) => await ReadAsync<RunPlayResponse>(await SwapRawAsync(sessionId, position));
+    /// <summary>Choisit le thème de la manche à venir (avant son premier son) ; rend la partie et le premier morceau de la manche.</summary>
+    public async Task<RunPlayResponse> ThemeAsync(int sessionId, int round, int? themeId) =>
+        await ReadAsync<RunPlayResponse>(await ThemeRawAsync(sessionId, round, themeId));
 
     public Task<HttpResponseMessage> AbandonRawAsync(int sessionId) => Client.PostAsync($"/api/runs/sessions/{sessionId}/abandon", null, Ct);
 

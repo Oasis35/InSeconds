@@ -1,18 +1,19 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, inject, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-button.component';
-import { RunDuel, RunFinish, discStars, finishSquares, levelDeltaText } from '../../domain/run';
+import { RunDuel, RunFinish, finishSquares, levelDeltaText } from '../../domain/run';
 import { finishSequence } from '../../../ui/motion/motion';
 import { RunDiscComponent } from '../run-disc/run-disc.component';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { PointsPipe } from '../../../ui/format/points.pipe';
+import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 
 /**
- * La fin du run, victoire comme défaite : la carte du disque (le disque, son nom, « Nouveau record » ou le record, le score final, « 16 / 20
- * morceaux trouvés » et un carré par morceau groupé par manche), une case par manche (« score / objectif », l'objectif manqué en ambre, ✕ pour une
- * manche non jouée), puis « Rejouer » (« Revanche » en duel) en action principale, avec ce qui a manqué pour le disque suivant (« Il t'a manqué 12 pts pour le Disque de
- * bronze »), et le bloc « Fais mieux » avec « Partager mon score » (la grille et le lien de la même playlist). Un joueur sans accès (venu par un lien)
+ * La fin d'une série (plus de vie) : les manches terminées, « Nouveau record » ou le record, le score final, « 16 / 20
+ * morceaux trouvés » et un carré par morceau groupé par manche, une case par manche (son score et son palier d'écoute, ✕ pour une
+ * manche non jouée), puis « Rejouer » (« Revanche » en duel) en action principale, et le bloc « Fais mieux » avec « Partager mon score » (la grille et le lien de la même playlist). Un joueur sans accès (venu par un lien)
  * ne peut pas lancer de playlist : le lien vers le jeu du jour remplace « Rejouer », en bas. Quand l'ami qui a lancé la playlist l'a finie, le duel
  * ouvre l'écran (« Tu bats Léa de 126 pts », « Léa gagne de 40 pts »), sur un ton neutre, jamais « perdu ». La fin se joue en 2,2 s au plus, un
  * toucher la saute, et rien n'attend la fin : les boutons sont actifs dès le début (`finishSequence`). Dans la nouvelle interface (`showLevel`), le haut tient dans un bloc compact (le
@@ -21,10 +22,20 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
  */
 @Component({
   selector: 'app-run-finish',
-  imports: [PointsPipe, TranslatePipe, RouterLink, ButtonComponent, RunDiscComponent, ShareButtonComponent],
+  imports: [NgTemplateOutlet, PointsPipe, SecondsPipe, TranslatePipe, RouterLink, ButtonComponent, RunDiscComponent, ShareButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex-1 flex flex-col', '(click)': 'skipSequence()' },
   template: `
+    <ng-template #bonus>
+      @if (completed()) {
+        <div class="flex flex-col gap-0.5 text-sm tabular-nums" data-testid="run-bonus" style="color:var(--color-accent-3)">
+          @if (finish().lifeBonus > 0) {
+            <span data-testid="run-bonus-lives">{{ 'runs.finished.bonusLives' | translate: { count: finish().livesLeft, points: format(finish().lifeBonus) } }}</span>
+          }
+          <span data-testid="run-bonus-complete">{{ 'runs.finished.bonusComplete' | translate: { points: format(finish().completeBonus) } }}</span>
+        </div>
+      }
+    </ng-template>
     <div class="screen-enter flex-1 flex flex-col gap-4 pt-2" data-testid="run-finished" [attr.data-status]="finish().status">
       @if (duel(); as duel) {
         <!-- Le duel : la première ligne quand un ami a lancé la playlist. -->
@@ -42,18 +53,18 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
       @if (level(); as level) {
         <!-- Nouvelle interface : un seul bloc compact (le disque, le score, le badge de record, la jauge vers le disque suivant), les groupes, puis les deux actions. -->
         <section class="rounded-(--radius-card) px-4 py-4 flex flex-col gap-3" data-testid="run-level" [attr.data-disc]="level.disc.key"
-          style="background:rgb(var(--rgb-surface) / 0.55);border:1px solid var(--border-subtle)">
+          style="background:var(--bg-surface);border:1px solid var(--border-subtle)">
           <div class="flex items-center gap-4">
-            <app-run-disc class="shrink-0" data-motion="finish-disc" [disc]="finish().disc.key" [size]="72" [shine]="false" />
+            <app-run-disc class="shrink-0" data-motion="finish-disc" [disc]="level.disc.key" [size]="72" [shine]="false" />
             <div class="min-w-0 flex-1">
               <p class="text-sm" style="color:var(--text-muted)">
-                <span data-testid="run-disc" style="color:var(--text-light)">{{ (finish().status === 'won' ? 'runs.finished.won' : 'runs.finished.disc') | translate: { disc: (finish().disc.key | translate) } }}</span>
-                @if (difficultyKey(); as key) { · {{ key | translate }} }
+                <span data-testid="run-disc" style="color:var(--text-light)">{{ roundsKey() | translate: { count: finish().roundsPassed } }}</span>
               </p>
               <p class="tabular-nums" data-testid="run-final-score" data-motion="finish-score" [attr.data-value]="finish().totalScore"
                 style="font-family:var(--font-score);font-size:2.6rem;font-weight:900;line-height:1;letter-spacing:-0.02em;color:var(--text-hi)">
                 {{ format(finish().totalScore) }}
               </p>
+              <ng-container [ngTemplateOutlet]="bonus" />
               @if (finish().record; as record) {
                 @if (!record.isNew) {
                   <p class="text-sm" data-testid="run-record" style="color:var(--text-muted)">{{ 'runs.finished.record' | translate: { score: format(record.bestScore) } }}</p>
@@ -102,19 +113,12 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
         <div class="mt-auto flex flex-col gap-4">
           @if (canPlayAgain()) {
             <div class="flex flex-col gap-2" data-motion="finish-late">
-              @if (finish().shortfall; as shortfall) {
-                <p class="text-sm text-center" style="color:var(--text-light)" data-testid="run-shortfall">
-                  {{ 'runs.finished.shortfallBefore' | translate }}
-                  <span class="font-bold tabular-nums" style="color:var(--color-accent-3)">{{ 'runs.finished.shortfallPoints' | translate: { points: format(shortfall.points) } }}</span>
-                  {{ 'runs.finished.shortfallAfter' | translate: { disc: (shortfall.disc.key | translate) + stars(shortfall.disc) } }}
-                </p>
-              }
               <button appButton type="button" size="lg" [block]="true" (click)="playAgain.emit()" data-testid="run-play-again">
                 <span data-testid="run-play-again-label">{{ (duel() ? 'runs.finished.rematch' : 'runs.finished.playAgain') | translate }}</span>
               </button>
             </div>
           }
-          <app-share-button data-testid="run-share" [glow]="false" [copied]="shareCopied()" [failed]="shareFailed()" labelKey="runs.level.challenge"
+          <app-share-button data-testid="run-share" [copied]="shareCopied()" [failed]="shareFailed()" labelKey="runs.level.challenge"
             copiedKey="runs.finished.shareCopied" failedKey="runs.finished.shareFailed" [variant]="canPlayAgain() ? 'accent' : 'primary'" (share)="share.emit()" />
           <button type="button" (click)="compare.emit()" data-testid="run-compare" class="w-full min-h-11 text-sm underline touch-manipulation" style="color:var(--text-muted)">
             {{ 'runs.finished.compare' | translate }}
@@ -124,10 +128,9 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
         </div>
       } @else {
         <section class="flex items-center gap-4">
-          <app-run-disc class="shrink-0" data-motion="finish-disc" [disc]="finish().disc.key" [size]="88" />
           <div class="min-w-0 flex-1 space-y-1.5">
             <h2 class="text-xl font-bold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="run-disc">
-              {{ (finish().status === 'won' ? 'runs.finished.won' : 'runs.finished.disc') | translate: { disc: (finish().disc.key | translate) } }}
+              {{ roundsKey() | translate: { count: finish().roundsPassed } }}
             </h2>
             @if (finish().record; as record) {
               <span class="inline-block px-2 py-0.5 rounded-md text-xs font-semibold" data-testid="run-record" [attr.data-motion]="record.isNew ? 'finish-record' : null"
@@ -144,6 +147,7 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
               style="font-family:var(--font-score);font-size:3.1rem;font-weight:900;line-height:0.95;letter-spacing:-0.02em;color:var(--text-hi)">
               {{ format(finish().totalScore) }}
             </p>
+            <ng-container [ngTemplateOutlet]="bonus" />
             <p class="text-sm pt-1" style="color:var(--text-light)" data-testid="run-found">
               {{ 'runs.finished.found' | translate: { found: finish().foundCount, total: finish().trackCount } }}
             </p>
@@ -163,14 +167,14 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
 
         <div class="grid grid-cols-4 gap-1.5" data-testid="run-round-scores">
           @for (round of finish().rounds; track round.round) {
-            <div class="rounded-(--radius-button) px-0.5 py-2 text-center" style="background:rgb(var(--rgb-surface) / 0.55);border:1px solid var(--border-subtle)"
+            <div class="rounded-(--radius-button) px-0.5 py-2 text-center" style="background:var(--bg-surface);border:1px solid var(--border-subtle)"
               data-motion="finish-round" [attr.data-round]="round.round">
               <p class="text-[0.6875rem] whitespace-nowrap" style="color:var(--text-muted)">{{ 'runs.finished.round' | translate: { round: round.round } }}</p>
               @if (round.score !== null) {
-                <!-- Sur un petit écran (320 px), l'objectif passe sous le score. -->
+                <!-- Sur un petit écran (320 px), le palier passe sous le score. -->
                 <p class="flex flex-wrap justify-center gap-x-1 text-sm tabular-nums">
                   <span class="font-extrabold" style="font-family:var(--font-display);color:var(--text-hi)">{{ round.score | appPoints }}</span>
-                  <span class="text-xs whitespace-nowrap self-center" [style.color]="round.passed ? 'var(--text-faint)' : 'var(--color-warn)'">/ {{ round.objective }}</span>
+                  <span class="text-xs whitespace-nowrap self-center" style="color:var(--color-accent-2)">{{ round.listenSeconds | appSeconds }}</span>
                 </p>
               } @else {
                 <p class="text-sm font-bold" style="color:var(--text-faint)" [attr.aria-label]="'runs.finished.notPlayed' | translate">✕</p>
@@ -181,14 +185,6 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
 
         @if (canPlayAgain()) {
           <div class="flex flex-col gap-2">
-            @if (finish().shortfall; as shortfall) {
-              <!-- Ce qui a manqué : le chiffre à la couleur du joueur, c'est à lui de le rattraper. -->
-              <p class="text-sm text-center" style="color:var(--text-light)" data-testid="run-shortfall" data-motion="finish-late">
-                {{ 'runs.finished.shortfallBefore' | translate }}
-                <span class="font-bold tabular-nums" style="color:var(--color-accent-3)">{{ 'runs.finished.shortfallPoints' | translate: { points: format(shortfall.points) } }}</span>
-                {{ 'runs.finished.shortfallAfter' | translate: { disc: (shortfall.disc.key | translate) + stars(shortfall.disc) } }}
-              </p>
-            }
             <button appButton type="button" size="lg" [block]="true" (click)="playAgain.emit()" data-testid="run-play-again">
               {{ (duel() ? 'runs.finished.rematch' : 'runs.finished.playAgain') | translate }}
             </button>
@@ -237,14 +233,10 @@ export class RunFinishComponent {
   protected readonly level = computed(() => (this.showLevel() ? this.finish().level : null));
   /** « +38 » : ce que la partie a changé au niveau (rien sans changement). */
   protected readonly delta = computed(() => levelDeltaText(this.level()?.delta ?? null, value => this.format(value)));
-  /** La difficulté de la dernière manche jouée (« Mélomane »), à côté du disque ; `null` sans manche jouée. */
-  protected readonly difficultyKey = computed(() => {
-    const played = this.finish().rounds.filter(round => round.difficulty !== null);
-    const last = played.at(-1);
-    return last ? `runs.difficulty.${last.difficulty}` : null;
-  });
+  /** Une Série complète : les 8 manches jouées, avec ses bonus. */
+  protected readonly completed = computed(() => this.finish().status === 'completed');
+  protected readonly roundsKey = computed(() => (this.completed() ? 'runs.finished.complete' : 'runs.finished.rounds'));
   protected readonly squares = computed(() => finishSquares(this.finish()));
-  protected readonly stars = discStars;
   private readonly numbers = computed(() => new Intl.NumberFormat(this.lang()));
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private skip: (() => void) | null = null;

@@ -24,6 +24,8 @@ describe('SetlistBottomBarComponent', () => {
     const { el } = await render('/daily', {});
     expect(el.querySelector('[data-testid="bottom-bar"]')).not.toBeNull();
     expect(el.querySelector('[data-testid="tab-daily"]')?.getAttribute('aria-current')).toBe('page');
+    expect(el.querySelector('[data-testid="tab-daily"]')?.classList).toContain('bar-tab--active');
+    expect(el.querySelector('[data-testid="tab-history"]')?.classList).not.toContain('bar-tab--active');
     expect(document.documentElement.classList.contains('has-bottom-bar')).toBe(true);
   });
 

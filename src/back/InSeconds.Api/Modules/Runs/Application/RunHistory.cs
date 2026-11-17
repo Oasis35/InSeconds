@@ -10,11 +10,10 @@ using Wolverine.Http;
 
 namespace InSeconds.Api.Modules.Runs.Application;
 
-/// <summary>Une partie finie du joueur (gagnée ou perdue) : de quoi remplir une ligne de l'historique, jamais un morceau.</summary>
+/// <summary>Une partie finie du joueur (vies épuisées) : de quoi remplir une ligne de l'historique, jamais un morceau.</summary>
 /// <param name="EndedOn">Le jour (UTC) où elle s'est terminée.</param>
-/// <param name="Difficulty">La plus haute difficulté choisie sur ses manches (« Sûre » quand elle n'a rien eu à choisir).</param>
 public sealed record RunHistoryEntry(
-    int SessionId, string ChallengeCode, RunSessionStatus Status, int RoundsPassed, int TotalScore, DateOnly EndedOn, RunDifficulty Difficulty);
+    int SessionId, string ChallengeCode, RunSessionStatus Status, int RoundsPassed, int TotalScore, DateOnly EndedOn);
 
 /// <summary>Le résumé de toutes les parties finies du joueur : leur nombre, leur moyenne et la meilleure.</summary>
 public sealed record RunHistorySummary(int Count, int? AverageScore, int? BestScore);
@@ -24,7 +23,7 @@ public interface IRunHistoryQueries
 {
     Task<RunHistorySummary> GetSummaryAsync(Guid playerId, CancellationToken ct);
 
-    /// <summary>Les jours où le joueur a fini une partie (gagnée ou perdue), du plus récent au plus ancien.</summary>
+    /// <summary>Les jours où le joueur a fini une partie (vies épuisées), du plus récent au plus ancien.</summary>
     Task<IReadOnlyList<DateOnly>> ListEndedDaysAsync(Guid playerId, CancellationToken ct);
 
     /// <summary>Les parties finies entre ces deux instants (le second exclu), la plus récente d'abord.</summary>
@@ -34,10 +33,10 @@ public interface IRunHistoryQueries
 /// <summary>Une ligne de l'historique : une setlist jouée.</summary>
 /// <param name="SessionId">Sa partie : le détail des morceaux se lit par <c>GET /api/runs/sessions/{id}</c>.</param>
 /// <param name="Date">Le jour où elle s'est terminée.</param>
-/// <param name="Status"><c>won</c> ou <c>lost</c>.</param>
-/// <param name="Difficulty"><c>easy</c>, <c>safe</c> ou <c>risky</c> : la plus haute difficulté choisie sur ses manches.</param>
+/// <param name="Status"><c>lost</c> : les vies sont épuisées (une Série abandonnée n'y figure pas).</param>
+/// <param name="RoundsPassed">Les manches terminées.</param>
 public sealed record RunHistoryRunResponse(
-    int SessionId, string ChallengeCode, DateOnly Date, string Status, RunDiscResponse Disc, int RoundsPassed, int Score, string Difficulty);
+    int SessionId, string ChallengeCode, DateOnly Date, string Status, int RoundsPassed, int Score);
 
 /// <summary>L'historique du joueur sur le mode Run : le résumé de tout, puis un mois à la fois.</summary>
 /// <param name="Month">Le mois lu (`aaaa-mm`).</param>
@@ -56,7 +55,7 @@ public static class GetRunHistoryEndpoint
         string.IsNullOrWhiteSpace(month) || GameMonth.TryParse(month, out _) ? WolverineContinue.NoProblems : RunsProblems.InvalidMonth();
 
     /// <summary>
-    /// <c>GET /api/runs/history?month=aaaa-mm</c> : les setlists que **le joueur de la requête** a finies (gagnées ou perdues, pas les abandons), un
+    /// <c>GET /api/runs/history?month=aaaa-mm</c> : les setlists que **le joueur de la requête** a finies (terminées, pas les abandons), un
     /// mois à la fois (le mois en cours sans paramètre), avec le résumé de toutes ses parties. Lecture seule, jamais mise en cache ; l'identifiant ne
     /// vient que du cookie ; aucun morceau (le détail passe par la partie). 400 <c>runs.invalid_month</c>, 401 sans identité. Pas d'accès au mode
     /// demandé : ce sont ses propres parties.
@@ -66,7 +65,7 @@ public static class GetRunHistoryEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public static async Task<RunHistoryResponse> Get(
-        [FromQuery] string? month, ICurrentPlayer current, IRunHistoryQueries queries, IGameCalendar calendar, RunsRules rules, CancellationToken ct)
+        [FromQuery] string? month, ICurrentPlayer current, IRunHistoryQueries queries, IGameCalendar calendar, CancellationToken ct)
     {
         var playerId = current.PlayerId!.Value;
         var first = GameMonth.TryParse(month, out var parsed) ? parsed : GameMonth.FirstDayOf(calendar.Today);
@@ -81,13 +80,8 @@ public static class GetRunHistoryEndpoint
             days.Where(d => d < first).Select(GameMonth.Of).FirstOrDefault(),
             days.Where(d => d >= next).Select(GameMonth.Of).LastOrDefault(),
             summary.Count, summary.AverageScore, summary.BestScore,
-            entries.Select(e =>
-            {
-                var disc = DiscLadder.Of(e.RoundsPassed, rules.Discs);
-                return new RunHistoryRunResponse(
-                    e.SessionId, e.ChallengeCode, e.EndedOn, RunViews.StatusOf(e.Status), new RunDiscResponse(disc.Key, disc.Stars), e.RoundsPassed, e.TotalScore,
-                    RunDifficulties.KeyOf(e.Difficulty));
-            }).ToList());
+            entries.Select(e => new RunHistoryRunResponse(
+                e.SessionId, e.ChallengeCode, e.EndedOn, RunViews.StatusOf(e.Status), e.RoundsPassed, e.TotalScore)).ToList());
     }
 }
 
@@ -110,7 +104,9 @@ public static class GetRunPastPreviewEndpoint
             return null;
         if (await store.FindChallengeAsync(session.ChallengeId, ct) is not { } challenge)
             return null;
-        var trackId = session.TrackIdAt(challenge, position);
+        if (challenge.TrackAt(position) is not { } slot)
+            return null;
+        var trackId = slot.TrackId;
         return (await directory.GetAsync([trackId], ct)).GetValueOrDefault(trackId);
     }
 

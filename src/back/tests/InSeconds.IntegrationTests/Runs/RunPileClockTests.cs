@@ -44,11 +44,11 @@ public class RunPileClockTests(PostgresFixture postgres) : IAsyncLifetime
         var session = answer.Session;
         Assert.Equal([1, 2, 3, 4, 5, 6], session.PlayedTracks.Select(t => t.Position));
         Assert.Equal([1, 1, 1, 1, 1, 2], session.PlayedTracks.Select(t => t.Round));
-        Assert.Equal([100, 100, 0, 100, 100, 67], session.PlayedTracks.Select(t => t.Points));
+        Assert.Equal([100, 100, 0, 100, 100, 50], session.PlayedTracks.Select(t => t.Points));
         Assert.All(session.PlayedTracks, t => Assert.NotNull(t.Artist));
         // La manche en cours ne garde que ses morceaux (les pastilles), la pile a tout.
         Assert.Equal([6], session.RoundTracks.Select(t => t.Position));
-        Assert.Equal([new RunPassedRoundResponse(1, 400, 225, new RunDiscResponse("runs.discs.wax", 0), "safe")], session.PassedRounds);
+        Assert.Equal([new RunPassedRoundResponse(1, 400, 10m, null)], session.PassedRounds);
         Assert.Equal(45, session.AnswerSeconds);
     }
 
@@ -198,11 +198,11 @@ public class RunPileClockTests(PostgresFixture postgres) : IAsyncLifetime
         var (id, code) = (start.Session.SessionId, start.Session.ChallengeCode);
         await alice.PlayAsync(id, code, 1, true, true, true, true, true);
 
-        // Manche 2 ratée : la partie finit, la pile garde les 10 morceaux et la ligne de la manche 1.
-        var lost = await alice.PlayAsync(id, code, 6, false, false, false, false, false);
+        // Trois vies perdues en manche 2 : la partie finit, la pile garde les 8 morceaux et la ligne de la manche 1.
+        var lost = await alice.PlayAsync(id, code, 6, false, false, false);
 
         Assert.NotNull(lost.Session.Finish);
-        Assert.Equal(Enumerable.Range(1, 10), lost.Session.PlayedTracks.Select(t => t.Position));
+        Assert.Equal(Enumerable.Range(1, 8), lost.Session.PlayedTracks.Select(t => t.Position));
         Assert.Equal([1], lost.Session.PassedRounds.Select(r => r.Round));
         Assert.Null(lost.Session.ClockRemainingSeconds);
     }

@@ -14,7 +14,7 @@ public class RunHitsTests(PostgresFixture postgres) : IAsyncLifetime
     public ValueTask DisposeAsync() => _run.DisposeAsync();
 
     private static readonly bool[] AllFound = [true, true, true, true, true];
-    private static readonly bool[] NoneFound = [false, false, false, false, false];
+    private static readonly bool[] NoneFound = [false, false, false];
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -24,7 +24,7 @@ public class RunHitsTests(PostgresFixture postgres) : IAsyncLifetime
     private static string[] Earned(RunHitsResponse hits) => [.. hits.Hits.Where(h => h.Earned).Select(h => h.Key)];
 
     [Fact]
-    public async Task SansPartie_SeizeHits_AucunObtenu_EtUnAbandonNeComptePas()
+    public async Task SansPartie_OnzeHits_AucunObtenu_EtUnAbandonNeComptePas()
     {
         var alice = await _run.NewInvitedAsync("Alice");
         var launched = await alice.LaunchAsync();
@@ -38,21 +38,19 @@ public class RunHitsTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task UneSetlistGagnee_DonneSesHits_PuisUnRecordBattu()
+    public async Task UneSetlistLongue_DonneSesHits_PuisUnRecordBattu()
     {
         var alice = await _run.NewInvitedAsync("Alice");
         var lost = await alice.LaunchAsync();
         await alice.PlayAsync(lost.Session.SessionId, lost.Session.ChallengeCode, 1, [.. AllFound, .. NoneFound]);
-        Assert.Equal(["first_setlist", "first_card", "perfect_round"], Earned(await HitsAsync(alice)));
+        Assert.Equal(["first_setlist", "perfect_round"], Earned(await HitsAsync(alice)));
 
-        var won = await alice.LaunchAsync();
-        await alice.PlayAsync(won.Session.SessionId, won.Session.ChallengeCode, 1, [.. AllFound, .. AllFound, .. AllFound, .. AllFound]);
+        var longer = await alice.LaunchAsync();
+        await alice.PlayAsync(longer.Session.SessionId, longer.Session.ChallengeCode, 1, [.. AllFound, .. AllFound, .. NoneFound]);
 
         var hits = await HitsAsync(alice);
         Assert.Contains("first_record", Earned(hits));
         Assert.Contains("ten_in_a_row", Earned(hits));
-        Assert.Contains("setlist_won", Earned(hits));
-        Assert.DoesNotContain("boss_beaten", Earned(hits));
         Assert.Equal(hits.Hits.Count(h => h.Earned), hits.EarnedCount);
         var ten = hits.Hits.Single(h => h.Key == "ten_setlists");
         Assert.Equal((2, 10), (ten.Progress, ten.Target));

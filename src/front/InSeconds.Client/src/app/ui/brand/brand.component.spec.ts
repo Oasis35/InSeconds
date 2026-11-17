@@ -22,6 +22,12 @@ describe('BrandComponent', () => {
     expect(element.querySelector('[data-testid="brand-right"] a')?.textContent).toBe('avatar');
   });
 
+  it('allume les deux barres du logo en tube', () => {
+    const fixture = TestBed.createComponent(BrandComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.brand-slash')?.textContent).toBe('//');
+  });
+
   it('défile avec la page : ni barre collante ni fond flouté', () => {
     const fixture = TestBed.createComponent(BrandComponent);
     fixture.detectChanges();

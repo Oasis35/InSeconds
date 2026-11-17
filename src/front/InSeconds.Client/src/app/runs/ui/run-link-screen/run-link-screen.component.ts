@@ -24,10 +24,10 @@ import { ButtonComponent } from '../../../ui/button/button.component';
       <h1 class="text-2xl font-extrabold text-center leading-tight" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="run-link-title">
         {{ 'runs.link.title' | translate: { pseudo: link().authorPseudo ?? ('runs.link.guest' | translate) } }}
       </h1>
-      <ul class="w-full space-y-3 rounded-(--radius-card) p-4 text-sm" style="background:rgb(var(--rgb-surface) / 0.55);border:1px solid var(--border-subtle);color:var(--text-light)"
+      <ul class="w-full space-y-3 rounded-(--radius-card) p-4 text-sm" style="background:var(--bg-surface);border:1px solid var(--border-subtle);color:var(--text-light)"
         data-testid="run-link-rules">
-        <li>{{ 'runs.link.tracks' | translate: { tracks: link().trackCount } }}</li>
-        <li>{{ 'runs.link.rounds' | translate: { rounds: link().rounds } }}</li>
+        <li>{{ 'runs.link.lives' | translate: { lives: link().lives } }}</li>
+        <li>{{ 'runs.link.rounds' | translate: { tracks: link().tracksPerRound } }}</li>
         @if (link().answerSeconds > 0) {
           <li>{{ 'runs.link.listenAndAnswer' | translate: { seconds: link().listenSeconds | appSeconds, answer: link().answerSeconds | appSeconds } }}</li>
         } @else {
@@ -36,10 +36,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
         @for (theme of link().themes; track theme.round) {
           <li data-testid="run-link-theme">{{ 'runs.link.theme' | translate: { round: theme.round, name: theme.name } }}</li>
         }
-        <li class="flex items-start gap-2">
-          <app-run-disc class="shrink-0 mt-0.5" disc="runs.discs.gold" [size]="18" />
-          <span>{{ 'runs.link.goal' | translate: { rounds: link().rounds } }}</span>
-        </li>
+        <li>{{ 'runs.link.goal' | translate }}</li>
       </ul>
       <button appButton type="button" size="lg" [block]="true" (click)="start.emit()" data-testid="run-link-play">
         {{ 'runs.link.play' | translate }}

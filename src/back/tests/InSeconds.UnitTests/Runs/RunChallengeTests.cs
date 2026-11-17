@@ -7,34 +7,61 @@ public class RunChallengeTests
 {
     private static readonly DateTimeOffset Now = new(2026, 10, 21, 8, 0, 0, TimeSpan.Zero);
 
-    private static List<PlannedTrack> Tracks(int count = 20) =>
-        Enumerable.Range(1, count).Select(id => new PlannedTrack(id, (id - 1) / 5 + 1, 1m)).ToList();
+    private static readonly int[] FirstRound = [1, 2, 3, 4, 5];
 
     [Fact]
-    public void Cree_LesMorceauxAuxPositions_EtGardeLesReglesFigees()
+    public void Cree_LaPremiereManche_EtGardeLesReglesFigees()
     {
-        var challenge = RunChallenge.Create("K7Q2M9", 123, RunsOptions.DefaultRules(), Tracks(), Guid.NewGuid(), Now);
+        var challenge = RunChallenge.Create("K7Q2M9", 123, TestRules.Legacy(), FirstRound, Guid.NewGuid(), Now);
 
         Assert.Equal("K7Q2M9", challenge.Code);
-        Assert.Equal(20, challenge.Tracks.Count);
-        Assert.Equal(Enumerable.Range(1, 20), challenge.Tracks.Select(t => (int)t.Position));
-        Assert.Equal([1, 2, 3, 4], challenge.Tracks.Select(t => (int)t.Round).Distinct());
-        Assert.Equal(RunsOptions.DefaultRules().Rounds, challenge.Rules.Rounds);
+        Assert.Equal(Enumerable.Range(1, 5), challenge.Tracks.Select(t => (int)t.Position));
+        Assert.All(challenge.Tracks, t => Assert.Equal(1, t.Round));
+        Assert.Equal(1, challenge.RoundsDrawn);
+        Assert.True(challenge.HasRound(1));
+        Assert.False(challenge.HasRound(2));
+        Assert.Equal(3, challenge.Rules.Lives);
         Assert.Equal(Now, challenge.CreatedAt);
     }
 
     [Fact]
-    public void PasLeBonNombreDeMorceaux_Refuse() =>
-        Assert.Throws<ArgumentException>(() => RunChallenge.Create("K7Q2M9", 1, RunsOptions.DefaultRules(), Tracks(19), null, Now));
+    public void AppendRound_AjouteLaMancheSuivante_AvecSonTheme()
+    {
+        var challenge = RunChallenge.Create("K7Q2M9", 1, TestRules.Legacy(), FirstRound, null, Now);
+
+        challenge.AppendRound(2, [6, 7, 8, 9, 10], new RunRoundTheme(2, 12, "Années 80"));
+
+        Assert.Equal(2, challenge.RoundsDrawn);
+        Assert.Equal(10, challenge.Tracks.Count);
+        Assert.Equal(6, challenge.TrackAt(6)!.TrackId);
+        Assert.Equal(2, challenge.TrackAt(6)!.Round);
+        Assert.Equal("Années 80", challenge.Rules.ThemeOf(2)!.Name);
+        Assert.Null(challenge.Rules.ThemeOf(1));
+    }
 
     [Fact]
-    public void UnMorceauDeuxFois_Refuse()
+    public void AppendRound_PasDansLOrdre_Refuse()
     {
-        var tracks = Tracks();
-        tracks[3] = tracks[2];
+        var challenge = RunChallenge.Create("K7Q2M9", 1, TestRules.Legacy(), FirstRound, null, Now);
 
-        Assert.Throws<ArgumentException>(() => RunChallenge.Create("K7Q2M9", 1, RunsOptions.DefaultRules(), tracks, null, Now));
+        Assert.Throws<InvalidOperationException>(() => challenge.AppendRound(3, [6, 7, 8, 9, 10], null));
     }
+
+    [Fact]
+    public void AppendRound_UnMorceauDejaTire_Refuse()
+    {
+        var challenge = RunChallenge.Create("K7Q2M9", 1, TestRules.Legacy(), FirstRound, null, Now);
+
+        Assert.Throws<ArgumentException>(() => challenge.AppendRound(2, [5, 7, 8, 9, 10], null));
+    }
+
+    [Fact]
+    public void PasLeBonNombreDeMorceaux_Refuse() =>
+        Assert.Throws<ArgumentException>(() => RunChallenge.Create("K7Q2M9", 1, TestRules.Legacy(), [1, 2, 3, 4], null, Now));
+
+    [Fact]
+    public void UnMorceauDeuxFois_Refuse() =>
+        Assert.Throws<ArgumentException>(() => RunChallenge.Create("K7Q2M9", 1, TestRules.Legacy(), [1, 2, 3, 3, 5], null, Now));
 
     [Theory]
     [InlineData("k7q2m9")]
@@ -42,7 +69,7 @@ public class RunChallengeTests
     [InlineData("K7Q2M0")]
     [InlineData("")]
     public void UnCodeInvalideOuEnMinuscules_Refuse(string code) =>
-        Assert.Throws<ArgumentException>(() => RunChallenge.Create(code, 1, RunsOptions.DefaultRules(), Tracks(), null, Now));
+        Assert.Throws<ArgumentException>(() => RunChallenge.Create(code, 1, TestRules.Legacy(), FirstRound, null, Now));
 }
 
 public class RunChallengeCodeTests

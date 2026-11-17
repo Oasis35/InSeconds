@@ -106,7 +106,7 @@ const PAGE_SIZE = 50;
               <button type="button" (click)="addDeezer.emit(result)" [disabled]="status === 'loading' || inTheme().has(result.deezerTrackId)"
                 [title]="'admin.themes.addDeezer' | translate" [attr.aria-label]="'admin.themes.addDeezer' | translate"
                 class="w-11 h-11 rounded-(--radius-button) flex items-center justify-center text-lg font-semibold shrink-0 disabled:opacity-40"
-                style="background:var(--bg-primary-dk);color:var(--text-on-primary)">
+                style="background:var(--bg-primary-dk);color:var(--text-on-orange)">
                 @switch (status) {
                   @case ('loading') { … }
                   @case ('success') { ✓ }

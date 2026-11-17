@@ -12,16 +12,16 @@ describe('RunFinishComponent', () => {
   afterEach(() => { delete flag.__disableAnimations; });
 
   const finish = (overrides: Partial<RunFinish> = {}): RunFinish => ({
-    status: 'lost', disc: { key: 'runs.discs.bronze', stars: 0 }, totalScore: 1284, roundsPassed: 2, foundCount: 2, trackCount: 20,
+    status: 'lost', totalScore: 1284, roundsPassed: 2, foundCount: 2, trackCount: 20, livesLeft: 0, lifeBonus: 0, completeBonus: 0,
     tracks: [TRACK({ position: 1 }), TRACK({ position: 2 }), TRACK({ position: 6, round: 2, titleCorrect: false })],
     rounds: [
-      { round: 1, score: 400, objective: 200, passed: true, difficulty: 'safe' },
-      { round: 2, score: 466, objective: 333, passed: true, difficulty: 'risky' },
-      { round: 3, score: 418, objective: 501, passed: false, difficulty: 'easy' },
-      { round: 4, score: null, objective: null, passed: false, difficulty: null },
+      { round: 1, score: 400, listenSeconds: 10, theme: null },
+      { round: 2, score: 466, listenSeconds: 5, theme: null },
+      { round: 3, score: 418, listenSeconds: 3, theme: null },
+      { round: 4, score: null, listenSeconds: 2, theme: null },
     ],
     record: { bestScore: 2617, bestRoundsPassed: 4, isNew: false }, challengeCode: 'ABC234',
-    shortfall: { points: 83, disc: { key: 'runs.discs.silver', stars: 0 } }, level: null, ...overrides,
+    level: null, ...overrides,
   });
 
   function render(value: RunFinish, canPlayAgain = true, duel: RunDuel | null = null) {
@@ -37,11 +37,10 @@ describe('RunFinishComponent', () => {
 
   const text = (element: HTMLElement, id: string) => element.querySelector(`[data-testid="${id}"]`)?.textContent?.replace(/\s+/g, ' ').trim();
 
-  it('une défaite : le disque obtenu, le record, le score au format de la langue, les morceaux trouvés et 20 carrés', () => {
+  it('une défaite : les manches passées, le record, le score au format de la langue, les morceaux trouvés et 20 carrés', () => {
     const { element } = render(finish());
 
-    expect(element.querySelector('[data-disc]')?.getAttribute('data-disc')).toBe('runs.discs.bronze');
-    expect(text(element, 'run-disc')).toBe('runs.finished.disc');
+    expect(text(element, 'run-disc')).toBe('runs.finished.rounds');
     expect(text(element, 'run-record')).toBe('runs.finished.record');
     expect(text(element, 'run-final-score')?.replace(/\s/g, ' ')).toBe('1 284');
     expect(text(element, 'run-found')).toBe('runs.finished.found');
@@ -49,31 +48,39 @@ describe('RunFinishComponent', () => {
     expect(element.querySelectorAll('[data-testid="run-squares"] [data-state="found"]')).toHaveLength(2);
   });
 
-  it('une victoire annonce le disque et le nouveau record', () => {
-    const { element } = render(finish({ status: 'won', disc: { key: 'runs.discs.gold', stars: 0 }, record: { bestScore: 2617, bestRoundsPassed: 4, isNew: true } }));
+  it('une Série complète : le titre et le détail des bonus (vies restantes, complétion)', () => {
+    const { element } = render(finish({ status: 'completed', livesLeft: 2, lifeBonus: 500, completeBonus: 500, roundsPassed: 8 }));
 
-    expect(text(element, 'run-disc')).toBe('runs.finished.won');
+    expect(text(element, 'run-disc')).toBe('runs.finished.complete');
+    expect(text(element, 'run-bonus-lives')).toBe('runs.finished.bonusLives');
+    expect(text(element, 'run-bonus-complete')).toBe('runs.finished.bonusComplete');
+  });
+
+  it('une partie perdue n\'a aucun bonus', () => {
+    expect(render(finish()).element.querySelector('[data-testid="run-bonus"]')).toBeNull();
+  });
+
+  it('un nouveau record se dit', () => {
+    const { element } = render(finish({ record: { bestScore: 2617, bestRoundsPassed: 4, isNew: true } }));
+
     expect(text(element, 'run-record')).toBe('runs.finished.newRecord');
   });
 
-  it('une case par manche : score / objectif, l\'objectif manqué en ambre, ✕ pour une manche non jouée', () => {
+  it('une case par manche : son score et son palier, ✕ pour une manche non jouée', () => {
     const { element } = render(finish());
     const cases = element.querySelectorAll('[data-testid="run-round-scores"] [data-round]');
 
     expect(cases).toHaveLength(4);
     expect(cases[0].textContent).toContain('400');
-    expect(cases[0].textContent).toContain('/ 200');
-    expect((cases[2].querySelector('span:last-child') as HTMLElement).style.color).toBe('var(--color-warn)');
     expect(cases[3].textContent).toContain('✕');
   });
 
-  it('« Rejouer » en action principale, avec ce qui a manqué pour le disque suivant, avant le partage', () => {
+  it('« Rejouer » en action principale, avant le partage', () => {
     const { element } = render(finish());
     const again = element.querySelector<HTMLElement>('[data-testid="run-play-again"]')!;
 
     expect(text(element, 'run-play-again')).toBe('runs.finished.playAgain');
     expect(again.classList).toContain('app-button--primary');
-    expect(text(element, 'run-shortfall')).toBe('runs.finished.shortfallBefore runs.finished.shortfallPoints runs.finished.shortfallAfter');
     expect(again.compareDocumentPosition(element.querySelector('[data-testid="run-share"]')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
@@ -83,12 +90,6 @@ describe('RunFinishComponent', () => {
     expect(shareButton(render(finish()).element).classList).toContain('app-button--neutral');
     TestBed.resetTestingModule();
     expect(shareButton(render(finish(), false).element).classList).toContain('app-button--primary');
-  });
-
-  it('une victoire : rien n\'a manqué', () => {
-    const { element } = render(finish({ status: 'won', shortfall: null }));
-
-    expect(element.querySelector('[data-testid="run-shortfall"]')).toBeNull();
   });
 
   it('« Partager mon score » et « Rejouer »', () => {
@@ -115,11 +116,10 @@ describe('RunFinishComponent', () => {
     expect(compare).toHaveBeenCalledTimes(1);
   });
 
-  it('sans accès, le jeu du jour à la place de « Rejouer », sans ce qui a manqué', () => {
+  it('sans accès, le jeu du jour à la place de « Rejouer »', () => {
     const { element } = render(finish(), false);
 
     expect(element.querySelector('[data-testid="run-play-again"]')).toBeNull();
-    expect(element.querySelector('[data-testid="run-shortfall"]')).toBeNull();
     expect(element.querySelector('[data-testid="run-to-daily"]')?.getAttribute('href')).toBe('/daily');
   });
   it('un duel ouvre l\'écran, sur un ton neutre : avance, retard ou égalité, et « Revanche » à la place de « Rejouer »', () => {
@@ -144,7 +144,7 @@ describe('RunFinishComponent', () => {
   it('la séquence de fin marque ses éléments, et rien n\'attend : « Rejouer » est actif dès le début', () => {
     const { element } = render(finish({ record: { bestScore: 1284, bestRoundsPassed: 2, isNew: true } }));
 
-    for (const [part, count] of [['finish-disc', 1], ['finish-score', 1], ['finish-record', 1], ['finish-square', 20], ['finish-round', 4]] as const)
+    for (const [part, count] of [['finish-score', 1], ['finish-record', 1], ['finish-square', 20], ['finish-round', 4]] as const)
       expect(element.querySelectorAll(`[data-motion="${part}"]`), part).toHaveLength(count);
     expect(element.querySelector<HTMLButtonElement>('[data-testid="run-play-again"]')?.disabled).toBe(false);
   });

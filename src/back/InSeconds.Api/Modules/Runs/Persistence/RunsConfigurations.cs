@@ -39,22 +39,6 @@ internal sealed class RunChallengeConfiguration : IEntityTypeConfiguration<RunCh
             .HasForeignKey(nameof(RunChallenge.CreatedBy)).OnDelete(DeleteBehavior.SetNull);
         builder.HasMany(c => c.Tracks).WithOne().HasForeignKey(t => t.ChallengeId).OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(c => c.Tracks).UsePropertyAccessMode(PropertyAccessMode.Field);
-        builder.HasMany(c => c.Reserve).WithOne().HasForeignKey(t => t.ChallengeId).OnDelete(DeleteBehavior.Cascade);
-        builder.Navigation(c => c.Reserve).UsePropertyAccessMode(PropertyAccessMode.Field);
-    }
-}
-
-internal sealed class RunChallengeReserveTrackConfiguration : IEntityTypeConfiguration<RunChallengeReserveTrack>
-{
-    public void Configure(EntityTypeBuilder<RunChallengeReserveTrack> builder)
-    {
-        builder.ToTable("challenge_reserve_tracks", DbSchemas.Runs);
-        builder.HasKey(t => new { t.ChallengeId, t.Round, t.Rank });
-        // Un morceau ne figure qu'une fois dans la réserve d'un défi (le domaine refuse aussi un morceau à la fois joué et en réserve).
-        builder.HasIndex(t => new { t.ChallengeId, t.TrackId }).IsUnique();
-        builder.HasIndex(t => t.TrackId);
-        builder.HasOne("InSeconds.Api.Modules.Catalogue.Domain.Track", navigationName: null).WithMany()
-            .HasForeignKey(nameof(RunChallengeReserveTrack.TrackId)).OnDelete(DeleteBehavior.Restrict);
     }
 }
 
@@ -64,7 +48,6 @@ internal sealed class RunChallengeTrackConfiguration : IEntityTypeConfiguration<
     {
         builder.ToTable("challenge_tracks", DbSchemas.Runs);
         builder.HasKey(t => new { t.ChallengeId, t.Position });
-        builder.Property(t => t.Multiplier).HasPrecision(3, 2);
         // Un morceau ne figure qu'une fois dans un défi ; l'index sur le morceau sert à l'usage (suppression refusée d'un morceau joué).
         builder.HasIndex(t => new { t.ChallengeId, t.TrackId }).IsUnique();
         builder.HasIndex(t => t.TrackId);
@@ -83,7 +66,7 @@ internal sealed class RunSessionConfiguration : IEntityTypeConfiguration<RunSess
         builder.ToTable("sessions", DbSchemas.Runs, table => table.HasCheckConstraint("ck_sessions_status", "status IN (0, 1, 2, 3)"));
         builder.HasKey(s => s.Id);
         builder.Property(s => s.Id).UseHiLo("sessions_hilo", DbSchemas.Runs);
-        // status : 0 en cours, 1 gagnée, 2 perdue, 3 abandonnée.
+        // status : 0 en cours, 1 Série complète, 2 perdue (plus de vie), 3 abandonnée.
         builder.Property(s => s.Status).HasConversion<short>();
         builder.Property(s => s.CurrentListenedSeconds).HasPrecision(4, 2);
         builder.HasIndex(s => new { s.ChallengeId, s.PlayerId }).IsUnique().HasDatabaseName(ChallengePlayerIndex);
@@ -93,37 +76,6 @@ internal sealed class RunSessionConfiguration : IEntityTypeConfiguration<RunSess
             .HasForeignKey(nameof(RunSession.PlayerId)).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(s => s.Answers).WithOne().HasForeignKey(a => a.SessionId).OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(s => s.Answers).UsePropertyAccessMode(PropertyAccessMode.Field);
-        builder.HasMany(s => s.Rounds).WithOne().HasForeignKey(r => r.SessionId).OnDelete(DeleteBehavior.Cascade);
-        builder.Navigation(s => s.Rounds).UsePropertyAccessMode(PropertyAccessMode.Field);
-        builder.HasMany(s => s.Cards).WithOne().HasForeignKey(c => c.SessionId).OnDelete(DeleteBehavior.Cascade);
-        builder.Navigation(s => s.Cards).UsePropertyAccessMode(PropertyAccessMode.Field);
-        // La main est tirée de Cards : pas une relation (EF la prendrait pour une seconde clé étrangère vers session_cards).
-        builder.Ignore(s => s.Hand);
-    }
-}
-
-internal sealed class RunSessionCardConfiguration : IEntityTypeConfiguration<RunSessionCard>
-{
-    public void Configure(EntityTypeBuilder<RunSessionCard> builder)
-    {
-        // card : 1 QCM, 2 Échange (jamais en main : une ligne par échange fait), 3 indice, 5 prolongation ; 4 et 6 à 10 : anciennes cartes, sans effet.
-        builder.ToTable("session_cards", DbSchemas.Runs, table => table.HasCheckConstraint("ck_session_cards_card", "card BETWEEN 1 AND 10"));
-        builder.HasKey(c => new { c.SessionId, c.Slot });
-        builder.Property(c => c.Card).HasConversion<short>();
-        // Échange : le morceau de la réserve joué à la place, qui ne se supprime pas tant qu'une partie l'a joué.
-        builder.HasOne("InSeconds.Api.Modules.Catalogue.Domain.Track", navigationName: null).WithMany()
-            .HasForeignKey(nameof(RunSessionCard.ReplacementTrackId)).OnDelete(DeleteBehavior.Restrict);
-    }
-}
-
-internal sealed class RunSessionRoundConfiguration : IEntityTypeConfiguration<RunSessionRound>
-{
-    public void Configure(EntityTypeBuilder<RunSessionRound> builder)
-    {
-        // difficulty : 1 facile, 2 sûre, 3 risquée. Une ligne par manche à choix : la difficulté ne se choisit qu'une fois.
-        builder.ToTable("session_rounds", DbSchemas.Runs, table => table.HasCheckConstraint("ck_session_rounds_difficulty", "difficulty IN (1, 2, 3)"));
-        builder.HasKey(r => new { r.SessionId, r.Round });
-        builder.Property(r => r.Difficulty).HasConversion<short>();
     }
 }
 

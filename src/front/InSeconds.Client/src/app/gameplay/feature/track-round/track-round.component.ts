@@ -80,14 +80,14 @@ import { ButtonComponent } from '../../../ui/button/button.component';
             @if (phase === 'submit-error') {
               <div class="rounded-xl px-4 py-3 space-y-3" style="background:rgb(var(--rgb-danger) / 0.08);border:1px solid rgb(var(--rgb-danger) / 0.3)">
                 <p role="alert" class="text-sm text-center font-semibold" style="color:var(--text-error)">{{ 'gameplay.answer.submitFailed' | translate }}</p>
-                <button appButton type="button" [block]="true" [glow]="true" (click)="retrySubmission()">
+                <button appButton type="button" [block]="true" (click)="retrySubmission()">
                   {{ 'gameplay.answer.retry' | translate }}
                 </button>
               </div>
             } @else if (round.pendingConfirm(); as kind) {
               <div class="rounded-xl px-4 py-3 space-y-3" style="background:rgb(var(--rgb-accent) / 0.08);border:1px solid rgb(var(--rgb-accent) / 0.35)">
                 <p class="text-sm text-center font-semibold" style="color:var(--color-accent)">
-                  {{ (kind === 'skip' ? 'gameplay.answer.skipConfirm' : 'gameplay.answer.emptyConfirm') | translate }}
+                  {{ (kind === 'skip' ? skipConfirmKey() : emptyConfirmKey()) | translate }}
                 </p>
                 <div class="flex gap-2">
                   <button appButton type="button" variant="secondary" class="flex-1" (click)="round.cancelConfirm()">
@@ -100,7 +100,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
               </div>
             } @else {
               @if (!choices()) {
-                <button appButton type="submit" [block]="true" [glow]="true" [disabled]="phase === 'submitting' || locked()">
+                <button appButton type="submit" [block]="true" [disabled]="phase === 'submitting' || locked()">
                   {{ phase === 'submitting' ? '…' : ('gameplay.answer.validate' | translate) }}
                 </button>
               }
@@ -108,7 +108,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
               <div class="flex flex-wrap justify-center gap-x-4">
                 <button type="button" class="inline-flex items-center min-h-11 px-2 text-[15px] underline underline-offset-4 touch-manipulation disabled:opacity-50"
                   style="color:var(--text-light)" [disabled]="phase === 'submitting' || locked()" (click)="round.askSkip()" data-testid="round-skip">
-                  {{ 'gameplay.round.skip' | translate }}
+                  {{ skipLabelKey() | translate }}
                 </button>
                 <!-- Le lien du mode à côté de « Passer » (le mode Run : « Changer de morceau »). -->
                 <ng-content select="[roundLinks]" />
@@ -134,11 +134,14 @@ import { ButtonComponent } from '../../../ui/button/button.component';
   styles: `
     .inline-frame {
       background: var(--bg-surface);
-      border: 1px solid var(--border-medium);
+      backdrop-filter: var(--blur-tile);
+      -webkit-backdrop-filter: var(--blur-tile);
+      border: 1px solid var(--core-cyan);
       border-radius: var(--radius-card);
-      transition: border-color 300ms;
+      box-shadow: var(--tube-frame);
+      transition: border-color 300ms, box-shadow 300ms;
     }
-    .inline-frame.alert { border-color: rgb(var(--rgb-text) / 0.45); }
+    .inline-frame.alert { border-color: rgb(var(--rgb-text) / 0.45); box-shadow: none; }
   `,
 })
 export class TrackRoundComponent {
@@ -151,6 +154,11 @@ export class TrackRoundComponent {
   readonly hintPending = input(false);
   /** `inline` : toute la manche dans une carte, le bouton à gauche de la waveform (un mode à écoute fixe) ; `stacked` (défaut) : le Daily. */
   readonly layout = input<'stacked' | 'inline'>('stacked');
+  /** Les textes de « Passer » : le mode qui retire une vie les remplace (« Passer (une vie) »). */
+  readonly skipLabelKey = input('gameplay.round.skip');
+  readonly skipConfirmKey = input('gameplay.answer.skipConfirm');
+  /** Le texte de la confirmation d'une réponse vide ; le mode Run y dit qu'une vie sera perdue. */
+  readonly emptyConfirmKey = input('gameplay.answer.emptyConfirm');
   /** Le bord de la carte s'éclaircit (en ligne seulement) : les dernières secondes du chrono du mode. */
   readonly alert = input(false);
   /** Le temps du mode est écoulé : la saisie part telle quelle, sans confirmation (une seule fois par morceau). */

@@ -21,12 +21,10 @@ public class RunsSettingsTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData("Runs:Rounds", "0", "Runs:Rounds")]
+    [InlineData("Runs:Lives", "0", "Runs:Lives")]
     [InlineData("Runs:TracksPerRound", "0", "Runs:TracksPerRound")]
-    [InlineData("Runs:ListenSeconds", "0", "Runs:ListenSeconds")]
-    [InlineData("Runs:ThresholdPercents:0", "0", "Runs:ThresholdPercents")]
-    [InlineData("Runs:MinMultiplier", "3", "Runs:MinMultiplier")]
-    [InlineData("Runs:Discs:0", " ", "Runs:Discs")]
+    [InlineData("Runs:ListenLadder:0", "0", "Runs:ListenLadder")]
+    [InlineData("Runs:StepPoints:0", "0", "Runs:StepPoints")]
     [InlineData("Runs:Levels:Window", "0", "Runs:Levels:Window")]
     [InlineData("Runs:Levels:ProvisionalRuns", "11", "Runs:Levels:ProvisionalRuns")]
     public async Task Demarrage_ReglageIncoherent_RefuseDeDemarrer(string key, string value, string expected)
@@ -45,15 +43,18 @@ public class RunsSettingsTests(PostgresFixture postgres) : IAsyncLifetime
         // Le binder AJOUTE les éléments lus à ceux de la valeur initiale : les listes n'en ont pas (le défaut est dans Effective…).
         await using var api = new ApiFactory(_connectionString, settings: new Dictionary<string, string>
         {
-            ["Runs:ThresholdPercents:0"] = "30",
-            ["Runs:ThresholdPercents:1"] = "40",
-            ["Runs:ThresholdPercents:2"] = "50",
-            ["Runs:ThresholdPercents:3"] = "60",
+            ["Runs:ListenLadder:0"] = "8",
+            ["Runs:ListenLadder:1"] = "4",
+            ["Runs:ListenLadder:2"] = "2",
+            ["Runs:StepPoints:0"] = "100",
+            ["Runs:StepPoints:1"] = "300",
+            ["Runs:StepPoints:2"] = "900",
         });
 
         var options = api.Services.GetRequiredService<IOptionsMonitor<InSeconds.Api.Modules.Runs.Application.RunsOptions>>().CurrentValue;
 
-        Assert.Equal([30, 40, 50, 60], options.EffectiveThresholdPercents);
+        Assert.Equal([8m, 4m, 2m], options.EffectiveListenLadder);
+        Assert.Equal([100, 300, 900], options.EffectiveStepPoints);
     }
 
     private static IEnumerable<Exception> Unwrap(Exception exception)

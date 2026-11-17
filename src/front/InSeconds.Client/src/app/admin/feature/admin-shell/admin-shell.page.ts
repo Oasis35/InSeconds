@@ -97,7 +97,7 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
           <header class="lg:hidden relative px-4 pt-3 pb-2">
             <div class="flex items-center gap-2">
               <a routerLink="/" [attr.aria-label]="'admin.backToGame' | translate" [title]="'admin.backToGame' | translate"
-                class="shrink-0 font-extrabold uppercase text-base tracking-[0.14em] px-1" style="font-family:var(--font-display);color:var(--text-hi)">IN<span style="color:var(--text-accent)">//</span></a>
+                class="shrink-0 font-extrabold uppercase text-base tracking-[0.14em] px-1" style="font-family:var(--font-display);color:var(--text-hi)">IN<span class="brand-slash">//</span></a>
               <span class="flex-1 min-w-0 truncate text-center text-xs" style="color:var(--text-muted)" data-testid="deployed-at-short">
                 @if (system.build.deployedAt; as at) {
                   {{ 'admin.deployedShort' | translate: { date: (at | date: 'dd/MM'), time: (at | date: 'HH:mm') } }}
@@ -126,7 +126,7 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
               data-testid="admin-top-bar">
               <a routerLink="/" [title]="'admin.backToGame' | translate"
                 class="px-4 font-extrabold uppercase text-base tracking-[0.14em]" style="font-family:var(--font-display);color:var(--text-hi)">
-                IN<span style="color:var(--text-accent)">//</span>SECONDS
+                IN<span class="brand-slash">//</span>SECONDS
               </a>
               <nav data-testid="admin-top-nav" class="flex justify-self-start gap-1 rounded-xl p-1.5" style="background:var(--bg-surface)" [attr.aria-label]="'admin.tabsLabel' | translate">
                 @for (tab of tabs; track tab.path) {
@@ -150,9 +150,9 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
             <div class="min-w-0 pb-4 lg:pb-10"><router-outlet /></div>
           </div>
 
-          <!-- Téléphone : les onglets en bas, fond opaque (rien ne passe dessous en transparence). -->
+          <!-- Téléphone : les onglets en bas, fond translucide et flou (le contenu qui défile dessous se lit en tache floue, jamais net sous le texte). -->
           <nav class="lg:hidden fixed bottom-0 inset-x-0 z-10 grid grid-cols-4 gap-1 px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
-            style="background:var(--bg-page);border-top:1px solid var(--border-medium)" [attr.aria-label]="'admin.tabsLabel' | translate"
+            style="background:var(--bg-bar);backdrop-filter:var(--blur-tile);-webkit-backdrop-filter:var(--blur-tile);border-top:1px solid var(--border-medium)" [attr.aria-label]="'admin.tabsLabel' | translate"
             data-testid="admin-bottom-nav">
             @for (tab of tabs; track tab.path) {
               <a [routerLink]="['/admin', tab.path]" [class.is-active]="isActive(tab)" [attr.aria-current]="isActive(tab) ? 'page' : null" [replaceUrl]="true"

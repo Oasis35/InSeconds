@@ -10,15 +10,16 @@ namespace InSeconds.Api.Modules.Runs.Application;
 
 /// <summary>Une partie terminée d'une playlist, vue par un autre joueur de cette playlist : jamais un morceau (piège 31), seulement des scores.</summary>
 /// <param name="Pseudo">Le pseudo du joueur ; vide pour un invité (« Invité » à l'écran).</param>
+/// <param name="RoundsPassed">Les manches terminées avant la dernière vie perdue.</param>
 /// <param name="Rounds">Le score de chaque manche de la playlist, dans l'ordre ; vide pour une manche non jouée (✕ à l'écran).</param>
 /// <param name="IsMe">C'est la partie du joueur qui regarde (« Toi »).</param>
 /// <param name="Tag">Un repère court, affiché en gris à côté du pseudo, seulement quand deux joueurs de la comparaison ont le même pseudo (jamais sinon) ;
 /// calculé à partir de l'identifiant du joueur, stable pour lui, jamais de son cookie.</param>
-public sealed record RunComparisonRowResponse(string? Pseudo, RunDiscResponse Disc, IReadOnlyList<int?> Rounds, int TotalScore, bool IsMe, string? Tag = null);
+public sealed record RunComparisonRowResponse(string? Pseudo, int RoundsPassed, IReadOnlyList<int?> Rounds, int TotalScore, bool IsMe, string? Tag = null);
 
 /// <summary>La comparaison des joueurs d'une playlist (écran de comparaison).</summary>
 /// <param name="AuthorPseudo">Le pseudo de son auteur ; vide pour un invité ou un compte effacé (« Invité » à l'écran).</param>
-/// <param name="PlayerCount">Les parties terminées (gagnées ou perdues) de cette playlist.</param>
+/// <param name="PlayerCount">Les parties terminées (vies épuisées) de cette playlist.</param>
 /// <param name="RoundCount">Les manches de la playlist (règles figées) : les colonnes M1 à Mn.</param>
 /// <param name="Rows">Une ligne par partie terminée, triée par total (à égalité : plus de manches passées, puis la première terminée).</param>
 public sealed record RunComparisonResponse(string Code, string? AuthorPseudo, int PlayerCount, int RoundCount, IReadOnlyList<RunComparisonRowResponse> Rows);
@@ -56,11 +57,12 @@ public static class GetRunComparisonEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     public static async Task<RunComparisonResponse> Get(
-        [NotBody] RunComparisonLoad load, ICurrentPlayer current, IRunsQueries queries, IPlayerDirectory players, IRunScoringPolicy scoring, RunsRules rules, CancellationToken ct)
+        [NotBody] RunComparisonLoad load, ICurrentPlayer current, IRunsQueries queries, IPlayerDirectory players, CancellationToken ct)
     {
         var challenge = load.Challenge!;
         var sessions = await queries.ListFinishedSessionsAsync(challenge.Id, ct);
-        var rounds = challenge.Tracks.Select(t => (int)t.Round).Distinct().Order().ToList();
+        // Les colonnes vont jusqu'à la manche la plus loin atteinte par un joueur (la playlist n'a pas de fin).
+        var rounds = Enumerable.Range(1, Math.Max(1, sessions.Count == 0 ? 1 : sessions.Max(s => s.RoundsPassed + 1))).ToList();
 
         var ids = sessions.Select(s => s.PlayerId).ToList();
         if (challenge.CreatedBy is { } createdBy)
@@ -75,8 +77,8 @@ public static class GetRunComparisonEndpoint
             .ThenBy(s => s.Id)
             .Select(s => new RunComparisonRowResponse(
                 pseudos.GetValueOrDefault(s.PlayerId),
-                Disc(s, rules.Discs),
-                rounds.Select(r => RoundScore(s, challenge, r, scoring)).ToList(),
+                s.RoundsPassed,
+                rounds.Select(r => RoundScore(s, challenge, r)).ToList(),
                 s.TotalScore,
                 s.PlayerId == current.PlayerId,
                 tags.GetValueOrDefault(s.PlayerId)))
@@ -86,16 +88,10 @@ public static class GetRunComparisonEndpoint
             challenge.Code, challenge.CreatedBy is { } author ? pseudos.GetValueOrDefault(author) : null, rows.Count, rounds.Count, rows);
     }
 
-    private static RunDiscResponse Disc(RunSession session, IReadOnlyList<string> discs)
-    {
-        var disc = DiscLadder.Of(session.RoundsPassed, discs);
-        return new RunDiscResponse(disc.Key, disc.Stars);
-    }
-
     /// <summary>Le score de la manche si elle a été jouée (au moins un morceau répondu), sinon vide.</summary>
-    private static int? RoundScore(RunSession session, RunChallenge challenge, int round, IRunScoringPolicy scoring)
+    private static int? RoundScore(RunSession session, RunChallenge challenge, int round)
     {
-        var played = challenge.Tracks.Any(t => t.Round == round && session.Answers.Any(a => a.Position == t.Position));
-        return played ? session.RoundProgressOf(challenge, round, scoring).Score : null;
+        var inRound = session.Answers.Where(a => challenge.Rules.RoundOf(a.Position) == round).ToList();
+        return inRound.Count > 0 ? inRound.Sum(a => a.Points) : null;
     }
 }

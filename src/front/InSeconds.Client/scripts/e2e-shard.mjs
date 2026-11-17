@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 const SPECS = fileURLToPath(new URL('../e2e/specs/', import.meta.url));
 const DEFAULT_WEIGHT = 10;
 
-// Durées mesurées en CI le 19/10/2026 (run 1557) ; runs.spec.ts estimé le 09/11/2026 (test « Risquée » ajouté) et admin-themes.spec.ts estimé le 11/11/2026, à mesurer au prochain réglage.
+// Durées mesurées en CI le 19/10/2026 (run 1557) ; runs.spec.ts estimé le 09/11/2026 et admin-themes.spec.ts estimé le 11/11/2026, à mesurer au prochain réglage.
 const WEIGHTS = {
   'admin-themes.spec.ts': 75,
   'admin-candidates.spec.ts': 40, // estimé le 11/11/2026, à mesurer

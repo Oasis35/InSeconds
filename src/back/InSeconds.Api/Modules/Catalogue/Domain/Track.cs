@@ -41,7 +41,7 @@ public sealed class Track
 
     public short? ReleaseYear { get; private set; }
 
-    /// <summary>Rang (popularité) chez Deezer, qui servira à la difficulté de Runs.</summary>
+    /// <summary>Rang (popularité) chez Deezer, qui sert aux tranches de notoriété de Runs.</summary>
     public int? DeezerRank { get; private set; }
 
     public DateTimeOffset? RankUpdatedAt { get; private set; }

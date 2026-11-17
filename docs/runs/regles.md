@@ -1,78 +1,84 @@
-# Run (Setlist) : règles du proto 1
+# Setlist (mode Run) : les règles de la Série
 
-Règles validées par Clément le 17/10/2026. Les écrans qui les montrent : [`ecrans.md`](ecrans.md). Leur traduction technique : [`conception.md`](conception.md). Les valeurs ci-dessous sont celles livrées avec le proto 1 (les défauts de `Runs:`) ; les seuils et la difficulté seront réglés après les parties de test (tout est réglable à chaud, cf. [Réglages](#réglages)).
+Règles validées par Clément en novembre 2026 (refonte « la Série », qui remplace le modèle à jauge, difficultés et cartes ; l'ancien modèle est archivé dans [`../historique/runs-ancien-modele/`](../historique/runs-ancien-modele/)). Les écrans : [`ecrans.md`](ecrans.md). Leur traduction technique : [`conception.md`](conception.md). Toutes les valeurs ci-dessous sont les défauts de `Runs:` (relus à chaud, cf. [Réglages](#réglages)).
+
+## Le principe
+
+On enchaîne des **manches de 3 morceaux**, jusqu'à avoir perdu ses **3 vies** ou joué **8 manches** (la « Série complète »). Une manche sans vie perdue rend une vie. Plus on avance, moins les morceaux sont connus, plus l'écoute raccourcit, plus un morceau rapporte. Le but est d'aller le plus loin possible, de battre ses amis sur la même playlist et de rejouer. Une partie dure de 6 à 8 minutes pour un joueur moyen.
+
+À l'écran, un défi s'appelle une **playlist** ; le code garde `challenge`.
 
 ## La playlist
 
-À l'écran, un défi s'appelle une **playlist** (Clément, 18/10) ; le code garde `challenge`.
-
-- Une playlist = **4 manches de 5 morceaux** (20 morceaux), tirés et enregistrés **à la création de la playlist**, sans doublon, dans **tout le catalogue jouable**, morceaux du Daily compris.
-- **Difficulté croissante** : le catalogue est trié par rang Deezer et coupé en 4 tranches, une par manche (manche 1 = les morceaux les plus connus). Un morceau sans rang va dans la tranche la moins connue.
-- Les règles (manches, seuils, multiplicateurs…) sont **figées dans la playlist** à sa création : un réglage changé ensuite ne touche pas une playlist existante, ni la partie d'un ami qui le relève plus tard.
-- **Runs illimités** : un joueur autorisé lance autant de runs qu'il veut. Chaque run est une nouvelle playlist.
+- Une playlist = une **suite de manches, 8 au plus** (le plafond), tirées **à la volée** depuis une graine jamais exposée : la manche 1 à la création, chacune des suivantes par le premier joueur qui y arrive, puis figée pour tous. Tous les joueurs d'une playlist jouent les mêmes morceaux, dans le même ordre.
+- **Les morceaux sont de moins en moins connus** : le catalogue jouable (Daily compris) est trié par rang Deezer et coupé en 8 tranches (`Runs:RankBands`) ; la manche k tire dans la tranche k, la dernière tranche se répète. Jamais deux fois le même morceau dans une playlist.
+- **Les règles sont figées dans la playlist** à sa création : un réglage changé ensuite ne touche pas une playlist existante, ni la partie d'un ami qui la rejoint plus tard.
+- **Illimité** : un joueur autorisé lance autant de parties qu'il veut ; chacune est une nouvelle playlist.
 
 ## Un morceau
 
-1. Le son démarre **au clic** (iPhone) : « Lancer une partie » (ou « Jouer » sur le lien d'un ami, « Reprendre » pour une partie en pause) pour le premier morceau, « Morceau suivant » pour les autres.
-2. **Écoute fixe de 10 s**, d'un seul tenant (pas de paliers comme au Daily, pas d'« écouter plus »). La relecture du lecteur du Daily reste possible : pas de limite de réécoute au proto 1.
-3. Le joueur tape **« Artiste - Titre »** dans un seul champ, avec l'autocomplétion Deezer du Daily, puis **Valider**. Valider un champ vide demande une confirmation.
-4. **Passer** donne 0 point, après confirmation.
-5. **Pas d'indice, un chrono de 45 s par morceau** (`Runs:AnswerSeconds`, décidé le 03/11) : il part au premier son et compte l'écoute, les réécoutes et la saisie. Réécouter reste libre, mais chaque écoute prend 10 s du chrono. Une réponse arrivée après le chrono (5 s de marge réseau) vaut 0 point ; à zéro, le navigateur envoie ce qui est tapé. Le chrono continue pendant une absence : à la reprise, il reste ce qui restait, ou le morceau vaut 0. Le serveur fait foi (heure du premier son, au plus 30 s après l'envoi de l'extrait).
-6. **La réponse s'affiche aussitôt** dans l'écran de la manche : pochette, artiste et titre, ce qui était juste (artiste, titre), les points gagnés, la jauge qui avance. Le joueur passe au morceau suivant quand il veut.
+1. Le son démarre **au clic** (iPhone) : « Lancer une partie », « Jouer » sur le lien d'un ami, « Reprendre » après une pause, « Manche suivante » entre deux manches.
+2. **Écoute d'un seul tenant**, de la durée du palier de la manche. Pas d'« écouter plus » ; la relecture (↺) reste libre.
+3. Le joueur tape **« Artiste - Titre »** dans un seul champ (autocomplétion Deezer), puis **Valider**. Pas d'indice.
+4. **Passer** : 0 point, une vie perdue, après confirmation.
+5. **Chrono de 45 s par morceau** (`Runs:AnswerSeconds`) : il part au premier son et compte l'écoute, les réécoutes et la saisie. À zéro, le navigateur envoie ce qui est tapé ; une réponse arrivée après le chrono (5 s de marge réseau) est un morceau passé. Le chrono continue pendant une absence. Le serveur fait foi.
+6. **La réponse s'affiche aussitôt** : pochette, artiste et titre, ce qui était juste, les points du morceau. Le joueur enchaîne quand il veut, ou après 2 s.
 
-## Les points
+## Les vies
 
-- **Points d'un morceau = (50 si l'artiste est juste + 50 si le titre est juste) × multiplicateur de la manche**, arrondi au plus proche sur le total du morceau. Artiste et titre sont corrigés séparément, avec la même tolérance qu'au Daily.
-- Multiplicateur, le même pour toute une manche : **×1 ; ×1,33 ; ×1,67 ; ×2**. Le joueur ne le voit pas à l'écran : il le voit dans les points gagnés.
-- Maximum par manche : 500, 665, 835, 1 000, soit **3 000** pour une playlist.
-- Un morceau est **trouvé** quand l'artiste et le titre sont justes (c'est ce que compte « 16 / 20 morceaux trouvés » à la fin).
+- **3 vies** au départ.
+- Une manche **terminée sans vie perdue** (une moitié juste ne compte pas comme une vie perdue) **rend une vie**, jamais au-delà des 3 du départ. Une manche où l'on a perdu une vie ne rend rien.
+- Un morceau **raté** (ni artiste ni titre), **passé** ou **répondu après le chrono** coûte **une vie**.
+- Une **moitié juste** (l'artiste ou le titre seulement) vaut **la moitié des points** et **ne coûte pas de vie**.
+- La **dernière vie perdue arrête la partie net**, au milieu d'une manche s'il le faut.
+- Un morceau **sans extrait** (Deezer l'a retiré depuis le tirage) est **neutralisé par le serveur** : 0 point, ni vie, ni palier touchés. Une panne passagère de Deezer ne neutralise pas : le joueur réessaie.
 
-## La jauge
+## L'écoute et les points
 
-- Chaque manche a un **objectif** : un pourcentage du maximum de la manche, **45, 55, 68 puis 80 %**, soit 225, 366, 568 et 800 points (40, 50, 60 et 70 % pour les playlists créées avant le 05/11/2026, qui gardent leurs règles figées). Le proto 2 en fait l'objectif de « Normal » (ex « Sûre ») ([`proto2.md`](proto2.md)). Le score de la manche doit l'atteindre (`>=`) pour **débloquer la manche suivante**.
-- La jauge se remplit à chaque réponse. Pleine avant la fin de la manche, on joue quand même les morceaux restants : **la jauge ne sert qu'à passer, ce qui compte ce sont les points** (Clément, 17/10).
-- **Morceau sans extrait** (Deezer l'a retiré depuis le tirage) : **neutralisé** par le serveur. Il ne rapporte rien et sort du maximum de la manche ; l'objectif se recalcule sur les morceaux restants. Une manche entièrement neutralisée est passée. Une panne passagère de Deezer ne neutralise pas : le joueur réessaie.
+L'écoute suit une **échelle de paliers** : **10, 5, 3, 2, 1, 0,5 s** (le dernier palier se répète). Un morceau **trouvé en entier** rapporte les points de son palier, **100, 200, 350, 550, 800, 1 200**, sans multiplicateur. Artiste et titre sont corrigés séparément, avec la même tolérance qu'au Daily.
+
+Le palier d'une manche se **calcule** depuis les réponses de la manche d'avant, jamais stocké :
+- **manche terminée sans vie perdue** (les moitiés justes ne gênent plus) : le palier **raccourcit** d'un cran ;
+- **manche avec au moins une vie perdue** : le palier **rallonge** d'un cran, jamais au-dessus de 10 s (une erreur au premier palier le laisse là) ;
+- une manche où tous les morceaux ont été retirés (neutralisés) ne bouge pas.
+
+L'écran de bilan entre deux manches le dit : « L'écoute raccourcit », « L'écoute reste la même », « L'écoute rallonge ».
+
+## Les thèmes
+
+À partir de la **manche 2**, quand au moins 3 thèmes ont assez de morceaux libres, le **premier joueur arrivé** à la manche choisit entre **deux thèmes** tirés au sort et le **thème mystère** (un autre thème, révélé après le choix). Son choix s'applique à la manche pour tous les joueurs de la playlist. Sans offre possible, la manche se joue sans thème. Les thèmes sont ceux de l'admin (onglet Contenu > Thèmes).
 
 ## La fin
 
-- Une manche passée se ferme par une ligne de palier dans la pile des morceaux (disque gagné, score / objectif) : pas d'écran de bilan (Clément, 03/11).
-- **Jauge non remplie à la fin d'une manche = fin du run** (défaite). Les manches suivantes ne se jouent pas.
-- **4 manches passées = victoire**.
-- Score final = total des points de toutes les manches jouées.
-- **Disque obtenu** = nombre de manches passées :
-
-| Manches passées | Disque |
-|---|---|
-| 0 | Disque rayé |
-| 1 | Disque de cire |
-| 2 | Disque de bronze |
-| 3 | Disque d'argent |
-| 4 (victoire du proto 1) | Disque d'or |
-
-La suite de l'échelle est prévue pour quand un run aura plus de 4 manches : platine, diamant, cristal, lunaire, cosmique, puis cosmique ★2, ★3… (au-delà de la liste, le dernier disque prend une étoile de plus).
-
-- **Record** : meilleur score et meilleur disque, par joueur (invité compris). L'écran de fin dit « Nouveau record » ou rappelle le record.
-- **Abandon** : possible à tout moment pendant une manche (lien « Abandonner », comme au Daily). Une partie abandonnée est finie.
+- **Trois vies perdues** = fin de la partie ; **la 8e manche terminée avec au moins une vie** = **« Série complète »** ; **« Abandonner »** (à tout moment) aussi, mais un abandon ne compte pas pour le record.
+- **Score final** = total des points de tous les morceaux, plus, pour une **Série complète**, **250 points par vie restante** et **500 points de complétion**. Une égalité de score n'est pas départagée. On est jugé sur le **score** et le nombre de **manches passées** (manches terminées avec au moins une vie).
+- **Record** : meilleur score par joueur (invité compris). L'écran de fin dit « Nouveau record » ou rappelle le record.
+- **Niveau** : les parties alimentent le niveau du joueur (disques, de Rayé à Diamant), cf. [`proto4.md`](proto4.md).
 - **Interruption** : une partie en cours se reprend au morceau en cours (même verrou anti-triche que le Daily).
 
-## La playlist partagée
+## Battre ses amis
 
-- Chaque run a un lien : **`inseconds.cc/runs/K7Q2M9`** (code de 6 caractères sans caractère ambigu, saisie insensible à la casse). Il se partage depuis l'écran de fin (« Partager mon score » : le score en grille et « Fais mieux » avec le lien) et depuis la comparaison (« Partager la playlist »).
-- Tous ceux qui ouvrent le lien jouent **les mêmes 20 morceaux, dans le même ordre**, **une seule fois** chacun, sans compte obligatoire (un invité est créé comme au Daily).
-- Les 20 morceaux sont tirés dès le départ : un ami peut aller plus loin que l'auteur de la playlist si celui-ci a perdu avant la fin.
-- **Comparaison** : après avoir fini sa partie (une partie abandonnée est finie), chacun voit toutes les parties **gagnées ou perdues** sur cette playlist, manche par manche (une manche non jouée est vide), avec le pseudo de chacun (« Invité » pour un invité), son disque et son total, triées par total. Rouvrir le lien d'une playlist déjà jouée mène directement à la comparaison : une playlist se joue une seule fois. **Ce n'est pas un classement général** : seuls ceux qui ont le lien la voient, et la page de confidentialité le dit.
+- Chaque playlist a un lien **`inseconds.cc/setlist/K7Q2M9`** (code de 6 caractères sans caractère ambigu). Il se partage depuis la fin d'une partie (« Défier un ami » : la grille d'emojis par manche et « Fais mieux » avec le lien).
+- **Une playlist se joue une seule fois par joueur**, sans compte obligatoire (un invité est créé comme au Daily).
+- **Le fantôme** : en jouant la playlist d'un ami, on voit son total au même morceau et l'écart. **Au-delà de son score figé** (il a perdu ses vies, pas vous), on continue : « Tu bats Léa ».
+- **Duel** : à la fin, quand l'ami a fini la playlist, la première ligne dit « Tu bats Léa de 126 pts » (ou l'écart qui reste) ; « Revanche » relance une partie contre lui.
+- **Comparaison** : après avoir fini sa propre partie (un abandon compte), on voit tous les joueurs de la playlist, manche par manche, avec leur pseudo (« Invité » pour un invité) et leur total. Ce n'est **pas un classement général** : seuls ceux qui ont le lien la voient.
+- **Hits** : 17 jalons calculés à la lecture sur les parties finies, rien de stocké :
+  - débuts : première setlist, record battu, premier groupe (le seul côté groupes) ;
+  - volume : 10 setlists, 50 setlists, **Marathon** (8 manches jouées en entier dans une même partie) ;
+  - jeu : manche parfaite, **Oreille d'or** (un morceau trouvé en entier à l'écoute de 0,5 s), **Sans une égratignure** (3 manches de suite sans perdre une vie), **Mystère résolu** (une manche au thème mystère, choisi par le joueur, dont tous les morceaux sont trouvés en entier), 10 bonnes réponses d'affilée ;
+  - social : un ami a joué ta setlist, duel gagné, **Fantôme battu en retard** (dépasser l'ami après son arrêt : aller plus loin que lui et faire plus de points que son total), 5 duels ;
+  - niveau : niveau Or, niveau Diamant.
 
-## L'accès pendant le proto
+## L'accès
 
-- **Sur invitation** : Setlist n'est ouvert qu'aux comptes que Clément autorise, par un interrupteur dans l'onglet Joueurs de l'admin. Les admins ont l'accès d'office. Un invité sans compte n'y a pas accès. L'interrupteur est distinct du rôle admin (qui reste posé en SQL seulement).
-- Sans accès, rien ne change pour le joueur : pas de carte Setlist sur l'accueil, et l'adresse `/setlist` renvoie vers le Daily.
-- **Lien reçu** : un ami sans accès qui ouvre le lien d'une playlist peut jouer **cette playlist-là seulement**, invité compris. À la fin, il ne voit pas « Rejouer » mais une invitation à jouer au Daily.
+- **Sur invitation** : réservé aux comptes autorisés par l'admin (onglet Joueurs), admins d'office. Un invité sans compte n'a pas l'accès. L'interrupteur est distinct du rôle admin.
+- Sans accès, rien ne change pour le joueur : pas de carte Setlist, et `/setlist` renvoie vers le Daily.
+- **Lien reçu** : un ami sans accès qui ouvre le lien d'une playlist peut jouer **cette playlist-là seulement**, invité compris ; à la fin, une invitation à jouer au Daily remplace « Rejouer ».
 - Retirer l'accès n'interrompt pas une partie en cours ; cela empêche seulement d'en lancer une nouvelle.
 
 ## Réglages
 
-Tous relus à chaud (`Runs:…` dans `infra.settings`), contrôlés au démarrage de l'API et à l'usage : nombre de manches (4), morceaux par manche (5), durée d'écoute (10 s), objectifs en pourcentage (45, 55, 65, 75), multiplicateurs minimum et maximum (×1 et ×2), échelle des disques.
+Tous relus à chaud (`Runs:…`, `infra.settings`), contrôlés au démarrage de l'API **et** à l'usage (une valeur incohérente retombe sur les défauts) : `Lives` (3), `TracksPerRound` (3), `RegainLife` (vrai), `ShortenOnNoLifeLost` (vrai), `MaxRounds` (8 ; 0 : pas de plafond), `LifeBonus` (250), `CompleteBonus` (500), `ListenLadder` (10, 5, 3, 2, 1, 0,5), `StepPoints` (100 à 1 200), `AnswerSeconds` (45), `RankBands` (8), `Levels` (le niveau). Tableau complet : [`CLAUDE.md`](../../CLAUDE.md) § Réglages.
 
-## Ce qui n'est pas dans le proto 1
-
-Bonus et contraintes, thèmes et genres en jeu, fantôme, mode infini, classement, série, statistiques dans l'admin, accueil à deux modes. Cf. [`plan.md`](plan.md).
+**Les playlists d'avant** (créées avant les règles d'équilibrage de novembre 2026) gardent les règles figées à leur création : manches de 5, pas de vie regagnée, l'écoute ne raccourcit qu'après une manche où tout est trouvé en entier, pas de plafond ni de bonus.

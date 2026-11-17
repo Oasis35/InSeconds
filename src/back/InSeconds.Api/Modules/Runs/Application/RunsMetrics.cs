@@ -6,9 +6,9 @@ namespace InSeconds.Api.Modules.Runs.Application;
 
 /// <summary>
 /// Métriques OpenTelemetry du mode Run, pour le tableau Grafana « Activité » : des compteurs plutôt que des regex sur le texte des journaux. Aucun
-/// identifiant de joueur, de morceau ni de playlist en étiquette (cardinalité bornée : événement, manche, trouvé ou non, disque, difficulté, carte).
+/// identifiant de joueur, de morceau ni de playlist en étiquette (cardinalité bornée : événement, manche, trouvé ou non, palier, disque de niveau).
 /// Noms côté Prometheus : <c>inseconds_runs_sessions_total</c>, <c>inseconds_runs_answers_total</c>, <c>inseconds_runs_neutralized_total</c>,
-/// <c>inseconds_runs_discs_total</c>, <c>inseconds_runs_difficulties_total</c>, <c>inseconds_runs_cards_total</c>, <c>inseconds_runs_duels_total</c>,
+/// <c>inseconds_runs_rounds_total</c>, <c>inseconds_runs_duels_total</c>,
 /// <c>inseconds_runs_levels_total</c>.
 /// </summary>
 public sealed class RunsMetrics
@@ -18,9 +18,7 @@ public sealed class RunsMetrics
     public const string SessionsName = "inseconds.runs.sessions";
     public const string AnswersName = "inseconds.runs.answers";
     public const string NeutralizedName = "inseconds.runs.neutralized";
-    public const string DiscsName = "inseconds.runs.discs";
-    public const string DifficultiesName = "inseconds.runs.difficulties";
-    public const string CardsName = "inseconds.runs.cards";
+    public const string RoundsName = "inseconds.runs.rounds";
     public const string DuelsName = "inseconds.runs.duels";
     public const string LevelsName = "inseconds.runs.levels";
 
@@ -34,23 +32,17 @@ public sealed class RunsMetrics
     public const string DuelBehind = "behind";
     public const string DuelTied = "tied";
 
-    /// <summary>Étiquette <c>action</c> des coups de pouce : carte gagnée en franchissant une manche, ou morceau changé (Échange).</summary>
-    public const string CardEarnedAction = "earned";
-    public const string SwappedAction = "swapped";
-
-    /// <summary>Étiquette <c>event</c> des parties : run lancé (nouvelle playlist), playlist relevée, gagnée, perdue, abandonnée.</summary>
+    /// <summary>Étiquette <c>event</c> des parties : run lancé (nouvelle playlist), playlist relevée, perdue (plus de vie), abandonnée.</summary>
     public const string Launched = "launched";
     public const string Joined = "joined";
-    public const string Won = "won";
     public const string Lost = "lost";
+    public const string Completed = "completed";
     public const string Abandoned = "abandoned";
 
     private readonly Counter<long> _sessions;
     private readonly Counter<long> _answers;
     private readonly Counter<long> _neutralized;
-    private readonly Counter<long> _discs;
-    private readonly Counter<long> _difficulties;
-    private readonly Counter<long> _cards;
+    private readonly Counter<long> _rounds;
     private readonly Counter<long> _duels;
     private readonly Counter<long> _levels;
 
@@ -60,9 +52,7 @@ public sealed class RunsMetrics
         _sessions = meter.CreateCounter<long>(SessionsName, description: "Parties du mode Run, par événement (event).");
         _answers = meter.CreateCounter<long>(AnswersName, description: "Réponses données, par manche, artiste et titre trouvés.");
         _neutralized = meter.CreateCounter<long>(NeutralizedName, description: "Morceaux neutralisés (Deezer n'a plus d'extrait).");
-        _discs = meter.CreateCounter<long>(DiscsName, description: "Disques obtenus à la fin d'une partie gagnée ou perdue, par clé (disc).");
-        _difficulties = meter.CreateCounter<long>(DifficultiesName, description: "Difficultés choisies, par manche (round) et difficulté (difficulty).");
-        _cards = meter.CreateCounter<long>(CardsName, description: "Coups de pouce, par action (action : carte gagnée, morceau changé) et carte (card).");
+        _rounds = meter.CreateCounter<long>(RoundsName, description: "Manches terminées, par manche (round) et résultat (outcome : shorter, same, longer).");
         _levels = meter.CreateCounter<long>(LevelsName, description: "Niveaux recalculés à la fin d'une partie, par disque de niveau (disc), changement (change) et provisoire (provisional).");
         _duels = meter.CreateCounter<long>(DuelsName, description: "Duels finis contre l'ami qui a lancé la playlist, par résultat (result : devant, derrière, égalité).");
     }
@@ -74,17 +64,15 @@ public sealed class RunsMetrics
     public void SessionAbandoned() => Session(Abandoned);
 
     /// <summary>
-    /// La fin d'une partie gagnée ou perdue, avec le disque obtenu ; une partie perdue dit aussi la manche ratée (<c>round</c>, la seule façon de
-    /// perdre : l'objectif manqué), pour régler les seuils.
+    /// La fin d'une partie : perdue (plus de vie ; <c>round</c> : la manche où la dernière vie est tombée) ou « Série complète » (<c>completed</c>,
+    /// le plafond de manches atteint ; <c>round</c> : la dernière manche), avec le nombre de manches terminées, pour régler les paliers.
     /// </summary>
-    public void SessionEnded(bool won, string disc, int roundsPassed)
-    {
-        if (won)
-            Session(Won);
-        else
-            _sessions.Add(1, new KeyValuePair<string, object?>("event", Lost), new KeyValuePair<string, object?>("round", roundsPassed + 1));
-        _discs.Add(1, new KeyValuePair<string, object?>("disc", disc));
-    }
+    public void SessionEnded(int roundsPassed, bool completed = false) =>
+        _sessions.Add(1, new KeyValuePair<string, object?>("event", completed ? Completed : Lost), new KeyValuePair<string, object?>("round", completed ? roundsPassed : roundsPassed + 1));
+
+    /// <summary>Une manche terminée : son numéro et ce qu'elle a fait du palier (<c>shorter</c>, <c>same</c>, <c>longer</c>).</summary>
+    public void RoundEnded(int round, string outcome) =>
+        _rounds.Add(1, new KeyValuePair<string, object?>("round", round), new KeyValuePair<string, object?>("outcome", outcome));
 
     /// <summary>La fin d'une partie jouée sur la playlist d'un ami qui l'a finie : le joueur est devant, derrière ou à égalité.</summary>
     public void DuelEnded(int gap) =>
@@ -99,13 +87,6 @@ public sealed class RunsMetrics
             new KeyValuePair<string, object?>("change", current.FromPoints > previousDiscFrom ? LevelUp : current.FromPoints < previousDiscFrom ? LevelDown : LevelSame),
             new KeyValuePair<string, object?>("provisional", provisional));
 
-    public void DifficultyChosen(int round, string difficulty) =>
-        _difficulties.Add(1, new KeyValuePair<string, object?>("round", round), new KeyValuePair<string, object?>("difficulty", difficulty));
-
-    public void CardEarned(string card) => Card(CardEarnedAction, card);
-
-    public void TrackSwapped() => Card(SwappedAction, RunCards.KeyOf(RunCard.Swap));
-
     public void AnswerSubmitted(RoundOutcome outcome, int round) =>
         _answers.Add(1,
             new KeyValuePair<string, object?>("round", round),
@@ -115,7 +96,4 @@ public sealed class RunsMetrics
     public void TrackNeutralized() => _neutralized.Add(1);
 
     private void Session(string @event) => _sessions.Add(1, new KeyValuePair<string, object?>("event", @event));
-
-    private void Card(string action, string card) =>
-        _cards.Add(1, new KeyValuePair<string, object?>("action", action), new KeyValuePair<string, object?>("card", card));
 }

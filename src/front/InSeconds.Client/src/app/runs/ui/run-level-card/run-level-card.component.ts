@@ -15,8 +15,8 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
-    <section class="rounded-(--radius-card) px-4 py-3 flex flex-col gap-2" data-testid="run-level" [attr.data-disc]="level().disc.key"
-      style="background:rgb(var(--rgb-surface) / 0.55);border:1px solid var(--border-subtle)"
+    <section [class.tube-amber]="focus()" [style.border]="focus() ? null : '1px solid var(--border-medium)'" class="rounded-(--radius-card) px-4 py-3 flex flex-col gap-2" data-testid="run-level" [attr.data-disc]="level().disc.key"
+      style="background:var(--bg-surface)"
       [attr.aria-label]="'runs.level.label' | translate: { disc: (level().disc.key | translate), points: format(level().points) }">
       <div class="flex items-center gap-2.5">
         <app-run-disc class="shrink-0" [disc]="level().disc.key" [size]="28" [shine]="false" />
@@ -69,6 +69,8 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
 })
 export class RunLevelCardComponent {
   readonly level = input.required<RunLevel>();
+  /** La tuile de focus de l'écran (tube ambre) : faux quand l'écran en a déjà une autre, ou son bouton principal (l'accueil du mode). */
+  readonly focus = input(true);
   readonly lang = input<'fr' | 'en'>('fr');
   /** Le lien de la partie dans l'historique ; `null` : pas de « Revoir ». */
   readonly reviewLink = input<string | null>(null);

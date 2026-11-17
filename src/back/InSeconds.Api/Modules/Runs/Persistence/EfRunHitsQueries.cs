@@ -9,12 +9,12 @@ namespace InSeconds.Api.Modules.Runs.Persistence;
 public sealed class EfRunHitsQueries(InSecondsDbContext db) : IRunHitsQueries
 {
     private IQueryable<RunSession> Finished() =>
-        db.Set<RunSession>().AsNoTracking().Where(s => (s.Status == RunSessionStatus.Won || s.Status == RunSessionStatus.Lost) && s.EndedAt != null);
+        db.Set<RunSession>().AsNoTracking().Where(s => (s.Status == RunSessionStatus.Lost || s.Status == RunSessionStatus.Completed) && s.EndedAt != null);
 
     public async Task<RunHitFacts> GetFactsAsync(Guid playerId, CancellationToken ct)
     {
         var sessions = await Finished().Where(s => s.PlayerId == playerId)
-            .Include(s => s.Answers).Include(s => s.Rounds).Include(s => s.Cards).AsSplitQuery()
+            .Include(s => s.Answers)
             .OrderBy(s => s.EndedAt).ThenBy(s => s.Id)
             .ToListAsync(ct);
         var challengeIds = sessions.Select(s => s.ChallengeId).Distinct().ToList();
@@ -38,14 +38,14 @@ public sealed class EfRunHitsQueries(InSecondsDbContext db) : IRunHitsQueries
         var runs = sessions.Where(s => challenges.ContainsKey(s.ChallengeId)).Select(session =>
         {
             var challenge = challenges[session.ChallengeId];
-            var rounds = challenge.Tracks.ToDictionary(t => (int)t.Position, t => (int)t.Round);
+            var rules = challenge.Rules;
             return new RunHitRun(
-                session.Status == RunSessionStatus.Won, session.TotalScore, challenge.Rules.Rounds, challenge.Rules.TracksPerRound,
-                session.Rounds.ToDictionary(r => (int)r.Round, r => r.Difficulty),
+                session.TotalScore, rules.TracksPerRound,
                 [.. session.Answers.OrderBy(a => a.Position).Select(a => new RunHitAnswer(
-                    a.Position, rounds.GetValueOrDefault(a.Position), a.ArtistCorrect && a.TitleCorrect, a.Neutralized))],
-                session.Cards.Any(c => c.IsEarned),
-                friendPoints.GetValueOrDefault(session.ChallengeId));
+                    a.Position, rules.RoundOf(a.Position), a.ArtistCorrect && a.TitleCorrect, a.Neutralized,
+                    rules.ListenAt(session.StepOf(rules, rules.RoundOf(a.Position))), a.IsFailed))],
+                friendPoints.GetValueOrDefault(session.ChallengeId),
+                rules.Themes?.Where(t => t.Mystery).Select(t => t.Round).ToHashSet());
         }).ToList();
         return new RunHitFacts(runs, friendPlayedMine);
     }

@@ -1,6 +1,6 @@
 namespace InSeconds.Api.Modules.Runs.Application;
 
-// Ce que portent les réponses des routes de la partie, dicté par les écrans (docs/runs/conception.md § 3.5). **Rien qui identifie un morceau avant
+// Ce que portent les réponses des routes de la partie, dicté par les écrans (docs/runs/ecrans.md). **Rien qui identifie un morceau avant
 // sa réponse** (piège 31) : ni nom, ni pochette, ni identifiant Deezer d'un morceau à venir, et l'adresse d'extrait du morceau en cours seulement.
 
 /// <summary>
@@ -19,23 +19,12 @@ public sealed record RunTrackResponse(
     int Position, int Round, bool Neutralized, bool ArtistCorrect, bool TitleCorrect, int Points,
     string? Artist, string? Title, string? CoverUrl, long? DeezerTrackId, string? Waveform = null);
 
-/// <summary>La manche en cours : la jauge.</summary>
-/// <param name="Score">Les points de la manche.</param>
-/// <param name="Objective">Les points à atteindre pour la passer (recalculé sans les morceaux neutralisés).</param>
-/// <param name="MaxScore">Ce que rapportent au plus ses morceaux non neutralisés, à la difficulté de la manche (son plafond).</param>
-/// <param name="Difficulty">Sa difficulté : <c>easy</c>, <c>safe</c> ou <c>risky</c> (« Sûre » tant qu'elle n'est pas choisie).</param>
-public sealed record RunRoundResponse(int Round, int Score, int Objective, int MaxScore, string Difficulty);
-
-/// <summary>Une difficulté proposée pour la manche à venir (une colonne de l'écran « Difficulté ? »).</summary>
-/// <param name="Difficulty"><c>easy</c>, <c>safe</c> ou <c>risky</c>.</param>
-/// <param name="Objective">Les points à atteindre pour passer la manche à cette difficulté (le cadenas).</param>
-/// <param name="MaxScore">Ce que la manche rapporte au plus à cette difficulté (la hauteur de la colonne).</param>
-/// <param name="ListenSeconds">L'écoute d'un morceau de la manche à cette difficulté (plus courte pour la manche boss).</param>
-public sealed record RunDifficultyOptionResponse(string Difficulty, int Objective, int MaxScore, decimal ListenSeconds);
-
-/// <summary>Le choix de difficulté qui attend le joueur : la manche en cours n'a pas encore commencé et propose plusieurs difficultés.</summary>
-/// <param name="Options">Les difficultés proposées, de la plus facile à la plus risquée.</param>
-public sealed record RunDifficultyChoiceResponse(int Round, IReadOnlyList<RunDifficultyOptionResponse> Options);
+/// <summary>La manche en cours.</summary>
+/// <param name="Score">Les points déjà marqués dans la manche.</param>
+/// <param name="ListenSeconds">L'écoute d'un morceau de la manche (son palier).</param>
+/// <param name="FullPoints">Ce que rapporte un morceau trouvé en entier à ce palier.</param>
+/// <param name="Failed">Les morceaux ratés (une vie perdue chacun) dans la manche : la manche n'est pas « sans erreur ».</param>
+public sealed record RunRoundResponse(int Round, int Score, decimal ListenSeconds, int FullPoints, int Failed);
 
 /// <summary>Le morceau à jouer maintenant.</summary>
 /// <param name="PositionInRound">Sa place dans la manche (« Morceau 3 sur 5 »).</param>
@@ -44,53 +33,35 @@ public sealed record RunDifficultyChoiceResponse(int Round, IReadOnlyList<RunDif
 /// morceau reste en cours.
 /// </param>
 /// <param name="ListenSeconds">
-/// Son écoute fixe, à la difficulté de sa manche (la manche boss est plus courte) : c'est elle qui fait foi.
+/// Son écoute, au palier de sa manche : c'est elle qui fait foi.
 /// </param>
 /// <param name="Waveform">La forme de l'extrait en base64 (cf. <c>TrackSlot</c> du Daily), vide si elle n'est pas calculée : le navigateur calcule la sienne.</param>
-/// <param name="Effects">La carte active sur ce morceau et ce qu'elle révèle (servi pour lui seul, piège 31) ; vide sans carte.</param>
 public sealed record RunCurrentTrackResponse(
-    int Position, int Round, int PositionInRound, string? PreviewUrl, decimal ListenSeconds, string? Waveform = null,
-    RunTrackEffectsResponse? Effects = null);
-
-/// <summary>Ce que la carte active sur le morceau en cours change ou révèle.</summary>
-/// <param name="Cards">Les cartes actives, par leur nom d'API.</param>
-/// <param name="Year">« Indice » : l'année du morceau (vide si elle est inconnue).</param>
-/// <param name="ArtistInitials">« Indice » : les initiales de chaque mot de l'artiste.</param>
-/// <param name="TitleInitials">« Indice » : les initiales de chaque mot du titre.</param>
-/// <param name="Choices">« QCM » : trois réponses, une seule juste, dans un ordre qui ne la trahit pas.</param>
-/// <param name="Genre">« Indice » : le premier genre de l'album du morceau (vide s'il n'en a pas en base).</param>
-public sealed record RunTrackEffectsResponse(
-    IReadOnlyList<string> Cards, int? Year, IReadOnlyList<string>? ArtistInitials, IReadOnlyList<string>? TitleInitials,
-    IReadOnlyList<RunChoiceResponse>? Choices, string? Genre = null);
-
-/// <summary>Une réponse proposée par « QCM ».</summary>
-public sealed record RunChoiceResponse(string Artist, string Title);
-
-/// <summary>La carte en main (une seule à la fois) : gagnée à la manche d'avant, elle aide toute la manche en cours.</summary>
-/// <param name="Slot">Son numéro dans la partie.</param>
-/// <param name="Card">Son nom d'API (<c>three_choices</c>, <c>hint</c> ou <c>extend</c>).</param>
-public sealed record RunHandCardResponse(int Slot, string Card);
+    int Position, int Round, int PositionInRound, string? PreviewUrl, decimal ListenSeconds, string? Waveform = null);
 
 /// <summary>Un morceau que le serveur vient de neutraliser (Deezer n'en a plus d'extrait), pour l'écran « morceau retiré de la manche ».</summary>
-/// <param name="ObjectiveBefore">L'objectif de la manche avant la neutralisation (l'écran le barre).</param>
-/// <param name="ObjectiveAfter">L'objectif recalculé sur les morceaux restants.</param>
-public sealed record RunNeutralizedResponse(int Position, int Round, int ObjectiveBefore, int ObjectiveAfter);
+public sealed record RunNeutralizedResponse(int Position, int Round);
 
 /// <summary>Le bilan d'une manche qui vient de se terminer (écran de fin de manche).</summary>
-/// <param name="Passed">L'objectif est atteint : la manche suivante est débloquée (ou la partie gagnée si c'était la dernière).</param>
+/// <param name="Score">Les points de la manche.</param>
+/// <param name="Outcome"><c>shorter</c> (sans vie perdue : le palier raccourcit), <c>same</c> (le palier ne bouge pas) ou <c>longer</c> (une erreur : il s'allonge).</param>
+/// <param name="ListenSeconds">L'écoute de la manche qui se termine.</param>
+/// <param name="NextListenSeconds">L'écoute de la manche suivante.</param>
 /// <param name="Tracks">Ses morceaux, révélés, avec leurs points.</param>
 /// <param name="TotalScore">Le score total de la partie à la fin de cette manche.</param>
-/// <param name="RewardCard">La carte que cette manche a fait gagner (son nom d'API) : elle aide la manche suivante ; vide sinon.</param>
+/// <param name="LivesLeft">Les vies qui restent.</param>
+/// <param name="FullPoints">Ce que rapportait un morceau trouvé en entier à l'écoute de la manche qui se termine.</param>
+/// <param name="NextFullPoints">Ce que rapportera un morceau trouvé en entier à l'écoute de la manche suivante.</param>
+/// <param name="LifeRegained">Cette manche, finie sans vie perdue, vient de rendre une vie (<c>livesLeft</c> la compte déjà).</param>
 public sealed record RunRoundSummaryResponse(
-    int Round, bool Passed, int Score, int Objective, IReadOnlyList<RunTrackResponse> Tracks, int TotalScore, string? RewardCard = null);
+    int Round, int Score, string Outcome, decimal ListenSeconds, decimal NextListenSeconds, IReadOnlyList<RunTrackResponse> Tracks, int TotalScore,
+    int LivesLeft, int FullPoints, int NextFullPoints, bool LifeRegained = false);
 
-/// <summary>Une manche passée de la partie en cours : la ligne de palier de la pile (« Disque de bronze · manche 2 · 412 / 333 »).</summary>
-/// <param name="Disc">Le disque que cette manche a fait gagner (la clé de traduction).</param>
-/// <param name="Difficulty">La difficulté à laquelle elle a été jouée.</param>
-public sealed record RunPassedRoundResponse(int Round, int Score, int Objective, RunDiscResponse Disc, string Difficulty);
+/// <summary>Une manche déjà jouée : une ligne de la pile.</summary>
+public sealed record RunPassedRoundResponse(int Round, int Score, decimal ListenSeconds, string? Theme);
 
-/// <summary>Le score d'une manche à l'écran de fin ; score, objectif et difficulté vides pour une manche non jouée.</summary>
-public sealed record RunRoundScoreResponse(int Round, int? Score, int? Objective, bool Passed, string? Difficulty);
+/// <summary>Le score d'une manche à l'écran de fin ; vide pour une manche non jouée.</summary>
+public sealed record RunRoundScoreResponse(int Round, int? Score, decimal ListenSeconds, string? Theme);
 
 /// <param name="Key">La clé de traduction du disque (<c>runs.discs.gold</c>), jamais un texte.</param>
 /// <param name="Stars">Ses étoiles au-delà de l'échelle des disques (0 sinon).</param>
@@ -116,61 +87,48 @@ public sealed record RunLevelResponse(
     int Points, RunDiscResponse Disc, RunDiscResponse? NextDisc, int? PointsToNext, int ProgressPercent, bool Provisional, int RunsPlayed, int? Delta);
 
 /// <summary>Le résultat d'une partie finie (écran de fin).</summary>
-/// <param name="Status"><c>won</c>, <c>lost</c> ou <c>abandoned</c>.</param>
+/// <param name="Status"><c>lost</c> (plus de vie) ou <c>abandoned</c>.</param>
 /// <param name="FoundCount">Morceaux trouvés (artiste et titre justes).</param>
-/// <param name="TrackCount">Morceaux de la playlist (les carrés de l'écran de fin) ; ceux qui manquent à <paramref name="Tracks"/> n'ont pas été joués.</param>
+/// <param name="TrackCount">Morceaux joués (neutralisés exclus).</param>
 /// <param name="Tracks">Chaque morceau joué, par position.</param>
-/// <param name="Rounds">Chaque manche de la playlist, jouée ou non.</param>
+/// <param name="Rounds">Chaque manche jouée (même entamée), avec son score.</param>
 /// <param name="Record">Le record du joueur ; vide s'il n'en a pas encore (une partie abandonnée ne compte pas).</param>
 /// <param name="ChallengeCode">Le code de la playlist, pour la partager.</param>
-/// <param name="Shortfall">
-/// Ce qui a manqué à une partie perdue pour le disque suivant (« Il t'a manqué 12 pts pour le Disque de bronze ») ; vide pour une partie gagnée ou
-/// abandonnée.
-/// </param>
 /// <param name="Level">
-/// Le niveau du joueur après cette partie, avec ce qu'elle lui a fait gagner ou perdre (<c>delta</c>) ; une partie abandonnée ne compte pas
-/// (son niveau est rendu sans <c>delta</c>) ; vide si le joueur n'a encore fini aucune partie.
+/// Le niveau du joueur après cette partie, avec ce qu'elle lui a fait gagner ou perdre (<c>delta</c>) ; vide si le joueur n'a encore fini aucune partie.
 /// </param>
+/// <param name="LivesLeft">Les vies restantes à la fin (celles qui rapportent le bonus d'une Série complète).</param>
+/// <param name="LifeBonus">Les points de bonus des vies restantes, déjà dans le score ; 0 hors Série complète.</param>
+/// <param name="CompleteBonus">Les points de la Série complète, déjà dans le score ; 0 sinon.</param>
 public sealed record RunFinishResponse(
-    string Status, RunDiscResponse Disc, int TotalScore, int RoundsPassed, int FoundCount, int TrackCount,
+    string Status, int TotalScore, int RoundsPassed, int FoundCount, int TrackCount,
     IReadOnlyList<RunTrackResponse> Tracks, IReadOnlyList<RunRoundScoreResponse> Rounds, RunRecordResponse? Record, string ChallengeCode,
-    RunShortfallResponse? Shortfall, RunLevelResponse? Level = null);
+    RunLevelResponse? Level = null, int LivesLeft = 0, int LifeBonus = 0, int CompleteBonus = 0);
 
-/// <summary>Les points qui manquaient à l'objectif de la manche ratée, et le disque qu'elle aurait donné.</summary>
-public sealed record RunShortfallResponse(int Points, RunDiscResponse Disc);
-
-/// <summary>L'état d'une partie : en-tête, jauge et pastilles de la manche en cours, ou le résultat de fin.</summary>
-/// <param name="Status"><c>pending</c>, <c>won</c>, <c>lost</c> ou <c>abandoned</c>.</param>
-/// <param name="Rounds">Les manches de la playlist (règles figées).</param>
-/// <param name="ListenSeconds">
-/// L'écoute normale d'un morceau (règles figées) ; celle du morceau en cours, qui suit la difficulté et les cartes, est
-/// <see cref="RunCurrentTrackResponse.ListenSeconds"/> et fait foi.
-/// </param>
+/// <summary>L'état d'une partie : en-tête (vies, score), manche en cours, ou le résultat de fin.</summary>
+/// <param name="Status"><c>pending</c>, <c>completed</c> (Série complète), <c>lost</c> ou <c>abandoned</c>.</param>
+/// <param name="TracksPerRound">Les morceaux d'une manche.</param>
+/// <param name="Lives">Les vies au départ.</param>
+/// <param name="LivesLeft">Les vies qui restent.</param>
+/// <param name="RoundsPassed">Les manches terminées.</param>
 /// <param name="Round">La manche en cours ; vide une fois la partie finie.</param>
 /// <param name="RoundTracks">Les morceaux déjà joués de la manche en cours (les pastilles), neutralisés compris.</param>
 /// <param name="Finish">Le résultat de fin ; vide tant que la partie est en cours.</param>
 /// <param name="AnswerSeconds">Le chrono d'un morceau (règles figées) ; 0 : pas de chrono.</param>
 /// <param name="ClockRemainingSeconds">Ce qui reste au chrono du morceau en cours s'il est parti (une reprise en plein morceau), vide sinon.</param>
 /// <param name="PlayedTracks">Tous les morceaux déjà joués de la partie, toutes manches, par position (la pile de l'écran de jeu).</param>
-/// <param name="PassedRounds">Les manches déjà passées (les lignes de palier de la pile).</param>
-/// <param name="DifficultyChoice">
-/// Le choix de difficulté de la manche en cours, tant que le joueur peut le faire (avant le premier son de la manche) ; vide sinon. Sans choix, la
-/// manche se joue en « Sûre ».
-/// </param>
-/// <param name="Hand">La carte en main, gagnée à la manche d'avant (vide sans carte : une seule à la fois).</param>
-/// <param name="SwapAvailable">Le joueur peut changer le morceau en cours (un Échange par manche, qui ne se garde pas).</param>
-/// <param name="NextDisc">Le disque que la manche en cours fait gagner si elle est passée (l'écran de palier : « 366 pts pour … ») ; vide une fois finie.</param>
-/// <param name="CardValues">Ce que valent les coups de pouce de cette playlist (règles figées) ; vide sans coups de pouce.</param>
-/// <param name="Themes">Les manches à thème de la playlist dont le thème est choisi (jamais la première), pour l'annoncer au palier et sur l'écran de la manche ; vide : aucune.</param>
-/// <param name="ThemeChoice">Le choix du thème de la manche en cours, tant que le créateur peut le faire (avant le premier son de la manche) ; vide sinon.</param>
-/// <param name="Ghost">Le fantôme de l'ami qui a lancé la playlist, s'il l'a finie ; vide sinon (sa propre playlist, un ami pas encore arrivé au bout). Gardé à la fin de la partie du joueur : c'est le duel de l'écran de fin.</param>
+/// <param name="PassedRounds">Les manches déjà terminées (les lignes de la pile).</param>
+/// <param name="Themes">Les manches à thème de la playlist dont le thème est choisi (jamais la première), pour l'annoncer ; vide : aucune.</param>
+/// <param name="ThemeChoice">Le choix du thème de la manche à venir, tant que personne ne l'a fait (avant son premier son) ; vide sinon.</param>
+/// <param name="ListenLadder">L'échelle des paliers d'écoute de la playlist (règles figées), du plus long au plus court : la rangée de l'écran de jeu.</param>
+/// <param name="MaxRounds">Le plafond de manches de la playlist (règles figées) ; 0 : pas de plafond.</param>
+/// <param name="Ghost">Le fantôme de l'ami qui a lancé la playlist, s'il l'a finie ; vide sinon. Gardé à la fin de la partie du joueur : c'est le duel de l'écran de fin.</param>
 public sealed record RunSessionResponse(
-    int SessionId, string ChallengeCode, string Status, int Rounds, int TracksPerRound, decimal ListenSeconds, int TotalScore, int RoundsPassed,
+    int SessionId, string ChallengeCode, string Status, int TracksPerRound, int Lives, int LivesLeft, int TotalScore, int RoundsPassed,
     RunRoundResponse? Round, IReadOnlyList<RunTrackResponse> RoundTracks, RunFinishResponse? Finish,
     int AnswerSeconds, decimal? ClockRemainingSeconds, IReadOnlyList<RunTrackResponse> PlayedTracks, IReadOnlyList<RunPassedRoundResponse> PassedRounds,
-    RunDifficultyChoiceResponse? DifficultyChoice = null, IReadOnlyList<RunHandCardResponse>? Hand = null, bool SwapAvailable = false,
-    RunDiscResponse? NextDisc = null, RunCardValuesResponse? CardValues = null, RunGhostResponse? Ghost = null,
-    IReadOnlyList<RunRoundThemeResponse>? Themes = null, RunThemeChoiceResponse? ThemeChoice = null);
+    RunGhostResponse? Ghost = null, IReadOnlyList<RunRoundThemeResponse>? Themes = null, RunThemeChoiceResponse? ThemeChoice = null,
+    IReadOnlyList<decimal>? ListenLadder = null, int MaxRounds = 0);
 
 /// <summary>
 /// Le choix du thème de la manche en cours, que seul le créateur de la playlist fait, juste avant de la commencer : deux thèmes proposés, plus le
@@ -196,11 +154,6 @@ public sealed record RunRoundThemeResponse(int Round, string Name);
 /// <param name="StoppedAtRound">La manche où sa partie s'est arrêtée, quand le joueur est allé plus loin ; vide sinon.</param>
 public sealed record RunGhostResponse(string? Pseudo, int Total, int? StoppedAtRound);
 
-/// <summary>Ce que valent les coups de pouce d'une playlist, figés avec elle : l'écran les affiche, il n'en invente aucun.</summary>
-/// <param name="ExtendBonusSeconds">Les secondes que « Prolongation » ajoute à l'écoute d'un morceau.</param>
-/// <param name="RewardMarginPercent">De combien l'objectif d'une manche doit être dépassé pour gagner une carte (25 : à 125 %).</param>
-public sealed record RunCardValuesResponse(decimal ExtendBonusSeconds, int RewardMarginPercent);
-
 /// <summary>
 /// Ce que rendent le lancement, le démarrage ou la reprise, la redemande d'extrait et la réponse : l'état à jour, puis, dans l'ordre des manches, ce
 /// qui vient de se passer (morceaux neutralisés, manches terminées), et le morceau à jouer s'il en reste un. Le clic « Morceau suivant » lance son
@@ -210,7 +163,7 @@ public sealed record RunCardValuesResponse(decimal ExtendBonusSeconds, int Rewar
 /// <param name="Neutralized">Les morceaux neutralisés en cherchant le morceau suivant (le plus souvent aucun).</param>
 /// <param name="RoundSummaries">Les manches qui viennent de se terminer (le plus souvent aucune, ou une).</param>
 /// <param name="Current">
-/// Le morceau à jouer ; vide une fois la partie finie, ou tant que la difficulté de la manche est à choisir (<see cref="RunSessionResponse.DifficultyChoice"/> :
+/// Le morceau à jouer ; vide une fois la partie finie, ou tant que le thème de la manche est à choisir (<see cref="RunSessionResponse.ThemeChoice"/> :
 /// le choix le donne).
 /// </param>
 /// <param name="IsResuming">La partie existait déjà (reprise).</param>

@@ -38,17 +38,21 @@
 }
 
 :host(.app-button--primary) {
-  background: var(--gradient-primary);
-  color: var(--text-on-primary);
+  background: var(--fill-primary);
+  color: var(--text-on-orange);
+  // Un filet clair façon tube et un seul halo serré : le bouton plein est le seul de son écran à briller.
+  border: 1.5px solid var(--core-orange);
+  box-shadow: var(--glow-primary);
 }
 
-:host(.app-button--primary:hover:not(:disabled)),
-:host(.app-button--glow) {
-  box-shadow: var(--glow-primary);
+:host(.app-button--primary:hover:not(:disabled)) {
+  background: color-mix(in srgb, var(--fill-primary) 88%, white);
 }
 
 :host(.app-button--secondary) {
   background: var(--bg-surface);
+  backdrop-filter: var(--blur-tile);
+  -webkit-backdrop-filter: var(--blur-tile);
   color: var(--text-hi);
   border-color: var(--border-strong);
 }

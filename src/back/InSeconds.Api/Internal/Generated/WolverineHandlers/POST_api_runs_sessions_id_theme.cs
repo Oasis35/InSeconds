@@ -24,12 +24,11 @@ namespace Internal.Generated.WolverineHandlers
     {
         private readonly Wolverine.Http.WolverineHttpOptions _wolverineHttpOptions;
         private readonly FluentValidation.IValidator<InSeconds.Api.Modules.Runs.Application.ChooseRunTheme> _validatorOfChooseRunTheme;
-        private readonly InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle _seededShuffle1;
-        private readonly InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle _seededShuffle2;
-        private readonly InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle _seededShuffle3;
+        private readonly InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle _seededShuffle;
         private readonly InSeconds.Api.Modules.Runs.Application.RunsMetrics _runsMetrics;
         private readonly InSeconds.Api.Modules.Runs.Application.RunsRules _runsRules;
         private readonly InSeconds.Api.Modules.Runs.Domain.IRunScoringPolicy _runScoringPolicy;
+        private readonly InSeconds.Api.Modules.Runs.Domain.IRunTrackSelector _runTrackSelector;
         private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor;
         private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _serviceScopeFactory;
         private readonly Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms> _loggerOfLoggedTrackWaveforms;
@@ -41,16 +40,15 @@ namespace Internal.Generated.WolverineHandlers
         private readonly Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Runs.Application.ChooseRunTheme> _problemDetailSourceOfChooseRunTheme;
         private readonly Wolverine.Runtime.IWolverineRuntime _wolverineRuntime;
 
-        public POST_api_runs_sessions_id_theme(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, FluentValidation.IValidator<InSeconds.Api.Modules.Runs.Application.ChooseRunTheme> validatorOfChooseRunTheme, InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle __seededShuffle1, InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle __seededShuffle2, InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle __seededShuffle3, InSeconds.Api.Modules.Runs.Application.RunsMetrics runsMetrics, InSeconds.Api.Modules.Runs.Application.RunsRules runsRules, InSeconds.Api.Modules.Runs.Domain.IRunScoringPolicy runScoringPolicy, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms> loggerOfLoggedTrackWaveforms, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Runs.Application.ChooseRunTheme> loggerForMessage, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Runs.Application.RunPlayer> loggerOfRunPlayer, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Runs.Application.ChooseRunTheme> problemDetailSourceOfChooseRunTheme, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
+        public POST_api_runs_sessions_id_theme(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, FluentValidation.IValidator<InSeconds.Api.Modules.Runs.Application.ChooseRunTheme> validatorOfChooseRunTheme, InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle seededShuffle, InSeconds.Api.Modules.Runs.Application.RunsMetrics runsMetrics, InSeconds.Api.Modules.Runs.Application.RunsRules runsRules, InSeconds.Api.Modules.Runs.Domain.IRunScoringPolicy runScoringPolicy, InSeconds.Api.Modules.Runs.Domain.IRunTrackSelector runTrackSelector, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms> loggerOfLoggedTrackWaveforms, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Runs.Application.ChooseRunTheme> loggerForMessage, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Runs.Application.RunPlayer> loggerOfRunPlayer, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Runs.Application.ChooseRunTheme> problemDetailSourceOfChooseRunTheme, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
         {
             _wolverineHttpOptions = wolverineHttpOptions;
             _validatorOfChooseRunTheme = validatorOfChooseRunTheme;
-            _seededShuffle1 = __seededShuffle1;
-            _seededShuffle2 = __seededShuffle2;
-            _seededShuffle3 = __seededShuffle3;
+            _seededShuffle = seededShuffle;
             _runsMetrics = runsMetrics;
             _runsRules = runsRules;
             _runScoringPolicy = runScoringPolicy;
+            _runTrackSelector = runTrackSelector;
             _httpContextAccessor = httpContextAccessor;
             _serviceScopeFactory = serviceScopeFactory;
             _loggerOfLoggedTrackWaveforms = loggerOfLoggedTrackWaveforms;
@@ -79,10 +77,9 @@ namespace Internal.Generated.WolverineHandlers
             var loggedTrackWaveforms = new InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms(efTrackWaveforms, _loggerOfLoggedTrackWaveforms);
             var deezerTrackPreviews = new InSeconds.Api.Modules.Catalogue.Persistence.DeezerTrackPreviews(previewProvider);
             var efTrackDirectory = new InSeconds.Api.Modules.Catalogue.Persistence.EfTrackDirectory(inSecondsDbContext, _optionsMonitorOfCatalogueOptions);
-            var runChoiceDealer = new InSeconds.Api.Modules.Runs.Application.RunChoiceDealer(efTrackDirectory, _seededShuffle3);
             var efRunsStore = new InSeconds.Api.Modules.Runs.Persistence.EfRunsStore(inSecondsDbContext);
-            var runThemeDealer = new InSeconds.Api.Modules.Runs.Application.RunThemeDealer(efTrackDirectory, _seededShuffle1, efRunsStore);
-            var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, _seededShuffle2, runChoiceDealer, runThemeDealer, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, runGhosts, _runScoringPolicy, _runsRules, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
+            var runRoundDealer = new InSeconds.Api.Modules.Runs.Application.RunRoundDealer(efTrackDirectory, _seededShuffle, _runTrackSelector, efRunsStore);
+            var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, runRoundDealer, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, runGhosts, _runScoringPolicy, _runsRules, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
             // Reading the request body via JSON deserialization
             var (request, jsonContinue) = await ReadJsonAsync<InSeconds.Api.Modules.Runs.Application.ChooseRunTheme>(httpContext);
@@ -123,7 +120,7 @@ namespace Internal.Generated.WolverineHandlers
                     return;
                 }
 
-                var runThemeChoiceLoad = await InSeconds.Api.Modules.Runs.Application.ChooseRunThemeEndpoint.LoadAsync(id, claimsCurrentPlayer, efRunsStore, runThemeDealer, httpContext.RequestAborted).ConfigureAwait(false);
+                var runThemeChoiceLoad = await InSeconds.Api.Modules.Runs.Application.ChooseRunThemeEndpoint.LoadAsync(id, claimsCurrentPlayer, efRunsStore, runRoundDealer, httpContext.RequestAborted).ConfigureAwait(false);
                 var problemDetails2 = InSeconds.Api.Modules.Runs.Application.ChooseRunThemeEndpoint.Validate(request, runThemeChoiceLoad);
                 // Evaluate whether the processing should stop if there are any problems
                 if (!(ReferenceEquals(problemDetails2, Wolverine.Http.WolverineContinue.NoProblems)))
@@ -134,7 +131,7 @@ namespace Internal.Generated.WolverineHandlers
 
                 
                 // The actual HTTP request handler execution
-                var runPlayResponse_response = await InSeconds.Api.Modules.Runs.Application.ChooseRunThemeEndpoint.Post(request, runThemeChoiceLoad, runThemeDealer, runPlayer, _loggerForMessage, httpContext.RequestAborted).ConfigureAwait(false);
+                var runPlayResponse_response = await InSeconds.Api.Modules.Runs.Application.ChooseRunThemeEndpoint.Post(request, runThemeChoiceLoad, runRoundDealer, runPlayer, _loggerForMessage, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

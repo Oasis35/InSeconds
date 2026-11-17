@@ -10,11 +10,12 @@ describe('RunLevelCardComponent', () => {
     progressPercent: 56, provisional: false, runsPlayed: 12, delta: null, ...overrides,
   });
 
-  function render(value: RunLevel, reviewLink: string | null = null) {
+  function render(value: RunLevel, reviewLink: string | null = null, focus = true) {
     TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
     const fixture = TestBed.createComponent(RunLevelCardComponent);
     fixture.componentRef.setInput('level', value);
     fixture.componentRef.setInput('reviewLink', reviewLink);
+    fixture.componentRef.setInput('focus', focus);
     fixture.detectChanges();
     return fixture.nativeElement as HTMLElement;
   }
@@ -32,6 +33,12 @@ describe('RunLevelCardComponent', () => {
     expect(find(element, 'run-level-provisional')).toBeNull();
     expect(find(element, 'run-level-delta')).toBeNull();
     expect(find(element, 'run-level-review')).toBeNull();
+  });
+
+  it('le tube ambre de la tuile de focus, ou un filet plat quand l\'écran a déjà son bouton principal', () => {
+    expect(find(render(level()), 'run-level')?.classList).toContain('tube-amber');
+    TestBed.resetTestingModule();
+    expect(find(render(level(), null, false), 'run-level')?.classList).not.toContain('tube-amber');
   });
 
   it('une hausse en orange (le joueur), une baisse en gris', () => {

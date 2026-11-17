@@ -3,7 +3,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { DeezerBadgeComponent } from '../../../gameplay/ui/deezer-badge/deezer-badge.component';
 import { MembraneComponent } from '../../../gameplay/ui/membrane/membrane.component';
 import { flyTo, revealInTurn } from '../../../ui/motion/motion';
-import { RunTrack, gainLabel } from '../../domain/run';
+import { RunTrack, gainLabel, lostLife } from '../../domain/run';
 import { RunNextButtonComponent } from '../run-next-button/run-next-button.component';
 import { RunWaveComponent } from '../run-wave/run-wave.component';
 
@@ -25,12 +25,12 @@ import { RunWaveComponent } from '../run-wave/run-wave.component';
           @if (track().coverUrl; as cover) {
             <img [src]="cover" [alt]="'gameplay.reveal.coverAlt' | translate" class="object-cover rounded-full" style="width:52px;height:52px" />
           } @else {
-            <div class="rounded-full" style="width:52px;height:52px;background:var(--gradient-primary);opacity:0.6"></div>
+            <div class="rounded-full" style="width:52px;height:52px;background:var(--fill-primary);opacity:0.6"></div>
           }
         </app-membrane>
       </div>
       <div class="flex-1 min-w-0 flex flex-col justify-end" style="height:64px">
-        <app-run-wave [peaks]="peaks()" color="var(--color-accent-2)" />
+        <app-run-wave [peaks]="peaks()" color="var(--wave-unlocked)" [lit]="true" />
       </div>
     </div>
 
@@ -48,6 +48,11 @@ import { RunWaveComponent } from '../run-wave/run-wave.component';
       <span #gain data-testid="run-answer-points" class="ml-auto leading-none tabular-nums text-[30px] font-black"
         style="font-family:var(--font-score)" [style.color]="track().points > 0 ? 'var(--color-accent)' : 'var(--text-faint)'">{{ gainText() }}</span>
     </div>
+
+    @if (lifeLost()) {
+      <!-- Une vie perdue se dit : sans le mot, le cœur qui s'éteint en haut passerait inaperçu. -->
+      <p class="mt-2 text-[13px] font-semibold" style="color:var(--color-fail)" data-testid="run-answer-life-lost">{{ 'runs.reveal.lifeLost' | translate }}</p>
+    }
 
     @if (track().deezerTrackId; as deezerTrackId) {
       <div class="mt-3" data-testid="run-answer-deezer">
@@ -74,6 +79,7 @@ export class RunRevealComponent {
   readonly flyTarget = input<HTMLElement | null>(null);
   readonly next = output();
 
+  protected readonly lifeLost = computed(() => lostLife(this.track()));
   protected readonly gainText = computed(() => (this.track().points > 0 ? gainLabel(this.track().points) : '0'));
 
   private readonly verdicts = viewChildren<ElementRef<HTMLElement>>('verdict');

@@ -33,7 +33,7 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
 
     public ValueTask DisposeAsync() => _game.DisposeAsync();
 
-    /// <summary>Une partie finie (1 gagnée, 2 perdue, 3 abandonnée) sur la playlist de test (4 manches).</summary>
+    /// <summary>Une partie finie (2 perdue, 3 abandonnée) sur la playlist de test (4 manches).</summary>
     private async Task AddRunAsync(Guid playerId, int status, int roundsPassed, int score, int minutesAgo = 1)
     {
         // Une partie par joueur et par playlist : chaque partie a sa copie de la playlist de test (mêmes règles).
@@ -48,15 +48,15 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
             INSERT INTO runs.sessions (id, challenge_id, player_id, status, current_position, rounds_passed, total_score, started_at, ended_at)
             VALUES ({id}, {challengeId}, '{playerId}', {status}, 1, {roundsPassed}, {score}, now() - interval '{minutesAgo + 5} minutes', now() - interval '{minutesAgo} minutes')
             """);
-        if (status is not (1 or 2))
+        if (status is not 2)
             return;
         // Le niveau du joueur, comme le calcule la fin d'une partie : la moyenne de ses dix dernières parties gagnées ou perdues.
         await _game.Api.ExecuteAsync($"""
             INSERT INTO runs.player_levels (player_id, points, runs_played, recent_scores, last_delta, updated_at)
             SELECT player_id,
-                   round((SELECT avg(s) FROM (SELECT total_score AS s FROM runs.sessions r WHERE r.player_id = '{playerId}' AND r.status IN (1, 2) ORDER BY ended_at DESC LIMIT 10) recent))::int,
+                   round((SELECT avg(s) FROM (SELECT total_score AS s FROM runs.sessions r WHERE r.player_id = '{playerId}' AND r.status = 2 ORDER BY ended_at DESC LIMIT 10) recent))::int,
                    count(*)::int, array_agg(total_score ORDER BY ended_at), 0, now()
-            FROM runs.sessions WHERE player_id = '{playerId}' AND status IN (1, 2) GROUP BY player_id
+            FROM runs.sessions WHERE player_id = '{playerId}' AND status = 2 GROUP BY player_id
             ON CONFLICT (player_id) DO UPDATE SET points = excluded.points, runs_played = excluded.runs_played, recent_scores = excluded.recent_scores
             """);
         await _game.Api.ExecuteAsync($"""
@@ -82,7 +82,7 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
     {
         var (alice, bob, carol, group) = await GroupOfThreeAsync();
         await AddRunAsync(alice.Id, status: 2, roundsPassed: 2, score: 800);
-        await AddRunAsync(bob.Id, status: 1, roundsPassed: 4, score: 2500);
+        await AddRunAsync(bob.Id, status: 2, roundsPassed: 4, score: 2500);
         // Une partie abandonnée ne compte pas : Carol reste sans classement.
         await AddRunAsync(carol.Id, status: 3, roundsPassed: 3, score: 1500);
 
@@ -102,7 +102,7 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
     {
         var (alice, _, _, group) = await GroupOfThreeAsync();
         // Six parties : 2000 puis cinq à 100, soit 417 points de niveau (disque Cire), le record restant à 2000.
-        await AddRunAsync(alice.Id, status: 1, roundsPassed: 4, score: 2000, minutesAgo: 60);
+        await AddRunAsync(alice.Id, status: 2, roundsPassed: 4, score: 2000, minutesAgo: 60);
         for (var i = 1; i <= 5; i++)
             await AddRunAsync(alice.Id, status: 2, roundsPassed: 0, score: 100, minutesAgo: i);
 
@@ -200,8 +200,8 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
     {
         var (alice, bob, carol) = (await _game.NewPlayerAsync("Alice"), await _game.NewPlayerAsync("Bob"), await _game.NewPlayerAsync("Carol"));
         await AddRunAsync(alice.Id, status: 2, roundsPassed: 2, score: 800);
-        await AddRunAsync(bob.Id, status: 1, roundsPassed: 4, score: 2500);
-        await AddRunAsync(carol.Id, status: 1, roundsPassed: 4, score: 1700);
+        await AddRunAsync(bob.Id, status: 2, roundsPassed: 4, score: 2500);
+        await AddRunAsync(carol.Id, status: 2, roundsPassed: 4, score: 1700);
 
         var empty = await GeneralAsync(alice);
         Assert.Empty(empty.Top);

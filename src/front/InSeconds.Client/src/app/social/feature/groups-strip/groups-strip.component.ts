@@ -7,7 +7,7 @@ import { GroupsStore } from '../../data-access/groups.store';
 import { PendingInvite } from '../../data-access/pending-invite';
 
 /**
- * Les groupes du joueur à la fin d'une partie, dans un bloc violet (la couleur des autres joueurs) titré « Tes groupes » : une ligne par groupe avec
+ * Les groupes du joueur à la fin d'une partie, dans un bloc à filet plat dont le titre « Tes groupes » est violet (la couleur des autres joueurs) : une ligne par groupe avec
  * sa place (« Potes · n° 2 sur 5 ») et, s'il vient de monter, « Tu passes devant Léa », ou « Joue avec tes amis · Créer un groupe » s'il n'en a pas ; au-dessus, l'invitation reçue avec le lien de la playlist (« Rejoindre le groupe »), pour tout joueur. Les places
  * ne se lisent que pour qui a des groupes (`showGroups`) : le store est celui de la page.
  */
@@ -18,8 +18,8 @@ import { PendingInvite } from '../../data-access/pending-invite';
   template: `
     @if (pendingCode() || showGroups()) {
       <section class="flex flex-col gap-2.5 px-4 py-3 text-sm" data-testid="groups-strip"
-        style="background:rgb(var(--rgb-violet) / 0.12);border:1px solid rgb(var(--rgb-violet) / 0.6);border-radius:var(--radius-card)">
-        <h3 class="text-xs font-bold uppercase tracking-widest" style="font-family:var(--font-body);color:var(--color-violet)">{{ 'social.strip.title' | translate }}</h3>
+        style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)">
+        <h3 class="text-sm font-bold" style="font-family:var(--font-body);color:var(--color-violet)">{{ 'social.strip.title' | translate }}</h3>
         @if (pendingCode(); as code) {
           <a [routerLink]="['/ranking/join', code]" class="flex items-center justify-between gap-3 min-h-11" data-testid="strip-pending" style="color:var(--text-hi)">
             <span>{{ 'social.pending.line' | translate }}</span><span aria-hidden="true">›</span>

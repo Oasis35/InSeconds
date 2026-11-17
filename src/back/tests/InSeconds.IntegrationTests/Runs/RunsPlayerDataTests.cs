@@ -21,7 +21,7 @@ public class RunsPlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _game = await GameApi.CreateAsync(await postgres.CreateDatabaseAsync(), tracks: 40);
+        _game = await GameApi.CreateAsync(await postgres.CreateDatabaseAsync(), tracks: 40, new Dictionary<string, string>(RunGame.LegacyRules));
         await _game.Api.ExecuteAsync("UPDATE catalogue.tracks SET deezer_rank = 1000000 - id * 1000");
         using var scope = _game.Api.Services.CreateScope();
         var plan = await scope.ServiceProvider.GetRequiredService<RunChallengePlanner>().PlanAsync(null, TestContext.Current.CancellationToken);
@@ -42,7 +42,6 @@ public class RunsPlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
             INSERT INTO runs.answers (session_id, position, artist_correct, title_correct, points, neutralized, answered_at) VALUES
               ({id}, 1, true, true, 100, false, '2026-10-21T08:01:00Z'),
               ({id}, 2, false, false, 0, false, '2026-10-21T08:02:00Z');
-            INSERT INTO runs.session_rounds (session_id, round, difficulty, chosen_at) VALUES ({id}, 2, 3, '2026-10-21T08:03:00Z');
             INSERT INTO runs.access (player_id, granted_at) VALUES ('{playerId}', '2026-10-20T08:00:00Z');
             INSERT INTO runs.player_levels (player_id, points, runs_played, recent_scores, last_session_id, last_delta, updated_at)
             VALUES ('{playerId}', 150, 2, ARRAY[100,200], {id}, -50, '2026-10-21T08:06:00Z');
@@ -128,15 +127,14 @@ public class RunsPlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(["runs.access", "runs.player_levels", "runs.received_challenges", "runs.records", "runs.sessions"], tables.Order(StringComparer.Ordinal));
         foreach (var table in tables)
             Assert.Equal(0L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM {table} WHERE player_id = '{alice.Id}'"));
-        // Seules les réponses et la difficulté choisie de Bob restent (cascade depuis la partie) ; son record et son accès aussi.
+        // Seules les réponses de Bob restent (cascade depuis la partie) ; son record et son accès aussi.
         Assert.Equal(2L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM runs.answers"));
-        Assert.Equal(1L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM runs.session_rounds"));
         Assert.Equal(1L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.records WHERE player_id = '{bob.Id}'"));
         Assert.Equal(1L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.access WHERE player_id = '{bob.Id}'"));
         Assert.Equal(1L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.player_levels WHERE player_id = '{bob.Id}'"));
         // Le défi qu'elle avait créé est toujours là, jouable, sans auteur.
         Assert.Equal(1L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.challenges WHERE id = {_challengeId} AND created_by IS NULL"));
-        Assert.Equal(20L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.challenge_tracks WHERE challenge_id = {_challengeId}"));
+        Assert.Equal(5L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.challenge_tracks WHERE challenge_id = {_challengeId}"));
         Assert.Equal(1L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.sessions WHERE player_id = '{bob.Id}'"));
     }
 

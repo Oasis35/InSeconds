@@ -4,7 +4,7 @@ import { RunNextButtonComponent } from '../run-next-button/run-next-button.compo
 
 /**
  * Un morceau retiré de la manche (le serveur n'a plus trouvé son extrait), à la place de la carte du morceau : rien ne révèle le morceau, la
- * carte dit le nouvel objectif, puis « Morceau suivant » (le clic, ou l'enchaînement automatique, est géré par la page). À ne pas confondre avec
+ * carte dit qu'il ne compte pas (ni point, ni vie perdue), puis « Morceau suivant » (le clic, ou l'enchaînement automatique, est géré par la page). À ne pas confondre avec
  * un extrait illisible (réseau, lien expiré), qui garde « Réessayer / Passer » du lecteur.
  */
 @Component({
@@ -23,7 +23,7 @@ import { RunNextButtonComponent } from '../run-next-button/run-next-button.compo
         <div class="min-w-0">
           <h2 class="text-base font-semibold" style="color:var(--text-hi)">{{ 'runs.withdrawn.title' | translate }}</h2>
           <p class="text-sm leading-snug mt-0.5" style="color:var(--text-light)" data-testid="run-withdrawn-body">
-            {{ 'runs.withdrawn.body' | translate: { objective: objective() } }}
+            {{ 'runs.withdrawn.body' | translate }}
           </p>
         </div>
       </div>
@@ -32,8 +32,6 @@ import { RunNextButtonComponent } from '../run-next-button/run-next-button.compo
   `,
 })
 export class RunWithdrawnCardComponent {
-  /** Le nouvel objectif de la manche, abaissé par le retrait. */
-  readonly objective = input.required<number>();
   /** Le prochain clic mène à la fin de la partie. */
   readonly endsRun = input(false);
   /** L'enchaînement automatique est armé. */

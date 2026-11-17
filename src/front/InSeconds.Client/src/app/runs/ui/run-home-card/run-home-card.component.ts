@@ -18,7 +18,7 @@ export const DISC_LADDER: readonly string[] = [
  * La carte Setlist de l'accueil (V4), **toujours compacte** : le disque du joueur, « Setlist » et son niveau (« Disque d'argent · à ton rythme »,
  * sinon la promesse), la rangée des huit disques où le sien est plus gros, la jauge vers le disque suivant avec ses deux bornes, et « Jouer »
  * (« Rejouer » après une setlist du jour). Tant que le défi du jour reste à jouer, la carte est discrète (contour neutre, bouton en contour) ;
- * **une fois le défi joué (`active`), c'est la prochaine action** : contour orange et « Jouer » en bouton principal. Ouvre `/setlist`.
+ * **une fois le défi joué (`active`), c'est la prochaine action** : tube ambre et « Jouer » en bouton principal. Ouvre `/setlist`.
  */
 @Component({
   selector: 'app-run-home-card',
@@ -27,8 +27,9 @@ export const DISC_LADDER: readonly string[] = [
   host: { class: 'block' },
   template: `
     <section class="rounded-(--radius-card) px-5 py-4 flex flex-col gap-3" data-testid="run-home-card" [attr.data-active]="active()"
-      style="background:rgb(var(--rgb-surface) / 0.55)"
-      [style.border]="active() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-subtle)'">
+      style="background:var(--bg-surface)"
+      [class.tube-amber]="active()"
+      [style.border]="active() ? null : '1px solid var(--border-medium)'">
       <div class="flex items-center gap-3.5">
         <app-run-disc class="shrink-0" [disc]="disc()" [size]="52" [shine]="false" />
         <div class="min-w-0 flex-1">

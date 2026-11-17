@@ -7,13 +7,11 @@ public class RunHitsTests
     private static readonly RunLevelStep[] Ladder =
         [new("runs.discs.scratched", 0), new("runs.discs.gold", 1600), new("runs.discs.diamond", 3400)];
 
-    /// <summary>Une partie de 4 manches de 5 morceaux ; <paramref name="found"/> : les morceaux trouvés, dans l'ordre (les autres ne sont pas joués).</summary>
-    private static RunHitRun Run(
-        int score, bool won = false, bool[]? found = null, Dictionary<int, RunDifficulty>? difficulties = null, bool card = false,
-        Dictionary<int, int>? friend = null, int[]? neutralized = null)
+    /// <summary>Une partie finie ; <paramref name="found"/> : les morceaux trouvés, dans l'ordre (les autres ne sont pas joués).</summary>
+    private static RunHitRun Run(int score, bool[]? found = null, Dictionary<int, int>? friend = null, int[]? neutralized = null)
     {
         var answers = (found ?? []).Select((f, i) => new RunHitAnswer(i + 1, i / 5 + 1, f, neutralized?.Contains(i + 1) ?? false)).ToList();
-        return new RunHitRun(won, score, 4, 5, difficulties ?? [], answers, card, friend);
+        return new RunHitRun(score, 5, answers, friend);
     }
 
     private static Dictionary<string, RunHit> Evaluate(bool friendPlayed = false, params RunHitRun[] runs) =>
@@ -34,7 +32,7 @@ public class RunHitsTests
     }
 
     [Fact]
-    public void UnePartiePerdue_DonneLaPremiereSetlist_SeulementElle()
+    public void UnePartieFinie_DonneLaPremiereSetlist_SeulementElle()
     {
         Assert.Equal([RunHits.FirstSetlist], Earned(Evaluate(false, Run(200, found: [true, false, false, false, false]))));
     }
@@ -77,25 +75,6 @@ public class RunHitsTests
     }
 
     [Fact]
-    public void Melomane_PremiereManche_Boss_EtDisqueDOr()
-    {
-        var oneRisky = Run(900, difficulties: new() { [2] = RunDifficulty.Risky });
-        Assert.Equal([RunHits.FirstSetlist, RunHits.FirstRiskyRound], Earned(Evaluate(false, oneRisky)));
-
-        var boss = Run(3000, won: true, difficulties: new() { [2] = RunDifficulty.Safe, [4] = RunDifficulty.Risky });
-        var withBoss = Evaluate(false, boss);
-        Assert.True(withBoss[RunHits.BossBeaten].Earned);
-        Assert.True(withBoss[RunHits.SetlistWon].Earned);
-        Assert.False(withBoss[RunHits.GoldInRisky].Earned);
-
-        var lostOnBoss = Run(2000, difficulties: new() { [4] = RunDifficulty.Risky });
-        Assert.False(Evaluate(false, lostOnBoss)[RunHits.BossBeaten].Earned);
-
-        var allRisky = Run(3500, won: true, difficulties: new() { [2] = RunDifficulty.Risky, [3] = RunDifficulty.Risky, [4] = RunDifficulty.Risky });
-        Assert.True(Evaluate(false, allRisky)[RunHits.GoldInRisky].Earned);
-    }
-
-    [Fact]
     public void Duel_GagneSurLesMorceauxJoues_EgaliteNeCompte_CinqPourLeSecond()
     {
         var ahead = Run(300, found: [true, true, true], friend: new() { [1] = 100, [2] = 100, [3] = 50, [4] = 900 });
@@ -109,11 +88,8 @@ public class RunHitsTests
     }
 
     [Fact]
-    public void CarteGagnee_EtAmiQuiAJoueMaSetlist()
-    {
-        Assert.True(Evaluate(false, Run(100, card: true))[RunHits.FirstCard].Earned);
+    public void AmiQuiAJoueMaSetlist() =>
         Assert.True(Evaluate(true)[RunHits.FriendPlayed].Earned);
-    }
 
     [Fact]
     public void Niveau_JugeSurLePlusHautAtteint_JamaisProvisoire()
@@ -133,5 +109,74 @@ public class RunHitsTests
         var hits = RunHits.Evaluate(new RunHitFacts([Run(9000), Run(9000), Run(9000)], false), 10, 3, [new("runs.discs.scratched", 0)]);
 
         Assert.False(hits.Single(h => h.Key == RunHits.LevelGold).Earned);
+    }
+
+    private static RunHitAnswer Ans(int position, bool found, decimal listen = 10m, bool failed = false, bool neutralized = false) =>
+        new(position, (position - 1) / 5 + 1, found, neutralized, listen, failed);
+
+    private static RunHitRun Answers(int score, IEnumerable<RunHitAnswer> answers, Dictionary<int, int>? friend = null, int[]? mystery = null) =>
+        new(score, 5, [.. answers], friend, mystery is null ? null : mystery.ToHashSet());
+
+    [Fact]
+    public void OreilleDOr_UnMorceauTrouveEnEntierA0Virgule5Seconde()
+    {
+        Assert.True(Evaluate(false, Answers(1200, [Ans(1, true, 0.5m)]))[RunHits.EarGold].Earned);
+        Assert.False(Evaluate(false, Answers(1200, [Ans(1, true, 1m)]))[RunHits.EarGold].Earned);
+        Assert.False(Evaluate(false, Answers(0, [Ans(1, false, 0.5m, failed: true)]))[RunHits.EarGold].Earned);
+    }
+
+    [Fact]
+    public void SansUneEgratignure_TroisManchesDeSuiteSansVieLaissee()
+    {
+        var clean = Enumerable.Range(1, 15).Select(p => Ans(p, true));
+        Assert.True(Evaluate(false, Answers(100, clean))[RunHits.NoScratch].Earned);
+
+        // Une erreur en manche 2 coupe la série : 1 puis 1 manche propres, jamais 3 de suite.
+        var broken = Enumerable.Range(1, 15).Select(p => p == 7 ? Ans(p, false, failed: true) : Ans(p, true));
+        Assert.False(Evaluate(false, Answers(100, broken))[RunHits.NoScratch].Earned);
+
+        // Une moitié juste ne coûte pas de vie, une manche incomplète ne compte pas.
+        var halves = Enumerable.Range(1, 15).Select(p => Ans(p, false));
+        Assert.True(Evaluate(false, Answers(100, halves))[RunHits.NoScratch].Earned);
+        Assert.False(Evaluate(false, Answers(100, Enumerable.Range(1, 14).Select(p => Ans(p, true))))[RunHits.NoScratch].Earned);
+    }
+
+    [Fact]
+    public void Marathon_CompteLesManchesJoueesEnEntier_EtPlafonneA8()
+    {
+        var hits = Evaluate(false, Answers(100, Enumerable.Range(1, 23).Select(p => Ans(p, true))));
+        Assert.Equal((false, 4, 8), (hits[RunHits.Marathon].Earned, hits[RunHits.Marathon].Progress, hits[RunHits.Marathon].Target));
+
+        var done = Evaluate(false, Answers(100, Enumerable.Range(1, 55).Select(p => Ans(p, true))))[RunHits.Marathon];
+        Assert.Equal((true, 8, 8), (done.Earned, done.Progress, done.Target));
+    }
+
+    [Fact]
+    public void MystereResolu_UneMancheMystereTrouveeEnEntier()
+    {
+        var round2Found = Enumerable.Range(1, 10).Select(p => Ans(p, true));
+        Assert.True(Evaluate(false, Answers(100, round2Found, mystery: [2]))[RunHits.MysterySolved].Earned);
+        Assert.False(Evaluate(false, Answers(100, round2Found))[RunHits.MysterySolved].Earned);
+
+        var missed = Enumerable.Range(1, 10).Select(p => p == 8 ? Ans(p, false, failed: true) : Ans(p, true));
+        Assert.False(Evaluate(false, Answers(100, missed, mystery: [2]))[RunHits.MysterySolved].Earned);
+
+        // Un morceau retiré ne gâche pas la manche.
+        var withdrawn = Enumerable.Range(1, 10).Select(p => p == 8 ? Ans(p, false, neutralized: true) : Ans(p, true));
+        Assert.True(Evaluate(false, Answers(100, withdrawn, mystery: [2]))[RunHits.MysterySolved].Earned);
+    }
+
+    [Fact]
+    public void FantomeBattuEnRetard_PlusLoinQueLAmi_EtPlusDePointsQueSonTotal()
+    {
+        var friend = new Dictionary<int, int> { [1] = 100, [2] = 100, [3] = 100 };
+        // Il a joué jusqu'au morceau 5 (l'ami s'est arrêté au 3) et fait 500 > 300.
+        Assert.True(Evaluate(false, Answers(500, Enumerable.Range(1, 5).Select(p => Ans(p, true)), friend))[RunHits.LateGhost].Earned);
+        // Pas plus loin que l'ami : pas de Hit, même avec plus de points.
+        Assert.False(Evaluate(false, Answers(500, Enumerable.Range(1, 3).Select(p => Ans(p, true)), friend))[RunHits.LateGhost].Earned);
+        // Plus loin mais moins de points que le total de l'ami.
+        Assert.False(Evaluate(false, Answers(250, Enumerable.Range(1, 5).Select(p => Ans(p, false)), friend))[RunHits.LateGhost].Earned);
+        // Sur sa propre playlist (pas d'ami) : rien.
+        Assert.False(Evaluate(false, Answers(500, Enumerable.Range(1, 5).Select(p => Ans(p, true))))[RunHits.LateGhost].Earned);
     }
 }

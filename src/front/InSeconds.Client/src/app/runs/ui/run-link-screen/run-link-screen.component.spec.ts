@@ -19,11 +19,11 @@ describe('RunLinkScreenComponent', () => {
   });
 
   it('montre les quatre règles, tirées des règles figées de la playlist', () => {
-    const { element } = render(LINK({ trackCount: 30, rounds: 6 }));
+    const { element } = render(LINK({ lives: 3, tracksPerRound: 6 }));
 
     const rules = Array.from(element.querySelectorAll('[data-testid="run-link-rules"] li')).map(item => item.textContent ?? '');
     expect(rules).toHaveLength(4);
-    expect(rules[0]).toContain('runs.link.tracks');
+    expect(rules[0]).toContain('runs.link.lives');
     expect(rules[1]).toContain('runs.link.rounds');
     expect(rules[2]).toContain('runs.link.listenAndAnswer');
     expect(rules[3]).toContain('runs.link.goal');

@@ -27,7 +27,7 @@
             <span class="font-semibold" style="color:var(--color-accent-2)">{{ remainingKey | translate: { n: remaining } }}</span>
           </div>
           <div class="rounded-full" style="height:6px;background:rgb(var(--rgb-border) / 0.25)">
-            <div class="rounded-full" style="height:6px;background:var(--gradient-ice)" [style.width.%]="progressPercent"></div>
+            <div class="rounded-full" style="height:6px;background:var(--fill-ice)" [style.width.%]="progressPercent"></div>
           </div>
         </div>
       } @else {
@@ -58,7 +58,7 @@
               }
               @case ('freeze') {
                 <span class="flex items-center justify-center rounded-full box-border"
-                      style="width:38px;height:38px;background:var(--gradient-ice);box-shadow:var(--glow-ice);color:rgb(var(--rgb-bg) / 0.82)">
+                      style="width:38px;height:38px;background:var(--fill-ice);color:rgb(var(--rgb-bg) / 0.82)">
                   <app-streak-icon name="snowflake" size="17px" />
                 </span>
                 <span class="flex items-center gap-[3px] text-[11px] font-bold" style="color:var(--color-accent-2)">
@@ -78,7 +78,7 @@
         <strong class="font-semibold" style="color:var(--text-hi)">{{ 'daily.streakFreeze.sheet.protectedUse.' + missedKey | translate: { missed: streak().missedDays } }}</strong>
       </p>
       <div class="flex flex-col gap-2.5">
-        <button appButton type="button" [block]="true" [glow]="true" (click)="finish('playNow')">
+        <button appButton type="button" [block]="true" (click)="finish('playNow')">
           {{ 'daily.streakFreeze.sheet.playNow' | translate }}
         </button>
         <button appButton type="button" variant="neutral" [block]="true" (click)="finish('close')">
@@ -98,7 +98,7 @@
         {{ 'daily.streakFreeze.sheet.guestFreeze' | translate }}
       </p>
       <div class="flex flex-col gap-2.5">
-        <button appButton type="button" [block]="true" [glow]="true" (click)="finish('signup')">
+        <button appButton type="button" [block]="true" (click)="finish('signup')">
           {{ 'daily.streakFreeze.sheet.signup' | translate }}
         </button>
         <button appButton type="button" variant="neutral" [block]="true" (click)="finish('close')">

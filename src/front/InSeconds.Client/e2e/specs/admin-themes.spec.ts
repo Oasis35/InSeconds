@@ -1,7 +1,6 @@
 import { test, expect } from '../fixtures/test';
 import { AdminPage } from '../pages/admin.page';
 import { RunPage } from '../pages/run.page';
-import { inSequence } from '../fixtures/sequence';
 import type { Page } from '@playwright/test';
 
 // L'onglet « Thèmes » de l'admin : la liste de thèmes (recherche, puces d'état), le détail (morceaux, retrait, ajout depuis le pool ou Deezer, écoute),
@@ -252,6 +251,7 @@ test.describe('Admin - thèmes', () => {
 test.describe('Admin - icônes des thèmes', () => {
   test.beforeEach(async ({ api }) => {
     await api.reseed();
+    await api.useLegacyRunRules();
   });
 
   test('choisit une icône : elle s\'affiche dans le détail et la liste, et reste après rechargement', async ({ page }) => {
@@ -352,8 +352,7 @@ test.describe('Admin - icônes des thèmes', () => {
 
   test('l\'icône du thème s\'affiche dans le choix de thème d\'une playlist de Setlist', async ({ page, api }) => {
     test.slow();
-    // Sans réserve et avec de grands thèmes : assez de morceaux restent à chaque thème une fois ceux de la playlist écartés.
-    await api.setRunSetting('Runs:ReservePerRound', '0');
+    // De grands thèmes : assez de morceaux restent à chaque thème une fois ceux de la playlist écartés.
     const run = new RunPage(page);
     await run.loginAsAdmin();
     const eighties = await createTheme(page, 'Années 80', 16);
@@ -364,9 +363,12 @@ test.describe('Admin - icônes des thèmes', () => {
 
     await run.launch();
     const tracks = await api.latestRunTracks();
-    // Le tirage de la manche à thème est aléatoire : on la place à la manche 2, et le choix arrive après la manche 1.
-    await api.forceThemedRound(2);
-    await inSequence(tracks.filter(t => t.round === 1), track => run.answerRight(track));
+    // Le choix de thème arrive avec la manche 2, après le bilan de la manche 1.
+    await run.winRound(async () => tracks, 1);
+    await expect(async () => {
+      if (await run.palierNextButton.isVisible()) await run.palierNextButton.click();
+      await expect(page.getByTestId('run-theme')).toBeVisible({ timeout: 1000 });
+    }).toPass();
 
     await expect(page.getByTestId('run-theme')).toBeVisible();
     const tiles = page.locator('[data-theme-id]:not([data-theme-id="mystery"])');

@@ -18,8 +18,8 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
-    <section class="rounded-(--radius-card) px-5 pt-5 pb-3 flex flex-col" data-testid="home-challenge"
-      style="background:rgb(var(--rgb-surface) / 0.55);border:1px solid var(--color-accent-3)">
+    <section class="tube-amber rounded-(--radius-card) px-5 pt-5 pb-3 flex flex-col" data-testid="home-challenge"
+      style="background:var(--bg-surface)">
       <div class="flex items-baseline justify-between gap-3">
         <p class="text-sm" style="color:var(--text-light)">{{ 'daily.home.label' | translate }}</p>
         @if (dateLabel()) {

@@ -1,90 +1,96 @@
 namespace InSeconds.Api.Modules.Runs.Domain;
 
 /// <summary>
-/// La photo des règles d'un run au moment où son défi est créé, rangée en <c>jsonb</c> dans le défi : changer un réglage <c>Runs:</c> à chaud
-/// ne modifie jamais un défi déjà créé. Les listes sont des tableaux (le binder de configuration ne mélange rien ici : la photo n'est pas relue
-/// depuis les réglages).
+/// La photo des règles de la Série au moment où son défi est créé, rangée en <c>jsonb</c> dans le défi : changer un réglage <c>Runs:</c> à chaud
+/// ne modifie jamais un défi déjà créé. Les listes sont des tableaux (la photo n'est pas relue depuis le binder de configuration).
+/// <para>
+/// La Série n'a pas de fin fixée : le joueur joue des manches de <see cref="TracksPerRound"/> morceaux jusqu'à avoir perdu ses
+/// <see cref="Lives"/> vies. L'écoute d'une manche suit l'échelle <see cref="ListenLadder"/> (10, 5, 3, 2, 1, 0,5 s : le dernier palier se
+/// répète), et un morceau rapporte les points du palier de sa manche (<see cref="StepPoints"/>).
+/// </para>
 /// </summary>
-/// <param name="Rounds">Nombre de manches.</param>
-/// <param name="TracksPerRound">Morceaux par manche.</param>
-/// <param name="ListenSeconds">Durée d'écoute fixe d'un morceau.</param>
-/// <param name="ThresholdPercents">Pour chaque manche, la part du maximum de la manche à atteindre pour la passer (une valeur par manche).</param>
-/// <param name="MinMultiplier">Multiplicateur de points de la première manche.</param>
-/// <param name="MaxMultiplier">Multiplicateur de points de la dernière manche.</param>
-/// <param name="AnswerSeconds">
-/// Le chrono d'un morceau, du premier son à la réponse (écoute et réécoutes comprises) ; 0 : pas de chrono (les playlists créées avant lui, dont la
-/// photo n'a pas ce champ).
-/// </param>
-/// <param name="RoundRules">
-/// Les difficultés proposées pour chaque manche (proto 2) ; vide pour une playlist du proto 1, dont chaque manche se joue en « Sûre » aux seuils
-/// <paramref name="ThresholdPercents"/> et à l'écoute <paramref name="ListenSeconds"/>.
-/// </param>
-/// <param name="ReservePerRound">Les morceaux de réserve tirés pour chaque manche (« Échange » change de morceau) ; 0 au proto 1 : pas d'Échange.</param>
-/// <param name="Cards">Les coups de pouce de la playlist : la carte que gagne chaque manche, ses effets ; vide : aucune carte.</param>
+/// <param name="Lives">Les vies au départ.</param>
+/// <param name="TracksPerRound">Les morceaux d'une manche.</param>
+/// <param name="ListenLadder">Les durées d'écoute, du palier le plus long (celui de la première manche) au plus court.</param>
+/// <param name="StepPoints">Les points d'un morceau trouvé en entier à chaque palier (une valeur par palier de <see cref="ListenLadder"/>).</param>
+/// <param name="AnswerSeconds">Le chrono d'un morceau, du premier son à la réponse (écoute et réécoutes comprises) ; 0 : pas de chrono.</param>
 /// <param name="Themes">
-/// Les manches à thème (jamais la première) : pour chacune, le thème de la liste de l'admin (« Années 80 ») dont tous ses morceaux sont tirés, et son
-/// nom au moment de la création (un renommage ensuite ne change rien). Les autres manches suivent leur tranche de rang. Figé avec la playlist : tous
-/// ses joueurs jouent les mêmes morceaux, la comparaison reste juste ; vide : aucune manche à thème (ou pas encore choisie, cf. <paramref name="PendingThemeRound"/>).
+/// Les thèmes des manches (jamais la première), figés dès que le premier joueur arrivé à une manche l'a choisi : pour chacune, le thème de la liste
+/// de l'admin dont ses morceaux sont tirés, et son nom à ce moment-là. Tous les joueurs de la playlist jouent les mêmes morceaux, la comparaison reste
+/// juste ; une manche qui n'y figure pas est tirée sans thème.
 /// </param>
-/// <param name="PendingThemeRound">
-/// La manche à thème que le créateur n'a pas encore choisie : tirée avec la playlist (parmi les manches de <c>Runs:ThemedRounds</c>, ou aucune), elle
-/// se joue d'abord avec les morceaux de sa tranche de rang ; le créateur choisit son thème juste avant de la commencer, et ses morceaux sont alors
-/// tirés dans ce thème (<c>RunChallenge.ApplyTheme</c>). Vide : aucune manche en attente de thème.
+/// <param name="RankBands">En combien de tranches de notoriété le catalogue est coupé : la manche k tire dans la tranche k (la dernière se répète).</param>
+/// <param name="RegainLife">Une manche terminée sans vie perdue rend une vie (jamais au-dessus de <paramref name="Lives"/>). Faux pour les playlists d'avant.</param>
+/// <param name="MaxRounds">Le plafond de manches : la partie s'arrête en « Série complète » à la fin de cette manche ; 0 : pas de plafond (playlists d'avant).</param>
+/// <param name="LifeBonus">Les points de chaque vie restante à la fin d'une Série complète.</param>
+/// <param name="CompleteBonus">Les points d'une Série complète.</param>
+/// <param name="ShortenOnNoLifeLost">
+/// L'écoute raccourcit dès qu'une manche se termine sans vie perdue (une moitié juste ne gêne plus). Faux : seulement une manche où tout est trouvé en
+/// entier (playlists d'avant).
 /// </param>
 public sealed record RunRules(
-    int Rounds, int TracksPerRound, decimal ListenSeconds, IReadOnlyList<int> ThresholdPercents, decimal MinMultiplier, decimal MaxMultiplier,
-    int AnswerSeconds = 0, IReadOnlyList<RunRoundRules>? RoundRules = null, int ReservePerRound = 0, RunCardRules? Cards = null, IReadOnlyList<RunRoundTheme>? Themes = null,
-    int? PendingThemeRound = null)
+    int Lives, int TracksPerRound, IReadOnlyList<decimal> ListenLadder, IReadOnlyList<int> StepPoints, int AnswerSeconds = 0,
+    IReadOnlyList<RunRoundTheme>? Themes = null, int RankBands = 8,
+    bool RegainLife = false, int MaxRounds = 0, int LifeBonus = 0, int CompleteBonus = 0, bool ShortenOnNoLifeLost = false)
 {
+    /// <summary>La Série a un plafond de manches.</summary>
+    public bool HasCap => MaxRounds > 0;
+
     /// <summary>Le thème de cette manche, vide si elle n'en a pas.</summary>
     public RunRoundTheme? ThemeOf(int round) => Themes?.FirstOrDefault(t => t.Round == round);
-
-    /// <summary>Les Échanges d'une manche : un seul, qui ne se garde pas pour la suivante.</summary>
-    public const int SwapsPerRound = 1;
-
-    /// <summary>La playlist a une réserve : le joueur peut changer de morceau (« Échange »).</summary>
-    public bool HasSwap => ReservePerRound > 0;
 
     /// <summary>Le morceau a un chrono.</summary>
     public bool HasClock => AnswerSeconds > 0;
 
-    /// <summary>Les morceaux d'un défi.</summary>
-    public int TrackCount => Rounds * TracksPerRound;
+    /// <summary>Le dernier palier de l'échelle : on n'écoute pas moins.</summary>
+    public int LastStep => ListenLadder.Count - 1;
 
-    /// <summary>
-    /// Le multiplicateur de la manche <paramref name="round"/> (à partir de 1) : de <see cref="MinMultiplier"/> à <see cref="MaxMultiplier"/>,
-    /// par interpolation linéaire, arrondi à deux décimales (la colonne est <c>numeric(3,2)</c>). Une seule manche : le minimum.
-    /// </summary>
-    public decimal MultiplierOf(int round)
+    /// <summary>La manche d'une position (de 1 à N) : les morceaux se jouent dans l'ordre, <see cref="TracksPerRound"/> par manche.</summary>
+    public int RoundOf(int position)
     {
-        if (round < 1 || round > Rounds)
-            throw new ArgumentOutOfRangeException(nameof(round));
-        if (Rounds == 1)
-            return MinMultiplier;
-        return decimal.Round(MinMultiplier + (MaxMultiplier - MinMultiplier) * (round - 1) / (Rounds - 1), 2, MidpointRounding.AwayFromZero);
+        ArgumentOutOfRangeException.ThrowIfLessThan(position, 1);
+        return ((position - 1) / TracksPerRound) + 1;
     }
 
-    /// <summary>
-    /// Les difficultés proposées pour la manche <paramref name="round"/> : celles figées dans la playlist, ou, pour une playlist du proto 1, la seule
-    /// « Sûre » (son seuil, sans facteur de points, l'écoute des règles).
-    /// </summary>
-    public IReadOnlyList<RunDifficultyOption> OptionsOf(int round)
+    /// <summary>La première position d'une manche.</summary>
+    public int FirstPositionOf(int round)
     {
-        if (round < 1 || round > Rounds)
-            throw new ArgumentOutOfRangeException(nameof(round));
-        return RoundRules?.FirstOrDefault(r => r.Round == round)?.Options
-            ?? [new RunDifficultyOption(RunDifficulty.Safe, 1m, ThresholdPercents[round - 1], ListenSeconds)];
+        ArgumentOutOfRangeException.ThrowIfLessThan(round, 1);
+        return ((round - 1) * TracksPerRound) + 1;
     }
 
-    /// <summary>Le joueur choisit la difficulté de cette manche (plusieurs sont proposées).</summary>
-    public bool HasChoice(int round) => OptionsOf(round).Count > 1;
+    /// <summary>L'écoute d'un morceau à ce palier (au-delà du dernier, le dernier).</summary>
+    public decimal ListenAt(int step) => ListenLadder[Math.Clamp(step, 0, LastStep)];
 
-    /// <summary>Cette difficulté, si elle est proposée pour cette manche.</summary>
-    public RunDifficultyOption? OptionOf(int round, RunDifficulty difficulty) => OptionsOf(round).FirstOrDefault(o => o.Difficulty == difficulty);
-
-    /// <summary>La difficulté d'une manche que le joueur n'a pas choisie : « Sûre » si elle est proposée, sinon la première.</summary>
-    public RunDifficultyOption DefaultOptionOf(int round) => OptionOf(round, RunDifficulty.Safe) ?? OptionsOf(round)[0];
+    /// <summary>Les points d'un morceau trouvé en entier à ce palier.</summary>
+    public int PointsAt(int step) => StepPoints[Math.Clamp(step, 0, LastStep)];
 }
 
-/// <summary>Le thème d'une manche à thème : la manche, le thème de la liste de l'admin et son nom quand la playlist a été créée.</summary>
-public sealed record RunRoundTheme(int Round, int ThemeId, string Name);
+/// <summary>Le thème d'une manche à thème : la manche, le thème de la liste de l'admin et son nom quand il a été choisi.</summary>
+public sealed record RunRoundTheme(int Round, int ThemeId, string Name, bool Mystery = false);
+
+/// <summary>
+/// Ce que devient le palier d'une manche à l'autre. Une manche avec une **erreur** (une vie perdue) remonte d'un palier (jamais au-dessus du premier) ;
+/// une manche **sans vie perdue** descend d'un palier (écoute plus courte, points plus gros). Avec <c>shortenOnNoLifeLost</c> (les playlists d'aujourd'hui)
+/// une moitié juste ne gêne pas ; sans lui (les playlists d'avant), il faut que tous les morceaux soient trouvés en entier, sinon le palier ne bouge pas.
+/// Un morceau retiré ne compte pour rien : une manche sans aucune réponse comptée ne bouge pas. Une règle unique, la même à tous les paliers.
+/// </summary>
+public static class RunSteps
+{
+    public static int Next(int step, RoundTally tally, int lastStep, bool shortenOnNoLifeLost = false)
+    {
+        if (tally.Failed > 0)
+            return Math.Max(0, step - 1);
+        var clean = shortenOnNoLifeLost ? tally.Answered > 0 : tally is { Half: 0, Full: > 0 };
+        return clean ? Math.Min(lastStep, step + 1) : step;
+    }
+}
+
+/// <summary>Le compte des réponses d'une manche, morceaux neutralisés exclus (ils ne comptent pour rien).</summary>
+/// <param name="Full">Artiste et titre justes.</param>
+/// <param name="Half">Un seul des deux : la moitié des points, pas de vie perdue.</param>
+/// <param name="Failed">Ni l'un ni l'autre, un morceau passé ou une réponse arrivée après le chrono : une vie perdue.</param>
+public readonly record struct RoundTally(int Full, int Half, int Failed)
+{
+    public int Answered => Full + Half + Failed;
+}
