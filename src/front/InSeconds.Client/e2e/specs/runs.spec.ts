@@ -165,7 +165,7 @@ test.describe('Mode Setlist', () => {
     await expect(run.palier).toBeVisible();
     await expect(page.getByTestId('run-palier-title')).toHaveText('Manche 1 terminée');
     await expect(page.getByTestId('run-palier-score')).toHaveText('500');
-    await expect(page.getByTestId('run-palier-outcome')).toHaveText('Sans erreur : l’écoute raccourcit.');
+    await expect(page.getByTestId('run-palier-outcome')).toHaveText('Aucune vie perdue : l’écoute raccourcit.');
     await expect(page.getByTestId('run-palier-next')).toContainText('5');
     await expect(page.getByTestId('run-palier-lives')).toHaveAttribute('aria-label', 'Vies : 3 sur 3');
 
