@@ -2,7 +2,7 @@
   <app-decor-background />
 
   <main class="relative flex-1 flex flex-col p-5 w-full max-w-lg mx-auto overflow-x-clip">
-    @switch (store.screen()) {
+    @switch (screen()) {
       @case ('loading') {
         <div class="flex-1 flex items-center justify-center">
           <p class="text-sm animate-pulse" style="color:var(--text-faint)">{{ 'runs.common.loading' | translate }}</p>

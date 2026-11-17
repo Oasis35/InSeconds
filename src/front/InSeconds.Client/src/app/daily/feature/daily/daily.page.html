@@ -7,7 +7,7 @@
       <app-brand>
         <!-- En pleine manche, rien à la place des accès du compte : un toucher par erreur ouvrirait la confirmation de sortie. Le total
              de la partie se lit à la révélation de chaque morceau. -->
-        @if (store.screen() !== 'playing') {
+        @if (screen() !== 'playing' && screen() !== 'loading') {
           <div brandRight class="flex items-center gap-2">
             @if (chrome.v4()) { <app-instagram-link /> }
             <app-account-link />
@@ -19,7 +19,7 @@
       }
     </header>
 
-    @switch (store.screen()) {
+    @switch (screen()) {
       @case ('loading') {
         <div class="flex-1 flex items-center justify-center">
           <p class="text-sm animate-pulse" style="color:var(--text-faint)">{{ 'daily.common.loading' | translate }}</p>
@@ -174,9 +174,11 @@
 
   </main>
   <!-- Sous la V4, les liens légaux sont une ligne discrète sous la carte Setlist (pas pendant une manche) et la langue est dans le profil. -->
-  @if (!chrome.v4()) {
+  @if (screen() === 'loading') {
+    <!-- Le flag n'est pas lu : ni ancien pied de page, ni ligne légale de la V4. -->
+  } @else if (!chrome.v4()) {
     <app-daily-footer class="mt-auto" [lang]="language.current()" (toggleLanguage)="toggleLanguage()" />
-  } @else if (store.screen() !== 'playing') {
+  } @else if (screen() !== 'playing') {
     <app-home-legal-line class="mt-auto" />
   }
 

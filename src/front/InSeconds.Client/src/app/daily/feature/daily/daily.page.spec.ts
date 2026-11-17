@@ -1,3 +1,4 @@
+import { ApplicationRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { SwUpdate } from '@angular/service-worker';
@@ -45,6 +46,17 @@ describe('DailyPage : la racine et /daily', () => {
     const router = await open('/', { v4: true, known: true });
 
     expect(router.url).toBe('/');
+  });
+
+  it('tant que le flag n\'est pas lu, un chargement neutre : ni accueil, ni pied de page, ni accès du compte', async () => {
+    await open('/', { v4: false, known: false });
+    const el = TestBed.inject(ApplicationRef).components[0]?.location.nativeElement as HTMLElement | undefined;
+    const root = el ?? document.body;
+
+    expect(root.querySelector('[data-testid="home-v4"]')).toBeNull();
+    expect(root.querySelector('app-daily-footer')).toBeNull();
+    expect(root.querySelector('app-account-link')).toBeNull();
+    expect(root.textContent).toContain('daily.common.loading');
   });
 
   it('tant que le flag n\'est pas lu, la racine ne bouge pas', async () => {
