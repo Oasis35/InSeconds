@@ -18,7 +18,7 @@ import { reloadMomentFor } from '../reload-moment';
 import { DailyResultView, DailyStartup, StreakSheetOpener } from './daily-view';
 
 /** Les écrans que la V4 montre sur l'accueil (`/`) : tout ce qui n'est pas la manche ni une erreur. */
-const HOME_SCREENS: readonly DailyScreen[] = ['welcome', 'resume_prompt', 'already_played', 'done'];
+const HOME_SCREENS: ReadonlySet<DailyScreen> = new Set<DailyScreen>(['welcome', 'resume_prompt', 'already_played', 'done']);
 
 /**
  * La coquille du jeu du jour : elle porte la partie (`DailyGameStore`, la manche, le partage) et laisse deux pages la montrer, l'accueil (`/`,
@@ -90,7 +90,7 @@ export class DailyShellComponent implements OnInit {
       const known = this.chrome.v4Known();
       const v4 = this.chrome.v4();
       if (path === '/' && ((known && !v4) || screen === 'playing')) this.goTo('/daily');
-      else if (path === '/daily' && v4 && HOME_SCREENS.includes(screen)) this.goTo('/');
+      else if (path === '/daily' && v4 && HOME_SCREENS.has(screen)) this.goTo('/');
     });
 
     // Une nouvelle version du site ne recharge jamais la page en pleine manche (cf. `reloadMomentFor`).
