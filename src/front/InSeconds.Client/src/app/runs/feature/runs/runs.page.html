@@ -11,7 +11,7 @@
 
       @case ('welcome') {
         @if (chrome.v4() && chrome.dailyDone() === false) {
-          <a routerLink="/daily" data-testid="daily-left" class="block pt-2 text-center text-sm underline" style="color:var(--text-light)">{{ 'runs.v4.dailyLeft' | translate }}</a>
+          <a routerLink="/" data-testid="daily-left" class="block pt-2 text-center text-sm underline" style="color:var(--text-light)">{{ 'runs.v4.dailyLeft' | translate }}</a>
         }
         <app-run-welcome-screen [record]="store.record()" [level]="chrome.v4() ? store.level() : null" [lang]="language.current()" (start)="store.begin()" />
         @if (chrome.v4()) {

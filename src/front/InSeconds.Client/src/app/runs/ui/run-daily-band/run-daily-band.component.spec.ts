@@ -17,7 +17,7 @@ describe('RunDailyBandComponent', () => {
 
   it('défi à jouer : la carte cyan mène au jeu du jour', () => {
     const el = render(true);
-    expect(el.querySelector('[data-testid="daily-left"]')?.getAttribute('href')).toBe('/daily');
+    expect(el.querySelector('[data-testid="daily-left"]')?.getAttribute('href')).toBe('/');
     expect(el.textContent).toContain('runs.v4.band.title');
     expect(el.querySelector('[data-testid="daily-done-band"]')).toBeNull();
   });

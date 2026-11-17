@@ -65,5 +65,10 @@
     }
 
   </main>
-  <app-daily-footer class="mt-auto" [lang]="language.current()" (toggleLanguage)="toggleLanguage()" />
+  <!-- Sous la V4, la langue est dans le profil et les liens légaux sont une ligne discrète. -->
+  @if (chrome.v4()) {
+    <app-home-legal-line class="mt-auto" />
+  } @else {
+    <app-daily-footer class="mt-auto" [lang]="language.current()" (toggleLanguage)="toggleLanguage()" />
+  }
 </div>
