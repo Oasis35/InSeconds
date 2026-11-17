@@ -55,7 +55,7 @@ export class RunPage {
   constructor(readonly page: Page) {
     this.homeCard            = page.getByTestId('run-home-card');
     this.welcome             = page.getByTestId('run-welcome');
-    this.startButton         = page.getByRole('button', { name: 'Lancer une partie' });
+    this.startButton         = page.getByRole('button', { name: /Lancer une partie|Commencer/ });
     this.answerInput         = page.getByPlaceholder('Artiste - Titre');
     this.submitButton        = page.getByRole('button', { name: 'Valider', exact: true });
     this.confirmSubmitButton = page.getByRole('button', { name: 'Valider quand même' });

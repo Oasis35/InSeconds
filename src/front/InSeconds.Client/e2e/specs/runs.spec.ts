@@ -117,7 +117,7 @@ test.describe('Mode Setlist', () => {
     await expect(run.startButton).toBeVisible();
     await expect(page.getByTestId('tab-daily')).toHaveAttribute('aria-current', 'page');
     await page.getByTestId('daily-left').click();
-    await expect(page).toHaveURL(/\/daily$/);
+    await expect(page).toHaveURL(/\/$/);
     await game.waitForWelcome();
 
     // L'historique : un onglet, une page par mode. Rien de joué : chacune le dit, et celle du jeu du jour garde le lien des jours passés,
