@@ -28,18 +28,28 @@ function findReports(dir) {
   });
 }
 
-// Somme, par fichier de spec, des durées de première tentative (suites imbriquées des `describe` comprises).
+// Une première tentative en échec (délai dépassé compris) ne mesure pas la durée normale de la spec.
+const FAILED = new Set(['failed', 'timedOut', 'interrupted']);
+
+// Somme, par fichier de spec, des durées de première tentative (suites imbriquées des `describe` comprises) ; une
+// spec dont un test a raté sa première tentative n'est pas mesurée dans ce rapport.
 function durationsOf(report) {
   const seconds = new Map();
+  const failed = new Set();
   const visit = (suite) => {
     for (const spec of suite.specs ?? []) {
       const file = basename(spec.file);
-      const first = spec.tests.reduce((sum, test) => sum + (test.results?.[0]?.duration ?? 0), 0);
-      seconds.set(file, (seconds.get(file) ?? 0) + first / 1000);
+      for (const test of spec.tests) {
+        const first = (test.results ?? []).find((result) => result.retry === 0);
+        if (!first) continue;
+        if (FAILED.has(first.status)) failed.add(file);
+        seconds.set(file, (seconds.get(file) ?? 0) + first.duration / 1000);
+      }
     }
     for (const child of suite.suites ?? []) visit(child);
   };
   for (const suite of report.suites ?? []) visit(suite);
+  for (const file of failed) seconds.delete(file);
   return seconds;
 }
 
@@ -55,6 +65,11 @@ for (const path of reports) {
   for (const [file, seconds] of durationsOf(JSON.parse(readFileSync(path, 'utf8')))) {
     samples.set(file, [...(samples.get(file) ?? []), seconds]);
   }
+}
+
+if (samples.size === 0) {
+  console.error('Aucune spec réussie à sa première tentative dans ces rapports : poids inchangés.');
+  process.exit(1);
 }
 
 const previous = JSON.parse(readFileSync(WEIGHTS_FILE, 'utf8')).weights;

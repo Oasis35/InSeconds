@@ -1,5 +1,5 @@
 {
-  "source": "Moyenne de 4 runs de la CI du 18/11/2026 (première tentative de chaque test). Mise à jour : node scripts/e2e-weights.mjs <dossier des rapports>.",
+  "source": "Moyenne de 4 run(s) de la CI, mesurée le 2026-11-18 (première tentative de chaque test). Mise à jour : node scripts/e2e-weights.mjs <dossier des rapports>.",
   "weights": {
     "admin.spec.ts": 103,
     "scoring.spec.ts": 63,
