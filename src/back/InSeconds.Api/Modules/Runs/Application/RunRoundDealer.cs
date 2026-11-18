@@ -34,7 +34,8 @@ public sealed class RunRoundDealer(
         ArgumentNullException.ThrowIfNull(challenge);
         if (round < 2 || challenge.HasRound(round))
             return null;
-        var pool = await PoolAsync(challenge, await MemoryAsync(challenge, playerId, ct), ct);
+        var playable = await tracks.ListPlayableIdsAsync(ct);
+        var pool = await PoolAsync(challenge, await MemoryAsync(challenge, playerId, playable.Count, ct), playable, ct);
         return await OfferFromAsync(challenge, round, pool, ct);
     }
 
@@ -63,8 +64,9 @@ public sealed class RunRoundDealer(
         if (round != challenge.RoundsDrawn + 1)
             throw new InvalidOperationException("Les manches se tirent dans l'ordre.");
 
-        var memory = await MemoryAsync(challenge, playerId, ct);
-        var pool = await PoolAsync(challenge, memory, ct);
+        var playable = await tracks.ListPlayableIdsAsync(ct);
+        var memory = await MemoryAsync(challenge, playerId, playable.Count, ct);
+        var pool = await PoolAsync(challenge, memory, playable, ct);
         var offer = round < 2 ? null : await OfferFromAsync(challenge, round, pool, ct);
         int? chosen = null;
         if (offer is not null)
@@ -92,20 +94,18 @@ public sealed class RunRoundDealer(
     }
 
     // La mémoire du joueur qui tire (cf. RunDrawMemoryReader) : les thèmes de cette playlist d'abord, du plus récent au plus ancien.
-    private async Task<RunDrawMemory> MemoryAsync(RunChallenge challenge, Guid? playerId, CancellationToken ct)
+    private async Task<RunDrawMemory> MemoryAsync(RunChallenge challenge, Guid? playerId, int playableCount, CancellationToken ct)
     {
         var inPlaylist = challenge.Rules.Themes?.OrderByDescending(t => t.Round).Select(t => t.ThemeId).ToList() ?? [];
-        var playable = (await tracks.ListPlayableIdsAsync(ct)).Count;
-        return await memories.ReadAsync(playerId, challenge.Id == 0 ? null : challenge.Id, inPlaylist, playable, ct);
+        return await memories.ReadAsync(playerId, challenge.Id == 0 ? null : challenge.Id, inPlaylist, playableCount, ct);
     }
 
     // Les morceaux jouables hors ceux déjà tirés (aucun morceau deux fois dans une playlist), et les thèmes qui en ont assez pour une manche : ceux qu'on
     // peut proposer (assez de morceaux pas entendus récemment, si au moins trois, et sans les thèmes joués récemment dans la limite des réglages).
-    private async Task<ThemePool> PoolAsync(RunChallenge challenge, RunDrawMemory memory, CancellationToken ct)
+    private async Task<ThemePool> PoolAsync(RunChallenge challenge, RunDrawMemory memory, IReadOnlyCollection<int> playable, CancellationToken ct)
     {
         var taken = challenge.Tracks.Select(t => t.TrackId).ToHashSet();
         var avoided = memory.AvoidTracks.ToHashSet();
-        var playable = (await tracks.ListPlayableIdsAsync(ct)).ToList();
         var infos = playable.Count == 0 ? new Dictionary<int, TrackInfo>() : await tracks.GetAsync(playable, ct);
         var candidates = playable.Select(id => new RankedTrack(id, infos.GetValueOrDefault(id)?.DeezerRank, infos.GetValueOrDefault(id)?.ThemeIds)).ToList();
         var names = await tracks.ListThemesAsync(ct);

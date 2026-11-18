@@ -104,7 +104,7 @@ public sealed class RunDiversityOptions
     /// <summary>Les morceaux entendus récemment qu'on évite, en part du pool jouable (0 : pas de diversité des morceaux, 90 au plus).</summary>
     public int PoolPercent { get; set; } = DefaultPoolPercent;
 
-    /// <summary>La part des thèmes éligibles qu'on garde en lice quand on évite ceux joués récemment (0 : aucun thème évité, 100 : tous gardés).</summary>
+    /// <summary>La part des thèmes éligibles qu'on peut écarter, ceux joués le plus récemment (0 : aucun thème évité) ; il en reste toujours au moins 3.</summary>
     public int ThemePercent { get; set; } = DefaultThemePercent;
 
     /// <summary>Le nombre de parties les plus récentes lues pour construire la mémoire (une limite de lecture, pas une règle de jeu).</summary>
@@ -212,7 +212,7 @@ public static class RunsOptionsChecks
         if (diversity.PoolPercent is < 0 or > 90)
             problems.Add("Runs:Diversity:PoolPercent : de 0 (pas de diversité des morceaux) à 90 % du pool.");
         if (diversity.ThemePercent is < 0 or > 100)
-            problems.Add("Runs:Diversity:ThemePercent : de 0 à 100 % des thèmes gardés en lice.");
+            problems.Add("Runs:Diversity:ThemePercent : de 0 (aucun thème évité) à 100 % des thèmes éligibles écartables.");
         if (diversity.MaxGames is < 1 or > RunDiversityOptions.MaxMaxGames)
             problems.Add($"Runs:Diversity:MaxGames : de 1 à {RunDiversityOptions.MaxMaxGames} parties lues.");
         return problems;
