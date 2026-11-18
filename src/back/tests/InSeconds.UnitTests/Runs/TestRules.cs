@@ -11,6 +11,7 @@ internal static class TestRules
         TracksPerRound = 5,
         RegainLife = false,
         ShortenOnNoLifeLost = false,
+        HoldOnLifeLost = false,
         MaxRounds = 0,
         LifeBonus = 0,
         CompleteBonus = 0,

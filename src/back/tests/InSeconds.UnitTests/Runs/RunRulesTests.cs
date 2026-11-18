@@ -11,7 +11,7 @@ public class RunRulesTests
         var rules = RunsOptions.DefaultRules();
 
         Assert.Equal((3, 3), (rules.Lives, rules.TracksPerRound));
-        Assert.Equal((true, true, 8, 250, 500), (rules.RegainLife, rules.ShortenOnNoLifeLost, rules.MaxRounds, rules.LifeBonus, rules.CompleteBonus));
+        Assert.Equal((true, true, true, 8, 250, 500), (rules.RegainLife, rules.ShortenOnNoLifeLost, rules.HoldOnLifeLost, rules.MaxRounds, rules.LifeBonus, rules.CompleteBonus));
         Assert.True(rules.HasCap);
         Assert.Equal([10m, 5m, 3m, 2m, 1m, 0.5m], rules.ListenLadder);
         Assert.Equal([100, 200, 350, 550, 800, 1200], rules.StepPoints);
@@ -73,4 +73,13 @@ public class RunRulesTests
     [InlineData(2, 0, 0, 0, 2)]
     public void AvecLaRegleDAujourdhui_UneMancheSansVieRetireeFaitRaccourcir(int step, int full, int half, int failed, int expected) =>
         Assert.Equal(expected, RunSteps.Next(step, new RoundTally(full, half, failed), lastStep: 5, shortenOnNoLifeLost: true));
+
+    [Theory]
+    [InlineData(0, 2, 0, 1, 0)]
+    [InlineData(2, 2, 0, 1, 2)]
+    [InlineData(4, 0, 0, 3, 4)]
+    [InlineData(2, 3, 0, 0, 3)]
+    [InlineData(2, 0, 3, 0, 3)]
+    public void AvecLaRegleDAujourdhui_UneVieEstPerdue_LePalierResteOuIlEstAtteint(int step, int full, int half, int failed, int expected) =>
+        Assert.Equal(expected, RunSteps.Next(step, new RoundTally(full, half, failed), lastStep: 5, shortenOnNoLifeLost: true, holdOnLifeLost: true));
 }
