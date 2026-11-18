@@ -22,11 +22,12 @@ function findReports(path) {
   if (!statSync(path).isDirectory()) return [path];
   return readdirSync(path).flatMap((name) => {
     const child = join(path, name);
-    return statSync(child).isDirectory() ? findReports(child) : name.endsWith('.xml') ? [child] : [];
+    if (statSync(child).isDirectory()) return findReports(child);
+    return name.endsWith('.xml') ? [child] : [];
   });
 }
 
-const attribute = (tag, name) => tag.match(new RegExp(`\\s${name}="([^"]*)"`))?.[1];
+const attribute = (tag, name) => tag.match(new RegExp(String.raw`\s${name}="([^"]*)"`))?.[1];
 
 // Le dossier d'une classe : le segment qui suit l'espace de noms du projet, « (racine) » pour les classes posées à sa racine.
 function folderOf(type) {

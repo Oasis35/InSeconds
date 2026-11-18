@@ -364,8 +364,10 @@ jobs:
         run: |
           status=0
           for project in tests/*/*.csproj; do
-            case "$project" in */InSeconds.IntegrationTests/*) continue ;; esac
-            dotnet test --project "$project" --configuration Release --no-build || status=1
+            case "$project" in
+              */InSeconds.IntegrationTests/*) ;;
+              *) dotnet test --project "$project" --configuration Release --no-build || status=1 ;;
+            esac
           done
           exit $status
 
