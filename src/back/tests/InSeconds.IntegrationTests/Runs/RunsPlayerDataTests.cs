@@ -43,8 +43,8 @@ public class RunsPlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
               ({id}, 1, true, true, 100, false, '2026-10-21T08:01:00Z'),
               ({id}, 2, false, false, 0, false, '2026-10-21T08:02:00Z');
             INSERT INTO runs.access (player_id, granted_at) VALUES ('{playerId}', '2026-10-20T08:00:00Z');
-            INSERT INTO runs.player_levels (player_id, points, runs_played, recent_scores, last_session_id, last_delta, updated_at)
-            VALUES ('{playerId}', 150, 2, ARRAY[100,200], {id}, -50, '2026-10-21T08:06:00Z');
+            INSERT INTO runs.player_levels (player_id, points, runs_played, last_session_id, last_delta, updated_at)
+            VALUES ('{playerId}', 150, 2, {id}, -50, '2026-10-21T08:06:00Z');
             """);
         if (record)
         {
@@ -75,7 +75,6 @@ public class RunsPlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(100, runs.Record!.BestScore);
         Assert.NotNull(runs.Access);
         Assert.Equal((150, 2), (runs.Level!.Points, runs.Level.RunsPlayed));
-        Assert.Equal([100, 200], runs.Level.RecentScores);
     }
 
     [Fact]

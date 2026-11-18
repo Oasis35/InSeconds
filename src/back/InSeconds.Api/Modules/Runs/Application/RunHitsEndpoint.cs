@@ -31,8 +31,7 @@ public static class GetRunHitsEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public static async Task<RunHitsResponse> Get(ICurrentPlayer current, IRunHitsQueries queries, RunsRules rules, CancellationToken ct)
     {
-        var levels = rules.Levels;
-        var hits = RunHits.Evaluate(await queries.GetFactsAsync(current.PlayerId!.Value, ct), levels.Window, levels.ProvisionalRuns, levels.Ladder);
+        var hits = RunHits.Evaluate(await queries.GetFactsAsync(current.PlayerId!.Value, ct), rules.LevelRules);
         return new RunHitsResponse(
             hits.Select(h => new RunHitResponse(h.Key, h.Earned, h.Progress, h.Target)).ToList(),
             hits.Count(h => h.Earned));

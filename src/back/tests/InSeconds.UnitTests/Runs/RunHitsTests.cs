@@ -4,25 +4,27 @@ namespace InSeconds.UnitTests.Runs;
 
 public class RunHitsTests
 {
-    private static readonly RunLevelStep[] Ladder =
-        [new("runs.discs.scratched", 0), new("runs.discs.gold", 1600), new("runs.discs.diamond", 3400)];
+    private static readonly DateTimeOffset Start = new(2026, 11, 1, 20, 0, 0, TimeSpan.Zero);
+
+    private static readonly RunLevelRules Levels =
+        new(80, 10, 14, 5, 50, [new("runs.discs.scratched", 300), new("runs.discs.gold", 1600), new("runs.discs.diamond", 3400)]);
 
     /// <summary>Une partie finie ; <paramref name="found"/> : les morceaux trouvés, dans l'ordre (les autres ne sont pas joués).</summary>
     private static RunHitRun Run(int score, bool[]? found = null, Dictionary<int, int>? friend = null, int[]? neutralized = null)
     {
         var answers = (found ?? []).Select((f, i) => new RunHitAnswer(i + 1, i / 5 + 1, f, neutralized?.Contains(i + 1) ?? false)).ToList();
-        return new RunHitRun(score, 5, answers, friend);
+        return new RunHitRun(score, 5, answers, friend, Start);
     }
 
     private static Dictionary<string, RunHit> Evaluate(bool friendPlayed = false, params RunHitRun[] runs) =>
-        RunHits.Evaluate(new RunHitFacts(runs, friendPlayed), window: 10, provisionalRuns: 3, Ladder).ToDictionary(h => h.Key);
+        RunHits.Evaluate(new RunHitFacts(runs, friendPlayed), Levels).ToDictionary(h => h.Key);
 
     private static string[] Earned(Dictionary<string, RunHit> hits) => [.. hits.Values.Where(h => h.Earned).Select(h => h.Key)];
 
     [Fact]
     public void SansPartie_AucunHit_SeizeDansLOrdreDeLEcran()
     {
-        var hits = RunHits.Evaluate(new RunHitFacts([], false), 10, 3, Ladder);
+        var hits = RunHits.Evaluate(new RunHitFacts([], false), Levels);
 
         Assert.Equal(16, hits.Count);
         Assert.Equal(RunHits.FirstSetlist, hits[0].Key);
@@ -92,21 +94,34 @@ public class RunHitsTests
         Assert.True(Evaluate(true)[RunHits.FriendPlayed].Earned);
 
     [Fact]
-    public void Niveau_JugeSurLePlusHautAtteint_JamaisProvisoire()
+    public void Niveau_JugeSurLePlusHautAtteint_UnDisqueParSerie()
     {
-        // Deux parties : encore provisoire.
-        Assert.False(Evaluate(false, Run(3000), Run(3000))[RunHits.LevelGold].Earned);
-        // Trois parties à 2000 de moyenne, puis une chute : l'Or reste acquis.
-        var hits = Evaluate(false, Run(2000), Run(2000), Run(2000), Run(0), Run(0), Run(0), Run(0), Run(0));
+        // Une série : le premier disque seulement, quel que soit le score.
+        Assert.False(Evaluate(false, Run(20000))[RunHits.LevelGold].Earned);
+        // Deux séries : l'Or (plafonné à son seuil), puis les chutes ne le reprennent pas.
+        var hits = Evaluate(false, Run(20000), Run(20000), Run(0), Run(0), Run(0));
         Assert.True(hits[RunHits.LevelGold].Earned);
         Assert.False(hits[RunHits.LevelDiamond].Earned);
-        Assert.Equal(2000, RunHits.PeakLevel([Run(2000), Run(2000), Run(2000), Run(0)], 10, 3));
+        Assert.Equal(1600, RunHits.PeakLevel([Run(20000), Run(20000), Run(0)], Levels));
+        Assert.True(Evaluate(false, Run(20000), Run(20000), Run(20000))[RunHits.LevelDiamond].Earned);
+    }
+
+    [Fact]
+    public void Niveau_RejoueLInactiviteEntreDeuxSeries()
+    {
+        RunHitRun At(int score, double days) => Run(score) with { EndedAt = Start.AddDays(days) };
+
+        // 1 600 (l'Or) après deux séries ; 70 jours sans jouer le ramènent à 880, sous l'Or : la troisième série le rend, sans aller jusqu'au Diamant.
+        var hits = Evaluate(false, At(20000, 0), At(20000, 1), At(20000, 71));
+        Assert.True(hits[RunHits.LevelGold].Earned);
+        Assert.False(hits[RunHits.LevelDiamond].Earned);
+        Assert.True(Evaluate(false, At(20000, 0), At(20000, 1), At(20000, 2))[RunHits.LevelDiamond].Earned);
     }
 
     [Fact]
     public void UnDisqueAbsentDeLEchelle_NeSObtientPas()
     {
-        var hits = RunHits.Evaluate(new RunHitFacts([Run(9000), Run(9000), Run(9000)], false), 10, 3, [new("runs.discs.scratched", 0)]);
+        var hits = RunHits.Evaluate(new RunHitFacts([Run(9000), Run(9000), Run(9000)], false), Levels with { Ladder = [new("runs.discs.scratched", 300)] });
 
         Assert.False(hits.Single(h => h.Key == RunHits.LevelGold).Earned);
     }
@@ -115,7 +130,7 @@ public class RunHitsTests
         new(position, (position - 1) / 5 + 1, found, neutralized, listen, failed);
 
     private static RunHitRun Answers(int score, IEnumerable<RunHitAnswer> answers, Dictionary<int, int>? friend = null, int[]? mystery = null) =>
-        new(score, 5, [.. answers], friend, mystery is null ? null : mystery.ToHashSet());
+        new(score, 5, [.. answers], friend, Start, mystery is null ? null : mystery.ToHashSet());
 
     [Fact]
     public void OreilleDOr_UnMorceauTrouveEnEntierA0Virgule5Seconde()

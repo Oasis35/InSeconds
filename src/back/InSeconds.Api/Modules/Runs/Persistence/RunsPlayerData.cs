@@ -43,7 +43,7 @@ public sealed class RunsPlayerData(InSecondsDbContext db) : IPlayerDataContribut
             .FirstOrDefaultAsync(ct);
 
         var levelRow = await db.Set<RunLevel>().AsNoTracking().FirstOrDefaultAsync(l => l.PlayerId == playerId, ct);
-        var level = levelRow is null ? null : new RunLevelExport(levelRow.Points, levelRow.RunsPlayed, levelRow.RecentScores, levelRow.UpdatedAt);
+        var level = levelRow is null ? null : new RunLevelExport(levelRow.Points, levelRow.RunsPlayed, levelRow.UpdatedAt);
 
         var received = await (
                 from r in db.Set<RunReceivedChallenge>().AsNoTracking()

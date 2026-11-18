@@ -25,6 +25,10 @@ export const discColor = (key: string): string => DISC_COLORS[key] ?? DISC_COLOR
   template: `
     <svg [attr.width]="size()" [attr.height]="size()" viewBox="0 0 100 100" aria-hidden="true" [attr.data-disc]="disc()"
       [style.filter]="gold() && shine() ? 'drop-shadow(0 0 10px rgb(var(--rgb-warning) / 0.55))' : null">
+      @if (none()) {
+        <circle cx="50" cy="50" r="46" fill="none" stroke="var(--border-neutral)" stroke-width="3" stroke-dasharray="7 7" data-testid="disc-none" />
+        <circle cx="50" cy="50" r="6" fill="none" stroke="var(--border-neutral)" stroke-width="2" />
+      } @else {
       <circle cx="50" cy="50" r="47" [attr.fill]="color()" stroke="rgb(255 255 255 / 0.35)" stroke-width="3" />
       <circle cx="50" cy="50" r="38" fill="none" stroke="rgb(0 0 0 / 0.14)" stroke-width="1.5" />
       <circle cx="50" cy="50" r="30" fill="none" stroke="rgb(0 0 0 / 0.14)" stroke-width="1.5" />
@@ -36,6 +40,7 @@ export const discColor = (key: string): string => DISC_COLORS[key] ?? DISC_COLOR
       }
       @if (scratched()) {
         <path d="M22 30 L44 56 M60 18 L78 46 M30 72 L52 84" stroke="rgb(0 0 0 / 0.4)" stroke-width="1.6" stroke-linecap="round" />
+      }
       }
     </svg>
   `,
@@ -51,4 +56,6 @@ export class RunDiscComponent {
   protected readonly gold = computed(() => this.disc() === 'runs.discs.gold');
   protected readonly double = computed(() => this.disc() === 'runs.discs.double_platinum');
   protected readonly scratched = computed(() => this.disc() === 'runs.discs.scratched');
+  /** Pas encore de disque : un cercle en pointillés. */
+  protected readonly none = computed(() => this.disc() === 'runs.discs.none');
 }

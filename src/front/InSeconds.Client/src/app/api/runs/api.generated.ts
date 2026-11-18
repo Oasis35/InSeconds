@@ -1607,13 +1607,15 @@ export interface RunHitsResponse {
 
 export interface RunLevelResponse {
     points: number;
-    disc: RunDiscResponse;
+    disc: RunDiscResponse | undefined;
     nextDisc: RunDiscResponse | undefined;
     pointsToNext: number | undefined;
     progressPercent: number;
-    provisional: boolean;
     runsPlayed: number;
     delta: number | undefined;
+    discChange: string | undefined;
+    inactivityLoss: number;
+    discDropInDays: number | undefined;
 
     [key: string]: any;
 }

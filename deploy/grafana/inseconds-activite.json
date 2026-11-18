@@ -1353,7 +1353,7 @@
             "type": "prometheus",
             "uid": "${DS_PROM}"
           },
-          "expr": "sum by (disc, change) (increase(inseconds_runs_levels_total{job=~\".*inseconds-api\",provisional=\"false\"}[$__range]))",
+          "expr": "sum by (disc, change) (increase(inseconds_runs_levels_total{job=~\".*inseconds-api\"}[$__range]))",
           "legendFormat": "{{disc}} · {{change}}",
           "instant": true,
           "range": false,

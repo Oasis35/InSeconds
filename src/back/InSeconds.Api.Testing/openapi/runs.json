@@ -1752,9 +1752,11 @@
           "nextDisc",
           "pointsToNext",
           "progressPercent",
-          "provisional",
           "runsPlayed",
-          "delta"
+          "delta",
+          "discChange",
+          "inactivityLoss",
+          "discDropInDays"
         ],
         "type": "object",
         "properties": {
@@ -1763,7 +1765,14 @@
             "format": "int32"
           },
           "disc": {
-            "$ref": "#/components/schemas/RunDiscResponse"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunDiscResponse"
+              }
+            ]
           },
           "nextDisc": {
             "oneOf": [
@@ -1786,14 +1795,28 @@
             "type": "integer",
             "format": "int32"
           },
-          "provisional": {
-            "type": "boolean"
-          },
           "runsPlayed": {
             "type": "integer",
             "format": "int32"
           },
           "delta": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "discChange": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "inactivityLoss": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "discDropInDays": {
             "type": [
               "null",
               "integer"

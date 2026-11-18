@@ -7,7 +7,7 @@ import { RunLevelCardComponent } from './run-level-card.component';
 describe('RunLevelCardComponent', () => {
   const level = (overrides: Partial<RunLevel> = {}): RunLevel => ({
     points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: { key: 'runs.discs.gold', stars: 0 }, pointsToNext: 220,
-    progressPercent: 56, provisional: false, runsPlayed: 12, delta: null, ...overrides,
+    progressPercent: 56, runsPlayed: 12, delta: null, discChange: null, inactivityLoss: 0, discDropInDays: null, ...overrides,
   });
 
   function render(value: RunLevel, reviewLink: string | null = null, focus = true) {
@@ -30,7 +30,6 @@ describe('RunLevelCardComponent', () => {
     expect(text(element, 'run-level-points')).toBe('1 380');
     expect(find(element, 'run-level-bar')?.style.width).toBe('56%');
     expect(text(element, 'run-level-next')).toBe('runs.level.next');
-    expect(find(element, 'run-level-provisional')).toBeNull();
     expect(find(element, 'run-level-delta')).toBeNull();
     expect(find(element, 'run-level-review')).toBeNull();
   });
@@ -52,10 +51,9 @@ describe('RunLevelCardComponent', () => {
     expect(down?.style.color).toBe('var(--text-muted)');
   });
 
-  it('un niveau provisoire le dit, le dernier disque n\'a pas de suivant', () => {
-    const element = render(level({ provisional: true, disc: { key: 'runs.discs.diamond', stars: 0 }, nextDisc: null, pointsToNext: null, progressPercent: 100 }));
+  it('le dernier disque n\'a pas de suivant', () => {
+    const element = render(level({ disc: { key: 'runs.discs.diamond', stars: 0 }, nextDisc: null, pointsToNext: null, progressPercent: 100 }));
 
-    expect(text(element, 'run-level-provisional')).toContain('runs.level.provisional');
     expect(text(element, 'run-level-next')).toBe('runs.level.top');
   });
 

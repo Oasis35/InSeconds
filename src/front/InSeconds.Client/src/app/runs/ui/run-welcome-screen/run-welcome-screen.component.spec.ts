@@ -26,7 +26,7 @@ describe('RunWelcomeScreenComponent', () => {
     expect(render().element.querySelector('[data-testid="run-level"]')).toBeNull();
     TestBed.resetTestingModule();
 
-    const { element } = render({ level: { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: null, pointsToNext: null, progressPercent: 100, provisional: false, runsPlayed: 12, delta: null } });
+    const { element } = render({ level: { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: null, pointsToNext: null, progressPercent: 100, runsPlayed: 12, delta: null, discChange: null, inactivityLoss: 0, discDropInDays: null } });
 
     expect(element.querySelector('[data-testid="run-level"]')?.getAttribute('data-disc')).toBe('runs.discs.silver');
     expect(element.querySelector('[data-testid="run-level-review"]')).toBeNull();

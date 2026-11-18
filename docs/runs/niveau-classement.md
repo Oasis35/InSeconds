@@ -1,6 +1,6 @@
 # Niveau et classement général de Survie : plan de dev
 
-Chantier en préparation, **rien n'est codé** : tickets [#607](https://github.com/Oasis35/InSeconds/issues/607) (niveau, back), [#608](https://github.com/Oasis35/InSeconds/issues/608) (niveau, front), [#609](https://github.com/Oasis35/InSeconds/issues/609) (classement général, back), [#610](https://github.com/Oasis35/InSeconds/issues/610) (classement général, front). Le code ne démarre qu'au « go » de Clément.
+Chantier en cours : le niveau back (#607) est codé, le reste suit. Tickets [#607](https://github.com/Oasis35/InSeconds/issues/607) (niveau, back), [#608](https://github.com/Oasis35/InSeconds/issues/608) (niveau, front), [#609](https://github.com/Oasis35/InSeconds/issues/609) (classement général, back), [#610](https://github.com/Oasis35/InSeconds/issues/610) (classement général, front). Go de Clément donné le 18/11 : les quatre tickets sont codés dans l'ordre, une PR chacun.
 
 ## Décisions
 
