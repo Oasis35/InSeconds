@@ -21,6 +21,14 @@ public sealed record RunLevelRules(
     int OldWeightPercent, int MaxDropPercent, int InactivityGraceDays, int InactivityWeeklyDropPercent, int InactivityFloorPercent,
     IReadOnlyList<RunLevelStep> Ladder);
 
+/// <summary>Ce qu'une série a fait au disque du joueur.</summary>
+public enum RunDiscChange
+{
+    Same,
+    Up,
+    Down,
+}
+
 /// <summary>Le niveau d'un joueur à un instant : ses points après l'inactivité, et quand son disque baissera s'il ne joue pas.</summary>
 /// <param name="Points">Ses points de niveau, inactivité déduite.</param>
 /// <param name="InactivityLoss">Ce que l'inactivité lui a retiré depuis sa dernière partie finie.</param>
@@ -36,6 +44,18 @@ public sealed record RunLevelNow(int Points, int InactivityLoss, int? DiscDropIn
 public static class RunLevelPolicy
 {
     private const int DaysPerWeek = 7;
+
+    /// <summary>
+    /// La transition du niveau, seule écrite : le niveau de la dernière série (<paramref name="points"/>, finie à <paramref name="lastPlayedAt"/> ;
+    /// vide avant la première), l'inactivité jusqu'à la fin de la nouvelle série (<paramref name="endedAt"/>), puis la formule. Rend le niveau d'avant
+    /// (inactivité déduite) et celui d'après. Partagée par <see cref="RunLevel.Record"/> et le rejeu des Hits.
+    /// </summary>
+    public static (int Before, int After) Apply(int points, DateTimeOffset? lastPlayedAt, int score, DateTimeOffset endedAt, RunLevelRules rules)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        var before = lastPlayedAt is { } last ? Now(points, last, endedAt, rules).Points : 0;
+        return (before, Next(before, score, rules));
+    }
 
     /// <summary>Le niveau après une série finie : <paramref name="current"/> est le niveau d'avant, inactivité déduite.</summary>
     public static int Next(int current, int score, RunLevelRules rules)
@@ -119,12 +139,12 @@ public static class RunLevelPolicy
         return new RunLevelStanding(current, next, next.FromPoints - points, progress);
     }
 
-    /// <summary>Le sens du changement de disque entre deux niveaux : <c>up</c>, <c>down</c> ou <c>same</c>.</summary>
-    public static string DiscChange(int before, int after, IReadOnlyList<RunLevelStep> ladder)
+    /// <summary>Le sens du changement de disque entre deux niveaux.</summary>
+    public static RunDiscChange DiscChange(int before, int after, IReadOnlyList<RunLevelStep> ladder)
     {
         var from = Standing(before, ladder).Current?.FromPoints ?? -1;
         var to = Standing(after, ladder).Current?.FromPoints ?? -1;
-        return to > from ? "up" : to < from ? "down" : "same";
+        return to > from ? RunDiscChange.Up : to < from ? RunDiscChange.Down : RunDiscChange.Same;
     }
 }
 
@@ -163,10 +183,10 @@ public sealed class RunLevel
         RunsPlayed == 0 ? new RunLevelNow(0, 0, null) : RunLevelPolicy.Now(Points, UpdatedAt, now, rules);
 
     /// <summary>
-    /// Compte une série finie (vies épuisées ou Série complète) : le niveau d'avant (inactivité déduite) et son score donnent le nouveau. Une partie
-    /// déjà comptée ne l'est pas deux fois.
+    /// Compte une série finie (vies épuisées ou Série complète) : le niveau d'avant (inactivité déduite jusqu'à la fin de la série) et son score
+    /// donnent le nouveau (<see cref="RunLevelPolicy.Apply"/>). Une partie déjà comptée ne l'est pas deux fois.
     /// </summary>
-    public void Record(RunSession session, RunLevelRules rules, DateTimeOffset now)
+    public void Record(RunSession session, RunLevelRules rules)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(rules);
@@ -177,14 +197,21 @@ public sealed class RunLevel
         if (LastSessionId == session.Id)
             return;
 
-        var before = At(now, rules).Points;
-        Points = RunLevelPolicy.Next(before, session.TotalScore, rules);
+        var endedAt = session.EndedAt ?? throw new InvalidOperationException("Une partie finie a une date de fin.");
+        var (before, after) = RunLevelPolicy.Apply(Points, RunsPlayed == 0 ? null : UpdatedAt, session.TotalScore, endedAt, rules);
+        Points = after;
         RunsPlayed++;
-        LastDelta = Points - before;
+        LastDelta = after - before;
         LastSessionId = session.Id;
-        UpdatedAt = now;
+        UpdatedAt = endedAt;
     }
 
     /// <summary>Ce que cette partie a changé aux points ; vide si ce n'est pas la dernière partie comptée.</summary>
     public int? DeltaOf(int sessionId) => LastSessionId == sessionId ? LastDelta : null;
+
+    /// <summary>Ce que la dernière partie comptée a fait au disque.</summary>
+    public RunDiscChange LastDiscChange(IReadOnlyList<RunLevelStep> ladder) => RunLevelPolicy.DiscChange(Points - LastDelta, Points, ladder);
+
+    /// <summary>Ce que cette partie a fait au disque ; vide si ce n'est pas la dernière partie comptée.</summary>
+    public RunDiscChange? DiscChangeOf(int sessionId, IReadOnlyList<RunLevelStep> ladder) => LastSessionId == sessionId ? LastDiscChange(ladder) : null;
 }

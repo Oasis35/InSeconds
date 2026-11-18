@@ -98,10 +98,10 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
     }
 
     [Fact]
-    public async Task Classement_LeNiveauEstLaMoyenneDesPartiesRecentes()
+    public async Task Classement_LesPointsDuNiveauEtLeRecordSontRendusTelsQuels()
     {
         var (alice, _, _, group) = await GroupOfThreeAsync();
-        // Six parties : 2000 puis cinq à 100, soit 417 points de niveau (disque Cire), le record restant à 2000.
+        // Six parties : 2000 puis cinq à 100 ; le niveau posé par le test (417 points, disque rayé), le record restant à 2000.
         await AddRunAsync(alice.Id, status: 2, roundsPassed: 4, score: 2000, minutesAgo: 60);
         for (var i = 1; i <= 5; i++)
             await AddRunAsync(alice.Id, status: 2, roundsPassed: 0, score: 100, minutesAgo: i);
@@ -111,6 +111,25 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
         var me = ranking.Entries.Single(e => e.IsMe);
         Assert.Equal((417, "runs.discs.scratched", 6), (me.Points, me.Badge, me.GamesPlayed));
         Assert.Equal(2000, me.BestScore);
+    }
+
+    [Fact]
+    public async Task Classement_LInactiviteEstDeduiteALaLecture_EtPeutChangerLOrdre()
+    {
+        var (alice, bob, _, group) = await GroupOfThreeAsync();
+        await AddRunAsync(alice.Id, status: 2, roundsPassed: 2, score: 2500);
+        await AddRunAsync(bob.Id, status: 2, roundsPassed: 4, score: 3000);
+        // Alice a joué à l'instant (horloge de l'API), Bob il y a 70 jours : 9 semaines d'inactivité comptées, 3 000 deviennent 1 650.
+        var now = _game.Time.GetUtcNow();
+        await _game.Api.ExecuteAsync($"UPDATE runs.player_levels SET updated_at = '{now:O}' WHERE player_id = '{alice.Id}'");
+        await _game.Api.ExecuteAsync($"UPDATE runs.player_levels SET updated_at = '{now.AddDays(-70):O}' WHERE player_id = '{bob.Id}'");
+
+        var ranking = (await alice.Client.GetFromJsonAsync<GroupRankingResponse>($"/api/social/groups/{group.Id}/ranking", Ct))!;
+
+        Assert.Equal(["Alice", "Bob"], ranking.Entries.Where(e => e.Rank is not null).Select(e => e.Pseudo));
+        var bobEntry = ranking.Entries.Single(e => e.Pseudo == "Bob");
+        Assert.Equal((1650, "runs.discs.bronze", Math.Round(1650d / 13000, 4)), (bobEntry.Points, bobEntry.Badge, bobEntry.Performance));
+        Assert.Equal(3000, await _game.Api.ScalarAsync<int>($"SELECT points FROM runs.player_levels WHERE player_id = '{bob.Id}'"));
     }
 
     [Fact]

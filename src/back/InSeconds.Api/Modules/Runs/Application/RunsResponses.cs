@@ -83,11 +83,11 @@ public sealed record RunRecordResponse(int BestScore, int BestRoundsPassed, bool
 /// <param name="RunsPlayed">Les séries finies (vies épuisées ou Série complète) prises en compte.</param>
 /// <param name="Delta">Ce que la partie qui vient de finir a changé aux points (« +38 ») ; vide hors de l'écran de fin de cette partie.</param>
 /// <param name="DiscChange">Avec <paramref name="Delta"/> : <c>up</c> (un disque de plus), <c>down</c> (un disque perdu) ou <c>same</c>.</param>
-/// <param name="InactivityLoss">Ce que l'inactivité lui a retiré depuis sa dernière série finie (0 s'il a joué il y a moins de 14 jours).</param>
+/// <param name="InactivityLoss">Ce que l'inactivité lui a retiré depuis sa dernière série finie (0 pendant la grâce, <c>Runs:Levels:InactivityGraceDays</c>).</param>
 /// <param name="DiscDropInDays">Dans combien de jours l'inactivité lui fera perdre son disque s'il ne joue pas ; vide sans disque ou si rien ne le menace.</param>
 public sealed record RunLevelResponse(
     int Points, RunDiscResponse? Disc, RunDiscResponse? NextDisc, int? PointsToNext, int ProgressPercent, int RunsPlayed, int? Delta,
-    string? DiscChange = null, int InactivityLoss = 0, int? DiscDropInDays = null);
+    string? DiscChange, int InactivityLoss, int? DiscDropInDays);
 
 /// <summary>Le résultat d'une partie finie (écran de fin).</summary>
 /// <param name="Status"><c>lost</c> (plus de vie) ou <c>abandoned</c>.</param>

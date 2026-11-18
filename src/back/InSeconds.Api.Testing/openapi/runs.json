@@ -1753,7 +1753,10 @@
           "pointsToNext",
           "progressPercent",
           "runsPlayed",
-          "delta"
+          "delta",
+          "discChange",
+          "inactivityLoss",
+          "discDropInDays"
         ],
         "type": "object",
         "properties": {
@@ -1811,8 +1814,7 @@
           },
           "inactivityLoss": {
             "type": "integer",
-            "format": "int32",
-            "default": 0
+            "format": "int32"
           },
           "discDropInDays": {
             "type": [

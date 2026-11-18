@@ -1613,9 +1613,9 @@ export interface RunLevelResponse {
     progressPercent: number;
     runsPlayed: number;
     delta: number | undefined;
-    discChange?: string | undefined;
-    inactivityLoss?: number;
-    discDropInDays?: number | undefined;
+    discChange: string | undefined;
+    inactivityLoss: number;
+    discDropInDays: number | undefined;
 
     [key: string]: any;
 }

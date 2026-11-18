@@ -13,6 +13,9 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
             // Le niveau change de formule (80 % de l'ancien, 20 % du score, #607) : les niveaux de l'ancienne moyenne glissante ne veulent plus rien
             // dire. Le mode n'est pas encore public, ils repartent de zéro (les testeurs sont prévenus).
             migrationBuilder.Sql("DELETE FROM runs.player_levels;");
+            // Les réglages de l'ancien niveau (fenêtre, parties provisoires, échelle qui commençait à 0) : une échelle sur mesure en base serait
+            // refusée par le contrôle du démarrage (le premier disque doit dépasser 0), et l'API ne démarrerait plus.
+            migrationBuilder.Sql("DELETE FROM infra.settings WHERE key LIKE 'Runs:Levels:%';");
 
             migrationBuilder.DropColumn(
                 name: "recent_scores",

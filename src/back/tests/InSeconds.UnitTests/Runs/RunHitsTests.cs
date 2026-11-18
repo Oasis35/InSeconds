@@ -4,6 +4,8 @@ namespace InSeconds.UnitTests.Runs;
 
 public class RunHitsTests
 {
+    private static readonly DateTimeOffset Start = new(2026, 11, 1, 20, 0, 0, TimeSpan.Zero);
+
     private static readonly RunLevelRules Levels =
         new(80, 10, 14, 5, 50, [new("runs.discs.scratched", 300), new("runs.discs.gold", 1600), new("runs.discs.diamond", 3400)]);
 
@@ -11,7 +13,7 @@ public class RunHitsTests
     private static RunHitRun Run(int score, bool[]? found = null, Dictionary<int, int>? friend = null, int[]? neutralized = null)
     {
         var answers = (found ?? []).Select((f, i) => new RunHitAnswer(i + 1, i / 5 + 1, f, neutralized?.Contains(i + 1) ?? false)).ToList();
-        return new RunHitRun(score, 5, answers, friend);
+        return new RunHitRun(score, 5, answers, friend, Start);
     }
 
     private static Dictionary<string, RunHit> Evaluate(bool friendPlayed = false, params RunHitRun[] runs) =>
@@ -107,8 +109,7 @@ public class RunHitsTests
     [Fact]
     public void Niveau_RejoueLInactiviteEntreDeuxSeries()
     {
-        var start = new DateTimeOffset(2026, 11, 1, 20, 0, 0, TimeSpan.Zero);
-        RunHitRun At(int score, double days) => Run(score) with { EndedAt = start.AddDays(days) };
+        RunHitRun At(int score, double days) => Run(score) with { EndedAt = Start.AddDays(days) };
 
         // 1 600 (l'Or) après deux séries ; 70 jours sans jouer le ramènent à 880, sous l'Or : la troisième série le rend, sans aller jusqu'au Diamant.
         var hits = Evaluate(false, At(20000, 0), At(20000, 1), At(20000, 71));
@@ -129,7 +130,7 @@ public class RunHitsTests
         new(position, (position - 1) / 5 + 1, found, neutralized, listen, failed);
 
     private static RunHitRun Answers(int score, IEnumerable<RunHitAnswer> answers, Dictionary<int, int>? friend = null, int[]? mystery = null) =>
-        new(score, 5, [.. answers], friend, mystery is null ? null : mystery.ToHashSet());
+        new(score, 5, [.. answers], friend, Start, mystery is null ? null : mystery.ToHashSet());
 
     [Fact]
     public void OreilleDOr_UnMorceauTrouveEnEntierA0Virgule5Seconde()

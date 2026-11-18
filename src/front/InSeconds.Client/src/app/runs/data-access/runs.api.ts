@@ -251,7 +251,7 @@ function toLevel(level: RunLevelResponse | undefined): RunLevel | null {
     runsPlayed: level.runsPlayed,
     delta: level.delta ?? null,
     discChange: toDiscChange(level.discChange),
-    inactivityLoss: level.inactivityLoss ?? 0,
+    inactivityLoss: level.inactivityLoss,
     discDropInDays: level.discDropInDays ?? null,
   };
 }

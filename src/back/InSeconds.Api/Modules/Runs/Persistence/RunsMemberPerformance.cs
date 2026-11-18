@@ -26,17 +26,16 @@ public sealed class RunsMemberPerformance(InSecondsDbContext db, RunsRules rules
 
         var levels = await db.Set<RunLevel>().AsNoTracking()
             .Where(l => ids.Contains(l.PlayerId) && l.RunsPlayed > 0)
-            .Select(l => new { l.PlayerId, l.Points, l.RunsPlayed, l.UpdatedAt })
             .ToListAsync(ct);
         var bests = await db.Set<RunRecord>().AsNoTracking()
             .Where(r => ids.Contains(r.PlayerId))
             .ToDictionaryAsync(r => r.PlayerId, r => r.BestScore, ct);
-        var levelRules = rules.Levels.ToRules();
+        var levelRules = rules.LevelRules;
         var now = time.GetUtcNow();
         foreach (var level in levels)
         {
             // L'inactivité se déduit à la lecture, comme sur l'accueil du joueur.
-            var points = RunLevelPolicy.Now(level.Points, level.UpdatedAt, now, levelRules).Points;
+            var points = level.At(now, levelRules).Points;
             var standing = RunLevelPolicy.Standing(points, levelRules.Ladder);
             result[level.PlayerId] = new MemberPerformance(
                 RunLevelPolicy.Share(points, levelRules.Ladder), level.RunsPlayed, bests.TryGetValue(level.PlayerId, out var best) ? best : null,

@@ -56,7 +56,7 @@ public sealed class RunsMetrics
         _answers = meter.CreateCounter<long>(AnswersName, description: "Réponses données, par manche, artiste et titre trouvés.");
         _neutralized = meter.CreateCounter<long>(NeutralizedName, description: "Morceaux neutralisés (Deezer n'a plus d'extrait).");
         _rounds = meter.CreateCounter<long>(RoundsName, description: "Manches terminées, par manche (round) et résultat (outcome : shorter, same, longer).");
-        _levels = meter.CreateCounter<long>(LevelsName, description: "Niveaux recalculés à la fin d'une partie, par disque de niveau (disc), changement (change) et provisoire (provisional).");
+        _levels = meter.CreateCounter<long>(LevelsName, description: "Niveaux recalculés à la fin d'une partie, par disque de niveau (disc, none sous le premier) et changement de disque (change : up, down, same).");
         _duels = meter.CreateCounter<long>(DuelsName, description: "Duels finis contre l'ami qui a lancé la playlist, par résultat (result : devant, derrière, égalité).");
     }
 
@@ -85,10 +85,10 @@ public sealed class RunsMetrics
     /// Le niveau après une série finie : son disque (<c>none</c> sous le premier), et s'il a gagné ou perdu un disque (<c>up</c>, <c>down</c>, <c>same</c>)
     /// par rapport au niveau d'avant la partie, inactivité déduite : la répartition des disques et les montées et baisses, pour régler les seuils.
     /// </summary>
-    public void LevelChanged(string? disc, string change) =>
+    public void LevelChanged(string? disc, RunDiscChange change) =>
         _levels.Add(1,
             new KeyValuePair<string, object?>("disc", disc ?? NoDisc),
-            new KeyValuePair<string, object?>("change", change switch { "up" => LevelUp, "down" => LevelDown, _ => LevelSame }));
+            new KeyValuePair<string, object?>("change", RunViews.DiscChangeOf(change)));
 
     public void AnswerSubmitted(RoundOutcome outcome, int round) =>
         _answers.Add(1,

@@ -79,7 +79,24 @@ public class RunLevelApiTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task LeDisqueGagne_EstAnnonce_PuisLInactiviteLeMenaceALaLecture()
+    public async Task UnDisqueGagne_EstAnnonce_PlafonneAuSeuilDuDisqueSuivant()
+    {
+        await _run.Game.SetSettingAsync(
+            "Runs:Levels:Discs", """[{"disc":"runs.discs.scratched","points":100},{"disc":"runs.discs.bronze","points":250},{"disc":"runs.discs.gold","points":400}]""");
+        var alice = await _run.NewInvitedAsync("Alice");
+        await PlayLostAfterOneRoundAsync(alice);
+        await _run.Api.ExecuteAsync($"UPDATE runs.player_levels SET points = 200 WHERE player_id = '{alice.Id}'");
+
+        var end = await PlayLostAfterOneRoundAsync(alice);
+
+        // 80 % de 200 + 20 % de 500 = 260, plafonné au seuil du bronze (250) : un disque de plus, pas deux.
+        var level = end.Session.Finish!.Level!;
+        Assert.Equal((250, "runs.discs.bronze", 50, "up"), (level.Points, level.Disc!.Key, level.Delta, level.DiscChange));
+        Assert.Null((await alice.MeAsync()).Level!.DiscChange);
+    }
+
+    [Fact]
+    public async Task LeDisqueGarde_EstMenaceParLInactivite_CalculeeALaLecture()
     {
         var alice = await _run.NewInvitedAsync("Alice");
         await PlayLostAfterOneRoundAsync(alice);

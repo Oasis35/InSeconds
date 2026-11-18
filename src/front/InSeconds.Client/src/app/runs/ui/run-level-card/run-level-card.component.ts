@@ -6,7 +6,7 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
 
 /**
  * Le niveau du joueur : son disque et son nom, ses points de niveau, ce que la dernière partie a changé (« +38 » en orange, une baisse en gris), la
- * jauge vers le disque suivant et ce qui manque pour l'avoir (« Disque d'or dans 220 pts »), « provisoire » tant qu'il a fini trop peu de parties.
+ * jauge vers le disque suivant et ce qui manque pour l'avoir (« Disque d'or dans 220 pts »).
  * Sur la fin d'un run, les morceaux trouvés et « Revoir », qui ouvre la partie dans l'historique.
  */
 @Component({

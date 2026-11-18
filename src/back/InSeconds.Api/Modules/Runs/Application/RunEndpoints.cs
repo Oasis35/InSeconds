@@ -50,7 +50,7 @@ public static class GetRunsMeEndpoint
             await access.CanPlayAsync(playerId, ct),
             record is null ? null : new RunRecordResponse(record.BestScore, record.BestRoundsPassed, IsNew: false),
             pending is null ? null : new RunPendingResponse(pending.SessionId, pending.ChallengeCode),
-            RunViews.LevelOf(await queries.FindLevelAsync(playerId, ct), rules.Levels, sessionId: null, time.GetUtcNow()),
+            RunViews.LevelOf(await queries.FindLevelAsync(playerId, ct), rules.LevelRules, sessionId: null, time.GetUtcNow()),
             await received.PendingAsync(playerId, time.GetUtcNow(), ct));
     }
 }

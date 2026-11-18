@@ -27,7 +27,7 @@ public class RunLevelPolicyTests
         var after = RunLevelPolicy.Next(current, score, Rules);
 
         Assert.Equal(expected, after);
-        Assert.Equal("up", RunLevelPolicy.DiscChange(current, after, Ladder));
+        Assert.Equal(RunDiscChange.Up, RunLevelPolicy.DiscChange(current, after, Ladder));
     }
 
     [Theory]
@@ -40,9 +40,9 @@ public class RunLevelPolicyTests
     [Fact]
     public void LeChangementDeDisque_PeutEtreUneBaisse()
     {
-        Assert.Equal("down", RunLevelPolicy.DiscChange(2000, 1800, Ladder));
-        Assert.Equal("same", RunLevelPolicy.DiscChange(2400, 2200, Ladder));
-        Assert.Equal("same", RunLevelPolicy.DiscChange(100, 200, Ladder));
+        Assert.Equal(RunDiscChange.Down, RunLevelPolicy.DiscChange(2000, 1800, Ladder));
+        Assert.Equal(RunDiscChange.Same, RunLevelPolicy.DiscChange(2400, 2200, Ladder));
+        Assert.Equal(RunDiscChange.Same, RunLevelPolicy.DiscChange(100, 200, Ladder));
     }
 
     [Theory]
@@ -120,6 +120,14 @@ public class RunLevelPolicyTests
     }
 
     [Fact]
+    public void LaTransition_DeduitLInactiviteJusquALaFinDeLaSerie()
+    {
+        Assert.Equal((0, 300), RunLevelPolicy.Apply(0, null, 6000, Last, Rules));
+        // 2 000 points, 21 jours plus tard (2 semaines comptées) : 1 800 avant la série, puis 80 % de 1 800 + 20 % de 2 000.
+        Assert.Equal((1800, 1840), RunLevelPolicy.Apply(2000, Last, 2000, Last.AddDays(21), Rules));
+    }
+
+    [Fact]
     public void SansBaisseHebdomadaire_LInactiviteNeChangeRien()
     {
         var rules = Rules with { InactivityWeeklyDropPercent = 0 };
@@ -138,8 +146,9 @@ public class RunLevelTests
     /// Une partie finie : <paramref name="roundsFound"/> manches entièrement trouvées (500, 1 000, 1 750, 2 750 points : le palier raccourcit à chacune),
     /// puis la suivante ratée jusqu'à la dernière vie.
     /// </summary>
-    private static RunSession Finished(Guid player, int roundsFound)
+    private static RunSession Finished(Guid player, int roundsFound, DateTimeOffset? at = null)
     {
+        var end = at ?? Now;
         var rules = TestRules.Legacy();
         var challenge = RunChallenge.Create("K7Q2M9", 1, rules, Enumerable.Range(1, 5).ToList(), null, Now);
         for (var round = 2; round <= roundsFound + 1; round++)
@@ -149,7 +158,7 @@ public class RunLevelTests
         while (session.IsPending)
         {
             var found = rules.RoundOf(session.NextPosition) <= roundsFound;
-            session.Answer(challenge, new RoundOutcome(found, found, 10m, 0), new ArtistTitleScoring(), Now);
+            session.Answer(challenge, new RoundOutcome(found, found, 10m, 0), new ArtistTitleScoring(), end);
         }
 
         return session;
@@ -162,11 +171,13 @@ public class RunLevelTests
         var level = RunLevel.Start(player, Now);
         var session = Finished(player, 4);
 
-        level.Record(session, Rules, Now);
+        level.Record(session, Rules);
 
         Assert.Equal(6000, session.TotalScore);
         Assert.Equal((300, 1, 300), (level.Points, level.RunsPlayed, level.LastDelta));
         Assert.Equal(300, level.DeltaOf(session.Id));
+        Assert.Equal(RunDiscChange.Up, level.DiscChangeOf(session.Id, Rules.Ladder));
+        Assert.Null(level.DiscChangeOf(-1, Rules.Ladder));
     }
 
     [Fact]
@@ -178,7 +189,7 @@ public class RunLevelTests
         var points = new List<int>();
         for (var i = 0; i < 4; i++)
         {
-            level.Record(Finished(player, 4), Rules, Now);
+            level.Record(Finished(player, 4), Rules);
             points.Add(level.Points);
         }
 
@@ -191,15 +202,16 @@ public class RunLevelTests
     {
         var player = Guid.NewGuid();
         var level = RunLevel.Start(player, Now);
-        level.Record(Finished(player, 4), Rules, Now);
-        level.Record(Finished(player, 4), Rules, Now);
+        level.Record(Finished(player, 4), Rules);
+        level.Record(Finished(player, 4), Rules);
         var bad = Finished(player, 0);
 
-        level.Record(bad, Rules, Now);
+        level.Record(bad, Rules);
 
         Assert.Equal(0, bad.TotalScore);
         Assert.Equal(810, level.Points);
         Assert.Equal(-90, level.DeltaOf(bad.Id));
+        Assert.Equal(RunDiscChange.Down, level.DiscChangeOf(bad.Id, Rules.Ladder));
         Assert.Equal(3, level.RunsPlayed);
     }
 
@@ -208,15 +220,15 @@ public class RunLevelTests
     {
         var player = Guid.NewGuid();
         var level = RunLevel.Start(player, Now);
-        level.Record(Finished(player, 4), Rules, Now);
-        level.Record(Finished(player, 4), Rules, Now);
+        level.Record(Finished(player, 4), Rules);
+        level.Record(Finished(player, 4), Rules);
 
         // 900 points, puis 35 jours sans partie (4 semaines comptées : 14, 21, 28 et 35 jours) : 720, le niveau stocké ne bouge pas.
         var later = Now.AddDays(35);
         Assert.Equal(new RunLevelNow(720, 180, null), level.At(later, Rules));
         Assert.Equal(900, level.Points);
 
-        level.Record(Finished(player, 1), Rules, later);
+        level.Record(Finished(player, 1, later), Rules);
 
         // 80 % de 720 + 20 % de 500 = 676 : la perte se compte depuis le niveau inactivité déduite.
         Assert.Equal((676, -44, later), (level.Points, level.LastDelta, level.UpdatedAt));
@@ -228,9 +240,9 @@ public class RunLevelTests
         var player = Guid.NewGuid();
         var level = RunLevel.Start(player, Now);
         var session = Finished(player, 4);
-        level.Record(session, Rules, Now);
+        level.Record(session, Rules);
 
-        level.Record(session, Rules, Now);
+        level.Record(session, Rules);
 
         Assert.Equal((1, 300), (level.RunsPlayed, level.Points));
     }
@@ -240,7 +252,7 @@ public class RunLevelTests
     {
         var player = Guid.NewGuid();
         var level = RunLevel.Start(player, Now);
-        level.Record(Finished(player, 4), Rules, Now);
+        level.Record(Finished(player, 4), Rules);
 
         Assert.Null(level.DeltaOf(-1));
     }
@@ -254,13 +266,13 @@ public class RunLevelTests
         var abandoned = RunSession.Start(0, player, Now);
         abandoned.Abandon(Now);
 
-        Assert.Throws<InvalidOperationException>(() => level.Record(pending, Rules, Now));
-        Assert.Throws<InvalidOperationException>(() => level.Record(abandoned, Rules, Now));
+        Assert.Throws<InvalidOperationException>(() => level.Record(pending, Rules));
+        Assert.Throws<InvalidOperationException>(() => level.Record(abandoned, Rules));
     }
 
     [Fact]
     public void LaPartieDUnAutreJoueur_EstRefusee() =>
-        Assert.Throws<ArgumentException>(() => RunLevel.Start(Guid.NewGuid(), Now).Record(Finished(Guid.NewGuid(), 4), Rules, Now));
+        Assert.Throws<ArgumentException>(() => RunLevel.Start(Guid.NewGuid(), Now).Record(Finished(Guid.NewGuid(), 4), Rules));
 }
 
 public class RunLevelOptionsTests

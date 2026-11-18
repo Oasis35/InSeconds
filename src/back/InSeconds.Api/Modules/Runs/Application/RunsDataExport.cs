@@ -12,7 +12,7 @@ public sealed record RunsDataExport(
 /// <summary>Un défi d'ami reçu : le lien de la playlist, quand il a été reçu et, s'il a été refusé, quand.</summary>
 public sealed record RunReceivedChallengeExport(string ChallengeCode, DateTimeOffset ReceivedAt, DateTimeOffset? DismissedAt);
 
-/// <summary>Le niveau : ses points, les parties finies comptées et les scores de ses dernières parties (la fenêtre de la moyenne).</summary>
+/// <summary>Le niveau : ses points à sa dernière série finie (avant toute inactivité), les séries comptées et la fin de la dernière.</summary>
 public sealed record RunLevelExport(int Points, int RunsPlayed, DateTimeOffset UpdatedAt);
 
 /// <param name="ChallengeCode">Le lien du défi joué.</param>

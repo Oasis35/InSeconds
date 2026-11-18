@@ -10,10 +10,10 @@ public sealed record RunHitAnswer(int Position, int Round, bool Found, bool Neut
 /// Sur la playlist d'un ami qui l'a finie : les points de l'ami par position (le duel de l'écran de fin) ; vide sur sa propre playlist, ou si
 /// l'auteur ne l'a pas finie.
 /// </param>
-/// <param name="EndedAt">La fin de la partie, pour rejouer l'inactivité du niveau ; vide : aucune inactivité comptée.</param>
+/// <param name="EndedAt">La fin de la partie, pour rejouer l'inactivité du niveau.</param>
 public sealed record RunHitRun(
-    int TotalScore, int TracksPerRound, IReadOnlyList<RunHitAnswer> Answers, IReadOnlyDictionary<int, int>? FriendPoints, IReadOnlySet<int>? MysteryRounds = null,
-    DateTimeOffset? EndedAt = null);
+    int TotalScore, int TracksPerRound, IReadOnlyList<RunHitAnswer> Answers, IReadOnlyDictionary<int, int>? FriendPoints, DateTimeOffset EndedAt,
+    IReadOnlySet<int>? MysteryRounds = null);
 
 /// <summary>Ce que les Hits d'un joueur lisent : ses parties finies, de la plus ancienne à la plus récente, et si un ami a fini une de ses playlists.</summary>
 public sealed record RunHitFacts(IReadOnlyList<RunHitRun> Runs, bool FriendPlayedMine);
@@ -155,7 +155,11 @@ public static class RunHits
         run.FriendPoints is { } friend
         && run.TotalScore > RunGhost.TotalOver(friend, run.Answers.Where(a => !a.Neutralized).Select(a => a.Position));
 
-    /// <summary>Le plus haut niveau atteint : la formule du niveau rejouée série après série, inactivité entre deux séries comprise.</summary>
+    /// <summary>
+    /// Le plus haut niveau atteint : la transition du niveau (<see cref="RunLevelPolicy.Apply"/>) rejouée série après série, inactivité comprise. Toutes
+    /// les séries finies comptent, y compris celles d'avant la remise à zéro des niveaux de novembre 2026 (le mode n'était pas public) : le Hit juge le
+    /// niveau que le joueur aurait avec la formule d'aujourd'hui.
+    /// </summary>
     internal static int PeakLevel(IReadOnlyList<RunHitRun> runs, RunLevelRules levels)
     {
         var level = 0;
@@ -163,9 +167,8 @@ public static class RunHits
         var peak = 0;
         foreach (var run in runs)
         {
-            var before = last is { } at && run.EndedAt is { } end ? RunLevelPolicy.Now(level, at, end, levels).Points : level;
-            level = RunLevelPolicy.Next(before, run.TotalScore, levels);
-            last = run.EndedAt ?? last;
+            level = RunLevelPolicy.Apply(level, last, run.TotalScore, run.EndedAt, levels).After;
+            last = run.EndedAt;
             peak = Math.Max(peak, level);
         }
 
