@@ -14,6 +14,7 @@ Noms : **« Run »** dans les tickets GitHub (étiquette `Mode Run`), **`Runs`**
 | [`ecrans.md`](ecrans.md) | Les écrans du mode et leur enchaînement |
 | [`conception.md`](conception.md) | La conception technique : principe, tirage, ce qui est réutilisé, où lire le détail |
 | [`proto4.md`](proto4.md) | La V4 : barre du bas, accueil, historique, nom Survie, niveau et disques, groupes et classement ; découpage en 8 PR, avec les 16 écrans de référence dans [`maquettes/proto4/`](maquettes/proto4/) |
+| [`niveau-classement.md`](niveau-classement.md) | Niveau (7 disques) et classement général : décisions, plan de dev en 4 PR, maquettes |
 | [`plan.md`](plan.md) | Ce qui reste, les idées pour la suite et les décisions |
 
 Détail du code : [`src/back/CLAUDE.md`](../../src/back/CLAUDE.md) § Module Runs, [`src/front/CLAUDE.md`](../../src/front/CLAUDE.md) § Domaine runs.
