@@ -4,36 +4,89 @@ namespace InSeconds.Api.Modules.Runs.Domain;
 public sealed record RunLevelStep(string Disc, int FromPoints);
 
 /// <summary>Où en est un joueur sur l'échelle des disques de niveau.</summary>
-/// <param name="Current">Son disque.</param>
+/// <param name="Current">Son disque ; vide tant qu'il n'a pas les points du premier.</param>
 /// <param name="Next">Le disque suivant ; vide au dernier.</param>
 /// <param name="PointsToNext">Ce qui lui manque pour le disque suivant ; vide au dernier.</param>
-/// <param name="ProgressPercent">Sa progression entre son disque et le suivant (de 0 à 100) ; 100 au dernier.</param>
-public sealed record RunLevelStanding(RunLevelStep Current, RunLevelStep? Next, int? PointsToNext, int ProgressPercent);
+/// <param name="ProgressPercent">Sa progression entre son disque (0 sans disque) et le suivant (de 0 à 100) ; 100 au dernier.</param>
+public sealed record RunLevelStanding(RunLevelStep? Current, RunLevelStep? Next, int? PointsToNext, int ProgressPercent);
+
+/// <summary>Les règles du niveau, tirées des réglages <c>Runs:Levels:</c> (relus à chaud, jamais figés dans une playlist).</summary>
+/// <param name="OldWeightPercent">La part de l'ancien niveau dans le nouveau (80 : 80 % de l'ancien niveau, 20 % du score de la série).</param>
+/// <param name="MaxDropPercent">Une série ne fait pas perdre plus de cette part du niveau.</param>
+/// <param name="InactivityGraceDays">Les jours sans partie finie avant que le niveau ne baisse.</param>
+/// <param name="InactivityWeeklyDropPercent">Ce que le niveau perd par semaine d'inactivité après la grâce (part du niveau de la dernière partie).</param>
+/// <param name="InactivityFloorPercent">L'inactivité ne descend jamais sous cette part du niveau de la dernière partie.</param>
+/// <param name="Ladder">Les disques, du plus bas au plus haut, le premier au-dessus de 0.</param>
+public sealed record RunLevelRules(
+    int OldWeightPercent, int MaxDropPercent, int InactivityGraceDays, int InactivityWeeklyDropPercent, int InactivityFloorPercent,
+    IReadOnlyList<RunLevelStep> Ladder);
+
+/// <summary>Le niveau d'un joueur à un instant : ses points après l'inactivité, et quand son disque baissera s'il ne joue pas.</summary>
+/// <param name="Points">Ses points de niveau, inactivité déduite.</param>
+/// <param name="InactivityLoss">Ce que l'inactivité lui a retiré depuis sa dernière partie finie.</param>
+/// <param name="DiscDropInDays">Dans combien de jours (au moins 1) l'inactivité lui fera perdre son disque ; vide sans disque, ou si le plancher le garde.</param>
+public sealed record RunLevelNow(int Points, int InactivityLoss, int? DiscDropInDays);
 
 /// <summary>
-/// La politique du niveau : les points de niveau sont la **moyenne glissante** des scores des dernières parties finies du joueur (gagnées ou perdues,
-/// jamais une partie abandonnée). Ils montent et descendent avec ses parties, rien ne les fait décroître pendant son absence. Provisoires tant que le
-/// joueur n'a pas fini assez de parties. Pure : aucune horloge, aucune base (la fenêtre, le nombre de parties provisoires et les seuils sont des
-/// réglages <c>Runs:Levels:</c>).
+/// La politique du niveau (pure : aucune horloge, aucune base). Après chaque série finie (vies épuisées ou Série complète), le niveau devient
+/// <c>80 % de l'ancien + 20 % du score</c>, sans perdre plus de 10 % ni monter de plus d'un disque (plafonné au seuil du disque juste au-dessus). Rien
+/// de provisoire, le fantôme n'y est pour rien. Sans partie finie pendant 14 jours, le niveau baisse de 5 % par semaine, jamais sous la moitié :
+/// **calculé à la lecture**, aucune tâche de nuit (le niveau stocké reste celui de la dernière partie).
 /// </summary>
 public static class RunLevelPolicy
 {
-    /// <summary>Les parties gardées au plus par joueur, quelle que soit la fenêtre réglée (la fenêtre peut grandir sans perdre d'historique).</summary>
-    public const int MaxStoredScores = 50;
+    private const int DaysPerWeek = 7;
 
-    /// <summary>La moyenne (arrondie au plus proche) des <paramref name="window"/> derniers scores ; 0 sans partie.</summary>
-    public static int Points(IReadOnlyList<int> scores, int window)
+    /// <summary>Le niveau après une série finie : <paramref name="current"/> est le niveau d'avant, inactivité déduite.</summary>
+    public static int Next(int current, int score, RunLevelRules rules)
     {
-        ArgumentNullException.ThrowIfNull(scores);
-        ArgumentOutOfRangeException.ThrowIfLessThan(window, 1);
-        if (scores.Count == 0)
-            return 0;
-        var recent = scores.Skip(Math.Max(0, scores.Count - window)).ToList();
-        return (int)decimal.Round((decimal)recent.Sum(s => (long)s) / recent.Count, 0, MidpointRounding.AwayFromZero);
+        ArgumentNullException.ThrowIfNull(rules);
+        current = Math.Max(0, current);
+        score = Math.Max(0, score);
+        var raw = (int)decimal.Round(((decimal)current * rules.OldWeightPercent + (decimal)score * (100 - rules.OldWeightPercent)) / 100, 0, MidpointRounding.AwayFromZero);
+        var floor = (int)Math.Ceiling((decimal)current * (100 - rules.MaxDropPercent) / 100);
+        var cap = rules.Ladder.FirstOrDefault(s => s.FromPoints > current)?.FromPoints ?? int.MaxValue;
+        return Math.Max(floor, Math.Min(raw, cap));
     }
 
-    /// <summary>Le niveau est provisoire tant que le joueur n'a pas fini <paramref name="provisionalRuns"/> parties.</summary>
-    public static bool IsProvisional(int runsPlayed, int provisionalRuns) => runsPlayed < provisionalRuns;
+    /// <summary>Les semaines d'inactivité qui comptent : 0 pendant la grâce, 1 dès qu'elle est finie, 2 une semaine après…</summary>
+    public static int InactiveWeeks(DateTimeOffset lastPlayedAt, DateTimeOffset now, RunLevelRules rules)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        var days = (now - lastPlayedAt).TotalDays;
+        return days < rules.InactivityGraceDays ? 0 : (int)Math.Min(1000, Math.Floor((days - rules.InactivityGraceDays) / DaysPerWeek) + 1);
+    }
+
+    /// <summary>Les points de <paramref name="points"/> après <paramref name="weeks"/> semaines d'inactivité.</summary>
+    public static int AfterInactivity(int points, int weeks, RunLevelRules rules)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        if (weeks <= 0 || points <= 0)
+            return Math.Max(0, points);
+        var floor = (long)points * rules.InactivityFloorPercent / 100;
+        var decayed = (long)points * Math.Max(0, 100 - ((long)rules.InactivityWeeklyDropPercent * weeks)) / 100;
+        return (int)Math.Max(floor, decayed);
+    }
+
+    /// <summary>Le niveau d'un joueur maintenant : <paramref name="points"/> est le niveau de sa dernière partie finie, jouée à <paramref name="lastPlayedAt"/>.</summary>
+    public static RunLevelNow Now(int points, DateTimeOffset lastPlayedAt, DateTimeOffset now, RunLevelRules rules)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        var weeks = InactiveWeeks(lastPlayedAt, now, rules);
+        var effective = AfterInactivity(points, weeks, rules);
+        var disc = Standing(effective, rules.Ladder).Current;
+        int? dropIn = null;
+        if (disc is not null && rules.InactivityWeeklyDropPercent > 0 && AfterInactivity(points, 1000, rules) < disc.FromPoints)
+        {
+            var week = weeks + 1;
+            while (AfterInactivity(points, week, rules) >= disc.FromPoints)
+                week++;
+            var at = lastPlayedAt.AddDays(rules.InactivityGraceDays + ((week - 1) * DaysPerWeek));
+            dropIn = Math.Max(1, (int)Math.Ceiling((at - now).TotalDays));
+        }
+
+        return new RunLevelNow(effective, points - effective, dropIn);
+    }
 
     /// <summary>La part de ces points dans ceux du plus haut disque, de 0 à 1 : ce que le classement d'un groupe compare.</summary>
     public static double Share(int points, IReadOnlyList<RunLevelStep> ladder)
@@ -43,32 +96,42 @@ public static class RunLevelPolicy
         return top <= 0 ? 0d : Math.Clamp((double)points / top, 0d, 1d);
     }
 
-    /// <summary>Le disque de ces points et ce qu'il reste pour le suivant. <paramref name="ladder"/> : du plus bas au plus haut, le premier palier à 0.</summary>
+    /// <summary>Le disque de ces points (aucun sous le premier) et ce qu'il reste pour le suivant. <paramref name="ladder"/> : du plus bas au plus haut.</summary>
     public static RunLevelStanding Standing(int points, IReadOnlyList<RunLevelStep> ladder)
     {
         ArgumentNullException.ThrowIfNull(ladder);
         if (ladder.Count == 0)
             throw new ArgumentException("Il faut au moins un disque.", nameof(ladder));
-        var index = 0;
+        var index = -1;
         for (var i = 0; i < ladder.Count; i++)
         {
             if (points >= ladder[i].FromPoints)
                 index = i;
         }
 
-        var current = ladder[index];
+        var current = index < 0 ? null : ladder[index];
         if (index == ladder.Count - 1)
             return new RunLevelStanding(current, null, null, 100);
         var next = ladder[index + 1];
-        var span = next.FromPoints - current.FromPoints;
-        var progress = span <= 0 ? 100 : Math.Clamp((int)((long)(points - current.FromPoints) * 100 / span), 0, 100);
+        var from = current?.FromPoints ?? 0;
+        var span = next.FromPoints - from;
+        var progress = span <= 0 ? 100 : Math.Clamp((int)((long)(points - from) * 100 / span), 0, 100);
         return new RunLevelStanding(current, next, next.FromPoints - points, progress);
+    }
+
+    /// <summary>Le sens du changement de disque entre deux niveaux : <c>up</c>, <c>down</c> ou <c>same</c>.</summary>
+    public static string DiscChange(int before, int after, IReadOnlyList<RunLevelStep> ladder)
+    {
+        var from = Standing(before, ladder).Current?.FromPoints ?? -1;
+        var to = Standing(after, ladder).Current?.FromPoints ?? -1;
+        return to > from ? "up" : to < from ? "down" : "same";
     }
 }
 
 /// <summary>
-/// Le niveau d'un joueur (une ligne par joueur, invité compris) : ses points, les scores de ses dernières parties finies, et ce que sa dernière partie
-/// a changé (pour l'écran de fin, qui n'affiche son gain que pour cette partie-là). Mis à jour dans la transaction qui termine la partie.
+/// Le niveau d'un joueur (une ligne par joueur, invité compris) : ses points à sa dernière série finie, et ce que cette série a changé (pour l'écran
+/// de fin, qui n'affiche son gain que pour elle). Mis à jour dans la transaction qui termine la partie ; l'inactivité se déduit à la lecture
+/// (<see cref="RunLevelPolicy.Now"/>), à partir de <see cref="UpdatedAt"/>.
 /// </summary>
 public sealed class RunLevel
 {
@@ -78,32 +141,35 @@ public sealed class RunLevel
 
     public Guid PlayerId { get; private set; }
 
-    /// <summary>Les points de niveau : la moyenne glissante des scores récents, au moment de la dernière partie.</summary>
+    /// <summary>Les points de niveau à la dernière série finie, avant toute inactivité.</summary>
     public int Points { get; private set; }
 
-    /// <summary>Les parties finies prises en compte (gagnées ou perdues).</summary>
+    /// <summary>Les séries finies prises en compte (vies épuisées ou Série complète).</summary>
     public int RunsPlayed { get; private set; }
 
-    /// <summary>Les scores des dernières parties finies, de la plus ancienne à la plus récente (<see cref="RunLevelPolicy.MaxStoredScores"/> au plus).</summary>
-    public int[] RecentScores { get; private set; } = [];
-
-    /// <summary>La dernière partie comptée et ce qu'elle a changé aux points.</summary>
+    /// <summary>La dernière partie comptée et ce qu'elle a changé aux points (comparé au niveau d'avant, inactivité déduite).</summary>
     public int? LastSessionId { get; private set; }
 
     public int LastDelta { get; private set; }
 
+    /// <summary>La fin de la dernière série comptée : le départ de l'inactivité.</summary>
     public DateTimeOffset UpdatedAt { get; private set; }
 
     /// <summary>Le niveau d'un joueur avant sa première partie finie.</summary>
     public static RunLevel Start(Guid playerId, DateTimeOffset now) => new() { PlayerId = playerId, UpdatedAt = now };
 
+    /// <summary>Le niveau maintenant, inactivité déduite.</summary>
+    public RunLevelNow At(DateTimeOffset now, RunLevelRules rules) =>
+        RunsPlayed == 0 ? new RunLevelNow(0, 0, null) : RunLevelPolicy.Now(Points, UpdatedAt, now, rules);
+
     /// <summary>
-    /// Compte une partie finie (gagnée ou perdue) : son score entre dans la fenêtre et les points sont recalculés. Une partie déjà comptée ne l'est
-    /// pas deux fois.
+    /// Compte une série finie (vies épuisées ou Série complète) : le niveau d'avant (inactivité déduite) et son score donnent le nouveau. Une partie
+    /// déjà comptée ne l'est pas deux fois.
     /// </summary>
-    public void Record(RunSession session, int window, DateTimeOffset now)
+    public void Record(RunSession session, RunLevelRules rules, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(rules);
         if (session.PlayerId != PlayerId)
             throw new ArgumentException("Ce n'est pas une partie de ce joueur.", nameof(session));
         if (!session.IsFinished)
@@ -111,12 +177,9 @@ public sealed class RunLevel
         if (LastSessionId == session.Id)
             return;
 
-        var before = Points;
-        RecentScores = [.. RecentScores, Math.Max(0, session.TotalScore)];
-        if (RecentScores.Length > RunLevelPolicy.MaxStoredScores)
-            RecentScores = RecentScores[^RunLevelPolicy.MaxStoredScores..];
+        var before = At(now, rules).Points;
+        Points = RunLevelPolicy.Next(before, session.TotalScore, rules);
         RunsPlayed++;
-        Points = RunLevelPolicy.Points(RecentScores, window);
         LastDelta = Points - before;
         LastSessionId = session.Id;
         UpdatedAt = now;

@@ -45,7 +45,8 @@ public sealed class EfRunHitsQueries(InSecondsDbContext db) : IRunHitsQueries
                     a.Position, rules.RoundOf(a.Position), a.ArtistCorrect && a.TitleCorrect, a.Neutralized,
                     rules.ListenAt(session.StepOf(rules, rules.RoundOf(a.Position))), a.IsFailed))],
                 friendPoints.GetValueOrDefault(session.ChallengeId),
-                rules.Themes?.Where(t => t.Mystery).Select(t => t.Round).ToHashSet());
+                rules.Themes?.Where(t => t.Mystery).Select(t => t.Round).ToHashSet(),
+                session.EndedAt);
         }).ToList();
         return new RunHitFacts(runs, friendPlayedMine);
     }

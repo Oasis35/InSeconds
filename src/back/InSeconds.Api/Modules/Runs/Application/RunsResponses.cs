@@ -72,19 +72,22 @@ public sealed record RunDiscResponse(string Key, int Stars);
 public sealed record RunRecordResponse(int BestScore, int BestRoundsPassed, bool IsNew);
 
 /// <summary>
-/// Le niveau du joueur : la moyenne glissante de ses dernières parties finies, son disque de niveau et ce qu'il lui reste pour le suivant. Rien
-/// qui identifie un morceau, aucun classement.
+/// Le niveau du joueur (80 % de l'ancien niveau et 20 % du score de chaque série finie, inactivité déduite), son disque et ce qu'il lui reste pour le
+/// suivant. Rien qui identifie un morceau, aucun classement.
 /// </summary>
-/// <param name="Points">Ses points de niveau.</param>
-/// <param name="Disc">Son disque de niveau (clé <c>runs.discs.*</c>, jamais de texte).</param>
+/// <param name="Points">Ses points de niveau, inactivité déduite.</param>
+/// <param name="Disc">Son disque de niveau (clé <c>runs.discs.*</c>, jamais de texte) ; vide sous le premier disque (« Pas encore de disque »).</param>
 /// <param name="NextDisc">Le disque suivant ; vide au dernier.</param>
 /// <param name="PointsToNext">Ce qui lui manque pour le disque suivant (« Encore 220 pour l'Or ») ; vide au dernier disque.</param>
-/// <param name="ProgressPercent">Sa progression entre son disque et le suivant, de 0 à 100.</param>
-/// <param name="Provisional">Le niveau est provisoire : il a fini moins de parties que <c>Runs:Levels:ProvisionalRuns</c>.</param>
-/// <param name="RunsPlayed">Les parties finies (gagnées ou perdues) prises en compte.</param>
+/// <param name="ProgressPercent">Sa progression entre son disque (0 sans disque) et le suivant, de 0 à 100.</param>
+/// <param name="RunsPlayed">Les séries finies (vies épuisées ou Série complète) prises en compte.</param>
 /// <param name="Delta">Ce que la partie qui vient de finir a changé aux points (« +38 ») ; vide hors de l'écran de fin de cette partie.</param>
+/// <param name="DiscChange">Avec <paramref name="Delta"/> : <c>up</c> (un disque de plus), <c>down</c> (un disque perdu) ou <c>same</c>.</param>
+/// <param name="InactivityLoss">Ce que l'inactivité lui a retiré depuis sa dernière série finie (0 s'il a joué il y a moins de 14 jours).</param>
+/// <param name="DiscDropInDays">Dans combien de jours l'inactivité lui fera perdre son disque s'il ne joue pas ; vide sans disque ou si rien ne le menace.</param>
 public sealed record RunLevelResponse(
-    int Points, RunDiscResponse Disc, RunDiscResponse? NextDisc, int? PointsToNext, int ProgressPercent, bool Provisional, int RunsPlayed, int? Delta);
+    int Points, RunDiscResponse? Disc, RunDiscResponse? NextDisc, int? PointsToNext, int ProgressPercent, int RunsPlayed, int? Delta,
+    string? DiscChange = null, int InactivityLoss = 0, int? DiscDropInDays = null);
 
 /// <summary>Le résultat d'une partie finie (écran de fin).</summary>
 /// <param name="Status"><c>lost</c> (plus de vie) ou <c>abandoned</c>.</param>

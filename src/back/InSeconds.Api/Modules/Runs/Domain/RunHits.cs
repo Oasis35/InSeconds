@@ -10,8 +10,10 @@ public sealed record RunHitAnswer(int Position, int Round, bool Found, bool Neut
 /// Sur la playlist d'un ami qui l'a finie : les points de l'ami par position (le duel de l'écran de fin) ; vide sur sa propre playlist, ou si
 /// l'auteur ne l'a pas finie.
 /// </param>
+/// <param name="EndedAt">La fin de la partie, pour rejouer l'inactivité du niveau ; vide : aucune inactivité comptée.</param>
 public sealed record RunHitRun(
-    int TotalScore, int TracksPerRound, IReadOnlyList<RunHitAnswer> Answers, IReadOnlyDictionary<int, int>? FriendPoints, IReadOnlySet<int>? MysteryRounds = null);
+    int TotalScore, int TracksPerRound, IReadOnlyList<RunHitAnswer> Answers, IReadOnlyDictionary<int, int>? FriendPoints, IReadOnlySet<int>? MysteryRounds = null,
+    DateTimeOffset? EndedAt = null);
 
 /// <summary>Ce que les Hits d'un joueur lisent : ses parties finies, de la plus ancienne à la plus récente, et si un ami a fini une de ses playlists.</summary>
 public sealed record RunHitFacts(IReadOnlyList<RunHitRun> Runs, bool FriendPlayedMine);
@@ -48,16 +50,15 @@ public static class RunHits
     private const int NoScratchTarget = 3;
     private const decimal EarGoldSeconds = 0.5m;
 
-    /// <param name="window">La fenêtre de la moyenne du niveau (<c>Runs:Levels:Window</c>).</param>
-    /// <param name="provisionalRuns">Les parties pendant lesquelles le niveau est provisoire : il ne donne pas de Hit avant.</param>
-    /// <param name="ladder">Les disques de niveau, du plus bas au plus haut.</param>
-    public static IReadOnlyList<RunHit> Evaluate(RunHitFacts facts, int window, int provisionalRuns, IReadOnlyList<RunLevelStep> ladder)
+    /// <param name="levels">Les règles du niveau (<c>Runs:Levels:</c>) : formule, inactivité et disques.</param>
+    public static IReadOnlyList<RunHit> Evaluate(RunHitFacts facts, RunLevelRules levels)
     {
         ArgumentNullException.ThrowIfNull(facts);
-        ArgumentNullException.ThrowIfNull(ladder);
+        ArgumentNullException.ThrowIfNull(levels);
+        var ladder = levels.Ladder;
         var runs = facts.Runs;
         var duels = runs.Count(WonDuel);
-        var peak = PeakLevel(runs, window, provisionalRuns);
+        var peak = PeakLevel(runs, levels);
 
         return
         [
@@ -154,16 +155,18 @@ public static class RunHits
         run.FriendPoints is { } friend
         && run.TotalScore > RunGhost.TotalOver(friend, run.Answers.Where(a => !a.Neutralized).Select(a => a.Position));
 
-    /// <summary>Le plus haut niveau atteint : la moyenne glissante rejouée partie après partie, sans compter les parties provisoires.</summary>
-    internal static int PeakLevel(IReadOnlyList<RunHitRun> runs, int window, int provisionalRuns)
+    /// <summary>Le plus haut niveau atteint : la formule du niveau rejouée série après série, inactivité entre deux séries comprise.</summary>
+    internal static int PeakLevel(IReadOnlyList<RunHitRun> runs, RunLevelRules levels)
     {
-        var scores = new List<int>(runs.Count);
+        var level = 0;
+        DateTimeOffset? last = null;
         var peak = 0;
         foreach (var run in runs)
         {
-            scores.Add(Math.Max(0, run.TotalScore));
-            if (!RunLevelPolicy.IsProvisional(scores.Count, provisionalRuns))
-                peak = Math.Max(peak, RunLevelPolicy.Points(scores, window));
+            var before = last is { } at && run.EndedAt is { } end ? RunLevelPolicy.Now(level, at, end, levels).Points : level;
+            level = RunLevelPolicy.Next(before, run.TotalScore, levels);
+            last = run.EndedAt ?? last;
+            peak = Math.Max(peak, level);
         }
 
         return peak;

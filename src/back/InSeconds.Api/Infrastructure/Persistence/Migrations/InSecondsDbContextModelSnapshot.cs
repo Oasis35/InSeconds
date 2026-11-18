@@ -962,11 +962,6 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("points");
 
-                    b.PrimitiveCollection<int[]>("RecentScores")
-                        .IsRequired()
-                        .HasColumnType("integer[]")
-                        .HasColumnName("recent_scores");
-
                     b.Property<int>("RunsPlayed")
                         .HasColumnType("integer")
                         .HasColumnName("runs_played");

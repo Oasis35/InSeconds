@@ -124,7 +124,7 @@ public sealed class RunPlayer(
         }
 
         return RunViews.Session(run, scoring, record, shapes, time.GetUtcNow(), await ghosts.OfAsync(run.Session, run.Challenge, ct),
-            themeOffer, RunViews.LevelOf(level, rules.Levels, run.Session.Id));
+            themeOffer, RunViews.LevelOf(level, rules.Levels, run.Session.Id, time.GetUtcNow()));
     }
 
     // Le bilan d'une manche terminée, et son compte dans les métriques (la manche ne se termine qu'une fois).
@@ -145,7 +145,8 @@ public sealed class RunPlayer(
         else
             record.Improve(session, time.GetUtcNow());
 
-        // Le niveau : la moyenne glissante des scores des parties finies (même verrou que le record, une partie ne s'y compte qu'une fois).
+        // Le niveau : 80 % de l'ancien (inactivité déduite) et 20 % du score, un disque de plus au plus (même verrou que le record, une partie ne s'y
+        // compte qu'une fois).
         var level = await store.FindLevelAsync(session.PlayerId, ct);
         if (level is null)
         {
@@ -153,14 +154,13 @@ public sealed class RunPlayer(
             store.AddLevel(level);
         }
 
-        var pointsBefore = level.Points;
-        level.Record(session, rules.Levels.Window, time.GetUtcNow());
-        RunsLog.LevelUpdated(logger, session.Id, level.RunsPlayed, level.Points - pointsBefore);
-        var ladder = rules.Levels.Ladder;
+        var levelRules = rules.Levels.ToRules();
+        level.Record(session, levelRules, time.GetUtcNow());
+        RunsLog.LevelUpdated(logger, session.Id, level.RunsPlayed, level.LastDelta);
+        var pointsBefore = level.Points - level.LastDelta;
         metrics.LevelChanged(
-            RunLevelPolicy.Standing(pointsBefore, ladder).Current.FromPoints,
-            RunLevelPolicy.Standing(level.Points, ladder).Current,
-            RunLevelPolicy.IsProvisional(level.RunsPlayed, rules.Levels.ProvisionalRuns));
+            RunLevelPolicy.Standing(level.Points, levelRules.Ladder).Current?.Disc,
+            RunLevelPolicy.DiscChange(pointsBefore, level.Points, levelRules.Ladder));
 
         RunsLog.SessionEnded(logger, session.Id, session.PlayerId, session.Status, session.RoundsPassed, session.TotalScore);
         metrics.SessionEnded(session.RoundsPassed, session.Status == RunSessionStatus.Completed);
@@ -181,15 +181,19 @@ internal static class RunViews
     /// Le niveau d'un joueur tel que l'écran le montre ; <paramref name="sessionId"/> : la partie dont on veut le gain (« +38 »), rien pour l'accueil.
     /// Vide quand le joueur n'a encore fini aucune partie.
     /// </summary>
-    public static RunLevelResponse? LevelOf(RunLevel? level, RunLevelOptions options, int? sessionId)
+    public static RunLevelResponse? LevelOf(RunLevel? level, RunLevelOptions options, int? sessionId, DateTimeOffset now)
     {
         if (level is null || level.RunsPlayed == 0)
             return null;
-        var standing = RunLevelPolicy.Standing(level.Points, options.Ladder);
+        var rules = options.ToRules();
+        var current = level.At(now, rules);
+        var standing = RunLevelPolicy.Standing(current.Points, rules.Ladder);
+        var delta = sessionId is { } id ? level.DeltaOf(id) : null;
         return new RunLevelResponse(
-            level.Points, new RunDiscResponse(standing.Current.Disc, 0), standing.Next is null ? null : new RunDiscResponse(standing.Next.Disc, 0),
-            standing.PointsToNext, standing.ProgressPercent, RunLevelPolicy.IsProvisional(level.RunsPlayed, options.ProvisionalRuns), level.RunsPlayed,
-            sessionId is { } id ? level.DeltaOf(id) : null);
+            current.Points, standing.Current is null ? null : new RunDiscResponse(standing.Current.Disc, 0),
+            standing.Next is null ? null : new RunDiscResponse(standing.Next.Disc, 0), standing.PointsToNext, standing.ProgressPercent, level.RunsPlayed,
+            delta, delta is { } d ? RunLevelPolicy.DiscChange(level.Points - d, level.Points, rules.Ladder) : null, current.InactivityLoss,
+            current.DiscDropInDays);
     }
 
     public static string StatusOf(RunSessionStatus status) => status switch

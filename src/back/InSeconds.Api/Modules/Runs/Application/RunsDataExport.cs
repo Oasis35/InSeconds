@@ -13,7 +13,7 @@ public sealed record RunsDataExport(
 public sealed record RunReceivedChallengeExport(string ChallengeCode, DateTimeOffset ReceivedAt, DateTimeOffset? DismissedAt);
 
 /// <summary>Le niveau : ses points, les parties finies comptées et les scores de ses dernières parties (la fenêtre de la moyenne).</summary>
-public sealed record RunLevelExport(int Points, int RunsPlayed, IReadOnlyList<int> RecentScores, DateTimeOffset UpdatedAt);
+public sealed record RunLevelExport(int Points, int RunsPlayed, DateTimeOffset UpdatedAt);
 
 /// <param name="ChallengeCode">Le lien du défi joué.</param>
 /// <param name="Status"><c>Pending</c>, <c>Lost</c> ou <c>Abandoned</c>.</param>

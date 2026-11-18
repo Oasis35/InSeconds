@@ -8,11 +8,11 @@ namespace InSeconds.Api.Modules.Runs.Persistence;
 
 /// <summary>
 /// Ce que Runs donne au classement d'un groupe : le **niveau** de chaque joueur (<see cref="RunLevel"/>). Sa performance est la part de ses points de
-/// niveau dans ceux du plus haut disque (de 0 à 1), ses points et son disque sont montrés à côté de lui, avec son nombre de parties comptées et son
+/// niveau (inactivité déduite) dans ceux du plus haut disque (de 0 à 1), ses points et son disque (aucun sous le premier) sont montrés à côté de lui, avec son nombre de parties comptées et son
 /// record. Un joueur sans niveau (aucune partie gagnée ou perdue : une partie abandonnée ne compte pas) n'y figure pas. Runs ne connaît de Social que
 /// ce contrat.
 /// </summary>
-public sealed class RunsMemberPerformance(InSecondsDbContext db, RunsRules rules) : IMemberPerformanceSource
+public sealed class RunsMemberPerformance(InSecondsDbContext db, RunsRules rules, TimeProvider time) : IMemberPerformanceSource
 {
     public string Source => "runs";
 
@@ -26,18 +26,21 @@ public sealed class RunsMemberPerformance(InSecondsDbContext db, RunsRules rules
 
         var levels = await db.Set<RunLevel>().AsNoTracking()
             .Where(l => ids.Contains(l.PlayerId) && l.RunsPlayed > 0)
-            .Select(l => new { l.PlayerId, l.Points, l.RunsPlayed })
+            .Select(l => new { l.PlayerId, l.Points, l.RunsPlayed, l.UpdatedAt })
             .ToListAsync(ct);
         var bests = await db.Set<RunRecord>().AsNoTracking()
             .Where(r => ids.Contains(r.PlayerId))
             .ToDictionaryAsync(r => r.PlayerId, r => r.BestScore, ct);
-        var ladder = rules.Levels.Ladder;
+        var levelRules = rules.Levels.ToRules();
+        var now = time.GetUtcNow();
         foreach (var level in levels)
         {
-            var standing = RunLevelPolicy.Standing(level.Points, ladder);
+            // L'inactivité se déduit à la lecture, comme sur l'accueil du joueur.
+            var points = RunLevelPolicy.Now(level.Points, level.UpdatedAt, now, levelRules).Points;
+            var standing = RunLevelPolicy.Standing(points, levelRules.Ladder);
             result[level.PlayerId] = new MemberPerformance(
-                RunLevelPolicy.Share(level.Points, ladder), level.RunsPlayed, bests.TryGetValue(level.PlayerId, out var best) ? best : null,
-                level.Points, standing.Current.Disc);
+                RunLevelPolicy.Share(points, levelRules.Ladder), level.RunsPlayed, bests.TryGetValue(level.PlayerId, out var best) ? best : null,
+                points, standing.Current?.Disc);
         }
 
         return result;

@@ -27,6 +27,9 @@ public sealed class RunsMetrics
     public const string LevelDown = "down";
     public const string LevelSame = "same";
 
+    /// <summary>L'étiquette <c>disc</c> d'un joueur sous le premier disque.</summary>
+    public const string NoDisc = "none";
+
     /// <summary>Étiquette <c>result</c> d'un duel : le joueur devant l'ami (<c>ahead</c>), derrière (<c>behind</c>) ou à égalité (<c>tied</c>).</summary>
     public const string DuelAhead = "ahead";
     public const string DuelBehind = "behind";
@@ -79,13 +82,13 @@ public sealed class RunsMetrics
         _duels.Add(1, new KeyValuePair<string, object?>("result", gap > 0 ? DuelAhead : gap < 0 ? DuelBehind : DuelTied));
 
     /// <summary>
-    /// Le niveau après une partie gagnée ou perdue : son disque, et s'il a gagné ou perdu un disque (comparé au seuil du disque d'avant la partie).
+    /// Le niveau après une série finie : son disque (<c>none</c> sous le premier), et s'il a gagné ou perdu un disque (<c>up</c>, <c>down</c>, <c>same</c>)
+    /// par rapport au niveau d'avant la partie, inactivité déduite : la répartition des disques et les montées et baisses, pour régler les seuils.
     /// </summary>
-    public void LevelChanged(int previousDiscFrom, RunLevelStep current, bool provisional) =>
+    public void LevelChanged(string? disc, string change) =>
         _levels.Add(1,
-            new KeyValuePair<string, object?>("disc", current.Disc),
-            new KeyValuePair<string, object?>("change", current.FromPoints > previousDiscFrom ? LevelUp : current.FromPoints < previousDiscFrom ? LevelDown : LevelSame),
-            new KeyValuePair<string, object?>("provisional", provisional));
+            new KeyValuePair<string, object?>("disc", disc ?? NoDisc),
+            new KeyValuePair<string, object?>("change", change switch { "up" => LevelUp, "down" => LevelDown, _ => LevelSame }));
 
     public void AnswerSubmitted(RoundOutcome outcome, int round) =>
         _answers.Add(1,
