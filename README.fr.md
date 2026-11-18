@@ -102,14 +102,16 @@ InSeconds/
 
 ## Intégration continue
 
-Workflow GitHub Actions sur chaque push (toutes branches) et chaque PR vers `main` :
+Workflow GitHub Actions sur chaque push (toutes branches). Seuls tournent les jobs des zones que la branche change (back, front, les deux pour les tests de bout en bout ; rien pour la doc), tout sur `main` et `env/staging` :
 
-- **back** - build, tests unitaires, d'architecture et d'intégration (Testcontainers), migrations à jour, codegen Wolverine à jour, image Docker sans l'hôte de test
-- **front** - build de prod, tests Vitest, frontières Sheriff, clients NSwag à jour
-- **e2e** - Playwright contre l'hôte de test
+- **back** - tests d'intégration (Testcontainers), répartis sur 3 jobs par dossier de tests
+- **back-checks** - migrations à jour, codegen Wolverine à jour, image Docker sans l'hôte de test, puis tests unitaires, d'architecture et des scripts du VPS
+- **front** - build de prod, tests Vitest, frontières Sheriff
+- **api-clients** - clients NSwag à jour par rapport aux documents OpenAPI du back
 - **nginx-headers** - construit l'image nginx du front et vérifie en-têtes de cache et de sécurité, types MIME et redirection de l'ancienne adresse
+- **e2e** - Playwright contre l'hôte de test, réparti sur 6 jobs selon la durée mesurée des specs
 
-Le check **« CI OK »** les agrège (c'est lui qu'exige la protection des branches). Les runs obsolètes sont annulés automatiquement. Détail : [`docs/exploitation/ci.md`](docs/exploitation/ci.md).
+Le check **« CI OK »** les agrège (c'est lui qu'exige la protection des branches). Les runs obsolètes sont annulés automatiquement, et sur une branche de travail le premier job en échec annule le run. Détail : [`docs/exploitation/ci.md`](docs/exploitation/ci.md).
 
 Livraison : les PR visent `env/staging`, déployée sur le staging une fois « CI OK » passé ; après test, `env/staging` est mergée dans `main` (merge commit), qui déploie la prod de la même façon. Détail : [`docs/exploitation/deploiement.md`](docs/exploitation/deploiement.md).
 
@@ -139,7 +141,7 @@ cd src/front/InSeconds.Client
 E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=<DB_PASSWORD>" npm run e2e
 ```
 
-`playwright.config.ts` démarre l'hôte de test (port 5177) et `ng serve` (port 5178). **148 tests** répartis sur 33 fichiers : jeu, connexion, profil, appareils, tes données, série et gels, mode Run, admin…
+`playwright.config.ts` démarre l'hôte de test (port 5177) et `ng serve` (port 5178). **181 tests** répartis sur 37 fichiers : jeu, connexion, profil, appareils, tes données, série et gels, mode Run, admin…
 
 ## Documentation
 
