@@ -64,9 +64,8 @@ export class FakeSocialApi {
   setRankingIdentity(mode: 'pseudo' | 'alias'): Promise<RankingIdentity> {
     this.calls.push(`identity:${mode}`);
     if (this.failIdentity) return Promise.reject(new Error('down'));
-    const identity: RankingIdentity = mode === 'alias'
-      ? (this.general.identity?.mode === 'alias' ? this.general.identity : this.alias())
-      : { mode: 'pseudo', name: 'Moi', alias: null };
+    let identity: RankingIdentity = { mode: 'pseudo', name: 'Moi', alias: null };
+    if (mode === 'alias') identity = this.general.identity?.mode === 'alias' ? this.general.identity : this.alias();
     this.general = { ...this.general, identity };
     return Promise.resolve(identity);
   }
