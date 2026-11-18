@@ -26,7 +26,7 @@ describe('RunHomeCardComponent', () => {
     const fixture = TestBed.createComponent(RunHomeCardComponent);
     fixture.detectChanges();
     const played = vi.fn();
-    fixture.componentInstance.play.subscribe(played);
+    fixture.componentInstance.playClicked.subscribe(played);
     (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[data-testid="run-home-play"]')!.click();
     expect(played).toHaveBeenCalledTimes(1);
   });

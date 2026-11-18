@@ -115,14 +115,14 @@ export const DISC_LADDER: readonly string[] = [
             {{ 'runs.home.takeUp' | translate }}
           </a>
         } @else {
-          <a appButton routerLink="/survie" [queryParams]="{ go: 1 }" (click)="play.emit()" size="lg" [block]="true" data-testid="run-home-play">
+          <a appButton routerLink="/survie" [queryParams]="{ go: 1 }" (click)="playClicked.emit()" size="lg" [block]="true" data-testid="run-home-play">
             {{ (todayScore() !== null ? 'runs.home.replay' : 'runs.home.play') | translate }}
           </a>
         }
       } @else {
         <div class="flex items-center justify-between gap-3">
           <ng-container [ngTemplateOutlet]="place" />
-          <a appButton variant="neutral" routerLink="/survie" [queryParams]="{ go: 1 }" (click)="play.emit()" class="ml-auto" data-testid="run-home-play">
+          <a appButton variant="neutral" routerLink="/survie" [queryParams]="{ go: 1 }" (click)="playClicked.emit()" class="ml-auto" data-testid="run-home-play">
             {{ (todayScore() !== null ? 'runs.home.replay' : 'runs.home.play') | translate }}
           </a>
         </div>
@@ -151,7 +151,7 @@ export class RunHomeCardComponent {
   /** Le joueur refuse le défi (la croix) : le code de la playlist. */
   readonly dismissReceived = output<string>();
   /** Le clic sur « Jouer » : l'accueil y déverrouille le son avant de quitter la page. */
-  readonly play = output<void>();
+  readonly playClicked = output<void>();
 
   protected readonly ladder = DISC_LADDER;
   protected readonly days = computed(() => {

@@ -151,8 +151,14 @@ export function unlockSharedAudio(): void {
   const url = URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' }));
   audio.src = url;
   audio.play().then(
-    () => { audio.pause(); URL.revokeObjectURL(url); },
-    (err: unknown) => { if (!isAbort(err)) sharedUnlocked = false; URL.revokeObjectURL(url); },
+    () => {
+      audio.pause();
+      URL.revokeObjectURL(url);
+    },
+    (err: unknown) => {
+      if (!isAbort(err)) sharedUnlocked = false;
+      URL.revokeObjectURL(url);
+    },
   );
 }
 

@@ -38,7 +38,7 @@ interface HomeSummary {
       <div class="pt-3">
         <app-run-home-card [active]="chrome.dailyDone() === true" [level]="summary().level" [record]="summary().record"
           [todayScore]="summary().todayScore" [lang]="lang()" [received]="summary().received" [groupPlace]="summary().groupPlace"
-          [generalRank]="summary().generalRank" (dismissReceived)="dismiss($event)" (play)="unlockSound()" />
+          [generalRank]="summary().generalRank" (dismissReceived)="dismiss($event)" (playClicked)="unlockSound()" />
       </div>
     }
   `,
