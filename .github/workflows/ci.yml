@@ -228,12 +228,25 @@ jobs:
             src/front/InSeconds.Client/playwright-results/
           retention-days: 7
 
+  # Les tests d'intégration (Testcontainers : Docker est fourni par ubuntu-latest), en 3 jobs répartis par dossier de
+  # tests/InSeconds.IntegrationTests. Les groupes 1 et 2 prennent les dossiers de GROUP_1 et GROUP_2, le groupe 3 tout le
+  # reste : un nouveau dossier y tombe seul, aucun test n'est oublié ni joué deux fois. Un dossier compte avec ses
+  # sous-dossiers (namespaces X et X.*, xUnit comparant le namespace exactement). Rééquilibrer sur les durées que chaque
+  # job écrit dans le résumé du run (src/back/scripts/integration-durations.mjs). Un dossier de GROUP_1 ou GROUP_2 absent
+  # (renommé) fait échouer le job, comme un filtre qui ne trouve aucun test (code 8 de Microsoft.Testing.Platform).
   back:
-    name: Backend (build, tests)
+    name: Backend (integration ${{ matrix.group }}/3)
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.code == 'true'
-    timeout-minutes: 30
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [1, 2, 3]
+    env:
+      GROUP_1: Daily Social
+      GROUP_2: Catalogue Runs
     defaults:
       run:
         working-directory: src/back
@@ -246,21 +259,49 @@ jobs:
         with:
           global-json-file: src/back/global.json
 
-      - name: Restore
-        run: dotnet restore InSeconds.slnx
-
       - name: Build (Release)
-        run: dotnet build InSeconds.slnx --configuration Release --no-restore
+        run: dotnet build tests/InSeconds.IntegrationTests/InSeconds.IntegrationTests.csproj --configuration Release
 
-      # Unitaires, architecture, intégration et scripts SQL du VPS (Testcontainers : Docker est fourni par ubuntu-latest).
-      # Délai : la suite prend quelques minutes ; un test bloqué ne retient plus le job jusqu'à la limite de 6 h.
-      - name: Test
-        timeout-minutes: 20
-        run: dotnet test --solution InSeconds.slnx --configuration Release --no-build
+      # Délai : un test bloqué ne retient pas le job jusqu'à sa limite.
+      - name: Integration tests
+        timeout-minutes: 15
+        run: |
+          for name in $GROUP_1 $GROUP_2; do
+            [ -d "tests/InSeconds.IntegrationTests/$name" ] \
+              || { echo "::error::Dossier $name (GROUP_1 ou GROUP_2) absent de tests/InSeconds.IntegrationTests."; exit 1; }
+          done
+          add() { for name in "$@"; do filter+=("InSeconds.IntegrationTests.$name" "InSeconds.IntegrationTests.$name.*"); done; }
+          case "${{ matrix.group }}" in
+            1) filter=(--filter-namespace); add $GROUP_1 ;;
+            2) filter=(--filter-namespace); add $GROUP_2 ;;
+            3) filter=(--filter-not-namespace); add $GROUP_1 $GROUP_2 ;;
+            *) echo "::error::Groupe d'intégration inconnu : ${{ matrix.group }}."; exit 1 ;;
+          esac
+          dotnet test --project tests/InSeconds.IntegrationTests/InSeconds.IntegrationTests.csproj --configuration Release \
+            --no-build "${filter[@]}" --results-directory "$RUNNER_TEMP/back-integration" \
+            --report-xunit-xml --report-xunit-xml-filename integration-${{ matrix.group }}.xml
 
-  # Les vérifications du back qui ne sont pas des tests, en parallèle du job back : migrations, code Wolverine, image de prod.
+      # Rien à lire si le lanceur s'est arrêté avant d'écrire son rapport (le job est déjà en échec).
+      - name: Durations by folder
+        if: success() || failure()
+        run: |
+          compgen -G "$RUNNER_TEMP/back-integration/*.xml" > /dev/null || exit 0
+          { echo "### Intégration ${{ matrix.group }}/3"; node scripts/integration-durations.mjs "$RUNNER_TEMP/back-integration"; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test report
+        if: success() || failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: back-integration-${{ matrix.group }}
+          path: ${{ runner.temp }}/back-integration/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # Les vérifications du back qui ne sont pas des tests d'intégration, en parallèle des jobs back : tests unitaires,
+  # d'architecture et des scripts du VPS (tous les projets de tests/ sauf l'intégration : un nouveau projet y est joué
+  # seul), migrations, code Wolverine, image de prod.
   back-checks:
-    name: Backend (migrations, Wolverine code, prod image)
+    name: Backend (unit tests, migrations, Wolverine code, prod image)
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.code == 'true'
@@ -281,7 +322,8 @@ jobs:
         run: dotnet restore InSeconds.slnx
 
       - name: Build (Release)
-        run: dotnet build InSeconds.Api/InSeconds.Api.csproj --configuration Release --no-restore
+        id: build
+        run: dotnet build InSeconds.slnx --configuration Release --no-restore
 
       - name: Install dotnet-ef
         run: dotnet tool install --global dotnet-ef --version 10.0.12
@@ -312,6 +354,22 @@ jobs:
             echo "::error::InSeconds.Api.Testing présent dans l'image de prod (S9)."
             exit 1
           fi
+
+      # Unitaires, architecture et scripts SQL et de sauvegarde du VPS (InSeconds.MigrationTests : Testcontainers). En
+      # dernier et quoi qu'il arrive aux vérifications d'avant (une migration oubliée et un test rouge se voient ensemble),
+      # chaque projet joué même si un autre a échoué.
+      - name: Unit, architecture and VPS script tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        timeout-minutes: 10
+        run: |
+          status=0
+          for project in tests/*/*.csproj; do
+            case "$project" in
+              */InSeconds.IntegrationTests/*) ;;
+              *) dotnet test --project "$project" --configuration Release --no-build || status=1 ;;
+            esac
+          done
+          exit $status
 
   # Seul check exigé par le ruleset « Branches protégées » : échoue si un job a échoué ou a été
   # annulé (un job sauté, sur une branche qui ne change que de la doc, compte comme réussi).
