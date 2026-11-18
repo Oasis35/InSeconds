@@ -63,6 +63,17 @@ describe('RunsPage', () => {
     return created;
   }
 
+  describe("l'écran de départ", () => {
+    it("n'ouvre aucune partie avant le clic sur « Commencer » (ni requête de lancement, ni son)", async () => {
+      const { store } = create();
+
+      await store.init();
+
+      expect(store.screen()).toBe('welcome');
+      expect(api.calls.some(call => call.startsWith('launch'))).toBe(false);
+    });
+  });
+
   describe('quitter la page en pleine manche', () => {
     it("« Quitter quand même » est la confirmation, « Continuer à jouer » l'annulation (comme au Daily)", async () => {
       const { page } = await playing();
