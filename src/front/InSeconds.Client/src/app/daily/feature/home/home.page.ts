@@ -82,7 +82,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener, visibleScreen } from 
           @case ('already_played') {
             <div class="screen-enter flex flex-col gap-3" data-testid="home-v4">
               @if (store.abandoned()) {
-                <app-home-abandoned-card [countdown]="store.countdown()" />
+                <app-home-abandoned-card [countdown]="store.countdown()" [score]="store.stats()?.abandonedScore ?? null" [pending]="store.stats() === null" [rows]="result.rows()" [lang]="language.current()" />
               } @else {
                 <app-home-done-card
                   [score]="store.stats()?.yourScore ?? null"

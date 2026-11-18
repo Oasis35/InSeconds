@@ -837,6 +837,9 @@
     "home": {
       "label": "Daily challenge",
       "done": "Daily challenge",
+      "abandonedScore": "abandoned game",
+      "abandonedNoPlayTitle": "Challenge abandoned",
+      "abandonedNoPlay": "You didn't play today's challenge. Your streak is untouched.",
       "remainingHours": "{{ n }} h left",
       "remainingMinutes": "{{ n }} min left"
     },

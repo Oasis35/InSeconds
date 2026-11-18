@@ -264,6 +264,7 @@ function toStats(s: TodayStatsResponse): DayStats {
     maxPossibleScore: s.maxPossibleScore,
     scoreDistribution: s.scoreDistribution.map(b => ({ minScore: b.minScore, maxScore: b.maxScore, count: b.count })),
     betterThanPercent: s.betterThanPercent ?? null,
+    abandonedScore: s.abandonedScore ?? null,
     history: s.history
       ? {
           fastestSeconds: s.history.fastestSeconds ?? null,
