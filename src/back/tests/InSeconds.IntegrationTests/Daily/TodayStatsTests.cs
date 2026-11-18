@@ -127,7 +127,50 @@ public class TodayStatsTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task PartieAbandonnee_RevelelesMorceaux_SansScore()
+    public async Task PartieAbandonneeApresUneReponse_RevelelesMorceaux_AvecSonScorePartiel_SansLeComparer()
+    {
+        await _game.GenerateAsync();
+        var alice = await _game.NewPlayerAsync();
+        var session = (await alice.StartAsync()).SessionId;
+        await alice.AnswerCorrectlyAsync(session, 1, 1);
+        await alice.AbandonAsync(session);
+        var bob = await _game.NewPlayerAsync();
+        await bob.FinishAsync((await bob.StartAsync()).SessionId, seconds: 1);
+
+        var stats = await StatsAsync(alice.Client);
+
+        // Un autre joueur ou un anonyme ne voit rien de sa partie abandonnée ; seule la partie terminée de Bob compte.
+        Assert.Null((await StatsAsync(bob.Client)).AbandonedScore);
+        Assert.Null((await StatsAsync(_game.Api.CreateClient())).AbandonedScore);
+        Assert.Equal(1, stats.TotalPlayers);
+        var partial = await _game.Api.ScalarAsync<int>($"SELECT total_score FROM daily.sessions WHERE id = {session}");
+        Assert.True(partial > 0);
+        Assert.Equal(partial, stats.AbandonedScore);
+        Assert.Equal(5, stats.Tracks.Count);
+        // Seul le morceau répondu porte sa réponse ; rien d'une partie terminée (score du jour, comparaison, historique) n'est donné.
+        Assert.Equal([partial], stats.Tracks.Where(t => t.Score is not null).Select(t => t.Score!.Value));
+        Assert.Null(stats.YourScore);
+        Assert.Null(stats.BetterThanPercent);
+        Assert.Null(stats.History);
+    }
+
+    [Fact]
+    public async Task PartieAbandonneeSansReponse_NeMontreNiScoreNiMorceaux()
+    {
+        await _game.GenerateAsync();
+        var alice = await _game.NewPlayerAsync();
+        var session = (await alice.StartAsync()).SessionId;
+        await alice.AbandonAsync(session);
+
+        var stats = await StatsAsync(alice.Client);
+
+        Assert.Null(stats.AbandonedScore);
+        Assert.Null(stats.YourScore);
+        Assert.Empty(stats.Tracks);
+    }
+
+    [Fact]
+    public async Task PartieAbandonnee_NeTouchePasLaSerie_NiLesGels()
     {
         await _game.GenerateAsync();
         var alice = await _game.NewPlayerAsync();
@@ -135,13 +178,9 @@ public class TodayStatsTests(PostgresFixture postgres) : IAsyncLifetime
         await alice.AnswerCorrectlyAsync(session, 1, 1);
         await alice.AbandonAsync(session);
 
+        Assert.Equal(0L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM daily.streaks WHERE player_id = '{alice.Id}'"));
         var stats = await StatsAsync(alice.Client);
-
-        Assert.Equal(5, stats.Tracks.Count);
-        Assert.Null(stats.YourScore);
-        // Elle n'a pas de réponse à elle à montrer : seules les parties terminées comptent et se montrent.
-        Assert.All(stats.Tracks, t => Assert.Null(t.Score));
-        Assert.Equal(0, stats.TotalPlayers);
+        Assert.Equal((0, 0, false), (stats.CurrentStreak, stats.FreezesUsed, stats.FreezeMilestone));
     }
 
     [Fact]
@@ -158,6 +197,7 @@ public class TodayStatsTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal(5, stats.Tracks.Count);
         Assert.Null(stats.YourScore);
+        Assert.Null(stats.AbandonedScore);
         Assert.All(stats.Tracks, t => Assert.Null(t.Score));
         Assert.Equal(0, stats.TotalPlayers);
     }

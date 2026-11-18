@@ -48,7 +48,7 @@ public sealed record TodayHistoryResponse(
 /// <param name="MedianScore">Médiane des scores (division entière des deux valeurs centrales).</param>
 /// <param name="TotalPlayers">Parties terminées.</param>
 /// <param name="CurrentStreak">La série effective du joueur (0 si cassée).</param>
-/// <param name="Tracks">**Vide tant que la partie du joueur n'est pas finie** (terminée, abandonnée ou expirée) : sinon cette route publique donnerait les réponses avant de jouer (piège 31).</param>
+/// <param name="Tracks">**Vide tant que la partie du joueur n'est pas finie** (terminée, ou abandonnée après au moins une réponse) : sinon cette route publique donnerait les réponses avant de jouer (piège 31). Une partie abandonnée sans aucune réponse ne montre rien.</param>
 /// <param name="FreezesUsed">Gels consommés par la partie du jour (« 1 gel a sauvé ta série »).</param>
 /// <param name="FreezeMilestone">Compte : gel gagné par la partie du jour. Invité : palier atteint (« Tu aurais gagné un gel ! »).</param>
 /// <param name="MinScore">Le plus bas score du jour (vide sans joueur).</param>
@@ -57,6 +57,7 @@ public sealed record TodayHistoryResponse(
 /// <param name="ScoreDistribution">L'égaliseur : dix tranches de même largeur.</param>
 /// <param name="BetterThanPercent">Part des **autres** joueurs battus (vide sans score ou seul).</param>
 /// <param name="History">Vide tant que le joueur n'a pas de partie terminée aujourd'hui (rien sur lui n'est lu avant).</param>
+/// <param name="AbandonedScore">Le score des morceaux répondus d'une partie **abandonnée** (vide sans partie abandonnée ou sans aucune réponse). Jamais comparé aux autres, jamais dans la médiane ni l'égaliseur ; ses réponses sont dans <paramref name="Tracks"/>.</param>
 public sealed record TodayStatsResponse(
     int? YourScore,
     int MedianScore,
@@ -70,7 +71,8 @@ public sealed record TodayStatsResponse(
     int MaxPossibleScore,
     IReadOnlyList<ScoreBucketResponse> ScoreDistribution,
     int? BetterThanPercent,
-    TodayHistoryResponse? History = null)
+    TodayHistoryResponse? History = null,
+    int? AbandonedScore = null)
 {
     /// <summary>Pas de défi aujourd'hui : tout à zéro.</summary>
     public static TodayStatsResponse Empty { get; } = new(null, 0, 0, 0, [], 0, false, null, null, 0, [], null);
@@ -100,9 +102,19 @@ public static class GetTodayStatsEndpoint
         if (row is null)
             return TodayStatsResponse.Empty;
 
-        // Les morceaux du jour (nom, lien, pochette) : réservés à un joueur dont la partie est finie.
-        var revealTracks = row.SessionStatus is { } status && status != SessionStatus.Pending;
-        var own = playerId is { } id && row.SessionStatus == SessionStatus.Completed ? await stats.GetPlayerSessionAsync(row.ChallengeId, id, ct) : null;
+        // Les morceaux du jour (nom, lien, pochette) : réservés à un joueur dont la partie est finie, ou abandonnée après au moins une réponse
+        // (abandonnée sans réponse : rien à montrer, ni score ni détail).
+        var session = playerId is { } id && row.SessionStatus is SessionStatus.Completed or SessionStatus.Abandoned
+            ? await stats.GetPlayerSessionAsync(row.ChallengeId, id, ct)
+            : null;
+        var abandoned = session is { Status: SessionStatus.Abandoned, Answers.Count: > 0 } ? session : null;
+        var own = session is { Status: SessionStatus.Completed } ? session : null;
+        var revealTracks = row.SessionStatus switch
+        {
+            null or SessionStatus.Pending => false,
+            SessionStatus.Abandoned => abandoned is not null,
+            _ => true,
+        };
 
         var isLinked = playerId is { } pid && await players.HasAccountAsync(pid, ct);
         var streak = row.Streak is { } s
@@ -123,7 +135,7 @@ public static class GetTodayStatsEndpoint
             Medians.Integer(scores),
             scores.Count,
             streak.Streak,
-            revealTracks ? await RevealAsync(tracks, aggregates!, own, directory, rules, ct) : [],
+            revealTracks ? await RevealAsync(tracks, aggregates!, own ?? abandoned, directory, rules, ct) : [],
             own?.FreezesUsed ?? 0,
             own is not null && FreezeMilestone(own, row.Streak, isLinked, today, rules.Streak),
             scores.Count == 0 ? null : scores.Min(),
@@ -131,7 +143,8 @@ public static class GetTodayStatsEndpoint
             maxPossible,
             ScoreDistribution.Build(scores, maxPossible).Select(b => new ScoreBucketResponse(b.MinScore, b.MaxScore, b.Count)).ToList(),
             ScoreDistribution.BetterThanPercent(scores, yourScore),
-            history);
+            history,
+            abandoned?.TotalScore);
     }
 
     private static async Task<TodayHistoryResponse> HistoryAsync(PlayerSessionRow own, Guid playerId, DateOnly today, IDailyStatsQueries stats, CancellationToken ct)
