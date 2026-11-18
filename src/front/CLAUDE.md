@@ -43,7 +43,7 @@ src/front/InSeconds.Client/
 │   ├── i18n/{fr,en}.json      # clés rangées par domaine (common, errors, shell, ui, puis daily, account…)
 │   ├── favicon.svg            # « IN// » du logo (Poppins 800, IN en blanc, // en ambre) sur le fond du site, comme la photo de profil Instagram
 │   ├── manifest.webmanifest + icons/   # installation sur l'écran d'accueil : mêmes « IN// » en PNG, // en ambre vif #FF9500 sur --rgb-bg (192, 512, apple-touch 180, maskable 512 avec une marge pour le recadrage d'Android)
-│   ├── og-square.jpg          # image de partage (og:image, 600×600, carte `summary`) : le « IN// » du logo sur la grille ; carrée exprès, les messageries l'affichent en vignette à côté du lien au lieu d'un grand bandeau qui prend la place du score partagé ; nom changé pour vider les caches des aperçus ; refaite à chaque changement de DA (jamais de pochette ni d'extrait Deezer)
+│   ├── og-image.jpg           # image de partage (og:image, 1200×630) : le titre, un bouton ambre uni et un lecteur dans la DA actuelle ; refaite à chaque changement de DA (jamais de pochette ni d'extrait Deezer)
 │   └── robots.txt, sitemap.xml         # robots.txt écarte /survie et l'ancien /runs (les liens de playlists ne s'indexent pas) ; sitemap de secours (/daily, /legal, /privacy) : Caddy envoie /sitemap.xml à l'API, qui ajoute les jours publiés
 └── src/app/
     ├── app.ts / app.html      # coquille : bandeau DEV, toasts, bandeau de mise à jour, avis d'ancienne adresse, overlay
