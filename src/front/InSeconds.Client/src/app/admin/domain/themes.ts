@@ -1,11 +1,16 @@
 import { PoolTrack } from './pool-track';
 
-/** Combien de morceaux jouables un thème doit avoir pour qu'une manche de Setlist le tire (5 à jouer et 2 de marge pour les morceaux déjà tirés dans la playlist, `Runs:`). */
+/**
+ * Sous ce seuil, l'admin montre le thème en rouge (« Pas jouable »). Seuil de prudence propre à l'admin, plus haut que la règle du
+ * serveur : celui-ci retient un thème dès qu'il a encore, dans la playlist, autant de morceaux libres que le `TracksPerRound` figé dans
+ * le défi (3 par défaut, `RunThemes.Eligible`) ; les morceaux déjà tirés dans la playlist réduisent ce nombre en cours de partie, et
+ * ceux que le joueur a entendus récemment aussi, tant qu'il reste assez de thèmes sans eux (`RunRoundDealer`).
+ */
 export const MIN_PLAYABLE_TRACKS = 7;
 /** À partir de combien de morceaux jouables un thème est assez varié pour que deux parties ne se ressemblent pas trop. */
 export const VARIED_FROM_TRACKS = 14;
 
-/** Rouge : pas proposé en jeu ; orange : jouable mais peu varié ; vert : jouable et varié. */
+/** Rouge : sous le seuil de prudence de l'admin ; orange : jouable mais peu varié ; vert : jouable et varié. */
 export type ThemeHealth = 'unplayable' | 'thin' | 'varied';
 
 /** Un morceau que le tirage peut prendre : extrait disponible et morceau pas désactivé. */
@@ -18,7 +23,7 @@ export function themeHealth(playableCount: number): ThemeHealth {
   return playableCount < VARIED_FROM_TRACKS ? 'thin' : 'varied';
 }
 
-/** Combien de morceaux jouables manquent pour que le thème soit proposé en jeu (0 s'il l'est). */
+/** Combien de morceaux jouables manquent pour atteindre le seuil de prudence de l'admin (0 s'il l'atteint). */
 export function missingTracks(playableCount: number): number {
   return Math.max(0, MIN_PLAYABLE_TRACKS - playableCount);
 }

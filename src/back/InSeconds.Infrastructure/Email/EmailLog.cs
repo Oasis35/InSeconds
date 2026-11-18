@@ -13,7 +13,7 @@ internal static partial class EmailLog
         Message = "Email « {EmailSubject} » envoyé (Brevo {EmailMessageId})")]
     public static partial void EmailSent(ILogger logger, string emailSubject, string? emailMessageId);
 
-    [LoggerMessage(EventId = 1101, Level = LogLevel.Warning,
+    [LoggerMessage(EventId = 1011, Level = LogLevel.Warning,
         Message = "Échec de l'envoi de l'email « {EmailSubject} » (HTTP {HttpStatus})")]
     public static partial void EmailFailed(ILogger logger, Exception? exception, string emailSubject, int? httpStatus);
 }

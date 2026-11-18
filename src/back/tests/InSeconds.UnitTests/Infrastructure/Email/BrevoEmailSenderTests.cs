@@ -54,7 +54,7 @@ public class BrevoEmailSenderTests
         Assert.Contains("invalid_parameter", exception.Message);
         Assert.DoesNotContain(Recipient, exception.Message);
         var entry = Assert.Single(_logger.Entries);
-        Assert.Equal(1101, entry.EventId.Id);
+        Assert.Equal(1011, entry.EventId.Id);
         Assert.Equal(LogLevel.Warning, entry.Level);
         Assert.Contains(entry.Properties, p => p.Key == "HttpStatus" && Equals(p.Value, 400));
         AssertNoRecipient(entry);
@@ -69,7 +69,7 @@ public class BrevoEmailSenderTests
             CreateSender(handler).SendAsync(Recipient, "Ton lien", "<p>Salut</p>", TestContext.Current.CancellationToken));
 
         var entry = Assert.Single(_logger.Entries);
-        Assert.Equal(1101, entry.EventId.Id);
+        Assert.Equal(1011, entry.EventId.Id);
         Assert.NotNull(entry.Exception);
     }
 
