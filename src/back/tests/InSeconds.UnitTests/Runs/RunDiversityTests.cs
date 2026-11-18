@@ -107,4 +107,32 @@ public class RunDiversityTests
             selector.SelectRound(pool, rules, seed: 9, round: 3, new HashSet<int>(), themeId: null),
             selector.SelectRound(pool, rules, seed: 9, round: 3, new HashSet<int>(), themeId: null, []));
     }
+
+    [Fact]
+    public void LaMemoire_VientDesPartiesLesPlusRecentesD_Abord_SansDoublon_EtLesThemesDesRegles()
+    {
+        var rules = TestRules.Legacy() with { Themes = [new RunRoundTheme(2, 77, "Rock"), new RunRoundTheme(3, 88, "Jazz")] };
+        var heard = new[]
+        {
+            new HeardTrack(SessionId: 1, ChallengeId: 10, Position: 1, TrackId: 100, Round: 1),
+            new HeardTrack(1, 10, 2, 101, 1),
+            new HeardTrack(2, 11, 1, 100, 1),
+            new HeardTrack(2, 11, 6, 200, 2),
+            new HeardTrack(2, 11, 9, 300, 3),
+        };
+
+        var history = RunHeardHistory.From(heard, new Dictionary<int, RunRules> { [10] = rules, [11] = rules });
+
+        Assert.Equal([300, 200, 100, 101], history.TrackIds);
+        Assert.Equal([88, 77], history.ThemeIds);
+    }
+
+    [Fact]
+    public void LaMemoire_SansPartie_EstVide()
+    {
+        var history = RunHeardHistory.From([], new Dictionary<int, RunRules>());
+
+        Assert.Empty(history.TrackIds);
+        Assert.Empty(history.ThemeIds);
+    }
 }

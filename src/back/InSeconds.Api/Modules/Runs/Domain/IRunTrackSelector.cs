@@ -63,17 +63,22 @@ public sealed class RankBandSelector(ISeededShuffle shuffle) : IRunTrackSelector
         // Diversité : les morceaux entendus récemment passent après les autres, les plus anciens d'abord (jamais de blocage).
         var avoided = (avoidRecentFirst ?? []).Where(freeSet.Contains).Distinct().ToList();
         var avoidedSet = avoided.ToHashSet();
+        var inBandSet = inBand.ToHashSet();
         var fresh = inBand.Where(id => !avoidedSet.Contains(id)).ToList();
         var picked = shuffle.Shuffle(fresh, unchecked(seed + round)).Take(wanted).ToList();
         if (picked.Count < wanted)
-            picked.AddRange(Enumerable.Reverse(avoided).Where(id => inBand.Contains(id)).Take(wanted - picked.Count));
+            picked.AddRange(Enumerable.Reverse(avoided).Where(inBandSet.Contains).Take(wanted - picked.Count));
         if (picked.Count < wanted)
         {
             // Complète avec les moins connus (après la tranche), puis les plus connus (avant).
-            var rest = sorted.Skip(end).Concat(sorted.Take(start).Reverse()).Where(id => freeSet.Contains(id) && !picked.Contains(id)).ToList();
+            var pickedSet = picked.ToHashSet();
+            var rest = sorted.Skip(end).Concat(sorted.Take(start).Reverse()).Where(id => freeSet.Contains(id) && !pickedSet.Contains(id)).ToList();
             picked.AddRange(rest.Where(id => !avoidedSet.Contains(id)).Take(wanted - picked.Count));
             if (picked.Count < wanted)
-                picked.AddRange(Enumerable.Reverse(avoided).Where(id => rest.Contains(id)).Take(wanted - picked.Count));
+            {
+                var restSet = rest.ToHashSet();
+                picked.AddRange(Enumerable.Reverse(avoided).Where(id => restSet.Contains(id) && !picked.Contains(id)).Take(wanted - picked.Count));
+            }
         }
 
         return picked;

@@ -14,7 +14,7 @@ public sealed record PlanResult(RunChallenge? Challenge, int EligibleCount, int 
 /// (pas de réessai dans la transaction Wolverine) : 31⁶ codes, une collision est très rare, et l'index unique reste le garde-fou.
 /// </summary>
 public sealed class RunChallengePlanner(
-    ITrackDirectory tracks, IRunTrackSelector selector, IRunsStore store, IRunsQueries queries, RunsRules rules, TimeProvider time)
+    ITrackDirectory tracks, IRunTrackSelector selector, IRunsStore store, RunDrawMemoryReader memories, RunsRules rules, TimeProvider time)
 {
     /// <summary>Combien de codes essayer avant de renoncer (une collision répétée n'est plus de la malchance).</summary>
     private const int MaxCodeAttempts = 5;
@@ -28,15 +28,8 @@ public sealed class RunChallengePlanner(
 
         var seed = System.Security.Cryptography.RandomNumberGenerator.GetInt32(int.MaxValue);
         // Diversité : la première manche évite elle aussi ce que le créateur a entendu récemment (une préférence, jamais un blocage).
-        var avoid = Array.Empty<int>() as IReadOnlyList<int>;
-        if (createdBy is { } creator)
-        {
-            var options = rules.Diversity;
-            var history = await queries.GetHeardHistoryAsync(creator, exceptChallengeId: null, options.MaxGames, ct);
-            avoid = RunDiversity.TracksToAvoid(history.TrackIds, playable.Count, options.PoolPercent);
-        }
-
-        var first = selector.SelectRound(candidates, current, seed, round: 1, used: new HashSet<int>(), themeId: null, avoid);
+        var memory = await memories.ReadAsync(createdBy, challengeId: null, [], playable.Count, ct);
+        var first = selector.SelectRound(candidates, current, seed, round: 1, used: new HashSet<int>(), themeId: null, memory.AvoidTracks);
         if (first.Count < current.TracksPerRound)
             return new PlanResult(null, playable.Count, current.TracksPerRound);
 

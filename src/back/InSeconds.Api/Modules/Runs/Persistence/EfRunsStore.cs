@@ -134,32 +134,26 @@ public sealed class EfRunsQueries(InSecondsDbContext db) : IRunsQueries
 
         var sessionIds = sessions.Select(s => s.Id).ToList();
         var challengeIds = sessions.Select(s => s.ChallengeId).Distinct().ToList();
-        var heard = await (
-                from answer in db.Set<RunAnswer>().AsNoTracking()
-                join session in db.Set<RunSession>().AsNoTracking() on answer.SessionId equals session.Id
-                join track in db.Set<RunChallengeTrack>().AsNoTracking()
-                    on new { session.ChallengeId, answer.Position } equals new { track.ChallengeId, track.Position }
-                where sessionIds.Contains(answer.SessionId) && !answer.Neutralized
-                select new { answer.SessionId, answer.Position, track.TrackId, track.Round })
+        var answered = await db.Set<RunAnswer>().AsNoTracking()
+            .Where(a => sessionIds.Contains(a.SessionId) && !a.Neutralized)
+            .Select(a => new { a.SessionId, a.Position })
             .ToListAsync(ct);
+        var challengeTracks = (await db.Set<RunChallengeTrack>().AsNoTracking()
+                .Where(t => challengeIds.Contains(t.ChallengeId))
+                .Select(t => new { t.ChallengeId, t.Position, t.TrackId, t.Round })
+                .ToListAsync(ct))
+            .ToDictionary(t => (t.ChallengeId, t.Position));
         var rules = await db.Set<RunChallenge>().AsNoTracking()
             .Where(c => challengeIds.Contains(c.Id))
             .Select(c => new { c.Id, c.Rules })
             .ToDictionaryAsync(c => c.Id, c => c.Rules, ct);
 
-        var ordered = sessions.OrderByDescending(s => s.Id).ToList();
-        var tracks = new List<int>();
-        var themes = new List<int>();
-        foreach (var session in ordered)
-        {
-            var rows = heard.Where(h => h.SessionId == session.Id).OrderByDescending(h => h.Position).ToList();
-            tracks.AddRange(rows.Select(r => r.TrackId));
-            if (!rules.TryGetValue(session.ChallengeId, out var challengeRules))
-                continue;
-            themes.AddRange(rows.Select(r => (int)r.Round).Distinct().Select(round => challengeRules.ThemeOf(round)?.ThemeId).OfType<int>());
-        }
-
-        return new RunHeardHistory([.. tracks.Distinct()], [.. themes.Distinct()]);
+        var challengeOf = sessions.ToDictionary(s => s.Id, s => s.ChallengeId);
+        var heard = answered
+            .Select(a => (a.SessionId, Track: challengeTracks.GetValueOrDefault((challengeOf[a.SessionId], a.Position))))
+            .Where(h => h.Track is not null)
+            .Select(h => new HeardTrack(h.SessionId, challengeOf[h.SessionId], h.Track!.Position, h.Track.TrackId, h.Track.Round));
+        return RunHeardHistory.From(heard, rules);
     }
 
     public async Task<RunReceivedEntry?> FindPendingReceivedChallengeAsync(Guid playerId, DateTimeOffset now, CancellationToken ct)

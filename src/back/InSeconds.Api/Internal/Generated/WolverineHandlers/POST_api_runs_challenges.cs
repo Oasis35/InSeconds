@@ -26,6 +26,7 @@ namespace Internal.Generated.WolverineHandlers
         private readonly InSeconds.Api.Modules.Runs.Application.RunsRules _runsRules1;
         private readonly InSeconds.Api.Modules.Runs.Application.RunsRules _runsRules2;
         private readonly InSeconds.Api.Modules.Runs.Application.RunsRules _runsRules3;
+        private readonly InSeconds.Api.Modules.Runs.Application.RunsRules _runsRules4;
         private readonly InSeconds.Api.Modules.Runs.Domain.IRunScoringPolicy _runScoringPolicy;
         private readonly InSeconds.Api.Modules.Runs.Domain.IRunTrackSelector _runTrackSelector1;
         private readonly InSeconds.Api.Modules.Runs.Domain.IRunTrackSelector _runTrackSelector2;
@@ -39,7 +40,7 @@ namespace Internal.Generated.WolverineHandlers
         private readonly System.TimeProvider _timeProvider;
         private readonly Wolverine.Runtime.IWolverineRuntime _wolverineRuntime;
 
-        public POST_api_runs_challenges(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle seededShuffle, InSeconds.Api.Modules.Runs.Application.RunsMetrics runsMetrics, InSeconds.Api.Modules.Runs.Application.RunsRules __runsRules1, InSeconds.Api.Modules.Runs.Application.RunsRules __runsRules2, InSeconds.Api.Modules.Runs.Application.RunsRules __runsRules3, InSeconds.Api.Modules.Runs.Domain.IRunScoringPolicy runScoringPolicy, InSeconds.Api.Modules.Runs.Domain.IRunTrackSelector __runTrackSelector1, InSeconds.Api.Modules.Runs.Domain.IRunTrackSelector __runTrackSelector2, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms> loggerOfLoggedTrackWaveforms, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Runs.Application.RunLaunch> loggerOfRunLaunch, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Runs.Application.RunPlayer> loggerOfRunPlayer, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
+        public POST_api_runs_challenges(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle seededShuffle, InSeconds.Api.Modules.Runs.Application.RunsMetrics runsMetrics, InSeconds.Api.Modules.Runs.Application.RunsRules __runsRules1, InSeconds.Api.Modules.Runs.Application.RunsRules __runsRules2, InSeconds.Api.Modules.Runs.Application.RunsRules __runsRules3, InSeconds.Api.Modules.Runs.Application.RunsRules __runsRules4, InSeconds.Api.Modules.Runs.Domain.IRunScoringPolicy runScoringPolicy, InSeconds.Api.Modules.Runs.Domain.IRunTrackSelector __runTrackSelector1, InSeconds.Api.Modules.Runs.Domain.IRunTrackSelector __runTrackSelector2, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms> loggerOfLoggedTrackWaveforms, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Runs.Application.RunLaunch> loggerOfRunLaunch, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Runs.Application.RunPlayer> loggerOfRunPlayer, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
         {
             _wolverineHttpOptions = wolverineHttpOptions;
             _seededShuffle = seededShuffle;
@@ -47,6 +48,7 @@ namespace Internal.Generated.WolverineHandlers
             _runsRules1 = __runsRules1;
             _runsRules2 = __runsRules2;
             _runsRules3 = __runsRules3;
+            _runsRules4 = __runsRules4;
             _runScoringPolicy = runScoringPolicy;
             _runTrackSelector1 = __runTrackSelector1;
             _runTrackSelector2 = __runTrackSelector2;
@@ -78,9 +80,10 @@ namespace Internal.Generated.WolverineHandlers
             var deezerTrackPreviews = new InSeconds.Api.Modules.Catalogue.Persistence.DeezerTrackPreviews(previewProvider);
             var efTrackDirectory = new InSeconds.Api.Modules.Catalogue.Persistence.EfTrackDirectory(inSecondsDbContext, _optionsMonitorOfCatalogueOptions);
             var efRunsStore = new InSeconds.Api.Modules.Runs.Persistence.EfRunsStore(inSecondsDbContext);
-            var runRoundDealer = new InSeconds.Api.Modules.Runs.Application.RunRoundDealer(efTrackDirectory, _seededShuffle, _runTrackSelector2, efRunsStore, efRunsQueries, _runsRules2);
-            var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, runRoundDealer, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, runGhosts, _runScoringPolicy, _runsRules3, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
-            var runChallengePlanner = new InSeconds.Api.Modules.Runs.Application.RunChallengePlanner(efTrackDirectory, _runTrackSelector1, efRunsStore, efRunsQueries, _runsRules1, _timeProvider);
+            var runDrawMemoryReader = new InSeconds.Api.Modules.Runs.Application.RunDrawMemoryReader(efRunsQueries, _runsRules1);
+            var runRoundDealer = new InSeconds.Api.Modules.Runs.Application.RunRoundDealer(efTrackDirectory, _seededShuffle, _runTrackSelector2, efRunsStore, runDrawMemoryReader, _runsRules3);
+            var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, runRoundDealer, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, runGhosts, _runScoringPolicy, _runsRules4, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
+            var runChallengePlanner = new InSeconds.Api.Modules.Runs.Application.RunChallengePlanner(efTrackDirectory, _runTrackSelector1, efRunsStore, runDrawMemoryReader, _runsRules2, _timeProvider);
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
             var efRunAccess = new InSeconds.Api.Modules.Runs.Persistence.EfRunAccess(inSecondsDbContext, claimsCurrentPlayer);
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Runs.Application.LaunchRunEndpoint");
