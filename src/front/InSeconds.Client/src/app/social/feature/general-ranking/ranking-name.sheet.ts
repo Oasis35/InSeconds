@@ -42,7 +42,7 @@ import { GeneralRankingStore } from '../../data-access/general-ranking.store';
           </button>
           @if (choice() === 'alias' && alias(); as alias) {
             <div class="flex flex-wrap items-center justify-between gap-3 pl-8">
-              <span class="min-w-0 break-words text-lg font-bold" style="color:var(--color-violet)" data-testid="name-alias-value">{{ alias }}</span>
+              <span class="min-w-0 break-words text-lg font-bold" style="color:var(--color-accent-3)" data-testid="name-alias-value">{{ alias }}</span>
               <button appButton type="button" variant="neutral" size="sm" class="shrink-0" [disabled]="store.saving()" (click)="store.drawAlias()" data-testid="name-other-alias">
                 {{ 'social.general.name.otherAlias' | translate }}
               </button>
