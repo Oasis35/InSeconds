@@ -77,7 +77,7 @@ namespace Internal.Generated.WolverineHandlers
 
                 
                 // The actual HTTP request handler execution
-                var rankingIdentityResponse_response = await InSeconds.Api.Modules.Social.Application.SetRankingIdentityEndpoint.Put(request, rankingIdentityChoice, efRankingIdentityStore, efPlayerDirectory, _generalRankingCache, _socialMetrics, _timeProvider, _loggerOfRankingIdentity, httpContext.RequestAborted).ConfigureAwait(false);
+                var rankingIdentityResponse_response = await InSeconds.Api.Modules.Social.Application.SetRankingIdentityEndpoint.Put(request, rankingIdentityChoice, efRankingIdentityStore, efPlayerDirectory, _generalRankingCache, _socialMetrics, _timeProvider, _loggerOfRankingIdentity, httpContext, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

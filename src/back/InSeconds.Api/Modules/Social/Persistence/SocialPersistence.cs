@@ -191,7 +191,7 @@ public sealed class EfSocialQueries(InSecondsDbContext db) : ISocialQueries
 /// Enregistré par <c>ApiComposition.AddPlayerDataContributors</c>. La copie ne contient que ce qui le concerne : ses groupes (nom, date, son rôle), jamais
 /// les pseudos des autres membres ; et le nom sous lequel il apparaît au classement général (son pseudo, ou son alias et la date du tirage).
 /// </summary>
-public sealed class SocialPlayerData(InSecondsDbContext db) : IPlayerDataContributor
+public sealed class SocialPlayerData(InSecondsDbContext db, GeneralRankingCache cache) : IPlayerDataContributor
 {
     public string Module => "social";
 
@@ -230,8 +230,9 @@ public sealed class SocialPlayerData(InSecondsDbContext db) : IPlayerDataContrib
         }
 
         await db.Set<GroupMember>().Where(m => m.PlayerId == playerId).ExecuteDeleteAsync(ct);
-        // Son alias part avec lui : il redevient libre.
+        // Son alias part avec lui : il redevient libre. Et son nom quitte le classement général gardé, sans attendre la minute.
         await db.Set<RankingIdentity>().Where(i => i.PlayerId == playerId).ExecuteDeleteAsync(ct);
+        cache.Invalidate();
         // Aucune « partie » ici : le compte rendu de l'effacement ne compte que les parties de jeu.
         return 0;
     }

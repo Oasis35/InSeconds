@@ -13,7 +13,7 @@ describe('SocialApi', () => {
   let api: SocialApi;
 
   beforeEach(() => {
-    client = { listMyGroups: vi.fn(), getGroupRanking: vi.fn(), createGroup: vi.fn(), joinGroup: vi.fn(), leaveGroup: vi.fn(), getInvitation: vi.fn(), getGeneralRanking: vi.fn(), setRankingVisibility: vi.fn() };
+    client = { listMyGroups: vi.fn(), getGroupRanking: vi.fn(), createGroup: vi.fn(), joinGroup: vi.fn(), leaveGroup: vi.fn(), getInvitation: vi.fn(), getGeneralRanking: vi.fn(), setRankingIdentity: vi.fn(), drawRankingAlias: vi.fn() };
     TestBed.configureTestingModule({ providers: [{ provide: SocialClient, useValue: client }, SocialApi] });
     api = TestBed.inject(SocialApi);
   });

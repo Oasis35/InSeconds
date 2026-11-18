@@ -22,7 +22,7 @@ public static class MusicalAlias
     [
         "Guitare", "Trompette", "Flûte", "Harpe", "Cigale", "Baleine", "Mésange", "Chouette", "Contrebasse", "Batterie", "Clarinette", "Cymbale",
         "Mandoline", "Cassette", "Loutre", "Fauvette", "Alouette", "Tortue", "Marmotte", "Cornemuse", "Gazelle", "Libellule", "Panthère", "Hirondelle",
-        "Mouette", "Luciole", "Coccinelle", "Abeille", "Otarie", "Grenouille", "Lyre", "Timbale", "Viole", "Kalimba", "Castagnette", "Sirène",
+        "Mouette", "Luciole", "Coccinelle", "Abeille", "Otarie", "Grenouille", "Lyre", "Timbale", "Kalimba", "Castagnette", "Sirène",
     ];
 
     /// <summary>Chaque adjectif au masculin et au féminin.</summary>
@@ -33,7 +33,7 @@ public static class MusicalAlias
         ("sage", "sage"), ("pressé", "pressée"), ("tranquille", "tranquille"), ("rythmé", "rythmée"), ("endiablé", "endiablée"), ("jazzy", "jazzy"),
         ("groovy", "groovy"), ("funky", "funky"), ("lunaire", "lunaire"), ("cosmique", "cosmique"), ("nocturne", "nocturne"), ("sautillant", "sautillante"),
         ("distrait", "distraite"), ("espiègle", "espiègle"), ("intrépide", "intrépide"), ("électrique", "électrique"), ("acoustique", "acoustique"),
-        ("doré", "dorée"), ("brillant", "brillante"), ("agile", "agile"), ("audacieux", "audacieuse"), ("gourmand", "gourmande"), ("songeur", "songeuse"),
+        ("doré", "dorée"), ("brillant", "brillante"), ("agile", "agile"), ("audacieux", "audacieuse"), ("songeur", "songeuse"),
     ];
 
     /// <summary>Tous les noms, masculins puis féminins (les tests relisent la liste).</summary>

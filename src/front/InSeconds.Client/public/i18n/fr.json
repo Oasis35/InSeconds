@@ -84,6 +84,8 @@
     "social": {
       "account_required": "Il faut un compte pour les groupes.",
       "group_full": "Ce groupe est complet.",
+      "alias_taken": "Cet alias vient d'être pris : tires-en un autre.",
+      "invalid_ranking_mode": "Choisis ton pseudo ou un alias.",
       "invitation_not_found": "Cette invitation n'existe plus.",
       "not_owner": "Seul le créateur du groupe peut faire ça.",
       "too_many_groups": "Tu as atteint le nombre de groupes possible.",

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using InSeconds.Api.Modules.Players.Contracts;
 using InSeconds.Api.Modules.Social.Application;
 using InSeconds.Api.Modules.Social.Domain;
@@ -22,7 +23,7 @@ public static class SocialModule
         services.AddScoped<IRankingIdentityStore, EfRankingIdentityStore>();
         services.AddScoped<IReservedPseudos, SocialReservedPseudos>();
         services.AddScoped<GroupRanking>();
-        services.AddSingleton<GeneralRankingCache>();
+        services.TryAddSingleton<GeneralRankingCache>();
         services.AddExceptionHandler<AliasConflictExceptionHandler>();
         return services;
     }
@@ -31,6 +32,10 @@ public static class SocialModule
     /// La copie et l'effacement des données de groupe d'un joueur (ses droits RGPD). Enregistré par <c>ApiComposition.AddPlayerDataContributors</c>,
     /// partagé par l'API et la commande de secours, jamais par <see cref="AddSocial"/>.
     /// </summary>
-    public static IServiceCollection AddSocialPlayerData(this IServiceCollection services) =>
-        services.AddScoped<IPlayerDataContributor, SocialPlayerData>();
+    public static IServiceCollection AddSocialPlayerData(this IServiceCollection services)
+    {
+        // L'effacement vide le classement général gardé ; la commande de secours n'a pas le reste du module.
+        services.TryAddSingleton<GeneralRankingCache>();
+        return services.AddScoped<IPlayerDataContributor, SocialPlayerData>();
+    }
 }

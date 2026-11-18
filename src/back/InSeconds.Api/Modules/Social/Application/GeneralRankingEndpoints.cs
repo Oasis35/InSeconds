@@ -78,8 +78,10 @@ public static class GetGeneralRankingEndpoint
             hasAccount ? await RankingIdentities.OfAsync(playerId, queries, players, ct) : null);
     }
 
+    // Ni parties jouées, ni record, ni performance : au général, le rang, le nom, le disque et les points suffisent, et ces valeurs en plus
+    // aideraient à relier un alias au pseudo que voient les membres d'un groupe.
     private static RankingEntryResponse EntryOf(RankingRow row, Guid playerId) =>
-        new(row.Rank, row.Pseudo, row.PlayerId == playerId, row.Performance, row.GamesPlayed, row.BestScore, row.Points, row.Badge);
+        new(row.Rank, row.Pseudo, row.PlayerId == playerId, null, 0, null, row.Points, row.Badge);
 }
 
 /// <summary>Le nom d'un joueur au classement général, et le tirage d'un alias libre.</summary>
@@ -167,14 +169,14 @@ public static class SetRankingIdentityEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     public static async Task<RankingIdentityResponse> Put(
         SetRankingIdentity request, [NotBody] RankingIdentityChoice choice, IRankingIdentityStore store, IPlayerDirectory players,
-        GeneralRankingCache cache, SocialMetrics metrics, TimeProvider time, ILogger<RankingIdentity> logger, CancellationToken ct)
+        GeneralRankingCache cache, SocialMetrics metrics, TimeProvider time, ILogger<RankingIdentity> logger, HttpContext http, CancellationToken ct)
     {
         if (request.Mode == RankingIdentities.Pseudo)
         {
             if (choice.Current is { } identity)
             {
                 store.Remove(identity);
-                Changed(choice.PlayerId, SocialMetrics.ModePseudo, cache, metrics, logger);
+                Changed(choice.PlayerId, SocialMetrics.ModePseudo, cache, metrics, logger, http);
             }
 
             var pseudos = await players.GetPseudosAsync([choice.PlayerId], ct);
@@ -185,13 +187,22 @@ public static class SetRankingIdentityEndpoint
             return new RankingIdentityResponse(RankingIdentities.Alias, kept.Alias, kept.Alias);
         var alias = await RankingIdentities.DrawFreeAliasAsync(store, players, null, ct);
         store.Add(new RankingIdentity(choice.PlayerId, alias, time.GetUtcNow()));
-        Changed(choice.PlayerId, SocialMetrics.ModeAlias, cache, metrics, logger);
+        Changed(choice.PlayerId, SocialMetrics.ModeAlias, cache, metrics, logger, http);
         return new RankingIdentityResponse(RankingIdentities.Alias, alias, alias);
     }
 
-    internal static void Changed(Guid playerId, string mode, GeneralRankingCache cache, SocialMetrics metrics, ILogger logger)
+    /// <summary>
+    /// Le classement gardé est vidé tout de suite **et** au démarrage de la réponse, donc après le commit de Wolverine : une lecture qui se glisse avant
+    /// le commit ne garde pas l'ancien nom une minute.
+    /// </summary>
+    internal static void Changed(Guid playerId, string mode, GeneralRankingCache cache, SocialMetrics metrics, ILogger logger, HttpContext http)
     {
         cache.Invalidate();
+        http.Response.OnStarting(() =>
+        {
+            cache.Invalidate();
+            return Task.CompletedTask;
+        });
         SocialLog.RankingIdentityChanged(logger, playerId, mode);
         metrics.RankingIdentityChanged(mode);
     }
@@ -219,14 +230,16 @@ public static class DrawRankingAliasEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     public static async Task<RankingIdentityResponse> Post(
         [NotBody] RankingIdentityChoice choice, IRankingIdentityStore store, IPlayerDirectory players, GeneralRankingCache cache, SocialMetrics metrics,
-        TimeProvider time, ILogger<RankingIdentity> logger, CancellationToken ct)
+        TimeProvider time, ILogger<RankingIdentity> logger, HttpContext http, CancellationToken ct)
     {
         var alias = await RankingIdentities.DrawFreeAliasAsync(store, players, choice.Current?.Alias, ct);
         if (choice.Current is { } identity)
             identity.ChangeAlias(alias, time.GetUtcNow());
         else
             store.Add(new RankingIdentity(choice.PlayerId, alias, time.GetUtcNow()));
-        SetRankingIdentityEndpoint.Changed(choice.PlayerId, SocialMetrics.ModeOtherAlias, cache, metrics, logger);
+        // « Autre alias » seulement s'il en avait déjà un ; sinon, c'est son premier alias.
+        var mode = choice.Current is null ? SocialMetrics.ModeAlias : SocialMetrics.ModeOtherAlias;
+        SetRankingIdentityEndpoint.Changed(choice.PlayerId, mode, cache, metrics, logger, http);
         return new RankingIdentityResponse(RankingIdentities.Alias, alias, alias);
     }
 }
