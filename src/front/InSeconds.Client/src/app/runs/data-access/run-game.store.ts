@@ -726,13 +726,6 @@ export const RunGameStore = signalStore(
         if ((screen === 'playing' || screen === 'palier' || screen === 'theme') && session) return refreshGame(screen, session);
         if ((screen === 'welcome' || screen === 'resume') && !store.code()) return refreshHome(screen);
       },
-      /** Les sons d'interface sont coupés (le bouton de l'en-tête). */
-      soundsMuted: sounds.muted,
-      /** Couper ou remettre les sons d'interface (retenu dans ce navigateur) ; un toucher sur le bouton réveille aussi le son. */
-      toggleSounds(): void {
-        sounds.unlock();
-        sounds.toggleMuted();
-      },
       /** Coupe (ou rétablit) l'enchaînement automatique : la page le coupe en mouvement réduit. */
       setAutoAdvance(autoAdvance: boolean): void {
         patchState(store, { autoAdvance });

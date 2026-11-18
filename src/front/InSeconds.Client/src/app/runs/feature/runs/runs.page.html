@@ -18,8 +18,8 @@
                Le décor est inerte : ni son, ni partie, ni toucher avant le clic. -->
           <div class="relative flex-1 flex flex-col" data-testid="run-start-stage">
             <div class="flex-1 flex flex-col pt-1 pointer-events-none select-none" inert aria-hidden="true" style="filter:blur(3px)">
-              <app-run-header [lives]="previewLives" />
-              <app-run-scoreboard class="mt-2" [total]="0" [round]="1" [maxRounds]="8" [dots]="previewDots" [ladder]="previewLadder" [listenSeconds]="previewLadder[0]" [lang]="language.current()" />
+              <app-run-header />
+              <app-run-scoreboard class="mt-2" [total]="0" [round]="1" [maxRounds]="8" [lives]="previewLives" [dots]="previewDots" [ladder]="previewLadder" [listenSeconds]="previewLadder[0]" [lang]="language.current()" />
               <div class="mt-3">
                 <!-- Silhouette du lecteur : la vraie manche n'existe pas avant le premier extrait, rien n'est chargé. -->
                 <div class="flex flex-col gap-3.5 p-3.5" style="background:var(--bg-surface);border:1px solid var(--core-cyan);border-radius:var(--radius-card)" data-testid="run-start-player">
@@ -47,7 +47,7 @@
       @case ('theme') {
         @if (store.themeScreen(); as theme) {
           <div class="screen-enter flex-1 flex flex-col pt-1">
-            <app-run-header [lives]="store.lives()" [muted]="store.soundsMuted()" (toggleSounds)="store.toggleSounds()" (abandon)="confirmAbandon()" />
+            <app-run-header (abandon)="confirmAbandon()" />
             <app-run-theme-screen class="flex-1 flex flex-col" [choice]="theme.choice" [picked]="theme.picked" [result]="theme.result"
               (choose)="store.chooseTheme($event)" (revealed)="store.continueFromTheme()" />
           </div>
@@ -74,10 +74,10 @@
 
       @case ('playing') {
         <div class="screen-enter flex-1 flex flex-col pt-1">
-          <app-run-header [lives]="store.lives()" [muted]="store.soundsMuted()" (toggleSounds)="store.toggleSounds()" (abandon)="confirmAbandon()" />
+          <app-run-header (abandon)="confirmAbandon()" />
 
           @if (store.shownRound(); as shown) {
-            <app-run-scoreboard class="mt-2" [total]="store.totalScore()" [round]="shown" [maxRounds]="store.session()?.maxRounds ?? 0" [theme]="themeOf(shown)" [dots]="store.dots()" [ladder]="store.ladder()"
+            <app-run-scoreboard class="mt-2" [total]="store.totalScore()" [round]="shown" [maxRounds]="store.session()?.maxRounds ?? 0" [lives]="store.lives()" [dots]="store.dots()" [ladder]="store.ladder()"
               [listenSeconds]="store.shownListenSeconds() ?? 0" [ghost]="store.ghost()" [combo]="store.combo()" [lang]="language.current()" />
           }
 
@@ -89,6 +89,10 @@
               <!-- La carte du morceau : le lecteur (bouton à gauche de la waveform), le chrono dans son coin, la saisie, puis la réponse. -->
               <app-track-round layout="inline" skipLabelKey="runs.skip.label" skipConfirmKey="runs.skip.confirm" emptyConfirmKey="runs.skip.confirm" [alert]="store.clockAlert()" [timeUp]="store.timeUp()"
                 (answered)="onAnswered($event)">
+                @if (themeOf(store.shownRound() ?? 0); as themeName) {
+                  <!-- L'indice du morceau : le thème, juste au-dessus du champ de réponse. -->
+                  <p roundTheme class="flex justify-center"><span class="max-w-full truncate px-3.5 py-1.5 rounded-full text-[15px] font-bold" style="border:1px solid var(--border-neutral);color:var(--text-hi)" data-testid="run-theme-pill">{{ themeName }}</span></p>
+                }
                 @if (store.clockShown() !== null) {
                   <app-run-clock roundCorner [seconds]="store.clockShown()!" />
                 }
@@ -109,8 +113,7 @@
       @case ('palier') {
         @if (store.palier(); as palier) {
           <div class="screen-enter flex-1 flex flex-col pt-1">
-            <app-run-header [lives]="palier.lives" [muted]="store.soundsMuted()"
-              (toggleSounds)="store.toggleSounds()" (abandon)="confirmAbandon()" />
+            <app-run-header (abandon)="confirmAbandon()" />
             <app-run-palier class="flex-1 flex flex-col" [end]="palier.end" [lives]="palier.lives.length" [busy]="store.palierBusy()" [themeNext]="palier.themeNext"
               (next)="store.continueFromPalier()" />
           </div>

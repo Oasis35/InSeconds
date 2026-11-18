@@ -1,5 +1,4 @@
-import { DestroyRef, Injectable, inject, signal } from '@angular/core';
-import { StoragePort } from '../../core/storage/storage.port';
+import { DestroyRef, Injectable, inject } from '@angular/core';
 import { AudioPort } from '../../gameplay/data-access/audio.port';
 
 /** Un son d'interface : une suite de notes brèves, synthétisées. */
@@ -46,23 +45,17 @@ const SOUNDS: Readonly<Record<RunSound, readonly Note[]>> = {
   ],
 };
 
-/** La préférence du joueur, gardée dans ce navigateur seulement (rien n'est envoyé). */
-export const SOUNDS_MUTED_KEY = 'runs.sounds.muted';
-
 /**
  * Les sons d'interface du mode Setlist (le tic du chrono, une manche passée, la fin du run), synthétisés : aucun fichier, des
  * sons à nous. Ils ne sonnent **jamais pendant un extrait** : le service lit lui-même l'état du lecteur (`AudioPort`), aucun appelant n'a à y
- * penser. Le joueur peut les couper (`toggleMuted`, retenu dans ce navigateur). Le contexte audio se crée et se réveille dans un clic du joueur
+ * penser. Le contexte audio se crée et se réveille dans un clic du joueur
  * (`unlock`, iPhone : un contexte créé hors d'un geste reste muet, et Safari l'interrompt après un appel ou un passage par une autre appli) ;
  * sans Web Audio, ou si le navigateur le refuse, rien ne sonne. Sur iPhone, Web Audio suit l'interrupteur silencieux, l'extrait non.
  */
 @Injectable()
 export class RunSounds {
   private readonly audio = inject(AudioPort);
-  private readonly storage = inject(StoragePort);
   private context: AudioContext | null = null;
-  private readonly _muted = signal(this.storage.get(SOUNDS_MUTED_KEY) === '1');
-  readonly muted = this._muted.asReadonly();
 
   constructor() {
     // Safari limite le nombre de contextes audio : celui de la page se ferme avec elle.
@@ -81,17 +74,10 @@ export class RunSounds {
     }
   }
 
-  toggleMuted(): void {
-    const muted = !this._muted();
-    this._muted.set(muted);
-    if (muted) this.storage.set(SOUNDS_MUTED_KEY, '1');
-    else this.storage.remove(SOUNDS_MUTED_KEY);
-  }
-
-  /** Joue un son, sauf sons coupés, contexte muet ou extrait en cours de lecture. */
+  /** Joue un son, sauf contexte muet ou extrait en cours de lecture. */
   play(sound: RunSound): void {
     const context = this.context;
-    if (this._muted() || this.audio.state() === 'playing' || context?.state !== 'running') return;
+    if (this.audio.state() === 'playing' || context?.state !== 'running') return;
     try {
       const start = context.currentTime;
       for (const note of SOUNDS[sound]) {

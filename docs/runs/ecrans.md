@@ -11,7 +11,7 @@ Un écran qui existe déjà au Daily se reprend tel quel, seuls les textes chang
 | Lecteur | `RoundPlayerComponent` | écoute d'un seul tenant, durée du palier, ↺ libre, ni « écouter plus » ni indice |
 | Saisie | champ avec autocomplétion de la manche | « Artiste - Titre », Valider, Passer (0 pts) avec confirmation en ligne |
 | Reprise d'une partie en cours | `resume-screen` | avertissement d'abandon : « Cette partie sera perdue et ne comptera pas pour ton record. » |
-| « Abandonner » (✕) | `ModalService.confirm` | même texte |
+| « Abandonner » (lien de l'en-tête) | `ModalService.confirm` | même texte |
 | Quitter la page en jouant | `leave-game.guard` | la partie se reprend plus tard |
 | Extrait illisible | phase `audio-error` | « Réessayer / Passer » |
 | Erreur avec code, pool trop petit, service indisponible | `status-screen`, overlay commun | textes `runs.*` |
@@ -22,9 +22,9 @@ Sans écran du tout : l'accès refusé (`/survie` renvoie au Daily) et le lien d
 
 1. **Accueil du mode** (`/survie`) : le niveau et l'échelle des disques, le record, « Lancer une partie » (sous la V4 : « Commencer », qui recouvre le cadre de la partie, flou derrière, seulement à l'arrivée directe ; « Jouer » de la carte de l'accueil lance le son et la partie d'un seul toucher), la reprise d'une partie en cours, le lien « Hits ».
 2. **Manche** : un seul écran en pile.
-   - **En-tête** : ✕ (abandonner), les **vies** en cœurs (3), le haut-parleur.
-   - **Bloc du haut** (`run-scoreboard`) : le score (« Score », et à côté les bonnes réponses d'affilée), « Manche N » avec la pastille du thème et une pastille par morceau de la manche (trouvé, à moitié, raté, retiré, en cours, à venir), pour qui joue la playlist d'un ami son **fantôme** (son pseudo, son total au même morceau, l'écart ; « Tu viens de dépasser Léa ! » quelques secondes au moment du dépassement ; « Tu bats Léa » au-delà de son score figé), et la rangée des paliers d'écoute (10 à 0,5 s) avec celui de la manche en ambre (repliée sur un écran bas, le clavier ouvert).
-   - **Carte du morceau en cours** : bouton ↺ à gauche de la forme d'onde, la saisie, Valider, « Passer (une vie) » (lien souligné sous Valider, la confirmation dit qu'une vie sera perdue). Le **chrono de 45 s** s'affiche en gris, les 5 dernières secondes en grand et en blanc avec un tic ; à 0 la réponse tapée part seule.
+   - **En-tête** : le logo « IN//SECONDS » à gauche et « Abandonner » à droite, comme au défi.
+   - **Bloc du haut** (`run-scoreboard`) : trois zones : « Manche N » et une pastille par morceau de la manche (trouvé, à moitié, raté, retiré, en cours, à venir) à gauche, le score avec les bonnes réponses d'affilée au centre, les **vies** en cœurs rouges (3) à droite, pour qui joue la playlist d'un ami son **fantôme** (son pseudo, son total au même morceau, l'écart ; « Tu viens de dépasser Léa ! » quelques secondes au moment du dépassement ; « Tu bats Léa » au-delà de son score figé), et la rangée des paliers d'écoute (10 à 0,5 s) avec celui de la manche en ambre (repliée sur un écran bas, le clavier ouvert).
+   - **Carte du morceau en cours** : bouton ↺ à gauche de la forme d'onde, le **thème** de la manche (l'indice) en pastille juste au-dessus de la saisie quand il y en a un, la saisie, Valider, « Passer (une vie) » (lien souligné sous Valider, la confirmation dit qu'une vie sera perdue). Le **chrono de 45 s** s'affiche en gris, les 5 dernières secondes en grand et en blanc avec un tic ; à 0 la réponse tapée part seule.
    - **La pile** dessous : les morceaux joués, avec la ligne de chaque manche passée.
 3. **Réponse** : dans la carte, pochette ronde, artiste et titre avec ✓/✗ (une moitié juste en demi-teinte), « Une vie en moins » pour un morceau raté, points du morceau qui s'envolent vers le score, badge Deezer. Enchaînement au clic ou seul après 2 s.
 4. **Morceau retiré** : quand Deezer n'a plus d'extrait, la carte devient « Morceau retiré de la manche » ; aucune vie perdue.
@@ -32,7 +32,7 @@ Sans écran du tout : l'accès refusé (`/survie` renvoie au Daily) et le lien d
 6. **Choix du thème** (si le serveur en offre un, à partir de la manche 2) : « Choisis ton thème », deux thèmes et « Thème mystère » (tirage décoratif de 1,4 s, rien en mouvement réduit) ; le premier morceau part au clic.
 7. **Fin** : dès la troisième vie perdue, après la 8e manche (« Série complète » à la place du nombre de manches, avec dessous le détail des bonus en ambre : vies restantes × 250 et complétion 500) ou un abandon : le disque du niveau et ce que la partie a changé, le score en grand, « Nouveau record » ou le record, le nombre de manches passées, une case par manche, le duel de l'ami en première ligne s'il a fini la playlist, « Rejouer » (« Revanche » en duel) en action principale (sauf si le défi du jour reste à jouer : sa carte cyan passe au-dessus et « Rejouer » devient un contour), « Partager mon score » (grille d'emojis par manche, le palier, le score, « Fais mieux » vers la même playlist), « Défier un ami » et « Voir les autres joueurs », puis « Tes groupes » et la ligne « Hits ». La fin se joue en 2,2 s (un toucher la saute).
 
-Les sons d'interface (manche passée, fin, record, tic du chrono) sont synthétisés, jamais pendant un extrait, et coupés par le haut-parleur de l'en-tête. Animations : GSAP par la façade `ui/motion`, courtes et amorties, coupées en mouvement réduit.
+Les sons d'interface (manche passée, fin, record, tic du chrono) sont synthétisés, jamais pendant un extrait, sans bouton pour les couper (on écoute de la musique pour jouer). Animations : GSAP par la façade `ui/motion`, courtes et amorties, coupées en mouvement réduit.
 
 ## Le lien d'un ami
 
