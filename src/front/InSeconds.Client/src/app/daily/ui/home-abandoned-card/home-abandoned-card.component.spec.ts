@@ -38,7 +38,7 @@ describe('HomeAbandonedCardComponent', () => {
     const { fixture, el } = setup({ score: 850, rows: [row(1, true), row(2, null), row(3, null)] });
     expect(el.querySelector('[data-testid="home-abandoned-score"]')?.textContent).toContain('850');
     expect(el.querySelector('[data-testid="home-abandoned-noplay"]')).toBeNull();
-    expect(el.querySelectorAll('[data-testid="track-bar"]').length).toBe(3);
+    expect(el.querySelectorAll('[data-testid="track-bar"]')).toHaveLength(3);
     expect(el.querySelector('[data-testid="home-abandoned-tracks"]')).toBeNull();
 
     (el.querySelector('[data-testid="home-abandoned-toggle"]') as HTMLButtonElement).click();
