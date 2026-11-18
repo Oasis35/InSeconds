@@ -46,8 +46,3 @@ export function refocusContext(screen: DailyScreen): PeekContext | null {
 export function isRecapScreen(screen: DailyScreen): boolean {
   return screen === 'done' || screen === 'already_played';
 }
-
-/** Un écran de la carte du défi : sous la V4, il se lit sur l'accueil `/` (le reste, la manche, sur `/daily`). */
-export function isHomeScreen(screen: DailyScreen): boolean {
-  return screen === 'welcome' || screen === 'resume_prompt' || isRecapScreen(screen);
-}

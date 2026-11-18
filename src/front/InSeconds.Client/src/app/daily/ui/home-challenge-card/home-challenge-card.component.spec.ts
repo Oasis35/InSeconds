@@ -60,18 +60,4 @@ describe('HomeChallengeCardComponent', () => {
     expect(render({ streak: PROTECTED }).q('frozen-line')).not.toBeNull();
     expect(render().q('frozen-line')).toBeNull();
   });
-
-  it('une partie en pause propose « Reprendre » et « Abandonner » en lien discret', () => {
-    const { fixture, q } = render({ completedCount: 2 });
-    expect(q('home-paused-progress')?.textContent).toContain('daily.resume.progress.other');
-    expect(q('home-start')?.textContent).toContain('daily.resume.resume');
-    const spy = vi.fn();
-    fixture.componentInstance.abandon.subscribe(spy);
-    (q('home-abandon') as HTMLButtonElement).click();
-    expect(spy).toHaveBeenCalled();
-  });
-
-  it('sans partie en cours, pas de lien « Abandonner »', () => {
-    expect(render().q('home-abandon')).toBeNull();
-  });
 });

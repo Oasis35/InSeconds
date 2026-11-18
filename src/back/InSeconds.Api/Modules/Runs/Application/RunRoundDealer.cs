@@ -15,35 +15,22 @@ public sealed record RunThemeOffer(int Round, IReadOnlyList<RunThemeOption> Them
 /// l'est quand **le premier joueur** y arrive, avec le thème qu'il a choisi (deux thèmes tirés au hasard, ou le thème mystère), puis ne change plus :
 /// tous les joueurs de la playlist jouent les mêmes morceaux. Tout vient de la graine du défi : recharger l'écran redonne les mêmes thèmes, et un ami
 /// qui arrive le premier sans qu'on lui propose de choix (moins de trois thèmes assez fournis) tire la manche sans thème.
-/// <para>
-/// **Diversité** (<see cref="RunDiversity"/>) : le joueur qui tire (<c>playerId</c>) ne retombe pas trop vite sur ce qu'il a déjà entendu. Les morceaux et
-/// les thèmes de ses parties récentes passent après les autres, dans les limites des réglages <c>Runs:Diversity:</c>, et un thème déjà joué dans cette
-/// playlist est évité aussi ; c'est toujours une préférence (le tirage relâche, du plus ancien au plus récent, plutôt que de bloquer une partie).
-/// </para>
 /// </summary>
-public sealed class RunRoundDealer(
-    ITrackDirectory tracks, ISeededShuffle shuffle, IRunTrackSelector selector, IRunsStore store, RunDrawMemoryReader memories,
-    RunsRules rules)
+public sealed class RunRoundDealer(ITrackDirectory tracks, ISeededShuffle shuffle, IRunTrackSelector selector, IRunsStore store)
 {
     /// <summary>
     /// L'offre pour la manche <paramref name="round"/> ; vide si la manche est déjà tirée, si c'est la première, ou si moins de trois thèmes ont assez de
     /// morceaux libres au moment du choix.
     /// </summary>
-    public async Task<RunThemeOffer?> OfferAsync(RunChallenge challenge, int round, Guid? playerId, CancellationToken ct)
+    public async Task<RunThemeOffer?> OfferAsync(RunChallenge challenge, int round, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(challenge);
         if (round < 2 || challenge.HasRound(round))
             return null;
-        var playable = await tracks.ListPlayableIdsAsync(ct);
-        var pool = await PoolAsync(challenge, await MemoryAsync(challenge, playerId, playable.Count, ct), playable, ct);
-        return await OfferFromAsync(challenge, round, pool, ct);
-    }
-
-    private async Task<RunThemeOffer?> OfferFromAsync(RunChallenge challenge, int round, ThemePool pool, CancellationToken ct)
-    {
-        if (pool.Offerable.Count < RunThemes.MinEligibleThemes)
+        var pool = await PoolAsync(challenge, ct);
+        if (pool.Eligible.Count < RunThemes.MinEligibleThemes)
             return null;
-        var two = shuffle.Shuffle(pool.Offerable, unchecked(challenge.Seed + (round * 31))).Take(2).ToList();
+        var two = shuffle.Shuffle(pool.Eligible, unchecked(challenge.Seed + (round * 31))).Take(2).ToList();
         var icons = await tracks.ListThemeIconsAsync(ct);
         return new RunThemeOffer(round, [.. two.Select(id => new RunThemeOption(id, pool.Names[id], icons.GetValueOrDefault(id)))]);
     }
@@ -54,7 +41,7 @@ public sealed class RunRoundDealer(
     /// </summary>
     /// <returns>Le thème de la manche, vide si elle est sans thème.</returns>
     /// <exception cref="ArgumentException">Ce thème n'est pas proposé.</exception>
-    public async Task<RunRoundTheme?> DealAsync(RunChallenge challenge, int round, int? themeId, Guid? playerId, CancellationToken ct)
+    public async Task<RunRoundTheme?> DealAsync(RunChallenge challenge, int round, int? themeId, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(challenge);
         // Le défi est partagé par tous ses joueurs : un autre a pu tirer cette manche pendant l'attente du verrou, alors rien n'est réécrit.
@@ -64,10 +51,8 @@ public sealed class RunRoundDealer(
         if (round != challenge.RoundsDrawn + 1)
             throw new InvalidOperationException("Les manches se tirent dans l'ordre.");
 
-        var playable = await tracks.ListPlayableIdsAsync(ct);
-        var memory = await MemoryAsync(challenge, playerId, playable.Count, ct);
-        var pool = await PoolAsync(challenge, memory, playable, ct);
-        var offer = round < 2 ? null : await OfferFromAsync(challenge, round, pool, ct);
+        var pool = await PoolAsync(challenge, ct);
+        var offer = await OfferAsync(challenge, round, ct);
         int? chosen = null;
         if (offer is not null)
         {
@@ -77,7 +62,7 @@ public sealed class RunRoundDealer(
         }
 
         var used = challenge.Tracks.Select(t => t.TrackId).ToHashSet();
-        var drawn = selector.SelectRound(pool.Candidates, challenge.Rules, challenge.Seed, round, used, chosen, memory.AvoidTracks);
+        var drawn = selector.SelectRound(pool.Candidates, challenge.Rules, challenge.Seed, round, used, chosen);
         if (drawn.Count < challenge.Rules.TracksPerRound)
             throw new InvalidOperationException("Le catalogue n'a plus assez de morceaux pour tirer une manche.");
         var theme = chosen is { } id ? new RunRoundTheme(round, id, pool.Names[id], Mystery: themeId is null) : null;
@@ -88,36 +73,22 @@ public sealed class RunRoundDealer(
     // Le thème mystère de l'offre : un thème assez fourni qui n'est aucun de ceux qu'elle propose, tiré avec la graine.
     private int? Mystery(RunChallenge challenge, RunThemeOffer offer, ThemePool pool)
     {
-        // L'offre exige au moins trois thèmes proposables et en prend deux : il en reste toujours un pour le mystère.
-        var others = pool.Offerable.Where(id => offer.Themes.All(t => t.Id != id)).ToList();
+        var others = pool.Eligible.Where(id => offer.Themes.All(t => t.Id != id)).ToList();
         return others.Count == 0 ? null : shuffle.Shuffle(others, unchecked(challenge.Seed + (offer.Round * 7919))).First();
     }
 
-    // La mémoire du joueur qui tire (cf. RunDrawMemoryReader) : les thèmes de cette playlist d'abord, du plus récent au plus ancien.
-    private async Task<RunDrawMemory> MemoryAsync(RunChallenge challenge, Guid? playerId, int playableCount, CancellationToken ct)
-    {
-        var inPlaylist = challenge.Rules.Themes?.OrderByDescending(t => t.Round).Select(t => t.ThemeId).ToList() ?? [];
-        return await memories.ReadAsync(playerId, challenge.Id == 0 ? null : challenge.Id, inPlaylist, playableCount, ct);
-    }
-
-    // Les morceaux jouables hors ceux déjà tirés (aucun morceau deux fois dans une playlist), et les thèmes qui en ont assez pour une manche : ceux qu'on
-    // peut proposer (assez de morceaux pas entendus récemment, si au moins trois, et sans les thèmes joués récemment dans la limite des réglages).
-    private async Task<ThemePool> PoolAsync(RunChallenge challenge, RunDrawMemory memory, IReadOnlyCollection<int> playable, CancellationToken ct)
+    // Les morceaux jouables hors ceux déjà tirés (aucun morceau deux fois dans une playlist), et les thèmes qui en ont assez pour une manche.
+    private async Task<ThemePool> PoolAsync(RunChallenge challenge, CancellationToken ct)
     {
         var taken = challenge.Tracks.Select(t => t.TrackId).ToHashSet();
-        var avoided = memory.AvoidTracks.ToHashSet();
+        var playable = (await tracks.ListPlayableIdsAsync(ct)).ToList();
         var infos = playable.Count == 0 ? new Dictionary<int, TrackInfo>() : await tracks.GetAsync(playable, ct);
         var candidates = playable.Select(id => new RankedTrack(id, infos.GetValueOrDefault(id)?.DeezerRank, infos.GetValueOrDefault(id)?.ThemeIds)).ToList();
         var names = await tracks.ListThemesAsync(ct);
-        var perRound = challenge.Rules.TracksPerRound;
-        var free = candidates.Where(c => !taken.Contains(c.Id));
-        var eligible = RunThemes.Eligible(free.Select(c => c.ThemeIds), perRound).Where(names.ContainsKey).ToList();
-        var fresh = RunThemes.Eligible(free.Where(c => !avoided.Contains(c.Id)).Select(c => c.ThemeIds), perRound).Where(names.ContainsKey).ToList();
-        var basis = fresh.Count >= RunThemes.MinEligibleThemes ? fresh : eligible;
-        var skipped = RunDiversity.ThemesToAvoid(memory.PlayedThemes, basis, rules.Diversity.ThemePercent).ToHashSet();
-        return new ThemePool(candidates, names, eligible, [.. basis.Where(id => !skipped.Contains(id))]);
+        var free = candidates.Where(c => !taken.Contains(c.Id)).Select(c => c.ThemeIds);
+        var eligible = RunThemes.Eligible(free, challenge.Rules.TracksPerRound).Where(names.ContainsKey).ToList();
+        return new ThemePool(candidates, names, eligible);
     }
 
-    private sealed record ThemePool(
-        IReadOnlyList<RankedTrack> Candidates, IReadOnlyDictionary<int, string> Names, IReadOnlyList<int> Eligible, IReadOnlyList<int> Offerable);
+    private sealed record ThemePool(IReadOnlyList<RankedTrack> Candidates, IReadOnlyDictionary<int, string> Names, IReadOnlyList<int> Eligible);
 }

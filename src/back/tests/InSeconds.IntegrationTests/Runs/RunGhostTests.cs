@@ -38,7 +38,7 @@ public class RunGhostTests(PostgresFixture postgres) : IAsyncLifetime
         var aliceStart = (await alice.LaunchAsync()).Session;
         var code = aliceStart.ChallengeCode;
 
-        var carole = await _run.NewInvitedAsync();
+        var carole = await _run.NewPlayerAsync();
         var start = (await carole.JoinAsync(code)).Session;
         Assert.Null((await carole.AnswerAsync(start.SessionId, code, 1)).Session.Ghost);
 
@@ -55,7 +55,7 @@ public class RunGhostTests(PostgresFixture postgres) : IAsyncLifetime
         await alice.AnswerAsync(aliceStart.SessionId, aliceStart.ChallengeCode, 1);
         await alice.AbandonRawAsync(aliceStart.SessionId);
 
-        var bob = await _run.NewInvitedAsync("Bob");
+        var bob = await _run.NewPlayerAsync("Bob");
         var start = (await bob.JoinAsync(aliceStart.ChallengeCode)).Session;
         Assert.Null((await bob.AnswerAsync(start.SessionId, aliceStart.ChallengeCode, 1)).Session.Ghost);
     }
@@ -65,7 +65,7 @@ public class RunGhostTests(PostgresFixture postgres) : IAsyncLifetime
     {
         var (_, code) = await AliceLosesAtRoundTwoAsync();
 
-        var bob = await _run.NewInvitedAsync("Bob");
+        var bob = await _run.NewPlayerAsync("Bob");
         var bobStart = (await bob.JoinAsync(code)).Session;
         Assert.Null(bobStart.Ghost);
 
@@ -92,7 +92,7 @@ public class RunGhostTests(PostgresFixture postgres) : IAsyncLifetime
             UPDATE runs.challenges SET created_by = NULL WHERE code = '{code}';
             """);
 
-        var bob = await _run.NewInvitedAsync("Bob");
+        var bob = await _run.NewPlayerAsync("Bob");
         var start = (await bob.JoinAsync(code)).Session;
         Assert.Null(start.Ghost);
 
@@ -105,7 +105,7 @@ public class RunGhostTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task UnMorceauRetireAuJoueur_NeCompteNiPourLuiNiPourLeFantome()
     {
         var (_, code) = await AliceLosesAtRoundTwoAsync();
-        var bob = await _run.NewInvitedAsync("Bob");
+        var bob = await _run.NewPlayerAsync("Bob");
         var bobStart = (await bob.JoinAsync(code)).Session;
         // Le morceau 2 (trouvé par Alice, 100 pts) n'a plus d'extrait quand Bob y arrive : il lui est retiré.
         await _run.RemovePreviewAsync(await _run.TrackAtAsync(code, 2));
@@ -120,7 +120,7 @@ public class RunGhostTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task LeJoueurDepasseLAuteur_LaMancheOuSaPartieSestArretee_EtLeFantomeRestePourLeDuelDeFin()
     {
         var (_, code) = await AliceLosesAtRoundTwoAsync();
-        var bob = await _run.NewInvitedAsync("Bob");
+        var bob = await _run.NewPlayerAsync("Bob");
         var id = (await bob.JoinAsync(code)).Session.SessionId;
 
         await bob.PlayAsync(id, code, 1, AllFound);
@@ -139,7 +139,7 @@ public class RunGhostTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task LeDuelSeCompte_UneFoisALaFin_DevantDerriereOuAEgalite()
     {
         var (_, code) = await AliceLosesAtRoundTwoAsync();
-        var bob = await _run.NewInvitedAsync("Bob");
+        var bob = await _run.NewPlayerAsync("Bob");
         var id = (await bob.JoinAsync(code)).Session.SessionId;
         using var duels = new Microsoft.Extensions.Diagnostics.Metrics.Testing.MetricCollector<long>(
             _run.Api.Services.GetRequiredService<System.Diagnostics.Metrics.IMeterFactory>(), RunsMetrics.MeterName, RunsMetrics.DuelsName);

@@ -122,40 +122,6 @@ public sealed class EfRunsStore(InSecondsDbContext db) : IRunsStore
 
 public sealed class EfRunsQueries(InSecondsDbContext db) : IRunsQueries
 {
-    public async Task<RunHeardHistory> GetHeardHistoryAsync(Guid playerId, int? exceptChallengeId, int maxGames, CancellationToken ct)
-    {
-        var sessions = await db.Set<RunSession>().AsNoTracking()
-            .Where(s => s.PlayerId == playerId && s.ChallengeId != exceptChallengeId)
-            .OrderByDescending(s => s.Id).Take(maxGames)
-            .Select(s => new { s.Id, s.ChallengeId })
-            .ToListAsync(ct);
-        if (sessions.Count == 0)
-            return RunHeardHistory.Empty;
-
-        var sessionIds = sessions.Select(s => s.Id).ToList();
-        var challengeIds = sessions.Select(s => s.ChallengeId).Distinct().ToList();
-        var answered = await db.Set<RunAnswer>().AsNoTracking()
-            .Where(a => sessionIds.Contains(a.SessionId) && !a.Neutralized)
-            .Select(a => new { a.SessionId, a.Position })
-            .ToListAsync(ct);
-        var challengeTracks = (await db.Set<RunChallengeTrack>().AsNoTracking()
-                .Where(t => challengeIds.Contains(t.ChallengeId))
-                .Select(t => new { t.ChallengeId, t.Position, t.TrackId, t.Round })
-                .ToListAsync(ct))
-            .ToDictionary(t => (t.ChallengeId, t.Position));
-        var rules = await db.Set<RunChallenge>().AsNoTracking()
-            .Where(c => challengeIds.Contains(c.Id))
-            .Select(c => new { c.Id, c.Rules })
-            .ToDictionaryAsync(c => c.Id, c => c.Rules, ct);
-
-        var challengeOf = sessions.ToDictionary(s => s.Id, s => s.ChallengeId);
-        var heard = answered
-            .Select(a => (a.SessionId, Track: challengeTracks.GetValueOrDefault((challengeOf[a.SessionId], a.Position))))
-            .Where(h => h.Track is not null)
-            .Select(h => new HeardTrack(h.SessionId, challengeOf[h.SessionId], h.Track!.Position, h.Track.TrackId, h.Track.Round));
-        return RunHeardHistory.From(heard, rules);
-    }
-
     public async Task<RunReceivedEntry?> FindPendingReceivedChallengeAsync(Guid playerId, DateTimeOffset now, CancellationToken ct)
     {
         var oldest = now.AddDays(-RunReceivedChallenge.LifetimeDays);

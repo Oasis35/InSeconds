@@ -37,7 +37,7 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
         if (session is null)
             return null;
 
-        var answers = session.Status is SessionStatus.Completed or SessionStatus.Abandoned
+        var answers = session.Status == SessionStatus.Completed
             ? await db.Set<SessionAnswer>().AsNoTracking()
                 .Where(a => a.SessionId == session.Id)
                 .OrderBy(a => a.Position)

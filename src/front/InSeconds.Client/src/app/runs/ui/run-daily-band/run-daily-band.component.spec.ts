@@ -17,14 +17,9 @@ describe('RunDailyBandComponent', () => {
 
   it('défi à jouer : la carte cyan mène au jeu du jour', () => {
     const el = render(true);
-    expect(el.querySelector('[data-testid="daily-left"]')?.getAttribute('href')).toBe('/');
+    expect(el.querySelector('[data-testid="daily-left"]')?.getAttribute('href')).toBe('/daily');
     expect(el.textContent).toContain('runs.v4.band.title');
     expect(el.querySelector('[data-testid="daily-done-band"]')).toBeNull();
-  });
-
-  it('défi à jouer : la carte est cernée de cyan (la tuile de focus de l\'écran)', () => {
-    const card = render(true).querySelector<HTMLElement>('[data-testid="daily-left"]')!;
-    expect(card.style.boxShadow).not.toBe('');
   });
 
   it('défi joué : une ligne discrète avec le compte à rebours', () => {

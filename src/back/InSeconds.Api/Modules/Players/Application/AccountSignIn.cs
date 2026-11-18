@@ -45,15 +45,12 @@ public sealed class AccountSignIn(
     IStreakGrants streakGrants,
     IDeviceSessionValidationCache validationCache,
     IHttpContextAccessor httpContext,
-    TimeProvider time,
-    IReservedPseudos reserved)
+    TimeProvider time)
 {
     public async Task<AccountSignInPlan> PrepareAsync(string email, string? pseudo, CancellationToken ct)
     {
         var existing = await store.FindAccountByEmailAsync(email, ct);
-        // Un pseudo est pris par un autre compte, ou par l'alias d'un autre joueur au classement général.
-        var pseudoTaken = existing is null && pseudo is not null
-            && (await store.IsPseudoTakenAsync(pseudo, ct) || await reserved.IsReservedAsync(pseudo, current.PlayerId, ct));
+        var pseudoTaken = existing is null && pseudo is not null && await store.IsPseudoTakenAsync(pseudo, ct);
 
         Guid? guest = null;
         if (existing is null && current.PlayerId is { } playerId && !await store.HasAccountAsync(playerId, ct))

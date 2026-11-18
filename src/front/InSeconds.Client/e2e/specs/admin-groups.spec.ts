@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures/test';
 import { AdminPage } from '../pages/admin.page';
 
-// L'onglet « Groupes » de l'admin : la modération des groupes de Survie (renommer, remettre un nom à zéro, supprimer). Le groupe est créé par
+// L'onglet « Groupes » de l'admin : la modération des groupes de Setlist (renommer, remettre un nom à zéro, supprimer). Le groupe est créé par
 // l'API des joueurs, avec le compte admin des tests (un compte comme un autre).
 
 test.describe('Admin - groupes', () => {

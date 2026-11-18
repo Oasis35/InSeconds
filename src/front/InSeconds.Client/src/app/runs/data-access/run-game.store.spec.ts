@@ -904,8 +904,10 @@ describe('RunGameStore', () => {
     });
   });
 
-  describe("le lien d'un ami (/survie/<code>)", () => {
+  describe("le lien d'un ami (/setlist/<code>)", () => {
     it("une playlist pas encore jouée : l'écran du lien, sans rien lancer ni créer d'invité", async () => {
+      api.meResult = ME({ hasAccess: false });
+
       await store.init('abc234');
 
       expect(store.screen()).toBe('link');
@@ -916,6 +918,7 @@ describe('RunGameStore', () => {
 
     it("un compte qui ouvre le lien d'un ami le reçoit (défi sur son accueil) ; un échec ne change rien à l'écran", async () => {
       TestBed.inject(SessionStore).signedIn({ id: 'a1', pseudo: 'Clem', email: 'c@example.com', isGuest: false, isAdmin: false });
+      api.meResult = ME({ hasAccess: false });
       api.receiveError = new Error('réseau');
 
       await store.init('ABC234');
@@ -926,6 +929,8 @@ describe('RunGameStore', () => {
 
     it("un invité n'envoie rien : seuls les comptes reçoivent un défi", async () => {
       TestBed.inject(SessionStore).signedIn({ id: 'g1', pseudo: null, email: null, isGuest: true, isAdmin: false });
+      api.meResult = ME({ hasAccess: false });
+
       await store.init('ABC234');
 
       expect(api.calls.some(call => call.startsWith('receive:'))).toBe(false);
@@ -933,6 +938,7 @@ describe('RunGameStore', () => {
 
     it("une playlist déjà jouée n'est pas un défi reçu", async () => {
       TestBed.inject(SessionStore).signedIn({ id: 'a1', pseudo: 'Clem', email: 'c@example.com', isGuest: false, isAdmin: false });
+      api.meResult = ME({ hasAccess: false });
       api.challengeResult = { kind: 'ok', link: LINK({ myStatus: 'lost', mySessionId: 3 }) };
 
       await store.init('ABC234');
@@ -940,7 +946,16 @@ describe('RunGameStore', () => {
       expect(api.calls.some(call => call.startsWith('receive:'))).toBe(false);
     });
 
+    it("sans accès sur invitation, le lien reste jouable (pas d'écran réservé)", async () => {
+      api.meResult = ME({ hasAccess: false });
+
+      await store.init('ABC234');
+
+      expect(store.screen()).toBe('link');
+    });
+
     it("« Jouer » crée l'invité, relève la playlist et lance le premier son dans le clic", async () => {
+      api.meResult = ME({ hasAccess: false });
       await store.init('ABC234');
       audio.calls.length = 0;
 
@@ -984,15 +999,6 @@ describe('RunGameStore', () => {
       expect(store.screen()).toBe('comparison');
       expect(store.comparison()).toEqual(COMPARISON());
       expect(api.calls).toContain('comparison:ABC234');
-    });
-
-    it("le lien d'un ami sans l'accès au mode : écran de blocage, la playlist n'est même pas lue", async () => {
-      api.meResult = ME({ hasAccess: false });
-
-      await store.init('ABC234');
-
-      expect(store.screen()).toBe('link_blocked');
-      expect(api.calls).toEqual(['me']);
     });
 
     it('une playlist inconnue : le dit, sans réessayer', async () => {

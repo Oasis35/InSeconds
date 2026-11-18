@@ -46,25 +46,6 @@ describe('SetlistAccessStore', () => {
     expect(store.loaded()).toBe(true);
   });
 
-  it("un invité qui se connecte : le « non » d'avant n'est plus une réponse tant que l'accès n'est pas relu", async () => {
-    let release: (value: boolean) => void = () => undefined;
-    const { session, store } = setup(() => new Promise<boolean>(resolve => { release = resolve; }));
-    session.markLoaded();
-    session.signedIn(guest);
-    await TestBed.tick();
-    expect(store.loaded()).toBe(true);
-
-    session.signedIn(account);
-    await TestBed.tick();
-    expect(store.loaded()).toBe(false);
-
-    release(true);
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(store.loaded()).toBe(true);
-    expect(store.hasAccess()).toBe(true);
-  });
-
   it("une erreur vaut « pas d'accès »", async () => {
     const { store } = setup(async () => {
       throw new Error('réseau');

@@ -47,7 +47,7 @@ describe('runShareText', () => {
 
     expect(lines).toHaveLength(3);
     expect(lines.join('\n')).not.toContain('runs.share.beatMe');
-    expect(lines.join('\n')).not.toContain('/survie/');
+    expect(lines.join('\n')).not.toContain('/setlist/');
   });
 
   it('rien qui identifie un morceau : ni artiste ni titre', () => {
@@ -82,7 +82,7 @@ describe('RunShare', () => {
     await share.share('K7Q2M9');
 
     expect(shared).toEqual([`Une playlist !\n${playlistUrl('K7Q2M9')}`]);
-    expect(playlistUrl('K7Q2M9')).toMatch(/\/survie\/K7Q2M9\?utm_source=share$/);
+    expect(playlistUrl('K7Q2M9')).toMatch(/\/setlist\/K7Q2M9\?utm_source=share$/);
   });
 
   it('le score d\'une partie finie : la grille, envoyée telle que runShareText l\'écrit, et le bouton qui dit « copié »', async () => {
@@ -111,7 +111,7 @@ describe('RunShare', () => {
     await share.shareGroupInvite('K7Q2M9', { name: 'Potes', inviteCode: 'ABCD2345' });
 
     expect(shared).toEqual([`Rejoins Potes\n${playlistGroupUrl('K7Q2M9', 'ABCD2345')}`]);
-    expect(playlistGroupUrl('K7Q2M9', 'ABCD2345')).toMatch(/\/survie\/K7Q2M9\?group=ABCD2345&utm_source=share$/);
+    expect(playlistGroupUrl('K7Q2M9', 'ABCD2345')).toMatch(/\/setlist\/K7Q2M9\?group=ABCD2345&utm_source=share$/);
   });
 
   it('« Ma grille » part sans lien', async () => {

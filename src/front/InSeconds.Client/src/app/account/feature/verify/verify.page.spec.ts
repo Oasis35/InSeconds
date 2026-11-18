@@ -105,8 +105,6 @@ describe('VerifyPage', () => {
       expect(text(fixture)).toContain('account.verify.pseudoTitle');
       expect(pseudoInput(fixture)).not.toBeNull();
       expect(api.verifyMagicLink).toHaveBeenCalledTimes(1);
-      // Information RGPD avant de valider le pseudo : il apparaît au classement général.
-      expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="verify-ranking-info"]')?.textContent).toContain('account.verify.rankingInfo');
     });
 
     it('rassure un invité : ses parties passent au nouveau compte', async () => {

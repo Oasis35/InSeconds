@@ -1,5 +1,5 @@
 import { TodayState } from './daily';
-import { DailyScreen, PeekContext, isHomeScreen, isRecapScreen, refocusContext, screenAfterToday } from './daily-screen';
+import { DailyScreen, PeekContext, isRecapScreen, refocusContext, screenAfterToday } from './daily-screen';
 
 describe('screenAfterToday', () => {
   it('première lecture : accueil, reprise, pas de défi', () => {
@@ -42,12 +42,5 @@ describe('isRecapScreen', () => {
     expect(isRecapScreen('already_played')).toBe(true);
     expect(isRecapScreen('playing')).toBe(false);
     expect(isRecapScreen('welcome')).toBe(false);
-  });
-});
-
-describe('isHomeScreen', () => {
-  it('la carte du défi (à jouer, en pause, fait) est sur l\'accueil, la manche et les états d\'attente non', () => {
-    expect((['welcome', 'resume_prompt', 'already_played', 'done'] as const).every(isHomeScreen)).toBe(true);
-    expect((['loading', 'playing', 'no_challenge', 'error'] as const).some(isHomeScreen)).toBe(false);
   });
 });

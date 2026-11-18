@@ -2580,13 +2580,6 @@
                 "$ref": "#/components/schemas/TodayHistoryResponse"
               }
             ]
-          },
-          "abandonedScore": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
           }
         }
       },

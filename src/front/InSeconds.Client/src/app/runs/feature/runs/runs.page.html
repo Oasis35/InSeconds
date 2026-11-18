@@ -2,7 +2,7 @@
   <app-decor-background />
 
   <main class="relative flex-1 flex flex-col p-5 w-full max-w-lg mx-auto overflow-x-clip">
-    @switch (screen()) {
+    @switch (store.screen()) {
       @case ('loading') {
         <div class="flex-1 flex items-center justify-center">
           <p class="text-sm animate-pulse" style="color:var(--text-faint)">{{ 'runs.common.loading' | translate }}</p>
@@ -11,35 +11,12 @@
 
       @case ('welcome') {
         @if (chrome.v4() && chrome.dailyDone() === false) {
-          <a routerLink="/" data-testid="daily-left" class="block pt-2 text-center text-sm underline" style="color:var(--text-light)">{{ 'runs.v4.dailyLeft' | translate }}</a>
+          <a routerLink="/daily" data-testid="daily-left" class="block pt-2 text-center text-sm underline" style="color:var(--text-light)">{{ 'runs.v4.dailyLeft' | translate }}</a>
         }
+        <app-run-welcome-screen [record]="store.record()" [level]="chrome.v4() ? store.level() : null" [lang]="language.current()" (start)="store.begin()" />
         @if (chrome.v4()) {
-          <!-- Sous la V4, l'écran de départ est le jeu lui-même, à l'arrêt et flou : « Commencer » le recouvre et lance le premier son dans ce clic (iPhone).
-               Le décor est inerte : ni son, ni partie, ni toucher avant le clic. -->
-          <div class="relative flex-1 flex flex-col" data-testid="run-start-stage">
-            <div class="flex-1 flex flex-col pt-1 pointer-events-none select-none" inert aria-hidden="true" style="filter:blur(3px)">
-              <app-run-header [lives]="previewLives" />
-              <app-run-scoreboard class="mt-2" [total]="0" [round]="1" [maxRounds]="8" [dots]="previewDots" [ladder]="previewLadder" [listenSeconds]="previewLadder[0]" [lang]="language.current()" />
-              <div class="mt-3">
-                <!-- Silhouette du lecteur : la vraie manche n'existe pas avant le premier extrait, rien n'est chargé. -->
-                <div class="flex flex-col gap-3.5 p-3.5" style="background:var(--bg-surface);border:1px solid var(--core-cyan);border-radius:var(--radius-card)" data-testid="run-start-player">
-                  <div class="flex items-center gap-3">
-                    <div class="shrink-0 rounded-full" style="width:48px;height:48px;border:1px solid var(--border-neutral)"></div>
-                    <div class="flex-1 h-10 rounded" style="background:rgb(var(--rgb-accent-2) / 0.25)"></div>
-                  </div>
-                  <div class="h-12 rounded-(--radius-button)" style="background:var(--bg-surface-2);border:1px solid var(--border-field)"></div>
-                  <div class="h-12 rounded-(--radius-button)" style="background:var(--fill-primary);opacity:0.6"></div>
-                </div>
-              </div>
-            </div>
-            <div class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4">
-              <app-run-welcome-screen [overlay]="true" [record]="store.record()" [level]="store.level()" [lang]="language.current()" (start)="store.begin()" />
-              <app-run-hits-line class="block w-full max-w-xs" />
-            </div>
-          </div>
+          <app-run-hits-line class="block pt-3 pb-4" />
           <app-home-legal-line />
-        } @else {
-          <app-run-welcome-screen [record]="store.record()" [level]="null" [lang]="language.current()" (start)="store.begin()" />
         }
       }
 
@@ -123,7 +100,7 @@
             <!-- V4 : le logo et Instagram en haut de la fin, comme sur les autres écrans de la barre. -->
             <header class="pb-4"><app-brand [homeLink]="true"><div brandRight class="flex items-center gap-2"><app-instagram-link /></div></app-brand></header>
           }
-          <app-run-finish [finish]="finish" [showLevel]="chrome.v4()" [dailyFirst]="chrome.v4() && chrome.dailyDone() === false" [reviewLink]="reviewLink()" [duel]="store.duel()" [canPlayAgain]="store.canPlayAgain()" [shareCopied]="share.copied()" [shareFailed]="share.failed()"
+          <app-run-finish [finish]="finish" [showLevel]="chrome.v4()" [reviewLink]="reviewLink()" [duel]="store.duel()" [canPlayAgain]="store.canPlayAgain()" [shareCopied]="share.copied()" [shareFailed]="share.failed()"
             [lang]="language.current()" (share)="shareFinish(finish)" (compare)="store.showComparison()" (playAgain)="store.playAgain()">
             @if (chrome.v4()) {
               <app-groups-strip finishGroups data-motion="finish-groups" class="block" [showGroups]="session.isLinked()" [levelDelta]="finish.level?.delta ?? null" />
@@ -160,10 +137,6 @@
 
       @case ('not_found') {
         <app-run-status-screen kind="not_found" />
-      }
-
-      @case ('link_blocked') {
-        <app-run-status-screen kind="link_blocked" />
       }
 
       @case ('error') {

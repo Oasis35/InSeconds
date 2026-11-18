@@ -177,9 +177,10 @@ export const DailyGameStore = signalStore(
     const enterAlreadyPlayed = (abandoned: boolean) => {
       patchState(store, { screen: 'already_played', abandoned, gelToastDismissed: false });
       startCountdown();
-      // Une partie abandonnée relit les stats pour son score partiel et ses réponses (rien sans réponse) ; l'encart d'hier ne sert qu'à une partie finie.
-      void loadStats();
-      if (!abandoned) void loadYesterday();
+      if (!abandoned) {
+        void loadStats();
+        void loadYesterday();
+      }
     };
 
     /**

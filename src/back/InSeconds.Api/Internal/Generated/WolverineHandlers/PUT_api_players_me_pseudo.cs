@@ -43,7 +43,6 @@ namespace Internal.Generated.WolverineHandlers
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Wolverine.Runtime.ScopedMessageContextHolder>(serviceScope.ServiceProvider).Context = messageContext;
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
-            var socialReservedPseudos = new InSeconds.Api.Modules.Social.Persistence.SocialReservedPseudos(inSecondsDbContext);
             var efPlayerStore = new InSeconds.Api.Modules.Players.Persistence.EfPlayerStore(inSecondsDbContext);
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
             // Reading the request body via JSON deserialization
@@ -74,7 +73,7 @@ namespace Internal.Generated.WolverineHandlers
             try
             {
                 var account = await InSeconds.Api.Modules.Players.Application.UpdatePseudoEndpoint.LoadAsync(claimsCurrentPlayer, efPlayerStore, httpContext.RequestAborted).ConfigureAwait(false);
-                var problemDetails2 = await InSeconds.Api.Modules.Players.Application.UpdatePseudoEndpoint.ValidateAsync(request, account, efPlayerStore, socialReservedPseudos, httpContext.RequestAborted).ConfigureAwait(false);
+                var problemDetails2 = await InSeconds.Api.Modules.Players.Application.UpdatePseudoEndpoint.ValidateAsync(request, account, efPlayerStore, httpContext.RequestAborted).ConfigureAwait(false);
                 // Evaluate whether the processing should stop if there are any problems
                 if (!(ReferenceEquals(problemDetails2, Wolverine.Http.WolverineContinue.NoProblems)))
                 {

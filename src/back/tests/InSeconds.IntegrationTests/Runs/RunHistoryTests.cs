@@ -86,11 +86,11 @@ public class RunHistoryTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task UnJoueur_NeLitQueSesParties()
+    public async Task UnJoueur_NeLitQueSesParties_MemeSansAccesAuMode()
     {
         var (alice, _, _, code) = await SeedAsync();
-        // Un autre joueur autorisé joue la playlist d'Alice : son historique est le sien.
-        var guest = await _run.NewInvitedAsync();
+        // Un invité qui joue la playlist d'Alice n'a pas l'accès au mode : son historique est le sien.
+        var guest = await _run.NewPlayerAsync();
         var joined = await guest.JoinAsync(code);
         await guest.PlayAsync(joined.Session.SessionId, code, 1, NoneFound);
 

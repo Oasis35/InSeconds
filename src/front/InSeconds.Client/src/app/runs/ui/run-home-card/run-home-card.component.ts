@@ -5,20 +5,20 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { formatOrdinal } from '../../../ui/format/ordinal';
 import { enterHomeCard, lightLadder, slideBanner } from '../../../ui/motion/motion';
-import { RunLevel, RunReceivedChallenge, daysLeft, hasDisc } from '../../domain/run';
+import { RunLevel, RunReceivedChallenge, daysLeft } from '../../domain/run';
 import { RunDiscComponent } from '../run-disc/run-disc.component';
 
-/** L'échelle des sept disques, du plus bas au plus haut : la rangée de la carte (le disque du joueur y est plus gros, aucun avant le premier). */
+/** L'échelle des disques, du plus bas au plus haut : la rangée de la carte (le disque du joueur y est plus gros). */
 export const DISC_LADDER: readonly string[] = [
-  'runs.discs.scratched', 'runs.discs.bronze', 'runs.discs.silver',
+  'runs.discs.scratched', 'runs.discs.wax', 'runs.discs.bronze', 'runs.discs.silver',
   'runs.discs.gold', 'runs.discs.platinum', 'runs.discs.double_platinum', 'runs.discs.diamond',
 ];
 
 /**
- * La carte Setlist de l'accueil (V4), **toujours compacte** : le disque du joueur, « Survie » et son niveau (« Niveau Argent · 2 340 pts », « Pas encore
- * de disque » avant le premier, sinon la promesse), la rangée des sept disques où le sien est plus gros, la jauge vers le disque suivant avec ses deux bornes, et « Jouer »
+ * La carte Setlist de l'accueil (V4), **toujours compacte** : le disque du joueur, « Setlist » et son niveau (« Disque d'argent · à ton rythme »,
+ * sinon la promesse), la rangée des huit disques où le sien est plus gros, la jauge vers le disque suivant avec ses deux bornes, et « Jouer »
  * (« Rejouer » après une setlist du jour). Tant que le défi du jour reste à jouer, la carte est discrète (contour neutre, bouton en contour) ;
- * **une fois le défi joué (`active`), c'est la prochaine action** : tube ambre et « Jouer » en bouton principal. Ouvre `/survie`.
+ * **une fois le défi joué (`active`), c'est la prochaine action** : tube ambre et « Jouer » en bouton principal. Ouvre `/setlist`.
  */
 @Component({
   selector: 'app-run-home-card',
@@ -39,12 +39,7 @@ export const DISC_LADDER: readonly string[] = [
               {{ 'runs.home.playedToday' | translate }}
               <span class="whitespace-nowrap">· <b class="tabular-nums" style="font-family:var(--font-score);color:var(--color-accent-3)">{{ format(todayScore() ?? 0) }}</b></span>
             } @else if (level(); as level) {
-              @if (hasDisc(level)) {
-                {{ 'runs.home.levelLabel' | translate }} <b style="color:var(--text-hi)">{{ shortName(level.disc.key) | translate }}</b>
-                <span class="whitespace-nowrap">· <span class="tabular-nums">{{ 'runs.home.levelPoints' | translate: { points: format(level.points) } }}</span></span>
-              } @else {
-                <span data-testid="run-home-no-disc">{{ 'runs.discs.none' | translate }}</span>
-              }
+              {{ 'runs.home.levelLabel' | translate }} <b style="color:var(--text-hi)">{{ shortName(level.disc.key) | translate }}</b> · {{ 'runs.home.rhythm' | translate }}
             } @else if (record() !== null) {
               {{ 'runs.home.record' | translate }}
               <b class="tabular-nums" style="font-family:var(--font-score);color:var(--color-accent-3)">{{ format(record() ?? 0) }}</b>
@@ -60,7 +55,7 @@ export const DISC_LADDER: readonly string[] = [
         <!-- Le défi d'un ami : violet (les autres joueurs), refusable par la croix. -->
         <div class="flex items-center gap-1 pl-2.5 rounded-(--radius-button)" data-testid="run-home-received" data-motion="received"
           style="background:rgb(var(--rgb-violet) / 0.14);border:1px solid rgb(var(--rgb-violet) / 0.6)">
-          <a [routerLink]="['/survie', challenge.code]" class="min-w-0 flex-1 flex items-center gap-3 min-h-14 py-2" data-testid="run-home-received-link" style="color:var(--text-hi)">
+          <a [routerLink]="['/setlist', challenge.code]" class="min-w-0 flex-1 flex items-center gap-3 min-h-14 py-2" data-testid="run-home-received-link" style="color:var(--text-hi)">
             <span class="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full text-base font-bold" aria-hidden="true"
               style="background:rgb(var(--rgb-violet) / 0.55);color:var(--text-hi)">{{ initial(challenge.authorPseudo) }}</span>
             <span class="min-w-0">
@@ -85,7 +80,7 @@ export const DISC_LADDER: readonly string[] = [
 
       @if (level(); as level) {
         <div class="flex flex-col gap-2" data-testid="run-home-level">
-          <!-- La rangée des sept disques : celui du joueur plus gros, les disques à venir éteints (tous avant le premier disque). -->
+          <!-- La rangée des huit disques : celui du joueur plus gros, les disques à venir éteints. -->
           <div class="flex items-center justify-between gap-1" aria-hidden="true" data-testid="run-home-ladder">
             @for (key of ladder; track key; let i = $index) {
               <app-run-disc data-motion="ladder-disc" [disc]="key" [size]="i === ladderIndex() ? 22 : 13" [shine]="false" [style.opacity]="i <= ladderIndex() ? 1 : 0.28" />
@@ -95,13 +90,9 @@ export const DISC_LADDER: readonly string[] = [
             <div class="h-full rounded-full" data-testid="run-home-bar" style="background:var(--color-accent-3)" [style.width.%]="level.progressPercent"></div>
           </div>
           <div class="flex justify-between text-xs tabular-nums" style="color:var(--text-light)">
-            @if (hasDisc(level)) {
-              <span>{{ shortName(level.disc.key) | translate }} · {{ format(level.points) }}</span>
-            } @else {
-              <span data-testid="run-home-from">{{ shortName(level.disc.key) | translate }}</span>
-            }
+            <span>{{ shortName(level.disc.key) | translate }} · {{ format(level.points) }}</span>
             @if (level.nextDisc; as next) {
-              <span data-testid="run-home-next">{{ (hasDisc(level) ? shortName(next.key) : next.key) | translate }} · {{ format(level.points + (level.pointsToNext ?? 0)) }}</span>
+              <span data-testid="run-home-next">{{ shortName(next.key) | translate }} · {{ format(level.points + (level.pointsToNext ?? 0)) }}</span>
             }
           </div>
         </div>
@@ -120,18 +111,18 @@ export const DISC_LADDER: readonly string[] = [
       @if (active()) {
         <ng-container [ngTemplateOutlet]="place" />
         @if (received(); as challenge) {
-          <a appButton [routerLink]="['/survie', challenge.code]" size="lg" [block]="true" data-testid="run-home-play">
+          <a appButton [routerLink]="['/setlist', challenge.code]" size="lg" [block]="true" data-testid="run-home-play">
             {{ 'runs.home.takeUp' | translate }}
           </a>
         } @else {
-          <a appButton routerLink="/survie" [queryParams]="{ go: 1 }" (click)="playClicked.emit()" size="lg" [block]="true" data-testid="run-home-play">
+          <a appButton routerLink="/setlist" size="lg" [block]="true" data-testid="run-home-play">
             {{ (todayScore() !== null ? 'runs.home.replay' : 'runs.home.play') | translate }}
           </a>
         }
       } @else {
         <div class="flex items-center justify-between gap-3">
           <ng-container [ngTemplateOutlet]="place" />
-          <a appButton variant="neutral" routerLink="/survie" [queryParams]="{ go: 1 }" (click)="playClicked.emit()" class="ml-auto" data-testid="run-home-play">
+          <a appButton variant="neutral" routerLink="/setlist" class="ml-auto" data-testid="run-home-play">
             {{ (todayScore() !== null ? 'runs.home.replay' : 'runs.home.play') | translate }}
           </a>
         </div>
@@ -159,11 +150,8 @@ export class RunHomeCardComponent {
   readonly generalRank = input<number | null>(null);
   /** Le joueur refuse le défi (la croix) : le code de la playlist. */
   readonly dismissReceived = output<string>();
-  /** Le clic sur « Jouer » : l'accueil y déverrouille le son avant de quitter la page. */
-  readonly playClicked = output<void>();
 
   protected readonly ladder = DISC_LADDER;
-  protected readonly hasDisc = hasDisc;
   protected readonly days = computed(() => {
     const challenge = this.received();
     return challenge ? daysLeft(challenge.expiresAt, this.now()) : 0;

@@ -542,12 +542,6 @@ export class RunsClient {
             result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("Unauthorized", status, _responseText, _headers, result401);
             }));
-        } else if (status === 403) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result403: any = null;
-            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("Forbidden", status, _responseText, _headers, result403);
-            }));
         } else if (status === 404) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result404: any = null;
@@ -1607,15 +1601,13 @@ export interface RunHitsResponse {
 
 export interface RunLevelResponse {
     points: number;
-    disc: RunDiscResponse | undefined;
+    disc: RunDiscResponse;
     nextDisc: RunDiscResponse | undefined;
     pointsToNext: number | undefined;
     progressPercent: number;
+    provisional: boolean;
     runsPlayed: number;
     delta: number | undefined;
-    discChange: string | undefined;
-    inactivityLoss: number;
-    discDropInDays: number | undefined;
 
     [key: string]: any;
 }

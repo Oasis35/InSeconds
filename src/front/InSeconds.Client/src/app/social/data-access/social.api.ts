@@ -1,10 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import {
-  GroupRankingResponse, GroupSummaryResponse, InvitationResponse, RankingEntryResponse, RankingIdentityResponse, SocialClient,
-} from '../../api/social/api.generated';
+import { GroupRankingResponse, GroupSummaryResponse, InvitationResponse, RankingEntryResponse, SocialClient } from '../../api/social/api.generated';
 import { toAppError } from '../../core/errors/app-error';
-import { GeneralRanking, Group, GroupRanking, Invitation, MyGroups, RankingEntry, RankingIdentity } from '../domain/group';
+import { GeneralRanking, Group, GroupRanking, Invitation, MyGroups, RankingEntry } from '../domain/group';
 
 /** Les refus que les écrans connaissent : ils deviennent des issues, pas des erreurs. */
 const REFUSALS = ['account_required', 'invalid_name', 'too_many_groups', 'group_full', 'invitation_not_found', 'group_not_found'] as const;
@@ -40,23 +38,18 @@ export class SocialApi {
     return toRanking(await firstValueFrom(this.client.getGroupRanking(groupId)));
   }
 
-  /** Le classement général : la tête, ma place et le nom sous lequel j'y apparais. */
+  /** Le classement général : la tête, ma place et mon choix d'y apparaître. */
   async generalRanking(): Promise<GeneralRanking> {
     const response = await firstValueFrom(this.client.getGeneralRanking());
     return {
       top: response.top.map(toEntry), around: response.around.map(toEntry), total: response.total,
-      hasAccount: response.hasAccount, identity: response.identity ? toIdentity(response.identity) : null,
+      visible: response.visible, canAppear: response.canAppear, topPercent: response.topPercent ?? null,
     };
   }
 
-  /** Apparaître sous son pseudo ou sous un alias musical (tiré s'il n'en a pas) ; un compte seulement. */
-  async setRankingIdentity(mode: 'pseudo' | 'alias'): Promise<RankingIdentity> {
-    return toIdentity(await firstValueFrom(this.client.setRankingIdentity({ mode })));
-  }
-
-  /** « Autre alias » : un nouvel alias, toujours libre. */
-  async drawRankingAlias(): Promise<RankingIdentity> {
-    return toIdentity(await firstValueFrom(this.client.drawRankingAlias()));
+  /** Apparaître ou non dans le classement général (un compte seulement). */
+  async setRankingVisibility(visible: boolean): Promise<void> {
+    await firstValueFrom(this.client.setRankingVisibility({ visible }));
   }
 
   create(name: string): Promise<GroupOutcome> {
@@ -106,10 +99,6 @@ function toRanking(response: GroupRankingResponse): GroupRanking {
     name: response.name,
     entries: response.entries.map(toEntry),
   };
-}
-
-function toIdentity(identity: RankingIdentityResponse): RankingIdentity {
-  return { mode: identity.mode === 'alias' ? 'alias' : 'pseudo', name: identity.name, alias: identity.alias ?? null };
 }
 
 function toEntry(entry: RankingEntryResponse): RankingEntry {

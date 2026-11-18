@@ -18,8 +18,6 @@ import { ArchiveCalendarData, ArchiveCalendarResult, ArchiveCalendarSheetCompone
 import { ArchiveDayHeaderComponent } from '../../ui/archive-day-header/archive-day-header.component';
 import { ArchiveTrackRowComponent } from '../../ui/archive-track-row/archive-track-row.component';
 import { BrandComponent } from '../../../ui/brand/brand.component';
-import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
-import { HomeLegalLineComponent } from '../../../ui/legal-line/home-legal-line.component';
 import { DailyFooterComponent } from '../../ui/daily-footer/daily-footer.component';
 import { ScoreChartData, ScoreDistributionChartComponent } from '../../../ui/score-distribution-chart/score-distribution-chart.component';
 import { StatusScreenComponent } from '../../ui/status-screen/status-screen.component';
@@ -33,7 +31,7 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
 @Component({
   selector: 'app-archive-page',
   imports: [
-    PointsPipe, TranslatePipe, RouterLink, DecorBackgroundComponent, BrandComponent, DailyFooterComponent, HomeLegalLineComponent, AccountLinkComponent,
+    PointsPipe, TranslatePipe, RouterLink, DecorBackgroundComponent, BrandComponent, DailyFooterComponent, AccountLinkComponent,
     ArchiveDayHeaderComponent, ArchiveTrackRowComponent, ScoreDistributionChartComponent, StatusScreenComponent, ButtonComponent,
   ],
   providers: [ArchiveStore, AudioPreviewPlayer],
@@ -43,7 +41,6 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
 export class ArchivePage implements OnInit {
   protected readonly store = inject(ArchiveStore);
   protected readonly language = inject(LanguageService);
-  protected readonly chrome = inject(ShellChromeStore);
   protected readonly errorReporting = inject(ErrorReportingService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);

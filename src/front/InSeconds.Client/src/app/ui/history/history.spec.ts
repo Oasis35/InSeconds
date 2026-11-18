@@ -16,7 +16,7 @@ describe("pièces communes de l'historique", () => {
 
     expect(el.querySelector('[data-testid="history-tab-daily"]')?.getAttribute('href')).toBe('/history/daily');
     expect(el.querySelector('[data-testid="history-tab-daily"]')?.getAttribute('aria-current')).toBeNull();
-    expect(el.querySelector('[data-testid="history-tab-setlist"]')?.getAttribute('href')).toBe('/history/survie');
+    expect(el.querySelector('[data-testid="history-tab-setlist"]')?.getAttribute('href')).toBe('/history/setlist');
     expect(el.querySelector('[data-testid="history-tab-setlist"]')?.getAttribute('aria-current')).toBe('page');
   });
 
