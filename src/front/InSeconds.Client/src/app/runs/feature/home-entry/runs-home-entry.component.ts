@@ -71,12 +71,12 @@ export class RunsHomeEntryComponent {
     });
   }
 
-  /** Refuse le défi d'un ami : le bandeau part tout de suite, le serveur suit (un échec le laisse partir, il reviendra à la prochaine visite). */
   /** « Jouer » : le son se déverrouille dans ce clic, la partie démarre à l'arrivée sur `/survie?go=1` (iPhone). */
   protected unlockSound(): void {
     unlockSharedAudio();
   }
 
+  /** Refuse le défi d'un ami : le bandeau part tout de suite, le serveur suit (un échec le laisse partir, il reviendra à la prochaine visite). */
   protected dismiss(code: string): void {
     this.summary.update(summary => ({ ...summary, received: null }));
     void this.api.dismissReceived(code).catch(() => undefined);

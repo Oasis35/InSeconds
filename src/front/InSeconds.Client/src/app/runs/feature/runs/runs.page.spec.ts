@@ -72,6 +72,25 @@ describe('RunsPage', () => {
       expect(store.screen()).toBe('welcome');
       expect(api.calls.some(call => call.startsWith('launch'))).toBe(false);
     });
+
+    it("arrivée par « Jouer » de l'accueil (?go=1) : la partie démarre seule et le paramètre est retiré", async () => {
+      const { fixture, store } = create({ go: '1' });
+      const navigateTo = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
+      fixture.detectChanges();
+
+      await vi.waitFor(() => expect(store.screen()).toBe('playing'));
+      expect(navigateTo).toHaveBeenCalledWith([], expect.objectContaining({ queryParams: { go: null }, replaceUrl: true }));
+    });
+
+    it("sans ?go=1, rien ne démarre seul", async () => {
+      const { fixture, store } = create();
+
+      fixture.detectChanges();
+      await vi.waitFor(() => expect(store.screen()).toBe('welcome'));
+
+      expect(api.calls.some(call => call.startsWith('launch'))).toBe(false);
+    });
   });
 
   describe('quitter la page en pleine manche', () => {

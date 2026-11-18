@@ -27,7 +27,9 @@ describe('RunHomeCardComponent', () => {
     fixture.detectChanges();
     const played = vi.fn();
     fixture.componentInstance.playClicked.subscribe(played);
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[data-testid="run-home-play"]')!.click();
+    // Clic avec Ctrl : le lien ne navigue pas (le test n'a pas de routes), la sortie part quand même.
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[data-testid="run-home-play"]')!
+      .dispatchEvent(new MouseEvent('click', { ctrlKey: true, bubbles: true, cancelable: true }));
     expect(played).toHaveBeenCalledTimes(1);
   });
 

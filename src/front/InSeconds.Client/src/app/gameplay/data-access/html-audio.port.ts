@@ -99,30 +99,6 @@ function isAbort(err: unknown): boolean {
 }
 
 /**
- * L'`AudioPort` sur un **élément audio HTML**, rodé en prod
- * (décision du 13/10/2026, #309, après la recette sur iPhone de Howler). Aucune bibliothèque : un
- * seul élément `Audio` (`playsInline`) joue tous les extraits, en flux depuis le CDN de Deezer.
- *
- * - **Arrêt au palier calé sur le son réel** (piège 44) : le chrono part à l'événement `playing`
- *   pour le reliquat (palier − `currentTime`), il est suspendu sur `waiting`, et une boucle
- *   `requestAnimationFrame` coupe dès que `currentTime` atteint le palier.
- * - **Jamais de coupure à l'aveugle** (piège 46) : à l'échéance, le chrono relit la position et se
- *   reprogramme si le palier n'est pas atteint ; rien ne coupe pendant un `seeking` (juste après
- *   `currentTime = 0`, Safari peut encore renvoyer l'ancienne position). Sur iPhone, `playing` part
- *   parfois dès l'appel à `play()`, bien avant le son.
- * - « Écouter plus » pendant la lecture reprogramme l'arrêt sans couper le son ; à l'arrêt, la
- *   lecture repart du début jusqu'au nouveau palier ; pendant le chargement, la demande est gardée
- *   (piège 40).
- * - Un extrait plus court que le palier : la fin de l'extrait est la fin du palier.
- * - Un échec donne `error`, jamais `idle` (piège 33) ; un échec de la lecture complète (après la
- *   révélation) donne `finished` : il n'y a plus rien à proposer au joueur.
- * - Le suivant est seulement annoncé au navigateur (`<link rel="preload" as="audio">`), une fois
- *   le courant prêt : rien n'est décodé en mémoire.
- * - L'extrait est lu en flux : une adresse dont la signature expire en cours de route (piège 14)
- *   donne `error` ; la manche en redemande une fraîche d'elle-même une fois, puis par « Réessayer »
- *   (`refreshPreviewUrl`). L'échec d'une adresse déjà expirée n'est pas remonté (`isSignatureExpired`).
- */
-/**
  * L'élément audio est **un seul pour toute la page** : sur iPhone, un élément ne joue hors d'un geste qu'après avoir joué une fois dans
  * un geste, et le clic qui lance la Survie depuis l'accueil se fait dans une autre route (donc un autre lecteur) que la partie.
  */
@@ -168,6 +144,30 @@ export function resetSharedAudio(): void {
   sharedUnlocked = false;
 }
 
+/**
+ * L'`AudioPort` sur un **élément audio HTML**, rodé en prod
+ * (décision du 13/10/2026, #309, après la recette sur iPhone de Howler). Aucune bibliothèque : un
+ * seul élément `Audio` (`playsInline`) joue tous les extraits, en flux depuis le CDN de Deezer.
+ *
+ * - **Arrêt au palier calé sur le son réel** (piège 44) : le chrono part à l'événement `playing`
+ *   pour le reliquat (palier − `currentTime`), il est suspendu sur `waiting`, et une boucle
+ *   `requestAnimationFrame` coupe dès que `currentTime` atteint le palier.
+ * - **Jamais de coupure à l'aveugle** (piège 46) : à l'échéance, le chrono relit la position et se
+ *   reprogramme si le palier n'est pas atteint ; rien ne coupe pendant un `seeking` (juste après
+ *   `currentTime = 0`, Safari peut encore renvoyer l'ancienne position). Sur iPhone, `playing` part
+ *   parfois dès l'appel à `play()`, bien avant le son.
+ * - « Écouter plus » pendant la lecture reprogramme l'arrêt sans couper le son ; à l'arrêt, la
+ *   lecture repart du début jusqu'au nouveau palier ; pendant le chargement, la demande est gardée
+ *   (piège 40).
+ * - Un extrait plus court que le palier : la fin de l'extrait est la fin du palier.
+ * - Un échec donne `error`, jamais `idle` (piège 33) ; un échec de la lecture complète (après la
+ *   révélation) donne `finished` : il n'y a plus rien à proposer au joueur.
+ * - Le suivant est seulement annoncé au navigateur (`<link rel="preload" as="audio">`), une fois
+ *   le courant prêt : rien n'est décodé en mémoire.
+ * - L'extrait est lu en flux : une adresse dont la signature expire en cours de route (piège 14)
+ *   donne `error` ; la manche en redemande une fraîche d'elle-même une fois, puis par « Réessayer »
+ *   (`refreshPreviewUrl`). L'échec d'une adresse déjà expirée n'est pas remonté (`isSignatureExpired`).
+ */
 @Injectable()
 export class HtmlAudioPort extends AudioPort {
   private readonly _state = signal<AudioStatus>('idle');
