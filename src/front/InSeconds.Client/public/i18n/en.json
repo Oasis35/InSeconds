@@ -1163,6 +1163,7 @@
       "record": "Best",
       "anytime": "yours whenever you like",
       "levelLabel": "Level",
+      "levelPoints": "{{ points }} pts",
       "rhythm": "at your own pace",
       "playedToday": "Survival played",
       "play": "Play",
@@ -1238,7 +1239,8 @@
       "complete": "Series complete",
       "bonusLives": "Lives left ({{ count }}): +{{ points }} pts",
       "bonusComplete": "Series complete: +{{ points }} pts",
-      "rounds": "{{ count }} rounds done"
+      "rounds": "{{ count }} rounds done",
+      "roundsOne": "{{ count }} round done"
     },
     "pseudo": {
       "title": "Your nickname",
@@ -1288,7 +1290,6 @@
     "discShort": {
       "none": "No disc",
       "scratched": "Scratched",
-      "wax": "Wax",
       "bronze": "Bronze",
       "silver": "Silver",
       "gold": "Gold",
@@ -1299,7 +1300,6 @@
     "discs": {
       "none": "No disc yet",
       "scratched": "Scratched record",
-      "wax": "Wax record",
       "bronze": "Bronze record",
       "silver": "Silver record",
       "gold": "Gold record",
@@ -1374,8 +1374,17 @@
       },
       "dailyLeft": "Today's challenge is still waiting"
     },
+    "inactivity": {
+      "title": "You lose your {{ disc }} in {{ days }} days",
+      "titleTomorrow": "You lose your {{ disc }} tomorrow",
+      "body": "Play a Survival run to keep your level."
+    },
     "level": {
       "title": "Your level",
+      "discUp": "You reach the {{ disc }}",
+      "discDown": "You drop back to the {{ disc }}",
+      "discLost": "You lose your first record",
+      "badRun": "A bad run costs 10% at most.",
       "next": "{{ disc }} in {{ points }} pts",
       "top": "The highest record",
       "review": "Review",

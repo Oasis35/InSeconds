@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { NO_DISC } from '../../domain/run';
 
 /** La couleur de chaque disque (`runs.discs.*`) ; un disque inconnu (échelle future) prend celle de l'or. */
 const DISC_COLORS: Readonly<Record<string, string>> = {
   'runs.discs.scratched': 'var(--disc-scratched)',
-  'runs.discs.wax': 'var(--disc-wax)',
   'runs.discs.bronze': 'var(--disc-bronze)',
   'runs.discs.silver': 'var(--disc-silver)',
   'runs.discs.gold': 'var(--disc-gold)',
@@ -16,8 +16,8 @@ const DISC_COLORS: Readonly<Record<string, string>> = {
 export const discColor = (key: string): string => DISC_COLORS[key] ?? DISC_COLORS['runs.discs.gold'];
 
 /**
- * Le disque dessiné (rayé, cire, bronze, argent, or, platine, double platine, diamant) : sillons, étiquette, trou central ; le disque d'or brille, le
- * double platine a un second contour. Purement décoratif.
+ * Le disque dessiné (rayé, bronze, argent, or, platine, double platine, diamant) : sillons, étiquette, trou central ; le disque d'or brille, le
+ * double platine a un second contour ; avant le premier disque (`runs.discs.none`), un cercle en pointillés. Purement décoratif.
  */
 @Component({
   selector: 'app-run-disc',
@@ -57,5 +57,5 @@ export class RunDiscComponent {
   protected readonly double = computed(() => this.disc() === 'runs.discs.double_platinum');
   protected readonly scratched = computed(() => this.disc() === 'runs.discs.scratched');
   /** Pas encore de disque : un cercle en pointillés. */
-  protected readonly none = computed(() => this.disc() === 'runs.discs.none');
+  protected readonly none = computed(() => this.disc() === NO_DISC);
 }

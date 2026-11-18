@@ -103,8 +103,7 @@
   --disc-gold:      rgb(var(--rgb-warning));
   --disc-silver:    #C3C9D4;
   --disc-bronze:    #C47A3A;
-  --disc-wax:       #8C3A2B;
-  --disc-scratched: rgb(var(--rgb-text) / 0.3);
+  --disc-scratched: #8C3A2B; /* le premier disque (300 pts) ; visuel provisoire, à redessiner */
 
   /* Formes : tous les boutons en rectangle, toutes les cartes aux mêmes coins réguliers */
   --radius-button: 10px;

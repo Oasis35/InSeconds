@@ -181,6 +181,37 @@ describe('RunFinishComponent', () => {
       expect(text(element, 'run-play-again')).toBe('runs.finished.rematch');
     });
 
+    it('un disque gagné : « Tu passes au disque rayé » en ambre, avec les points', () => {
+      const up = { ...level, points: 300, disc: { key: 'runs.discs.scratched', stars: 0 }, delta: 300, discChange: 'up' as const };
+      const { element } = renderLevel(finish({ level: up }), true);
+
+      const change = element.querySelector<HTMLElement>('[data-testid="run-level-change"]');
+      expect(change?.getAttribute('data-change')).toBe('up');
+      expect(change?.textContent).toContain('runs.level.discUp');
+    });
+
+    it('une mauvaise série : le disque gardé, les points et « au plus 10 % » ; un disque perdu le dit', () => {
+      const bad = { ...level, points: 2286, delta: -254, discChange: 'same' as const };
+      const { element } = renderLevel(finish({ level: bad }), true);
+      expect(element.querySelector('[data-testid="run-level-change"]')?.getAttribute('data-change')).toBe('bad');
+      expect(text(element, 'run-level-change')).toContain('runs.level.badRun');
+
+      TestBed.resetTestingModule();
+      const lost = { ...level, points: 280, disc: { key: 'runs.discs.none', stars: 0 }, delta: -31, discChange: 'down' as const };
+      const lostScreen = renderLevel(finish({ level: lost }), true).element;
+      expect(text(lostScreen, 'run-level-change')).toContain('runs.level.discLost');
+    });
+
+    it('une série sans changement de disque ni baisse : pas de ligne', () => {
+      const { element } = renderLevel(finish({ level }), true);
+      expect(element.querySelector('[data-testid="run-level-change"]')).toBeNull();
+    });
+
+    it('« 1 manche terminée » au singulier', () => {
+      const { element } = renderLevel(finish({ level, roundsPassed: 1 }), true);
+      expect(text(element, 'run-disc')).toBe('runs.finished.roundsOne');
+    });
+
     it('sans la nouvelle interface, ou sans niveau (partie abandonnée) : l\'écran d\'avant', () => {
       for (const { element } of [renderLevel(finish({ level }), false)]) {
         expect(element.querySelector('[data-testid="run-level"]')).toBeNull();
