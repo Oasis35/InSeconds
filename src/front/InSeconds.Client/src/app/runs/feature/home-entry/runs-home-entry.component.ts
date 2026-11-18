@@ -10,6 +10,7 @@ import { provideSocialApi } from '../../../social/data-access/social.providers';
 import { RunLevel, RunReceivedChallenge } from '../../domain/run';
 import { scoreOfDay } from '../../domain/run-history';
 import { RunHomeCardComponent } from '../../ui/run-home-card/run-home-card.component';
+import { RunInactivityAlertComponent } from '../../ui/run-inactivity-alert/run-inactivity-alert.component';
 
 interface HomeSummary {
   readonly record: number | null;
@@ -25,17 +26,20 @@ interface HomeSummary {
  * L'entrée de Setlist sur l'accueil du jeu du jour, chargée à la demande : la carte n'apparaît que pour un compte connecté qui a l'accès
  * (lu une fois par `SetlistAccessStore`, jamais pour un invité). Sans accès ou sur une erreur, rien n'est affiché. Discrète tant que le
  * défi du jour reste à jouer, mise en avant (contour orange, « Jouer » principal) ensuite. Son record, son niveau et sa setlist du jour sont lus ici ; s'ils manquent (réseau), la
- * carte s'affiche sans eux. Le défi d'un ami en attente (bandeau violet, refusable) et sa place dans ses groupes et au général viennent avec.
+ * carte s'affiche sans eux. Le défi d'un ami en attente (bandeau violet, refusable) et sa place dans ses groupes et au général viennent avec ; au-dessus,
+ * l'alerte d'inactivité quand le disque du joueur baisse dans la semaine.
  */
 @Component({
   selector: 'app-runs-home-entry',
-  imports: [RunHomeCardComponent],
+  imports: [RunHomeCardComponent, RunInactivityAlertComponent],
   providers: [provideRunsApi(), provideSocialApi()],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
     @if (access.hasAccess()) {
-      <div class="pt-3">
+      <div class="pt-3 flex flex-col gap-3">
+        <!-- L'inactivité menace son disque dans la semaine : l'alerte cyan au-dessus de la carte. -->
+        <app-run-inactivity-alert [level]="summary().level" />
         <app-run-home-card [active]="chrome.dailyDone() === true" [level]="summary().level" [record]="summary().record"
           [todayScore]="summary().todayScore" [lang]="lang()" [received]="summary().received" [groupPlace]="summary().groupPlace"
           [generalRank]="summary().generalRank" (dismissReceived)="dismiss($event)" (playClicked)="unlockSound()" />

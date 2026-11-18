@@ -1163,6 +1163,7 @@
       "record": "Record",
       "anytime": "à toi quand tu veux",
       "levelLabel": "Niveau",
+      "levelPoints": "{{ points }} pts",
       "rhythm": "à ton rythme",
       "playedToday": "Survie jouée",
       "play": "Jouer",
@@ -1238,7 +1239,8 @@
       "complete": "Série complète",
       "bonusLives": "Vies restantes ({{ count }}) : +{{ points }} pts",
       "bonusComplete": "Série complète : +{{ points }} pts",
-      "rounds": "{{ count }} manches terminées"
+      "rounds": "{{ count }} manches terminées",
+      "roundsOne": "{{ count }} manche terminée"
     },
     "pseudo": {
       "title": "Ton pseudo",
@@ -1288,7 +1290,6 @@
     "discShort": {
       "none": "Sans disque",
       "scratched": "Rayé",
-      "wax": "Cire",
       "bronze": "Bronze",
       "silver": "Argent",
       "gold": "Or",
@@ -1299,7 +1300,6 @@
     "discs": {
       "none": "Pas encore de disque",
       "scratched": "Disque rayé",
-      "wax": "Disque de cire",
       "bronze": "Disque de bronze",
       "silver": "Disque d’argent",
       "gold": "Disque d’or",
@@ -1374,8 +1374,17 @@
       },
       "dailyLeft": "Il te reste le défi du jour"
     },
+    "inactivity": {
+      "title": "Ton {{ disc }} baisse dans {{ days }} jours",
+      "titleTomorrow": "Ton {{ disc }} baisse demain",
+      "body": "Rejoue une Survie pour garder ton niveau."
+    },
     "level": {
       "title": "Ton niveau",
+      "discUp": "Tu passes au {{ disc }}",
+      "discDown": "Tu redescends au {{ disc }}",
+      "discLost": "Tu perds ton premier disque",
+      "badRun": "Une série ratée coûte au plus 10 %.",
       "next": "{{ disc }} dans {{ points }} pts",
       "top": "Le plus haut disque",
       "review": "Revoir",

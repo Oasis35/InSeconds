@@ -21,7 +21,7 @@ describe('RunDiscComponent', () => {
     expect(render('runs.discs.gold').style.filter).toContain('drop-shadow');
     expect(render('runs.discs.silver').style.filter).toBe('');
     expect(render('runs.discs.scratched').querySelector('path')).not.toBeNull();
-    expect(render('runs.discs.wax').querySelector('path')).toBeNull();
+    expect(render('runs.discs.bronze').querySelector('path')).toBeNull();
   });
 
   it('pas encore de disque : un cercle en pointillés, sans couleur de disque', () => {

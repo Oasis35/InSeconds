@@ -184,6 +184,9 @@ test.describe('Mode Setlist', () => {
     await expect(run.page.getByTestId('run-final-score')).toBeVisible();
     // Nouvelle interface (le joueur a l'accès) : son niveau, « Rejouer » et « Défier un ami ».
     await expect(run.page.getByTestId('run-level')).toBeVisible();
+    // Une première série modeste : pas encore de disque (le premier est à 300 pts), une seule manche au singulier.
+    await expect(run.page.getByTestId('run-level')).toHaveAttribute('data-disc', 'runs.discs.none');
+    await expect(run.disc).toHaveText('1 manche terminée');
     await expect(run.page.getByTestId('run-share')).toContainText('Défier un ami');
     await run.page.getByTestId('run-share').click();
     await expect(run.page.getByTestId('share-sheet')).toBeVisible();

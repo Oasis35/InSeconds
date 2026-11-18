@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRe
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-button.component';
-import { RunDuel, RunFinish, finishSquares, levelDeltaText } from '../../domain/run';
+import { RunDuel, RunFinish, finishSquares, hasDisc, levelDeltaText } from '../../domain/run';
 import { finishSequence } from '../../../ui/motion/motion';
 import { RunDiscComponent } from '../run-disc/run-disc.component';
 import { ButtonComponent } from '../../../ui/button/button.component';
@@ -96,6 +96,23 @@ import { SecondsPipe } from '../../../ui/format/seconds.pipe';
                 <span class="shrink-0 tabular-nums" data-testid="run-level-delta" [style.color]="(level.delta ?? 0) > 0 ? 'var(--color-accent-3)' : 'var(--text-muted)'">{{ delta }}</span>
               }
             </p>
+            <!-- Ce que la série a changé au disque : un disque de plus, un de moins, ou une mauvaise série amortie. -->
+            @if (level.discChange === 'up') {
+              <p class="text-sm" data-testid="run-level-change" data-change="up" style="color:var(--text-light)">
+                <b style="color:var(--color-accent-3)">{{ 'runs.level.discUp' | translate: { disc: lower(level.disc.key | translate) } }}</b>
+                · <span class="tabular-nums">{{ 'runs.home.levelPoints' | translate: { points: format(level.points) } }}</span>
+              </p>
+            } @else if (level.discChange === 'down') {
+              <p class="text-sm" data-testid="run-level-change" data-change="down" style="color:var(--text-light)">
+                {{ (hasDisc(level) ? 'runs.level.discDown' : 'runs.level.discLost') | translate: { disc: lower(level.disc.key | translate) } }}
+                · <span class="tabular-nums">{{ 'runs.home.levelPoints' | translate: { points: format(level.points) } }}</span>
+              </p>
+            } @else if ((level.delta ?? 0) < 0) {
+              <p class="text-sm" data-testid="run-level-change" data-change="bad" style="color:var(--text-light)">
+                {{ level.disc.key | translate }} · <b class="tabular-nums" style="color:var(--text-hi)">{{ 'runs.home.levelPoints' | translate: { points: format(level.points) } }}</b>.
+                {{ 'runs.level.badRun' | translate }}
+              </p>
+            }
             <p class="flex items-center gap-2 text-sm" style="color:var(--text-light)">
               <span data-testid="run-found">{{ 'runs.finished.found' | translate: { found: finish().foundCount, total: finish().trackCount } }}</span>
               @if (reviewLink(); as link) {
@@ -234,7 +251,10 @@ export class RunFinishComponent {
   protected readonly delta = computed(() => levelDeltaText(this.level()?.delta ?? null, value => this.format(value)));
   /** Une Série complète : les 8 manches jouées, avec ses bonus. */
   protected readonly completed = computed(() => this.finish().status === 'completed');
-  protected readonly roundsKey = computed(() => (this.completed() ? 'runs.finished.complete' : 'runs.finished.rounds'));
+  /** « 1 manche terminée », « 3 manches terminées », ou « Série complète ». */
+  protected readonly roundsKey = computed(() =>
+    this.completed() ? 'runs.finished.complete' : this.finish().roundsPassed === 1 ? 'runs.finished.roundsOne' : 'runs.finished.rounds');
+  protected readonly hasDisc = hasDisc;
   protected readonly squares = computed(() => finishSquares(this.finish()));
   private readonly numbers = computed(() => new Intl.NumberFormat(this.lang()));
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
