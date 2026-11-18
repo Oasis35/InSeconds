@@ -262,9 +262,8 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
         Assert.Matches(@"^\p{L}+ \p{L}+ [1-9]\d{1,2}$", first.Alias);
         // Choisir l'alias une seconde fois le garde.
         Assert.Equal(first, await ChooseAsync(bob, "alias"));
-        var seen = System.Text.Json.JsonSerializer.Serialize(await GeneralAsync(alice));
-        Assert.Contains(first.Alias!, seen, StringComparison.Ordinal);
-        Assert.DoesNotContain("\"Bob\"", seen, StringComparison.Ordinal);
+        // Les noms lus (le JSON brut échappe les accents d'un alias comme « Écureuil »).
+        Assert.Equal([first.Alias], (await GeneralAsync(alice)).Top.Select(e => e.Pseudo));
 
         var other = (await (await bob.Client.PostAsync("/api/social/ranking/identity/alias", null, Ct)).Content.ReadFromJsonAsync<RankingIdentityResponse>(Ct))!;
         Assert.NotEqual(first.Alias, other.Alias);
