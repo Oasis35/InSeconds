@@ -45,6 +45,7 @@ public sealed class RunsMemberPerformance(InSecondsDbContext db, RunsRules rules
         return result;
     }
 
+    // Seuls les comptes dotés d'une ligne runs.access y figurent : un admin a l'accès d'office, sans ligne, et reste hors du classement général (voulu).
     public async Task<IReadOnlyCollection<Guid>> ListGeneralRankingPlayersAsync(CancellationToken ct) =>
         await (from level in db.Set<RunLevel>().AsNoTracking()
                join access in db.Set<RunAccess>().AsNoTracking() on level.PlayerId equals access.PlayerId

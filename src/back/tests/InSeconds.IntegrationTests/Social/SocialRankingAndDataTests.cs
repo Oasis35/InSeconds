@@ -349,6 +349,25 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task General_UnAdmin_NYFigurePas_MemeAvecUnNiveau()
+    {
+        // Décision du 18/11 : les admins ont l'accès d'office (sans ligne runs.access) et restent hors du classement général.
+        var (boss, bob) = (await _game.NewPlayerAsync("Boss"), await _game.NewPlayerAsync("Bob"));
+        await _game.Api.ExecuteAsync($"UPDATE players.accounts SET is_admin = true WHERE player_id = '{boss.Id}'");
+        await AddRunAsync(boss.Id, status: 2, roundsPassed: 4, score: 3000);
+        await AddRunAsync(bob.Id, status: 2, roundsPassed: 4, score: 2500);
+        await GrantAccessAsync(bob.Id);
+
+        var seenByBob = await GeneralAsync(bob);
+        var seenByBoss = await GeneralAsync(boss);
+
+        Assert.Equal(["Bob"], seenByBob.Top.Select(e => e.Pseudo));
+        Assert.Equal(["Bob"], seenByBoss.Top.Select(e => e.Pseudo));
+        Assert.DoesNotContain(seenByBoss.Top, e => e.IsMe);
+        Assert.Equal(1, seenByBoss.Total);
+    }
+
+    [Fact]
     public async Task General_UnInvite_LitLeClassement_MaisNYFigureJamais()
     {
         var guest = await _game.NewPlayerAsync();
