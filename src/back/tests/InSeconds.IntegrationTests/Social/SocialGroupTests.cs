@@ -308,7 +308,7 @@ public class SocialGroupTests(PostgresFixture postgres) : IAsyncLifetime
     {
         var factory = _game.Api.Services.GetRequiredService<System.Diagnostics.Metrics.IMeterFactory>();
         using var groups = new Microsoft.Extensions.Diagnostics.Metrics.Testing.MetricCollector<long>(factory, SocialMetrics.MeterName, SocialMetrics.GroupsName);
-        using var visibility = new Microsoft.Extensions.Diagnostics.Metrics.Testing.MetricCollector<long>(factory, SocialMetrics.MeterName, SocialMetrics.RankingVisibilityName);
+        using var identity = new Microsoft.Extensions.Diagnostics.Metrics.Testing.MetricCollector<long>(factory, SocialMetrics.MeterName, SocialMetrics.RankingIdentityName);
         var alice = await _game.NewPlayerAsync("Alice");
         var bob = await _game.NewPlayerAsync("Bob");
         var group = await CreateAsync(alice, "Les copains");
@@ -316,13 +316,16 @@ public class SocialGroupTests(PostgresFixture postgres) : IAsyncLifetime
         (await bob.Client.PostAsync($"/api/social/invitations/{group.InviteCode}/join", null, Ct)).EnsureSuccessStatusCode();
         (await bob.Client.DeleteAsync($"/api/social/groups/{group.Id}/membership", Ct)).EnsureSuccessStatusCode();
         (await alice.Client.DeleteAsync($"/api/social/groups/{group.Id}/membership", Ct)).EnsureSuccessStatusCode();
-        (await alice.Client.PutAsJsonAsync("/api/social/ranking/visibility", new SetRankingVisibility(true), Ct)).EnsureSuccessStatusCode();
+        (await alice.Client.PutAsJsonAsync("/api/social/ranking/identity", new SetRankingIdentity("alias"), Ct)).EnsureSuccessStatusCode();
+        (await alice.Client.PostAsync("/api/social/ranking/identity/alias", null, Ct)).EnsureSuccessStatusCode();
+        (await alice.Client.PutAsJsonAsync("/api/social/ranking/identity", new SetRankingIdentity("pseudo"), Ct)).EnsureSuccessStatusCode();
 
         Assert.Equal(
             [SocialMetrics.Created, SocialMetrics.Joined, SocialMetrics.Left, SocialMetrics.Emptied],
             groups.GetMeasurementSnapshot().Select(m => m.Tags["event"] as string));
         Assert.All(groups.GetMeasurementSnapshot(), m => Assert.Equal(["event"], m.Tags.Keys));
-        Assert.Equal([true], visibility.GetMeasurementSnapshot().Select(m => m.Tags["visible"]));
+        Assert.Equal([SocialMetrics.ModeAlias, SocialMetrics.ModeOtherAlias, SocialMetrics.ModePseudo], identity.GetMeasurementSnapshot().Select(m => m.Tags["mode"] as string));
+        Assert.All(identity.GetMeasurementSnapshot(), m => Assert.Equal(["mode"], m.Tags.Keys));
     }
 
     internal static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>

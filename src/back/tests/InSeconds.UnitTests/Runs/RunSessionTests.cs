@@ -292,7 +292,7 @@ public class RunSessionTests
     }
 
     [Fact]
-    public void UneMancheAvecUneVieDePerdue_NeRendRienEtLEcouteRemonte()
+    public void UneMancheAvecUneVieDePerdue_NeRendRienEtLEcouteResteAuMemePalier()
     {
         var challenge = Challenge(rules: Today());
         var session = Start();
@@ -300,7 +300,7 @@ public class RunSessionTests
         Play(session, challenge, Repeat(Found, 3));
         var steps = Play(session, challenge, Found, Missed, Found);
 
-        Assert.Equal((1, 0), (steps[^1].FromStep, steps[^1].ToStep));
+        Assert.Equal((1, 1), (steps[^1].FromStep, steps[^1].ToStep));
         Assert.Equal(2, session.LivesLeft(challenge.Rules));
         Assert.False(session.RegainedLife(challenge.Rules, 2));
     }
@@ -397,10 +397,10 @@ public class RunSessionTests
 
         var rules = System.Text.Json.JsonSerializer.Deserialize<RunRules>(legacy, web)!;
 
-        Assert.Equal((false, 0, 0, 0, false), (rules.RegainLife, rules.MaxRounds, rules.LifeBonus, rules.CompleteBonus, rules.ShortenOnNoLifeLost));
+        Assert.Equal((false, 0, 0, 0, false, false), (rules.RegainLife, rules.MaxRounds, rules.LifeBonus, rules.CompleteBonus, rules.ShortenOnNoLifeLost, rules.HoldOnLifeLost));
         Assert.False(rules.HasCap);
 
         var today = System.Text.Json.JsonSerializer.Deserialize<RunRules>(System.Text.Json.JsonSerializer.Serialize(Today(), web), web)!;
-        Assert.Equal((true, 8, 250, 500, true), (today.RegainLife, today.MaxRounds, today.LifeBonus, today.CompleteBonus, today.ShortenOnNoLifeLost));
+        Assert.Equal((true, 8, 250, 500, true, true), (today.RegainLife, today.MaxRounds, today.LifeBonus, today.CompleteBonus, today.ShortenOnNoLifeLost, today.HoldOnLifeLost));
     }
 }

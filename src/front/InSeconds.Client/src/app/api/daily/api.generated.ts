@@ -1840,6 +1840,7 @@ export interface TodayStatsResponse {
     scoreDistribution: ScoreBucketResponse[];
     betterThanPercent: number | undefined;
     history?: TodayHistoryResponse | undefined;
+    abandonedScore?: number | undefined;
 
     [key: string]: any;
 }

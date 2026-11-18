@@ -1,7 +1,8 @@
+import { EnvironmentInjector, createEnvironmentInjector } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { AudioStatus } from '../domain/track-round';
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
-import { HtmlAudioPort, describeAudioError, describeStall, isSignatureExpired, probePreview } from './html-audio.port';
+import { HtmlAudioPort, resetSharedAudio, describeAudioError, describeStall, isSignatureExpired, probePreview, unlockSharedAudio } from './html-audio.port';
 import { makeToneUrl } from './testing/wav';
 
 /**
@@ -19,6 +20,7 @@ describe('HtmlAudioPort', () => {
   let report: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    resetSharedAudio();
     report = vi.fn();
     TestBed.configureTestingModule({
       providers: [HtmlAudioPort, { provide: ErrorReportingService, useValue: { report } }],
@@ -307,6 +309,85 @@ describe('HtmlAudioPort', () => {
     expect(preloads()).toEqual([]);
   });
 
+  describe('touches multimédia (#519)', () => {
+    /** Les gestionnaires posés sur la Media Session (`null` : rendu au navigateur), notés pendant tout le test. */
+    let handlers: Map<string, MediaSessionActionHandler | null>;
+
+    beforeEach(() => {
+      resetSharedAudio();
+      handlers = new Map();
+      vi.spyOn(navigator.mediaSession, 'setActionHandler').mockImplementation((action, handler) => {
+        handlers.set(action, handler);
+      });
+    });
+
+    afterEach(() => vi.restoreAllMocks());
+
+    const press = (action: 'play' | 'pause') => handlers.get(action)?.({ action });
+
+    /** Un lecteur dans son propre injecteur, qu'on peut détruire. */
+    function portIn(): { player: HtmlAudioPort; destroy: () => void } {
+      const injector = createEnvironmentInjector([HtmlAudioPort], TestBed.inject(EnvironmentInjector));
+      return { player: injector.get(HtmlAudioPort), destroy: () => injector.destroy() };
+    }
+
+    it('lecture / pause fait ce que la manche a branché, au lieu de relancer l’extrait arrêté à son palier', () => {
+      const pressed = vi.fn();
+      const release = port.onPlayPauseKey(pressed);
+
+      press('play');
+      press('pause');
+      expect(pressed).toHaveBeenCalledTimes(2);
+
+      // Retirée, la touche revient au navigateur.
+      release();
+      expect(handlers.get('play')).toBeNull();
+      expect(handlers.get('pause')).toBeNull();
+      expect(pressed).toHaveBeenCalledTimes(2);
+    });
+
+    it('aucune autre touche multimédia n’est prise : le navigateur n’affiche pas de bouton qui ne ferait rien', () => {
+      port.onPlayPauseKey(vi.fn());
+      expect([...handlers.keys()].sort()).toEqual(['pause', 'play']);
+    });
+
+    it('rien n’est pris avant qu’une manche ne branche la touche', () => {
+      unlockSharedAudio();
+      expect(handlers.size).toBe(0);
+    });
+
+    it('une manche qui se retire ne retire pas la touche qu’une autre a posée depuis', () => {
+      const first = vi.fn();
+      const second = vi.fn();
+      const releaseFirst = port.onPlayPauseKey(first);
+      port.onPlayPauseKey(second);
+
+      releaseFirst();
+      press('play');
+
+      expect(first).not.toHaveBeenCalled();
+      expect(second).toHaveBeenCalledTimes(1);
+    });
+
+    it('le lecteur détruit rend la touche au navigateur, sauf si un autre lecteur l’a reprise', () => {
+      const a = portIn();
+      const b = portIn();
+      const fromA = vi.fn();
+      const fromB = vi.fn();
+
+      a.player.onPlayPauseKey(fromA);
+      b.player.onPlayPauseKey(fromB);
+      a.destroy();
+      press('play');
+      expect(fromA).not.toHaveBeenCalled();
+      expect(fromB).toHaveBeenCalledTimes(1);
+
+      b.destroy();
+      expect(handlers.get('play')).toBeNull();
+      expect(handlers.get('pause')).toBeNull();
+    });
+  });
+
   describe('arrêt calé sur le son réel (pièges 44 et 46)', () => {
     it('un démarrage lent du son ne raccourcit pas le palier', async () => {
       await loaded();
@@ -520,6 +601,18 @@ describe('HtmlAudioPort', () => {
       expect(port.state()).toBe('idle');
       await sleep(100);
       expect(element.paused).toBe(true);
+    });
+
+    it("déverrouillé avant le lecteur (clic de l'accueil), l'élément est le même et le lecteur ne rejoue pas de silence", async () => {
+      unlockSharedAudio();
+      const second = TestBed.runInInjectionContext(() => new HtmlAudioPort());
+      const secondElement = (second as unknown as { audio: HTMLAudioElement }).audio;
+      const play = vi.spyOn(secondElement, 'play');
+
+      second.unlock();
+
+      expect(secondElement).toBe(element);
+      expect(play).not.toHaveBeenCalled();
     });
 
     it('le son joue ensuite normalement, même chargé aussitôt après', async () => {

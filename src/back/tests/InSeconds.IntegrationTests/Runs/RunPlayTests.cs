@@ -233,7 +233,7 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Metrique_NiveauApresUnePartie_DisqueChangementEtProvisoire_SansIdentifiant()
+    public async Task Metrique_NiveauApresUnePartie_DisqueEtChangement_SansIdentifiant()
     {
         var factory = _run.Api.Services.GetRequiredService<System.Diagnostics.Metrics.IMeterFactory>();
         using var levels = new Microsoft.Extensions.Diagnostics.Metrics.Testing.MetricCollector<long>(factory, RunsMetrics.MeterName, RunsMetrics.LevelsName);
@@ -243,11 +243,10 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         await alice.PlayAsync(start.SessionId, start.ChallengeCode, 1, false, false, false);
 
         var measure = Assert.Single(levels.GetMeasurementSnapshot());
-        Assert.Equal(["change", "disc", "provisional"], measure.Tags.Keys.Order());
-        Assert.StartsWith("runs.discs.", measure.Tags["disc"] as string);
-        // Une partie ratée à 0 point depuis un niveau neuf : il reste sur le premier disque, provisoire (moins de 3 parties).
+        Assert.Equal(["change", "disc"], measure.Tags.Keys.Order());
+        // Une partie ratée à 0 point depuis un niveau neuf : toujours pas de disque.
+        Assert.Equal(RunsMetrics.NoDisc, measure.Tags["disc"]);
         Assert.Equal(RunsMetrics.LevelSame, measure.Tags["change"]);
-        Assert.Equal(true, measure.Tags["provisional"]);
     }
 
     [Fact]
@@ -284,11 +283,11 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task UnAmi_SansAcces_ReleveLaPlaylist_UneSeuleFois_LesMemesMorceaux()
+    public async Task UnAmiAutorise_ReleveLaPlaylist_UneSeuleFois_LesMemesMorceaux()
     {
         var alice = await _run.NewInvitedAsync("Alice");
         var code = (await alice.LaunchAsync()).Session.ChallengeCode;
-        var friend = await _run.NewPlayerAsync();
+        var friend = await _run.NewInvitedAsync();
 
         var link = await friend.ChallengeAsync(code.ToLowerInvariant());
         Assert.Equal(new RunChallengeResponse(code, "Alice", 3, 5, 10m, "none", null, 45), link);
@@ -310,11 +309,23 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task LeLienDUnAmi_NOuvrePasLeMode_SansAcces_403_InviteOuCompteNonAutorise()
+    {
+        var alice = await _run.NewInvitedAsync("Alice");
+        var code = (await alice.LaunchAsync()).Session.ChallengeCode;
+
+        await GameAsserts.ProblemAsync(await (await _run.NewPlayerAsync()).JoinRawAsync(code), HttpStatusCode.Forbidden, RunsErrorCodes.AccessDenied);
+        await GameAsserts.ProblemAsync(await (await _run.NewPlayerAsync("Bob")).JoinRawAsync(code), HttpStatusCode.Forbidden, RunsErrorCodes.AccessDenied);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await _run.Api.CreateClient().PostAsync($"/api/runs/challenges/{code}/sessions", null, Ct)).StatusCode);
+        Assert.Equal(1L, await _run.Api.ScalarAsync<long>("SELECT count(*) FROM runs.sessions"));
+    }
+
+    [Fact]
     public async Task UnAmiQuiVaPlusLoin_TireLesManchesSuivantes_QueLAuteurRetrouveIdentiques()
     {
         var alice = await _run.NewInvitedAsync("Alice");
         var start = (await alice.LaunchAsync()).Session;
-        var friend = await _run.NewPlayerAsync();
+        var friend = await _run.NewInvitedAsync();
         var joined = (await friend.JoinAsync(start.ChallengeCode)).Session;
 
         await friend.PlayAsync(joined.SessionId, start.ChallengeCode, 1, AllFound);
@@ -340,7 +351,7 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
 
         await GameAsserts.ProblemAsync(await anonymous.GetAsync("/api/runs/challenges/ZZZZZZ", Ct), HttpStatusCode.NotFound, RunsErrorCodes.ChallengeNotFound);
         await GameAsserts.ProblemAsync(await anonymous.GetAsync("/api/runs/challenges/pas-un-code", Ct), HttpStatusCode.NotFound, RunsErrorCodes.ChallengeNotFound);
-        await GameAsserts.ProblemAsync(await (await _run.NewPlayerAsync()).JoinRawAsync("ZZZZZZ"), HttpStatusCode.NotFound, RunsErrorCodes.ChallengeNotFound);
+        await GameAsserts.ProblemAsync(await (await _run.NewInvitedAsync()).JoinRawAsync("ZZZZZZ"), HttpStatusCode.NotFound, RunsErrorCodes.ChallengeNotFound);
 
         await _run.Api.ExecuteAsync($"UPDATE runs.challenges SET created_by = NULL WHERE code = '{code}'");
         Assert.Null((await (await _run.NewPlayerAsync()).ChallengeAsync(code)).AuthorPseudo);
@@ -521,7 +532,7 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
     {
         var alice = await _run.NewInvitedAsync("Alice");
         var code = (await alice.LaunchAsync()).Session.ChallengeCode;
-        var friend = await _run.NewPlayerAsync();
+        var friend = await _run.NewInvitedAsync();
 
         var responses = await Task.WhenAll(friend.JoinRawAsync(code), friend.JoinRawAsync(code), friend.JoinRawAsync(code));
 
@@ -606,7 +617,7 @@ public class RunsMetricsTests(PostgresFixture postgres) : IAsyncLifetime
         await _run.RemovePreviewAsync(await _run.TrackAtAsync(start.ChallengeCode, 3));
         await alice.PlayAsync(start.SessionId, start.ChallengeCode, 1, false, false);
         await alice.AnswerAsync(start.SessionId, start.ChallengeCode, 4, artist: false, title: false);
-        var friend = await _run.NewPlayerAsync();
+        var friend = await _run.NewInvitedAsync();
         var joined = (await friend.JoinAsync(start.ChallengeCode)).Session;
         await friend.JoinAsync(start.ChallengeCode);
         (await friend.AbandonRawAsync(joined.SessionId)).EnsureSuccessStatusCode();

@@ -5,8 +5,9 @@ using InSeconds.Api.Modules.Runs.Application;
 namespace InSeconds.IntegrationTests.Runs;
 
 /// <summary>
-/// Le niveau du joueur par HTTP : la fin d'une partie gagnée ou perdue met à jour la moyenne glissante (table <c>runs.player_levels</c>), l'écran de fin
-/// dit le gain, l'accueil (<c>GET /api/runs/me</c>) le disque et la progression ; une partie abandonnée ne compte pas ; un réglage relu à chaud change l'échelle.
+/// Le niveau du joueur par HTTP : la fin d'une série met à jour le niveau (80 % de l'ancien, 20 % du score, table <c>runs.player_levels</c>), l'écran de
+/// fin dit le gain, l'accueil (<c>GET /api/runs/me</c>) le disque, la progression et l'inactivité ; une partie abandonnée ne compte pas ; un réglage relu
+/// à chaud change l'échelle.
 /// </summary>
 public class RunLevelApiTests(PostgresFixture postgres) : IAsyncLifetime
 {
@@ -44,7 +45,7 @@ public class RunLevelApiTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task LaFinDUnePartie_MetLeNiveauAJour_LEcranDeFinDitLeGain_ProvisoireAvantTroisParties()
+    public async Task LaFinDUneSerie_MetLeNiveauAJour_LEcranDeFinDitLeGain_SansDisqueSous300()
     {
         var alice = await _run.NewInvitedAsync("Alice");
 
@@ -53,39 +54,66 @@ public class RunLevelApiTests(PostgresFixture postgres) : IAsyncLifetime
         var finish = end.Session.Finish!;
         Assert.Equal(500, finish.TotalScore);
         var level = finish.Level!;
-        Assert.Equal((500, 1, true, 500), (level.Points, level.RunsPlayed, level.Provisional, level.Delta));
-        Assert.Equal(new RunDiscResponse("runs.discs.wax", 0), level.Disc);
-        Assert.Equal(new RunDiscResponse("runs.discs.bronze", 0), level.NextDisc);
-        Assert.Equal((200, 50), (level.PointsToNext, level.ProgressPercent));
-        Assert.Equal(1L, await _run.Api.ScalarAsync<long>("SELECT count(*) FROM runs.player_levels"));
-        Assert.Equal("{500}", await _run.Api.ScalarAsync<string>("SELECT recent_scores::text FROM runs.player_levels"));
+        // 20 % de 500 : 100 points, sous le disque rayé.
+        Assert.Equal((100, 1, 100, "same"), (level.Points, level.RunsPlayed, level.Delta, level.DiscChange));
+        Assert.Null(level.Disc);
+        Assert.Equal(new RunDiscResponse("runs.discs.scratched", 0), level.NextDisc);
+        Assert.Equal((200, 33), (level.PointsToNext, level.ProgressPercent));
+        Assert.Equal((0, null), (level.InactivityLoss, level.DiscDropInDays));
+        Assert.Equal(100, await _run.Api.ScalarAsync<int>("SELECT points FROM runs.player_levels"));
     }
 
     [Fact]
-    public async Task UnMauvaisRun_FaitBaisserLeNiveau_EtLAccueilLeMontreSansGain()
+    public async Task UnMauvaisRun_FaitBaisserLeNiveauDe10PourCentAuPlus_EtLAccueilLeMontreSansGain()
     {
         var alice = await _run.NewInvitedAsync("Alice");
         await PlayLostAfterOneRoundAsync(alice);
 
         var end = await PlayLostAtOnceAsync(alice);
 
-        Assert.Equal((250, -250), (end.Session.Finish!.Level!.Points, end.Session.Finish.Level.Delta));
+        Assert.Equal((90, -10), (end.Session.Finish!.Level!.Points, end.Session.Finish.Level.Delta));
         var me = (await alice.MeAsync()).Level!;
-        Assert.Equal((250, 2, null), (me.Points, me.RunsPlayed, me.Delta));
-        Assert.Equal("runs.discs.scratched", me.Disc.Key);
-        Assert.Equal((50, 83), (me.PointsToNext, me.ProgressPercent));
+        Assert.Equal((90, 2, null, null), (me.Points, me.RunsPlayed, me.Delta, me.DiscChange));
+        Assert.Null(me.Disc);
+        Assert.Equal((210, 30), (me.PointsToNext, me.ProgressPercent));
     }
 
     [Fact]
-    public async Task LeNiveau_NEstPlusProvisoire_ApresTroisParties()
+    public async Task UnDisqueGagne_EstAnnonce_PlafonneAuSeuilDuDisqueSuivant()
+    {
+        await _run.Game.SetSettingAsync(
+            "Runs:Levels:Discs", """[{"disc":"runs.discs.scratched","points":100},{"disc":"runs.discs.bronze","points":250},{"disc":"runs.discs.gold","points":400}]""");
+        var alice = await _run.NewInvitedAsync("Alice");
+        await PlayLostAfterOneRoundAsync(alice);
+        await _run.Api.ExecuteAsync($"UPDATE runs.player_levels SET points = 200 WHERE player_id = '{alice.Id}'");
+
+        var end = await PlayLostAfterOneRoundAsync(alice);
+
+        // 80 % de 200 + 20 % de 500 = 260, plafonné au seuil du bronze (250) : un disque de plus, pas deux.
+        var level = end.Session.Finish!.Level!;
+        Assert.Equal((250, "runs.discs.bronze", 50, "up"), (level.Points, level.Disc!.Key, level.Delta, level.DiscChange));
+        Assert.Null((await alice.MeAsync()).Level!.DiscChange);
+    }
+
+    [Fact]
+    public async Task LeDisqueGarde_EstMenaceParLInactivite_CalculeeALaLecture()
     {
         var alice = await _run.NewInvitedAsync("Alice");
-        foreach (var _ in Enumerable.Range(0, 3))
-            await PlayLostAfterOneRoundAsync(alice);
+        await PlayLostAfterOneRoundAsync(alice);
+        await _run.Api.ExecuteAsync($"UPDATE runs.player_levels SET points = 1000 WHERE player_id = '{alice.Id}'");
 
-        var level = (await alice.MeAsync()).Level!;
+        var end = await PlayLostAfterOneRoundAsync(alice);
 
-        Assert.Equal((500, 3, false), (level.Points, level.RunsPlayed, level.Provisional));
+        // 80 % de 1 000 + 20 % de 500 = 900 : le bronze.
+        var level = end.Session.Finish!.Level!;
+        Assert.Equal((900, "runs.discs.bronze", "same", 14), (level.Points, level.Disc!.Key, level.DiscChange, level.DiscDropInDays));
+
+        _run.Game.Time.Advance(TimeSpan.FromDays(15));
+        var me = (await alice.MeAsync()).Level!;
+        // La grâce de 14 jours est passée : -5 %, 855, le bronze est perdu ; le niveau stocké, lui, ne bouge pas.
+        Assert.Equal((855, 45), (me.Points, me.InactivityLoss));
+        Assert.Equal("runs.discs.scratched", me.Disc!.Key);
+        Assert.Equal(900, await _run.Api.ScalarAsync<int>($"SELECT points FROM runs.player_levels WHERE player_id = '{alice.Id}'"));
     }
 
     [Fact]
@@ -96,7 +124,7 @@ public class RunLevelApiTests(PostgresFixture postgres) : IAsyncLifetime
 
         var again = await alice.SessionAsync(end.Session.SessionId);
 
-        Assert.Equal(500, again.Finish!.Level!.Delta);
+        Assert.Equal(100, again.Finish!.Level!.Delta);
     }
 
     [Fact]
@@ -127,10 +155,10 @@ public class RunLevelApiTests(PostgresFixture postgres) : IAsyncLifetime
     {
         var alice = await _run.NewInvitedAsync("Alice");
         await PlayLostAfterOneRoundAsync(alice);
-        Assert.Equal("runs.discs.wax", (await alice.MeAsync()).Level!.Disc.Key);
+        Assert.Null((await alice.MeAsync()).Level!.Disc);
 
         await _run.Game.SetSettingAsync(
-            "Runs:Levels:Discs", """[{"disc":"runs.discs.scratched","points":0},{"disc":"runs.discs.gold","points":400}]""");
+            "Runs:Levels:Discs", """[{"disc":"runs.discs.scratched","points":50},{"disc":"runs.discs.gold","points":100}]""");
 
         var level = (await alice.MeAsync()).Level!;
         Assert.Equal(new RunDiscResponse("runs.discs.gold", 0), level.Disc);

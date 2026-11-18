@@ -10,6 +10,27 @@ public class RunsOptionsTests
     [Fact]
     public void LesReglagesParDefaut_SontCoherents() => Assert.Empty(RunsOptionsChecks.Problems(new RunsOptions()));
 
+    [Theory]
+    [InlineData(-1, 50, 30)]
+    [InlineData(91, 50, 30)]
+    [InlineData(40, 101, 30)]
+    [InlineData(40, -1, 30)]
+    [InlineData(40, 50, 0)]
+    public void LaDiversiteHorsBornes_EstRefusee(int pool, int themes, int games)
+    {
+        var options = new RunsOptions { Diversity = new RunDiversityOptions { PoolPercent = pool, ThemePercent = themes, MaxGames = games } };
+
+        Assert.Contains(RunsOptionsChecks.Problems(options), p => p.Contains("Runs:Diversity", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void LaDiversiteParDefaut_EstCelleDeLaProposition()
+    {
+        var diversity = new RunsOptions().Diversity;
+
+        Assert.Equal((40, 50), (diversity.PoolPercent, diversity.ThemePercent));
+    }
+
     [Fact]
     public void LesListesSansValeurInitiale_LeDefautEstDansEffective()
     {

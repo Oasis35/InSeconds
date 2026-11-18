@@ -23,7 +23,9 @@ namespace Internal.Generated.WolverineHandlers
         private readonly Wolverine.Http.WolverineHttpOptions _wolverineHttpOptions;
         private readonly InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle _seededShuffle;
         private readonly InSeconds.Api.Modules.Runs.Application.RunsMetrics _runsMetrics;
-        private readonly InSeconds.Api.Modules.Runs.Application.RunsRules _runsRules;
+        private readonly InSeconds.Api.Modules.Runs.Application.RunsRules _runsRules1;
+        private readonly InSeconds.Api.Modules.Runs.Application.RunsRules _runsRules2;
+        private readonly InSeconds.Api.Modules.Runs.Application.RunsRules _runsRules3;
         private readonly InSeconds.Api.Modules.Runs.Domain.IRunScoringPolicy _runScoringPolicy;
         private readonly InSeconds.Api.Modules.Runs.Domain.IRunTrackSelector _runTrackSelector;
         private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor;
@@ -35,12 +37,14 @@ namespace Internal.Generated.WolverineHandlers
         private readonly System.TimeProvider _timeProvider;
         private readonly Wolverine.Runtime.IWolverineRuntime _wolverineRuntime;
 
-        public POST_api_runs_sessions_id_preview(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle seededShuffle, InSeconds.Api.Modules.Runs.Application.RunsMetrics runsMetrics, InSeconds.Api.Modules.Runs.Application.RunsRules runsRules, InSeconds.Api.Modules.Runs.Domain.IRunScoringPolicy runScoringPolicy, InSeconds.Api.Modules.Runs.Domain.IRunTrackSelector runTrackSelector, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms> loggerOfLoggedTrackWaveforms, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Runs.Application.RunPlayer> loggerOfRunPlayer, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
+        public POST_api_runs_sessions_id_preview(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Modules.Gameplay.Contracts.ISeededShuffle seededShuffle, InSeconds.Api.Modules.Runs.Application.RunsMetrics runsMetrics, InSeconds.Api.Modules.Runs.Application.RunsRules __runsRules1, InSeconds.Api.Modules.Runs.Application.RunsRules __runsRules2, InSeconds.Api.Modules.Runs.Application.RunsRules __runsRules3, InSeconds.Api.Modules.Runs.Domain.IRunScoringPolicy runScoringPolicy, InSeconds.Api.Modules.Runs.Domain.IRunTrackSelector runTrackSelector, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms> loggerOfLoggedTrackWaveforms, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Runs.Application.RunPlayer> loggerOfRunPlayer, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
         {
             _wolverineHttpOptions = wolverineHttpOptions;
             _seededShuffle = seededShuffle;
             _runsMetrics = runsMetrics;
-            _runsRules = runsRules;
+            _runsRules1 = __runsRules1;
+            _runsRules2 = __runsRules2;
+            _runsRules3 = __runsRules3;
             _runScoringPolicy = runScoringPolicy;
             _runTrackSelector = runTrackSelector;
             _httpContextAccessor = httpContextAccessor;
@@ -65,13 +69,14 @@ namespace Internal.Generated.WolverineHandlers
             var efTrackWaveforms = new InSeconds.Api.Modules.Catalogue.Persistence.EfTrackWaveforms(inSecondsDbContext);
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var previewProvider = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Deezer.IPreviewProvider>(serviceScope.ServiceProvider);
+            var runDrawMemoryReader = new InSeconds.Api.Modules.Runs.Application.RunDrawMemoryReader(efRunsQueries, _runsRules1);
             var runGhosts = new InSeconds.Api.Modules.Runs.Application.RunGhosts(efRunsQueries, efPlayerDirectory);
             var loggedTrackWaveforms = new InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms(efTrackWaveforms, _loggerOfLoggedTrackWaveforms);
             var deezerTrackPreviews = new InSeconds.Api.Modules.Catalogue.Persistence.DeezerTrackPreviews(previewProvider);
             var efTrackDirectory = new InSeconds.Api.Modules.Catalogue.Persistence.EfTrackDirectory(inSecondsDbContext, _optionsMonitorOfCatalogueOptions);
             var efRunsStore = new InSeconds.Api.Modules.Runs.Persistence.EfRunsStore(inSecondsDbContext);
-            var runRoundDealer = new InSeconds.Api.Modules.Runs.Application.RunRoundDealer(efTrackDirectory, _seededShuffle, _runTrackSelector, efRunsStore);
-            var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, runRoundDealer, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, runGhosts, _runScoringPolicy, _runsRules, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
+            var runRoundDealer = new InSeconds.Api.Modules.Runs.Application.RunRoundDealer(efTrackDirectory, _seededShuffle, _runTrackSelector, efRunsStore, runDrawMemoryReader, _runsRules2);
+            var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, runRoundDealer, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, runGhosts, _runScoringPolicy, _runsRules3, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Runs.Application.RefreshRunPreviewEndpoint");
             

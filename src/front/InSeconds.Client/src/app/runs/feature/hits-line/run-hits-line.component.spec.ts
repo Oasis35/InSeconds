@@ -33,7 +33,7 @@ describe('RunHitsLineComponent', () => {
     const el = await render();
 
     const line = el.querySelector('[data-testid="run-hits-line"]');
-    expect(line?.getAttribute('href')).toBe('/setlist/hits');
+    expect(line?.getAttribute('href')).toBe('/survie/hits');
     expect(el.querySelector('[data-testid="run-hits-count"]')?.textContent?.trim()).toBe('2 / 3');
     expect(el.querySelector('[data-testid="run-hits-fresh"]')).toBeNull();
   });

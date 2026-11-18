@@ -71,15 +71,15 @@ export class SetlistBottomBarComponent {
 
   private readonly section = computed<'daily' | 'setlist' | 'ranking' | 'history' | 'account' | null>(() => {
     const path = this.url().split(/[?#]/)[0];
-    // L'historique a une page par mode (`/history/daily`, `/history/setlist`) et un seul onglet.
+    // L'historique a une page par mode (`/history/daily`, `/history/survie`) et un seul onglet.
     if (/^\/history(\/|$)/.test(path)) return 'history';
     // Le classement entre amis ; la création d'un groupe et le lien d'invitation sont des écrans pleins, sans barre.
     if (path === '/ranking') return 'ranking';
     // Mon compte : l'écran du profil existant ; la connexion et le reste du compte sont des écrans pleins, sans barre.
     if (path === '/account/profile') return 'account';
-    // L'accueil est la racine ; le défi (`/daily`) et la Setlist (`/setlist`) lui appartiennent.
+    // L'accueil est la racine ; le défi (`/daily`) et la Setlist (`/survie`) lui appartiennent.
     if (path === '/' || path === '/daily' || path.startsWith('/daily/')) return 'daily';
-    if (path === '/setlist' || path.startsWith('/setlist/')) return 'setlist';
+    if (path === '/survie' || path.startsWith('/survie/')) return 'setlist';
     return null;
   });
 

@@ -351,6 +351,14 @@ describe('ProfilePage', () => {
       expect(back.getAttribute('href')).toBe('/');
       expect(back.compareDocumentPosition(query(fixture, 'h1')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
+
+    it('sous la V4, la barre du bas ramène au jeu : pas de second retour', async () => {
+      const fixture = await render();
+      TestBed.inject(ShellChromeStore).setV4(true);
+      await settle(fixture);
+
+      expect(query(fixture, '[data-testid="back-to-game"]')).toBeNull();
+    });
   });
 
   describe('tes données', () => {

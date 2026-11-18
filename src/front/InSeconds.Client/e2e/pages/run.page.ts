@@ -5,7 +5,7 @@ import type { RunTrack } from '../fixtures/api-client';
 const BASE = process.env['CI'] ? 'http://localhost:5175' : 'http://localhost:5177';
 
 /**
- * Le mode Run (« Setlist », `/setlist`) : l'accueil du mode, la partie (la carte du morceau avec son chrono, sa réponse ou le morceau retiré,
+ * Le mode Run (« Survie », `/survie`) : l'accueil du mode, la partie (la carte du morceau avec son chrono, sa réponse ou le morceau retiré,
  * puis la pile des morceaux joués et des manches passées, le bilan de chaque manche) et la fin. L'écoute suit l'échelle de la Série (10 s à la manche 1) et la saisie est là dès que le son se charge :
  * on répond sans attendre la fin de l'extrait. Les animations coupées, la partie ne s'enchaîne pas seule : « Morceau suivant » à chaque fois.
  */
@@ -55,7 +55,7 @@ export class RunPage {
   constructor(readonly page: Page) {
     this.homeCard            = page.getByTestId('run-home-card');
     this.welcome             = page.getByTestId('run-welcome');
-    this.startButton         = page.getByRole('button', { name: 'Lancer une partie' });
+    this.startButton         = page.getByRole('button', { name: /Lancer une partie|Commencer/ });
     this.answerInput         = page.getByPlaceholder('Artiste - Titre');
     this.submitButton        = page.getByRole('button', { name: 'Valider', exact: true });
     this.confirmSubmitButton = page.getByRole('button', { name: 'Valider quand même' });
@@ -110,17 +110,17 @@ export class RunPage {
     return ((await me.json()) as { playerId: string }).playerId;
   }
 
-  /** Ouvre `/setlist` et attend l'accueil du mode (horloge simulée, comme au jeu du jour : la saisie a des minuteries). */
+  /** Ouvre `/survie` et attend l'accueil du mode (horloge simulée, comme au jeu du jour : la saisie a des minuteries). */
   async open(): Promise<void> {
     await this.page.clock.install({ time: Date.now() });
-    await this.page.goto('/setlist');
+    await this.page.goto('/survie');
     await this.welcome.waitFor({ state: 'visible' });
   }
 
-  /** Ouvre le lien d'une playlist (`/setlist/<code>`), horloge simulée comme `open`. */
+  /** Ouvre le lien d'une playlist (`/survie/<code>`), horloge simulée comme `open`. */
   async openLink(code: string): Promise<void> {
     await this.page.clock.install({ time: Date.now() });
-    await this.page.goto(`/setlist/${code}`);
+    await this.page.goto(`/survie/${code}`);
   }
 
   /** `open` puis « Lancer une partie » : le premier morceau part. */

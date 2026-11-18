@@ -40,6 +40,16 @@ export class FakeAudioPort extends AudioPort {
     this.calls.push('unlock');
   }
 
+  /** La touche lecture / pause branchée par la manche, que le test peut presser. */
+  playPauseKey: (() => void) | null = null;
+
+  onPlayPauseKey(handler: () => void): () => void {
+    this.playPauseKey = handler;
+    return () => {
+      if (this.playPauseKey === handler) this.playPauseKey = null;
+    };
+  }
+
   stop(): void {
     this.calls.push('stop');
     this._position.set(0);

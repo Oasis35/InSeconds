@@ -5,7 +5,7 @@ import { GamePage } from '../pages/game.page';
 import { RunPage } from '../pages/run.page';
 import { inSequence } from '../fixtures/sequence';
 
-// Le mode Run (« Setlist », la Série) : 3 vies, des manches sans fin (ici de 5 morceaux : les règles d'avant l'équilibrage, `useLegacyRunRules`), une écoute de 10 s qui raccourcit après une manche sans erreur
+// Le mode Run (« Survie », la Série) : 3 vies, des manches sans fin (ici de 5 morceaux : les règles d'avant l'équilibrage, `useLegacyRunRules`), une écoute de 10 s qui raccourcit après une manche sans erreur
 // et s'allonge après une erreur, 45 s pour répondre. Le tirage est paresseux : l'hôte de test donne les morceaux déjà tirés de la playlist.
 // L'écran : la carte du morceau (chrono dans son coin), puis le total du run et la pile des morceaux joués ; un bilan clôt chaque manche.
 
@@ -31,7 +31,7 @@ test.describe('Mode Setlist', () => {
     await api.useLegacyRunRules();
   });
 
-  test("sans accès, pas de carte sur l'accueil et /setlist renvoie au jeu du jour ; l'accès ouvert par l'admin la montre", async ({ page, api }) => {
+  test("sans accès, pas de carte sur l'accueil et /survie renvoie au jeu du jour ; l'accès ouvert par l'admin la montre", async ({ page, api }) => {
     const game = new GamePage(page);
     const run = new RunPage(page);
 
@@ -56,8 +56,8 @@ test.describe('Mode Setlist', () => {
     await page.unroute('**/api/runs/me');
     await expect(run.homeCard).toHaveCount(0);
 
-    // L'adresse du mode ne montre rien : retour au jeu du jour, sans laisser /setlist dans l'historique.
-    await page.goto('/setlist');
+    // L'adresse du mode ne montre rien : retour au jeu du jour, sans laisser /survie dans l'historique.
+    await page.goto('/survie');
     await expect(page).toHaveURL(/\/daily$/);
     await game.waitForWelcome();
 
@@ -66,13 +66,15 @@ test.describe('Mode Setlist', () => {
     await game.goto();
     await game.waitForWelcome();
     await expect(run.homeCard).toBeVisible();
-    await expect(run.homeCard).toContainText('Setlist');
+    await expect(run.homeCard).toContainText('Survie');
     // Le défi du jour n'est pas joué : la carte est discrète (« Jouer » en contour), sous la carte du défi.
     await expect(run.homeCard).toHaveAttribute('data-active', 'false');
     await expect(page.getByTestId('home-challenge')).toBeVisible();
+    // Un seul toucher : la partie démarre sans écran « Commencer » (le son est déverrouillé dans ce clic).
     await page.getByTestId('run-home-play').click();
-    await expect(page).toHaveURL(/\/setlist$/);
-    await expect(run.startButton).toBeVisible();
+    await expect(page).toHaveURL(/\/survie$/);
+    await expect(run.answerInput).toBeVisible();
+    await expect(run.startButton).toHaveCount(0);
   });
 
   test("nouvelle interface : la barre du bas remplace le pied de page pour un joueur qui a l'accès, et pour lui seul", async ({ page, api }) => {
@@ -101,23 +103,22 @@ test.describe('Mode Setlist', () => {
     await expect(page.getByTestId('header-instagram')).toBeVisible();
     await expect(page.getByTestId('tab-daily')).toHaveAttribute('aria-current', 'page');
     await expect(page.getByTestId('daily-pending')).toBeVisible();
-    // L'accueil de la maquette : la carte du défi, avec sa série dedans, puis la carte Setlist.
+    // L'accueil de la maquette : la carte du défi, avec sa série dedans, puis la carte Survie.
     await expect(page.getByTestId('home-challenge')).toBeVisible();
     await expect(page.getByTestId('run-home-card')).toHaveAttribute('data-active', 'false');
-    // Les liens légaux ont quitté la barre : une ligne discrète sous la carte Setlist, et quatre entrées en bas.
+    // Les liens légaux ont quitté la barre : une ligne discrète sous la carte Survie, et quatre entrées en bas.
     await expect(page.getByTestId('home-legal-line').getByRole('link', { name: 'Confidentialité' })).toBeVisible();
     await expect(bar.getByRole('link', { name: 'Confidentialité' })).toHaveCount(0);
     await expect(page.getByTestId('tab-setlist')).toHaveCount(0);
     await expect(page.getByTestId('tab-account')).toBeVisible();
     await expect(page.getByTestId('header-login')).toHaveCount(0);
 
-    // La carte Setlist mène au mode, qui rappelle le défi restant et y ramène ; l'accueil reste allumé dans la barre.
-    await page.getByTestId('run-home-play').click();
-    await expect(page).toHaveURL(/\/setlist$/);
+    // La carte Survie mène au mode, qui rappelle le défi restant et y ramène ; l'accueil reste allumé dans la barre.
+    await page.goto('/survie');
     await expect(run.startButton).toBeVisible();
     await expect(page.getByTestId('tab-daily')).toHaveAttribute('aria-current', 'page');
     await page.getByTestId('daily-left').click();
-    await expect(page).toHaveURL(/\/daily$/);
+    await expect(page).toHaveURL(/\/$/);
     await game.waitForWelcome();
 
     // L'historique : un onglet, une page par mode. Rien de joué : chacune le dit, et celle du jeu du jour garde le lien des jours passés,
@@ -130,7 +131,7 @@ test.describe('Mode Setlist', () => {
     await expect(page.getByTestId('history-empty')).toBeVisible();
     await expect(page.getByTestId('history-archive')).toBeVisible();
     await page.getByTestId('history-tab-setlist').click();
-    await expect(page).toHaveURL(/\/history\/setlist$/);
+    await expect(page).toHaveURL(/\/history\/survie$/);
     await expect(page.getByTestId('history-empty')).toBeVisible();
     await expect(bar).toBeVisible();
   });
@@ -183,6 +184,9 @@ test.describe('Mode Setlist', () => {
     await expect(run.page.getByTestId('run-final-score')).toBeVisible();
     // Nouvelle interface (le joueur a l'accès) : son niveau, « Rejouer » et « Défier un ami ».
     await expect(run.page.getByTestId('run-level')).toBeVisible();
+    // Une première série modeste : pas encore de disque (le premier est à 300 pts), une seule manche au singulier.
+    await expect(run.page.getByTestId('run-level')).toHaveAttribute('data-disc', 'runs.discs.none');
+    await expect(run.disc).toHaveText('1 manche terminée');
     await expect(run.page.getByTestId('run-share')).toContainText('Défier un ami');
     await run.page.getByTestId('run-share').click();
     await expect(run.page.getByTestId('share-sheet')).toBeVisible();
@@ -194,10 +198,10 @@ test.describe('Mode Setlist', () => {
 
     // « Revoir » : la partie dans l'historique.
     await run.page.getByTestId('run-level-review').click();
-    await expect(page).toHaveURL(/\/history\/setlist\/\d+$/);
+    await expect(page).toHaveURL(/\/history\/survie\/\d+$/);
 
     // Le record apparaît ensuite sur l'accueil du mode.
-    await page.goto('/setlist');
+    await page.goto('/survie');
     await expect(run.welcome.getByTestId('run-record')).toBeVisible();
   });
 
@@ -335,7 +339,7 @@ test.describe('Mode Setlist', () => {
     await run.answerRight(tracks[0]);
     await expect(run.pileTracks).toHaveCount(1);
 
-    await page.goto('/setlist');
+    await page.goto('/survie');
     await expect(page.getByRole('heading', { name: 'Partie en pause' })).toBeVisible();
     await run.resumeButton.click();
 
@@ -348,18 +352,14 @@ test.describe('Mode Setlist', () => {
     await expect(run.pileTracks).toHaveCount(2);
   });
 
-  test("lien d'un ami : lien reçu, partie sans accès jouée une seule fois, comparaison dans deux navigateurs", async ({ page, api, browser }) => {
-    // Deux parties perdues à jouer : le temps de deux navigateurs.
-    test.slow();
+  test("lien d'un ami : sans l'accès au mode (visiteur sans identité), un écran de blocage avec un seul bouton vers le défi du jour", async ({ page, api, browser }) => {
     const author = new RunPage(page);
     await author.loginAsAdmin();
     await author.launch();
     await author.loseAllLives();
-    // Sa propre playlist : pas de duel.
-    await expect(page.getByTestId('run-duel')).toHaveCount(0);
     const code = await api.latestRunCode();
 
-    // Un ami, dans son propre navigateur, sans identité ni accès : le lien reçu, ses règles, « Jouer ».
+    // Un ami, dans son propre navigateur, sans identité ni accès : le mode n'est pas ouvert à tous, le lien ne le remplace pas.
     const friendContext = await browser.newContext();
     const friendPage = await friendContext.newPage();
     await friendPage.addInitScript(() => {
@@ -368,77 +368,24 @@ test.describe('Mode Setlist', () => {
       localStorage.setItem('lang', 'fr');
     });
     const friend = new RunPage(friendPage);
-    await friend.openLink(code);
-    await expect(friend.linkTitle).toHaveText('AdminE2E te lance une playlist');
-    await expect(friend.linkRules).toContainText('Des manches de 5 morceaux, de moins en moins connus, sans fin');
-    await expect(friend.linkRules).toContainText('3 vies');
-    await expect(friend.linkRules).toContainText('45 s pour trouver l’artiste et le titre');
-    await expect(friend.answerInput).toHaveCount(0);
-
-    // « Jouer » crée l'invité, relève la playlist du créateur et lance le premier morceau.
-    await friend.linkPlayButton.click();
-    await friend.answerInput.waitFor({ state: 'visible' });
-    await expect(friend.roundTitle).toContainText('Manche 1');
-    // Le fantôme de l'auteur, qui a fini la playlist : son total au même morceau et l'écart, dès la première réponse.
-    await expect(friendPage.getByTestId('run-ghost')).toHaveCount(0);
-    await friend.loseAllLives(async () => {
-      await expect(friendPage.getByTestId('run-ghost')).toContainText('AdminE2E 0');
-      await expect(friendPage.getByTestId('run-ghost-gap')).toHaveText('À égalité');
-    });
-
-    // Le duel ouvre l'écran de fin (les deux à 0 : égalité), sur un ton neutre.
-    await expect(friendPage.getByTestId('run-duel')).toHaveText('Égalité avec AdminE2E');
-
-    // Sans accès, pas de « Rejouer » : le jeu du jour à la place.
-    await expect(friend.playAgainButton).toHaveCount(0);
-    await expect(friend.toDailyLink).toBeVisible();
-
-    // La comparaison : les deux joueurs, « Toi » sur sa propre ligne, le pseudo de l'auteur en surtitre.
-    await friend.compareButton.click();
-
-    // Un invité sans pseudo le donne avant de voir la comparaison : obligatoire (pas de « Passer »), jamais celui d'un compte (sans tenir compte de la casse).
-    await expect(friend.pseudoScreen).toBeVisible();
-    await expect(friend.pseudoCancel).toHaveCount(0);
-    await friend.pseudoInput.fill('admine2e');
-    await friend.pseudoSave.click();
-    await expect(friend.pseudoError).toContainText('déjà pris');
-    await friend.pseudoInput.fill('Léa');
-    await friend.pseudoSave.click();
-
-    await expect(friend.comparisonTitle).toHaveText('2 joueurs de cette playlist');
-    await expect(friend.comparisonEyebrow).toHaveText('Playlist de AdminE2E');
-    await expect(friend.comparisonRows).toHaveCount(2);
-    await expect(friend.comparison.getByTestId('run-comparison-name').filter({ hasText: 'Toi' })).toHaveCount(1);
-    await expect(friend.comparison.getByText('AdminE2E', { exact: true }).first()).toBeVisible();
-
-    // Une playlist se joue une seule fois : le même lien rouvert mène directement à la comparaison.
-    await friendPage.goto(`/setlist/${code}`);
-    await expect(friend.comparisonTitle).toHaveText('2 joueurs de cette playlist');
+    await friendPage.goto(`/survie/${code}`);
+    await expect(friend.statusScreen).toContainText("Survie n’est pas encore ouverte");
     await expect(friend.linkScreen).toHaveCount(0);
+    await expect(friendPage.getByTestId('run-retry')).toHaveCount(0);
+    await expect(friendPage.getByRole('link', { name: /Créer un compte/i })).toHaveCount(0);
 
-    // Le pseudo est retrouvé à la visite suivante (rien à ressaisir) ; le crayon le change, et l'auteur voit le nouveau.
-    await expect(friend.pseudoScreen).toHaveCount(0);
-    await friend.pseudoEdit.click();
-    await expect(friend.pseudoInput).toHaveValue('Léa');
-    await friend.pseudoInput.fill('Léo');
-    await friend.pseudoSave.click();
-    await expect(friend.comparisonTitle).toHaveText('2 joueurs de cette playlist');
+    // Un seul bouton : le défi du jour.
+    await friendPage.getByTestId('run-blocked-daily').click();
+    await expect(friendPage).toHaveURL(/\/daily$/);
 
-    // L'auteur voit l'invité de l'ami dans le même tableau.
-    await page.goto(`/setlist/${code}`);
-    await expect(author.comparisonRows).toHaveCount(2);
-    await expect(author.comparison.getByText('Léo', { exact: true })).toBeVisible();
-    // Le compte garde son pseudo de compte : son crayon existe aussi, il mène à son profil.
-    await expect(author.comparison.getByTestId('run-comparison-edit-pseudo')).toBeVisible();
-
-    // Un lien inconnu le dit, sans proposer de réessayer.
-    await friendPage.goto('/setlist/ZZZZZZ');
-    await expect(friend.statusScreen).toContainText('Playlist introuvable');
+    // Un lien inconnu : même écran de blocage (l'accès se vérifie avant de lire la playlist).
+    await friendPage.goto('/survie/ZZZZZZ');
+    await expect(friend.statusScreen).toContainText("Survie n’est pas encore ouverte");
     await friendContext.close();
   });
 
-  test("les anciennes adresses /runs et /runs/<code> mènent à /setlist en gardant la query string", async ({ page }) => {
+  test("les anciennes adresses /runs et /runs/<code> mènent à /survie en gardant la query string", async ({ page }) => {
     await page.goto('/runs/ZZZZZZ?utm_source=share');
-    await expect(page).toHaveURL(/\/setlist\/ZZZZZZ\?utm_source=share$/);
+    await expect(page).toHaveURL(/\/survie\/ZZZZZZ\?utm_source=share$/);
   });
 });

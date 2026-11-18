@@ -166,6 +166,22 @@ describe('TrackRoundStore', () => {
       store.replay();
       expect(audio.calls).toEqual([]);
     });
+
+    it('la touche lecture / pause du clavier fait comme ↺, jamais une fois la réponse envoyée (#519)', () => {
+      listenedTo(1);
+      audio.playPauseKey!();
+      expect(audio.calls.at(-1)).toBe('replay 1');
+
+      audio.calls.length = 0;
+      store.submit({ artist: 'Daft Punk', title: 'Get Lucky' });
+      audio.playPauseKey!();
+      expect(audio.calls).toEqual([]);
+    });
+
+    it('la touche est retirée quand la manche disparaît', () => {
+      TestBed.resetTestingModule();
+      expect(audio.playPauseKey).toBeNull();
+    });
   });
 
   describe('erreur de lecture', () => {

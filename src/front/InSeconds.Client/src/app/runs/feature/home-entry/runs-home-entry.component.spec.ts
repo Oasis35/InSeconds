@@ -12,7 +12,7 @@ import { RunsHomeEntryComponent } from './runs-home-entry.component';
 
 const LEVEL: RunLevel = {
   points: 1380, disc: { key: 'runs.discs.silver', stars: 3 }, nextDisc: { key: 'runs.discs.gold', stars: 4 },
-  pointsToNext: 220, progressPercent: 44, provisional: false, runsPlayed: 12, delta: null,
+  pointsToNext: 220, progressPercent: 44, runsPlayed: 12, delta: null, discChange: null, inactivityLoss: 0, discDropInDays: null,
 };
 
 describe('RunsHomeEntryComponent', () => {
@@ -127,7 +127,7 @@ describe('RunsHomeEntryComponent', () => {
       expect(banner?.textContent).toContain('runs.home.receivedFrom');
       expect(banner?.textContent).toContain('runs.home.receivedScore');
       expect(banner?.textContent).toContain('runs.home.receivedExpires');
-      expect(element.querySelector('[data-testid="run-home-received-link"]')?.getAttribute('href')).toBe('/setlist/ABC234');
+      expect(element.querySelector('[data-testid="run-home-received-link"]')?.getAttribute('href')).toBe('/survie/ABC234');
     });
 
     it("sans score (l'ami n'a pas fini) ni pseudo (invité) : ni « à battre », un nom générique", async () => {
@@ -163,10 +163,10 @@ describe('RunsHomeEntryComponent', () => {
       expect(element.querySelectorAll('[data-testid="run-home-place"]')).toHaveLength(1);
     });
 
-    it("sans groupe ni apparition au général : pas de ligne ; une erreur Social ne casse pas la carte", async () => {
+    it("sans groupe ni place au général : pas de ligne ; une erreur Social ne casse pas la carte", async () => {
       api.meResult = ME({ level: LEVEL });
       social.groups = { groups: [], maxGroups: 5 };
-      social.general = { ...social.general, visible: false };
+      social.general = { ...social.general, around: [] };
       expect((await render(player(false), async () => true)).querySelector('[data-testid="run-home-place"]')).toBeNull();
     });
 

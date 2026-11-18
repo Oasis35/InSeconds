@@ -12,7 +12,7 @@ import { hitPercent } from '../../domain/run-hits';
 import { RunStatusScreenComponent } from '../../ui/run-status-screen/run-status-screen.component';
 
 /**
- * Les Hits du joueur (`/setlist/hits`) : ce qu'il a obtenu en jouant, à sa couleur, et ce qui reste à obtenir, avec une barre pour ceux qui se
+ * Les Hits du joueur (`/survie/hits`) : ce qu'il a obtenu en jouant, à sa couleur, et ce qui reste à obtenir, avec une barre pour ceux qui se
  * comptent. Un Hit obtenu depuis la dernière visite arrive avec un petit temps fort. Ce sont ses propres parties : pas d'accès à vérifier.
  */
 @Component({

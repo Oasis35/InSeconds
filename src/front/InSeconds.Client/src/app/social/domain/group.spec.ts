@@ -71,15 +71,14 @@ describe('generalRankOf', () => {
   const me = { rank: 14, pseudo: 'Moi', isMe: true, points: 1200, badge: null };
   const other = { rank: 1, pseudo: 'Autre', isMe: false, points: 3000, badge: null };
   const ranking = (overrides: Partial<GeneralRanking>): GeneralRanking =>
-    ({ top: [other], around: [me], total: 50, visible: true, canAppear: true, topPercent: 30, ...overrides });
+    ({ top: [other], around: [me], total: 50, hasAccount: true, identity: { mode: 'pseudo', name: 'Moi', alias: null }, ...overrides });
 
   it('lit sa place quand il apparaît, dans la tête ou autour de lui', () => {
     expect(generalRankOf(ranking({}))).toBe(14);
     expect(generalRankOf(ranking({ top: [{ ...me, rank: 2 }], around: [] }))).toBe(2);
   });
 
-  it('rien tant qu\'il n\'a pas choisi d\'apparaître, ni sans partie finie', () => {
-    expect(generalRankOf(ranking({ visible: false }))).toBeNull();
+  it('rien tant qu\'il n\'y est pas classé (pas d\'accès, ou aucune partie finie)', () => {
     expect(generalRankOf(ranking({ around: [] }))).toBeNull();
   });
 });

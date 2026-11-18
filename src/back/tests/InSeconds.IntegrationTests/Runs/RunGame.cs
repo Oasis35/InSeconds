@@ -22,6 +22,7 @@ internal sealed class RunGame : IAsyncDisposable
         ["Runs:TracksPerRound"] = "5",
         ["Runs:RegainLife"] = "false",
         ["Runs:ShortenOnNoLifeLost"] = "false",
+        ["Runs:HoldOnLifeLost"] = "false",
         ["Runs:MaxRounds"] = "0",
         ["Runs:LifeBonus"] = "0",
         ["Runs:CompleteBonus"] = "0",
@@ -33,6 +34,7 @@ internal sealed class RunGame : IAsyncDisposable
         ["Runs:TracksPerRound"] = "3",
         ["Runs:RegainLife"] = "true",
         ["Runs:ShortenOnNoLifeLost"] = "true",
+        ["Runs:HoldOnLifeLost"] = "true",
         ["Runs:MaxRounds"] = "8",
         ["Runs:LifeBonus"] = "250",
         ["Runs:CompleteBonus"] = "500",
@@ -58,8 +60,8 @@ internal sealed class RunGame : IAsyncDisposable
         return game;
     }
 
-    /// <summary>Un compte que l'admin a autorisé à lancer des runs.</summary>
-    public async Task<RunGamer> NewInvitedAsync(string pseudo)
+    /// <summary>Un joueur que l'admin a autorisé (accès au mode : lancer, comme relever le lien d'un ami).</summary>
+    public async Task<RunGamer> NewInvitedAsync(string? pseudo = null)
     {
         var gamer = await Game.NewPlayerAsync(pseudo);
         await Api.ExecuteAsync($"INSERT INTO runs.access (player_id, granted_at) VALUES ('{gamer.Id}', now())");

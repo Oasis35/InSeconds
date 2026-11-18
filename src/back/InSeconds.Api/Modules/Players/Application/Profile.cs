@@ -38,12 +38,14 @@ public static class UpdatePseudoEndpoint
     public static Task<Account?> LoadAsync(ICurrentPlayer current, IPlayerStore store, CancellationToken ct) =>
         CurrentAccount.LoadAsync(current, store, ct);
 
-    public static async Task<ProblemDetails> ValidateAsync(UpdatePseudo request, Account? account, IPlayerStore store, CancellationToken ct)
+    public static async Task<ProblemDetails> ValidateAsync(
+        UpdatePseudo request, Account? account, IPlayerStore store, IReservedPseudos reserved, CancellationToken ct)
     {
         if (account is null)
             return PlayersProblems.GuestForbidden();
-        // Le sien, même avec une autre casse, n'est pas « pris ».
+        // Le sien, même avec une autre casse, n'est pas « pris » ; l'alias d'un autre joueur au classement général, si.
         return await store.IsPseudoTakenByAnotherAsync(request.Pseudo, account.PlayerId, ct)
+            || await reserved.IsReservedAsync(request.Pseudo, account.PlayerId, ct)
             ? PlayersProblems.PseudoTaken()
             : WolverineContinue.NoProblems;
     }

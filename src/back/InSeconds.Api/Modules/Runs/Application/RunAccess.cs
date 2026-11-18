@@ -8,7 +8,7 @@ namespace InSeconds.Api.Modules.Runs.Application;
 
 /// <summary>
 /// Qui peut lancer un run : un admin d'office (le rôle est relu en base par la validation du cookie), ou un compte que l'admin a autorisé
-/// (<c>runs.access</c>). Relever un défi existant ne demande pas d'accès : il suffit d'avoir le lien. Players n'est pas modifié : l'accès est une
+/// (<c>runs.access</c>). Relever un défi existant demande le même accès : le lien d'un ami ne le remplace pas. Players n'est pas modifié : l'accès est une
 /// affaire du mode.
 /// </summary>
 public interface IRunAccess
@@ -43,6 +43,13 @@ public interface IRunsQueries
     Task<RunSessionEntry?> FindSessionAsync(int challengeId, Guid playerId, CancellationToken ct);
 
     Task<RunRecord?> FindRecordAsync(Guid playerId, CancellationToken ct);
+
+    /// <summary>
+    /// Ce que ce joueur a entendu dans ses <paramref name="maxGames"/> parties les plus récentes (toutes, abandonnées comprises), hors la playlist
+    /// <paramref name="exceptChallengeId"/> : ses morceaux répondus (un morceau retiré sans extrait n'a pas été entendu) et les thèmes de ses manches,
+    /// du plus récent au plus ancien. La mémoire de la diversité du tirage (<see cref="RunDiversity"/>) : lue dans ses parties, rien n'est stocké à part.
+    /// </summary>
+    Task<RunHeardHistory> GetHeardHistoryAsync(Guid playerId, int? exceptChallengeId, int maxGames, CancellationToken ct);
 
     /// <summary>Le niveau de ce joueur ; vide avant sa première partie finie.</summary>
     Task<RunLevel?> FindLevelAsync(Guid playerId, CancellationToken ct);
@@ -111,7 +118,7 @@ public static class RevokeRunAccessEndpoint
 
     /// <summary>
     /// <c>DELETE /api/admin/runs/access/{playerId}</c> : retire l'autorisation. Idempotent. Une partie en cours n'est pas touchée : l'accès ne
-    /// se vérifie qu'au lancement d'un run.
+    /// se vérifie au lancement d'un run et au départ sur une playlist.
     /// </summary>
     [WolverineDelete("/api/admin/runs/access/{playerId}", OperationId = "revokeRunAccess")]
     [EmptyResponse]

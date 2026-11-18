@@ -4,11 +4,11 @@ import { ShareService } from '../../core/share/share.service';
 import { environment } from '../../../environments/environment';
 import { RUN_SHARE_EMOJI, RunDuel, RunFinish, shareRounds } from '../domain/run';
 
-/** L'adresse d'une playlist (`/setlist/<code>`), celle que les amis ouvrent, marquée `utm_source=share` comme le partage du score. */
-export const playlistUrl = (code: string): string => `${environment.appUrl}/setlist/${code}?utm_source=share`;
+/** L'adresse d'une playlist (`/survie/<code>`), celle que les amis ouvrent, marquée `utm_source=share` comme le partage du score. */
+export const playlistUrl = (code: string): string => `${environment.appUrl}/survie/${code}?utm_source=share`;
 
 /** L'adresse d'une playlist qui fait aussi rejoindre un groupe : le code d'invitation du groupe suit dans `group`. */
-export const playlistGroupUrl = (code: string, inviteCode: string): string => `${environment.appUrl}/setlist/${code}?group=${inviteCode}&utm_source=share`;
+export const playlistGroupUrl = (code: string, inviteCode: string): string => `${environment.appUrl}/survie/${code}?group=${inviteCode}&utm_source=share`;
 
 /**
  * Le partage d'un run, par le menu de partage du téléphone ou sinon dans le presse-papier, et l'état du bouton (copié, échec) pour quelques secondes,

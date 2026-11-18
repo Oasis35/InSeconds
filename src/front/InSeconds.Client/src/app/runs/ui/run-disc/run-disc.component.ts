@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { NO_DISC } from '../../domain/run';
 
 /** La couleur de chaque disque (`runs.discs.*`) ; un disque inconnu (échelle future) prend celle de l'or. */
 const DISC_COLORS: Readonly<Record<string, string>> = {
   'runs.discs.scratched': 'var(--disc-scratched)',
-  'runs.discs.wax': 'var(--disc-wax)',
   'runs.discs.bronze': 'var(--disc-bronze)',
   'runs.discs.silver': 'var(--disc-silver)',
   'runs.discs.gold': 'var(--disc-gold)',
@@ -16,8 +16,8 @@ const DISC_COLORS: Readonly<Record<string, string>> = {
 export const discColor = (key: string): string => DISC_COLORS[key] ?? DISC_COLORS['runs.discs.gold'];
 
 /**
- * Le disque dessiné (rayé, cire, bronze, argent, or, platine, double platine, diamant) : sillons, étiquette, trou central ; le disque d'or brille, le
- * double platine a un second contour. Purement décoratif.
+ * Le disque dessiné (rayé, bronze, argent, or, platine, double platine, diamant) : sillons, étiquette, trou central ; le disque d'or brille, le
+ * double platine a un second contour ; avant le premier disque (`runs.discs.none`), un cercle en pointillés. Purement décoratif.
  */
 @Component({
   selector: 'app-run-disc',
@@ -25,6 +25,10 @@ export const discColor = (key: string): string => DISC_COLORS[key] ?? DISC_COLOR
   template: `
     <svg [attr.width]="size()" [attr.height]="size()" viewBox="0 0 100 100" aria-hidden="true" [attr.data-disc]="disc()"
       [style.filter]="gold() && shine() ? 'drop-shadow(0 0 10px rgb(var(--rgb-warning) / 0.55))' : null">
+      @if (none()) {
+        <circle cx="50" cy="50" r="46" fill="none" stroke="var(--border-neutral)" stroke-width="3" stroke-dasharray="7 7" data-testid="disc-none" />
+        <circle cx="50" cy="50" r="6" fill="none" stroke="var(--border-neutral)" stroke-width="2" />
+      } @else {
       <circle cx="50" cy="50" r="47" [attr.fill]="color()" stroke="rgb(255 255 255 / 0.35)" stroke-width="3" />
       <circle cx="50" cy="50" r="38" fill="none" stroke="rgb(0 0 0 / 0.14)" stroke-width="1.5" />
       <circle cx="50" cy="50" r="30" fill="none" stroke="rgb(0 0 0 / 0.14)" stroke-width="1.5" />
@@ -36,6 +40,7 @@ export const discColor = (key: string): string => DISC_COLORS[key] ?? DISC_COLOR
       }
       @if (scratched()) {
         <path d="M22 30 L44 56 M60 18 L78 46 M30 72 L52 84" stroke="rgb(0 0 0 / 0.4)" stroke-width="1.6" stroke-linecap="round" />
+      }
       }
     </svg>
   `,
@@ -51,4 +56,6 @@ export class RunDiscComponent {
   protected readonly gold = computed(() => this.disc() === 'runs.discs.gold');
   protected readonly double = computed(() => this.disc() === 'runs.discs.double_platinum');
   protected readonly scratched = computed(() => this.disc() === 'runs.discs.scratched');
+  /** Pas encore de disque : un cercle en pointillés. */
+  protected readonly none = computed(() => this.disc() === NO_DISC);
 }

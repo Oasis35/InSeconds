@@ -39,7 +39,10 @@ public sealed class RunsOptions
     /// <summary>Les vies au départ : une erreur, un morceau passé ou un chrono écoulé en coûte une.</summary>
     public int Lives { get; set; } = DefaultLives;
 
-    /// <summary>Le niveau du joueur (<c>Runs:Levels:…</c>) : fenêtre de la moyenne, parties provisoires, disques et seuils.</summary>
+    /// <summary>La diversité du tirage d'une partie à l'autre (<c>Runs:Diversity:…</c>) : relue à chaud, jamais figée dans une playlist.</summary>
+    public RunDiversityOptions Diversity { get; set; } = new();
+
+    /// <summary>Le niveau du joueur (<c>Runs:Levels:…</c>) : formule, baisse maximale, inactivité, disques et seuils.</summary>
     public RunLevelOptions Levels { get; set; } = new();
 
     public int TracksPerRound { get; set; } = DefaultTracksPerRound;
@@ -62,6 +65,9 @@ public sealed class RunsOptions
     /// <summary>L'écoute raccourcit dès qu'une manche se termine sans vie perdue (une moitié juste ne gêne plus).</summary>
     public bool ShortenOnNoLifeLost { get; set; } = true;
 
+    /// <summary>Une manche avec une vie perdue laisse l'écoute au même palier (elle ne rallonge plus).</summary>
+    public bool HoldOnLifeLost { get; set; } = true;
+
     /// <summary>Le plafond de manches : la partie s'arrête en « Série complète » ; 0 : pas de plafond.</summary>
     public int MaxRounds { get; set; } = DefaultMaxRounds;
 
@@ -79,48 +85,80 @@ public sealed class RunsOptions
     public RunRules ToRules() =>
         new(
             Lives, TracksPerRound, [.. EffectiveListenLadder], [.. EffectiveStepPoints], AnswerSeconds, Themes: null, RankBands,
-            RegainLife, MaxRounds, LifeBonus, CompleteBonus, ShortenOnNoLifeLost);
+            RegainLife, MaxRounds, LifeBonus, CompleteBonus, ShortenOnNoLifeLost, HoldOnLifeLost);
 
     public static RunRules DefaultRules() => new RunsOptions().ToRules();
 }
 
 /// <summary>
-/// Le niveau du joueur (<c>Runs:Levels:…</c>, relu à chaud) : ses points de niveau sont la moyenne de ses <see cref="Window"/> dernières parties finies
-/// (<see cref="RunLevelPolicy"/>). **Pas de valeur initiale sur la liste** : le défaut est dans <see cref="EffectiveDiscs"/>.
+/// La diversité du tirage (<c>Runs:Diversity:…</c>, relue à chaud) : un joueur ne retombe pas trop vite sur les mêmes morceaux ni les mêmes thèmes
+/// d'une partie à l'autre (<see cref="RunDiversity"/>). Des quantités, pas une durée : la mémoire s'adapte à la taille du catalogue.
+/// </summary>
+public sealed class RunDiversityOptions
+{
+    public const int DefaultPoolPercent = 40;
+    public const int DefaultThemePercent = 50;
+    public const int DefaultMaxGames = 30;
+    public const int MaxMaxGames = 200;
+
+    /// <summary>Les morceaux entendus récemment qu'on évite, en part du pool jouable (0 : pas de diversité des morceaux, 90 au plus).</summary>
+    public int PoolPercent { get; set; } = DefaultPoolPercent;
+
+    /// <summary>La part des thèmes éligibles qu'on peut écarter, ceux joués le plus récemment (0 : aucun thème évité) ; il en reste toujours au moins 3.</summary>
+    public int ThemePercent { get; set; } = DefaultThemePercent;
+
+    /// <summary>Le nombre de parties les plus récentes lues pour construire la mémoire (une limite de lecture, pas une règle de jeu).</summary>
+    public int MaxGames { get; set; } = DefaultMaxGames;
+}
+
+/// <summary>
+/// Le niveau du joueur (<c>Runs:Levels:…</c>, relu à chaud, jamais figé dans une playlist) : après chaque série finie, 80 % de l'ancien niveau et
+/// 20 % du score, une baisse de 10 % au plus, un disque de plus au plus ; l'inactivité se déduit à la lecture (<see cref="RunLevelPolicy"/>). Les
+/// disques sont des points : changer un seuil ne demande aucune migration. **Pas de valeur initiale sur la liste** : le défaut est dans
+/// <see cref="EffectiveDiscs"/>.
 /// </summary>
 public sealed class RunLevelOptions
 {
-    public const int DefaultWindow = 10;
-    public const int DefaultProvisionalRuns = 3;
+    /// <summary>La part de l'ancien niveau dans le nouveau, en % (de 50 à 95).</summary>
+    public int OldWeightPercent { get; set; } = 80;
 
-    /// <summary>Le nombre de parties finies (les plus récentes) dont la moyenne donne les points de niveau.</summary>
-    public int Window { get; set; } = DefaultWindow;
+    /// <summary>Une série ne fait pas perdre plus de cette part du niveau, en % (de 0 à 50).</summary>
+    public int MaxDropPercent { get; set; } = 10;
 
-    /// <summary>Le niveau reste « provisoire » tant que le joueur a fini moins de parties.</summary>
-    public int ProvisionalRuns { get; set; } = DefaultProvisionalRuns;
+    /// <summary>Les jours sans série finie avant que le niveau ne baisse (de 1 à 365).</summary>
+    public int InactivityGraceDays { get; set; } = 14;
+
+    /// <summary>Ce que le niveau perd par semaine d'inactivité après la grâce, en % (de 0 à 50).</summary>
+    public int InactivityWeeklyDropPercent { get; set; } = 5;
+
+    /// <summary>L'inactivité ne descend jamais sous cette part du niveau, en % (de 0 à 100).</summary>
+    public int InactivityFloorPercent { get; set; } = 50;
 
     /// <summary>
-    /// Les disques de niveau, du plus bas au plus haut : liste d'objets <c>{ "disc": "runs.discs.gold", "points": 1600 }</c> (clé de traduction et points
-    /// de niveau à partir desquels on l'a ; le premier à 0). Sans valeur : Rayé, Cire, Bronze, Argent, Or, Platine, Double platine, Diamant.
+    /// Les disques de niveau, du plus bas au plus haut : liste d'objets <c>{ "disc": "runs.discs.gold", "points": 3600 }</c> (clé de traduction et points
+    /// de niveau à partir desquels on l'a ; aucun disque sous le premier seuil). Sans valeur : Rayé, Bronze, Argent, Or, Platine, Double platine, Diamant.
     /// </summary>
     public RunLevelDiscSetting[]? Discs { get; set; }
 
     /// <summary>Une liste neuve à chaque lecture (ses éléments ont des accesseurs).</summary>
     public static RunLevelDiscSetting[] DefaultDiscs =>
     [
-        new() { Disc = "runs.discs.scratched", Points = 0 },
-        new() { Disc = "runs.discs.wax", Points = 300 },
-        new() { Disc = "runs.discs.bronze", Points = 700 },
-        new() { Disc = "runs.discs.silver", Points = 1100 },
-        new() { Disc = "runs.discs.gold", Points = 1600 },
-        new() { Disc = "runs.discs.platinum", Points = 2200 },
-        new() { Disc = "runs.discs.double_platinum", Points = 2800 },
-        new() { Disc = "runs.discs.diamond", Points = 3400 },
+        new() { Disc = "runs.discs.scratched", Points = 300 },
+        new() { Disc = "runs.discs.bronze", Points = 900 },
+        new() { Disc = "runs.discs.silver", Points = 2000 },
+        new() { Disc = "runs.discs.gold", Points = 3600 },
+        new() { Disc = "runs.discs.platinum", Points = 6000 },
+        new() { Disc = "runs.discs.double_platinum", Points = 9600 },
+        new() { Disc = "runs.discs.diamond", Points = 13000 },
     ];
 
     public IReadOnlyList<RunLevelDiscSetting> EffectiveDiscs => Discs ?? DefaultDiscs;
 
     public IReadOnlyList<RunLevelStep> Ladder => [.. EffectiveDiscs.Select(d => new RunLevelStep(d.Disc, d.Points))];
+
+    /// <summary>Les règles du domaine.</summary>
+    public RunLevelRules ToRules() =>
+        new(OldWeightPercent, MaxDropPercent, InactivityGraceDays, InactivityWeeklyDropPercent, InactivityFloorPercent, Ladder);
 }
 
 /// <summary>Un disque de niveau dans les réglages : sa clé de traduction et les points de niveau qui le donnent.</summary>
@@ -163,21 +201,40 @@ public static class RunsOptionsChecks
         if (options.AnswerSeconds != 0 && (options.AnswerSeconds > RunsOptions.MaxAnswerSeconds || ladder.Count == 0 || options.AnswerSeconds <= ladder[0]))
             problems.Add($"Runs:AnswerSeconds : 0 (pas de chrono), ou plus long que l'écoute la plus longue et au plus {RunsOptions.MaxAnswerSeconds} s.");
 
+        problems.AddRange(DiversityProblems(options.Diversity));
         problems.AddRange(LevelProblems(options.Levels));
+        return problems;
+    }
+
+    private static List<string> DiversityProblems(RunDiversityOptions diversity)
+    {
+        var problems = new List<string>();
+        if (diversity.PoolPercent is < 0 or > 90)
+            problems.Add("Runs:Diversity:PoolPercent : de 0 (pas de diversité des morceaux) à 90 % du pool.");
+        if (diversity.ThemePercent is < 0 or > 100)
+            problems.Add("Runs:Diversity:ThemePercent : de 0 (aucun thème évité) à 100 % des thèmes éligibles écartables.");
+        if (diversity.MaxGames is < 1 or > RunDiversityOptions.MaxMaxGames)
+            problems.Add($"Runs:Diversity:MaxGames : de 1 à {RunDiversityOptions.MaxMaxGames} parties lues.");
         return problems;
     }
 
     private static List<string> LevelProblems(RunLevelOptions levels)
     {
         var problems = new List<string>();
-        if (levels.Window is < 1 or > RunLevelPolicy.MaxStoredScores)
-            problems.Add($"Runs:Levels:Window : de 1 à {RunLevelPolicy.MaxStoredScores} parties.");
-        if (levels.ProvisionalRuns < 0 || levels.ProvisionalRuns > levels.Window)
-            problems.Add("Runs:Levels:ProvisionalRuns : de 0 à la fenêtre.");
+        if (levels.OldWeightPercent is < 50 or > 95)
+            problems.Add("Runs:Levels:OldWeightPercent : de 50 à 95 %.");
+        if (levels.MaxDropPercent is < 0 or > 50)
+            problems.Add("Runs:Levels:MaxDropPercent : de 0 à 50 %.");
+        if (levels.InactivityGraceDays is < 1 or > 365)
+            problems.Add("Runs:Levels:InactivityGraceDays : de 1 à 365 jours.");
+        if (levels.InactivityWeeklyDropPercent is < 0 or > 50)
+            problems.Add("Runs:Levels:InactivityWeeklyDropPercent : de 0 à 50 %.");
+        if (levels.InactivityFloorPercent is < 0 or > 100)
+            problems.Add("Runs:Levels:InactivityFloorPercent : de 0 à 100 %.");
         var discs = levels.EffectiveDiscs;
-        if (discs.Count is < 2 or > 12 || discs.Any(d => string.IsNullOrWhiteSpace(d.Disc)) || discs.Select(d => d.Disc).Distinct().Count() != discs.Count
-            || discs[0].Points != 0 || discs.Zip(discs.Skip(1), (a, b) => b.Points <= a.Points).Any(bad => bad))
-            problems.Add("Runs:Levels:Discs : de 2 à 12 disques distincts, le premier à 0 point, les points strictement croissants.");
+        if (discs.Count is < 1 or > 12 || discs.Any(d => string.IsNullOrWhiteSpace(d.Disc)) || discs.Select(d => d.Disc).Distinct().Count() != discs.Count
+            || discs[0].Points <= 0 || discs.Zip(discs.Skip(1), (a, b) => b.Points <= a.Points).Any(bad => bad))
+            problems.Add("Runs:Levels:Discs : de 1 à 12 disques distincts, le premier au-dessus de 0 point, les points strictement croissants.");
         return problems;
     }
 }

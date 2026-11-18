@@ -170,7 +170,7 @@ export class ApiTestClient {
     return ((await res.json()) as { tracks: RunTrack[] }).tracks;
   }
 
-  /** Le code (le lien `/setlist/<code>`) de la dernière playlist de Run tirée. */
+  /** Le code (le lien `/survie/<code>`) de la dernière playlist de Run tirée. */
   async latestRunCode(): Promise<string> {
     const res = await fetch(`${BASE}/api/e2e/runs/latest-tracks`);
     if (!res.ok) throw new Error(`runs/latest-tracks failed: ${res.status}`);
@@ -205,6 +205,7 @@ export class ApiTestClient {
     await this.setRunSetting('Runs:TracksPerRound', '5');
     await this.setRunSetting('Runs:RegainLife', 'false');
     await this.setRunSetting('Runs:ShortenOnNoLifeLost', 'false');
+    await this.setRunSetting('Runs:HoldOnLifeLost', 'false');
     await this.setRunSetting('Runs:MaxRounds', '0');
     await this.setRunSetting('Runs:LifeBonus', '0');
     await this.setRunSetting('Runs:CompleteBonus', '0');

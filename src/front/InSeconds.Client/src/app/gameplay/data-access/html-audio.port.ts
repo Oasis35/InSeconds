@@ -99,6 +99,88 @@ function isAbort(err: unknown): boolean {
 }
 
 /**
+ * L'élément audio est **un seul pour toute la page** : sur iPhone, un élément ne joue hors d'un geste qu'après avoir joué une fois dans
+ * un geste, et le clic qui lance la Survie depuis l'accueil se fait dans une autre route (donc un autre lecteur) que la partie.
+ */
+let sharedAudio: HTMLAudioElement | null = null;
+let sharedUnlocked = false;
+
+function audioElement(): HTMLAudioElement | null {
+  if (typeof document === 'undefined') return null;
+  if (sharedAudio === null) {
+    sharedAudio = new Audio();
+    // iPhone : lire dans la page, jamais en plein écran (absent du type `HTMLAudioElement`).
+    sharedAudio.setAttribute('playsinline', '');
+  }
+  return sharedAudio;
+}
+
+/** La touche lecture / pause : un seul bouton sur les claviers, qui envoie `play` à l'arrêt et `pause` en lecture. */
+const PLAY_PAUSE_ACTIONS = ['play', 'pause'] as const;
+
+/** Ce que fait la touche lecture / pause, posé par la manche en cours (`onPlayPauseKey`) ; `null` : la touche est au navigateur. */
+let playPauseHandler: (() => void) | null = null;
+
+function setPlayPauseActions(handler: MediaSessionActionHandler | null): void {
+  if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+  for (const action of PLAY_PAUSE_ACTIONS) {
+    try {
+      navigator.mediaSession.setActionHandler(action, handler);
+    } catch {
+      // Action non gérée par ce navigateur : rien à remplacer.
+    }
+  }
+}
+
+/**
+ * La touche « lecture » du clavier relançait l'extrait arrêté à son palier, au-delà du palier (#519). Tant
+ * qu'une manche est là, lecture / pause fait ce qu'elle a branché (la relecture ↺, jamais au-delà du palier).
+ * Les autres touches n'ont pas de gestionnaire : le navigateur n'en affiche pas le bouton, et elles ne
+ * lancent rien (une avance pendant la lecture est coupée au palier par la boucle d'arrêt).
+ */
+function attachPlayPauseKey(handler: () => void): void {
+  playPauseHandler = handler;
+  setPlayPauseActions(() => playPauseHandler?.());
+}
+
+/** Retire la touche si c'est encore celle-là (une manche suivante a pu la reprendre) : elle revient au navigateur. */
+function releasePlayPauseKey(handler: () => void): void {
+  if (playPauseHandler !== handler) return;
+  playPauseHandler = null;
+  setPlayPauseActions(null);
+}
+
+/**
+ * Déverrouille l'élément partagé depuis un clic, avant que le lecteur de la page suivante n'existe (la carte Survie de l'accueil).
+ * Rien ne joue : un silence de 10 ms. Sans effet une fois l'élément déverrouillé ou si le navigateur refuse (le prochain clic réessaie).
+ */
+export function unlockSharedAudio(): void {
+  const audio = audioElement();
+  if (!audio || sharedUnlocked || !audio.paused) return;
+  sharedUnlocked = true;
+  const bytes = Uint8Array.from(atob(SILENCE_WAV_BASE64), c => c.codePointAt(0)!);
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' }));
+  audio.src = url;
+  audio.play().then(
+    () => {
+      audio.pause();
+      URL.revokeObjectURL(url);
+    },
+    (err: unknown) => {
+      if (!isAbort(err)) sharedUnlocked = false;
+      URL.revokeObjectURL(url);
+    },
+  );
+}
+
+/** Pour les tests : l'élément repart de zéro. */
+export function resetSharedAudio(): void {
+  sharedAudio = null;
+  sharedUnlocked = false;
+  playPauseHandler = null;
+}
+
+/**
  * L'`AudioPort` sur un **élément audio HTML**, rodé en prod
  * (décision du 13/10/2026, #309, après la recette sur iPhone de Howler). Aucune bibliothèque : un
  * seul élément `Audio` (`playsInline`) joue tous les extraits, en flux depuis le CDN de Deezer.
@@ -129,7 +211,7 @@ export class HtmlAudioPort extends AudioPort {
   private readonly _position = signal(0);
   readonly position = this._position.asReadonly();
 
-  private readonly audio: HTMLAudioElement | null = null;
+  private readonly audio: HTMLAudioElement | null = audioElement();
   private currentUrl: string | null = null;
   /** Invalide les rappels d'un chargement périmé (`canplay`, `error`). */
   private loadToken = 0;
@@ -143,7 +225,8 @@ export class HtmlAudioPort extends AudioPort {
   private frame: number | null = null;
   private preloadLink: HTMLLinkElement | null = null;
   private silenceUrl: string | null = null;
-  private unlocked = false;
+  /** Les touches lecture / pause branchées par ce lecteur et pas encore retirées, rendues au navigateur à sa destruction. */
+  private readonly playPauseKeys = new Set<() => void>();
   /** Le déroulé du palier en cours, pour le diagnostic des sons lents ou coupés sur iPhone. */
   private timings: PlaybackTimings | null = null;
   /** Résolu au premier envoi seulement : le lecteur n'impose pas `HttpClient` à ses tests. */
@@ -151,11 +234,6 @@ export class HtmlAudioPort extends AudioPort {
 
   constructor() {
     super();
-    if (typeof document !== 'undefined') {
-      this.audio = new Audio();
-      // iPhone : lire dans la page, jamais en plein écran (absent du type `HTMLAudioElement`).
-      this.audio.setAttribute('playsinline', '');
-    }
     inject(DestroyRef).onDestroy(() => this.dispose());
   }
 
@@ -229,9 +307,9 @@ export class HtmlAudioPort extends AudioPort {
    */
   unlock(): void {
     const audio = this.audio;
-    if (!audio || this.unlocked) return;
+    if (!audio || sharedUnlocked) return;
     const state = this._state();
-    this.unlocked = true;
+    sharedUnlocked = true;
     if (state === 'playing') return;
     if (this.currentUrl !== null && state !== 'error') {
       this.unlockLoaded(audio);
@@ -247,7 +325,7 @@ export class HtmlAudioPort extends AudioPort {
       },
       (err: unknown) => {
         // Refusé (pas dans un geste) : on réessaiera au prochain clic. Interrompu par le chargement d'un extrait : c'est fait.
-        if (!isAbort(err)) this.unlocked = false;
+        if (!isAbort(err)) sharedUnlocked = false;
       },
     );
   }
@@ -268,9 +346,20 @@ export class HtmlAudioPort extends AudioPort {
       },
       (err: unknown) => {
         audio.muted = false;
-        if (!isAbort(err)) this.unlocked = false;
+        if (!isAbort(err)) sharedUnlocked = false;
       },
     );
+  }
+
+  onPlayPauseKey(handler: () => void): () => void {
+    // Une copie propre à cet appel : deux branchements de la même fonction se retirent chacun le sien.
+    const key = () => handler();
+    this.playPauseKeys.add(key);
+    attachPlayPauseKey(key);
+    return () => {
+      this.playPauseKeys.delete(key);
+      releasePlayPauseKey(key);
+    };
   }
 
   stop(): void {
@@ -457,6 +546,9 @@ export class HtmlAudioPort extends AudioPort {
 
   private dispose(): void {
     this.stop();
+    // La touche ne vise plus une manche disparue : elle revient au navigateur, sauf si un autre lecteur l'a reprise.
+    for (const key of this.playPauseKeys) releasePlayPauseKey(key);
+    this.playPauseKeys.clear();
     this.preload(null);
     if (this.audio) {
       this.audio.oncanplay = null;

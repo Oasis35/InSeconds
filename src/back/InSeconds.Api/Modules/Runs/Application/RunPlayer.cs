@@ -58,9 +58,9 @@ public sealed class RunPlayer(
             var round = challenge.Rules.RoundOf(session.NextPosition);
             if (!challenge.HasRound(round))
             {
-                if (await roundDealer.OfferAsync(challenge, round, ct) is not null)
+                if (await roundDealer.OfferAsync(challenge, round, session.PlayerId, ct) is not null)
                     break;
-                await roundDealer.DealAsync(challenge, round, themeId: null, ct);
+                await roundDealer.DealAsync(challenge, round, themeId: null, session.PlayerId, ct);
                 run = await LoadAsync(session, challenge, ct);
             }
 
@@ -111,7 +111,7 @@ public sealed class RunPlayer(
         if (run.Session.IsPending)
         {
             var round = run.Challenge.Rules.RoundOf(run.Session.NextPosition);
-            themeOffer = await roundDealer.OfferAsync(run.Challenge, round, ct);
+            themeOffer = await roundDealer.OfferAsync(run.Challenge, round, run.Session.PlayerId, ct);
         }
 
         IReadOnlyDictionary<int, byte[]> shapes = new Dictionary<int, byte[]>();
@@ -124,7 +124,7 @@ public sealed class RunPlayer(
         }
 
         return RunViews.Session(run, scoring, record, shapes, time.GetUtcNow(), await ghosts.OfAsync(run.Session, run.Challenge, ct),
-            themeOffer, RunViews.LevelOf(level, rules.Levels, run.Session.Id));
+            themeOffer, RunViews.LevelOf(level, rules.LevelRules, run.Session.Id, time.GetUtcNow()));
     }
 
     // Le bilan d'une manche terminée, et son compte dans les métriques (la manche ne se termine qu'une fois).
@@ -145,7 +145,8 @@ public sealed class RunPlayer(
         else
             record.Improve(session, time.GetUtcNow());
 
-        // Le niveau : la moyenne glissante des scores des parties finies (même verrou que le record, une partie ne s'y compte qu'une fois).
+        // Le niveau : 80 % de l'ancien (inactivité déduite) et 20 % du score, un disque de plus au plus (même verrou que le record, une partie ne s'y
+        // compte qu'une fois).
         var level = await store.FindLevelAsync(session.PlayerId, ct);
         if (level is null)
         {
@@ -153,14 +154,10 @@ public sealed class RunPlayer(
             store.AddLevel(level);
         }
 
-        var pointsBefore = level.Points;
-        level.Record(session, rules.Levels.Window, time.GetUtcNow());
-        RunsLog.LevelUpdated(logger, session.Id, level.RunsPlayed, level.Points - pointsBefore);
-        var ladder = rules.Levels.Ladder;
-        metrics.LevelChanged(
-            RunLevelPolicy.Standing(pointsBefore, ladder).Current.FromPoints,
-            RunLevelPolicy.Standing(level.Points, ladder).Current,
-            RunLevelPolicy.IsProvisional(level.RunsPlayed, rules.Levels.ProvisionalRuns));
+        var levelRules = rules.LevelRules;
+        level.Record(session, levelRules);
+        RunsLog.LevelUpdated(logger, session.Id, level.RunsPlayed, level.LastDelta);
+        metrics.LevelChanged(RunLevelPolicy.Standing(level.Points, levelRules.Ladder).Current?.Disc, level.LastDiscChange(levelRules.Ladder));
 
         RunsLog.SessionEnded(logger, session.Id, session.PlayerId, session.Status, session.RoundsPassed, session.TotalScore);
         metrics.SessionEnded(session.RoundsPassed, session.Status == RunSessionStatus.Completed);
@@ -181,16 +178,27 @@ internal static class RunViews
     /// Le niveau d'un joueur tel que l'écran le montre ; <paramref name="sessionId"/> : la partie dont on veut le gain (« +38 »), rien pour l'accueil.
     /// Vide quand le joueur n'a encore fini aucune partie.
     /// </summary>
-    public static RunLevelResponse? LevelOf(RunLevel? level, RunLevelOptions options, int? sessionId)
+    public static RunLevelResponse? LevelOf(RunLevel? level, RunLevelRules rules, int? sessionId, DateTimeOffset now)
     {
         if (level is null || level.RunsPlayed == 0)
             return null;
-        var standing = RunLevelPolicy.Standing(level.Points, options.Ladder);
+        var current = level.At(now, rules);
+        var standing = RunLevelPolicy.Standing(current.Points, rules.Ladder);
         return new RunLevelResponse(
-            level.Points, new RunDiscResponse(standing.Current.Disc, 0), standing.Next is null ? null : new RunDiscResponse(standing.Next.Disc, 0),
-            standing.PointsToNext, standing.ProgressPercent, RunLevelPolicy.IsProvisional(level.RunsPlayed, options.ProvisionalRuns), level.RunsPlayed,
-            sessionId is { } id ? level.DeltaOf(id) : null);
+            current.Points, standing.Current is null ? null : new RunDiscResponse(standing.Current.Disc, 0),
+            standing.Next is null ? null : new RunDiscResponse(standing.Next.Disc, 0), standing.PointsToNext, standing.ProgressPercent, level.RunsPlayed,
+            sessionId is { } id ? level.DeltaOf(id) : null,
+            sessionId is { } session && level.DiscChangeOf(session, rules.Ladder) is { } change ? DiscChangeOf(change) : null,
+            current.InactivityLoss, current.DiscDropInDays);
     }
+
+    /// <summary>Le changement de disque tel que l'API le nomme : <c>up</c>, <c>down</c> ou <c>same</c>.</summary>
+    public static string DiscChangeOf(RunDiscChange change) => change switch
+    {
+        RunDiscChange.Up => RunsMetrics.LevelUp,
+        RunDiscChange.Down => RunsMetrics.LevelDown,
+        _ => RunsMetrics.LevelSame,
+    };
 
     public static string StatusOf(RunSessionStatus status) => status switch
     {

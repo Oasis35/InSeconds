@@ -26,6 +26,9 @@ public interface IPlayerDirectory
     /// <summary>Le joueur existe et n'est pas supprimé (invité ou compte).</summary>
     Task<bool> ExistsAsync(Guid playerId, CancellationToken ct);
 
+    /// <summary>Ce nom est-il le pseudo d'un compte (sans la casse) ? Social ne tire jamais un alias déjà pris comme pseudo.</summary>
+    Task<bool> IsPseudoTakenAsync(string pseudo, CancellationToken ct);
+
     /// <summary>
     /// Les comptes des joueurs non supprimés, les plus récemment vus d'abord, ceux qu'on n'a jamais vus en dernier (à égalité, le plus
     /// récemment créé d'abord).

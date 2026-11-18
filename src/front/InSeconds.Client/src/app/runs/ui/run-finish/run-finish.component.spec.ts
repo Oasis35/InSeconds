@@ -120,7 +120,7 @@ describe('RunFinishComponent', () => {
     const { element } = render(finish(), false);
 
     expect(element.querySelector('[data-testid="run-play-again"]')).toBeNull();
-    expect(element.querySelector('[data-testid="run-to-daily"]')?.getAttribute('href')).toBe('/daily');
+    expect(element.querySelector('[data-testid="run-to-daily"]')?.getAttribute('href')).toBe('/');
   });
   it('un duel ouvre l\'écran, sur un ton neutre : avance, retard ou égalité, et « Revanche » à la place de « Rejouer »', () => {
     for (const gap of [126, -40, 0]) {
@@ -150,12 +150,12 @@ describe('RunFinishComponent', () => {
   });
 
   describe('nouvelle interface (niveau)', () => {
-    const level = { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: { key: 'runs.discs.gold', stars: 0 }, pointsToNext: 220, progressPercent: 56, provisional: false, runsPlayed: 12, delta: 38 };
+    const level = { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: { key: 'runs.discs.gold', stars: 0 }, pointsToNext: 220, progressPercent: 56, runsPlayed: 12, delta: 38, discChange: 'same' as const, inactivityLoss: 0, discDropInDays: null };
 
     function renderLevel(value: RunFinish, showLevel: boolean, duel: RunDuel | null = null) {
       const rendered = render(value, true, duel);
       rendered.fixture.componentRef.setInput('showLevel', showLevel);
-      rendered.fixture.componentRef.setInput('reviewLink', '/history/setlist/7');
+      rendered.fixture.componentRef.setInput('reviewLink', '/history/survie/7');
       rendered.fixture.detectChanges();
       return rendered;
     }
@@ -172,13 +172,60 @@ describe('RunFinishComponent', () => {
       expect(text(element, 'run-share')).toContain('runs.level.challenge');
       expect((element.querySelector('[data-testid="run-level-bar"]') as HTMLElement).style.width).toBe('56%');
       expect(element.querySelector('app-run-level-card')).toBeNull();
-      expect(element.querySelector('[data-testid="run-level-review"]')?.getAttribute('href')).toBe('/history/setlist/7');
+      expect(element.querySelector('[data-testid="run-level-review"]')?.getAttribute('href')).toBe('/history/survie/7');
+    });
+
+    it('défi du jour à jouer : « Rejouer » passe en contour et la bande du défi monte au-dessus des actions ; sinon « Rejouer » reste plein', () => {
+      const again = (element: HTMLElement) => element.querySelector<HTMLElement>('[data-testid="run-play-again"]')!;
+      const band = (element: HTMLElement) => element.querySelector<HTMLElement>('[data-testid="finish-bottom"]')!;
+
+      const first = renderLevel(finish({ level }), true);
+      first.fixture.componentRef.setInput('dailyFirst', true);
+      first.fixture.detectChanges();
+      expect(again(first.element).classList).toContain('app-button--accent');
+      expect(band(first.element).style.order).toBe('-1');
+
+      TestBed.resetTestingModule();
+      const done = renderLevel(finish({ level }), true);
+      expect(again(done.element).classList).toContain('app-button--primary');
+      expect(band(done.element).style.order).toBe('0');
     });
 
     it('en duel, l\'action principale reste « Revanche »', () => {
       const { element } = renderLevel(finish({ level }), true, { pseudo: 'Léa', gap: 126 });
 
       expect(text(element, 'run-play-again')).toBe('runs.finished.rematch');
+    });
+
+    it('un disque gagné : « Tu passes au disque rayé » en ambre, avec les points', () => {
+      const up = { ...level, points: 300, disc: { key: 'runs.discs.scratched', stars: 0 }, delta: 300, discChange: 'up' as const };
+      const { element } = renderLevel(finish({ level: up }), true);
+
+      const change = element.querySelector<HTMLElement>('[data-testid="run-level-change"]');
+      expect(change?.getAttribute('data-change')).toBe('up');
+      expect(change?.textContent).toContain('runs.level.discUp');
+    });
+
+    it('une mauvaise série : le disque gardé, les points et « au plus 10 % » ; un disque perdu le dit', () => {
+      const bad = { ...level, points: 2286, delta: -254, discChange: 'same' as const };
+      const { element } = renderLevel(finish({ level: bad }), true);
+      expect(element.querySelector('[data-testid="run-level-change"]')?.getAttribute('data-change')).toBe('bad');
+      expect(text(element, 'run-level-change')).toContain('runs.level.badRun');
+
+      TestBed.resetTestingModule();
+      const lost = { ...level, points: 280, disc: { key: 'runs.discs.none', stars: 0 }, delta: -31, discChange: 'down' as const };
+      const lostScreen = renderLevel(finish({ level: lost }), true).element;
+      expect(text(lostScreen, 'run-level-change')).toContain('runs.level.discLost');
+    });
+
+    it('une série sans changement de disque ni baisse : pas de ligne', () => {
+      const { element } = renderLevel(finish({ level }), true);
+      expect(element.querySelector('[data-testid="run-level-change"]')).toBeNull();
+    });
+
+    it('« 1 manche terminée » au singulier', () => {
+      const { element } = renderLevel(finish({ level, roundsPassed: 1 }), true);
+      expect(text(element, 'run-disc')).toBe('runs.finished.roundsOne');
     });
 
     it('sans la nouvelle interface, ou sans niveau (partie abandonnée) : l\'écran d\'avant', () => {

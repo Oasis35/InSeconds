@@ -20,7 +20,7 @@ import { StatusScreenComponent } from '../../ui/status-screen/status-screen.comp
 
 /**
  * L'historique du joueur sur le défi du jour (`/history/daily`, `?mois=aaaa-mm`) : le résumé de toutes ses parties, puis un mois à la fois.
- * Une ligne mène aux réponses du jour. L'onglet « Setlists » est la page du mode Setlist (`/history/setlist`) : les modes ne se connaissent pas.
+ * Une ligne mène aux réponses du jour. L'onglet « Setlists » est la page du mode Setlist (`/history/survie`) : les modes ne se connaissent pas.
  */
 @Component({
   selector: 'app-daily-history-page',

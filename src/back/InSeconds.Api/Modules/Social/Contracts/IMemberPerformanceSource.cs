@@ -25,4 +25,10 @@ public interface IMemberPerformanceSource
     /// par le contrat de Players.
     /// </summary>
     Task<IReadOnlyDictionary<Guid, MemberPerformance>> GetAsync(IReadOnlyCollection<Guid> playerIds, CancellationToken ct);
+
+    /// <summary>
+    /// Les joueurs que ce mode met au classement général : ceux qui y ont accès et y ont fini une partie (pour Runs : une ligne d'accès Survie donnée par l'admin,
+    /// et un niveau ; un admin, qui a l'accès d'office sans ligne, n'y figure pas : décision du 18/11). Social n'y garde que les comptes.
+    /// </summary>
+    Task<IReadOnlyCollection<Guid>> ListGeneralRankingPlayersAsync(CancellationToken ct);
 }

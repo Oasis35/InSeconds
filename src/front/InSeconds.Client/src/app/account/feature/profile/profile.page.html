@@ -2,11 +2,14 @@
   <app-decor-background />
 
   <div class="relative flex w-full max-w-sm flex-col gap-6 py-8">
-    <div class="-mb-2 flex items-center justify-between">
-      <a routerLink="/" class="py-1 text-sm hover:underline" style="color:var(--text-muted)" data-testid="back-to-game">
-        ← {{ 'account.profile.backToGame' | translate }}
-      </a>
-    </div>
+    <!-- Sous la V4, la barre du bas ramène au jeu : pas de second retour. -->
+    @if (!chrome.v4()) {
+      <div class="-mb-2 flex items-center justify-between">
+        <a routerLink="/" class="py-1 text-sm hover:underline" style="color:var(--text-muted)" data-testid="back-to-game">
+          ← {{ 'account.profile.backToGame' | translate }}
+        </a>
+      </div>
+    }
 
     <h1 class="text-center text-2xl font-bold" style="font-family:var(--font-display);color:var(--text-hi)">
       {{ 'account.profile.title' | translate }}
@@ -112,10 +115,14 @@
 
     <!-- Langue : sous la V4, le pied de page n'est plus là, la bascule vit ici -->
     @if (chrome.v4()) {
-      <!-- Le choix d'apparaître dans le classement général se fait sur la page du classement -->
-      <a routerLink="/ranking" [queryParams]="{ view: 'general' }" class="flex items-center justify-between gap-3 min-h-11 text-sm" data-testid="profile-general-ranking"
+      <!-- Le nom au classement général (pseudo ou alias musical) se choisit sur la page du classement : le lien ouvre ce choix. -->
+      <a routerLink="/ranking" [queryParams]="{ view: 'general', edit: 'name' }" class="flex items-center justify-between gap-3 min-h-11 text-sm" data-testid="profile-general-ranking"
          style="color:var(--text-body)">
-        <span>{{ 'social.general.profileLink' | translate }}</span><span aria-hidden="true">›</span>
+        <span class="flex flex-col">
+          <span>{{ 'social.general.profileLink' | translate }}</span>
+          <span class="text-xs" style="color:var(--text-muted)">{{ 'social.general.profileHint' | translate }}</span>
+        </span>
+        <span class="shrink-0" style="color:var(--text-hi)">{{ 'social.general.edit' | translate }} <span aria-hidden="true">›</span></span>
       </a>
       <section class="flex items-center justify-between gap-3" data-testid="profile-language">
         <span class="text-sm" style="color:var(--text-body)">{{ 'account.profile.language' | translate }}</span>

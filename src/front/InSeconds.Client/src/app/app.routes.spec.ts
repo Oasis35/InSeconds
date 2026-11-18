@@ -48,8 +48,12 @@ describe('routes', () => {
     ['/history', '/history/daily'],
     ['/daily/history', '/history/daily'],
     ['/daily/archive/2026-11-10', '/history/daily/2026-11-10'],
-    ['/setlist/history', '/history/setlist'],
-    ['/setlist/history/12', '/history/setlist/12'],
+    ['/setlist', '/survie'],
+    ['/setlist/hits', '/survie/hits'],
+    ['/setlist/history', '/history/survie'],
+    ['/history/setlist', '/history/survie'],
+    ['/history/setlist/12', '/history/survie/12'],
+    ['/setlist/history/12', '/history/survie/12'],
   ];
 
   for (const [from, to] of legacyRedirects) {
@@ -98,14 +102,14 @@ describe('routes', () => {
   });
 
   // Le mode Run s'appelle Setlist : on vérifie les redirections sans charger la page du mode (qui voudrait son client d'API).
-  it('route /runs vers /setlist, et /runs/<code> vers /setlist/<code>, query string et fragment gardés', () => {
+  it('route /runs vers /survie, et /runs/<code> vers /survie/<code>, query string et fragment gardés', () => {
     expect(routes.find(r => r.path === 'runs')?.redirectTo).toBeDefined();
     expect(routes.find(r => r.path === 'runs/:code')?.redirectTo).toBe(redirectRunsLink);
     const toTree = (fn: unknown, snapshot: object) =>
       TestBed.runInInjectionContext(() => (fn as (s: object) => ReturnType<Router['parseUrl']>)(snapshot)).toString();
-    expect(toTree(redirectKeepingQuery('/setlist'), { queryParams: { x: '1' }, fragment: null })).toBe('/setlist?x=1');
+    expect(toTree(redirectKeepingQuery('/survie'), { queryParams: { x: '1' }, fragment: null })).toBe('/survie?x=1');
     expect(toTree(redirectRunsLink, { params: { code: 'K7Q2M9' }, queryParams: { utm_source: 'share' }, fragment: 'top' }))
-      .toBe('/setlist/K7Q2M9?utm_source=share#top');
-    expect(routes.find(r => r.path === 'setlist')?.loadChildren).toBeDefined();
+      .toBe('/survie/K7Q2M9?utm_source=share#top');
+    expect(routes.find(r => r.path === 'survie')?.loadChildren).toBeDefined();
   });
 });

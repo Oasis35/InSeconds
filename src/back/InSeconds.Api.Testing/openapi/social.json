@@ -211,69 +211,6 @@
         }
       }
     },
-    "/api/social/ranking/visibility": {
-      "put": {
-        "tags": [
-          "Social"
-        ],
-        "operationId": "setRankingVisibility",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SetRankingVisibility"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/social/groups": {
       "get": {
         "tags": [
@@ -850,6 +787,156 @@
           }
         }
       }
+    },
+    "/api/social/ranking/identity": {
+      "put": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "setRankingIdentity",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetRankingIdentity"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankingIdentityResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/social/ranking/identity/alias": {
+      "post": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "drawRankingAlias",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankingIdentityResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -922,9 +1009,8 @@
           "top",
           "around",
           "total",
-          "visible",
-          "canAppear",
-          "topPercent"
+          "hasAccount",
+          "identity"
         ],
         "type": "object",
         "properties": {
@@ -944,18 +1030,18 @@
             "type": "integer",
             "format": "int32"
           },
-          "visible": {
+          "hasAccount": {
             "type": "boolean"
           },
-          "canAppear": {
-            "type": "boolean"
-          },
-          "topPercent": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
+          "identity": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RankingIdentityResponse"
+              }
+            ]
           }
         }
       },
@@ -1254,14 +1340,36 @@
           }
         }
       },
-      "SetRankingVisibility": {
+      "RankingIdentityResponse": {
         "required": [
-          "visible"
+          "mode",
+          "name",
+          "alias"
         ],
         "type": "object",
         "properties": {
-          "visible": {
-            "type": "boolean"
+          "mode": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "alias": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SetRankingIdentity": {
+        "required": [
+          "mode"
+        ],
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
           }
         }
       }
@@ -1284,7 +1392,10 @@
       "name": "InSeconds.Api.Modules.Social.Application.GetGeneralRankingEndpoint"
     },
     {
-      "name": "InSeconds.Api.Modules.Social.Application.SetRankingVisibilityEndpoint"
+      "name": "InSeconds.Api.Modules.Social.Application.SetRankingIdentityEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Social.Application.DrawRankingAliasEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Social.Application.ListMyGroupsEndpoint"

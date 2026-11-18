@@ -6,7 +6,7 @@ import { ShellChromeStore } from '../../core/shell/shell-chrome.store';
 
 /**
  * Lit l'accès au mode Setlist (`GET /api/runs/me`). Le client de l'API du mode n'est jamais dans le bundle initial : il se charge ici à la
- * demande, dans un injecteur à part (comme la route `/setlist` et l'entrée de l'accueil). Un jeton pour que les tests le remplacent.
+ * demande, dans un injecteur à part (comme la route `/survie` et l'entrée de l'accueil). Un jeton pour que les tests le remplacent.
  */
 export const SETLIST_ACCESS_LOADER = new InjectionToken<() => Promise<boolean>>('SETLIST_ACCESS_LOADER', {
   factory: () => {
@@ -50,6 +50,8 @@ export const SetlistAccessStore = signalStore(
         }
         if (asked) return;
         asked = true;
+        // Un compte qui vient de se connecter : le « non » d'avant n'est plus une réponse, les pages attendent la nouvelle.
+        patchState(store, { loaded: false });
         try {
           patchState(store, { hasAccess: await loader(), loaded: true });
         } catch {

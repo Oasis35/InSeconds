@@ -42,4 +42,11 @@ export abstract class AudioPort {
    * Sans effet si le son est déjà déverrouillé.
    */
   abstract unlock(): void;
+
+  /**
+   * Ce que fait la touche lecture / pause du clavier ou d'un casque (#519) : la manche y branche
+   * sa relecture (↺). Rend de quoi retirer ce branchement-là, et lui seul : la touche revient alors
+   * au navigateur, sauf si une autre manche l'a reprise entre-temps.
+   */
+  abstract onPlayPauseKey(handler: () => void): () => void;
 }
