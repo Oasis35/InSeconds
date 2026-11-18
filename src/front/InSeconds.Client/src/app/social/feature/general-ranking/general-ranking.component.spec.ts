@@ -23,57 +23,24 @@ describe('GeneralRankingComponent', () => {
 
   beforeEach(() => (api = new FakeSocialApi()));
 
-  it('montre la tête, puis le joueur et ses voisins, et sa position', async () => {
+  it('montre la tête, puis le joueur et ses voisins', async () => {
     const { el } = await render();
 
     const lists = el.querySelectorAll('[data-testid="ranking-list"]');
     expect(lists).toHaveLength(2);
     expect(lists[0].querySelectorAll('[data-testid="ranking-row"]')).toHaveLength(2);
     expect(lists[1].querySelector('[data-me="true"] [data-testid="ranking-rank"]')?.textContent).toBe('42');
-    expect(find(el, 'general-percent')).not.toBeNull();
-    expect(find(el, 'general-visible')?.getAttribute('aria-checked')).toBe('true');
   });
 
-  it('ne montre qu\'une liste quand le joueur est dans la tête ou n\'apparaît pas', async () => {
-    api.general = { ...GENERAL, around: [], visible: false };
+  it('ne montre qu\'une liste quand le joueur est dans la tête ou n\'est pas classé', async () => {
+    api.general = { ...GENERAL, around: [] };
     const { el } = await render();
 
     expect(el.querySelectorAll('[data-testid="ranking-list"]')).toHaveLength(1);
-    expect(find(el, 'general-visible')?.getAttribute('aria-checked')).toBe('false');
-  });
-
-  it('change le choix d\'apparaître puis relit le classement', async () => {
-    const { el, settle } = await render();
-
-    find(el, 'general-visible')!.click();
-    await settle();
-
-    expect(api.calls).toEqual(['generalRanking', 'visibility:false', 'generalRanking']);
-    expect(find(el, 'general-visible')?.getAttribute('aria-checked')).toBe('false');
-    expect(el.querySelectorAll('[data-testid="ranking-list"]')).toHaveLength(1);
-  });
-
-  it('dit que le changement a échoué et garde le choix', async () => {
-    api.failVisibility = true;
-    const { el, settle } = await render();
-
-    find(el, 'general-visible')!.click();
-    await settle();
-
-    expect(find(el, 'general-save-failed')).not.toBeNull();
-    expect(find(el, 'general-visible')?.getAttribute('aria-checked')).toBe('true');
-  });
-
-  it('cache l\'interrupteur à un invité et la position à qui n\'a pas joué', async () => {
-    api.general = { top: GENERAL.top, around: [], total: 2, visible: false, canAppear: false, topPercent: null };
-    const { el } = await render();
-
-    expect(find(el, 'general-visible')).toBeNull();
-    expect(find(el, 'general-percent')).toBeNull();
   });
 
   it('dit quand personne n\'apparaît', async () => {
-    api.general = { top: [], around: [], total: 0, visible: false, canAppear: true, topPercent: null };
+    api.general = { top: [], around: [], total: 0, hasAccount: true, identity: { mode: 'pseudo', name: 'Moi', alias: null } };
     const { el } = await render();
 
     expect(find(el, 'general-empty')).not.toBeNull();

@@ -19,8 +19,11 @@ public static class SocialModule
         services.AddSingleton<SocialMetrics>();
         services.AddScoped<IGroupStore, EfGroupStore>();
         services.AddScoped<ISocialQueries, EfSocialQueries>();
-        services.AddScoped<IRankingVisibilityStore, EfRankingVisibilityStore>();
+        services.AddScoped<IRankingIdentityStore, EfRankingIdentityStore>();
+        services.AddScoped<IReservedPseudos, SocialReservedPseudos>();
         services.AddScoped<GroupRanking>();
+        services.AddSingleton<GeneralRankingCache>();
+        services.AddExceptionHandler<AliasConflictExceptionHandler>();
         return services;
     }
 

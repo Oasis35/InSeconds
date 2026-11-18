@@ -1424,10 +1424,7 @@
   "social": {
     "general": {
       "tab": "Général",
-      "percent": "Tu es dans le top {{ percent }} %.",
       "empty": "Personne n'apparaît encore ici.",
-      "appear": "Apparaître dans le classement",
-      "appearHint": "Ton pseudo et ton niveau sont alors visibles de tous.",
       "saveFailed": "Le changement n'a pas été enregistré.",
       "profileLink": "Classement général"
     },

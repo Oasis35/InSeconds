@@ -117,17 +117,24 @@ export function avatarOf(pseudo: string): 1 | 2 | 3 | 4 {
   return ((sum % 4) + 1) as 1 | 2 | 3 | 4;
 }
 
+/** Le nom sous lequel un compte apparaît au classement général : son pseudo (le défaut) ou un alias musical (« Hibou rêveur 12 »). */
+export interface RankingIdentity {
+  readonly mode: 'pseudo' | 'alias';
+  /** Le nom affiché : le pseudo, ou l'alias. */
+  readonly name: string;
+  readonly alias: string | null;
+}
+
 /**
- * Le classement général tel que le joueur le lit : la tête, puis lui et ses voisins s'il y apparaît plus bas. `topPercent` le situe par dizaines
- * (« top 30 % »), vide tant qu'il n'a fini aucune partie ; `canAppear` est faux pour un invité.
+ * Le classement général tel que le joueur le lit : la tête, puis lui et ses voisins s'il y est classé plus bas (tous les comptes qui ont l'accès
+ * et ont fini une partie y figurent). `identity` : le nom sous lequel il y apparaît, `null` pour un invité, qui n'y figure jamais.
  */
 export interface GeneralRanking {
   readonly top: readonly RankingEntry[];
   readonly around: readonly RankingEntry[];
   readonly total: number;
-  readonly visible: boolean;
-  readonly canAppear: boolean;
-  readonly topPercent: number | null;
+  readonly hasAccount: boolean;
+  readonly identity: RankingIdentity | null;
 }
 
 /** Sa meilleure place parmi ses groupes (le plus petit rang) ; `null` sans groupe ou tant qu'il n'a fini aucune partie. En cas d'égalité, le premier groupe. */
@@ -141,6 +148,5 @@ export function bestStanding(standings: readonly GroupStanding[]): (GroupStandin
 
 /** Sa place au classement général ; `null` s'il n'y apparaît pas (c'est son choix, éteint par défaut) ou n'a fini aucune partie. */
 export function generalRankOf(ranking: GeneralRanking): number | null {
-  if (!ranking.visible) return null;
   return [...ranking.top, ...ranking.around].find(entry => entry.isMe)?.rank ?? null;
 }

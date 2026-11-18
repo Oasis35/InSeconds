@@ -42,17 +42,30 @@ describe('SocialApi', () => {
     });
   });
 
-  it('lit le classement général et envoie le choix d\'y apparaître', async () => {
+  it('lit le classement général et le nom sous lequel j\'y apparais', async () => {
     const row = { rank: 1, pseudo: 'Nova', isMe: false, performance: 0.9, gamesPlayed: 9, bestScore: 3300, points: 3100, badge: 'runs.discs.platinum' };
-    client['getGeneralRanking'].mockReturnValue(of({ top: [row], around: [], total: 1, visible: false, canAppear: true, topPercent: undefined }));
-    client['setRankingVisibility'].mockReturnValue(of(undefined));
+    client['getGeneralRanking'].mockReturnValue(of({ top: [row], around: [], total: 1, hasAccount: true, identity: { mode: 'pseudo', name: 'Léa', alias: undefined } }));
 
     expect(await api.generalRanking()).toEqual({
       top: [{ rank: 1, pseudo: 'Nova', isMe: false, points: 3100, badge: 'runs.discs.platinum' }],
-      around: [], total: 1, visible: false, canAppear: true, topPercent: null,
+      around: [], total: 1, hasAccount: true, identity: { mode: 'pseudo', name: 'Léa', alias: null },
     });
-    await api.setRankingVisibility(true);
-    expect(client['setRankingVisibility']).toHaveBeenCalledWith({ visible: true });
+  });
+
+  it('un invité : pas de nom au classement', async () => {
+    client['getGeneralRanking'].mockReturnValue(of({ top: [], around: [], total: 0, hasAccount: false, identity: undefined }));
+
+    expect((await api.generalRanking()).identity).toBeNull();
+  });
+
+  it('choisit le pseudo ou un alias, et tire un autre alias', async () => {
+    const alias = { mode: 'alias', name: 'Hibou rêveur 12', alias: 'Hibou rêveur 12' };
+    client['setRankingIdentity'].mockReturnValue(of(alias));
+    client['drawRankingAlias'].mockReturnValue(of({ ...alias, name: 'Cigale folle 45', alias: 'Cigale folle 45' }));
+
+    expect(await api.setRankingIdentity('alias')).toEqual(alias);
+    expect(client['setRankingIdentity']).toHaveBeenCalledWith({ mode: 'alias' });
+    expect((await api.drawRankingAlias()).alias).toBe('Cigale folle 45');
   });
 
   it('crée un groupe, le nom rogné', async () => {

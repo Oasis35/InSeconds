@@ -10,8 +10,8 @@ public class SocialOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests
 
         Assert.Equal(
             [
-                "createGroup", "deleteAdminGroup", "deleteGroup", "getGeneralRanking", "getGroup", "getGroupRanking", "getInvitation", "joinGroup", "leaveGroup", "listAdminGroups",
-                "listMyGroups", "renameAdminGroup", "resetAdminGroupName", "rotateGroupInviteCode", "setRankingVisibility",
+                "createGroup", "deleteAdminGroup", "deleteGroup", "drawRankingAlias", "getGeneralRanking", "getGroup", "getGroupRanking", "getInvitation", "joinGroup",
+                "leaveGroup", "listAdminGroups", "listMyGroups", "renameAdminGroup", "resetAdminGroupName", "rotateGroupInviteCode", "setRankingIdentity",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));
         Assert.All(document["paths"]!.AsObject().Select(p => p.Key), path =>
@@ -36,7 +36,12 @@ public class SocialOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests
         Assert.NotNull(Operation(document, "renameAdminGroup")["responses"]!["400"]);
         Assert.Null(Operation(document, "deleteAdminGroup")["responses"]!["204"]!["content"]);
         Assert.Null(Operation(document, "getGeneralRanking")["requestBody"]);
-        Assert.NotNull(Operation(document, "setRankingVisibility")["requestBody"]);
-        Assert.NotNull(Operation(document, "setRankingVisibility")["responses"]!["403"]);
+        Assert.NotNull(Operation(document, "setRankingIdentity")["requestBody"]);
+        Assert.Null(Operation(document, "drawRankingAlias")["requestBody"]);
+        foreach (var id in new[] { "setRankingIdentity", "drawRankingAlias" })
+        {
+            Assert.NotNull(Operation(document, id)["responses"]!["403"]);
+            Assert.NotNull(Operation(document, id)["responses"]!["409"]);
+        }
     }
 }

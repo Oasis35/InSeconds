@@ -13,26 +13,28 @@ using Wolverine.Runtime;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: PUT_api_social_ranking_visibility
+    // START: POST_api_social_ranking_identity_alias
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class PUT_api_social_ranking_visibility : Wolverine.Http.HttpHandler
+    public sealed class POST_api_social_ranking_identity_alias : Wolverine.Http.HttpHandler
     {
         private readonly Wolverine.Http.WolverineHttpOptions _wolverineHttpOptions;
+        private readonly InSeconds.Api.Modules.Social.Application.GeneralRankingCache _generalRankingCache;
         private readonly InSeconds.Api.Modules.Social.Application.SocialMetrics _socialMetrics;
         private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor;
         private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _serviceScopeFactory;
-        private readonly Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Social.Domain.RankingVisibility> _loggerOfRankingVisibility;
+        private readonly Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Social.Domain.RankingIdentity> _loggerOfRankingIdentity;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly System.TimeProvider _timeProvider;
         private readonly Wolverine.Runtime.IWolverineRuntime _wolverineRuntime;
 
-        public PUT_api_social_ranking_visibility(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Modules.Social.Application.SocialMetrics socialMetrics, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Social.Domain.RankingVisibility> loggerOfRankingVisibility, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
+        public POST_api_social_ranking_identity_alias(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Modules.Social.Application.GeneralRankingCache generalRankingCache, InSeconds.Api.Modules.Social.Application.SocialMetrics socialMetrics, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Social.Domain.RankingIdentity> loggerOfRankingIdentity, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
         {
             _wolverineHttpOptions = wolverineHttpOptions;
+            _generalRankingCache = generalRankingCache;
             _socialMetrics = socialMetrics;
             _httpContextAccessor = httpContextAccessor;
             _serviceScopeFactory = serviceScopeFactory;
-            _loggerOfRankingVisibility = loggerOfRankingVisibility;
+            _loggerOfRankingIdentity = loggerOfRankingIdentity;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
             _timeProvider = timeProvider;
             _wolverineRuntime = wolverineRuntime;
@@ -45,10 +47,10 @@ namespace Internal.Generated.WolverineHandlers
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Wolverine.Runtime.ScopedMessageContextHolder>(serviceScope.ServiceProvider).Context = messageContext;
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
-            var efRankingVisibilityStore = new InSeconds.Api.Modules.Social.Persistence.EfRankingVisibilityStore(inSecondsDbContext);
+            var efRankingIdentityStore = new InSeconds.Api.Modules.Social.Persistence.EfRankingIdentityStore(inSecondsDbContext);
             var efPlayerDirectory = new InSeconds.Api.Modules.Players.Persistence.EfPlayerDirectory(inSecondsDbContext);
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Social.Application.SetRankingVisibilityEndpoint");
+            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Social.Application.DrawRankingAliasEndpoint");
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
             var efCoreEnvelopeTransaction = new Wolverine.EntityFrameworkCore.Internals.EfCoreEnvelopeTransaction(inSecondsDbContext, messageContext, _domainEventScraperIEnumerable);
@@ -61,11 +63,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                // Reading the request body via JSON deserialization
-                var (request, jsonContinue) = await ReadJsonAsync<InSeconds.Api.Modules.Social.Application.SetRankingVisibility>(httpContext);
-                if (jsonContinue == Wolverine.HandlerContinuation.Stop) return;
-                var rankingVisibilityChoice = await InSeconds.Api.Modules.Social.Application.SetRankingVisibilityEndpoint.LoadAsync(claimsCurrentPlayer, efPlayerDirectory, efRankingVisibilityStore, httpContext.RequestAborted).ConfigureAwait(false);
-                var problemDetails1 = InSeconds.Api.Modules.Social.Application.SetRankingVisibilityEndpoint.Validate(rankingVisibilityChoice);
+                var rankingIdentityChoice = await InSeconds.Api.Modules.Social.Application.DrawRankingAliasEndpoint.LoadAsync(claimsCurrentPlayer, efPlayerDirectory, efRankingIdentityStore, httpContext.RequestAborted).ConfigureAwait(false);
+                var problemDetails1 = InSeconds.Api.Modules.Social.Application.DrawRankingAliasEndpoint.Validate(rankingIdentityChoice);
                 // Evaluate whether the processing should stop if there are any problems
                 if (!(ReferenceEquals(problemDetails1, Wolverine.Http.WolverineContinue.NoProblems)))
                 {
@@ -75,7 +74,7 @@ namespace Internal.Generated.WolverineHandlers
 
                 
                 // The actual HTTP request handler execution
-                InSeconds.Api.Modules.Social.Application.SetRankingVisibilityEndpoint.Put(request, rankingVisibilityChoice, efRankingVisibilityStore, _socialMetrics, _timeProvider, _loggerOfRankingVisibility);
+                var rankingIdentityResponse_response = await InSeconds.Api.Modules.Social.Application.DrawRankingAliasEndpoint.Post(rankingIdentityChoice, efRankingIdentityStore, efPlayerDirectory, _generalRankingCache, _socialMetrics, _timeProvider, _loggerOfRankingIdentity, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware
@@ -85,8 +84,8 @@ namespace Internal.Generated.WolverineHandlers
                 await efCoreEnvelopeTransaction.CommitAsync(httpContext.RequestAborted, flushOutgoingMessages: false).ConfigureAwait(false);
                 // GH-2917/GH-4742: flush the outbox after the commit and before the response is written
                 await Wolverine.EntityFrameworkCore.EfCoreOutboxFlushing.FlushOutgoingMessagesAsync(messageContext).ConfigureAwait(false);
-                // Wolverine automatically sets the status code to 204 for empty responses
-                if (httpContext.Response is { HasStarted: false, StatusCode: 200 }) httpContext.Response.StatusCode = 204;
+                // Writing the response body to JSON because this was the first 'return variable' in the method signature
+                await WriteJsonAsync(httpContext, rankingIdentityResponse_response, 404);
             }
             catch (System.Exception)
             {
@@ -96,7 +95,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: PUT_api_social_ranking_visibility
+    // END: POST_api_social_ranking_identity_alias
     
     
 }

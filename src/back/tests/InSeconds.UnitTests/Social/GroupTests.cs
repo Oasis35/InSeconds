@@ -230,11 +230,11 @@ public class GeneralRankingPolicyTests
     {
         var rows = Ranked(60);
 
-        var view = GeneralRankingPolicy.Build(rows, rows[39].PlayerId, viewer: null);
+        var view = GeneralRankingPolicy.Build(rows, rows[39].PlayerId);
 
         Assert.Equal(Enumerable.Range(1, 20).Cast<int?>(), view.Top.Select(r => r.Rank));
         Assert.Equal([39, 40, 41], view.Around.Select(r => r.Rank));
-        Assert.Equal((60, 70), (view.Total, view.TopPercent));
+        Assert.Equal(60, view.Total);
     }
 
     [Fact]
@@ -242,9 +242,9 @@ public class GeneralRankingPolicyTests
     {
         var rows = Ranked(30);
 
-        Assert.Empty(GeneralRankingPolicy.Build(rows, rows[4].PlayerId, null).Around);
-        Assert.Equal([21, 22], GeneralRankingPolicy.Build(rows, rows[20].PlayerId, null).Around.Select(r => r.Rank));
-        Assert.Equal([29, 30], GeneralRankingPolicy.Build(rows, rows[29].PlayerId, null).Around.Select(r => r.Rank));
+        Assert.Empty(GeneralRankingPolicy.Build(rows, rows[4].PlayerId).Around);
+        Assert.Equal([21, 22], GeneralRankingPolicy.Build(rows, rows[20].PlayerId).Around.Select(r => r.Rank));
+        Assert.Equal([29, 30], GeneralRankingPolicy.Build(rows, rows[29].PlayerId).Around.Select(r => r.Rank));
     }
 
     [Fact]
@@ -254,36 +254,33 @@ public class GeneralRankingPolicyTests
             new RankingInput(Guid.NewGuid(), "Alice", [new MemberPerformance(0.5, 1)]), new RankingInput(Guid.NewGuid(), "Zoe", []),
         ]);
 
-        var view = GeneralRankingPolicy.Build(rows, rows[1].PlayerId, null);
+        var view = GeneralRankingPolicy.Build(rows, rows[1].PlayerId);
 
         Assert.Equal(["Alice"], view.Top.Select(r => r.Pseudo));
         Assert.Equal(1, view.Total);
-        Assert.Null(view.TopPercent);
+        Assert.Empty(view.Around);
     }
 
-    [Theory]
-    [InlineData(0.9995, 10)] // devant tout le monde : 1er sur 41
-    [InlineData(0.9885, 30)] // derrière 11 joueurs : 12e sur 41
-    [InlineData(0.5, 100)] // dernier
-    public void CeluiQuiNApparaitPas_ASaPositionParDizaines_SansEtreDansLaListe(double performance, int expected)
+    [Fact]
+    public void UnJoueurNonClasse_NeVoitQueLaTete()
     {
-        var rows = Ranked(40);
-        var me = new RankingRow(1, Guid.NewGuid(), "Moi", performance, 3, null);
+        var view = GeneralRankingPolicy.Build(Ranked(40), Guid.NewGuid());
 
-        var view = GeneralRankingPolicy.Build(rows, me.PlayerId, me);
-
-        Assert.Equal(expected, view.TopPercent);
+        Assert.Equal(20, view.Top.Count);
         Assert.Empty(view.Around);
-        Assert.DoesNotContain(view.Top, r => r.PlayerId == me.PlayerId);
         Assert.Equal(40, view.Total);
     }
 
     [Fact]
-    public void SansPartie_NiPositionNiVoisins()
+    public void AuSommet_LesPointsDepartagentUnePerformancePlafonnee()
     {
-        var view = GeneralRankingPolicy.Build(Ranked(5), Guid.NewGuid(), new RankingRow(null, Guid.NewGuid(), "Moi", null, 0, null));
+        // Deux joueurs au-dessus du dernier disque : même performance (1), c'est le niveau qui les départage, avant le nombre de parties.
+        var rows = GroupRankingPolicy.Rank([
+            new RankingInput(Guid.NewGuid(), "Alice", [new MemberPerformance(1, 30, Points: 13100)]),
+            new RankingInput(Guid.NewGuid(), "Bob", [new MemberPerformance(1, 5, Points: 17000)]),
+        ]);
 
-        Assert.Null(view.TopPercent);
-        Assert.Equal(5, view.Total);
+        Assert.Equal(["Bob", "Alice"], rows.Select(r => r.Pseudo));
+        Assert.Equal([1, 2], rows.Select(r => r.Rank));
     }
 }

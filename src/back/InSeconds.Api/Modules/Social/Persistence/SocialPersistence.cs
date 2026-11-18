@@ -45,15 +45,21 @@ internal sealed class GroupMemberConfiguration : IEntityTypeConfiguration<GroupM
     }
 }
 
-internal sealed class RankingVisibilityConfiguration : IEntityTypeConfiguration<RankingVisibility>
+internal sealed class RankingIdentityConfiguration : IEntityTypeConfiguration<RankingIdentity>
 {
-    public void Configure(EntityTypeBuilder<RankingVisibility> builder)
+    /// <summary>L'index unique des alias : la règle d'unicité tient même si deux tirages se croisaient malgré le verrou.</summary>
+    public const string AliasIndex = "ix_ranking_identity_alias";
+
+    public void Configure(EntityTypeBuilder<RankingIdentity> builder)
     {
-        builder.ToTable("ranking_visibility", DbSchemas.Social);
-        builder.HasKey(v => v.PlayerId);
-        builder.Property(v => v.PlayerId).ValueGeneratedNever();
+        builder.ToTable("ranking_identity", DbSchemas.Social);
+        builder.HasKey(i => i.PlayerId);
+        builder.Property(i => i.PlayerId).ValueGeneratedNever();
+        // citext : « Hibou rêveur 12 » et « hibou rêveur 12 » sont le même alias.
+        builder.Property(i => i.Alias).HasColumnType("citext").HasMaxLength(MusicalAlias.MaxLength).IsRequired();
+        builder.HasIndex(i => i.Alias).IsUnique().HasDatabaseName(AliasIndex);
         builder.HasOne("InSeconds.Api.Modules.Players.Domain.Player", navigationName: null).WithMany()
-            .HasForeignKey(nameof(RankingVisibility.PlayerId)).OnDelete(DeleteBehavior.Restrict);
+            .HasForeignKey(nameof(RankingIdentity.PlayerId)).OnDelete(DeleteBehavior.Restrict);
     }
 }
 
@@ -103,20 +109,48 @@ public sealed class EfGroupStore(InSecondsDbContext db) : IGroupStore
     }
 }
 
-public sealed class EfRankingVisibilityStore(InSecondsDbContext db) : IRankingVisibilityStore
+public sealed class EfRankingIdentityStore(InSecondsDbContext db) : IRankingIdentityStore
 {
-    public Task<RankingVisibility?> FindAsync(Guid playerId, CancellationToken ct) =>
-        db.Set<RankingVisibility>().FirstOrDefaultAsync(v => v.PlayerId == playerId, ct);
+    /// <summary>Le verrou des tirages d'alias : un seul entier, tous les tirages se suivent (ils sont rares et courts).</summary>
+    private const int AliasLockNamespace = 0x53_4F_41_4C; // « SOAL »
 
-    public void Add(RankingVisibility visibility) => db.Set<RankingVisibility>().Add(visibility);
+    public Task<RankingIdentity?> FindAsync(Guid playerId, CancellationToken ct) =>
+        db.Set<RankingIdentity>().FirstOrDefaultAsync(i => i.PlayerId == playerId, ct);
 
-    public void Remove(RankingVisibility visibility) => db.Set<RankingVisibility>().Remove(visibility);
+    public Task<bool> IsAliasTakenAsync(string alias, CancellationToken ct) =>
+        db.Set<RankingIdentity>().AsNoTracking().AnyAsync(i => i.Alias == alias, ct);
+
+    public async Task LockAliasDrawAsync(CancellationToken ct)
+    {
+        if (db.Database.CurrentTransaction is null)
+            throw new InvalidOperationException("Le tirage d'un alias doit tourner dans une transaction.");
+        await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock({AliasLockNamespace}, 0)", ct);
+    }
+
+    public void Add(RankingIdentity identity) => db.Set<RankingIdentity>().Add(identity);
+
+    public void Remove(RankingIdentity identity) => db.Set<RankingIdentity>().Remove(identity);
+}
+
+/// <summary>
+/// Les alias du classement général, vus de Players (<see cref="IReservedPseudos"/>) : un compte ne prend pas pour pseudo l'alias d'un autre joueur.
+/// </summary>
+public sealed class SocialReservedPseudos(InSecondsDbContext db) : IReservedPseudos
+{
+    public Task<bool> IsReservedAsync(string name, Guid? exceptPlayerId, CancellationToken ct) =>
+        db.Set<RankingIdentity>().AsNoTracking().AnyAsync(i => i.Alias == name && i.PlayerId != exceptPlayerId, ct);
 }
 
 public sealed class EfSocialQueries(InSecondsDbContext db) : ISocialQueries
 {
-    public async Task<IReadOnlyList<Guid>> ListRankingVisiblePlayersAsync(CancellationToken ct) =>
-        await db.Set<RankingVisibility>().AsNoTracking().Select(v => v.PlayerId).ToListAsync(ct);
+    public async Task<IReadOnlyDictionary<Guid, string>> GetAliasesAsync(IReadOnlyCollection<Guid> playerIds, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(playerIds);
+        if (playerIds.Count == 0)
+            return new Dictionary<Guid, string>();
+        var ids = playerIds.Distinct().ToList();
+        return await db.Set<RankingIdentity>().AsNoTracking().Where(i => ids.Contains(i.PlayerId)).ToDictionaryAsync(i => i.PlayerId, i => i.Alias, ct);
+    }
 
     public async Task<IReadOnlyList<GroupView>> ListGroupsOfAsync(Guid playerId, CancellationToken ct)
     {
@@ -155,7 +189,7 @@ public sealed class EfSocialQueries(InSecondsDbContext db) : ISocialQueries
 /// <summary>
 /// La copie et l'effacement des données de groupe d'un joueur (ses droits RGPD) : Social est un contributeur de Players, comme les modes de jeu.
 /// Enregistré par <c>ApiComposition.AddPlayerDataContributors</c>. La copie ne contient que ce qui le concerne : ses groupes (nom, date, son rôle), jamais
-/// les pseudos des autres membres.
+/// les pseudos des autres membres ; et le nom sous lequel il apparaît au classement général (son pseudo, ou son alias et la date du tirage).
 /// </summary>
 public sealed class SocialPlayerData(InSecondsDbContext db) : IPlayerDataContributor
 {
@@ -169,9 +203,9 @@ public sealed class SocialPlayerData(InSecondsDbContext db) : IPlayerDataContrib
                             orderby m.JoinedAt, g.Id
                             select new SocialGroupExport(g.Name, g.OwnerId == playerId, m.JoinedAt, g.CreatedAt, g.Members.Count))
             .ToListAsync(ct);
-        var visibleSince = await db.Set<RankingVisibility>().AsNoTracking()
-            .Where(v => v.PlayerId == playerId).Select(v => (DateTimeOffset?)v.VisibleSince).FirstOrDefaultAsync(ct);
-        return new SocialDataExport(groups, visibleSince);
+        var identity = await db.Set<RankingIdentity>().AsNoTracking()
+            .Where(i => i.PlayerId == playerId).Select(i => new SocialRankingIdentityExport("alias", i.Alias, i.ChosenAt)).FirstOrDefaultAsync(ct);
+        return new SocialDataExport(groups, identity ?? new SocialRankingIdentityExport("pseudo", null, null));
     }
 
     // Exécuté tout de suite, dans la transaction de l'appelant (pas de SaveChanges : la ligne du joueur part juste après). Un groupe qu'il a créé passe
@@ -196,7 +230,8 @@ public sealed class SocialPlayerData(InSecondsDbContext db) : IPlayerDataContrib
         }
 
         await db.Set<GroupMember>().Where(m => m.PlayerId == playerId).ExecuteDeleteAsync(ct);
-        await db.Set<RankingVisibility>().Where(v => v.PlayerId == playerId).ExecuteDeleteAsync(ct);
+        // Son alias part avec lui : il redevient libre.
+        await db.Set<RankingIdentity>().Where(i => i.PlayerId == playerId).ExecuteDeleteAsync(ct);
         // Aucune « partie » ici : le compte rendu de l'effacement ne compte que les parties de jeu.
         return 0;
     }

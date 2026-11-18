@@ -80,23 +80,16 @@ test.describe('Groupes entre amis', () => {
     await expect(page.getByTestId('ranking-row')).toHaveCount(1);
   });
 
-  test("le classement général : personne n'y figure sans l'avoir choisi, le choix est gardé ; les Hits se lisent depuis la Survie", async ({ page, api }) => {
+  test("le classement général : vide sans partie finie, le profil y mène ; les Hits se lisent depuis la Survie", async ({ page, api }) => {
     const player = new RunPage(page);
     const playerId = await player.loginAsPlayer('zoe-general@e2e.test', 'ZoeGeneral');
     await api.grantRunAccess(playerId);
 
-    // La pastille « Général » : vide, et l'interrupteur éteint par défaut.
+    // La pastille « Général » : vide tant que personne n'a fini de partie.
     await page.goto('/ranking');
     await page.getByTestId('ranking-general').click();
     await expect(page).toHaveURL(/\/ranking\?view=general$/);
     await expect(page.getByTestId('general-empty')).toBeVisible();
-    await expect(page.getByTestId('general-visible')).toHaveAttribute('aria-checked', 'false');
-
-    // Le choix d'apparaître tient au rechargement.
-    await page.getByTestId('general-visible').click();
-    await expect(page.getByTestId('general-visible')).toHaveAttribute('aria-checked', 'true');
-    await page.reload();
-    await expect(page.getByTestId('general-visible')).toHaveAttribute('aria-checked', 'true');
 
     // Le profil y mène.
     await page.goto('/account/profile');

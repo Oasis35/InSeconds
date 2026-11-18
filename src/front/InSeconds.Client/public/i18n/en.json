@@ -1424,10 +1424,7 @@
   "social": {
     "general": {
       "tab": "Overall",
-      "percent": "You are in the top {{ percent }}%.",
       "empty": "Nobody appears here yet.",
-      "appear": "Appear in the ranking",
-      "appearHint": "Your nickname and level are then visible to everyone.",
       "saveFailed": "The change was not saved.",
       "profileLink": "Overall ranking"
     },

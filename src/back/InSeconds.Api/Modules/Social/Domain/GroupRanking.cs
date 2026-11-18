@@ -12,7 +12,8 @@ public sealed record RankingRow(int? Rank, Guid PlayerId, string Pseudo, double?
 
 /// <summary>
 /// Le classement d'un groupe : la **moyenne des performances** (de 0 à 1) des modes où le membre a joué, la plus haute d'abord ; à égalité, celui qui a
-/// le plus de parties, puis l'ordre alphabétique des pseudos. Les ex æquo (même performance, même nombre de parties) partagent un rang (1, 1, 3) ; les
+/// le plus de points (une performance plafonnée au dernier disque n'y départage plus personne), puis le plus de parties, puis l'ordre alphabétique
+/// des pseudos. Les ex æquo (même performance, mêmes points, même nombre de parties) partagent un rang (1, 1, 3) ; les
 /// membres sans partie finie ferment la liste, sans rang. La règle ne connaît aucun mode : un mode de plus fournit une performance de plus.
 /// </summary>
 public static class GroupRankingPolicy
@@ -23,7 +24,7 @@ public static class GroupRankingPolicy
     public static IReadOnlyList<RankingRow> Rank(IEnumerable<RankingInput> members)
     {
         ArgumentNullException.ThrowIfNull(members);
-        var scored = new List<(RankingInput Member, double Performance, int Games, int? Best)>();
+        var scored = new List<(RankingInput Member, double Performance, int? Points, int Games, int? Best)>();
         var unplayed = new List<RankingInput>();
         foreach (var member in members)
         {
@@ -35,23 +36,25 @@ public static class GroupRankingPolicy
 
             var performance = Math.Round(member.Performances.Average(p => Math.Clamp(p.Performance, 0d, 1d)), Decimals);
             var best = member.Performances.Where(p => p.BestScore is not null).Select(p => p.BestScore).Max();
-            scored.Add((member, performance, member.Performances.Sum(p => p.GamesPlayed), best));
+            var withPoints = member.Performances.Where(p => p.Points is not null).ToList();
+            int? points = withPoints.Count == 0 ? null : (int)Math.Round(withPoints.Average(p => (double)p.Points!.Value), MidpointRounding.AwayFromZero);
+            scored.Add((member, performance, points, member.Performances.Sum(p => p.GamesPlayed), best));
         }
 
         var rows = new List<RankingRow>();
         var ordered = scored
-            .OrderByDescending(s => s.Performance).ThenByDescending(s => s.Games).ThenBy(s => s.Member.Pseudo, StringComparer.OrdinalIgnoreCase)
+            .OrderByDescending(s => s.Performance).ThenByDescending(s => s.Points ?? 0).ThenByDescending(s => s.Games)
+            .ThenBy(s => s.Member.Pseudo, StringComparer.OrdinalIgnoreCase)
             .ThenBy(s => s.Member.PlayerId)
             .ToList();
         for (var i = 0; i < ordered.Count; i++)
         {
             var current = ordered[i];
-            var tiesPrevious = i > 0 && ordered[i - 1].Performance == current.Performance && ordered[i - 1].Games == current.Games;
+            var previous = i > 0 ? ordered[i - 1] : default;
+            var tiesPrevious = i > 0 && previous.Performance == current.Performance && previous.Points == current.Points && previous.Games == current.Games;
             var rank = tiesPrevious ? rows[i - 1].Rank : i + 1;
-            var withPoints = current.Member.Performances.Where(p => p.Points is not null).ToList();
-            int? points = withPoints.Count == 0 ? null : (int)Math.Round(withPoints.Average(p => (double)p.Points!.Value), MidpointRounding.AwayFromZero);
             var badge = current.Member.Performances.Where(p => p.Badge is not null).OrderByDescending(p => p.Points ?? 0).Select(p => p.Badge).FirstOrDefault();
-            rows.Add(new RankingRow(rank, current.Member.PlayerId, current.Member.Pseudo, current.Performance, current.Games, current.Best, points, badge));
+            rows.Add(new RankingRow(rank, current.Member.PlayerId, current.Member.Pseudo, current.Performance, current.Games, current.Best, current.Points, badge));
         }
 
         rows.AddRange(unplayed

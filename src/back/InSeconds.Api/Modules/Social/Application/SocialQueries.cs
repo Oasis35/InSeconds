@@ -30,8 +30,8 @@ public interface ISocialQueries
     /// <summary>Ce que le lien montre : rien si le code est inconnu. <paramref name="playerId"/> vide : navigateur sans identité.</summary>
     Task<InvitationView?> FindInvitationAsync(string code, Guid? playerId, CancellationToken ct);
 
-    /// <summary>Les joueurs qui ont choisi d'apparaître dans le classement général.</summary>
-    Task<IReadOnlyList<Guid>> ListRankingVisiblePlayersAsync(CancellationToken ct);
+    /// <summary>Les alias de ces joueurs au classement général (ceux qui n'en ont pas n'y sont pas).</summary>
+    Task<IReadOnlyDictionary<Guid, string>> GetAliasesAsync(IReadOnlyCollection<Guid> playerIds, CancellationToken ct);
 }
 
 /// <summary>
@@ -46,7 +46,20 @@ public sealed class GroupRanking(IEnumerable<IMemberPerformanceSource> sources, 
         return RankAsync([.. group.Members.Select(m => m.PlayerId)], ct);
     }
 
-    /// <summary>Ces joueurs, classés entre eux (le classement général : ceux qui ont choisi d'y apparaître).</summary>
+    /// <summary>
+    /// Les joueurs du classement général : ceux que les modes y mettent (l'accès et une partie finie), **comptes seulement** (un invité n'a pas de
+    /// pseudo de compte et n'y figure jamais).
+    /// </summary>
+    public async Task<IReadOnlyList<Guid>> ListGeneralRankingPlayersAsync(CancellationToken ct)
+    {
+        var ids = new HashSet<Guid>();
+        foreach (var source in sources)
+            ids.UnionWith(await source.ListGeneralRankingPlayersAsync(ct));
+        var accounts = await players.GetPseudosAsync(ids, ct);
+        return [.. ids.Where(accounts.ContainsKey)];
+    }
+
+    /// <summary>Ces joueurs, classés entre eux (le classement général).</summary>
     public async Task<IReadOnlyList<RankingRow>> RankAsync(IReadOnlyList<Guid> ids, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(ids);
