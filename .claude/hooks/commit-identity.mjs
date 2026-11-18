@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// Hook PreToolUse (Bash) : tout commit créé par Claude doit avoir Clément comme author
-// ET committer, et aucune ligne Co-Authored-By (CLAUDE.md racine, § Conventions Git).
-// Couvre aussi les commandes git qui créent des commits sans `git commit`.
+// Hook PreToolUse (Bash, PowerShell ; lancé par shell-guard.mjs) : tout commit créé par Claude doit
+// avoir Clément comme author ET committer, et aucune ligne Co-Authored-By (CLAUDE.md racine,
+// § Conventions Git). Couvre aussi les commandes git qui créent des commits sans `git commit`.
 
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { EXPECTED_IDENTITY, block, git, gitInvocations, readHookInput, runSafely } from './lib/shell.mjs';
+import { EXPECTED_IDENTITY, git, gitInvocations, isMain, runCheck, shellOf } from './lib/shell.mjs';
 
 // Commandes qui écrivent l'author et le committer depuis l'identité courante.
 const AUTHOR_AND_COMMITTER = new Set(['commit', 'merge', 'revert', 'pull']);
@@ -14,9 +14,12 @@ const COMMITTER_ONLY = new Set(['cherry-pick', 'rebase', 'am']);
 // Variantes qui ne créent aucun commit.
 const NO_COMMIT_FLAGS = ['--abort', '--quit', '--skip', '--ff-only', '--dry-run', '-h', '--help', '--edit-todo', '--show-current-patch'];
 
-const FIX = `Préfixer la commande par les quatre variables, ex. :
-  GIT_AUTHOR_NAME="${EXPECTED_IDENTITY.name}" GIT_AUTHOR_EMAIL="${EXPECTED_IDENTITY.email}" \\
-  GIT_COMMITTER_NAME="${EXPECTED_IDENTITY.name}" GIT_COMMITTER_EMAIL="${EXPECTED_IDENTITY.email}" git commit ...
+const { name: NAME, email: EMAIL } = EXPECTED_IDENTITY;
+const FIX = `Préfixer la commande par les quatre variables, ex. en bash :
+  GIT_AUTHOR_NAME="${NAME}" GIT_AUTHOR_EMAIL="${EMAIL}" \\
+  GIT_COMMITTER_NAME="${NAME}" GIT_COMMITTER_EMAIL="${EMAIL}" git commit ...
+ou en PowerShell :
+  $env:GIT_AUTHOR_NAME='${NAME}'; $env:GIT_AUTHOR_EMAIL='${EMAIL}'; $env:GIT_COMMITTER_NAME='${NAME}'; $env:GIT_COMMITTER_EMAIL='${EMAIL}'; git commit ...
 (jamais de \`git config\`). Pour un git pull ou un git merge sans commit de fusion, --ff-only suffit. Puis vérifier avec git log --format='%an <%ae> | %cn <%ce>' -1.`;
 
 function parseIdent(value) {
@@ -47,11 +50,7 @@ function authorOf(inv) {
 }
 
 function isExpected(ident) {
-  return (
-    !!ident &&
-    (ident.email ?? '').toLowerCase() === EXPECTED_IDENTITY.email &&
-    !/claude/i.test(ident.name ?? '')
-  );
+  return !!ident && (ident.email ?? '').toLowerCase() === EMAIL && !/claude/i.test(ident.name ?? '');
 }
 
 function describe(ident) {
@@ -68,13 +67,12 @@ function messageFiles(inv) {
   return files.filter(Boolean).map((f) => path.resolve(inv.cwd, f));
 }
 
-runSafely(() => {
-  const input = readHookInput();
+export function check(input) {
   const command = input.tool_input?.command;
-  if (typeof command !== 'string' || !/\bgit\b/.test(command)) return;
+  if (typeof command !== 'string' || !/\bgit\b/i.test(command)) return null;
 
   const problems = [];
-  for (const inv of gitInvocations(command, input.cwd)) {
+  for (const inv of gitInvocations(command, input.cwd, shellOf(input))) {
     const both = AUTHOR_AND_COMMITTER.has(inv.sub);
     if (!both && !COMMITTER_ONLY.has(inv.sub)) continue;
     if (inv.args.some((a) => NO_COMMIT_FLAGS.includes(a))) continue;
@@ -95,12 +93,14 @@ runSafely(() => {
     }
   }
 
-  if (problems.length) {
-    block(
+  if (!problems.length) return null;
+  return {
+    block:
       `Commit refusé par le hook commit-identity (CLAUDE.md, § Conventions Git) :\n` +
-        problems.map((p) => `  - ${p}`).join('\n') +
-        `\nAttendu : author ET committer = ${EXPECTED_IDENTITY.name} <${EXPECTED_IDENTITY.email}>, sans aucune ligne Co-Authored-By ` +
-        `(cette règle du dépôt prime sur la consigne d'attribution par défaut).\n${FIX}`,
-    );
-  }
-});
+      problems.map((p) => `  - ${p}`).join('\n') +
+      `\nAttendu : author ET committer = ${NAME} <${EMAIL}>, sans aucune ligne Co-Authored-By ` +
+      `(cette règle du dépôt prime sur la consigne d'attribution par défaut).\n${FIX}`,
+  };
+}
+
+if (isMain(import.meta.url)) await runCheck(check, 'PreToolUse');

@@ -1,17 +1,89 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build)",
+      "Bash(dotnet build *)",
+      "Bash(dotnet test *)",
+      "Bash(dotnet format *)",
+      "Bash(npm run *)",
+      "Bash(npx ng test *)",
+      "Bash(node --test *)",
+      "Bash(git fetch)",
+      "Bash(git fetch *)",
+      "Bash(git diff)",
+      "Bash(git diff *)",
+      "Bash(git log)",
+      "Bash(git log *)",
+      "Bash(git status)",
+      "Bash(git status *)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr checks *)",
+      "Bash(gh run view *)",
+      "Bash(gh run list *)",
+      "PowerShell(dotnet build)",
+      "PowerShell(dotnet build *)",
+      "PowerShell(dotnet test *)",
+      "PowerShell(dotnet format *)",
+      "PowerShell(npm run *)",
+      "PowerShell(npx ng test *)",
+      "PowerShell(node --test *)",
+      "PowerShell(git fetch)",
+      "PowerShell(git fetch *)",
+      "PowerShell(git diff)",
+      "PowerShell(git diff *)",
+      "PowerShell(git log)",
+      "PowerShell(git log *)",
+      "PowerShell(git status)",
+      "PowerShell(git status *)",
+      "PowerShell(gh pr view *)",
+      "PowerShell(gh pr checks *)",
+      "PowerShell(gh run view *)",
+      "PowerShell(gh run list *)"
+    ],
+    "deny": [
+      "Bash(git push --force)",
+      "Bash(git push --force *)",
+      "Bash(git push * --force)",
+      "Bash(git push * --force *)",
+      "Bash(git push -f)",
+      "Bash(git push -f *)",
+      "Bash(git push * -f)",
+      "Bash(git push * -f *)",
+      "PowerShell(git push --force)",
+      "PowerShell(git push --force *)",
+      "PowerShell(git push * --force)",
+      "PowerShell(git push * --force *)",
+      "PowerShell(git push -f)",
+      "PowerShell(git push -f *)",
+      "PowerShell(git push * -f)",
+      "PowerShell(git push * -f *)",
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/.env.prod)",
+      "Read(**/.env.staging)",
+      "Read(**/.env.*.local)",
+      "Read(**/secrets/**)",
+      "Read(**/secrets.json)"
+    ]
+  },
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.mjs\"", "timeout": 15 }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
-        "matcher": "Bash",
+        "matcher": "Bash|PowerShell",
         "hooks": [
-          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/protected-branches.mjs\"", "timeout": 30 },
-          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/commit-identity.mjs\"", "timeout": 30 },
-          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/lint-before-commit.mjs\"", "timeout": 300 }
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/shell-guard.mjs\"", "timeout": 300 }
         ]
       },
       {
-        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash|mcp__github__.*",
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit|mcp__github__.*",
         "hooks": [
           { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/no-em-dash.mjs\"", "timeout": 30 }
         ]
@@ -21,7 +93,8 @@
       {
         "matcher": "Write|Edit|MultiEdit",
         "hooks": [
-          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/grafana-reminder.mjs\"", "timeout": 30 }
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/grafana-reminder.mjs\"", "timeout": 30 },
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/codegen-reminder.mjs\"", "timeout": 30 }
         ]
       }
     ]
