@@ -228,12 +228,24 @@ jobs:
             src/front/InSeconds.Client/playwright-results/
           retention-days: 7
 
+  # Les tests d'intégration (Testcontainers : Docker est fourni par ubuntu-latest), en 3 jobs répartis par dossier de
+  # tests/InSeconds.IntegrationTests. Les groupes 1 et 2 prennent les dossiers de GROUP_1 et GROUP_2, le groupe 3 tout le
+  # reste : un nouveau dossier y tombe seul, aucun test n'est oublié ni joué deux fois. Répartition faite sur les durées
+  # que chaque job écrit dans le résumé du run (src/back/scripts/integration-durations.mjs) ; un filtre qui ne trouve
+  # aucun test fait échouer le job (code 8 de Microsoft.Testing.Platform).
   back:
-    name: Backend (build, tests)
+    name: Backend (integration ${{ matrix.group }}/3)
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.code == 'true'
-    timeout-minutes: 30
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [1, 2, 3]
+    env:
+      GROUP_1: Daily Social
+      GROUP_2: Catalogue Runs
     defaults:
       run:
         working-directory: src/back
@@ -246,21 +258,43 @@ jobs:
         with:
           global-json-file: src/back/global.json
 
-      - name: Restore
-        run: dotnet restore InSeconds.slnx
-
       - name: Build (Release)
-        run: dotnet build InSeconds.slnx --configuration Release --no-restore
+        run: dotnet build tests/InSeconds.IntegrationTests/InSeconds.IntegrationTests.csproj --configuration Release
 
-      # Unitaires, architecture, intégration et scripts SQL du VPS (Testcontainers : Docker est fourni par ubuntu-latest).
-      # Délai : la suite prend quelques minutes ; un test bloqué ne retient plus le job jusqu'à la limite de 6 h.
-      - name: Test
-        timeout-minutes: 20
-        run: dotnet test --solution InSeconds.slnx --configuration Release --no-build
+      # Délai : un test bloqué ne retient pas le job jusqu'à sa limite.
+      - name: Integration tests
+        timeout-minutes: 15
+        run: |
+          ns() { for name in "$@"; do printf ' InSeconds.IntegrationTests.%s' "$name"; done; }
+          case ${{ matrix.group }} in
+            1) filter="--filter-namespace$(ns $GROUP_1)" ;;
+            2) filter="--filter-namespace$(ns $GROUP_2)" ;;
+            3) filter="--filter-not-namespace$(ns $GROUP_1 $GROUP_2)" ;;
+          esac
+          dotnet test --project tests/InSeconds.IntegrationTests/InSeconds.IntegrationTests.csproj --configuration Release \
+            --no-build $filter --results-directory "$RUNNER_TEMP/back-integration" \
+            --report-xunit-xml --report-xunit-xml-filename integration-${{ matrix.group }}.xml
 
-  # Les vérifications du back qui ne sont pas des tests, en parallèle du job back : migrations, code Wolverine, image de prod.
+      - name: Durations by folder
+        if: success() || failure()
+        run: |
+          [ -d "$RUNNER_TEMP/back-integration" ] || exit 0
+          { echo "### Intégration ${{ matrix.group }}/3"; node scripts/integration-durations.mjs "$RUNNER_TEMP/back-integration"; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test report
+        if: success() || failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: back-integration-${{ matrix.group }}
+          path: ${{ runner.temp }}/back-integration/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # Les vérifications du back qui ne sont pas des tests d'intégration, en parallèle des jobs back : tests unitaires,
+  # d'architecture et des scripts du VPS (tous les projets de tests/ sauf l'intégration : un nouveau projet y est joué
+  # seul), migrations, code Wolverine, image de prod.
   back-checks:
-    name: Backend (migrations, Wolverine code, prod image)
+    name: Backend (unit tests, migrations, Wolverine code, prod image)
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.code == 'true'
@@ -281,7 +315,16 @@ jobs:
         run: dotnet restore InSeconds.slnx
 
       - name: Build (Release)
-        run: dotnet build InSeconds.Api/InSeconds.Api.csproj --configuration Release --no-restore
+        run: dotnet build InSeconds.slnx --configuration Release --no-restore
+
+      # Unitaires, architecture et scripts SQL et de sauvegarde du VPS (InSeconds.MigrationTests : Testcontainers).
+      - name: Unit, architecture and VPS script tests
+        timeout-minutes: 10
+        run: |
+          for project in tests/*/*.csproj; do
+            case "$project" in */InSeconds.IntegrationTests/*) continue ;; esac
+            dotnet test --project "$project" --configuration Release --no-build
+          done
 
       - name: Install dotnet-ef
         run: dotnet tool install --global dotnet-ef --version 10.0.12
