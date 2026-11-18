@@ -15,7 +15,7 @@ import { TranslatePipe } from '@ngx-translate/core';
   template: `
     @if (pending()) {
       <a routerLink="/" data-testid="daily-left" class="flex items-center justify-between gap-3 px-4 py-4 touch-manipulation"
-        style="border:1px solid var(--border-medium);background:var(--bg-surface);border-radius:var(--radius-card)">
+        style="border:1px solid rgb(var(--rgb-accent-2));box-shadow:var(--glow-accent-2);background:var(--bg-surface);border-radius:var(--radius-card)">
         <span class="min-w-0">
           <span class="block text-base font-extrabold" style="color:var(--text-hi)">{{ 'runs.v4.band.title' | translate }}</span>
           <span class="block text-sm" style="color:var(--color-accent-2)" data-testid="daily-left-time">

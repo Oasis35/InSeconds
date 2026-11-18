@@ -129,7 +129,7 @@ import { SecondsPipe } from '../../../ui/format/seconds.pipe';
         <div class="mt-auto flex flex-col gap-4">
           @if (canPlayAgain()) {
             <div class="flex flex-col gap-2" data-motion="finish-late">
-              <button appButton type="button" size="lg" [block]="true" (click)="playAgain.emit()" data-testid="run-play-again">
+              <button appButton type="button" size="lg" [block]="true" [variant]="dailyFirst() ? 'accent' : 'primary'" (click)="playAgain.emit()" data-testid="run-play-again">
                 <span data-testid="run-play-again-label">{{ (duel() ? 'runs.finished.rematch' : 'runs.finished.playAgain') | translate }}</span>
               </button>
             </div>
@@ -140,7 +140,7 @@ import { SecondsPipe } from '../../../ui/format/seconds.pipe';
             {{ 'runs.finished.compare' | translate }}
           </button>
           <!-- Tout en bas, au-dessus de la barre : le défi du jour qui attend, ou le prochain. -->
-          <ng-content select="[finishBottom]" />
+          <div [style.order]="dailyFirst() ? -1 : 0"><ng-content select="[finishBottom]" /></div>
         </div>
       } @else {
         <section class="flex items-center gap-4">
@@ -235,6 +235,8 @@ export class RunFinishComponent {
   readonly canPlayAgain = input(true);
   /** La nouvelle interface (accès Setlist) : le niveau du joueur s'affiche, « Rejouer » devient « Nouvelle setlist » et le partage « Défier un ami ». */
   readonly showLevel = input(false);
+  /** Le défi du jour reste à jouer : sa carte passe au-dessus des actions et devient l'étape principale, « Rejouer » passe en contour. */
+  readonly dailyFirst = input(false);
   /** Le lien de cette partie dans l'historique (« Revoir ») ; `null` : pas de lien. */
   readonly reviewLink = input<string | null>(null);
   readonly shareCopied = input(false);
