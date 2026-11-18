@@ -37,22 +37,34 @@ public class RunDiversityTests
     {
         var eligible = Enumerable.Range(1, 8).ToList();
 
-        var avoid = RunDiversity.ThemesToAvoid([8, 7, 6, 5, 4, 3, 2, 1], eligible, keepPercent: 50);
+        var avoid = RunDiversity.ThemesToAvoid([8, 7, 6, 5, 4, 3, 2, 1], eligible, avoidPercent: 50);
 
         Assert.Equal([8, 7, 6, 5], avoid);
+    }
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(100, 9)]
+    public void LesBornesDuPourcentage_ZeroCoupeLaRegle_CentLaisseTroisThemes(int percent, int expected)
+    {
+        var eligible = Enumerable.Range(1, 12).ToList();
+
+        var avoid = RunDiversity.ThemesToAvoid(Enumerable.Range(1, 12).ToList(), eligible, percent);
+
+        Assert.Equal(expected, avoid.Count);
     }
 
     [Fact]
     public void PeuDeThemes_JamaisMoinsDeTroisEnLice()
     {
-        Assert.Empty(RunDiversity.ThemesToAvoid([1, 2, 3], [1, 2, 3], keepPercent: 50));
-        Assert.Equal([1], RunDiversity.ThemesToAvoid([1, 2, 3], [1, 2, 3, 4], keepPercent: 50));
+        Assert.Empty(RunDiversity.ThemesToAvoid([1, 2, 3], [1, 2, 3], avoidPercent: 50));
+        Assert.Equal([1], RunDiversity.ThemesToAvoid([1, 2, 3], [1, 2, 3, 4], avoidPercent: 50));
     }
 
     [Fact]
     public void UnThemeJoueMaisAbsentDesEligibles_NeCompteNiNeBloque()
     {
-        Assert.Equal([2], RunDiversity.ThemesToAvoid([99, 2], [1, 2, 3, 4], keepPercent: 50));
+        Assert.Equal([2], RunDiversity.ThemesToAvoid([99, 2], [1, 2, 3, 4], avoidPercent: 50));
     }
 
     [Fact]

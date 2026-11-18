@@ -14,6 +14,7 @@ public class RunsOptionsTests
     [InlineData(-1, 50, 30)]
     [InlineData(91, 50, 30)]
     [InlineData(40, 101, 30)]
+    [InlineData(40, -1, 30)]
     [InlineData(40, 50, 0)]
     public void LaDiversiteHorsBornes_EstRefusee(int pool, int themes, int games)
     {
