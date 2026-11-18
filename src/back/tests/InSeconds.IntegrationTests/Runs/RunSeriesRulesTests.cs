@@ -59,6 +59,35 @@ public class RunSeriesRulesTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task UneVieRetiree_LaisseLEcouteAuPalierAtteint()
+    {
+        var alice = await _run.NewInvitedAsync("Alice");
+        var start = (await alice.LaunchAsync()).Session;
+        var (id, code) = (start.SessionId, start.ChallengeCode);
+
+        await alice.PlayAsync(id, code, 1, true, true, true);
+        var second = await alice.PlayAsync(id, code, 4, true, false, true);
+
+        var summary = Assert.Single(second.RoundSummaries);
+        Assert.Equal(("same", 5m, 5m), (summary.Outcome, summary.ListenSeconds, summary.NextListenSeconds));
+    }
+
+    [Fact]
+    public async Task UnePlaylistSansLaRegleDuPalier_RallongueEncoreApresUneVieRetiree()
+    {
+        var alice = await _run.NewInvitedAsync("Alice");
+        var start = (await alice.LaunchAsync()).Session;
+        var (id, code) = (start.SessionId, start.ChallengeCode);
+        await _run.Api.ExecuteAsync($"UPDATE runs.challenges SET rules = rules - 'holdOnLifeLost' WHERE code = '{code}'");
+
+        await alice.PlayAsync(id, code, 1, true, true, true);
+        var second = await alice.PlayAsync(id, code, 4, true, false, true);
+
+        var summary = Assert.Single(second.RoundSummaries);
+        Assert.Equal(("longer", 5m, 10m), (summary.Outcome, summary.ListenSeconds, summary.NextListenSeconds));
+    }
+
+    [Fact]
     public async Task UneMoitieJuste_NeGenePasLaDescenteDeLEcoute()
     {
         var alice = await _run.NewInvitedAsync("Alice");

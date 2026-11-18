@@ -397,10 +397,10 @@ public class RunSessionTests
 
         var rules = System.Text.Json.JsonSerializer.Deserialize<RunRules>(legacy, web)!;
 
-        Assert.Equal((false, 0, 0, 0, false), (rules.RegainLife, rules.MaxRounds, rules.LifeBonus, rules.CompleteBonus, rules.ShortenOnNoLifeLost || rules.HoldOnLifeLost));
+        Assert.Equal((false, 0, 0, 0, false, false), (rules.RegainLife, rules.MaxRounds, rules.LifeBonus, rules.CompleteBonus, rules.ShortenOnNoLifeLost, rules.HoldOnLifeLost));
         Assert.False(rules.HasCap);
 
         var today = System.Text.Json.JsonSerializer.Deserialize<RunRules>(System.Text.Json.JsonSerializer.Serialize(Today(), web), web)!;
-        Assert.Equal((true, 8, 250, 500, true), (today.RegainLife, today.MaxRounds, today.LifeBonus, today.CompleteBonus, today.ShortenOnNoLifeLost && today.HoldOnLifeLost));
+        Assert.Equal((true, 8, 250, 500, true, true), (today.RegainLife, today.MaxRounds, today.LifeBonus, today.CompleteBonus, today.ShortenOnNoLifeLost, today.HoldOnLifeLost));
     }
 }

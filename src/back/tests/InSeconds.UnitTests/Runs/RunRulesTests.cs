@@ -11,7 +11,7 @@ public class RunRulesTests
         var rules = RunsOptions.DefaultRules();
 
         Assert.Equal((3, 3), (rules.Lives, rules.TracksPerRound));
-        Assert.Equal((true, true, 8, 250, 500), (rules.RegainLife, rules.ShortenOnNoLifeLost && rules.HoldOnLifeLost, rules.MaxRounds, rules.LifeBonus, rules.CompleteBonus));
+        Assert.Equal((true, true, true, 8, 250, 500), (rules.RegainLife, rules.ShortenOnNoLifeLost, rules.HoldOnLifeLost, rules.MaxRounds, rules.LifeBonus, rules.CompleteBonus));
         Assert.True(rules.HasCap);
         Assert.Equal([10m, 5m, 3m, 2m, 1m, 0.5m], rules.ListenLadder);
         Assert.Equal([100, 200, 350, 550, 800, 1200], rules.StepPoints);
