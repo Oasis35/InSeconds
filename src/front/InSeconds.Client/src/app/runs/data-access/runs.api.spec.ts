@@ -38,7 +38,7 @@ describe('RunsApi', () => {
   it('lit mon accès, mon record, ma partie en cours et mon étagère', async () => {
     client['getRunsMe'].mockReturnValue(of({
       hasAccess: true, record: { bestScore: 900, bestRoundsPassed: 2, isNew: false }, pending: { sessionId: 7, challengeCode: 'ABC234' },
-      level: { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: { key: 'runs.discs.gold', stars: 0 }, pointsToNext: 220, progressPercent: 56, runsPlayed: 12, delta: undefined },
+      level: { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: { key: 'runs.discs.gold', stars: 0 }, pointsToNext: 220, progressPercent: 56, runsPlayed: 12, delta: undefined, discChange: undefined, inactivityLoss: 0, discDropInDays: undefined },
     } as RunsMeResponse));
 
     expect(await api.me()).toEqual({
