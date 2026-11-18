@@ -28,6 +28,19 @@ describe('RankingNameSheet', () => {
 
   const find = (el: HTMLElement, id: string) => el.querySelector<HTMLElement>(`[data-testid="${id}"]`);
 
+  /** Un joueur sous alias revient au pseudo et enregistre ; `failing` : le serveur refuse. */
+  async function backToPseudo(failing = false) {
+    api.general = { ...api.general, identity: { mode: 'alias', name: 'Hibou rêveur 12', alias: 'Hibou rêveur 12' } };
+    const { el, settle } = await render();
+    expect(find(el, 'name-alias')?.getAttribute('aria-checked')).toBe('true');
+    api.failIdentity = failing;
+    find(el, 'name-pseudo')!.click();
+    await settle();
+    find(el, 'name-save')!.click();
+    await settle();
+    return el;
+  }
+
   beforeEach(() => (api = new FakeSocialApi()));
 
   it('part du pseudo, coché par défaut', async () => {
@@ -54,28 +67,14 @@ describe('RankingNameSheet', () => {
   });
 
   it('revenir au pseudo puis « Enregistrer » rend l\'alias et ferme la feuille', async () => {
-    api.general = { ...api.general, identity: { mode: 'alias', name: 'Hibou rêveur 12', alias: 'Hibou rêveur 12' } };
-    const { el, settle } = await render();
-    expect(find(el, 'name-alias')?.getAttribute('aria-checked')).toBe('true');
-
-    find(el, 'name-pseudo')!.click();
-    await settle();
-    find(el, 'name-save')!.click();
-    await settle();
+    await backToPseudo();
 
     expect(api.calls).toContain('identity:pseudo');
     expect(close).toHaveBeenCalled();
   });
 
   it('un échec le dit et garde la feuille ouverte', async () => {
-    api.general = { ...api.general, identity: { mode: 'alias', name: 'Hibou rêveur 12', alias: 'Hibou rêveur 12' } };
-    const { el, settle } = await render();
-    api.failIdentity = true;
-
-    find(el, 'name-pseudo')!.click();
-    await settle();
-    find(el, 'name-save')!.click();
-    await settle();
+    const el = await backToPseudo(true);
 
     expect(find(el, 'name-save-failed')).not.toBeNull();
     expect(close).not.toHaveBeenCalled();
