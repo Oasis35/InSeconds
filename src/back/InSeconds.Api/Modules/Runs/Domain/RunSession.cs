@@ -440,7 +440,7 @@ public sealed class RunRecord
 
     /// <summary>
     /// Compare une partie terminée au record : un score strictement meilleur devient le record (et cette partie, celle qui l'a établi) ; plus de
-    /// manches passées améliorent le meilleur disque, même avec un score moindre.
+    /// manches passées améliorent le plus grand nombre de manches passées, même avec un score moindre.
     /// </summary>
     public void Improve(RunSession session, DateTimeOffset now)
     {
