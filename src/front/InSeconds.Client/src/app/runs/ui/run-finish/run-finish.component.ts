@@ -252,8 +252,10 @@ export class RunFinishComponent {
   /** Une Série complète : les 8 manches jouées, avec ses bonus. */
   protected readonly completed = computed(() => this.finish().status === 'completed');
   /** « 1 manche terminée », « 3 manches terminées », ou « Série complète ». */
-  protected readonly roundsKey = computed(() =>
-    this.completed() ? 'runs.finished.complete' : this.finish().roundsPassed === 1 ? 'runs.finished.roundsOne' : 'runs.finished.rounds');
+  protected readonly roundsKey = computed(() => {
+    if (this.completed()) return 'runs.finished.complete';
+    return this.finish().roundsPassed === 1 ? 'runs.finished.roundsOne' : 'runs.finished.rounds';
+  });
   protected readonly hasDisc = hasDisc;
   protected readonly squares = computed(() => finishSquares(this.finish()));
   private readonly numbers = computed(() => new Intl.NumberFormat(this.lang()));
