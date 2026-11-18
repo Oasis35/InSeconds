@@ -102,14 +102,16 @@ InSeconds/
 
 ## Continuous integration
 
-GitHub Actions workflow on every push (all branches) and every PR to `main`:
+GitHub Actions workflow on every push (all branches). Only the jobs of the areas a branch changes run (backend or frontend, the end-to-end tests and the NSwag client check for either one, nothing for docs), everything on `main` and `env/staging`:
 
-- **back** - build, unit, architecture and integration tests (Testcontainers), migrations up to date, Wolverine codegen up to date, Docker image without the test host
-- **front** - production build, Vitest tests, Sheriff boundaries, NSwag clients up to date
-- **e2e** - Playwright against the test host
+- **back** - integration tests (Testcontainers), split across 3 jobs by test folder
+- **back-checks** - migrations up to date, Wolverine codegen up to date, Docker image without the test host, then unit, architecture and VPS script tests
+- **front** - production build, Vitest tests, Sheriff boundaries
+- **api-clients** - NSwag clients up to date with the backend OpenAPI documents
 - **nginx-headers** - builds the frontend nginx image and checks cache and security headers, MIME types and the old-address redirect
+- **e2e** - Playwright against the test host, split across 6 jobs by measured spec duration
 
-The **"CI OK"** check aggregates them (it is the one branch protection requires). Stale runs are cancelled automatically. Details: [`docs/exploitation/ci.md`](docs/exploitation/ci.md).
+The **"CI OK"** check aggregates them (it is the one branch protection requires). Stale runs are cancelled automatically, and on a work branch the first failing job cancels the run. Details: [`docs/exploitation/ci.md`](docs/exploitation/ci.md).
 
 Delivery: pull requests target `env/staging`, which is deployed to the staging site once "CI OK" passes; after testing there, `env/staging` is merged into `main` (merge commit), which deploys production the same way. Details: [`docs/exploitation/deploiement.md`](docs/exploitation/deploiement.md).
 
@@ -139,7 +141,7 @@ cd src/front/InSeconds.Client
 E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=<DB_PASSWORD>" npm run e2e
 ```
 
-`playwright.config.ts` starts the test host (port 5177) and `ng serve` (port 5178). **148 tests** across 33 files: game, login, profile, devices, your data, streak and freezes, Run mode, admin…
+`playwright.config.ts` starts the test host (port 5177) and `ng serve` (port 5178). **181 tests** across 37 files: game, login, profile, devices, your data, streak and freezes, Run mode, admin…
 
 ## Documentation
 
