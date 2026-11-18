@@ -61,7 +61,7 @@
           }
         }
         <!-- Information RGPD (#609) : le pseudo apparaît au classement général de Survie, avant de le valider. -->
-        <p class="text-sm rounded-(--radius-card) px-4 py-3 text-center" style="color:var(--text-light);border:1px solid var(--border-medium)" data-testid="verify-ranking-info">
+        <p class="text-sm rounded-(--radius-card) px-4 py-3 text-center" style="background:var(--bg-surface);color:var(--text-light);border:1px solid var(--border-medium)" data-testid="verify-ranking-info">
           {{ 'account.verify.rankingInfo' | translate }}
         </p>
         <button appButton type="submit" [block]="true" [disabled]="step().kind === 'confirming'">

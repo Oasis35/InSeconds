@@ -21,7 +21,8 @@ import { GeneralRankingStore } from '../../data-access/general-ranking.store';
       <div class="mt-4 flex flex-col gap-3" role="radiogroup" [attr.aria-label]="'social.general.name.title' | translate">
         <button type="button" role="radio" [attr.aria-checked]="choice() === 'pseudo'" (click)="choosePseudo()" data-testid="name-pseudo"
           class="flex items-center gap-3 rounded-(--radius-card) px-4 py-3 text-left cursor-pointer touch-manipulation"
-          [style.border]="choice() === 'pseudo' ? '1px solid var(--color-accent-3)' : '1px solid var(--border-medium)'">
+          [style.border]="choice() === 'pseudo' ? '1px solid var(--color-accent-3)' : '1px solid var(--border-medium)'"
+          [style.background]="choice() === 'pseudo' ? 'rgb(var(--rgb-accent-3) / 0.08)' : null">
           <span class="radio-dot" [class.radio-dot-on]="choice() === 'pseudo'" aria-hidden="true"></span>
           <span class="flex flex-col">
             <span class="font-semibold" style="color:var(--text-hi)">{{ 'social.general.name.pseudo' | translate }}</span>
@@ -29,7 +30,8 @@ import { GeneralRankingStore } from '../../data-access/general-ranking.store';
           </span>
         </button>
         <div class="rounded-(--radius-card) px-4 py-3 flex flex-col gap-2"
-          [style.border]="choice() === 'alias' ? '1px solid var(--color-accent-3)' : '1px solid var(--border-medium)'">
+          [style.border]="choice() === 'alias' ? '1px solid var(--color-accent-3)' : '1px solid var(--border-medium)'"
+          [style.background]="choice() === 'alias' ? 'rgb(var(--rgb-accent-3) / 0.08)' : null">
           <button type="button" role="radio" [attr.aria-checked]="choice() === 'alias'" (click)="chooseAlias()" data-testid="name-alias"
             class="flex items-center gap-3 text-left cursor-pointer touch-manipulation">
             <span class="radio-dot" [class.radio-dot-on]="choice() === 'alias'" aria-hidden="true"></span>
@@ -39,9 +41,9 @@ import { GeneralRankingStore } from '../../data-access/general-ranking.store';
             </span>
           </button>
           @if (choice() === 'alias' && alias(); as alias) {
-            <div class="flex items-center justify-between gap-3 pl-8">
-              <span class="text-lg font-bold" style="color:rgb(var(--rgb-violet))" data-testid="name-alias-value">{{ alias }}</span>
-              <button appButton type="button" variant="neutral" size="sm" [disabled]="store.saving()" (click)="store.drawAlias()" data-testid="name-other-alias">
+            <div class="flex flex-wrap items-center justify-between gap-3 pl-8">
+              <span class="min-w-0 break-words text-lg font-bold" style="color:var(--color-violet)" data-testid="name-alias-value">{{ alias }}</span>
+              <button appButton type="button" variant="neutral" size="sm" class="shrink-0" [disabled]="store.saving()" (click)="store.drawAlias()" data-testid="name-other-alias">
                 {{ 'social.general.name.otherAlias' | translate }}
               </button>
             </div>
@@ -58,7 +60,7 @@ import { GeneralRankingStore } from '../../data-access/general-ranking.store';
   `,
   styles: `
     .radio-dot { flex-shrink: 0; width: 1.25rem; height: 1.25rem; border-radius: 9999px; border: 2px solid var(--border-strong); }
-    .radio-dot-on { border-color: var(--color-accent-3); box-shadow: inset 0 0 0 3px var(--bg-page), inset 0 0 0 10px var(--color-accent-3); }
+    .radio-dot-on { border-color: var(--color-accent-3); box-shadow: inset 0 0 0 3px var(--bg-surface-2), inset 0 0 0 10px var(--color-accent-3); }
   `,
 })
 export class RankingNameSheet {
