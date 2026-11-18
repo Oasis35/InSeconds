@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
+import { unlockSharedAudio } from '../../../gameplay/data-access/html-audio.port';
 import { RunsApi } from '../../data-access/runs.api';
 import { provideRunsApi } from '../../data-access/runs.providers';
 import { SetlistAccessStore } from '../../data-access/setlist-access.store';
@@ -37,7 +38,7 @@ interface HomeSummary {
       <div class="pt-3">
         <app-run-home-card [active]="chrome.dailyDone() === true" [level]="summary().level" [record]="summary().record"
           [todayScore]="summary().todayScore" [lang]="lang()" [received]="summary().received" [groupPlace]="summary().groupPlace"
-          [generalRank]="summary().generalRank" (dismissReceived)="dismiss($event)" />
+          [generalRank]="summary().generalRank" (dismissReceived)="dismiss($event)" (playClicked)="unlockSound()" />
       </div>
     }
   `,
@@ -68,6 +69,11 @@ export class RunsHomeEntryComponent {
       groupPlace: places?.group ?? null,
       generalRank: places?.general ?? null,
     });
+  }
+
+  /** « Jouer » : le son se déverrouille dans ce clic, la partie démarre à l'arrivée sur `/survie?go=1` (iPhone). */
+  protected unlockSound(): void {
+    unlockSharedAudio();
   }
 
   /** Refuse le défi d'un ami : le bandeau part tout de suite, le serveur suit (un échec le laisse partir, il reviendra à la prochaine visite). */

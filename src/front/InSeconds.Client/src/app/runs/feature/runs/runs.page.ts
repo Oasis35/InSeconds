@@ -41,7 +41,7 @@ import { GroupsStore } from '../../../social/data-access/groups.store';
 import { PendingInvite } from '../../../social/data-access/pending-invite';
 import { GroupsStripComponent } from '../../../social/feature/groups-strip/groups-strip.component';
 import { formatCountdown, secondsUntilMidnightUtc, timeLeft } from '../../../core/game-day/game-day';
-import { RunFinish } from '../../domain/run';
+import { RoundDot, RunFinish } from '../../domain/run';
 import { RunHitsLineComponent } from '../hits-line/run-hits-line.component';
 import { reloadMomentFor } from '../reload-moment';
 import { RunShareSheetComponent, RunShareSheetData } from '../share-sheet/run-share-sheet.component';
@@ -69,6 +69,11 @@ export class RunsPage implements OnInit {
   /** La manche du morceau : sa forme et ses basses pour la réponse dans la carte. */
   protected readonly round = inject(TrackRoundStore);
   protected readonly share = inject(RunShare);
+
+  /** Le jeu flou derrière « Commencer » (V4) : les règles par défaut d'une playlist neuve, la partie réelle les lit dans ses règles figées. */
+  protected readonly previewLives: readonly boolean[] = [true, true, true];
+  protected readonly previewDots: readonly RoundDot[] = ['current', 'upcoming', 'upcoming'];
+  protected readonly previewLadder: readonly number[] = [10, 5, 3, 2, 1, 0.5];
   protected readonly session = inject(SessionStore);
   private readonly router = inject(Router);
   protected readonly language = inject(LanguageService);
@@ -150,7 +155,20 @@ export class RunsPage implements OnInit {
     // Le lien d'une playlist peut aussi inviter dans un groupe (`?group=<code>`) : l'invitation attend la fin de la partie.
     const invite = this.route.snapshot.queryParamMap.get('group');
     if (invite) this.pendingInvite.set(invite);
-    void this.store.init(this.code);
+    void this.initAndAutoStart();
+  }
+
+  /**
+   * Arrivée par « Jouer » de l'accueil (`?go=1`) : le clic a déjà déverrouillé le son, la partie (ou la reprise) démarre sans second
+   * toucher. Le paramètre est retiré de l'adresse ; sans lui (adresse tapée, rechargement), l'écran de départ reste.
+   */
+  private async initAndAutoStart(): Promise<void> {
+    const go = this.route.snapshot.queryParamMap.get('go') === '1';
+    await this.store.init(this.code);
+    if (!go || this.code) return;
+    void this.router.navigate([], { queryParams: { go: null }, queryParamsHandling: 'merge', replaceUrl: true });
+    const screen = this.store.screen();
+    if (screen === 'welcome' || screen === 'resume') await this.store.begin();
   }
 
   /** « Défier un ami » : sous la V4, la feuille à trois choix (défier, inviter dans un groupe, ma grille) ; sinon le partage du score. */

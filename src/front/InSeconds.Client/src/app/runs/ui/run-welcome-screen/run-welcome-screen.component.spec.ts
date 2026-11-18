@@ -48,14 +48,18 @@ describe('RunWelcomeScreenComponent', () => {
     expect(start).toHaveBeenCalledTimes(1);
   });
 
-  it("sous la nouvelle interface, « Commencer » recouvre le cadre de la partie (les vies, floues derrière)", () => {
-    const { element } = render({ overlay: true });
+  it("sous la nouvelle interface, la carte de départ est « Commencer », sans le badge ni le titre de l'accueil", () => {
+    const { element } = render({ overlay: true, record: { bestScore: 900, bestRoundsPassed: 2, isNew: false } });
 
     expect(element.querySelector('[data-testid="run-start"]')?.textContent).toContain('runs.welcome.begin');
-    expect(element.querySelectorAll('[data-testid="run-lives"] svg')).toHaveLength(3);
+    expect(element.querySelector('h1')).toBeNull();
+    expect(element.querySelector('[data-testid="run-record"]')).not.toBeNull();
   });
 
-  it('sans la nouvelle interface, aucun cadre derrière', () => {
-    expect(render().element.querySelector('[data-testid="run-lives"]')).toBeNull();
+  it("sans la nouvelle interface, l'accueil du mode garde son titre et « Lancer une partie »", () => {
+    const { element } = render();
+
+    expect(element.querySelector('h1')).not.toBeNull();
+    expect(element.querySelector('[data-testid="run-start"]')?.textContent).toContain('runs.welcome.launch');
   });
 });

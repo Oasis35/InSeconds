@@ -20,13 +20,26 @@ describe('RunHomeCardComponent', () => {
     return { element, q: (id: string) => element.querySelector(`[data-testid="${id}"]`) };
   }
 
+  it("« Jouer » prévient l'accueil au clic (il déverrouille le son)", () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
+    const fixture = TestBed.createComponent(RunHomeCardComponent);
+    fixture.detectChanges();
+    const played = vi.fn();
+    fixture.componentInstance.playClicked.subscribe(played);
+    // Clic avec Ctrl : le lien ne navigue pas (le test n'a pas de routes), la sortie part quand même.
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[data-testid="run-home-play"]')!
+      .dispatchEvent(new MouseEvent('click', { ctrlKey: true, bubbles: true, cancelable: true }));
+    expect(played).toHaveBeenCalledTimes(1);
+  });
+
   describe('discrète (le défi du jour reste à jouer)', () => {
     it('sans partie finie : la promesse, « Jouer » en contour, le disque d’or, pas de rangée', () => {
       const { element, q } = render();
       expect(q('run-home-card')?.getAttribute('data-active')).toBe('false');
       expect(q('run-home-line')?.textContent).toContain('runs.welcome.tagline');
       expect(q('run-home-play')?.textContent).toContain('runs.home.play');
-      expect(q('run-home-play')?.getAttribute('href')).toBe('/survie');
+      expect(q('run-home-play')?.getAttribute('href')).toBe('/survie?go=1');
       expect(element.querySelector('[data-disc]')?.getAttribute('data-disc')).toBe('runs.discs.gold');
       expect(q('run-home-level')).toBeNull();
     });
@@ -109,7 +122,7 @@ describe('RunHomeCardComponent', () => {
       const takeUp = inputs(true);
       expect(takeUp?.textContent).toContain('runs.home.takeUp');
       expect(takeUp?.getAttribute('href')).toBe('/survie/ABC234');
-      expect(inputs(false)?.getAttribute('href')).toBe('/survie');
+      expect(inputs(false)?.getAttribute('href')).toBe('/survie?go=1');
     });
 
     it('sans défi, pas de bandeau', () => {

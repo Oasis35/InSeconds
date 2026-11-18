@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { AudioStatus } from '../domain/track-round';
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
-import { HtmlAudioPort, describeAudioError, describeStall, isSignatureExpired, probePreview } from './html-audio.port';
+import { HtmlAudioPort, resetSharedAudio, describeAudioError, describeStall, isSignatureExpired, probePreview, unlockSharedAudio } from './html-audio.port';
 import { makeToneUrl } from './testing/wav';
 
 /**
@@ -19,6 +19,7 @@ describe('HtmlAudioPort', () => {
   let report: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    resetSharedAudio();
     report = vi.fn();
     TestBed.configureTestingModule({
       providers: [HtmlAudioPort, { provide: ErrorReportingService, useValue: { report } }],
@@ -520,6 +521,18 @@ describe('HtmlAudioPort', () => {
       expect(port.state()).toBe('idle');
       await sleep(100);
       expect(element.paused).toBe(true);
+    });
+
+    it("déverrouillé avant le lecteur (clic de l'accueil), l'élément est le même et le lecteur ne rejoue pas de silence", async () => {
+      unlockSharedAudio();
+      const second = TestBed.runInInjectionContext(() => new HtmlAudioPort());
+      const secondElement = (second as unknown as { audio: HTMLAudioElement }).audio;
+      const play = vi.spyOn(secondElement, 'play');
+
+      second.unlock();
+
+      expect(secondElement).toBe(element);
+      expect(play).not.toHaveBeenCalled();
     });
 
     it('le son joue ensuite normalement, même chargé aussitôt après', async () => {
