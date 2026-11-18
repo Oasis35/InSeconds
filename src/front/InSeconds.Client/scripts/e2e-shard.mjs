@@ -1,55 +1,15 @@
 // Répartit les specs E2E entre les jobs parallèles de la CI : `node scripts/e2e-shard.mjs <n> <total>` écrit les
 // fichiers du job n, à passer à `playwright test`. Playwright découpe (--shard) par nombre de tests et dans l'ordre
 // alphabétique : les specs qui jouent des parties entières, en fin d'alphabet, finissaient dans le même job (4 min 20
-// contre 1 min 20 pour le premier). Ici, chaque spec a un poids (sa durée en CI, en secondes) et va au job le moins
-// chargé, la plus lourde d'abord. Toute spec est jouée : une spec absente de la table compte pour DEFAULT_WEIGHT.
-// Poids à remettre à jour quand l'écart entre les jobs se creuse (rapport Playwright : durée par fichier).
-import { readdirSync } from 'node:fs';
+// contre 1 min 20 pour le premier). Ici, chaque spec a un poids (sa durée en CI, en secondes, dans e2e-weights.json)
+// et va au job le moins chargé, la plus lourde d'abord. Toute spec est jouée : une spec absente de la table compte
+// pour DEFAULT_WEIGHT. Poids mesurés, jamais estimés : `node scripts/e2e-weights.mjs <rapports>` les recalcule.
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const SPECS = fileURLToPath(new URL('../e2e/specs/', import.meta.url));
 const DEFAULT_WEIGHT = 10;
-
-// Durées mesurées en CI le 19/10/2026 (run 1557) ; runs.spec.ts estimé le 09/11/2026 et admin-themes.spec.ts estimé le 11/11/2026, à mesurer au prochain réglage.
-const WEIGHTS = {
-  'admin-themes.spec.ts': 75,
-  'admin-candidates.spec.ts': 40, // estimé le 11/11/2026, à mesurer
-  'admin.spec.ts': 97,
-  'groups.spec.ts': 30, // estimé le 13/11/2026 (trois navigateurs), à mesurer
-  'admin-groups.spec.ts': 12, // estimé le 13/11/2026, à mesurer
-  'scoring.spec.ts': 65,
-  'streak-freeze.spec.ts': 52,
-  'already-played.spec.ts': 49,
-  'login-nudges.spec.ts': 49,
-  'runs.spec.ts': 130,
-  'share-button.spec.ts': 44,
-  'score-distribution.spec.ts': 30,
-  'resume-game.spec.ts': 21,
-  'account-data.spec.ts': 19,
-  'happy-path.spec.ts': 19,
-  'answers-hidden.spec.ts': 19,
-  'autocomplete-keyboard-nav.spec.ts': 17,
-  'multi-tab.spec.ts': 16,
-  'login.spec.ts': 12,
-  'devices.spec.ts': 10,
-  'profile.spec.ts': 10,
-  'change-email.spec.ts': 8,
-  'autocomplete-dedup.spec.ts': 7,
-  'guess-time-chart.spec.ts': 7,
-  'sound-on-click.spec.ts': 6,
-  'audio-error.spec.ts': 6,
-  'legacy-urls.spec.ts': 4,
-  'clear-search.spec.ts': 3,
-  'leave-guard.spec.ts': 3,
-  'footer.spec.ts': 4,
-  'archive.spec.ts': 7,
-  'arrival-source.spec.ts': 6,
-  'skip-track.spec.ts': 2,
-  'no-challenge.spec.ts': 2,
-  'mobile-input-zoom.spec.ts': 3,
-  'service-down.spec.ts': 1,
-  'error-reporting.spec.ts': 1,
-};
+const { weights: WEIGHTS } = JSON.parse(readFileSync(new URL('./e2e-weights.json', import.meta.url), 'utf8'));
 
 const [shard, total] = process.argv.slice(2).map(Number);
 if (!Number.isInteger(shard) || !Number.isInteger(total) || shard < 1 || shard > total) {

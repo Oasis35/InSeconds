@@ -110,10 +110,10 @@ jobs:
         run: bash scripts/check-nginx-headers.sh
 
   # E2E contre l'hôte de test de l'API (InSeconds.Api.Testing, port 5175) et le front servi par
-  # ng serve (port 5176, proxy /api). Découpés en 4 jobs, les specs réparties selon leur durée
-  # (scripts/e2e-shard.mjs) : chacun a sa base, son hôte de test et son ng serve, comme le job unique d'avant.
+  # ng serve (port 5176, proxy /api). Découpés en 6 jobs, les specs réparties selon leur durée mesurée
+  # (scripts/e2e-shard.mjs, poids dans scripts/e2e-weights.json) : chacun a sa base, son hôte de test et son ng serve.
   e2e:
-    name: E2E (Playwright ${{ matrix.shard }}/4)
+    name: E2E (Playwright ${{ matrix.shard }}/6)
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.code == 'true'
@@ -121,7 +121,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6]
 
     # Image officielle de Playwright (MCR), à la version du lockfile : Chromium, ses bibliothèques système et les
     # polices y sont déjà. Remplace le cache des navigateurs et `playwright install-deps`, qui passait par le miroir apt
@@ -153,9 +153,28 @@ jobs:
         with:
           global-json-file: src/back/global.json
 
-      - name: Build test host (Debug)
-        working-directory: src/back
-        run: dotnet build InSeconds.Api.Testing/InSeconds.Api.Testing.csproj --configuration Debug
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          # Sans ça, setup-node prend le Node 24 préinstallé du runner, qui peut avoir un correctif de sécurité de retard.
+          check-latest: true
+          cache: 'npm'
+          cache-dependency-path: src/front/InSeconds.Client/package-lock.json
+
+      # En même temps : le build de l'hôte de test (processeur) et `npm ci` (réseau, disque) ne se gênent guère, et
+      # chacun prenait environ 20 s l'un après l'autre. Le journal du build n'est affiché que s'il échoue.
+      - name: Build test host (Debug) and install npm dependencies
+        timeout-minutes: 10
+        run: |
+          (cd src/back && dotnet build InSeconds.Api.Testing/InSeconds.Api.Testing.csproj --configuration Debug) > /tmp/build.log 2>&1 &
+          build=$!
+          (cd src/front/InSeconds.Client && npm ci --ignore-scripts)
+          if ! wait "$build"; then
+            cat /tmp/build.log
+            echo "::error::Build de l'hôte de test en échec."
+            exit 1
+          fi
 
       # --no-launch-profile : sans lui, launchSettings.json impose l'environnement Development
       # (origines de confiance, limites de débit…), cf. piège 9.
@@ -166,19 +185,6 @@ jobs:
           ASPNETCORE_ENVIRONMENT: Testing
           ConnectionStrings__DefaultConnection: >-
             Host=postgres;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=inseconds_e2e
-
-      - name: Setup Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-          # Sans ça, setup-node prend le Node 24 préinstallé du runner, qui peut avoir un correctif de sécurité de retard.
-          check-latest: true
-          cache: 'npm'
-          cache-dependency-path: src/front/InSeconds.Client/package-lock.json
-
-      - name: Install npm dependencies
-        working-directory: src/front/InSeconds.Client
-        run: npm ci --ignore-scripts
 
       - name: Start Angular dev server
         working-directory: src/front/InSeconds.Client
@@ -193,24 +199,33 @@ jobs:
 
       - name: Run E2E tests
         working-directory: src/front/InSeconds.Client
-        run: npx --no-install playwright test $(node scripts/e2e-shard.mjs ${{ matrix.shard }} 4)
+        # Une affectation arrête le script si e2e-shard.mjs échoue ; une liste vide ferait jouer toutes les specs ici.
+        run: |
+          files=$(node scripts/e2e-shard.mjs ${{ matrix.shard }} 6)
+          [ -n "$files" ] || { echo "::error::Aucune spec pour ce job (scripts/e2e-shard.mjs)."; exit 1; }
+          npx --no-install playwright test $files
         env:
           CI: 'true'
 
       - name: Diagnostics (on failure)
-        if: failure()
+        if: failure() || cancelled()
         run: |
+          echo "=== Test host build logs ==="
+          cat /tmp/build.log || true
           echo "=== Backend logs ==="
           cat /tmp/backend.log || true
           echo "=== Angular logs ==="
           cat /tmp/angular.log || true
 
+      # Le rapport HTML, et le rapport JSON qui donne la durée de chaque test (scripts/e2e-weights.mjs).
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report-${{ matrix.shard }}
-          path: src/front/InSeconds.Client/playwright-report/
+          path: |
+            src/front/InSeconds.Client/playwright-report/
+            src/front/InSeconds.Client/playwright-results/
           retention-days: 7
 
   back:
