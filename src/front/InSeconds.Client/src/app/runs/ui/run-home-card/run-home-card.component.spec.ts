@@ -69,8 +69,9 @@ describe('RunHomeCardComponent', () => {
       const { element, q } = render({ level: none });
       expect(element.querySelector('[data-disc]')?.getAttribute('data-disc')).toBe('runs.discs.none');
       expect(q('run-home-no-disc')?.textContent).toContain('runs.discs.none');
-      const ladder = [...(q('run-home-ladder')?.querySelectorAll('app-run-disc') ?? [])] as HTMLElement[];
-      expect(ladder.every(disc => disc.style.opacity === '0.28')).toBe(true);
+      // Aucun disque de la rangée n'est le sien : tous à la petite taille (ils sont aussi éteints, ce que l'animation de l'échelle rend illisible ici).
+      const ladder = [...(q('run-home-ladder')?.querySelectorAll('svg') ?? [])];
+      expect(ladder.map(svg => svg.getAttribute('width'))).toEqual(['13', '13', '13', '13', '13', '13', '13']);
       expect(q('run-home-from')?.textContent).toContain('runs.discShort.none');
       expect(q('run-home-next')?.textContent).toContain('runs.discs.scratched');
       expect(q('run-home-next')?.textContent).toMatch(/300/);
@@ -90,7 +91,7 @@ describe('RunHomeCardComponent', () => {
       expect(q('run-home-card')?.getAttribute('data-active')).toBe('true');
       expect((q('run-home-card') as HTMLElement).classList).toContain('tube-amber');
       expect(q('run-home-play')?.textContent).toContain('runs.home.play');
-      expect(element.querySelectorAll('[data-disc]')).toHaveLength(9);
+      expect(element.querySelectorAll('[data-disc]')).toHaveLength(8);
     });
 
     it('au plus haut disque : pas de borne suivante', () => {
