@@ -60,7 +60,7 @@ Deux onglets, Défis du jour et Survie (écrans 9 et 10) : résumé en haut (nom
 - Table `runs.player_levels`, politique pure dans `Runs/Domain`, migration EF, code Wolverine régénéré.
 **État : codée (#570).** Back : `runs.player_levels`, `RunLevelPolicy`, réglages `Runs:Levels:*`, le niveau dans `GET /api/runs/me` et dans la fin d'une partie. Front : la carte du niveau (`runs/ui/run-level-card` : disque, points, « +38 », jauge, « Disque d’or dans 220 pts ») sur l'accueil du mode et sur la fin de run, où « Rejouer » devient « Nouvelle setlist » et le partage « Défier un ami », avec « Revoir » vers `/history/survie/<partie>` et le rappel du défi du jour ; trois disques de plus (platine, double platine, diamant). La fin de run a ensuite été mise au niveau de la maquette 04 (cf. § Mise au niveau).
 
-- **Fin de run V4** (écran 4) : haut compact (disque, score, badge « Record », « Disque d'or dans X pts »), bloc violet « Tes groupes » (comptes dans un groupe), « Rejouer » (« Revanche » en duel) et « Défier un ami » en contour orange, et en bas la bande du défi du jour (carte cyan « t'attend » ou ligne discrète avec compte à rebours).
+- **Fin de run V4** (écran 4) : haut compact (disque, score, badge « Record », « Disque d'or dans X pts »), bloc violet « Tes groupes » (comptes dans un groupe), « Rejouer » (« Revanche » en duel) et « Défier un ami » en contour orange, et la bande du défi du jour : défi fait, une ligne discrète avec compte à rebours en bas ; défi à jouer, la carte cyan « t'attend » monte au-dessus des actions (tube cyan) et « Rejouer » passe en contour orange, le défi étant l'étape suivante de la journée.
 
 ## PR 5 : groupes, côté back
 

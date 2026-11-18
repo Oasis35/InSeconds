@@ -22,6 +22,11 @@ describe('RunDailyBandComponent', () => {
     expect(el.querySelector('[data-testid="daily-done-band"]')).toBeNull();
   });
 
+  it('défi à jouer : la carte est cernée de cyan (la tuile de focus de l\'écran)', () => {
+    const card = render(true).querySelector<HTMLElement>('[data-testid="daily-left"]')!;
+    expect(card.style.boxShadow).not.toBe('');
+  });
+
   it('défi joué : une ligne discrète avec le compte à rebours', () => {
     const el = render(false);
     expect(el.querySelector('[data-testid="daily-left"]')).toBeNull();

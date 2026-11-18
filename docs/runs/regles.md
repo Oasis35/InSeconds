@@ -74,7 +74,7 @@ L'écran de bilan entre deux manches le dit : « L'écoute raccourcit », « L'�
 
 - **Sur invitation** : réservé aux comptes autorisés par l'admin (onglet Joueurs), admins d'office. Un invité sans compte n'a pas l'accès. L'interrupteur est distinct du rôle admin.
 - Sans accès, rien ne change pour le joueur : pas de carte Survie, et `/survie` renvoie vers le Daily.
-- **Lien reçu** : le mode est réservé aux comptes qui y ont accès, liens d'ami compris. Sans accès (invité, compte non autorisé, visiteur sans identité), le lien ouvre un écran « Survie n'est pas encore ouverte » avec un seul bouton vers le défi du jour, et le serveur refuse le départ (403 `runs.access_denied`). Avec l'accès, le joueur peut jouer la playlist ; à la fin, « Rejouer » reste le geste principal.
+- **Lien reçu** : le mode est réservé aux comptes qui y ont accès, liens d'ami compris. Sans accès (invité, compte non autorisé, visiteur sans identité), le lien ouvre un écran « Survie n'est pas encore ouverte » avec un seul bouton vers le défi du jour, et le serveur refuse le départ (403 `runs.access_denied`). Avec l'accès, le joueur peut jouer la playlist ; à la fin, « Rejouer » reste le geste principal, sauf quand le défi du jour attend encore : sa carte passe alors devant.
 - Retirer l'accès n'interrompt pas une partie en cours ; cela empêche seulement d'en lancer une nouvelle.
 
 ## Réglages

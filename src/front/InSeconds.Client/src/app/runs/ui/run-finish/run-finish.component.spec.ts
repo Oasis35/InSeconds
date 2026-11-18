@@ -175,6 +175,22 @@ describe('RunFinishComponent', () => {
       expect(element.querySelector('[data-testid="run-level-review"]')?.getAttribute('href')).toBe('/history/survie/7');
     });
 
+    it('défi du jour à jouer : « Rejouer » passe en contour et la bande du défi monte au-dessus des actions ; sinon « Rejouer » reste plein', () => {
+      const again = (element: HTMLElement) => element.querySelector<HTMLElement>('[data-testid="run-play-again"]')!;
+      const band = (element: HTMLElement) => element.querySelector<HTMLElement>('[data-testid="finish-bottom"]')!;
+
+      const first = renderLevel(finish({ level }), true);
+      first.fixture.componentRef.setInput('dailyFirst', true);
+      first.fixture.detectChanges();
+      expect(again(first.element).classList).toContain('app-button--accent');
+      expect(band(first.element).style.order).toBe('-1');
+
+      TestBed.resetTestingModule();
+      const done = renderLevel(finish({ level }), true);
+      expect(again(done.element).classList).toContain('app-button--primary');
+      expect(band(done.element).style.order).toBe('0');
+    });
+
     it('en duel, l\'action principale reste « Revanche »', () => {
       const { element } = renderLevel(finish({ level }), true, { pseudo: 'Léa', gap: 126 });
 
