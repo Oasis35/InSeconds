@@ -1,0 +1,21 @@
+name: Stop the run
+description: >
+  Annule le run en cours, pour qu'un échec ne laisse pas les autres jobs tourner pour rien : posée en dernière étape
+  de chaque job de tests, avec `if: failure()`, sur les branches de travail seulement (l'admin lit le verdict des runs
+  de main et env/staging, et y montrerait un run annulé comme « inconnu »). « CI OK » tourne quand même (`always()`) et
+  échoue sur le job en échec. Le job qui l'appelle doit avoir `actions: write` (et son checkout `persist-credentials:
+  false`, pour que ce jeton ne reste pas à portée des paquets) ; une annulation refusée est notée et le run va au bout,
+  sans faire échouer l'étape.
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/github-script@v8
+      with:
+        script: |
+          try {
+            await github.rest.actions.cancelWorkflowRun({ owner: context.repo.owner, repo: context.repo.repo, run_id: context.runId });
+            core.notice('Run annulé après l\'échec de ce job.');
+          } catch (error) {
+            core.warning(`Run non annulé : ${error.message}`);
+          }
