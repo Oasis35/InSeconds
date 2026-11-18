@@ -303,7 +303,9 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
     public async Task Pseudo_UnAliasDejaAttribue_NePeutPasDevenirUnPseudo()
     {
         var (bob, carol) = (await _game.NewPlayerAsync("Bob"), await _game.NewPlayerAsync("Carol"));
-        var alias = (await ChooseAsync(bob, "alias")).Alias!;
+        // Un alias court posé en base : un alias tiré au hasard peut dépasser les 20 caractères d'un pseudo (400 avant même le contrôle d'unicité).
+        const string alias = "Hibou fou 12";
+        await _game.Api.ExecuteAsync($"INSERT INTO social.ranking_identity (player_id, alias, chosen_at) VALUES ('{bob.Id}', '{alias}', now())");
 
         // Sans tenir compte de la casse, comme les pseudos.
         var refused = await carol.Client.PutAsJsonAsync("/api/players/me/pseudo", new UpdatePseudo(alias.ToUpperInvariant()), Ct);
