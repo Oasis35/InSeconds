@@ -408,7 +408,7 @@ public sealed class RunAnswer
 }
 
 /// <summary>
-/// Le record personnel d'un joueur (une ligne par joueur, invité compris) : son meilleur score et son meilleur disque (manches passées), chacun le
+/// Le record personnel d'un joueur (une ligne par joueur, invité compris) : son meilleur score et son plus grand nombre de manches passées, chacun le
 /// meilleur de ses parties gagnées ou perdues ; une partie abandonnée ne compte pas. Mis à jour dans la transaction qui termine la partie.
 /// </summary>
 public sealed class RunRecord

@@ -7,8 +7,8 @@ using Microsoft.EntityFrameworkCore;
 namespace InSeconds.Api.Modules.Runs.Persistence;
 
 /// <summary>
-/// Runs comme contributeur aux droits d'un joueur (RGPD) : sa section « runs » de la copie de ses données (parties, défis créés, record, accès) et
-/// l'effacement de ses parties (réponses), record et accès ; les défis qu'il a créés restent jouables (<c>created_by</c> à <c>null</c>). Appelé par
+/// Runs comme contributeur aux droits d'un joueur (RGPD) : sa section « runs » de la copie de ses données (parties, défis créés, record, accès, niveau, défis reçus) et
+/// l'effacement de ses parties (réponses), record, niveau, défis reçus et accès ; les défis qu'il a créés restent jouables (<c>created_by</c> à <c>null</c>). Appelé par
 /// Players dans sa propre transaction.
 /// </summary>
 public sealed class RunsPlayerData(InSecondsDbContext db) : IPlayerDataContributor
