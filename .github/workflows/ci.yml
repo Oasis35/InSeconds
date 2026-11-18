@@ -22,11 +22,12 @@ concurrency:
 
 jobs:
   # Les zones que la branche change par rapport à env/staging choisissent les jobs : `back` (src/back, deploy : les tests
-  # du back lisent les scripts du VPS et les tableaux Grafana) pour back et back-checks, `front` (src/front) pour front
+  # du back lisent les scripts SQL et de sauvegarde du VPS) pour back et back-checks, `front` (src/front) pour front
   # et nginx-headers, l'un ou l'autre pour e2e. La doc (*.md, docs/) et .claude/ (hooks et agents, sans CI) ne lancent
   # rien ; tout autre fichier (.github, compose…) lance tout. Toujours tout sur main et env/staging (déploiement). La
   # comparaison porte sur toute la branche, pas sur le dernier push : un run annulé (cancel-in-progress) ne laisse jamais
-  # du code non testé derrière un commit qui touche une autre zone.
+  # du code non testé derrière un commit qui touche une autre zone. `--no-renames` : un fichier renommé compte aussi par
+  # son ancien chemin (sinon un script de deploy/ rangé dans docs/ ne lancerait plus les tests qui le lisaient).
   # Le job « CI OK » en fin de fichier agrège tous les jobs : c'est le seul check exigé par le ruleset.
   changes:
     name: Changed files
@@ -50,6 +51,7 @@ jobs:
           front=true
           if [ "$GITHUB_REF" != refs/heads/main ] && [ "$GITHUB_REF" != refs/heads/env/staging ] \
             && base=$(git merge-base origin/env/staging HEAD); then
+            files=$(git -c core.quotePath=false diff --name-only --no-renames "$base" HEAD)
             back=false
             front=false
             while IFS= read -r file; do
@@ -59,7 +61,7 @@ jobs:
                 src/front/*) front=true ;;
                 *) back=true; front=true ;;
               esac
-            done < <(git diff --name-only "$base" HEAD)
+            done <<< "$files"
           fi
           e2e=false
           if [ "$back" = true ] || [ "$front" = true ]; then e2e=true; fi
@@ -91,6 +93,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # Le jeton du job peut annuler le run (actions: write) : il ne reste pas dans .git/config, à portée des paquets.
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@v7
@@ -132,6 +137,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # Le jeton du job peut annuler le run (actions: write) : il ne reste pas dans .git/config, à portée des paquets.
+          persist-credentials: false
 
       - name: Build image and verify headers
         working-directory: src/front/InSeconds.Client
@@ -183,6 +191,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # Le jeton du job peut annuler le run (actions: write) : il ne reste pas dans .git/config, à portée des paquets.
+          persist-credentials: false
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
@@ -297,6 +308,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # Le jeton du job peut annuler le run (actions: write) : il ne reste pas dans .git/config, à portée des paquets.
+          persist-credentials: false
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
@@ -364,6 +378,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # Le jeton du job peut annuler le run (actions: write) : il ne reste pas dans .git/config, à portée des paquets.
+          persist-credentials: false
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
