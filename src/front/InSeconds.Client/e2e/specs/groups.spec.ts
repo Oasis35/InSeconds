@@ -90,11 +90,23 @@ test.describe('Groupes entre amis', () => {
     await page.getByTestId('ranking-general').click();
     await expect(page).toHaveURL(/\/ranking\?view=general$/);
     await expect(page.getByTestId('general-empty')).toBeVisible();
+    // Pas de fenêtre : la ligne « Tu apparais sous ZoeGeneral · Modifier » ; l'alias musical se tire dans la feuille et se garde au rechargement.
+    await expect(page.getByTestId('general-identity-name')).toHaveText('ZoeGeneral');
+    await page.getByTestId('general-identity-edit').click();
+    await page.getByTestId('name-alias').click();
+    await expect(page.getByTestId('name-alias-value')).toHaveText(/^\S+ \S+ \d{2,3}$/);
+    const alias = (await page.getByTestId('name-alias-value').textContent())!.trim();
+    await page.getByTestId('name-save').click();
+    await expect(page.getByTestId('general-identity-name')).toHaveText(alias);
+    await page.reload();
+    await expect(page.getByTestId('general-identity-name')).toHaveText(alias);
 
-    // Le profil y mène.
+    // Le profil y mène, et ouvre directement le choix du nom.
     await page.goto('/account/profile');
     await page.getByTestId('profile-general-ranking').click();
-    await expect(page).toHaveURL(/\/ranking\?view=general$/);
+    await expect(page).toHaveURL(/\/ranking\?view=general&edit=name$/);
+    await expect(page.getByTestId('name-alias')).toHaveAttribute('aria-checked', 'true');
+    await page.keyboard.press('Escape');
 
     // Les Hits : la ligne de l'accueil du mode ouvre la liste, rien n'est obtenu sans partie finie.
     await page.goto('/survie');

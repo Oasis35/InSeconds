@@ -58,6 +58,9 @@ export class RankingPage {
     { initialValue: null },
   );
 
+  /** `?edit=name` (le lien du profil) : le choix du nom s'ouvre avec le classement général. */
+  protected readonly editName = toSignal(inject(ActivatedRoute).queryParamMap.pipe(map(params => params.get('edit') === 'name')), { initialValue: false });
+
   /** `?view=general` : le classement général à la place de celui d'un groupe. */
   protected readonly general = toSignal(inject(ActivatedRoute).queryParamMap.pipe(map(params => params.get('view') === 'general')), { initialValue: false });
 

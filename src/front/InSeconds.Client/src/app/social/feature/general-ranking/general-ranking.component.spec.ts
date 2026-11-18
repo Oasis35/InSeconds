@@ -32,6 +32,32 @@ describe('GeneralRankingComponent', () => {
     expect(lists[1].querySelector('[data-me="true"] [data-testid="ranking-rank"]')?.textContent).toBe('42');
   });
 
+  it('« Tu apparais sous Moi · Modifier » et le nombre de joueurs classés', async () => {
+    const { el } = await render();
+
+    expect(find(el, 'general-identity')?.textContent).toContain('social.general.appearsAs');
+    expect(find(el, 'general-identity-name')?.textContent?.trim()).toBe('Moi');
+    expect(find(el, 'general-identity-edit')).not.toBeNull();
+    expect(find(el, 'general-total')?.textContent).toContain('social.general.total');
+  });
+
+  it('pas de ligne de nom pour un invité, qui n\'y figure jamais', async () => {
+    api.general = { ...GENERAL, around: [], hasAccount: false, identity: null };
+    const { el } = await render();
+
+    expect(find(el, 'general-identity')).toBeNull();
+  });
+
+  it('« Modifier » ouvre le choix du nom', async () => {
+    const { el, settle } = await render();
+
+    find(el, 'general-identity-edit')!.click();
+    await settle();
+
+    expect(document.querySelector('[data-testid="name-pseudo"]')).not.toBeNull();
+    expect(document.querySelector('[data-testid="name-alias"]')).not.toBeNull();
+  });
+
   it('ne montre qu\'une liste quand le joueur est dans la tête ou n\'est pas classé', async () => {
     api.general = { ...GENERAL, around: [] };
     const { el } = await render();
