@@ -11,7 +11,7 @@ Chantier en cours : le niveau est codé (#607 back, #608 front), le classement g
 - Les anciens niveaux sont remis à zéro par la migration.
 
 **Classement général**
-- Les comptes qui ont l'accès Survie (jamais un invité) : les 20 premiers, puis sa place et ses deux voisins ; cache d'une minute.
+- Les comptes autorisés par l'admin (une ligne `runs.access`) qui ont fini une partie (jamais un invité) ; **les admins n'y figurent pas** (décision du 18/11 : ils ont l'accès d'office, sans ligne) : les 20 premiers, puis sa place et ses deux voisins ; cache d'une minute.
 - Pseudo par défaut, alias musical au choix (animal ou objet musical + adjectif + 2 chiffres), **toujours unique** (ni déjà pris comme alias, ni égal à un pseudo de compte). Dans un groupe, les vrais pseudos.
 - Pas de fenêtre : ligne fixe « Tu apparais sous Léa · Modifier » sur l'onglet Général et dans le profil.
 - RGPD (gardien passé) : base légale intérêt légitime ; une ligne d'information à la création du compte, `/privacy` et `docs/conformite/rgpd.md` à jour, alias comme droit d'opposition, effacement et export de la nouvelle table. Reporté à l'ouverture à tous : mode « Masqué », masquage après 12 mois d'inactivité, bandeau d'information.
