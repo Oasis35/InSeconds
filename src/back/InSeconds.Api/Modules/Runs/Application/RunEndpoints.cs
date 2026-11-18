@@ -459,7 +459,7 @@ public static class ChooseRunThemeEndpoint
         var loaded = await RunSessionAccess.LoadAsync(id, current, store, ct);
         RunThemeOffer? offer = null;
         if (loaded is not null && loaded.Session.IsPending)
-            offer = await dealer.OfferAsync(loaded.Challenge, loaded.Challenge.Rules.RoundOf(loaded.Session.NextPosition), ct);
+            offer = await dealer.OfferAsync(loaded.Challenge, loaded.Challenge.Rules.RoundOf(loaded.Session.NextPosition), loaded.Session.PlayerId, ct);
         return new RunThemeChoiceLoad(loaded, offer);
     }
 
@@ -490,7 +490,7 @@ public static class ChooseRunThemeEndpoint
         ILogger<ChooseRunTheme> logger, CancellationToken ct)
     {
         var (session, challenge) = load.Loaded!;
-        await dealer.DealAsync(challenge, request.Round, request.ThemeId, ct);
+        await dealer.DealAsync(challenge, request.Round, request.ThemeId, session.PlayerId, ct);
         RunsLog.ThemeChosen(logger, session.Id, session.PlayerId, request.Round, request.ThemeId is null);
         return await player.AdvanceAsync(await player.LoadAsync(session, challenge, ct), answered: null, revealed: null, isResuming: false, ct);
     }

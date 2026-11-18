@@ -14,7 +14,13 @@ public interface IRunTrackSelector
     /// </summary>
     /// <param name="used">Les morceaux déjà tirés pour ce défi : jamais deux fois le même (sauf pool épuisé).</param>
     /// <param name="themeId">Le thème de la manche : seuls les morceaux qui l'ont sont tirés ; vide, tout le catalogue.</param>
-    IReadOnlyList<int> SelectRound(IReadOnlyCollection<RankedTrack> candidates, RunRules rules, int seed, int round, IReadOnlySet<int> used, int? themeId);
+    /// <param name="avoidRecentFirst">
+    /// Les morceaux que le joueur a entendu récemment, du plus récent au plus ancien (<see cref="RunDiversity"/>) : une préférence, jamais un blocage.
+    /// Ils ne sont tirés que si la tranche ne suffit pas sans eux, les plus anciens d'abord.
+    /// </param>
+    IReadOnlyList<int> SelectRound(
+        IReadOnlyCollection<RankedTrack> candidates, RunRules rules, int seed, int round, IReadOnlySet<int> used, int? themeId,
+        IReadOnlyList<int>? avoidRecentFirst = null);
 }
 
 /// <summary>
@@ -26,7 +32,8 @@ public interface IRunTrackSelector
 public sealed class RankBandSelector(ISeededShuffle shuffle) : IRunTrackSelector
 {
     public IReadOnlyList<int> SelectRound(
-        IReadOnlyCollection<RankedTrack> candidates, RunRules rules, int seed, int round, IReadOnlySet<int> used, int? themeId)
+        IReadOnlyCollection<RankedTrack> candidates, RunRules rules, int seed, int round, IReadOnlySet<int> used, int? themeId,
+        IReadOnlyList<int>? avoidRecentFirst = null)
     {
         ArgumentNullException.ThrowIfNull(candidates);
         ArgumentNullException.ThrowIfNull(rules);
@@ -53,12 +60,20 @@ public sealed class RankBandSelector(ISeededShuffle shuffle) : IRunTrackSelector
         var end = (int)((long)sorted.Count * (band + 1) / bands);
         var freeSet = free.ToHashSet();
         var inBand = sorted.Skip(start).Take(end - start).Where(freeSet.Contains).ToList();
-        var picked = shuffle.Shuffle(inBand, unchecked(seed + round)).Take(wanted).ToList();
+        // Diversité : les morceaux entendus récemment passent après les autres, les plus anciens d'abord (jamais de blocage).
+        var avoided = (avoidRecentFirst ?? []).Where(freeSet.Contains).Distinct().ToList();
+        var avoidedSet = avoided.ToHashSet();
+        var fresh = inBand.Where(id => !avoidedSet.Contains(id)).ToList();
+        var picked = shuffle.Shuffle(fresh, unchecked(seed + round)).Take(wanted).ToList();
+        if (picked.Count < wanted)
+            picked.AddRange(Enumerable.Reverse(avoided).Where(id => inBand.Contains(id)).Take(wanted - picked.Count));
         if (picked.Count < wanted)
         {
             // Complète avec les moins connus (après la tranche), puis les plus connus (avant).
-            var rest = sorted.Skip(end).Concat(sorted.Take(start).Reverse()).Where(id => freeSet.Contains(id) && !picked.Contains(id));
-            picked.AddRange(rest.Take(wanted - picked.Count));
+            var rest = sorted.Skip(end).Concat(sorted.Take(start).Reverse()).Where(id => freeSet.Contains(id) && !picked.Contains(id)).ToList();
+            picked.AddRange(rest.Where(id => !avoidedSet.Contains(id)).Take(wanted - picked.Count));
+            if (picked.Count < wanted)
+                picked.AddRange(Enumerable.Reverse(avoided).Where(id => rest.Contains(id)).Take(wanted - picked.Count));
         }
 
         return picked;

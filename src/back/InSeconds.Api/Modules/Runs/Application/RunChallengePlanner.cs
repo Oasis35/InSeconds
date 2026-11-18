@@ -13,7 +13,8 @@ public sealed record PlanResult(RunChallenge? Challenge, int EligibleCount, int 
 /// (<see cref="RunRoundDealer"/>). La route qui lance une Série l'appelle ; le défi n'est pas enregistré ici. Le code est vérifié avant l'insertion
 /// (pas de réessai dans la transaction Wolverine) : 31⁶ codes, une collision est très rare, et l'index unique reste le garde-fou.
 /// </summary>
-public sealed class RunChallengePlanner(ITrackDirectory tracks, IRunTrackSelector selector, IRunsStore store, RunsRules rules, TimeProvider time)
+public sealed class RunChallengePlanner(
+    ITrackDirectory tracks, IRunTrackSelector selector, IRunsStore store, IRunsQueries queries, RunsRules rules, TimeProvider time)
 {
     /// <summary>Combien de codes essayer avant de renoncer (une collision répétée n'est plus de la malchance).</summary>
     private const int MaxCodeAttempts = 5;
@@ -26,7 +27,16 @@ public sealed class RunChallengePlanner(ITrackDirectory tracks, IRunTrackSelecto
         var candidates = playable.Select(id => new RankedTrack(id, infos.GetValueOrDefault(id)?.DeezerRank, infos.GetValueOrDefault(id)?.ThemeIds)).ToList();
 
         var seed = System.Security.Cryptography.RandomNumberGenerator.GetInt32(int.MaxValue);
-        var first = selector.SelectRound(candidates, current, seed, round: 1, used: new HashSet<int>(), themeId: null);
+        // Diversité : la première manche évite elle aussi ce que le créateur a entendu récemment (une préférence, jamais un blocage).
+        var avoid = Array.Empty<int>() as IReadOnlyList<int>;
+        if (createdBy is { } creator)
+        {
+            var options = rules.Diversity;
+            var history = await queries.GetHeardHistoryAsync(creator, exceptChallengeId: null, options.MaxGames, ct);
+            avoid = RunDiversity.TracksToAvoid(history.TrackIds, playable.Count, options.PoolPercent);
+        }
+
+        var first = selector.SelectRound(candidates, current, seed, round: 1, used: new HashSet<int>(), themeId: null, avoid);
         if (first.Count < current.TracksPerRound)
             return new PlanResult(null, playable.Count, current.TracksPerRound);
 

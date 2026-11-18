@@ -122,6 +122,46 @@ public sealed class EfRunsStore(InSecondsDbContext db) : IRunsStore
 
 public sealed class EfRunsQueries(InSecondsDbContext db) : IRunsQueries
 {
+    public async Task<RunHeardHistory> GetHeardHistoryAsync(Guid playerId, int? exceptChallengeId, int maxGames, CancellationToken ct)
+    {
+        var sessions = await db.Set<RunSession>().AsNoTracking()
+            .Where(s => s.PlayerId == playerId && s.ChallengeId != exceptChallengeId)
+            .OrderByDescending(s => s.Id).Take(maxGames)
+            .Select(s => new { s.Id, s.ChallengeId })
+            .ToListAsync(ct);
+        if (sessions.Count == 0)
+            return RunHeardHistory.Empty;
+
+        var sessionIds = sessions.Select(s => s.Id).ToList();
+        var challengeIds = sessions.Select(s => s.ChallengeId).Distinct().ToList();
+        var heard = await (
+                from answer in db.Set<RunAnswer>().AsNoTracking()
+                join session in db.Set<RunSession>().AsNoTracking() on answer.SessionId equals session.Id
+                join track in db.Set<RunChallengeTrack>().AsNoTracking()
+                    on new { session.ChallengeId, answer.Position } equals new { track.ChallengeId, track.Position }
+                where sessionIds.Contains(answer.SessionId) && !answer.Neutralized
+                select new { answer.SessionId, answer.Position, track.TrackId, track.Round })
+            .ToListAsync(ct);
+        var rules = await db.Set<RunChallenge>().AsNoTracking()
+            .Where(c => challengeIds.Contains(c.Id))
+            .Select(c => new { c.Id, c.Rules })
+            .ToDictionaryAsync(c => c.Id, c => c.Rules, ct);
+
+        var ordered = sessions.OrderByDescending(s => s.Id).ToList();
+        var tracks = new List<int>();
+        var themes = new List<int>();
+        foreach (var session in ordered)
+        {
+            var rows = heard.Where(h => h.SessionId == session.Id).OrderByDescending(h => h.Position).ToList();
+            tracks.AddRange(rows.Select(r => r.TrackId));
+            if (!rules.TryGetValue(session.ChallengeId, out var challengeRules))
+                continue;
+            themes.AddRange(rows.Select(r => (int)r.Round).Distinct().Select(round => challengeRules.ThemeOf(round)?.ThemeId).OfType<int>());
+        }
+
+        return new RunHeardHistory([.. tracks.Distinct()], [.. themes.Distinct()]);
+    }
+
     public async Task<RunReceivedEntry?> FindPendingReceivedChallengeAsync(Guid playerId, DateTimeOffset now, CancellationToken ct)
     {
         var oldest = now.AddDays(-RunReceivedChallenge.LifetimeDays);

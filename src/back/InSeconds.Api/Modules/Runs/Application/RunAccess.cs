@@ -44,6 +44,13 @@ public interface IRunsQueries
 
     Task<RunRecord?> FindRecordAsync(Guid playerId, CancellationToken ct);
 
+    /// <summary>
+    /// Ce que ce joueur a entendu dans ses <paramref name="maxGames"/> parties les plus récentes (toutes, abandonnées comprises), hors la playlist
+    /// <paramref name="exceptChallengeId"/> : ses morceaux répondus (un morceau retiré sans extrait n'a pas été entendu) et les thèmes de ses manches,
+    /// du plus récent au plus ancien. La mémoire de la diversité du tirage (<see cref="RunDiversity"/>) : lue dans ses parties, rien n'est stocké à part.
+    /// </summary>
+    Task<RunHeardHistory> GetHeardHistoryAsync(Guid playerId, int? exceptChallengeId, int maxGames, CancellationToken ct);
+
     /// <summary>Le niveau de ce joueur ; vide avant sa première partie finie.</summary>
     Task<RunLevel?> FindLevelAsync(Guid playerId, CancellationToken ct);
 

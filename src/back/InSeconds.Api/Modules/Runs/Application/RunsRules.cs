@@ -26,6 +26,9 @@ public sealed class RunsRules(IOptionsMonitor<RunsOptions> options, ILogger<Runs
         return problems.Count == 0 ? current.ToRules() : RunsOptions.DefaultRules();
     }
 
+    /// <summary>Les réglages de la diversité du tirage, ou ceux par défaut si les réglages sont incohérents.</summary>
+    public RunDiversityOptions Diversity => RunsOptionsChecks.Problems(Options).Count == 0 ? Options.Diversity : new RunDiversityOptions();
+
     /// <summary>Les réglages du niveau, ou ceux par défaut si les réglages sont incohérents.</summary>
     public RunLevelOptions Levels => RunsOptionsChecks.Problems(Options).Count == 0 ? Options.Levels : new RunLevelOptions();
 

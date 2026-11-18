@@ -58,9 +58,9 @@ public sealed class RunPlayer(
             var round = challenge.Rules.RoundOf(session.NextPosition);
             if (!challenge.HasRound(round))
             {
-                if (await roundDealer.OfferAsync(challenge, round, ct) is not null)
+                if (await roundDealer.OfferAsync(challenge, round, session.PlayerId, ct) is not null)
                     break;
-                await roundDealer.DealAsync(challenge, round, themeId: null, ct);
+                await roundDealer.DealAsync(challenge, round, themeId: null, session.PlayerId, ct);
                 run = await LoadAsync(session, challenge, ct);
             }
 
@@ -111,7 +111,7 @@ public sealed class RunPlayer(
         if (run.Session.IsPending)
         {
             var round = run.Challenge.Rules.RoundOf(run.Session.NextPosition);
-            themeOffer = await roundDealer.OfferAsync(run.Challenge, round, ct);
+            themeOffer = await roundDealer.OfferAsync(run.Challenge, round, run.Session.PlayerId, ct);
         }
 
         IReadOnlyDictionary<int, byte[]> shapes = new Dictionary<int, byte[]>();
