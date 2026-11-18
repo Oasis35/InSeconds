@@ -62,6 +62,9 @@ public sealed class RunsOptions
     /// <summary>L'écoute raccourcit dès qu'une manche se termine sans vie perdue (une moitié juste ne gêne plus).</summary>
     public bool ShortenOnNoLifeLost { get; set; } = true;
 
+    /// <summary>Une manche avec une vie perdue laisse l'écoute au même palier (elle ne rallonge plus).</summary>
+    public bool HoldOnLifeLost { get; set; } = true;
+
     /// <summary>Le plafond de manches : la partie s'arrête en « Série complète » ; 0 : pas de plafond.</summary>
     public int MaxRounds { get; set; } = DefaultMaxRounds;
 
@@ -79,7 +82,7 @@ public sealed class RunsOptions
     public RunRules ToRules() =>
         new(
             Lives, TracksPerRound, [.. EffectiveListenLadder], [.. EffectiveStepPoints], AnswerSeconds, Themes: null, RankBands,
-            RegainLife, MaxRounds, LifeBonus, CompleteBonus, ShortenOnNoLifeLost);
+            RegainLife, MaxRounds, LifeBonus, CompleteBonus, ShortenOnNoLifeLost, HoldOnLifeLost);
 
     public static RunRules DefaultRules() => new RunsOptions().ToRules();
 }

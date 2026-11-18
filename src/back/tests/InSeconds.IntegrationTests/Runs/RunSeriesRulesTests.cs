@@ -30,7 +30,7 @@ public class RunSeriesRulesTests(PostgresFixture postgres) : IAsyncLifetime
 
         // Une playlist d'avant (rien de ces champs dans ses règles figées) : ni vie regagnée, ni plafond, ni bonus, quels que soient les réglages d'aujourd'hui.
         await _run.Api.ExecuteAsync(
-            "UPDATE runs.challenges SET rules = rules - 'regainLife' - 'maxRounds' - 'lifeBonus' - 'completeBonus' - 'shortenOnNoLifeLost'"
+            "UPDATE runs.challenges SET rules = rules - 'regainLife' - 'maxRounds' - 'lifeBonus' - 'completeBonus' - 'shortenOnNoLifeLost' - 'holdOnLifeLost'"
             + $" WHERE code = '{start.ChallengeCode}'");
         var resumed = await alice.SessionAsync(start.SessionId);
         Assert.Equal(0, resumed.MaxRounds);

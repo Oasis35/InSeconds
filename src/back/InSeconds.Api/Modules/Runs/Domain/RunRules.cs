@@ -28,10 +28,13 @@ namespace InSeconds.Api.Modules.Runs.Domain;
 /// L'écoute raccourcit dès qu'une manche se termine sans vie perdue (une moitié juste ne gêne plus). Faux : seulement une manche où tout est trouvé en
 /// entier (playlists d'avant).
 /// </param>
+/// <param name="HoldOnLifeLost">
+/// Une manche avec une vie perdue laisse le palier où il est (on stagne, on ne remonte pas). Faux : le palier rallonge d'un cran (playlists d'avant).
+/// </param>
 public sealed record RunRules(
     int Lives, int TracksPerRound, IReadOnlyList<decimal> ListenLadder, IReadOnlyList<int> StepPoints, int AnswerSeconds = 0,
     IReadOnlyList<RunRoundTheme>? Themes = null, int RankBands = 8,
-    bool RegainLife = false, int MaxRounds = 0, int LifeBonus = 0, int CompleteBonus = 0, bool ShortenOnNoLifeLost = false)
+    bool RegainLife = false, int MaxRounds = 0, int LifeBonus = 0, int CompleteBonus = 0, bool ShortenOnNoLifeLost = false, bool HoldOnLifeLost = false)
 {
     /// <summary>La Série a un plafond de manches.</summary>
     public bool HasCap => MaxRounds > 0;
@@ -70,17 +73,18 @@ public sealed record RunRules(
 public sealed record RunRoundTheme(int Round, int ThemeId, string Name, bool Mystery = false);
 
 /// <summary>
-/// Ce que devient le palier d'une manche à l'autre. Une manche avec une **erreur** (une vie perdue) remonte d'un palier (jamais au-dessus du premier) ;
+/// Ce que devient le palier d'une manche à l'autre. Une manche avec une **erreur** (une vie perdue) le laisse en place avec <c>holdOnLifeLost</c>
+/// (les playlists d'aujourd'hui), sinon (les playlists d'avant) le remonte d'un palier (jamais au-dessus du premier) ;
 /// une manche **sans vie perdue** descend d'un palier (écoute plus courte, points plus gros). Avec <c>shortenOnNoLifeLost</c> (les playlists d'aujourd'hui)
 /// une moitié juste ne gêne pas ; sans lui (les playlists d'avant), il faut que tous les morceaux soient trouvés en entier, sinon le palier ne bouge pas.
 /// Un morceau retiré ne compte pour rien : une manche sans aucune réponse comptée ne bouge pas. Une règle unique, la même à tous les paliers.
 /// </summary>
 public static class RunSteps
 {
-    public static int Next(int step, RoundTally tally, int lastStep, bool shortenOnNoLifeLost = false)
+    public static int Next(int step, RoundTally tally, int lastStep, bool shortenOnNoLifeLost = false, bool holdOnLifeLost = false)
     {
         if (tally.Failed > 0)
-            return Math.Max(0, step - 1);
+            return holdOnLifeLost ? step : Math.Max(0, step - 1);
         var clean = shortenOnNoLifeLost ? tally.Answered > 0 : tally is { Half: 0, Full: > 0 };
         return clean ? Math.Min(lastStep, step + 1) : step;
     }

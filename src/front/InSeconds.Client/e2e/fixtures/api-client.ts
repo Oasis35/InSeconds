@@ -205,6 +205,7 @@ export class ApiTestClient {
     await this.setRunSetting('Runs:TracksPerRound', '5');
     await this.setRunSetting('Runs:RegainLife', 'false');
     await this.setRunSetting('Runs:ShortenOnNoLifeLost', 'false');
+    await this.setRunSetting('Runs:HoldOnLifeLost', 'false');
     await this.setRunSetting('Runs:MaxRounds', '0');
     await this.setRunSetting('Runs:LifeBonus', '0');
     await this.setRunSetting('Runs:CompleteBonus', '0');

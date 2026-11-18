@@ -39,10 +39,10 @@ L'écoute suit une **échelle de paliers** : **10, 5, 3, 2, 1, 0,5 s** (le derni
 
 Le palier d'une manche se **calcule** depuis les réponses de la manche d'avant, jamais stocké :
 - **manche terminée sans vie perdue** (les moitiés justes ne gênent plus) : le palier **raccourcit** d'un cran ;
-- **manche avec au moins une vie perdue** : le palier **rallonge** d'un cran, jamais au-dessus de 10 s (une erreur au premier palier le laisse là) ;
+- **manche avec au moins une vie perdue** : le palier **reste** où il est (on ne remonte pas) ;
 - une manche où tous les morceaux ont été retirés (neutralisés) ne bouge pas.
 
-L'écran de bilan entre deux manches le dit : « L'écoute raccourcit », « L'écoute reste la même », « L'écoute rallonge ».
+L'écran de bilan entre deux manches le dit : « L'écoute raccourcit », « L'écoute reste la même » (« L'écoute rallonge » ne se voit plus que sur les playlists d'avant).
 
 ## Les thèmes
 
@@ -79,6 +79,6 @@ L'écran de bilan entre deux manches le dit : « L'écoute raccourcit », « L'�
 
 ## Réglages
 
-Tous relus à chaud (`Runs:…`, `infra.settings`), contrôlés au démarrage de l'API **et** à l'usage (une valeur incohérente retombe sur les défauts) : `Lives` (3), `TracksPerRound` (3), `RegainLife` (vrai), `ShortenOnNoLifeLost` (vrai), `MaxRounds` (8 ; 0 : pas de plafond), `LifeBonus` (250), `CompleteBonus` (500), `ListenLadder` (10, 5, 3, 2, 1, 0,5), `StepPoints` (100 à 1 200), `AnswerSeconds` (45), `RankBands` (8), `Levels` (le niveau). Tableau complet : [`CLAUDE.md`](../../CLAUDE.md) § Réglages.
+Tous relus à chaud (`Runs:…`, `infra.settings`), contrôlés au démarrage de l'API **et** à l'usage (une valeur incohérente retombe sur les défauts) : `Lives` (3), `TracksPerRound` (3), `RegainLife` (vrai), `ShortenOnNoLifeLost` (vrai), `HoldOnLifeLost` (vrai), `MaxRounds` (8 ; 0 : pas de plafond), `LifeBonus` (250), `CompleteBonus` (500), `ListenLadder` (10, 5, 3, 2, 1, 0,5), `StepPoints` (100 à 1 200), `AnswerSeconds` (45), `RankBands` (8), `Levels` (le niveau). Tableau complet : [`CLAUDE.md`](../../CLAUDE.md) § Réglages.
 
-**Les playlists d'avant** (créées avant les règles d'équilibrage de novembre 2026) gardent les règles figées à leur création : manches de 5, pas de vie regagnée, l'écoute ne raccourcit qu'après une manche où tout est trouvé en entier, pas de plafond ni de bonus.
+**Les playlists d'avant** (créées avant les règles d'équilibrage de novembre 2026) gardent les règles figées à leur création : manches de 5, pas de vie regagnée, l'écoute ne raccourcit qu'après une manche où tout est trouvé en entier et rallonge après une vie perdue, pas de plafond ni de bonus.
