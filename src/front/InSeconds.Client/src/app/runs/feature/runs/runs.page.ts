@@ -155,7 +155,20 @@ export class RunsPage implements OnInit {
     // Le lien d'une playlist peut aussi inviter dans un groupe (`?group=<code>`) : l'invitation attend la fin de la partie.
     const invite = this.route.snapshot.queryParamMap.get('group');
     if (invite) this.pendingInvite.set(invite);
-    void this.store.init(this.code);
+    void this.initAndAutoStart();
+  }
+
+  /**
+   * Arrivée par « Jouer » de l'accueil (`?go=1`) : le clic a déjà déverrouillé le son, la partie (ou la reprise) démarre sans second
+   * toucher. Le paramètre est retiré de l'adresse ; sans lui (adresse tapée, rechargement), l'écran de départ reste.
+   */
+  private async initAndAutoStart(): Promise<void> {
+    const go = this.route.snapshot.queryParamMap.get('go') === '1';
+    await this.store.init(this.code);
+    if (!go || this.code) return;
+    void this.router.navigate([], { queryParams: { go: null }, queryParamsHandling: 'merge', replaceUrl: true });
+    const screen = this.store.screen();
+    if (screen === 'welcome' || screen === 'resume') await this.store.begin();
   }
 
   /** « Défier un ami » : sous la V4, la feuille à trois choix (défier, inviter dans un groupe, ma grille) ; sinon le partage du score. */

@@ -70,8 +70,13 @@ test.describe('Mode Setlist', () => {
     // Le défi du jour n'est pas joué : la carte est discrète (« Jouer » en contour), sous la carte du défi.
     await expect(run.homeCard).toHaveAttribute('data-active', 'false');
     await expect(page.getByTestId('home-challenge')).toBeVisible();
+    // Un seul toucher : la partie démarre sans écran « Commencer » (le son est déverrouillé dans ce clic).
     await page.getByTestId('run-home-play').click();
     await expect(page).toHaveURL(/\/survie$/);
+    await expect(run.answerInput).toBeVisible();
+    await expect(run.startButton).toHaveCount(0);
+    // Arrivée directe sur /survie : l'écran de départ (le jeu flou et « Commencer »).
+    await page.goto('/survie');
     await expect(run.startButton).toBeVisible();
   });
 
@@ -112,8 +117,7 @@ test.describe('Mode Setlist', () => {
     await expect(page.getByTestId('header-login')).toHaveCount(0);
 
     // La carte Survie mène au mode, qui rappelle le défi restant et y ramène ; l'accueil reste allumé dans la barre.
-    await page.getByTestId('run-home-play').click();
-    await expect(page).toHaveURL(/\/survie$/);
+    await page.goto('/survie');
     await expect(run.startButton).toBeVisible();
     await expect(page.getByTestId('tab-daily')).toHaveAttribute('aria-current', 'page');
     await page.getByTestId('daily-left').click();
