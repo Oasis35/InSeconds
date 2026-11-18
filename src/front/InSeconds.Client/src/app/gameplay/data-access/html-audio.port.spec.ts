@@ -308,6 +308,61 @@ describe('HtmlAudioPort', () => {
     expect(preloads()).toEqual([]);
   });
 
+  describe('touches multimédia (#519)', () => {
+    /** Un lecteur neuf, avec les gestionnaires qu'il a posés sur la Media Session. */
+    function keyedPort(): { keyed: HtmlAudioPort; handlers: Map<string, MediaSessionActionHandler | null> } {
+      resetSharedAudio();
+      const handlers = new Map<string, MediaSessionActionHandler | null>();
+      const spy = vi.spyOn(navigator.mediaSession, 'setActionHandler').mockImplementation((action, handler) => {
+        handlers.set(action, handler);
+      });
+      const keyed = TestBed.runInInjectionContext(() => new HtmlAudioPort());
+      spy.mockRestore();
+      return { keyed, handlers };
+    }
+
+    it('lecture / pause fait ce que la manche a branché, au lieu de relancer l’extrait arrêté à son palier', () => {
+      const { keyed, handlers } = keyedPort();
+      const pressed = vi.fn();
+
+      handlers.get('play')!({ action: 'play' }); // rien de branché : rien ne se passe
+      keyed.onPlayPauseKey(pressed);
+      handlers.get('play')!({ action: 'play' });
+      handlers.get('pause')!({ action: 'pause' });
+      expect(pressed).toHaveBeenCalledTimes(2);
+
+      keyed.onPlayPauseKey(null);
+      handlers.get('play')!({ action: 'play' });
+      expect(pressed).toHaveBeenCalledTimes(2);
+      keyed.stop();
+    });
+
+    it('les autres touches multimédia ne font rien', () => {
+      const { keyed, handlers } = keyedPort();
+      for (const action of ['stop', 'seekbackward', 'seekforward', 'seekto', 'previoustrack', 'nexttrack']) {
+        expect(handlers.get(action)).toBeTypeOf('function');
+      }
+      keyed.stop();
+    });
+
+    it('un lecteur ne retire pas la touche qu’un autre a posée depuis', () => {
+      const { keyed, handlers } = keyedPort();
+      const other = TestBed.runInInjectionContext(() => new HtmlAudioPort());
+      const first = vi.fn();
+      const second = vi.fn();
+
+      keyed.onPlayPauseKey(first);
+      other.onPlayPauseKey(second);
+      keyed.onPlayPauseKey(null);
+      handlers.get('play')!({ action: 'play' });
+
+      expect(first).not.toHaveBeenCalled();
+      expect(second).toHaveBeenCalledTimes(1);
+      keyed.stop();
+      other.stop();
+    });
+  });
+
   describe('arrêt calé sur le son réel (pièges 44 et 46)', () => {
     it('un démarrage lent du son ne raccourcit pas le palier', async () => {
       await loaded();
