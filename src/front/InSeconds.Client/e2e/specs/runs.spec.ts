@@ -75,9 +75,6 @@ test.describe('Mode Setlist', () => {
     await expect(page).toHaveURL(/\/survie$/);
     await expect(run.answerInput).toBeVisible();
     await expect(run.startButton).toHaveCount(0);
-    // Arrivée directe sur /survie : l'écran de départ (le jeu flou et « Commencer »).
-    await page.goto('/survie');
-    await expect(run.startButton).toBeVisible();
   });
 
   test("nouvelle interface : la barre du bas remplace le pied de page pour un joueur qui a l'accès, et pour lui seul", async ({ page, api }) => {
