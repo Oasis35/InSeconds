@@ -1,4 +1,4 @@
-import { GeneralRanking, Group, GroupRanking, Invitation, MyGroups } from '../../domain/group';
+import { GeneralRanking, Group, GroupRanking, Invitation, MyGroups, RankingIdentity } from '../../domain/group';
 import { GroupOutcome, InvitationOutcome, SocialApi } from '../social.api';
 
 export const GROUP: Group = { id: 4, name: 'Potes', inviteCode: 'ABCD2345', memberCount: 3, maxMembers: 15, isOwner: true };
@@ -24,7 +24,7 @@ export const GENERAL: GeneralRanking = {
     { rank: 41, pseudo: 'Iris', isMe: false, points: 1400, badge: 'runs.discs.silver' },
     { rank: 42, pseudo: 'Moi', isMe: true, points: 1380, badge: 'runs.discs.silver' },
   ],
-  total: 60, visible: true, canAppear: true, topPercent: 70,
+  total: 60, hasAccount: true, identity: { mode: 'pseudo', name: 'Moi', alias: null },
 };
 
 /** Un faux adaptateur de l'API Social : il rend ce qu'on lui a posé et note les appels. */
@@ -36,7 +36,8 @@ export class FakeSocialApi {
   invitationOutcome: InvitationOutcome = { kind: 'ok', invitation: INVITATION };
   general: GeneralRanking = GENERAL;
   failGeneral = false;
-  failVisibility = false;
+  failIdentity = false;
+  private aliasCount = 0;
   failGroups = false;
   failLeave = false;
   readonly calls: string[] = [];
@@ -60,13 +61,27 @@ export class FakeSocialApi {
     return Promise.resolve(this.general);
   }
 
-  setRankingVisibility(visible: boolean): Promise<void> {
-    this.calls.push(`visibility:${visible}`);
-    if (this.failVisibility) return Promise.reject(new Error('down'));
-    this.general = visible
-      ? GENERAL
-      : { ...GENERAL, around: [], visible: false };
-    return Promise.resolve();
+  setRankingIdentity(mode: 'pseudo' | 'alias'): Promise<RankingIdentity> {
+    this.calls.push(`identity:${mode}`);
+    if (this.failIdentity) return Promise.reject(new Error('down'));
+    let identity: RankingIdentity = { mode: 'pseudo', name: 'Moi', alias: null };
+    if (mode === 'alias') identity = this.general.identity?.mode === 'alias' ? this.general.identity : this.alias();
+    this.general = { ...this.general, identity };
+    return Promise.resolve(identity);
+  }
+
+  drawRankingAlias(): Promise<RankingIdentity> {
+    this.calls.push('alias');
+    if (this.failIdentity) return Promise.reject(new Error('down'));
+    const identity = this.alias();
+    this.general = { ...this.general, identity };
+    return Promise.resolve(identity);
+  }
+
+  private alias(): RankingIdentity {
+    this.aliasCount++;
+    const alias = `Hibou rêveur ${10 + this.aliasCount}`;
+    return { mode: 'alias', name: alias, alias };
   }
 
   create(name: string): Promise<GroupOutcome> {

@@ -1531,7 +1531,7 @@
     },
     {
       "type": "stat",
-      "title": "Apparaître au classement général (allumé)",
+      "title": "Classement général : alias choisis",
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROM}"
@@ -1543,7 +1543,7 @@
             "type": "prometheus",
             "uid": "${DS_PROM}"
           },
-          "expr": "sum(increase(inseconds_social_ranking_visibility_total{job=~\".*inseconds-api\",visible=\"true\"}[$__range])) or vector(0)",
+          "expr": "sum(increase(inseconds_social_ranking_identity_total{job=~\".*inseconds-api\",mode=~\"alias|other_alias\"}[$__range])) or vector(0)",
           "legendFormat": "",
           "instant": true,
           "range": false
@@ -1574,7 +1574,7 @@
     },
     {
       "type": "stat",
-      "title": "Classement général (éteint)",
+      "title": "Classement général : retours au pseudo",
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROM}"
@@ -1586,7 +1586,7 @@
             "type": "prometheus",
             "uid": "${DS_PROM}"
           },
-          "expr": "sum(increase(inseconds_social_ranking_visibility_total{job=~\".*inseconds-api\",visible=\"false\"}[$__range])) or vector(0)",
+          "expr": "sum(increase(inseconds_social_ranking_identity_total{job=~\".*inseconds-api\",mode=\"pseudo\"}[$__range])) or vector(0)",
           "legendFormat": "",
           "instant": true,
           "range": false

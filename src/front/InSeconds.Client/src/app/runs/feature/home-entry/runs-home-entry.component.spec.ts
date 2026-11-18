@@ -163,10 +163,10 @@ describe('RunsHomeEntryComponent', () => {
       expect(element.querySelectorAll('[data-testid="run-home-place"]')).toHaveLength(1);
     });
 
-    it("sans groupe ni apparition au général : pas de ligne ; une erreur Social ne casse pas la carte", async () => {
+    it("sans groupe ni place au général : pas de ligne ; une erreur Social ne casse pas la carte", async () => {
       api.meResult = ME({ level: LEVEL });
       social.groups = { groups: [], maxGroups: 5 };
-      social.general = { ...social.general, visible: false };
+      social.general = { ...social.general, around: [] };
       expect((await render(player(false), async () => true)).querySelector('[data-testid="run-home-place"]')).toBeNull();
     });
 

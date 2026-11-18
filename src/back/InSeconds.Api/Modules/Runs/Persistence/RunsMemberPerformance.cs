@@ -44,4 +44,10 @@ public sealed class RunsMemberPerformance(InSecondsDbContext db, RunsRules rules
 
         return result;
     }
+
+    public async Task<IReadOnlyCollection<Guid>> ListGeneralRankingPlayersAsync(CancellationToken ct) =>
+        await (from level in db.Set<RunLevel>().AsNoTracking()
+               join access in db.Set<RunAccess>().AsNoTracking() on level.PlayerId equals access.PlayerId
+               where level.RunsPlayed > 0
+               select level.PlayerId).ToListAsync(ct);
 }

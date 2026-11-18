@@ -19,6 +19,10 @@ BEGIN
     IF to_regclass('social.groups') IS NOT NULL THEN
         UPDATE social.groups SET name = 'groupe-' || id, invite_code = upper(substr(md5(id::text || 'staging'), 1, 8)) WHERE id IS NOT NULL;
     END IF;
+    -- Les alias musicaux du classement général : tout le monde revient à son pseudo, anonymisé plus haut (aucun nom de la prod ne reste).
+    IF to_regclass('social.ranking_identity') IS NOT NULL THEN
+        TRUNCATE social.ranking_identity;
+    END IF;
 END $$;
 -- TRUNCATE plutôt que DELETE sans WHERE : même effet ici (aucune table ne les référence), et l'intention « tout vider » est explicite.
 TRUNCATE players.auth_tokens, players.device_sessions, players.legacy_tokens, infra.data_protection_keys;

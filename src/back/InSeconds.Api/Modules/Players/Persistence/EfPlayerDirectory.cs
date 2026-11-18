@@ -13,6 +13,9 @@ public sealed class EfPlayerDirectory(InSecondsDbContext db) : IPlayerDirectory
     public Task<bool> ExistsAsync(Guid playerId, CancellationToken ct) =>
         db.Set<Player>().AsNoTracking().AnyAsync(p => p.Id == playerId, ct);
 
+    public Task<bool> IsPseudoTakenAsync(string pseudo, CancellationToken ct) =>
+        db.Set<Account>().AsNoTracking().AnyAsync(a => a.Pseudo == pseudo, ct);
+
     public async Task<IReadOnlyList<AccountSummary>> ListAccountsAsync(CancellationToken ct) =>
         await (from a in db.Set<Account>().AsNoTracking()
                join p in db.Set<Player>().AsNoTracking() on a.PlayerId equals p.Id
