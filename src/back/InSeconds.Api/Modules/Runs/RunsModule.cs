@@ -25,6 +25,7 @@ public static class RunsModule
         services.AddScoped<IRunHistoryQueries, EfRunHistoryQueries>();
         services.AddScoped<IRunHitsQueries, EfRunHitsQueries>();
         services.AddScoped<IRunAccess, EfRunAccess>();
+        services.AddScoped<RunDrawMemoryReader>();
         services.AddScoped<RunChallengePlanner>();
         services.AddScoped<RunRoundDealer>();
         services.AddSingleton<IRunScoringPolicy, ArtistTitleScoring>();

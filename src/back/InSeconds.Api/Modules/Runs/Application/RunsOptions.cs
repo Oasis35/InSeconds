@@ -39,6 +39,9 @@ public sealed class RunsOptions
     /// <summary>Les vies au départ : une erreur, un morceau passé ou un chrono écoulé en coûte une.</summary>
     public int Lives { get; set; } = DefaultLives;
 
+    /// <summary>La diversité du tirage d'une partie à l'autre (<c>Runs:Diversity:…</c>) : relue à chaud, jamais figée dans une playlist.</summary>
+    public RunDiversityOptions Diversity { get; set; } = new();
+
     /// <summary>Le niveau du joueur (<c>Runs:Levels:…</c>) : formule, baisse maximale, inactivité, disques et seuils.</summary>
     public RunLevelOptions Levels { get; set; } = new();
 
@@ -85,6 +88,27 @@ public sealed class RunsOptions
             RegainLife, MaxRounds, LifeBonus, CompleteBonus, ShortenOnNoLifeLost, HoldOnLifeLost);
 
     public static RunRules DefaultRules() => new RunsOptions().ToRules();
+}
+
+/// <summary>
+/// La diversité du tirage (<c>Runs:Diversity:…</c>, relue à chaud) : un joueur ne retombe pas trop vite sur les mêmes morceaux ni les mêmes thèmes
+/// d'une partie à l'autre (<see cref="RunDiversity"/>). Des quantités, pas une durée : la mémoire s'adapte à la taille du catalogue.
+/// </summary>
+public sealed class RunDiversityOptions
+{
+    public const int DefaultPoolPercent = 40;
+    public const int DefaultThemePercent = 50;
+    public const int DefaultMaxGames = 30;
+    public const int MaxMaxGames = 200;
+
+    /// <summary>Les morceaux entendus récemment qu'on évite, en part du pool jouable (0 : pas de diversité des morceaux, 90 au plus).</summary>
+    public int PoolPercent { get; set; } = DefaultPoolPercent;
+
+    /// <summary>La part des thèmes éligibles qu'on garde en lice quand on évite ceux joués récemment (0 : aucun thème évité, 100 : tous gardés).</summary>
+    public int ThemePercent { get; set; } = DefaultThemePercent;
+
+    /// <summary>Le nombre de parties les plus récentes lues pour construire la mémoire (une limite de lecture, pas une règle de jeu).</summary>
+    public int MaxGames { get; set; } = DefaultMaxGames;
 }
 
 /// <summary>
@@ -177,7 +201,20 @@ public static class RunsOptionsChecks
         if (options.AnswerSeconds != 0 && (options.AnswerSeconds > RunsOptions.MaxAnswerSeconds || ladder.Count == 0 || options.AnswerSeconds <= ladder[0]))
             problems.Add($"Runs:AnswerSeconds : 0 (pas de chrono), ou plus long que l'écoute la plus longue et au plus {RunsOptions.MaxAnswerSeconds} s.");
 
+        problems.AddRange(DiversityProblems(options.Diversity));
         problems.AddRange(LevelProblems(options.Levels));
+        return problems;
+    }
+
+    private static List<string> DiversityProblems(RunDiversityOptions diversity)
+    {
+        var problems = new List<string>();
+        if (diversity.PoolPercent is < 0 or > 90)
+            problems.Add("Runs:Diversity:PoolPercent : de 0 (pas de diversité des morceaux) à 90 % du pool.");
+        if (diversity.ThemePercent is < 0 or > 100)
+            problems.Add("Runs:Diversity:ThemePercent : de 0 à 100 % des thèmes gardés en lice.");
+        if (diversity.MaxGames is < 1 or > RunDiversityOptions.MaxMaxGames)
+            problems.Add($"Runs:Diversity:MaxGames : de 1 à {RunDiversityOptions.MaxMaxGames} parties lues.");
         return problems;
     }
 
