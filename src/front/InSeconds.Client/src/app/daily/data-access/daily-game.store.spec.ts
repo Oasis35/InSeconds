@@ -95,7 +95,9 @@ describe('DailyGameStore', () => {
       api.today = TODAY({ state: 'abandoned' });
       await store.init();
       expect(store.abandoned()).toBe(true);
-      expect(api.calls).not.toContain('stats');
+      // Une partie abandonnée relit les stats (score partiel et réponses), mais pas l'encart d'hier.
+      expect(api.calls).toContain('stats');
+      expect(api.calls.some(c => c.startsWith('archiveDay'))).toBe(false);
     });
 
     it('sans défi : écran « pas de défi » ; échec réseau : écran d\'erreur', async () => {
@@ -376,7 +378,7 @@ describe('DailyGameStore', () => {
 
       await store.abandonFromResume();
 
-      expect(api.calls.slice(-2)).toEqual(['start', 'abandon 11']);
+      expect(api.calls.slice(-3)).toEqual(['start', 'abandon 11', 'stats']);
       expect(store.screen()).toBe('already_played');
       expect(store.abandoned()).toBe(true);
     });

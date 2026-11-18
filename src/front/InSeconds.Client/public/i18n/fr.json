@@ -837,6 +837,9 @@
     "home": {
       "label": "Défi du jour",
       "done": "Défi du jour",
+      "abandonedScore": "partie abandonnée",
+      "abandonedNoPlayTitle": "Défi abandonné",
+      "abandonedNoPlay": "Tu n'as pas joué le défi d'aujourd'hui. Ta série n'est pas touchée.",
       "remainingHours": "plus que {{ n }} h",
       "remainingMinutes": "plus que {{ n }} min"
     },
