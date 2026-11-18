@@ -102,7 +102,7 @@ InSeconds/
 
 ## Intégration continue
 
-Workflow GitHub Actions sur chaque push (toutes branches). Seuls tournent les jobs des zones que la branche change (back, front, les deux pour les tests de bout en bout ; rien pour la doc), tout sur `main` et `env/staging` :
+Workflow GitHub Actions sur chaque push (toutes branches). Seuls tournent les jobs des zones que la branche change (back ou front, les tests de bout en bout et le contrôle des clients NSwag pour l'un comme pour l'autre, rien pour la doc), tout sur `main` et `env/staging` :
 
 - **back** - tests d'intégration (Testcontainers), répartis sur 3 jobs par dossier de tests
 - **back-checks** - migrations à jour, codegen Wolverine à jour, image Docker sans l'hôte de test, puis tests unitaires, d'architecture et des scripts du VPS

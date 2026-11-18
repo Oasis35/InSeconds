@@ -189,8 +189,20 @@ jobs:
       - name: Install (clean)
         run: npm ci --ignore-scripts
 
+      # generate-api ne réécrit que les modules qu'il connaît : un module ajouté hors du script, ou retiré en laissant son
+      # client, passerait sinon inaperçu. Les dossiers de src/app/api, les nswag/*.nswag.json et le script doivent concorder.
       - name: Regenerate API clients and compare
         run: |
+          modules=$(ls nswag/*.nswag.json | sed 's|^nswag/||; s|\.nswag\.json$||' | sort)
+          clients=$(ls -d src/app/api/*/ | xargs -n1 basename | sort)
+          if [ "$modules" != "$clients" ]; then
+            echo "::error::nswag/*.nswag.json ($(echo $modules)) et les dossiers de src/app/api ($(echo $clients)) ne concordent pas."
+            exit 1
+          fi
+          for module in $modules; do
+            grep -qF "nswag/$module.nswag.json" package.json \
+              || { echo "::error::nswag/$module.nswag.json absent du script generate-api de package.json."; exit 1; }
+          done
           npm run generate-api
           if [ -n "$(git status --porcelain --untracked-files=all -- src/app/api)" ]; then
             git status --short -- src/app/api

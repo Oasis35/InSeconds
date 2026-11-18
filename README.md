@@ -102,7 +102,7 @@ InSeconds/
 
 ## Continuous integration
 
-GitHub Actions workflow on every push (all branches). Only the jobs of the areas a branch changes run (backend, frontend, or both for the end-to-end tests; nothing for docs), everything on `main` and `env/staging`:
+GitHub Actions workflow on every push (all branches). Only the jobs of the areas a branch changes run (backend or frontend, the end-to-end tests and the NSwag client check for either one, nothing for docs), everything on `main` and `env/staging`:
 
 - **back** - integration tests (Testcontainers), split across 3 jobs by test folder
 - **back-checks** - migrations up to date, Wolverine codegen up to date, Docker image without the test host, then unit, architecture and VPS script tests
