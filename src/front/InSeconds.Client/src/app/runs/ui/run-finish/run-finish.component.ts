@@ -18,7 +18,7 @@ import { SecondsPipe } from '../../../ui/format/seconds.pipe';
  * ouvre l'écran (« Tu bats Léa de 126 pts », « Léa gagne de 40 pts »), sur un ton neutre, jamais « perdu ». La fin se joue en 2,2 s au plus, un
  * toucher la saute, et rien n'attend la fin : les boutons sont actifs dès le début (`finishSequence`). Dans la nouvelle interface (`showLevel`), le haut tient dans un bloc compact (le
  * disque, le score, le badge « Record », la jauge vers le disque suivant), les groupes suivent (`[finishGroups]`), puis « Rejouer » en principal,
- * « Défier un ami » en contour orange et, tout en bas, la bande du défi du jour (`[finishBottom]`).
+ * « Défier un ami » en contour orange et, tout en bas, la bande du défi du jour (`[finishBottom]`). Quand le défi du jour reste à jouer (`dailyFirst`), la bande monte au-dessus des actions et « Rejouer » passe en contour : le défi devient l'étape principale.
  */
 @Component({
   selector: 'app-run-finish',
@@ -135,12 +135,12 @@ import { SecondsPipe } from '../../../ui/format/seconds.pipe';
             </div>
           }
           <app-share-button data-testid="run-share" [copied]="shareCopied()" [failed]="shareFailed()" labelKey="runs.level.challenge"
-            copiedKey="runs.finished.shareCopied" failedKey="runs.finished.shareFailed" [variant]="canPlayAgain() ? 'accent' : 'primary'" (share)="share.emit()" />
+            copiedKey="runs.finished.shareCopied" failedKey="runs.finished.shareFailed" [variant]="canPlayAgain() || dailyFirst() ? 'accent' : 'primary'" (share)="share.emit()" />
           <button type="button" (click)="compare.emit()" data-testid="run-compare" class="w-full min-h-11 text-sm underline touch-manipulation" style="color:var(--text-muted)">
             {{ 'runs.finished.compare' | translate }}
           </button>
           <!-- Tout en bas, au-dessus de la barre : le défi du jour qui attend, ou le prochain. -->
-          <div [style.order]="dailyFirst() ? -1 : 0"><ng-content select="[finishBottom]" /></div>
+          <div class="empty:hidden" data-testid="finish-bottom" [style.order]="dailyFirst() ? -1 : 0"><ng-content select="[finishBottom]" /></div>
         </div>
       } @else {
         <section class="flex items-center gap-4">

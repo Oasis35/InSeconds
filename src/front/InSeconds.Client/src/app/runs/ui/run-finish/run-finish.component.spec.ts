@@ -177,7 +177,7 @@ describe('RunFinishComponent', () => {
 
     it('défi du jour à jouer : « Rejouer » passe en contour et la bande du défi monte au-dessus des actions ; sinon « Rejouer » reste plein', () => {
       const again = (element: HTMLElement) => element.querySelector<HTMLElement>('[data-testid="run-play-again"]')!;
-      const band = (element: HTMLElement) => element.querySelector<HTMLElement>('[data-testid="run-finished"] .mt-auto > div:last-child')!;
+      const band = (element: HTMLElement) => element.querySelector<HTMLElement>('[data-testid="finish-bottom"]')!;
 
       const first = renderLevel(finish({ level }), true);
       first.fixture.componentRef.setInput('dailyFirst', true);
