@@ -45,7 +45,8 @@ export abstract class AudioPort {
 
   /**
    * Ce que fait la touche lecture / pause du clavier ou d'un casque (#519) : la manche y branche
-   * sa relecture (↺) ; `null` : la touche ne fait rien. Les autres touches multimédia sont ignorées.
+   * sa relecture (↺). Rend de quoi retirer ce branchement-là, et lui seul : la touche revient alors
+   * au navigateur, sauf si une autre manche l'a reprise entre-temps.
    */
-  abstract onPlayPauseKey(handler: (() => void) | null): void;
+  abstract onPlayPauseKey(handler: () => void): () => void;
 }

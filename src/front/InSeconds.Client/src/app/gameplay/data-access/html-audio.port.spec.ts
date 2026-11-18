@@ -1,3 +1,4 @@
+import { EnvironmentInjector, createEnvironmentInjector } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { AudioStatus } from '../domain/track-round';
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
@@ -309,57 +310,81 @@ describe('HtmlAudioPort', () => {
   });
 
   describe('touches multimédia (#519)', () => {
-    /** Un lecteur neuf, avec les gestionnaires qu'il a posés sur la Media Session. */
-    function keyedPort(): { keyed: HtmlAudioPort; handlers: Map<string, MediaSessionActionHandler | null> } {
+    /** Les gestionnaires posés sur la Media Session (`null` : rendu au navigateur), notés pendant tout le test. */
+    let handlers: Map<string, MediaSessionActionHandler | null>;
+
+    beforeEach(() => {
       resetSharedAudio();
-      const handlers = new Map<string, MediaSessionActionHandler | null>();
-      const spy = vi.spyOn(navigator.mediaSession, 'setActionHandler').mockImplementation((action, handler) => {
+      handlers = new Map();
+      vi.spyOn(navigator.mediaSession, 'setActionHandler').mockImplementation((action, handler) => {
         handlers.set(action, handler);
       });
-      const keyed = TestBed.runInInjectionContext(() => new HtmlAudioPort());
-      spy.mockRestore();
-      return { keyed, handlers };
+    });
+
+    afterEach(() => vi.restoreAllMocks());
+
+    const press = (action: 'play' | 'pause') => handlers.get(action)?.({ action });
+
+    /** Un lecteur dans son propre injecteur, qu'on peut détruire. */
+    function portIn(): { player: HtmlAudioPort; destroy: () => void } {
+      const injector = createEnvironmentInjector([HtmlAudioPort], TestBed.inject(EnvironmentInjector));
+      return { player: injector.get(HtmlAudioPort), destroy: () => injector.destroy() };
     }
 
     it('lecture / pause fait ce que la manche a branché, au lieu de relancer l’extrait arrêté à son palier', () => {
-      const { keyed, handlers } = keyedPort();
       const pressed = vi.fn();
+      const release = port.onPlayPauseKey(pressed);
 
-      handlers.get('play')!({ action: 'play' }); // rien de branché : rien ne se passe
-      keyed.onPlayPauseKey(pressed);
-      handlers.get('play')!({ action: 'play' });
-      handlers.get('pause')!({ action: 'pause' });
+      press('play');
+      press('pause');
       expect(pressed).toHaveBeenCalledTimes(2);
 
-      keyed.onPlayPauseKey(null);
-      handlers.get('play')!({ action: 'play' });
+      // Retirée, la touche revient au navigateur.
+      release();
+      expect(handlers.get('play')).toBeNull();
+      expect(handlers.get('pause')).toBeNull();
       expect(pressed).toHaveBeenCalledTimes(2);
-      keyed.stop();
     });
 
-    it('les autres touches multimédia ne font rien', () => {
-      const { keyed, handlers } = keyedPort();
-      for (const action of ['stop', 'seekbackward', 'seekforward', 'seekto', 'previoustrack', 'nexttrack']) {
-        expect(handlers.get(action)).toBeTypeOf('function');
-      }
-      keyed.stop();
+    it('aucune autre touche multimédia n’est prise : le navigateur n’affiche pas de bouton qui ne ferait rien', () => {
+      port.onPlayPauseKey(vi.fn());
+      expect([...handlers.keys()].sort()).toEqual(['pause', 'play']);
     });
 
-    it('un lecteur ne retire pas la touche qu’un autre a posée depuis', () => {
-      const { keyed, handlers } = keyedPort();
-      const other = TestBed.runInInjectionContext(() => new HtmlAudioPort());
+    it('rien n’est pris avant qu’une manche ne branche la touche', () => {
+      unlockSharedAudio();
+      expect(handlers.size).toBe(0);
+    });
+
+    it('une manche qui se retire ne retire pas la touche qu’une autre a posée depuis', () => {
       const first = vi.fn();
       const second = vi.fn();
+      const releaseFirst = port.onPlayPauseKey(first);
+      port.onPlayPauseKey(second);
 
-      keyed.onPlayPauseKey(first);
-      other.onPlayPauseKey(second);
-      keyed.onPlayPauseKey(null);
-      handlers.get('play')!({ action: 'play' });
+      releaseFirst();
+      press('play');
 
       expect(first).not.toHaveBeenCalled();
       expect(second).toHaveBeenCalledTimes(1);
-      keyed.stop();
-      other.stop();
+    });
+
+    it('le lecteur détruit rend la touche au navigateur, sauf si un autre lecteur l’a reprise', () => {
+      const a = portIn();
+      const b = portIn();
+      const fromA = vi.fn();
+      const fromB = vi.fn();
+
+      a.player.onPlayPauseKey(fromA);
+      b.player.onPlayPauseKey(fromB);
+      a.destroy();
+      press('play');
+      expect(fromA).not.toHaveBeenCalled();
+      expect(fromB).toHaveBeenCalledTimes(1);
+
+      b.destroy();
+      expect(handlers.get('play')).toBeNull();
+      expect(handlers.get('pause')).toBeNull();
     });
   });
 

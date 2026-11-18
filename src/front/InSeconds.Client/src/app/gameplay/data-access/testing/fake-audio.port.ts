@@ -43,8 +43,11 @@ export class FakeAudioPort extends AudioPort {
   /** La touche lecture / pause branchée par la manche, que le test peut presser. */
   playPauseKey: (() => void) | null = null;
 
-  onPlayPauseKey(handler: (() => void) | null): void {
+  onPlayPauseKey(handler: () => void): () => void {
     this.playPauseKey = handler;
+    return () => {
+      if (this.playPauseKey === handler) this.playPauseKey = null;
+    };
   }
 
   stop(): void {

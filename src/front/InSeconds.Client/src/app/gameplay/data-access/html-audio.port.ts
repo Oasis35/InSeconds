@@ -111,7 +111,6 @@ function audioElement(): HTMLAudioElement | null {
     sharedAudio = new Audio();
     // iPhone : lire dans la page, jamais en plein écran (absent du type `HTMLAudioElement`).
     sharedAudio.setAttribute('playsinline', '');
-    takeOverMediaKeys();
   }
   return sharedAudio;
 }
@@ -119,28 +118,36 @@ function audioElement(): HTMLAudioElement | null {
 /** La touche lecture / pause : un seul bouton sur les claviers, qui envoie `play` à l'arrêt et `pause` en lecture. */
 const PLAY_PAUSE_ACTIONS = ['play', 'pause'] as const;
 
-/** Les autres touches multimédia (clavier, casque, écran de verrouillage), que le jeu ignore. */
-const IGNORED_MEDIA_ACTIONS = ['stop', 'seekbackward', 'seekforward', 'seekto', 'previoustrack', 'nexttrack'] as const;
-
-/** Ce que fait la touche lecture / pause, posé par la manche en cours (`onPlayPauseKey`) ; rien sans manche. */
+/** Ce que fait la touche lecture / pause, posé par la manche en cours (`onPlayPauseKey`) ; `null` : la touche est au navigateur. */
 let playPauseHandler: (() => void) | null = null;
 
-/**
- * La touche « lecture » du clavier relançait l'extrait arrêté à son palier, contournant le jeu (#519). Un
- * gestionnaire enregistré remplace l'action par défaut du navigateur : lecture / pause fait ce que la
- * manche a branché (la relecture ↺), les autres touches ne font rien.
- */
-function takeOverMediaKeys(): void {
+function setPlayPauseActions(handler: MediaSessionActionHandler | null): void {
   if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
-  const set = (action: MediaSessionAction, handler: MediaSessionActionHandler) => {
+  for (const action of PLAY_PAUSE_ACTIONS) {
     try {
       navigator.mediaSession.setActionHandler(action, handler);
     } catch {
       // Action non gérée par ce navigateur : rien à remplacer.
     }
-  };
-  for (const action of PLAY_PAUSE_ACTIONS) set(action, () => playPauseHandler?.());
-  for (const action of IGNORED_MEDIA_ACTIONS) set(action, () => undefined);
+  }
+}
+
+/**
+ * La touche « lecture » du clavier relançait l'extrait arrêté à son palier, au-delà du palier (#519). Tant
+ * qu'une manche est là, lecture / pause fait ce qu'elle a branché (la relecture ↺, jamais au-delà du palier).
+ * Les autres touches n'ont pas de gestionnaire : le navigateur n'en affiche pas le bouton, et elles ne
+ * lancent rien (une avance pendant la lecture est coupée au palier par la boucle d'arrêt).
+ */
+function attachPlayPauseKey(handler: () => void): void {
+  playPauseHandler = handler;
+  setPlayPauseActions(() => playPauseHandler?.());
+}
+
+/** Retire la touche si c'est encore celle-là (une manche suivante a pu la reprendre) : elle revient au navigateur. */
+function releasePlayPauseKey(handler: () => void): void {
+  if (playPauseHandler !== handler) return;
+  playPauseHandler = null;
+  setPlayPauseActions(null);
 }
 
 /**
@@ -218,8 +225,8 @@ export class HtmlAudioPort extends AudioPort {
   private frame: number | null = null;
   private preloadLink: HTMLLinkElement | null = null;
   private silenceUrl: string | null = null;
-  /** La touche lecture / pause branchée par ce lecteur, pour ne retirer que la sienne à sa destruction. */
-  private playPauseHandler: (() => void) | null = null;
+  /** Les touches lecture / pause branchées par ce lecteur et pas encore retirées, rendues au navigateur à sa destruction. */
+  private readonly playPauseKeys = new Set<() => void>();
   /** Le déroulé du palier en cours, pour le diagnostic des sons lents ou coupés sur iPhone. */
   private timings: PlaybackTimings | null = null;
   /** Résolu au premier envoi seulement : le lecteur n'impose pas `HttpClient` à ses tests. */
@@ -344,10 +351,15 @@ export class HtmlAudioPort extends AudioPort {
     );
   }
 
-  onPlayPauseKey(handler: (() => void) | null): void {
-    // La touche est commune à la page : on ne retire que la sienne, jamais celle qu'un autre lecteur a posée depuis.
-    if (handler !== null || playPauseHandler === this.playPauseHandler) playPauseHandler = handler;
-    this.playPauseHandler = handler;
+  onPlayPauseKey(handler: () => void): () => void {
+    // Une copie propre à cet appel : deux branchements de la même fonction se retirent chacun le sien.
+    const key = () => handler();
+    this.playPauseKeys.add(key);
+    attachPlayPauseKey(key);
+    return () => {
+      this.playPauseKeys.delete(key);
+      releasePlayPauseKey(key);
+    };
   }
 
   stop(): void {
@@ -534,7 +546,9 @@ export class HtmlAudioPort extends AudioPort {
 
   private dispose(): void {
     this.stop();
-    this.onPlayPauseKey(null); // la touche ne vise plus une manche disparue
+    // La touche ne vise plus une manche disparue : elle revient au navigateur, sauf si un autre lecteur l'a reprise.
+    for (const key of this.playPauseKeys) releasePlayPauseKey(key);
+    this.playPauseKeys.clear();
     this.preload(null);
     if (this.audio) {
       this.audio.oncanplay = null;
