@@ -1137,8 +1137,6 @@
       "abandon": "Give up",
       "roundShort": "Round {{ round }}",
       "roundOf": "Round {{ round }}/{{ max }}",
-      "soundsOff": "Mute sounds",
-      "soundsOn": "Unmute sounds",
       "lives": "Lives: {{ left }} of {{ total }}",
       "listen": "Listen {{ seconds }}"
     },

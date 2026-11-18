@@ -1,14 +1,12 @@
 import { TestBed } from '@angular/core/testing';
-import { MemoryStoragePort, StoragePort } from '../../core/storage/storage.port';
 import { FakeAudioPort, provideFakeAudio } from '../../gameplay/data-access/testing/fake-audio.port';
-import { RunSounds, SOUNDS_MUTED_KEY } from './run-sounds';
+import { RunSounds } from './run-sounds';
 
 describe('RunSounds', () => {
   let audio: FakeAudioPort;
-  let storage: MemoryStoragePort;
 
   const create = (): RunSounds => {
-    TestBed.configureTestingModule({ providers: [RunSounds, provideFakeAudio(audio), { provide: StoragePort, useValue: storage }] });
+    TestBed.configureTestingModule({ providers: [RunSounds, provideFakeAudio(audio)] });
     return TestBed.inject(RunSounds);
   };
 
@@ -22,7 +20,6 @@ describe('RunSounds', () => {
 
   beforeEach(() => {
     audio = new FakeAudioPort();
-    storage = new MemoryStoragePort();
   });
 
   afterEach(() => vi.restoreAllMocks());
@@ -66,30 +63,6 @@ describe('RunSounds', () => {
     audio.emit('finished');
     sounds.play('tick');
     expect(oscillator).toHaveBeenCalledTimes(1);
-  });
-
-  it('coupés par le joueur, ils ne sonnent plus, et ce navigateur s\'en souvient', async () => {
-    const sounds = await awake();
-    sounds.toggleMuted();
-    const oscillator = vi.spyOn(AudioContext.prototype, 'createOscillator');
-
-    sounds.play('won');
-
-    expect(sounds.muted()).toBe(true);
-    expect(oscillator).not.toHaveBeenCalled();
-    expect(storage.get(SOUNDS_MUTED_KEY)).toBe('1');
-    TestBed.resetTestingModule();
-    expect(create().muted()).toBe(true);
-  });
-
-  it('remis, ils sonnent de nouveau et la préférence s\'efface', async () => {
-    storage.set(SOUNDS_MUTED_KEY, '1');
-    const sounds = await awake();
-
-    sounds.toggleMuted();
-
-    expect(sounds.muted()).toBe(false);
-    expect(storage.get(SOUNDS_MUTED_KEY)).toBeNull();
   });
 
   it('ferme son contexte audio avec la page (Safari en limite le nombre)', () => {

@@ -1137,8 +1137,6 @@
       "abandon": "Abandonner",
       "roundShort": "Manche {{ round }}",
       "roundOf": "Manche {{ round }}/{{ max }}",
-      "soundsOff": "Couper les sons",
-      "soundsOn": "Remettre les sons",
       "lives": "Vies : {{ left }} sur {{ total }}",
       "listen": "Écoute {{ seconds }}"
     },
