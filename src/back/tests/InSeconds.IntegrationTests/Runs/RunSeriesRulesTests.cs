@@ -30,7 +30,7 @@ public class RunSeriesRulesTests(PostgresFixture postgres) : IAsyncLifetime
 
         // Une playlist d'avant (rien de ces champs dans ses règles figées) : ni vie regagnée, ni plafond, ni bonus, quels que soient les réglages d'aujourd'hui.
         await _run.Api.ExecuteAsync(
-            "UPDATE runs.challenges SET rules = rules - 'regainLife' - 'maxRounds' - 'lifeBonus' - 'completeBonus' - 'shortenOnNoLifeLost' - 'holdOnLifeLost'"
+            "UPDATE runs.challenges SET rules = rules - 'regainLife' - 'maxRounds' - 'lifeBonus' - 'completeBonus' - 'shortenOnNoLifeLost'"
             + $" WHERE code = '{start.ChallengeCode}'");
         var resumed = await alice.SessionAsync(start.SessionId);
         Assert.Equal(0, resumed.MaxRounds);
@@ -56,35 +56,6 @@ public class RunSeriesRulesTests(PostgresFixture postgres) : IAsyncLifetime
         var third = await alice.PlayAsync(id, code, 7, true, true, true);
         summary = Assert.Single(third.RoundSummaries);
         Assert.Equal((3, false), (summary.LivesLeft, summary.LifeRegained));
-    }
-
-    [Fact]
-    public async Task UneVieRetiree_LaisseLEcouteAuPalierAtteint()
-    {
-        var alice = await _run.NewInvitedAsync("Alice");
-        var start = (await alice.LaunchAsync()).Session;
-        var (id, code) = (start.SessionId, start.ChallengeCode);
-
-        await alice.PlayAsync(id, code, 1, true, true, true);
-        var second = await alice.PlayAsync(id, code, 4, true, false, true);
-
-        var summary = Assert.Single(second.RoundSummaries);
-        Assert.Equal(("same", 5m, 5m), (summary.Outcome, summary.ListenSeconds, summary.NextListenSeconds));
-    }
-
-    [Fact]
-    public async Task UnePlaylistSansLaRegleDuPalier_RallongueEncoreApresUneVieRetiree()
-    {
-        var alice = await _run.NewInvitedAsync("Alice");
-        var start = (await alice.LaunchAsync()).Session;
-        var (id, code) = (start.SessionId, start.ChallengeCode);
-        await _run.Api.ExecuteAsync($"UPDATE runs.challenges SET rules = rules - 'holdOnLifeLost' WHERE code = '{code}'");
-
-        await alice.PlayAsync(id, code, 1, true, true, true);
-        var second = await alice.PlayAsync(id, code, 4, true, false, true);
-
-        var summary = Assert.Single(second.RoundSummaries);
-        Assert.Equal(("longer", 5m, 10m), (summary.Outcome, summary.ListenSeconds, summary.NextListenSeconds));
     }
 
     [Fact]

@@ -59,7 +59,7 @@
           </nav>
 
           @if (general()) {
-            <app-general-ranking [lang]="language.current()" [openNameOnLoad]="editName()" />
+            <app-general-ranking [lang]="language.current()" />
           } @else if (store.groups().length) {
 
             @switch (store.rankingStatus()) {

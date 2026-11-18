@@ -74,16 +74,10 @@ export interface RunFinish {
   readonly level: RunLevel | null;
 }
 
-/** La clé du « disque » d'un joueur qui n'a pas encore les points du premier : un cercle en pointillés, « Pas encore de disque ». */
-export const NO_DISC = 'runs.discs.none';
-
-/** Le sens du changement de disque d'une série : un disque de plus, un de moins, ou le même. */
-export type RunDiscChange = 'up' | 'down' | 'same';
-
 /**
- * Le niveau du joueur : ses points (80 % de l'ancien niveau et 20 % du score de chaque série, inactivité déduite), son disque (`NO_DISC` sous le
- * premier seuil), le suivant et ce qui manque pour l'avoir (`null` au dernier disque), sa progression entre les deux (de 0 à 100), ce que la dernière
- * série a changé (`null` hors de l'écran de fin), ce que l'inactivité lui a retiré et dans combien de jours elle lui fera perdre son disque.
+ * Le niveau du joueur : ses points (la moyenne de ses dernières parties, ils montent et descendent), son disque, le suivant et ce qui manque pour
+ * l'avoir (`null` au dernier disque), sa progression entre les deux (de 0 à 100), « provisoire » tant qu'il a fini trop peu de parties, et ce que la
+ * dernière partie a changé (`null` hors de l'écran de fin).
  */
 export interface RunLevel {
   readonly points: number;
@@ -91,15 +85,10 @@ export interface RunLevel {
   readonly nextDisc: RunDisc | null;
   readonly pointsToNext: number | null;
   readonly progressPercent: number;
+  readonly provisional: boolean;
   readonly runsPlayed: number;
   readonly delta: number | null;
-  readonly discChange: RunDiscChange | null;
-  readonly inactivityLoss: number;
-  readonly discDropInDays: number | null;
 }
-
-/** Le joueur a-t-il un disque ? */
-export const hasDisc = (level: RunLevel): boolean => level.disc.key !== NO_DISC;
 
 /** « +38 », « −12 » : ce que la partie a changé au niveau ; rien pour un niveau inchangé ou inconnu. */
 export function levelDeltaText(delta: number | null, format: (value: number) => string): string | null {

@@ -6,7 +6,7 @@ import { RunHomeCardComponent } from './run-home-card.component';
 
 const LEVEL: RunLevel = {
   points: 1380, disc: { key: 'runs.discs.silver', stars: 3 }, nextDisc: { key: 'runs.discs.gold', stars: 4 },
-  pointsToNext: 220, progressPercent: 44, runsPlayed: 12, delta: null, discChange: null, inactivityLoss: 0, discDropInDays: null,
+  pointsToNext: 220, progressPercent: 44, provisional: false, runsPlayed: 12, delta: null,
 };
 
 describe('RunHomeCardComponent', () => {
@@ -20,26 +20,13 @@ describe('RunHomeCardComponent', () => {
     return { element, q: (id: string) => element.querySelector(`[data-testid="${id}"]`) };
   }
 
-  it("« Jouer » prévient l'accueil au clic (il déverrouille le son)", () => {
-    TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
-    const fixture = TestBed.createComponent(RunHomeCardComponent);
-    fixture.detectChanges();
-    const played = vi.fn();
-    fixture.componentInstance.playClicked.subscribe(played);
-    // Clic avec Ctrl : le lien ne navigue pas (le test n'a pas de routes), la sortie part quand même.
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[data-testid="run-home-play"]')!
-      .dispatchEvent(new MouseEvent('click', { ctrlKey: true, bubbles: true, cancelable: true }));
-    expect(played).toHaveBeenCalledTimes(1);
-  });
-
   describe('discrète (le défi du jour reste à jouer)', () => {
     it('sans partie finie : la promesse, « Jouer » en contour, le disque d’or, pas de rangée', () => {
       const { element, q } = render();
       expect(q('run-home-card')?.getAttribute('data-active')).toBe('false');
       expect(q('run-home-line')?.textContent).toContain('runs.welcome.tagline');
       expect(q('run-home-play')?.textContent).toContain('runs.home.play');
-      expect(q('run-home-play')?.getAttribute('href')).toBe('/survie?go=1');
+      expect(q('run-home-play')?.getAttribute('href')).toBe('/setlist');
       expect(element.querySelector('[data-disc]')?.getAttribute('data-disc')).toBe('runs.discs.gold');
       expect(q('run-home-level')).toBeNull();
     });
@@ -51,30 +38,16 @@ describe('RunHomeCardComponent', () => {
       expect(q('run-home-line')?.textContent).toContain('runs.home.anytime');
     });
 
-    it('avec un niveau : son disque, « Niveau Argent · 1 380 pts », la rangée des sept disques où le sien est plus gros, la jauge et ses deux bornes', () => {
+    it('avec un niveau : son disque, la rangée des huit disques où le sien est plus gros, la jauge et ses deux bornes', () => {
       const { element, q } = render({ record: 3420, level: LEVEL });
       expect(element.querySelector('[data-disc]')?.getAttribute('data-disc')).toBe('runs.discs.silver');
       expect(q('run-home-line')?.textContent).toContain('runs.home.levelLabel');
       const ladder = [...(q('run-home-ladder')?.querySelectorAll('svg') ?? [])];
-      expect(q('run-home-line')?.textContent).toContain('runs.home.levelPoints');
-      expect(ladder).toHaveLength(7);
-      expect(ladder.map(svg => svg.getAttribute('width'))).toEqual(['13', '13', '22', '13', '13', '13', '13']);
+      expect(ladder).toHaveLength(8);
+      expect(ladder.map(svg => svg.getAttribute('width'))).toEqual(['13', '13', '13', '22', '13', '13', '13', '13']);
       expect((q('run-home-bar') as HTMLElement).style.width).toBe('44%');
       expect(q('run-home-level')?.textContent).toMatch(/1\s380/);
       expect(q('run-home-next')?.textContent).toMatch(/1\s600/);
-    });
-
-    it('avant le premier disque : le cercle en pointillés, « Pas encore de disque », tous les disques éteints, la jauge vers le disque rayé', () => {
-      const none: RunLevel = { ...LEVEL, points: 100, disc: { key: 'runs.discs.none', stars: 0 }, nextDisc: { key: 'runs.discs.scratched', stars: 0 }, pointsToNext: 200, progressPercent: 33 };
-      const { element, q } = render({ level: none });
-      expect(element.querySelector('[data-disc]')?.getAttribute('data-disc')).toBe('runs.discs.none');
-      expect(q('run-home-no-disc')?.textContent).toContain('runs.discs.none');
-      // Aucun disque de la rangée n'est le sien : tous à la petite taille (ils sont aussi éteints, ce que l'animation de l'échelle rend illisible ici).
-      const ladder = [...(q('run-home-ladder')?.querySelectorAll('svg') ?? [])];
-      expect(ladder.map(svg => svg.getAttribute('width'))).toEqual(['13', '13', '13', '13', '13', '13', '13']);
-      expect(q('run-home-from')?.textContent).toContain('runs.discShort.none');
-      expect(q('run-home-next')?.textContent).toContain('runs.discs.scratched');
-      expect(q('run-home-next')?.textContent).toMatch(/300/);
     });
 
     it('une setlist finie aujourd’hui : son score et « Rejouer »', () => {
@@ -91,7 +64,7 @@ describe('RunHomeCardComponent', () => {
       expect(q('run-home-card')?.getAttribute('data-active')).toBe('true');
       expect((q('run-home-card') as HTMLElement).classList).toContain('tube-amber');
       expect(q('run-home-play')?.textContent).toContain('runs.home.play');
-      expect(element.querySelectorAll('[data-disc]')).toHaveLength(8);
+      expect(element.querySelectorAll('[data-disc]')).toHaveLength(9);
     });
 
     it('au plus haut disque : pas de borne suivante', () => {
@@ -115,7 +88,7 @@ describe('RunHomeCardComponent', () => {
       fixture.detectChanges();
       const element = fixture.nativeElement as HTMLElement;
 
-      expect(element.querySelector('[data-testid="run-home-received-link"]')?.getAttribute('href')).toBe('/survie/ABC234');
+      expect(element.querySelector('[data-testid="run-home-received-link"]')?.getAttribute('href')).toBe('/setlist/ABC234');
       expect(element.querySelector('[data-testid="run-home-received-score"]')?.textContent).toMatch(/runs\.home\.receivedScore/);
       expect(element.querySelector('[data-testid="run-home-received-days"]')?.textContent).toContain('runs.home.receivedExpires');
       (element.querySelector('[data-testid="run-home-received-dismiss"]') as HTMLButtonElement).click();
@@ -135,8 +108,8 @@ describe('RunHomeCardComponent', () => {
 
       const takeUp = inputs(true);
       expect(takeUp?.textContent).toContain('runs.home.takeUp');
-      expect(takeUp?.getAttribute('href')).toBe('/survie/ABC234');
-      expect(inputs(false)?.getAttribute('href')).toBe('/survie?go=1');
+      expect(takeUp?.getAttribute('href')).toBe('/setlist/ABC234');
+      expect(inputs(false)?.getAttribute('href')).toBe('/setlist');
     });
 
     it('sans défi, pas de bandeau', () => {

@@ -159,8 +159,6 @@ export interface DayStats {
   readonly betterThanPercent: number | null;
   /** Vide tant que le joueur n'a pas fini sa partie du jour. */
   readonly history?: DayHistory | null;
-  /** Le score des morceaux répondus d'une partie abandonnée ; vide sans partie abandonnée ou sans aucune réponse. */
-  readonly abandonedScore?: number | null;
 }
 
 /** Ce que le démarrage d'une partie peut donner (jamais une erreur : les refus du jeu sont des issues). */

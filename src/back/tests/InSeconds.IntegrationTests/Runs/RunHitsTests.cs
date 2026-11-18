@@ -60,7 +60,7 @@ public class RunHitsTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task UnAmiJoueMaSetlist_LeDuelEstAuGagnant_ChacunNeVoitQueLesSiens()
     {
         var alice = await _run.NewInvitedAsync("Alice");
-        var bob = await _run.NewInvitedAsync("Bob");
+        var bob = await _run.NewPlayerAsync("Bob");
         var launched = await alice.LaunchAsync();
         var code = launched.Session.ChallengeCode;
         await alice.PlayAsync(launched.Session.SessionId, code, 1, [.. AllFound, .. NoneFound]);

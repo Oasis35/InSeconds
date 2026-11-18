@@ -15,7 +15,6 @@ public class SecretPathsTests
     [InlineData("/api/runs/challenges/K7P2QX/comparison", "/api/runs/challenges/{code}/comparison")]
     [InlineData("/ranking/join/ABCD2345", "/ranking/join/{code}")]
     [InlineData("/setlist/K7P2QX", "/setlist/{code}")]
-    [InlineData("/survie/K7P2QX", "/survie/{code}")]
     [InlineData("/runs/K7P2QX", "/runs/{code}")]
     [InlineData("/Setlist/K7P2QX", "/setlist/{code}")]
     [InlineData("https://api.inseconds.cc/api/social/invitations/ABCD2345/join", "https://api.inseconds.cc/api/social/invitations/{code}/join")]
@@ -23,9 +22,6 @@ public class SecretPathsTests
     public void Mask_RemplaceLeCode(string path, string expected) => Assert.Equal(expected, LinkSecrets.Paths.Mask(path));
 
     [Theory]
-    [InlineData("/survie")]
-    [InlineData("/survie/history")]
-    [InlineData("/survie/hits")]
     [InlineData("/setlist")]
     [InlineData("/setlist/")]
     [InlineData("/setlist/history")]

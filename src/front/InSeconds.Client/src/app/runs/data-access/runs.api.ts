@@ -7,7 +7,7 @@ import {
 import { toAppError } from '../../core/errors/app-error';
 import {
   RunComparison, RunCurrentTrack, RunFinish, RunLink, RunNeutralized, RunPassedRound, RunPlay, RunRecord, RunRound, RunRoundScore,
-  RunRoundSummary, RunSession, RunStatus, RunRoundOutcome, RunTrack, RunsMe, RunLevel, RunReceivedChallenge, RunDiscChange, NO_DISC,
+  RunRoundSummary, RunSession, RunStatus, RunRoundOutcome, RunTrack, RunsMe, RunLevel, RunReceivedChallenge,
 } from '../domain/run';
 import { RunHistory } from '../domain/run-history';
 import { RunHit } from '../domain/run-hits';
@@ -236,23 +236,17 @@ function toReceived(received: RunReceivedChallengeResponse | undefined): RunRece
   return { code: received.code, authorPseudo: received.authorPseudo ?? null, scoreToBeat: received.scoreToBeat ?? null, expiresAt: toIsoText(received.expiresAt) };
 }
 
-function toDiscChange(change: string | null | undefined): RunDiscChange | null {
-  return change === 'up' || change === 'down' || change === 'same' ? change : null;
-}
-
 function toLevel(level: RunLevelResponse | undefined): RunLevel | null {
   if (!level) return null;
   return {
     points: level.points,
-    disc: level.disc ? { key: level.disc.key, stars: level.disc.stars } : { key: NO_DISC, stars: 0 },
+    disc: { key: level.disc.key, stars: level.disc.stars },
     nextDisc: level.nextDisc ? { key: level.nextDisc.key, stars: level.nextDisc.stars } : null,
     pointsToNext: level.pointsToNext ?? null,
     progressPercent: level.progressPercent,
+    provisional: level.provisional,
     runsPlayed: level.runsPlayed,
     delta: level.delta ?? null,
-    discChange: toDiscChange(level.discChange),
-    inactivityLoss: level.inactivityLoss,
-    discDropInDays: level.discDropInDays ?? null,
   };
 }
 

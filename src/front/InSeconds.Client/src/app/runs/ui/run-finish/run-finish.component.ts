@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRe
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-button.component';
-import { RunDuel, RunFinish, finishSquares, hasDisc, levelDeltaText } from '../../domain/run';
+import { RunDuel, RunFinish, finishSquares, levelDeltaText } from '../../domain/run';
 import { finishSequence } from '../../../ui/motion/motion';
 import { RunDiscComponent } from '../run-disc/run-disc.component';
 import { ButtonComponent } from '../../../ui/button/button.component';
@@ -18,7 +18,7 @@ import { SecondsPipe } from '../../../ui/format/seconds.pipe';
  * ouvre l'écran (« Tu bats Léa de 126 pts », « Léa gagne de 40 pts »), sur un ton neutre, jamais « perdu ». La fin se joue en 2,2 s au plus, un
  * toucher la saute, et rien n'attend la fin : les boutons sont actifs dès le début (`finishSequence`). Dans la nouvelle interface (`showLevel`), le haut tient dans un bloc compact (le
  * disque, le score, le badge « Record », la jauge vers le disque suivant), les groupes suivent (`[finishGroups]`), puis « Rejouer » en principal,
- * « Défier un ami » en contour orange et, tout en bas, la bande du défi du jour (`[finishBottom]`). Quand le défi du jour reste à jouer (`dailyFirst`), la bande monte au-dessus des actions et « Rejouer » passe en contour : le défi devient l'étape principale.
+ * « Défier un ami » en contour orange et, tout en bas, la bande du défi du jour (`[finishBottom]`).
  */
 @Component({
   selector: 'app-run-finish',
@@ -91,28 +91,12 @@ import { SecondsPipe } from '../../../ui/format/seconds.pipe';
                 } @else {
                   <span>{{ 'runs.level.top' | translate }}</span>
                 }
+                @if (level.provisional) { <span class="text-xs" style="color:var(--text-muted)" data-testid="run-level-provisional"> · {{ 'runs.level.provisional' | translate }}</span> }
               </span>
               @if (delta(); as delta) {
                 <span class="shrink-0 tabular-nums" data-testid="run-level-delta" [style.color]="(level.delta ?? 0) > 0 ? 'var(--color-accent-3)' : 'var(--text-muted)'">{{ delta }}</span>
               }
             </p>
-            <!-- Ce que la série a changé au disque : un disque de plus, un de moins, ou une mauvaise série amortie. -->
-            @if (level.discChange === 'up') {
-              <p class="text-sm" data-testid="run-level-change" data-change="up" style="color:var(--text-light)">
-                <b style="color:var(--color-accent-3)">{{ 'runs.level.discUp' | translate: { disc: lower(level.disc.key | translate) } }}</b>
-                · <span class="tabular-nums">{{ 'runs.home.levelPoints' | translate: { points: format(level.points) } }}</span>
-              </p>
-            } @else if (level.discChange === 'down') {
-              <p class="text-sm" data-testid="run-level-change" data-change="down" style="color:var(--text-light)">
-                {{ (hasDisc(level) ? 'runs.level.discDown' : 'runs.level.discLost') | translate: { disc: lower(level.disc.key | translate) } }}
-                · <span class="tabular-nums">{{ 'runs.home.levelPoints' | translate: { points: format(level.points) } }}</span>
-              </p>
-            } @else if ((level.delta ?? 0) < 0) {
-              <p class="text-sm" data-testid="run-level-change" data-change="bad" style="color:var(--text-light)">
-                {{ level.disc.key | translate }} · <b class="tabular-nums" style="color:var(--text-hi)">{{ 'runs.home.levelPoints' | translate: { points: format(level.points) } }}</b>.
-                {{ 'runs.level.badRun' | translate }}
-              </p>
-            }
             <p class="flex items-center gap-2 text-sm" style="color:var(--text-light)">
               <span data-testid="run-found">{{ 'runs.finished.found' | translate: { found: finish().foundCount, total: finish().trackCount } }}</span>
               @if (reviewLink(); as link) {
@@ -129,18 +113,18 @@ import { SecondsPipe } from '../../../ui/format/seconds.pipe';
         <div class="mt-auto flex flex-col gap-4">
           @if (canPlayAgain()) {
             <div class="flex flex-col gap-2" data-motion="finish-late">
-              <button appButton type="button" size="lg" [block]="true" [variant]="dailyFirst() ? 'accent' : 'primary'" (click)="playAgain.emit()" data-testid="run-play-again">
+              <button appButton type="button" size="lg" [block]="true" (click)="playAgain.emit()" data-testid="run-play-again">
                 <span data-testid="run-play-again-label">{{ (duel() ? 'runs.finished.rematch' : 'runs.finished.playAgain') | translate }}</span>
               </button>
             </div>
           }
           <app-share-button data-testid="run-share" [copied]="shareCopied()" [failed]="shareFailed()" labelKey="runs.level.challenge"
-            copiedKey="runs.finished.shareCopied" failedKey="runs.finished.shareFailed" [variant]="canPlayAgain() || dailyFirst() ? 'accent' : 'primary'" (share)="share.emit()" />
+            copiedKey="runs.finished.shareCopied" failedKey="runs.finished.shareFailed" [variant]="canPlayAgain() ? 'accent' : 'primary'" (share)="share.emit()" />
           <button type="button" (click)="compare.emit()" data-testid="run-compare" class="w-full min-h-11 text-sm underline touch-manipulation" style="color:var(--text-muted)">
             {{ 'runs.finished.compare' | translate }}
           </button>
           <!-- Tout en bas, au-dessus de la barre : le défi du jour qui attend, ou le prochain. -->
-          <div class="empty:hidden" data-testid="finish-bottom" [style.order]="dailyFirst() ? -1 : 0"><ng-content select="[finishBottom]" /></div>
+          <ng-content select="[finishBottom]" />
         </div>
       } @else {
         <section class="flex items-center gap-4">
@@ -220,7 +204,7 @@ import { SecondsPipe } from '../../../ui/format/seconds.pipe';
       }
 
       @if (!canPlayAgain()) {
-        <a appButton variant="neutral" [block]="true" routerLink="/" data-testid="run-to-daily">
+        <a appButton variant="neutral" [block]="true" routerLink="/daily" data-testid="run-to-daily">
           {{ 'runs.finished.toDaily' | translate }}
         </a>
       }
@@ -235,8 +219,6 @@ export class RunFinishComponent {
   readonly canPlayAgain = input(true);
   /** La nouvelle interface (accès Setlist) : le niveau du joueur s'affiche, « Rejouer » devient « Nouvelle setlist » et le partage « Défier un ami ». */
   readonly showLevel = input(false);
-  /** Le défi du jour reste à jouer : sa carte passe au-dessus des actions et devient l'étape principale, « Rejouer » passe en contour. */
-  readonly dailyFirst = input(false);
   /** Le lien de cette partie dans l'historique (« Revoir ») ; `null` : pas de lien. */
   readonly reviewLink = input<string | null>(null);
   readonly shareCopied = input(false);
@@ -253,12 +235,7 @@ export class RunFinishComponent {
   protected readonly delta = computed(() => levelDeltaText(this.level()?.delta ?? null, value => this.format(value)));
   /** Une Série complète : les 8 manches jouées, avec ses bonus. */
   protected readonly completed = computed(() => this.finish().status === 'completed');
-  /** « 1 manche terminée », « 3 manches terminées », ou « Série complète ». */
-  protected readonly roundsKey = computed(() => {
-    if (this.completed()) return 'runs.finished.complete';
-    return this.finish().roundsPassed === 1 ? 'runs.finished.roundsOne' : 'runs.finished.rounds';
-  });
-  protected readonly hasDisc = hasDisc;
+  protected readonly roundsKey = computed(() => (this.completed() ? 'runs.finished.complete' : 'runs.finished.rounds'));
   protected readonly squares = computed(() => finishSquares(this.finish()));
   private readonly numbers = computed(() => new Intl.NumberFormat(this.lang()));
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);

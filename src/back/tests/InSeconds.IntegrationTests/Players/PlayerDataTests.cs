@@ -112,8 +112,6 @@ public class PlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
         await PlayerDataSeed.AddGameAsync(_app.Api, bob.PlayerId);
         await _app.Api.ExecuteAsync(
             $"INSERT INTO players.legacy_tokens (player_id, token_hash) VALUES ('{phone.PlayerId}', '\\x0102')");
-        // Un alias au classement général (Social) : il part aussi.
-        (await phone.Client.PutAsJsonAsync("/api/social/ranking/identity", new { mode = "alias" }, Ct)).EnsureSuccessStatusCode();
         // Un lien de connexion demandé pour son adresse, pas encore utilisé : il ne porte que l'adresse.
         await _app.RequestTokenAsync("efface@example.com");
 

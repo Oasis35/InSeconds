@@ -69,11 +69,9 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'runs.track_not_found': 'errors.runs.track_not_found',
   // Social (groupes, classement général, modération de l'admin)
   'social.account_required': 'errors.social.account_required',
-  'social.alias_taken': 'errors.social.alias_taken',
   'social.group_full': 'errors.social.group_full',
   'social.group_not_found': 'errors.social.group_not_found',
   'social.invalid_name': 'errors.social.invalid_name',
-  'social.invalid_ranking_mode': 'errors.social.invalid_ranking_mode',
   'social.invitation_not_found': 'errors.social.invitation_not_found',
   'social.not_owner': 'errors.social.not_owner',
   'social.too_many_groups': 'errors.social.too_many_groups',

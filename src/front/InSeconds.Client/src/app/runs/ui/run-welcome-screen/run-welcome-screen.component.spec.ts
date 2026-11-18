@@ -5,12 +5,11 @@ import { RunLevel, RunRecord } from '../../domain/run';
 import { RunWelcomeScreenComponent } from './run-welcome-screen.component';
 
 describe('RunWelcomeScreenComponent', () => {
-  function render(inputs: { record?: RunRecord | null; level?: RunLevel | null; overlay?: boolean } = {}) {
+  function render(inputs: { record?: RunRecord | null; level?: RunLevel | null } = {}) {
     TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
     const fixture = TestBed.createComponent(RunWelcomeScreenComponent);
     fixture.componentRef.setInput('record', inputs.record ?? null);
     fixture.componentRef.setInput('level', inputs.level ?? null);
-    fixture.componentRef.setInput('overlay', inputs.overlay ?? false);
     fixture.detectChanges();
     return { fixture, element: fixture.nativeElement as HTMLElement };
   }
@@ -26,7 +25,7 @@ describe('RunWelcomeScreenComponent', () => {
     expect(render().element.querySelector('[data-testid="run-level"]')).toBeNull();
     TestBed.resetTestingModule();
 
-    const { element } = render({ level: { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: null, pointsToNext: null, progressPercent: 100, runsPlayed: 12, delta: null, discChange: null, inactivityLoss: 0, discDropInDays: null } });
+    const { element } = render({ level: { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: null, pointsToNext: null, progressPercent: 100, provisional: false, runsPlayed: 12, delta: null } });
 
     expect(element.querySelector('[data-testid="run-level"]')?.getAttribute('data-disc')).toBe('runs.discs.silver');
     expect(element.querySelector('[data-testid="run-level-review"]')).toBeNull();
@@ -46,20 +45,5 @@ describe('RunWelcomeScreenComponent', () => {
     (element.querySelector('[data-testid="run-start"]') as HTMLButtonElement).click();
 
     expect(start).toHaveBeenCalledTimes(1);
-  });
-
-  it("sous la nouvelle interface, la carte de départ est « Commencer », sans le badge ni le titre de l'accueil", () => {
-    const { element } = render({ overlay: true, record: { bestScore: 900, bestRoundsPassed: 2, isNew: false } });
-
-    expect(element.querySelector('[data-testid="run-start"]')?.textContent).toContain('runs.welcome.begin');
-    expect(element.querySelector('h1')).toBeNull();
-    expect(element.querySelector('[data-testid="run-record"]')).not.toBeNull();
-  });
-
-  it("sans la nouvelle interface, l'accueil du mode garde son titre et « Lancer une partie »", () => {
-    const { element } = render();
-
-    expect(element.querySelector('h1')).not.toBeNull();
-    expect(element.querySelector('[data-testid="run-start"]')?.textContent).toContain('runs.welcome.launch');
   });
 });

@@ -1,4 +1,4 @@
-# Survie (mode Run) : les règles de la Série
+# Setlist (mode Run) : les règles de la Série
 
 Règles validées par Clément en novembre 2026 (refonte « la Série », qui remplace le modèle à jauge, difficultés et cartes ; l'ancien modèle est archivé dans [`../historique/runs-ancien-modele/`](../historique/runs-ancien-modele/)). Les écrans : [`ecrans.md`](ecrans.md). Leur traduction technique : [`conception.md`](conception.md). Toutes les valeurs ci-dessous sont les défauts de `Runs:` (relus à chaud, cf. [Réglages](#réglages)).
 
@@ -12,7 +12,6 @@ On enchaîne des **manches de 3 morceaux**, jusqu'à avoir perdu ses **3 vies** 
 
 - Une playlist = une **suite de manches, 8 au plus** (le plafond), tirées **à la volée** depuis une graine jamais exposée : la manche 1 à la création, chacune des suivantes par le premier joueur qui y arrive, puis figée pour tous. Tous les joueurs d'une playlist jouent les mêmes morceaux, dans le même ordre.
 - **Les morceaux sont de moins en moins connus** : le catalogue jouable (Daily compris) est trié par rang Deezer et coupé en 8 tranches (`Runs:RankBands`) ; la manche k tire dans la tranche k, la dernière tranche se répète. Jamais deux fois le même morceau dans une playlist.
-- **La diversité d'une partie à l'autre** (`Runs:Diversity:`) : le joueur qui tire une manche (le créateur pour la manche 1, puis le premier arrivé à chaque manche) ne retombe pas trop vite sur ce qu'il a déjà entendu. Ses morceaux entendus récemment (du plus récent au plus ancien, toutes ses parties, abandonnées comprises, un morceau retiré sans extrait exclu) passent **après** les autres (dans la tranche de notoriété de la manche d'abord : la tranche prime sur la fraîcheur, on ne sort de la tranche que si elle ne suffit pas), jusqu'à **40 % du pool jouable** (`PoolPercent`) : une quantité et non une durée, donc la mémoire s'adapte seule à la taille du catalogue et à la fréquence de jeu. C'est une préférence, jamais un blocage : si la tranche (ou le thème) ne suffit pas sans eux, le tirage reprend d'abord les plus anciennement entendus. Un ami qui rejoint ensuite joue les manches déjà tirées, sans règle propre ; ses parties comptent dans sa propre mémoire. Rien n'est stocké à part : la mémoire se lit dans les parties du joueur (les 30 dernières au plus, `MaxGames`).
 - **Les règles sont figées dans la playlist** à sa création : un réglage changé ensuite ne touche pas une playlist existante, ni la partie d'un ami qui la rejoint plus tard.
 - **Illimité** : un joueur autorisé lance autant de parties qu'il veut ; chacune est une nouvelle playlist.
 
@@ -40,14 +39,14 @@ L'écoute suit une **échelle de paliers** : **10, 5, 3, 2, 1, 0,5 s** (le derni
 
 Le palier d'une manche se **calcule** depuis les réponses de la manche d'avant, jamais stocké :
 - **manche terminée sans vie perdue** (les moitiés justes ne gênent plus) : le palier **raccourcit** d'un cran ;
-- **manche avec au moins une vie perdue** : le palier **reste** où il est (on ne remonte pas) ;
+- **manche avec au moins une vie perdue** : le palier **rallonge** d'un cran, jamais au-dessus de 10 s (une erreur au premier palier le laisse là) ;
 - une manche où tous les morceaux ont été retirés (neutralisés) ne bouge pas.
 
-L'écran de bilan entre deux manches le dit : « L'écoute raccourcit », « L'écoute reste la même » (« L'écoute rallonge » ne se voit plus que sur les playlists d'avant).
+L'écran de bilan entre deux manches le dit : « L'écoute raccourcit », « L'écoute reste la même », « L'écoute rallonge ».
 
 ## Les thèmes
 
-À partir de la **manche 2**, quand au moins 3 thèmes ont assez de morceaux libres, le **premier joueur arrivé** à la manche choisit entre **deux thèmes** tirés au sort et le **thème mystère** (un autre thème, révélé après le choix). Son choix s'applique à la manche pour tous les joueurs de la playlist. Sans offre possible, la manche se joue sans thème. **Diversité** : l'offre écarte les thèmes déjà joués dans cette playlist et dans les parties récentes du joueur qui tire, jusqu'à **50 %** des thèmes éligibles (`Runs:Diversity:ThemePercent`, 0 coupe la règle) et en laissant toujours au moins 3 thèmes ; un thème n'est proposé que s'il a assez de morceaux pas entendus récemment, sinon (moins de 3 thèmes dans ce cas) on retombe sur tous les thèmes fournis. Les thèmes sont ceux de l'admin (onglet Contenu > Thèmes).
+À partir de la **manche 2**, quand au moins 3 thèmes ont assez de morceaux libres, le **premier joueur arrivé** à la manche choisit entre **deux thèmes** tirés au sort et le **thème mystère** (un autre thème, révélé après le choix). Son choix s'applique à la manche pour tous les joueurs de la playlist. Sans offre possible, la manche se joue sans thème. Les thèmes sont ceux de l'admin (onglet Contenu > Thèmes).
 
 ## La fin
 
@@ -74,12 +73,12 @@ L'écran de bilan entre deux manches le dit : « L'écoute raccourcit », « L'�
 ## L'accès
 
 - **Sur invitation** : réservé aux comptes autorisés par l'admin (onglet Joueurs), admins d'office. Un invité sans compte n'a pas l'accès. L'interrupteur est distinct du rôle admin.
-- Sans accès, rien ne change pour le joueur : pas de carte Survie, et `/survie` renvoie vers le Daily.
-- **Lien reçu** : le mode est réservé aux comptes qui y ont accès, liens d'ami compris. Sans accès (invité, compte non autorisé, visiteur sans identité), le lien ouvre un écran « Survie n'est pas encore ouverte » avec un seul bouton vers le défi du jour, et le serveur refuse le départ (403 `runs.access_denied`). Avec l'accès, le joueur peut jouer la playlist ; à la fin, « Rejouer » reste le geste principal, sauf quand le défi du jour attend encore : sa carte passe alors devant.
+- Sans accès, rien ne change pour le joueur : pas de carte Setlist, et `/setlist` renvoie vers le Daily.
+- **Lien reçu** : un ami sans accès qui ouvre le lien d'une playlist peut jouer **cette playlist-là seulement**, invité compris ; à la fin, une invitation à jouer au Daily remplace « Rejouer ».
 - Retirer l'accès n'interrompt pas une partie en cours ; cela empêche seulement d'en lancer une nouvelle.
 
 ## Réglages
 
-Tous relus à chaud (`Runs:…`, `infra.settings`), contrôlés au démarrage de l'API **et** à l'usage (une valeur incohérente retombe sur les défauts) : `Lives` (3), `TracksPerRound` (3), `RegainLife` (vrai), `ShortenOnNoLifeLost` (vrai), `HoldOnLifeLost` (vrai), `MaxRounds` (8 ; 0 : pas de plafond), `LifeBonus` (250), `CompleteBonus` (500), `ListenLadder` (10, 5, 3, 2, 1, 0,5), `StepPoints` (100 à 1 200), `AnswerSeconds` (45), `RankBands` (8), `Levels` (le niveau). Tableau complet : [`CLAUDE.md`](../../CLAUDE.md) § Réglages.
+Tous relus à chaud (`Runs:…`, `infra.settings`), contrôlés au démarrage de l'API **et** à l'usage (une valeur incohérente retombe sur les défauts) : `Lives` (3), `TracksPerRound` (3), `RegainLife` (vrai), `ShortenOnNoLifeLost` (vrai), `MaxRounds` (8 ; 0 : pas de plafond), `LifeBonus` (250), `CompleteBonus` (500), `ListenLadder` (10, 5, 3, 2, 1, 0,5), `StepPoints` (100 à 1 200), `AnswerSeconds` (45), `RankBands` (8), `Levels` (le niveau). Tableau complet : [`CLAUDE.md`](../../CLAUDE.md) § Réglages.
 
-**Les playlists d'avant** (créées avant les règles d'équilibrage de novembre 2026) gardent les règles figées à leur création (une playlist créée entre l'arrivée de la descente de l'écoute et celle de la règle « une vie perdue laisse le palier » rallonge encore après une vie perdue) : manches de 5, pas de vie regagnée, l'écoute ne raccourcit qu'après une manche où tout est trouvé en entier et rallonge après une vie perdue, pas de plafond ni de bonus.
+**Les playlists d'avant** (créées avant les règles d'équilibrage de novembre 2026) gardent les règles figées à leur création : manches de 5, pas de vie regagnée, l'écoute ne raccourcit qu'après une manche où tout est trouvé en entier, pas de plafond ni de bonus.

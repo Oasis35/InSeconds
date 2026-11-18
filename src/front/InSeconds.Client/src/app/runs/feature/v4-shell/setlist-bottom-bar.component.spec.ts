@@ -42,13 +42,13 @@ describe('SetlistBottomBarComponent', () => {
   });
 
   it('disparaît pendant une manche et hors du jeu', async () => {
-    expect((await render('/survie', { immersive: true })).el.querySelector('[data-testid="bottom-bar"]')).toBeNull();
+    expect((await render('/setlist', { immersive: true })).el.querySelector('[data-testid="bottom-bar"]')).toBeNull();
     TestBed.resetTestingModule();
     expect((await render('/legal', {})).el.querySelector('[data-testid="bottom-bar"]')).toBeNull();
   });
 
   it("le défi du jour à faire s'agite, pas quand il est joué", async () => {
-    const { el, fixture, chrome } = await render('/survie', { dailyDone: false });
+    const { el, fixture, chrome } = await render('/setlist', { dailyDone: false });
     expect(el.querySelector('[data-testid="daily-pending"]')).not.toBeNull();
     chrome.setDailyDone(true);
     fixture.detectChanges();
@@ -56,7 +56,7 @@ describe('SetlistBottomBarComponent', () => {
   });
 
   it("l'historique a un seul onglet pour ses deux pages, et n'allume pas celui du mode", async () => {
-    const { el } = await render('/history/survie/12', {});
+    const { el } = await render('/history/setlist/12', {});
     expect(el.querySelector('[data-testid="tab-history"]')?.getAttribute('aria-current')).toBe('page');
     expect(el.querySelector('[data-testid="tab-history"]')?.getAttribute('href')).toBe('/history');
     expect(el.querySelector('[data-testid="tab-daily"]')?.getAttribute('aria-current')).toBeNull();
@@ -72,7 +72,7 @@ describe('SetlistBottomBarComponent', () => {
   });
 
   it("quatre entrées : pas d'onglet Setlist, l'accueil reste allumé sur ses pages et la barre ne porte plus les liens légaux", async () => {
-    const { el } = await render('/survie', {});
+    const { el } = await render('/setlist', {});
     expect([...el.querySelectorAll('nav a')].map(a => a.getAttribute('data-testid'))).toEqual(['tab-daily', 'tab-ranking', 'tab-history', 'tab-account']);
     expect(el.querySelector('[data-testid="tab-daily"]')?.getAttribute('aria-current')).toBe('page');
     expect(el.querySelector('a[href="/legal"]')).toBeNull();

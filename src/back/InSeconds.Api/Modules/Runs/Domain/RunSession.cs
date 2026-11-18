@@ -166,7 +166,7 @@ public sealed class RunSession
         ArgumentNullException.ThrowIfNull(rules);
         var step = 0;
         for (var r = 1; r < round; r++)
-            step = RunSteps.Next(step, TallyOf(rules, r), rules.LastStep, rules.ShortenOnNoLifeLost, rules.HoldOnLifeLost);
+            step = RunSteps.Next(step, TallyOf(rules, r), rules.LastStep, rules.ShortenOnNoLifeLost);
         return step;
     }
 

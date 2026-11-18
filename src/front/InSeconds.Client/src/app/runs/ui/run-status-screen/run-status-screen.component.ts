@@ -3,8 +3,8 @@ import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonComponent } from '../../../ui/button/button.component';
 
-/** Ce que l'écran dit : pas de playlist, une playlist inconnue (lien erroné), le lien d'un ami ouvert sans l'accès au mode, ou une erreur. Sans accès sur invitation, il n'y a pas d'écran : la page renvoie au jeu du jour. */
-export type RunStatusKind = 'no_challenge' | 'not_found' | 'link_blocked' | 'error';
+/** Ce que l'écran dit : pas de playlist, une playlist inconnue (lien erroné), ou une erreur. Sans accès sur invitation, il n'y a pas d'écran : la page renvoie au jeu du jour. */
+export type RunStatusKind = 'no_challenge' | 'not_found' | 'error';
 
 /** Un refus ou une erreur du mode : un titre, une phrase, le code d'erreur s'il y en a un, « Réessayer » et le retour au jeu du jour. */
 @Component({
@@ -23,17 +23,12 @@ export type RunStatusKind = 'no_challenge' | 'not_found' | 'link_blocked' | 'err
         }
       </div>
       <div class="flex flex-col items-center gap-3">
-        @if (kind() === 'link_blocked') {
-          <!-- Un seul bouton, jamais de création de compte : le mode n'est pas ouvert à tous, un compte n'y donnerait pas accès. -->
-          <a appButton routerLink="/daily" size="lg" data-testid="run-blocked-daily">{{ 'runs.status.link_blocked.play' | translate }}</a>
-        } @else {
-          @if (kind() !== 'not_found') {
-            <button appButton type="button" variant="secondary" (click)="retry.emit()" data-testid="run-retry">
-              {{ 'common.retry' | translate }}
-            </button>
-          }
-          <a routerLink="/daily" class="text-sm underline" style="color:var(--text-muted)">{{ 'runs.status.backToDaily' | translate }}</a>
+        @if (kind() !== 'not_found') {
+          <button appButton type="button" variant="secondary" (click)="retry.emit()" data-testid="run-retry">
+            {{ 'common.retry' | translate }}
+          </button>
         }
+        <a routerLink="/daily" class="text-sm underline" style="color:var(--text-muted)">{{ 'runs.status.backToDaily' | translate }}</a>
       </div>
     </div>
   `,

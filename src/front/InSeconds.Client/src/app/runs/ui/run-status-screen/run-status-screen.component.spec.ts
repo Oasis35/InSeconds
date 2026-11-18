@@ -31,17 +31,6 @@ describe('RunStatusScreenComponent', () => {
     expect(element.querySelector('a')?.getAttribute('href')).toBe('/daily');
   });
 
-  it("le lien d'un ami sans accès : un seul bouton vers le défi du jour, ni « Réessayer » ni création de compte", () => {
-    const { element } = render('link_blocked');
-
-    expect(element.textContent).toContain('runs.status.link_blocked.title');
-    expect(element.querySelector('[data-testid="run-retry"]')).toBeNull();
-    const links = element.querySelectorAll('a');
-    expect(links).toHaveLength(1);
-    expect(links[0].getAttribute('href')).toBe('/daily');
-    expect(element.querySelector('[data-testid="run-blocked-daily"]')).not.toBeNull();
-  });
-
   it("une erreur montre son code (traceId), à donner au support comme au Daily", () => {
     const { element } = render('error', '00-abc123-01');
 

@@ -22,12 +22,13 @@ public sealed record RankingEntryResponse(int? Rank, string Pseudo, bool IsMe, d
 
 public sealed record GroupRankingResponse(int GroupId, string Name, IReadOnlyList<RankingEntryResponse> Entries);
 
-/// <summary>Le classement général : sa tête, puis le joueur et ses voisins s'il y est classé plus bas.</summary>
+/// <summary>Le classement général : sa tête, puis le joueur et ses voisins s'il y apparaît plus bas.</summary>
 /// <param name="Total">Combien de joueurs sont classés.</param>
-/// <param name="HasAccount">Le joueur a un compte (un invité n'y figure jamais).</param>
-/// <param name="Identity">Le nom sous lequel il y apparaît (pseudo ou alias) ; vide pour un invité.</param>
+/// <param name="Visible">Le joueur a choisi d'y apparaître.</param>
+/// <param name="CanAppear">Le joueur a un compte : il peut choisir d'y apparaître.</param>
+/// <param name="TopPercent">Sa position par dizaines (« top 30 % »), qu'il apparaisse ou non ; vide tant qu'il n'a fini aucune partie.</param>
 public sealed record GeneralRankingResponse(
-    IReadOnlyList<RankingEntryResponse> Top, IReadOnlyList<RankingEntryResponse> Around, int Total, bool HasAccount, RankingIdentityResponse? Identity);
+    IReadOnlyList<RankingEntryResponse> Top, IReadOnlyList<RankingEntryResponse> Around, int Total, bool Visible, bool CanAppear, int? TopPercent);
 
 /// <summary>Ce que montre un lien d'invitation avant de rejoindre : le nom du groupe et sa place, jamais ses membres.</summary>
 public sealed record InvitationResponse(string GroupName, int MemberCount, int MaxMembers, bool IsFull, bool AlreadyMember);

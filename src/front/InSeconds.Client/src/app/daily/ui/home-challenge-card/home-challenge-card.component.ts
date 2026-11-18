@@ -10,7 +10,7 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
 /**
  * La carte du défi du jour sur l'accueil de la V4, tant qu'il reste à jouer : « Défi du jour » et la date, le nombre de morceaux, le chiffre à battre
  * (le record du joueur en orange, sinon la médiane d'hier en violet) suivi de « plus que 6 h », « Commencer », puis le relevé de série dans la carte.
- * Une partie en pause (`completedCount`) remplace « Commencer » par « Reprendre » et propose « Abandonner » en lien discret. Le défi à jouer est la prochaine action : contour orange comme le bouton.
+ * Le défi à jouer est la prochaine action : contour orange comme le bouton.
  */
 @Component({
   selector: 'app-home-challenge-card',
@@ -27,13 +27,9 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
         }
       </div>
       <h2 class="text-2xl font-extrabold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)">
-        {{ (paused() ? 'daily.resume.title' : 'daily.welcome.subtitle') | translate: { count: trackCount() } }}
+        {{ 'daily.welcome.subtitle' | translate: { count: trackCount() } }}
       </h2>
-      @if (paused()) {
-        <p class="mt-3 text-[15px]" style="color:var(--text-light)" data-testid="home-paused-progress">
-          {{ progressKey() | translate: { done: completedCount(), total: trackCount() } }}
-        </p>
-      } @else if (bestScore() !== null || yesterdayMedian() !== null || remaining()) {
+      @if (bestScore() !== null || yesterdayMedian() !== null || remaining()) {
         <p class="mt-3 flex flex-wrap items-baseline gap-x-2 text-[15px]" style="color:var(--text-light)">
           @if (bestScore() !== null) {
             <span data-testid="welcome-record">{{ 'daily.welcome.record' | translate }}
@@ -48,15 +44,8 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
         </p>
       }
       <button appButton type="button" size="lg" [block]="true" class="mt-4" (click)="startGame.emit()" data-testid="home-start">
-        {{ (paused() ? 'daily.resume.resume' : 'daily.welcome.start') | translate }}
+        {{ 'daily.welcome.start' | translate }}
       </button>
-      @if (paused()) {
-        <!-- Abandonner : un lien discret, jamais un second bouton (un seul bouton plein par écran). -->
-        <button type="button" class="mt-3 self-center min-h-11 px-3 text-sm underline cursor-pointer touch-manipulation disabled:opacity-50"
-          style="color:var(--text-light)" [disabled]="abandonLoading()" (click)="abandon.emit()" data-testid="home-abandon">
-          {{ 'daily.resume.confirmAbandon' | translate }}
-        </button>
-      }
       <div class="flex flex-col items-center pt-1">
         <app-streak-pill [streak]="streak()" [linked]="linked()" (open)="openStreak.emit()" />
         @if (isProtected()) {
@@ -87,15 +76,9 @@ export class HomeChallengeCardComponent {
   readonly remaining = input<{ readonly unit: 'hours' | 'minutes'; readonly value: number } | null>(null);
   /** La date du jour de jeu, en haut à droite de la carte. */
   readonly dateLabel = input('');
-  /** Les morceaux déjà joués d'une partie en pause ; `null` : pas de partie en cours (la carte propose « Commencer »). */
-  readonly completedCount = input<number | null>(null);
-  readonly abandonLoading = input(false);
   readonly startGame = output<void>();
-  readonly abandon = output<void>();
   readonly openStreak = output<void>();
 
-  protected readonly paused = computed(() => this.completedCount() !== null);
-  protected readonly progressKey = computed(() => `daily.resume.progress.${(this.completedCount() ?? 0) <= 1 ? 'one' : 'other'}`);
   protected readonly isProtected = computed(() => isStreakProtected(this.streak(), this.linked()));
   protected readonly protectedKey = computed(() => `daily.streakFreeze.protectedLine.${pluralKey(this.streak()?.missedDays ?? 1)}`);
 }

@@ -13,7 +13,7 @@ describe('SocialApi', () => {
   let api: SocialApi;
 
   beforeEach(() => {
-    client = { listMyGroups: vi.fn(), getGroupRanking: vi.fn(), createGroup: vi.fn(), joinGroup: vi.fn(), leaveGroup: vi.fn(), getInvitation: vi.fn(), getGeneralRanking: vi.fn(), setRankingIdentity: vi.fn(), drawRankingAlias: vi.fn() };
+    client = { listMyGroups: vi.fn(), getGroupRanking: vi.fn(), createGroup: vi.fn(), joinGroup: vi.fn(), leaveGroup: vi.fn(), getInvitation: vi.fn(), getGeneralRanking: vi.fn(), setRankingVisibility: vi.fn() };
     TestBed.configureTestingModule({ providers: [{ provide: SocialClient, useValue: client }, SocialApi] });
     api = TestBed.inject(SocialApi);
   });
@@ -42,30 +42,17 @@ describe('SocialApi', () => {
     });
   });
 
-  it('lit le classement général et le nom sous lequel j\'y apparais', async () => {
+  it('lit le classement général et envoie le choix d\'y apparaître', async () => {
     const row = { rank: 1, pseudo: 'Nova', isMe: false, performance: 0.9, gamesPlayed: 9, bestScore: 3300, points: 3100, badge: 'runs.discs.platinum' };
-    client['getGeneralRanking'].mockReturnValue(of({ top: [row], around: [], total: 1, hasAccount: true, identity: { mode: 'pseudo', name: 'Léa', alias: undefined } }));
+    client['getGeneralRanking'].mockReturnValue(of({ top: [row], around: [], total: 1, visible: false, canAppear: true, topPercent: undefined }));
+    client['setRankingVisibility'].mockReturnValue(of(undefined));
 
     expect(await api.generalRanking()).toEqual({
       top: [{ rank: 1, pseudo: 'Nova', isMe: false, points: 3100, badge: 'runs.discs.platinum' }],
-      around: [], total: 1, hasAccount: true, identity: { mode: 'pseudo', name: 'Léa', alias: null },
+      around: [], total: 1, visible: false, canAppear: true, topPercent: null,
     });
-  });
-
-  it('un invité : pas de nom au classement', async () => {
-    client['getGeneralRanking'].mockReturnValue(of({ top: [], around: [], total: 0, hasAccount: false, identity: undefined }));
-
-    expect((await api.generalRanking()).identity).toBeNull();
-  });
-
-  it('choisit le pseudo ou un alias, et tire un autre alias', async () => {
-    const alias = { mode: 'alias', name: 'Hibou rêveur 12', alias: 'Hibou rêveur 12' };
-    client['setRankingIdentity'].mockReturnValue(of(alias));
-    client['drawRankingAlias'].mockReturnValue(of({ ...alias, name: 'Cigale folle 45', alias: 'Cigale folle 45' }));
-
-    expect(await api.setRankingIdentity('alias')).toEqual(alias);
-    expect(client['setRankingIdentity']).toHaveBeenCalledWith({ mode: 'alias' });
-    expect((await api.drawRankingAlias()).alias).toBe('Cigale folle 45');
+    await api.setRankingVisibility(true);
+    expect(client['setRankingVisibility']).toHaveBeenCalledWith({ visible: true });
   });
 
   it('crée un groupe, le nom rogné', async () => {

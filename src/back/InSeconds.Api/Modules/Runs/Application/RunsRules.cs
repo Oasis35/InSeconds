@@ -26,14 +26,8 @@ public sealed class RunsRules(IOptionsMonitor<RunsOptions> options, ILogger<Runs
         return problems.Count == 0 ? current.ToRules() : RunsOptions.DefaultRules();
     }
 
-    /// <summary>Les réglages de la diversité du tirage, ou ceux par défaut si les réglages sont incohérents.</summary>
-    public RunDiversityOptions Diversity => RunsOptionsChecks.Problems(Options).Count == 0 ? Options.Diversity : new RunDiversityOptions();
-
     /// <summary>Les réglages du niveau, ou ceux par défaut si les réglages sont incohérents.</summary>
     public RunLevelOptions Levels => RunsOptionsChecks.Problems(Options).Count == 0 ? Options.Levels : new RunLevelOptions();
-
-    /// <summary>Les règles du niveau (formule, inactivité, disques), tirées de <see cref="Levels"/>.</summary>
-    public RunLevelRules LevelRules => Levels.ToRules();
 }
 
 /// <summary>Refuse de démarrer avec des réglages <c>Runs:</c> incohérents (lancé après le rechargement des réglages). Au démarrage seulement.</summary>

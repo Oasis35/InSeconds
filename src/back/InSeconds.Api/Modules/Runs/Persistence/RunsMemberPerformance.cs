@@ -8,11 +8,11 @@ namespace InSeconds.Api.Modules.Runs.Persistence;
 
 /// <summary>
 /// Ce que Runs donne au classement d'un groupe : le **niveau** de chaque joueur (<see cref="RunLevel"/>). Sa performance est la part de ses points de
-/// niveau (inactivité déduite) dans ceux du plus haut disque (de 0 à 1), ses points et son disque (aucun sous le premier) sont montrés à côté de lui, avec son nombre de parties comptées et son
+/// niveau dans ceux du plus haut disque (de 0 à 1), ses points et son disque sont montrés à côté de lui, avec son nombre de parties comptées et son
 /// record. Un joueur sans niveau (aucune partie gagnée ou perdue : une partie abandonnée ne compte pas) n'y figure pas. Runs ne connaît de Social que
 /// ce contrat.
 /// </summary>
-public sealed class RunsMemberPerformance(InSecondsDbContext db, RunsRules rules, TimeProvider time) : IMemberPerformanceSource
+public sealed class RunsMemberPerformance(InSecondsDbContext db, RunsRules rules) : IMemberPerformanceSource
 {
     public string Source => "runs";
 
@@ -26,29 +26,20 @@ public sealed class RunsMemberPerformance(InSecondsDbContext db, RunsRules rules
 
         var levels = await db.Set<RunLevel>().AsNoTracking()
             .Where(l => ids.Contains(l.PlayerId) && l.RunsPlayed > 0)
+            .Select(l => new { l.PlayerId, l.Points, l.RunsPlayed })
             .ToListAsync(ct);
         var bests = await db.Set<RunRecord>().AsNoTracking()
             .Where(r => ids.Contains(r.PlayerId))
             .ToDictionaryAsync(r => r.PlayerId, r => r.BestScore, ct);
-        var levelRules = rules.LevelRules;
-        var now = time.GetUtcNow();
+        var ladder = rules.Levels.Ladder;
         foreach (var level in levels)
         {
-            // L'inactivité se déduit à la lecture, comme sur l'accueil du joueur.
-            var points = level.At(now, levelRules).Points;
-            var standing = RunLevelPolicy.Standing(points, levelRules.Ladder);
+            var standing = RunLevelPolicy.Standing(level.Points, ladder);
             result[level.PlayerId] = new MemberPerformance(
-                RunLevelPolicy.Share(points, levelRules.Ladder), level.RunsPlayed, bests.TryGetValue(level.PlayerId, out var best) ? best : null,
-                points, standing.Current?.Disc);
+                RunLevelPolicy.Share(level.Points, ladder), level.RunsPlayed, bests.TryGetValue(level.PlayerId, out var best) ? best : null,
+                level.Points, standing.Current.Disc);
         }
 
         return result;
     }
-
-    // Seuls les comptes dotés d'une ligne runs.access y figurent : un admin a l'accès d'office, sans ligne, et reste hors du classement général (voulu).
-    public async Task<IReadOnlyCollection<Guid>> ListGeneralRankingPlayersAsync(CancellationToken ct) =>
-        await (from level in db.Set<RunLevel>().AsNoTracking()
-               join access in db.Set<RunAccess>().AsNoTracking() on level.PlayerId equals access.PlayerId
-               where level.RunsPlayed > 0
-               select level.PlayerId).ToListAsync(ct);
 }

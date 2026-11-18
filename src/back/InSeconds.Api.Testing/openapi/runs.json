@@ -368,16 +368,6 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -1752,11 +1742,9 @@
           "nextDisc",
           "pointsToNext",
           "progressPercent",
+          "provisional",
           "runsPlayed",
-          "delta",
-          "discChange",
-          "inactivityLoss",
-          "discDropInDays"
+          "delta"
         ],
         "type": "object",
         "properties": {
@@ -1765,14 +1753,7 @@
             "format": "int32"
           },
           "disc": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/RunDiscResponse"
-              }
-            ]
+            "$ref": "#/components/schemas/RunDiscResponse"
           },
           "nextDisc": {
             "oneOf": [
@@ -1795,28 +1776,14 @@
             "type": "integer",
             "format": "int32"
           },
+          "provisional": {
+            "type": "boolean"
+          },
           "runsPlayed": {
             "type": "integer",
             "format": "int32"
           },
           "delta": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "discChange": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "inactivityLoss": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "discDropInDays": {
             "type": [
               "null",
               "integer"

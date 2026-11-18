@@ -29,8 +29,7 @@ test.describe('Anciennes adresses', () => {
       [`/history${QUERY}`, `/history/daily${QUERY}`],
       [`/daily/history${QUERY}`, `/history/daily${QUERY}`],
       [`/daily/archive/2026-10-20${QUERY}`, `/history/daily/2026-10-20${QUERY}`],
-      [`/setlist/history${QUERY}`, `/history/survie${QUERY}`],
-      [`/setlist${QUERY}`, `/survie${QUERY}`],
+      [`/setlist/history${QUERY}`, `/history/setlist${QUERY}`],
     ];
     await inSequence(cases, async ([from, to]) => {
       await page.goto(from);

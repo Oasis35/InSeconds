@@ -60,19 +60,10 @@ public static class SocialErrorCodes
 
     /// <summary>Supprimer le groupe ou renouveler son code est réservé à son créateur.</summary>
     public const string NotOwner = "social.not_owner";
-
-    /// <summary>Deux tirages ont donné le même alias au même instant : le second recommence (rarissime, le tirage est sous verrou).</summary>
-    public const string AliasTaken = "social.alias_taken";
-
-    /// <summary>Le nom au classement général se choisit entre <c>pseudo</c> et <c>alias</c>.</summary>
-    public const string InvalidRankingMode = "social.invalid_ranking_mode";
 }
 
 internal static class SocialProblems
 {
-    public static ProblemDetails AliasTaken() =>
-        ApiProblem.Of(StatusCodes.Status409Conflict, SocialErrorCodes.AliasTaken, "Cet alias vient d'être pris : tires-en un autre.");
-
     public static ProblemDetails AccountRequired() =>
         ApiProblem.Of(StatusCodes.Status403Forbidden, SocialErrorCodes.AccountRequired, "Il faut un compte pour utiliser un groupe.");
 
@@ -127,7 +118,6 @@ internal static partial class SocialLog
     [LoggerMessage(EventId = 1807, Level = LogLevel.Information, Message = "Groupe {GroupId} supprimé par l'admin {AdminId}")]
     public static partial void AdminDeleted(ILogger logger, int groupId, Guid adminId);
 
-    /// <summary>Jamais l'alias ni le pseudo : l'identifiant et le mode seulement.</summary>
-    [LoggerMessage(EventId = 1808, Level = LogLevel.Information, Message = "{PlayerId} a changé son nom au classement général ({RankingNameMode})")]
-    public static partial void RankingIdentityChanged(ILogger logger, Guid playerId, string rankingNameMode);
+    [LoggerMessage(EventId = 1808, Level = LogLevel.Information, Message = "{PlayerId} a changé sa visibilité au classement général ({Visible})")]
+    public static partial void RankingVisibilityChanged(ILogger logger, Guid playerId, bool visible);
 }

@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Observable, defer, of, throwError } from 'rxjs';
 import { RunChallengeResponse, RunComparisonResponse, RunPlayResponse, RunsClient, RunsMeResponse } from '../../api/runs/api.generated';
-import { NO_DISC } from '../domain/run';
 import { RunsApi } from './runs.api';
 
 /** Une erreur comme le client généré la lève pour une réponse `ProblemDetails` : le statut et le code de l'API. */
@@ -38,26 +37,14 @@ describe('RunsApi', () => {
   it('lit mon accès, mon record, ma partie en cours et mon étagère', async () => {
     client['getRunsMe'].mockReturnValue(of({
       hasAccess: true, record: { bestScore: 900, bestRoundsPassed: 2, isNew: false }, pending: { sessionId: 7, challengeCode: 'ABC234' },
-      level: { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: { key: 'runs.discs.gold', stars: 0 }, pointsToNext: 220, progressPercent: 56, runsPlayed: 12, delta: undefined, discChange: undefined, inactivityLoss: 0, discDropInDays: undefined },
+      level: { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: { key: 'runs.discs.gold', stars: 0 }, pointsToNext: 220, progressPercent: 56, provisional: false, runsPlayed: 12, delta: undefined },
     } as RunsMeResponse));
 
     expect(await api.me()).toEqual({
       hasAccess: true, record: { bestScore: 900, bestRoundsPassed: 2, isNew: false }, pending: { sessionId: 7, challengeCode: 'ABC234' },
-      level: { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: { key: 'runs.discs.gold', stars: 0 }, pointsToNext: 220, progressPercent: 56, runsPlayed: 12, delta: null, discChange: null, inactivityLoss: 0, discDropInDays: null },
+      level: { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: { key: 'runs.discs.gold', stars: 0 }, pointsToNext: 220, progressPercent: 56, provisional: false, runsPlayed: 12, delta: null },
       received: null,
     });
-  });
-
-  it('un niveau sous le premier disque : le « disque » NO_DISC, et ce que l\'inactivité menace', async () => {
-    client['getRunsMe'].mockReturnValue(of({
-      hasAccess: true,
-      level: { points: 100, disc: null, nextDisc: { key: 'runs.discs.scratched', stars: 0 }, pointsToNext: 200, progressPercent: 33, runsPlayed: 1, delta: 100, discChange: 'same', inactivityLoss: 12, discDropInDays: 3 },
-    } as unknown as RunsMeResponse));
-
-    const level = (await api.me()).level;
-
-    expect(level?.disc).toEqual({ key: NO_DISC, stars: 0 });
-    expect([level?.discChange, level?.inactivityLoss, level?.discDropInDays]).toEqual(['same', 12, 3]);
   });
 
   it('sans record ni partie en cours : `null` plutôt que `undefined`', async () => {

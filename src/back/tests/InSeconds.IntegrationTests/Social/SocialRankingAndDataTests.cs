@@ -50,14 +50,14 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
             """);
         if (status is not 2)
             return;
-        // Un niveau posé à la main (la moyenne de ses parties perdues), pour ranger les joueurs : la formule elle-même est testée dans Runs.
+        // Le niveau du joueur, comme le calcule la fin d'une partie : la moyenne de ses dix dernières parties gagnées ou perdues.
         await _game.Api.ExecuteAsync($"""
-            INSERT INTO runs.player_levels (player_id, points, runs_played, last_delta, updated_at)
+            INSERT INTO runs.player_levels (player_id, points, runs_played, recent_scores, last_delta, updated_at)
             SELECT player_id,
                    round((SELECT avg(s) FROM (SELECT total_score AS s FROM runs.sessions r WHERE r.player_id = '{playerId}' AND r.status = 2 ORDER BY ended_at DESC LIMIT 10) recent))::int,
-                   count(*)::int, 0, now()
+                   count(*)::int, array_agg(total_score ORDER BY ended_at), 0, now()
             FROM runs.sessions WHERE player_id = '{playerId}' AND status = 2 GROUP BY player_id
-            ON CONFLICT (player_id) DO UPDATE SET points = excluded.points, runs_played = excluded.runs_played
+            ON CONFLICT (player_id) DO UPDATE SET points = excluded.points, runs_played = excluded.runs_played, recent_scores = excluded.recent_scores
             """);
         await _game.Api.ExecuteAsync($"""
             INSERT INTO runs.records (player_id, best_score, best_rounds_passed, session_id, achieved_at)
@@ -91,17 +91,17 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
         Assert.Equal(["Bob", "Alice", "Carol"], ranking.Entries.Select(e => e.Pseudo));
         Assert.Equal([1, 2, null], ranking.Entries.Select(e => e.Rank));
         Assert.Equal([2500, 800, null], ranking.Entries.Select(e => e.Points));
-        Assert.Equal(["runs.discs.silver", "runs.discs.scratched", null], ranking.Entries.Select(e => e.Badge));
-        Assert.Equal([Math.Round(2500d / 13000, 4), Math.Round(800d / 13000, 4), null], ranking.Entries.Select(e => e.Performance));
+        Assert.Equal(["runs.discs.platinum", "runs.discs.bronze", null], ranking.Entries.Select(e => e.Badge));
+        Assert.Equal([Math.Round(2500d / 3400, 4), Math.Round(800d / 3400, 4), null], ranking.Entries.Select(e => e.Performance));
         Assert.Equal([2500, 800, null], ranking.Entries.Select(e => e.BestScore));
         Assert.Equal([false, true, false], ranking.Entries.Select(e => e.IsMe));
     }
 
     [Fact]
-    public async Task Classement_LesPointsDuNiveauEtLeRecordSontRendusTelsQuels()
+    public async Task Classement_LeNiveauEstLaMoyenneDesPartiesRecentes()
     {
         var (alice, _, _, group) = await GroupOfThreeAsync();
-        // Six parties : 2000 puis cinq à 100 ; le niveau posé par le test (417 points, disque rayé), le record restant à 2000.
+        // Six parties : 2000 puis cinq à 100, soit 417 points de niveau (disque Cire), le record restant à 2000.
         await AddRunAsync(alice.Id, status: 2, roundsPassed: 4, score: 2000, minutesAgo: 60);
         for (var i = 1; i <= 5; i++)
             await AddRunAsync(alice.Id, status: 2, roundsPassed: 0, score: 100, minutesAgo: i);
@@ -109,27 +109,8 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
         var ranking = (await alice.Client.GetFromJsonAsync<GroupRankingResponse>($"/api/social/groups/{group.Id}/ranking", Ct))!;
 
         var me = ranking.Entries.Single(e => e.IsMe);
-        Assert.Equal((417, "runs.discs.scratched", 6), (me.Points, me.Badge, me.GamesPlayed));
+        Assert.Equal((417, "runs.discs.wax", 6), (me.Points, me.Badge, me.GamesPlayed));
         Assert.Equal(2000, me.BestScore);
-    }
-
-    [Fact]
-    public async Task Classement_LInactiviteEstDeduiteALaLecture_EtPeutChangerLOrdre()
-    {
-        var (alice, bob, _, group) = await GroupOfThreeAsync();
-        await AddRunAsync(alice.Id, status: 2, roundsPassed: 2, score: 2500);
-        await AddRunAsync(bob.Id, status: 2, roundsPassed: 4, score: 3000);
-        // Alice a joué à l'instant (horloge de l'API), Bob il y a 70 jours : 9 semaines d'inactivité comptées, 3 000 deviennent 1 650.
-        var now = _game.Time.GetUtcNow();
-        await _game.Api.ExecuteAsync($"UPDATE runs.player_levels SET updated_at = '{now:O}' WHERE player_id = '{alice.Id}'");
-        await _game.Api.ExecuteAsync($"UPDATE runs.player_levels SET updated_at = '{now.AddDays(-70):O}' WHERE player_id = '{bob.Id}'");
-
-        var ranking = (await alice.Client.GetFromJsonAsync<GroupRankingResponse>($"/api/social/groups/{group.Id}/ranking", Ct))!;
-
-        Assert.Equal(["Alice", "Bob"], ranking.Entries.Where(e => e.Rank is not null).Select(e => e.Pseudo));
-        var bobEntry = ranking.Entries.Single(e => e.Pseudo == "Bob");
-        Assert.Equal((1650, "runs.discs.bronze", Math.Round(1650d / 13000, 4)), (bobEntry.Points, bobEntry.Badge, bobEntry.Performance));
-        Assert.Equal(3000, await _game.Api.ScalarAsync<int>($"SELECT points FROM runs.player_levels WHERE player_id = '{bob.Id}'"));
     }
 
     [Fact]
@@ -208,194 +189,85 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
         Assert.Equal(0L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM social.groups WHERE owner_id IN ('{alice.Id}', '{carol.Id}')"));
     }
 
-    private static Task<HttpResponseMessage> SetModeAsync(Gamer gamer, string mode) =>
-        gamer.Client.PutAsJsonAsync("/api/social/ranking/identity", new SetRankingIdentity(mode), Ct);
-
-    private static async Task<RankingIdentityResponse> ChooseAsync(Gamer gamer, string mode)
-    {
-        var response = await SetModeAsync(gamer, mode);
-        response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<RankingIdentityResponse>(Ct))!;
-    }
+    private static Task<HttpResponseMessage> SetVisibleAsync(Gamer gamer, bool visible) =>
+        gamer.Client.PutAsJsonAsync("/api/social/ranking/visibility", new SetRankingVisibility(visible), Ct);
 
     private static async Task<GeneralRankingResponse> GeneralAsync(Gamer gamer) =>
         (await gamer.Client.GetFromJsonAsync<GeneralRankingResponse>("/api/social/ranking", Ct))!;
 
-    /// <summary>L'accès Survie, donné par l'admin : seuls ces comptes figurent au classement général.</summary>
-    private Task GrantAccessAsync(params Guid[] playerIds) =>
-        _game.Api.ExecuteAsync(string.Join(";", playerIds.Select(id => $"INSERT INTO runs.access (player_id, granted_at) VALUES ('{id}', now())")));
-
     [Fact]
-    public async Task General_LesComptesQuiOntLAcces_SousLeurPseudoParDefaut()
+    public async Task General_PersonneParDefaut_SeulsCeuxQuiLOntChoisiYOntLeurPseudo()
     {
         var (alice, bob, carol) = (await _game.NewPlayerAsync("Alice"), await _game.NewPlayerAsync("Bob"), await _game.NewPlayerAsync("Carol"));
         await AddRunAsync(alice.Id, status: 2, roundsPassed: 2, score: 800);
         await AddRunAsync(bob.Id, status: 2, roundsPassed: 4, score: 2500);
         await AddRunAsync(carol.Id, status: 2, roundsPassed: 4, score: 1700);
-        // Alice a joué mais n'a pas l'accès (le mode n'est pas ouvert à tous) : elle n'y figure pas.
-        await GrantAccessAsync(bob.Id, carol.Id);
 
+        var empty = await GeneralAsync(alice);
+        Assert.Empty(empty.Top);
+        Assert.Equal((0, false, true), (empty.Total, empty.Visible, empty.CanAppear));
+
+        Assert.Equal(HttpStatusCode.NoContent, (await SetVisibleAsync(bob, true)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await SetVisibleAsync(carol, true)).StatusCode);
+        // Le choisir deux fois ne change rien.
+        Assert.Equal(HttpStatusCode.NoContent, (await SetVisibleAsync(carol, true)).StatusCode);
+
+        // Alice n'y apparaît pas : elle lit les deux autres, et sa position anonyme (3e sur 3 : top 100 %).
         var seenByAlice = await GeneralAsync(alice);
         Assert.Equal(["Bob", "Carol"], seenByAlice.Top.Select(e => e.Pseudo));
         Assert.Equal([2500, 1700], seenByAlice.Top.Select(e => e.Points));
-        Assert.Equal(["runs.discs.silver", "runs.discs.bronze"], seenByAlice.Top.Select(e => e.Badge));
+        Assert.Equal(["runs.discs.platinum", "runs.discs.gold"], seenByAlice.Top.Select(e => e.Badge));
         Assert.DoesNotContain(seenByAlice.Top, e => e.IsMe);
-        Assert.Equal((2, true), (seenByAlice.Total, seenByAlice.HasAccount));
-        Assert.Equal(new RankingIdentityResponse("pseudo", "Alice", null), seenByAlice.Identity);
+        Assert.Equal((2, false, 100), (seenByAlice.Total, seenByAlice.Visible, seenByAlice.TopPercent));
+        Assert.DoesNotContain("Alice", System.Text.Json.JsonSerializer.Serialize(await GeneralAsync(bob)), StringComparison.Ordinal);
 
+        // Bob y est premier.
         var seenByBob = await GeneralAsync(bob);
         Assert.True(seenByBob.Top[0].IsMe);
+        Assert.Equal((true, 50), (seenByBob.Visible, seenByBob.TopPercent));
         Assert.Empty(seenByBob.Around);
-        Assert.Equal("Bob", seenByBob.Identity!.Name);
-    }
 
-    [Fact]
-    public async Task General_UnAliasRemplaceLePseudo_UnAutreAliasLeChange_LePseudoLeRetire()
-    {
-        var (alice, bob) = (await _game.NewPlayerAsync("Alice"), await _game.NewPlayerAsync("Bob"));
-        await AddRunAsync(bob.Id, status: 2, roundsPassed: 4, score: 2500);
-        await GrantAccessAsync(bob.Id);
-
-        var first = await ChooseAsync(bob, "alias");
-        Assert.Equal("alias", first.Mode);
-        Assert.Equal(first.Alias, first.Name);
-        Assert.Matches(@"^\p{L}+ \p{L}+ [1-9]\d{1,2}$", first.Alias);
-        // Choisir l'alias une seconde fois le garde.
-        Assert.Equal(first, await ChooseAsync(bob, "alias"));
-        // Les noms lus (le JSON brut échappe les accents d'un alias comme « Écureuil »).
-        Assert.Equal([first.Alias], (await GeneralAsync(alice)).Top.Select(e => e.Pseudo));
-
-        var other = (await (await bob.Client.PostAsync("/api/social/ranking/identity/alias", null, Ct)).Content.ReadFromJsonAsync<RankingIdentityResponse>(Ct))!;
-        Assert.NotEqual(first.Alias, other.Alias);
-        Assert.Equal([other.Alias], (await GeneralAsync(alice)).Top.Select(e => e.Pseudo));
-
-        Assert.Equal(new RankingIdentityResponse("pseudo", "Bob", null), await ChooseAsync(bob, "pseudo"));
+        // Carol se retire : elle disparaît de la liste des autres.
+        Assert.Equal(HttpStatusCode.NoContent, (await SetVisibleAsync(carol, false)).StatusCode);
         Assert.Equal(["Bob"], (await GeneralAsync(alice)).Top.Select(e => e.Pseudo));
-        Assert.Equal(0L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM social.ranking_identity"));
     }
 
     [Fact]
-    public async Task General_UnMauvaisMode_400()
-    {
-        var alice = await _game.NewPlayerAsync("Alice");
-
-        var response = await SetModeAsync(alice, "cache");
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal(SocialErrorCodes.InvalidRankingMode, await SocialGroupTests.CodeOfAsync(response));
-    }
-
-    [Fact]
-    public async Task General_DesTiragesSimultanes_DonnentDesAliasTousDifferents()
-    {
-        var players = new List<Gamer>();
-        for (var i = 0; i < 6; i++)
-            players.Add(await _game.NewPlayerAsync($"Joueur{i}"));
-
-        var drawn = await Task.WhenAll(players.Select(p => ChooseAsync(p, "alias")));
-
-        Assert.Equal(6, drawn.Select(d => d.Alias!.ToUpperInvariant()).Distinct().Count());
-        Assert.Equal(6L, await _game.Api.ScalarAsync<long>("SELECT count(DISTINCT alias) FROM social.ranking_identity"));
-    }
-
-    [Fact]
-    public async Task Pseudo_UnAliasDejaAttribue_NePeutPasDevenirUnPseudo()
-    {
-        var (bob, carol) = (await _game.NewPlayerAsync("Bob"), await _game.NewPlayerAsync("Carol"));
-        // Un alias court posé en base : un alias tiré au hasard peut dépasser les 20 caractères d'un pseudo (400 avant même le contrôle d'unicité).
-        const string alias = "Hibou fou 12";
-        await _game.Api.ExecuteAsync($"INSERT INTO social.ranking_identity (player_id, alias, chosen_at) VALUES ('{bob.Id}', '{alias}', now())");
-
-        // Sans tenir compte de la casse, comme les pseudos.
-        var refused = await carol.Client.PutAsJsonAsync("/api/players/me/pseudo", new UpdatePseudo(alias.ToUpperInvariant()), Ct);
-        Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
-        Assert.Equal("players.pseudo_taken", await SocialGroupTests.CodeOfAsync(refused));
-        // Rendu (retour au pseudo), l'alias redevient libre.
-        await ChooseAsync(bob, "pseudo");
-        Assert.Equal(HttpStatusCode.OK, (await carol.Client.PutAsJsonAsync("/api/players/me/pseudo", new UpdatePseudo(alias), Ct)).StatusCode);
-    }
-
-    [Fact]
-    public async Task General_GardeUneMinute_SaufApresUnChangementDeNom()
-    {
-        var (alice, bob) = (await _game.NewPlayerAsync("Alice"), await _game.NewPlayerAsync("Bob"));
-        await AddRunAsync(bob.Id, status: 2, roundsPassed: 4, score: 2500);
-        await GrantAccessAsync(bob.Id);
-        Assert.Equal(["Bob"], (await GeneralAsync(alice)).Top.Select(e => e.Pseudo));
-
-        // Carol arrive au classement : on ne la voit qu'une fois la minute passée.
-        var carol = await _game.NewPlayerAsync("Carol");
-        await AddRunAsync(carol.Id, status: 2, roundsPassed: 4, score: 1700);
-        await GrantAccessAsync(carol.Id);
-        Assert.Equal(["Bob"], (await GeneralAsync(alice)).Top.Select(e => e.Pseudo));
-        _game.Time.Advance(GeneralRankingCache.Duration);
-        Assert.Equal(["Bob", "Carol"], (await GeneralAsync(alice)).Top.Select(e => e.Pseudo));
-
-        // Un changement de nom se voit tout de suite.
-        var alias = (await ChooseAsync(carol, "alias")).Alias;
-        Assert.Equal(["Bob", alias], (await GeneralAsync(alice)).Top.Select(e => e.Pseudo));
-    }
-
-    [Fact]
-    public async Task General_UnAccesSansPartie_NEstPasClasse()
+    public async Task General_UnJoueurVisibleSansPartie_NEstPasClasse()
     {
         var dave = await _game.NewPlayerAsync("Dave");
-        await GrantAccessAsync(dave.Id);
+        await SetVisibleAsync(dave, true);
 
         var ranking = await GeneralAsync(dave);
 
         Assert.Empty(ranking.Top);
-        Assert.Equal(0, ranking.Total);
+        Assert.Equal((0, true), (ranking.Total, ranking.Visible));
+        Assert.Null(ranking.TopPercent);
     }
 
     [Fact]
-    public async Task General_UnAdmin_NYFigurePas_MemeAvecUnNiveau()
-    {
-        // Décision du 18/11 : les admins ont l'accès d'office (sans ligne runs.access) et restent hors du classement général.
-        var (boss, bob) = (await _game.NewPlayerAsync("Boss"), await _game.NewPlayerAsync("Bob"));
-        await _game.Api.ExecuteAsync($"UPDATE players.accounts SET is_admin = true WHERE player_id = '{boss.Id}'");
-        await AddRunAsync(boss.Id, status: 2, roundsPassed: 4, score: 3000);
-        await AddRunAsync(bob.Id, status: 2, roundsPassed: 4, score: 2500);
-        await GrantAccessAsync(bob.Id);
-
-        var seenByBob = await GeneralAsync(bob);
-        var seenByBoss = await GeneralAsync(boss);
-
-        Assert.Equal(["Bob"], seenByBob.Top.Select(e => e.Pseudo));
-        Assert.Equal(["Bob"], seenByBoss.Top.Select(e => e.Pseudo));
-        Assert.DoesNotContain(seenByBoss.Top, e => e.IsMe);
-        Assert.Equal(1, seenByBoss.Total);
-    }
-
-    [Fact]
-    public async Task General_UnInvite_LitLeClassement_MaisNYFigureJamais()
+    public async Task General_UnInvite_LitLeClassement_MaisNePeutPasYApparaitre()
     {
         var guest = await _game.NewPlayerAsync();
 
-        var refused = await SetModeAsync(guest, "alias");
-        var redraw = await guest.Client.PostAsync("/api/social/ranking/identity/alias", null, Ct);
+        var refused = await SetVisibleAsync(guest, true);
 
-        Assert.Equal((HttpStatusCode.Forbidden, HttpStatusCode.Forbidden), (refused.StatusCode, redraw.StatusCode));
-        var ranking = await GeneralAsync(guest);
-        Assert.False(ranking.HasAccount);
-        Assert.Null(ranking.Identity);
+        Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
+        Assert.False((await GeneralAsync(guest)).CanAppear);
         Assert.Equal(HttpStatusCode.Unauthorized, (await _game.Api.CreateClient().GetAsync("/api/social/ranking", Ct)).StatusCode);
     }
 
     [Fact]
-    public async Task General_LeNomEstDansLaCopie_LAliasPartAvecLeCompte_EtRedevientLibre()
+    public async Task General_LeChoixEstDansLaCopie_EtPartAvecLeCompte()
     {
         var erin = await _game.NewPlayerAsync("Erin");
-        var social = ExportReading.Section<SocialDataExport>((await erin.Client.GetFromJsonAsync<PlayerDataExport>("/api/players/me/export", Ct))!, "social");
-        Assert.Equal(new SocialRankingIdentityExport("pseudo", null, null), social.RankingIdentity);
+        await SetVisibleAsync(erin, true);
 
-        var alias = (await ChooseAsync(erin, "alias")).Alias;
-        social = ExportReading.Section<SocialDataExport>((await erin.Client.GetFromJsonAsync<PlayerDataExport>("/api/players/me/export", Ct))!, "social");
-        Assert.Equal(("alias", alias), (social.RankingIdentity.Mode, social.RankingIdentity.Alias));
-        Assert.NotNull(social.RankingIdentity.ChosenAt);
+        var social = ExportReading.Section<SocialDataExport>((await erin.Client.GetFromJsonAsync<PlayerDataExport>("/api/players/me/export", Ct))!, "social");
+        Assert.NotNull(social.RankingVisibleSince);
 
         (await erin.Client.PostAsJsonAsync("/api/players/me/delete", new DeleteMyAccount("Erin"), Ct)).EnsureSuccessStatusCode();
-        Assert.Equal(0L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM social.ranking_identity WHERE player_id = '{erin.Id}'"));
+        Assert.Equal(0L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM social.ranking_visibility WHERE player_id = '{erin.Id}'"));
     }
 
     [Fact]
@@ -407,7 +279,7 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
             """))!;
 
         Assert.Equal(
-            ["social.group_members.player_id", "social.groups.owner_id", "social.ranking_identity.player_id"], tables.Order(StringComparer.Ordinal));
+            ["social.group_members.player_id", "social.groups.owner_id", "social.ranking_visibility.player_id"], tables.Order(StringComparer.Ordinal));
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;

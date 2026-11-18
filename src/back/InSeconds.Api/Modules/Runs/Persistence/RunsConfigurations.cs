@@ -108,6 +108,7 @@ internal sealed class RunLevelConfiguration : IEntityTypeConfiguration<RunLevel>
     {
         builder.ToTable("player_levels", DbSchemas.Runs);
         builder.HasKey(l => l.PlayerId);
+        builder.Property(l => l.RecentScores).HasColumnType("integer[]").IsRequired();
         builder.HasOne("InSeconds.Api.Modules.Players.Domain.Player", navigationName: null).WithMany()
             .HasForeignKey(nameof(RunLevel.PlayerId)).OnDelete(DeleteBehavior.Restrict);
     }

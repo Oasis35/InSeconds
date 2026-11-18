@@ -258,14 +258,8 @@ export function withTrackRound() {
     withHooks({
       onInit(store) {
         const audio = inject(AudioPort);
-        // La touche lecture / pause du clavier ou d'un casque fait comme le bouton ↺ (#519) : rejoue le palier en cours,
-        // jamais au-delà ; sans effet hors de l'écoute (réponse envoyée, révélation).
-        const releasePlayPauseKey = audio.onPlayPauseKey(() => store.replay());
-        // Le store disparu, plus personne n'écoute : le son s'arrête, la touche revient au navigateur.
-        inject(DestroyRef).onDestroy(() => {
-          releasePlayPauseKey();
-          audio.stop();
-        });
+        // Le store disparu, plus personne n'écoute : le son s'arrête.
+        inject(DestroyRef).onDestroy(() => audio.stop());
         // Le lecteur parle, la manche suit (chargement, lecture, palier joué, erreur). Un premier
         // échec de lecture relance une fois depuis une adresse fraîche (piège 14).
         effect(() => {

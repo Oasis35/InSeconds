@@ -1,83 +1,76 @@
 namespace InSeconds.Api.Modules.Social.Domain;
 
 /// <summary>
-/// Le nom sous lequel un compte apparaît au classement général quand il a choisi un **alias musical** (« Métronome fou 67 ») : une ligne tant qu'il
-/// l'utilise, aucune sinon (le défaut : son pseudo). L'alias est unique sans tenir compte de la casse (index sur une colonne <c>citext</c>), et ne
-/// vaut jamais le pseudo d'un compte. Désigne le joueur par son identifiant (Players).
+/// Le choix d'un compte d'apparaître dans le classement général : une ligne tant qu'il y apparaît, aucune sinon (le défaut : personne n'y figure sans
+/// l'avoir choisi). Désigne le joueur par son identifiant (Players).
 /// </summary>
-public sealed class RankingIdentity
+public sealed class RankingVisibility
 {
-    private RankingIdentity()
+    private RankingVisibility()
     {
     }
 
-    public RankingIdentity(Guid playerId, string alias, DateTimeOffset chosenAt)
+    public RankingVisibility(Guid playerId, DateTimeOffset visibleSince)
     {
         PlayerId = playerId;
-        ChangeAlias(alias, chosenAt);
+        VisibleSince = visibleSince;
     }
 
     public Guid PlayerId { get; private set; }
 
-    public string Alias { get; private set; } = "";
-
-    /// <summary>Quand cet alias a été tiré.</summary>
-    public DateTimeOffset ChosenAt { get; private set; }
-
-    /// <summary>Un autre alias tiré (« Autre alias ») ; l'ancien redevient libre.</summary>
-    public void ChangeAlias(string alias, DateTimeOffset chosenAt)
-    {
-        if (!MusicalAlias.IsWellFormed(alias))
-            throw new ArgumentException("Ce n'est pas un alias musical.", nameof(alias));
-        Alias = alias;
-        ChosenAt = chosenAt;
-    }
+    public DateTimeOffset VisibleSince { get; private set; }
 }
 
-/// <summary>Les écritures du nom au classement général.</summary>
-public interface IRankingIdentityStore
+/// <summary>Les écritures du choix de visibilité.</summary>
+public interface IRankingVisibilityStore
 {
-    /// <summary>L'alias de ce joueur, suivi ; rien s'il apparaît sous son pseudo.</summary>
-    Task<RankingIdentity?> FindAsync(Guid playerId, CancellationToken ct);
+    /// <summary>Le choix de ce joueur, suivi ; rien s'il n'apparaît pas.</summary>
+    Task<RankingVisibility?> FindAsync(Guid playerId, CancellationToken ct);
 
-    /// <summary>Cet alias est-il déjà celui d'un joueur (sans la casse) ?</summary>
-    Task<bool> IsAliasTakenAsync(string alias, CancellationToken ct);
+    void Add(RankingVisibility visibility);
 
-    /// <summary>
-    /// Le verrou des tirages d'alias (un verrou consultatif de la transaction) : deux joueurs qui tirent au même moment se suivent, le second voit
-    /// l'alias du premier. L'index unique reste le dernier filet.
-    /// </summary>
-    Task LockAliasDrawAsync(CancellationToken ct);
-
-    void Add(RankingIdentity identity);
-
-    void Remove(RankingIdentity identity);
+    void Remove(RankingVisibility visibility);
 }
 
 /// <summary>Le classement général tel qu'un joueur le lit.</summary>
 /// <param name="Top">Les premiers, dans l'ordre.</param>
-/// <param name="Around">Le joueur et ses voisins, s'il est classé sans être dans <paramref name="Top"/> ; vide sinon.</param>
-/// <param name="Total">Combien de joueurs sont classés.</param>
-public sealed record GeneralRankingView(IReadOnlyList<RankingRow> Top, IReadOnlyList<RankingRow> Around, int Total);
+/// <param name="Around">Le joueur et ses voisins, s'il apparaît au classement sans être dans <paramref name="Top"/> ; vide sinon.</param>
+/// <param name="Total">Combien de joueurs sont classés (ceux qui ont choisi d'apparaître et ont fini une partie).</param>
+/// <param name="TopPercent">Où se situe le joueur, par dizaines (« top 30 % ») ; vide tant qu'il n'a fini aucune partie.</param>
+public sealed record GeneralRankingView(IReadOnlyList<RankingRow> Top, IReadOnlyList<RankingRow> Around, int Total, int? TopPercent);
 
 /// <summary>
-/// Le classement général : les comptes qui ont l'accès à un mode et y ont fini une partie, classés comme dans un groupe
-/// (<see cref="GroupRankingPolicy"/>). Un joueur n'en voit que la tête, puis sa place avec ses deux voisins.
+/// Le classement général : les joueurs qui ont choisi d'y apparaître, classés comme dans un groupe (<see cref="GroupRankingPolicy"/>), sans ceux qui
+/// n'ont fini aucune partie. Un joueur n'en voit que la tête, puis sa place avec ses deux voisins. Celui qui n'y apparaît pas ne reçoit qu'une position
+/// anonyme, par dizaines : la part des classés qui font au moins aussi bien que lui, lui compris.
 /// </summary>
 public static class GeneralRankingPolicy
 {
     public const int TopCount = 20;
 
-    /// <param name="ranked">Le classement (sortie de <see cref="GroupRankingPolicy.Rank"/>).</param>
-    public static GeneralRankingView Build(IReadOnlyList<RankingRow> ranked, Guid viewerId)
+    /// <param name="visible">Le classement des joueurs visibles (sortie de <see cref="GroupRankingPolicy.Rank"/>).</param>
+    /// <param name="viewer">La ligne du joueur qui lit, classé seul, quand il n'apparaît pas au classement ; vide s'il y apparaît.</param>
+    public static GeneralRankingView Build(IReadOnlyList<RankingRow> visible, Guid viewerId, RankingRow? viewer)
     {
-        ArgumentNullException.ThrowIfNull(ranked);
-        var rows = ranked.Where(r => r.Rank is not null).ToList();
-        var top = rows.Take(TopCount).ToList();
-        var index = rows.FindIndex(r => r.PlayerId == viewerId);
-        IReadOnlyList<RankingRow> around = index < TopCount
-            ? []
-            : [.. rows.Skip(Math.Max(TopCount, index - 1)).Take(index + 2 - Math.Max(TopCount, index - 1))];
-        return new GeneralRankingView(top, around, rows.Count);
+        ArgumentNullException.ThrowIfNull(visible);
+        var ranked = visible.Where(r => r.Rank is not null).ToList();
+        var top = ranked.Take(TopCount).ToList();
+        var index = ranked.FindIndex(r => r.PlayerId == viewerId);
+        if (index >= 0)
+        {
+            IReadOnlyList<RankingRow> around = index < TopCount
+                ? []
+                : [.. ranked.Skip(Math.Max(TopCount, index - 1)).Take(index + 2 - Math.Max(TopCount, index - 1))];
+            return new GeneralRankingView(top, around, ranked.Count, PercentOf(ranked[index].Rank!.Value, ranked.Count));
+        }
+
+        if (viewer?.Performance is not { } performance)
+            return new GeneralRankingView(top, [], ranked.Count, null);
+        // Il n'est pas dans la liste : sa place est celle qu'il y aurait, derrière ceux qui font strictement mieux.
+        var position = 1 + ranked.Count(r => r.Performance > performance);
+        return new GeneralRankingView(top, [], ranked.Count, PercentOf(position, ranked.Count + 1));
     }
+
+    /// <summary>La dizaine supérieure de la place rapportée au nombre de classés : 3e sur 40 donne « top 10 % », 12e sur 40 « top 30 % ».</summary>
+    private static int PercentOf(int position, int total) => Math.Clamp((int)Math.Ceiling(position * 10d / total) * 10, 10, 100);
 }
