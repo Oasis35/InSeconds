@@ -150,7 +150,7 @@ describe('RunFinishComponent', () => {
   });
 
   describe('nouvelle interface (niveau)', () => {
-    const level = { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: { key: 'runs.discs.gold', stars: 0 }, pointsToNext: 220, progressPercent: 56, provisional: false, runsPlayed: 12, delta: 38 };
+    const level = { points: 1380, disc: { key: 'runs.discs.silver', stars: 0 }, nextDisc: { key: 'runs.discs.gold', stars: 0 }, pointsToNext: 220, progressPercent: 56, runsPlayed: 12, delta: 38, discChange: 'same' as const, inactivityLoss: 0, discDropInDays: null };
 
     function renderLevel(value: RunFinish, showLevel: boolean, duel: RunDuel | null = null) {
       const rendered = render(value, true, duel);

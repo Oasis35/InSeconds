@@ -22,9 +22,6 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
         <app-run-disc class="shrink-0" [disc]="level().disc.key" [size]="28" [shine]="false" />
         <p class="min-w-0 flex-1 text-base font-bold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)">
           {{ level().disc.key | translate }}
-          @if (level().provisional) {
-            <span class="text-xs font-normal" style="font-family:var(--font-body);color:var(--text-muted)" data-testid="run-level-provisional">· {{ 'runs.level.provisional' | translate }}</span>
-          }
         </p>
         <p class="shrink-0 text-base font-bold tabular-nums" style="font-family:var(--font-score);color:var(--text-hi)" data-testid="run-level-points">
           {{ format(level().points) }}

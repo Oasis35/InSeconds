@@ -1286,6 +1286,7 @@
       "roundsPassed": "{{ count }} manches"
     },
     "discShort": {
+      "none": "Sans disque",
       "scratched": "Rayé",
       "wax": "Cire",
       "bronze": "Bronze",
@@ -1296,6 +1297,7 @@
       "diamond": "Diamant"
     },
     "discs": {
+      "none": "Pas encore de disque",
       "scratched": "Disque rayé",
       "wax": "Disque de cire",
       "bronze": "Disque de bronze",
@@ -1374,7 +1376,6 @@
     },
     "level": {
       "title": "Ton niveau",
-      "provisional": "provisoire",
       "next": "{{ disc }} dans {{ points }} pts",
       "top": "Le plus haut disque",
       "review": "Revoir",

@@ -56,7 +56,7 @@ Deux onglets, Défis du jour et Survie (écrans 9 et 10) : résumé en haut (nom
 
 ## PR 4 : niveau, disques et fin de run
 
-- **Points de niveau** : moyenne glissante des performances de run (monte et descend, provisoire avant 3 runs, pas de décroissance d'inactivité pour l'instant). **Disques** : Rayé, Cire, Bronze, Argent, Or, Platine, Double platine, Diamant. Formule et seuils en réglages `Runs:Levels...`.
+- **Points de niveau** (refonte du 18/11, #607, cf. [`niveau-classement.md`](niveau-classement.md)) : 80 % de l'ancien niveau et 20 % du score de chaque série, 10 % de baisse au plus, un disque de plus au plus, plus de niveau provisoire ; inactivité calculée à la lecture (14 jours de grâce, -5 % par semaine, plancher à la moitié). **Disques** : Rayé 300, Bronze 900, Argent 2 000, Or 3 600, Platine 6 000, Double platine 9 600, Diamant 13 000 (le disque de cire a disparu). Formule et seuils en réglages `Runs:Levels...`.
 - Table `runs.player_levels`, politique pure dans `Runs/Domain`, migration EF, code Wolverine régénéré.
 **État : codée (#570).** Back : `runs.player_levels`, `RunLevelPolicy`, réglages `Runs:Levels:*`, le niveau dans `GET /api/runs/me` et dans la fin d'une partie. Front : la carte du niveau (`runs/ui/run-level-card` : disque, points, « +38 », jauge, « Disque d'or dans 220 pts », « provisoire ») sur l'accueil du mode et sur la fin de run, où « Rejouer » devient « Nouvelle setlist » et le partage « Défier un ami », avec « Revoir » vers `/history/survie/<partie>` et le rappel du défi du jour ; trois disques de plus (platine, double platine, diamant). La fin de run a ensuite été mise au niveau de la maquette 04 (cf. § Mise au niveau).
 

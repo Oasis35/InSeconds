@@ -1286,6 +1286,7 @@
       "roundsPassed": "{{ count }} rounds"
     },
     "discShort": {
+      "none": "No disc",
       "scratched": "Scratched",
       "wax": "Wax",
       "bronze": "Bronze",
@@ -1296,6 +1297,7 @@
       "diamond": "Diamond"
     },
     "discs": {
+      "none": "No disc yet",
       "scratched": "Scratched record",
       "wax": "Wax record",
       "bronze": "Bronze record",
@@ -1374,7 +1376,6 @@
     },
     "level": {
       "title": "Your level",
-      "provisional": "provisional",
       "next": "{{ disc }} in {{ points }} pts",
       "top": "The highest record",
       "review": "Review",

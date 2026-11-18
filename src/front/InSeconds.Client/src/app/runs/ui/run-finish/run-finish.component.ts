@@ -91,7 +91,6 @@ import { SecondsPipe } from '../../../ui/format/seconds.pipe';
                 } @else {
                   <span>{{ 'runs.level.top' | translate }}</span>
                 }
-                @if (level.provisional) { <span class="text-xs" style="color:var(--text-muted)" data-testid="run-level-provisional"> · {{ 'runs.level.provisional' | translate }}</span> }
               </span>
               @if (delta(); as delta) {
                 <span class="shrink-0 tabular-nums" data-testid="run-level-delta" [style.color]="(level.delta ?? 0) > 0 ? 'var(--color-accent-3)' : 'var(--text-muted)'">{{ delta }}</span>

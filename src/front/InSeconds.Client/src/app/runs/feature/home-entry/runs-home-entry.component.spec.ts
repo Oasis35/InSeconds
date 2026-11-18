@@ -12,7 +12,7 @@ import { RunsHomeEntryComponent } from './runs-home-entry.component';
 
 const LEVEL: RunLevel = {
   points: 1380, disc: { key: 'runs.discs.silver', stars: 3 }, nextDisc: { key: 'runs.discs.gold', stars: 4 },
-  pointsToNext: 220, progressPercent: 44, provisional: false, runsPlayed: 12, delta: null,
+  pointsToNext: 220, progressPercent: 44, runsPlayed: 12, delta: null, discChange: null, inactivityLoss: 0, discDropInDays: null,
 };
 
 describe('RunsHomeEntryComponent', () => {
