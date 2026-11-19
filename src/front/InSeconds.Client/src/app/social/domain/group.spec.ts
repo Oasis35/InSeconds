@@ -1,4 +1,4 @@
-import { GeneralRanking, GroupRanking, GroupStanding, avatarOf, badgeColor, bestStanding, generalRankOf, movementOf, groupInviteUrl, initialOf, isGroupNameValid, isInviteCode, standingOf } from './group';
+import { GeneralRanking, GroupRanking, GroupStanding, avatarOf, badgeColor, bestStanding, generalRankOf, movementOf, groupInviteUrl, initialOf, isGroupNameValid, isInviteCode, preferredGroupId, standingOf } from './group';
 
 describe('group (domaine social)', () => {
   it('accepte un nom de 3 à 40 caractères, aux caractères d\'un pseudo', () => {
@@ -110,5 +110,14 @@ describe('movementOf', () => {
     const group = ranking([entry('Théo', 1910, 1), entry('Moi', 1380, 2, true), entry('Léa', 1300, 3)]);
     expect(standingOf(group, 280).moved).toEqual({ from: 3, passed: 'Léa' });
     expect(standingOf(group).moved).toBeUndefined();
+  });
+});
+
+describe('preferredGroupId', () => {
+  it("le groupe préféré s'il en est encore membre, sinon le premier", () => {
+    expect(preferredGroupId([4, 7], 7)).toBe(7);
+    expect(preferredGroupId([4, 7], 99)).toBe(4);
+    expect(preferredGroupId([4, 7], null)).toBe(4);
+    expect(preferredGroupId([], 7)).toBeNull();
   });
 });

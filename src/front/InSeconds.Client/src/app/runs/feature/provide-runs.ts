@@ -1,5 +1,5 @@
 import { EnvironmentProviders, inject, makeEnvironmentProviders, provideAppInitializer } from '@angular/core';
-import { HOME_MODE_ENTRIES } from '../../core/shell/home-mode-entries/home-mode-entries';
+import { HOME_ENTRY_ORDER, HOME_MODE_ENTRIES } from '../../core/shell/home-mode-entries/home-mode-entries';
 import { SetlistAccessStore } from '../data-access/setlist-access.store';
 
 /**
@@ -9,7 +9,7 @@ import { SetlistAccessStore } from '../data-access/setlist-access.store';
  */
 export function provideRuns(): EnvironmentProviders {
   return makeEnvironmentProviders([
-    { provide: HOME_MODE_ENTRIES, multi: true, useValue: { load: () => import('./home-entry/runs-home-entry.component').then(m => m.RunsHomeEntryComponent) } },
+    { provide: HOME_MODE_ENTRIES, multi: true, useValue: { order: HOME_ENTRY_ORDER.survie, load: () => import('./home-entry/runs-home-entry.component').then(m => m.RunsHomeEntryComponent) } },
     provideAppInitializer(() => void inject(SetlistAccessStore)),
   ]);
 }

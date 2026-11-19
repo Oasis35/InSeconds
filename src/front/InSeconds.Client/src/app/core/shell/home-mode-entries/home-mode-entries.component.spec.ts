@@ -6,6 +6,9 @@ import { HomeModeEntriesComponent } from './home-mode-entries.component';
 @Component({ selector: 'app-test-entry', template: '<p data-testid="entry">Une entrée</p>' })
 class TestEntryComponent {}
 
+@Component({ selector: 'app-test-other', template: '<p data-testid="entry">Une autre</p>' })
+class OtherEntryComponent {}
+
 describe('HomeModeEntriesComponent', () => {
   async function render(providers: unknown[]) {
     TestBed.configureTestingModule({ providers: providers as never[] });
@@ -24,17 +27,26 @@ describe('HomeModeEntriesComponent', () => {
   });
 
   it('pose l\'entrée de chaque mode, chargée à la demande', async () => {
-    const element = await render([{ provide: HOME_MODE_ENTRIES, multi: true, useValue: { load: () => Promise.resolve(TestEntryComponent) } }]);
+    const element = await render([{ provide: HOME_MODE_ENTRIES, multi: true, useValue: { order: 1, load: () => Promise.resolve(TestEntryComponent) } }]);
 
     expect(element.querySelectorAll('[data-testid="entry"]')).toHaveLength(1);
   });
 
   it('une entrée qui ne se charge pas ne casse pas les autres', async () => {
     const element = await render([
-      { provide: HOME_MODE_ENTRIES, multi: true, useValue: { load: () => Promise.reject(new Error('réseau')) } },
-      { provide: HOME_MODE_ENTRIES, multi: true, useValue: { load: () => Promise.resolve(TestEntryComponent) } },
+      { provide: HOME_MODE_ENTRIES, multi: true, useValue: { order: 1, load: () => Promise.reject(new Error('réseau')) } },
+      { provide: HOME_MODE_ENTRIES, multi: true, useValue: { order: 2, load: () => Promise.resolve(TestEntryComponent) } },
     ]);
 
     expect(element.querySelectorAll('[data-testid="entry"]')).toHaveLength(1);
+  });
+
+  it("range les entrées par leur place, pas par l'ordre des fournisseurs", async () => {
+    const element = await render([
+      { provide: HOME_MODE_ENTRIES, multi: true, useValue: { order: 20, load: () => Promise.resolve(OtherEntryComponent) } },
+      { provide: HOME_MODE_ENTRIES, multi: true, useValue: { order: 10, load: () => Promise.resolve(TestEntryComponent) } },
+    ]);
+
+    expect([...element.querySelectorAll('[data-testid="entry"]')].map(entry => entry.textContent)).toEqual(['Une entrée', 'Une autre']);
   });
 });

@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
+import { MemoryStoragePort, StoragePort } from '../../core/storage/storage.port';
 import { GroupsStore } from './groups.store';
+import { LastGroup } from './last-group';
 import { DAILY, FakeSocialApi, GROUP, OTHER_GROUP, provideFakeSocialApi } from './testing/fake-social-api';
 
 describe('GroupsStore', () => {
@@ -8,7 +10,7 @@ describe('GroupsStore', () => {
 
   beforeEach(() => {
     api = new FakeSocialApi();
-    TestBed.configureTestingModule({ providers: [GroupsStore, provideFakeSocialApi(api)] });
+    TestBed.configureTestingModule({ providers: [GroupsStore, provideFakeSocialApi(api), { provide: StoragePort, useValue: new MemoryStoragePort() }] });
     store = TestBed.inject(GroupsStore);
   });
 
@@ -36,6 +38,23 @@ describe('GroupsStore', () => {
 
     await store.load(99);
     expect(store.selectedId()).toBe(4);
+  });
+
+  it("le groupe regardé devient le dernier groupe, celui de la carte amis de l'accueil", async () => {
+    await store.load();
+    expect(TestBed.inject(LastGroup).get()).toBe(4);
+
+    await store.select(7);
+    expect(TestBed.inject(LastGroup).get()).toBe(7);
+  });
+
+  it('sans groupe demandé, le classement rouvre le dernier groupe regardé (sans le remplacer par le premier)', async () => {
+    TestBed.inject(LastGroup).set(7);
+
+    await store.load();
+
+    expect(store.selectedId()).toBe(7);
+    expect(TestBed.inject(LastGroup).get()).toBe(7);
   });
 
   it('sans groupe, rien à classer', async () => {

@@ -1,7 +1,8 @@
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
-import { Group, GroupRanking, GroupStanding, standingOf } from '../domain/group';
+import { Group, GroupRanking, GroupStanding, preferredGroupId, standingOf } from '../domain/group';
 import { GroupScores } from '../domain/group-scores';
+import { LastGroup } from './last-group';
 import { SocialApi } from './social.api';
 
 type Status = 'idle' | 'loading' | 'ready' | 'error';
@@ -31,7 +32,7 @@ export const GroupsStore = signalStore(
     /** Les scores du groupe regardé : jamais ceux d'un autre groupe le temps d'une lecture. */
     selectedScores: computed(() => (store.scores()?.groupId === store.selectedId() ? store.scores() : null)),
   })),
-  withMethods((store, api = inject(SocialApi)) => {
+  withMethods((store, api = inject(SocialApi), lastGroup = inject(LastGroup)) => {
     let scoresRequest = 0;
 
     async function loadScores(groupId: number): Promise<void> {
@@ -47,12 +48,14 @@ export const GroupsStore = signalStore(
 
     /** Regarde un groupe : ses scores sont lus une fois, une lecture en échec se refait. */
     async function show(groupId: number): Promise<void> {
+      // Le groupe regardé devient celui de la carte amis de l'accueil.
+      lastGroup.set(groupId);
       patchState(store, { selectedId: groupId });
       if (store.scoresFor() !== groupId) await loadScores(groupId);
     }
 
     return {
-      /** Lit mes groupes puis le classement du groupe demandé (à défaut, du premier). */
+      /** Lit mes groupes puis le classement du groupe demandé (à défaut, du dernier regardé, puis du premier). */
       async load(preferredId: number | null = null): Promise<void> {
         patchState(store, { status: 'loading' });
         try {
@@ -60,8 +63,9 @@ export const GroupsStore = signalStore(
           // Une relecture (après « Quitter ») repart de zéro : une réponse encore en route est ignorée, rien d'un groupe quitté ne reste affiché.
           scoresRequest++;
           patchState(store, { status: 'ready', groups, maxGroups, ...NOTHING_READ });
-          const target = groups.find(group => group.id === preferredId) ?? groups[0];
-          if (target) await show(target.id);
+          // Sans groupe demandé (l'onglet « Classements »), le dernier regardé : la barre du bas ne le remplace pas par le premier.
+          const target = preferredGroupId(groups.map(group => group.id), preferredId ?? lastGroup.get());
+          if (target !== null) await show(target);
           else patchState(store, { selectedId: null });
         } catch {
           patchState(store, { status: 'error' });
