@@ -81,15 +81,12 @@ export class DailyShellComponent implements OnInit {
     });
     this.destroyRef.onDestroy(() => this.chrome.setImmersive(false));
 
-    // Quelle page montre quoi. Sans l'accès Survie, la racine n'a pas d'accueil à part : c'est le défi. Avec lui, une manche est sur `/daily`, le
-    // reste (carte du défi, pause, abandon, résultat) sur `/`.
+    // Quelle page montre quoi : une manche est sur `/daily`, le reste (carte du défi, pause, abandon, résultat) sur `/`.
     effect(() => {
       const screen = this.store.screen();
       const path = this.path();
-      const known = this.chrome.v4Known();
-      const v4 = this.chrome.v4();
-      if (path === '/' && ((known && !v4) || screen === 'playing')) this.goTo('/daily');
-      else if (path === '/daily' && v4 && isHomeScreen(screen)) this.goTo('/');
+      if (path === '/' && screen === 'playing') this.goTo('/daily');
+      else if (path === '/daily' && isHomeScreen(screen)) this.goTo('/');
     });
 
     // Une nouvelle version du site ne recharge jamais la page en pleine manche (cf. `reloadMomentFor`).

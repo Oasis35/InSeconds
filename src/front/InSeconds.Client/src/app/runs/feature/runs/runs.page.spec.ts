@@ -180,9 +180,8 @@ describe('RunsPage', () => {
     const finish = { challengeCode: 'K7Q2M9' } as RunFinish;
     const shareFinish = (page: RunsPage) => (page as unknown as { shareFinish: (finish: RunFinish) => void }).shareFinish(finish);
 
-    it('sous la V4, ouvre la feuille à trois choix', () => {
+    it('ouvre la feuille à trois choix', () => {
       const { page } = create();
-      TestBed.inject(ShellChromeStore).setV4(true);
 
       shareFinish(page);
 
@@ -190,16 +189,6 @@ describe('RunsPage', () => {
       expect((sheet?.data as unknown as { finish: RunFinish }).finish).toBe(finish);
     });
 
-    it('sans la V4, partage le score sans feuille', () => {
-      const { fixture, page } = create();
-      TestBed.inject(ShellChromeStore).setV4(false);
-      const shareScore = vi.spyOn(fixture.debugElement.injector.get(RunShare), 'shareScore').mockResolvedValue();
-
-      shareFinish(page);
-
-      expect(sheet).toBeNull();
-      expect(shareScore).toHaveBeenCalledWith(finish, expect.any(String), null);
-    });
   });
 
   it('un lien de playlist qui invite dans un groupe garde l\'invitation pour la fin de la partie', async () => {

@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
+import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { ShareService } from '../../../core/share/share.service';
 import { ModalService } from '../../../ui/modal/modal.service';
 import { PendingInvite } from '../../data-access/pending-invite';
@@ -13,7 +14,7 @@ describe('RankingPage', () => {
   let shared: string[];
   let confirm: boolean;
 
-  async function render(url = '/ranking', who: 'account' | 'guest' | 'nobody' = 'account', pending: string | null = null) {
+  async function render(url = '/ranking', who: 'account' | 'guest' | 'nobody' = 'account', pending: string | null = null, survie = true) {
     api ??= new FakeSocialApi();
     shared = [];
     TestBed.configureTestingModule({
@@ -26,6 +27,7 @@ describe('RankingPage', () => {
     const invite = TestBed.inject(PendingInvite);
     invite.clear();
     if (pending) invite.set(pending);
+    TestBed.inject(ShellChromeStore).setSurvie(survie);
     signIn(who);
     await TestBed.inject(Router).navigateByUrl(url);
     const fixture = TestBed.createComponent(RankingPage);
@@ -55,6 +57,13 @@ describe('RankingPage', () => {
     expect(find(el, 'ranking-general')?.getAttribute('href')).toBe('/ranking?view=general');
     expect(find(el, 'general-ranking')).not.toBeNull();
     expect(find(el, 'ranking-empty')).toBeNull();
+  });
+
+  it("sans l'accès Survie, pas de pastille « Général », même demandée par l'adresse : seulement les groupes", async () => {
+    const { el } = await render('/ranking?view=general', 'account', null, false);
+
+    expect(find(el, 'ranking-general')).toBeNull();
+    expect(find(el, 'general-ranking')).toBeNull();
   });
 
   it('garde la pastille « Général » éteinte sur le classement d\'un groupe', async () => {

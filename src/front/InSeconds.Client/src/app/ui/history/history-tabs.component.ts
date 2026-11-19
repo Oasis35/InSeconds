@@ -2,13 +2,14 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
-/** Les deux pages de l'historique. Chaque mode a la sienne (les modes ne se connaissent pas) : ces onglets sont des liens. */
+/** Les pages de l'historique. Chaque mode a la sienne (les modes ne se connaissent pas) : ces onglets sont des liens. */
 @Component({
   selector: 'app-history-tabs',
   imports: [RouterLink, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h1 class="text-2xl font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'ui.history.title' | translate }}</h1>
+    @if (withSetlist()) {
     <nav class="mt-4 flex gap-1 p-1" style="border:1px solid var(--border-neutral);border-radius:var(--radius-button)" [attr.aria-label]="'ui.history.title' | translate">
       @for (tab of tabs; track tab.id) {
         <a [routerLink]="tab.link" [attr.data-testid]="'history-tab-' + tab.id" [attr.aria-current]="active() === tab.id ? 'page' : null"
@@ -19,10 +20,13 @@ import { TranslatePipe } from '@ngx-translate/core';
            [style.color]="active() === tab.id ? 'var(--text-hi)' : 'var(--text-muted)'">{{ tab.labelKey | translate }}</a>
       }
     </nav>
+    }
   `,
 })
 export class HistoryTabsComponent {
   readonly active = input.required<'daily' | 'setlist'>();
+  /** Sans l'accès Survie, il n'y a qu'une page : pas d'onglets, seulement le titre. */
+  readonly withSetlist = input(true);
 
   protected readonly tabs = [
     { id: 'daily', link: '/history/daily', labelKey: 'ui.history.tabs.daily' },

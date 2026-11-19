@@ -68,18 +68,9 @@ describe('ProfilePage', () => {
     expect(emailInput(fixture).value).toBe('alice@example.com');
   });
 
-  describe('nouvelle interface (V4)', () => {
-    it('sans la V4, ni bascule de langue ni liens légaux : le pied de page les porte', async () => {
+  describe('langue, liens légaux et classement général', () => {
+    it('la langue se choisit ici et les liens légaux restent joignables', async () => {
       const fixture = await render();
-
-      expect(query(fixture, '[data-testid="profile-language"]')).toBeNull();
-      expect(query(fixture, '[data-testid="profile-legal"]')).toBeNull();
-    });
-
-    it('sous la V4, la langue se choisit ici et les liens légaux restent joignables', async () => {
-      const fixture = await render();
-      TestBed.inject(ShellChromeStore).setV4(true);
-      await settle(fixture);
 
       const english = query<HTMLButtonElement>(fixture, '[data-testid="language-en"]')!;
       expect(query(fixture, '[data-testid="language-fr"]')!.getAttribute('aria-pressed')).toBe('true');
@@ -90,6 +81,15 @@ describe('ProfilePage', () => {
       expect(english.getAttribute('aria-pressed')).toBe('true');
       const links = [...query(fixture, '[data-testid="profile-legal"]')!.querySelectorAll('a')].map(a => a.getAttribute('href'));
       expect(links).toEqual(['/legal', '/privacy', 'mailto:contact@inseconds.cc']);
+    });
+
+    it("le lien du nom au classement général n'est là qu'avec l'accès Survie", async () => {
+      const fixture = await render();
+      expect(query(fixture, '[data-testid="profile-general-ranking"]')).toBeNull();
+
+      TestBed.inject(ShellChromeStore).setSurvie(true);
+      await settle(fixture);
+      expect(query(fixture, '[data-testid="profile-general-ranking"]')).not.toBeNull();
     });
   });
 
@@ -344,18 +344,8 @@ describe('ProfilePage', () => {
   });
 
   describe('retour au jeu', () => {
-    it('est en haut de la page, avant le titre', async () => {
+    it("la barre du bas ramène au jeu : pas de second retour", async () => {
       const fixture = await render();
-      const back = query<HTMLAnchorElement>(fixture, '[data-testid="back-to-game"]')!;
-
-      expect(back.getAttribute('href')).toBe('/');
-      expect(back.compareDocumentPosition(query(fixture, 'h1')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    });
-
-    it('sous la V4, la barre du bas ramène au jeu : pas de second retour', async () => {
-      const fixture = await render();
-      TestBed.inject(ShellChromeStore).setV4(true);
-      await settle(fixture);
 
       expect(query(fixture, '[data-testid="back-to-game"]')).toBeNull();
     });

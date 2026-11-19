@@ -106,7 +106,7 @@ export class RunsPage implements OnInit {
 
   protected readonly chrome = inject(ShellChromeStore);
   /** L'écran affiché : l'accueil du mode attend que le flag de la V4 soit lu (pas d'ancien accueil qui change de forme ensuite). */
-  protected readonly screen = computed(() => (!this.chrome.v4Known() && this.store.screen() === 'welcome' ? 'loading' : this.store.screen()));
+  protected readonly screen = computed(() => (!this.chrome.survieKnown() && this.store.screen() === 'welcome' ? 'loading' : this.store.screen()));
 
   /** Les secondes avant minuit UTC (le prochain défi), pour la bande du défi du jour ; au passage de minuit, un nouveau défi est à jouer. */
   private readonly secondsLeft = signal(secondsUntilMidnightUtc(new Date()));
@@ -171,12 +171,8 @@ export class RunsPage implements OnInit {
     if (screen === 'welcome' || screen === 'resume') await this.store.begin();
   }
 
-  /** « Défier un ami » : sous la V4, la feuille à trois choix (défier, inviter dans un groupe, ma grille) ; sinon le partage du score. */
+  /** « Défier un ami » : la feuille à trois choix (défier, inviter dans un groupe, ma grille). */
   protected shareFinish(finish: RunFinish): void {
-    if (!this.chrome.v4()) {
-      void this.share.shareScore(finish, this.language.current(), this.store.duel());
-      return;
-    }
     const data: RunShareSheetData = { finish, lang: this.language.current(), duel: this.store.duel() };
     this.modal.openSheet<void, RunShareSheetData, RunShareSheetComponent>(RunShareSheetComponent, { data, injector: this.injector });
   }

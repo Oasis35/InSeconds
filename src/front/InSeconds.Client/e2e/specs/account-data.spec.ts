@@ -41,9 +41,9 @@ test.describe('Tes données', () => {
     await dialog.getByLabel(`Retape ton pseudo ${PSEUDO} pour confirmer`).fill(PSEUDO.toLowerCase());
     await remove.click();
 
-    await expect(page).toHaveURL(/\/daily$/);
+    await expect(page).toHaveURL(/\/$/);
     await expect(page.getByText('Ton compte est supprimé.')).toBeVisible();
-    await expect(page.locator('app-account-link').getByTitle(PSEUDO)).toHaveCount(0);
+    await expect(page.getByTestId('tab-account')).toHaveAttribute('href', '/account/login');
 
     // Le compte n'existe plus : le profil renvoie vers la connexion, et l'adresse redemande un pseudo.
     await page.goto('/profile');

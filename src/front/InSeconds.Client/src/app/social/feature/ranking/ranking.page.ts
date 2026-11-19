@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -16,6 +16,7 @@ import { ModalService } from '../../../ui/modal/modal.service';
 import { GroupShare } from '../../data-access/group-share';
 import { GroupsStore } from '../../data-access/groups.store';
 import { PendingInvite } from '../../data-access/pending-invite';
+import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { GeneralRankingComponent } from '../general-ranking/general-ranking.component';
 import { RankingListComponent } from '../../ui/ranking-list/ranking-list.component';
 
@@ -61,8 +62,10 @@ export class RankingPage {
   /** `?edit=name` (le lien du profil) : le choix du nom s'ouvre avec le classement général. */
   protected readonly editName = toSignal(inject(ActivatedRoute).queryParamMap.pipe(map(params => params.get('edit') === 'name')), { initialValue: false });
 
-  /** `?view=general` : le classement général à la place de celui d'un groupe. */
-  protected readonly general = toSignal(inject(ActivatedRoute).queryParamMap.pipe(map(params => params.get('view') === 'general')), { initialValue: false });
+  protected readonly chrome = inject(ShellChromeStore);
+  private readonly generalRequested = toSignal(inject(ActivatedRoute).queryParamMap.pipe(map(params => params.get('view') === 'general')), { initialValue: false });
+  /** `?view=general` : le classement général à la place de celui d'un groupe, pour qui a l'accès Survie (il se classe par niveau). */
+  protected readonly general = computed(() => this.generalRequested() && this.chrome.survieKnown() && this.chrome.survie());
 
   constructor() {
     effect(() => {

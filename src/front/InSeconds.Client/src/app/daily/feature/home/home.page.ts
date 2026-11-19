@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
 import { LanguageService } from '../../../core/i18n/language.service';
-import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { InstagramLinkComponent } from '../../../core/shell/instagram-link/instagram-link.component';
 import { AccountLinkComponent } from '../../../core/shell/account-link/account-link.component';
 import { HomeModeEntriesComponent } from '../../../core/shell/home-mode-entries/home-mode-entries.component';
@@ -17,13 +16,12 @@ import { HomeAbandonedCardComponent } from '../../ui/home-abandoned-card/home-ab
 import { HomeChallengeCardComponent } from '../../ui/home-challenge-card/home-challenge-card.component';
 import { HomeDoneCardComponent } from '../../ui/home-done-card/home-done-card.component';
 import { StatusScreenComponent } from '../../ui/status-screen/status-screen.component';
-import { DailyResultView, DailyStartup, StreakSheetOpener, visibleScreen } from '../daily-shell/daily-view';
+import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell/daily-view';
 
 /**
- * L'accueil (`/`), neutre : ni le défi ni la Survie, mais leurs cartes. Sous la V4, la carte du défi porte tous ses états (à jouer, en pause,
+ * L'accueil (`/`), neutre : ni le défi ni la Survie, mais leurs cartes. La carte du défi porte tous ses états (à jouer, en pause,
  * abandonné, fait avec le score qui monte juste après la partie), la carte Survie (projetée par `<app-home-mode-entries>`) est dessous. Les stores
  * sont ceux de la coquille du jeu du jour : « Commencer » lance la partie dans ce toucher, et la coquille passe sur `/daily` pour la manche.
- * Sans la V4, la coquille renvoie la racine au défi : la page n'affiche alors qu'un chargement.
  */
 @Component({
   selector: 'app-home-page',
@@ -146,13 +144,11 @@ export class HomePage {
   protected readonly streakSheet = inject(StreakSheetOpener);
   protected readonly result = inject(DailyResultView);
   protected readonly startup = inject(DailyStartup);
-  private readonly chrome = inject(ShellChromeStore);
   private readonly modal = inject(ModalService);
   private readonly translate = inject(TranslateService);
 
-  private readonly flagged = visibleScreen();
-  /** L'écran affiché : un chargement tant que le flag n'est pas lu, et sans la V4 (la coquille renvoie alors au défi), jamais l'ancien accueil. */
-  protected readonly screen = computed(() => (this.chrome.v4() ? this.flagged() : 'loading'));
+  /** L'écran affiché : celui du jeu du jour. */
+  protected readonly screen = this.store.screen;
 
   protected readonly dateLabel = computed(() => formatGameDate(todayUtc(new Date()), this.language.current(), 'weekday'));
   /** Le temps qu'il reste pour jouer le défi, dit à côté du score à battre (« plus que 6 h »). */

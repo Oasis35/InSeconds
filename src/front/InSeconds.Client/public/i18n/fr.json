@@ -115,9 +115,6 @@
       "later": "Plus tard"
     },
     "header": {
-      "login": "Connexion",
-      "profile": "Mon profil",
-      "avatarTitle": "Mon profil : {{ pseudo }}",
       "admin": "Admin"
     }
   },
