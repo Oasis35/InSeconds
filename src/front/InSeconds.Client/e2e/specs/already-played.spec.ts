@@ -14,7 +14,7 @@ test.describe('Déjà joué - état already_played', () => {
 
     await expect(game.alreadyPlayedScreen).toBeVisible();
     await expect(game.countdown).toBeVisible();
-    await expect(page.getByText('Ton score du jour')).toBeVisible();
+    await expect(page.getByTestId('home-score')).toBeVisible();
   });
 
   test('affiche le bouton partager sur l\'écran déjà joué', async ({ page, api }) => {

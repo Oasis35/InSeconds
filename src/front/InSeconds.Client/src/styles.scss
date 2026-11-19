@@ -366,3 +366,7 @@ summary {
 html.has-bottom-bar .da-bg {
   padding-bottom: calc(4.25rem + env(safe-area-inset-bottom)); /* les onglets et un souffle : les liens légaux restent collés au-dessus */
 }
+/* Les toasts (série, gels) se posent au-dessus de la barre du bas, sinon elle les recouvre et « Fermer » ne se touche plus. */
+html.has-bottom-bar app-toast-frame {
+  bottom: calc(4.25rem + 18px + env(safe-area-inset-bottom));
+}
