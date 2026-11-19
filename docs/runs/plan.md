@@ -11,8 +11,7 @@ Ce qui reste pour le mode et les idées pour la suite. Règles : [`regles.md`](r
 
 1. **Parties de test et réglage** : le barème des paliers (`Runs:StepPoints`), l'échelle d'écoute (`Runs:ListenLadder`), le nombre de tranches de rang (`Runs:RankBands`) et les seuils des disques de niveau (`Runs:Levels:Discs`), à recaler sur des parties de testeurs ; viser 6 à 8 minutes par partie pour un joueur moyen.
 2. **Catalogue épuisé** : quand le tirage d'une manche ne trouve plus assez de morceaux libres, l'API répond une 500. Cas rare, à traiter proprement.
-3. **Ouverture à tous** : accès sans invitation, statistiques du mode dans l'admin, et pour le classement général ce qui a été reporté à ce moment-là : un mode « Masqué », le masquage après 12 mois d'inactivité, un bandeau d'information et une nouvelle balance des intérêts ([`../conformite/rgpd.md`](../conformite/rgpd.md)). Les anciens écrans de l'interface publique se retirent quand tout le monde a basculé.
-4. **Textes du lien d'un ami** : le bloc de règles dit encore « sans fin » alors que la partie s'arrête à la 8e manche.
+3. **Ouverture à tous** : accès sans invitation, statistiques du mode dans l'admin, et pour le classement général ce qui a été reporté à ce moment-là : un mode « Masqué », le masquage après 12 mois d'inactivité, un bandeau d'information et une nouvelle balance des intérêts ([`../conformite/rgpd.md`](../conformite/rgpd.md)). Les anciens écrans de l'interface publique se retirent quand tout le monde a basculé. Les écrans du pseudo d'invité (lien d'un ami ouvert sans compte), inatteignables tant que le lien exige l'accès, sont gardés pour cette ouverture (décision du 19/11/2026).
 
 ## Idées pour la suite (rien n'est décidé)
 

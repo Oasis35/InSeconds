@@ -1491,6 +1491,7 @@ export interface RunChallengeResponse {
     mySessionId: number | undefined;
     answerSeconds: number;
     themes?: RunRoundThemeResponse[] | undefined;
+    maxRounds?: number;
 
     [key: string]: any;
 }

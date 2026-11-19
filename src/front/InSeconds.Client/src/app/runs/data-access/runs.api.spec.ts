@@ -195,14 +195,14 @@ describe('RunsApi', () => {
 
       expect(await api.challenge('abc234')).toEqual({
         kind: 'ok',
-        link: { code: 'ABC234', authorPseudo: null, lives: 3, tracksPerRound: 5, listenSeconds: 10, answerSeconds: 45, myStatus: 'none', mySessionId: null, themes: [] },
+        link: { code: 'ABC234', authorPseudo: null, lives: 3, tracksPerRound: 5, listenSeconds: 10, answerSeconds: 45, myStatus: 'none', mySessionId: null, themes: [], maxRounds: 0 },
       });
       expect(client['getRunChallenge']).toHaveBeenCalledWith('abc234');
     });
 
     it('une partie finie ou en cours garde son identifiant ; un statut inconnu vaut « en cours »', async () => {
-      client['getRunChallenge'].mockReturnValue(of({ ...link, authorPseudo: 'Clément', myStatus: 'lost', mySessionId: 7 }));
-      expect(await api.challenge('ABC234')).toMatchObject({ link: { authorPseudo: 'Clément', myStatus: 'lost', mySessionId: 7 } });
+      client['getRunChallenge'].mockReturnValue(of({ ...link, authorPseudo: 'Clément', myStatus: 'lost', mySessionId: 7, maxRounds: 8 }));
+      expect(await api.challenge('ABC234')).toMatchObject({ link: { authorPseudo: 'Clément', myStatus: 'lost', mySessionId: 7, maxRounds: 8 } });
 
       client['getRunChallenge'].mockReturnValue(of({ ...link, myStatus: 'autre' }));
       expect(await api.challenge('ABC234')).toMatchObject({ link: { myStatus: 'pending' } });

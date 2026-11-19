@@ -1271,7 +1271,8 @@
     "link": {
       "guest": "Guest",
       "title": "{{ pseudo }} sent you a playlist",
-      "rounds": "Rounds of {{ tracks }} tracks, less and less famous, with no end",
+      "rounds": "Up to {{ max }} rounds of {{ tracks }} tracks, less and less famous",
+      "roundsNoMax": "Rounds of {{ tracks }} tracks, less and less famous, with no end",
       "theme": "Round {{ round }}: {{ name }} theme",
       "listen": "{{ seconds }} to find the artist and the title",
       "listenAndAnswer": "{{ seconds }} of listening, {{ answer }} to find the artist and the title",
