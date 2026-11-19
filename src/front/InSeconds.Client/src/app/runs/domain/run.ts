@@ -239,6 +239,8 @@ export interface RunLink {
   readonly mySessionId: number | null;
   /** Les manches à thème de la playlist ; vide : aucune. */
   readonly themes: readonly RunTheme[];
+  /** Le plafond de manches (règles figées) ; 0 : pas de plafond. */
+  readonly maxRounds: number;
 }
 
 /** Une partie terminée d'une playlist, dans le tableau de comparaison. */

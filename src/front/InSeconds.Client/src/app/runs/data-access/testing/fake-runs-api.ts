@@ -28,7 +28,7 @@ export const PLAY = (overrides: Partial<RunPlay> = {}): RunPlay => ({
 });
 
 export const LINK = (overrides: Partial<RunLink> = {}): RunLink => ({
-  code: 'ABC234', authorPseudo: 'Clément', lives: 3, tracksPerRound: 5, listenSeconds: 10, answerSeconds: 45, myStatus: 'none', mySessionId: null, themes: [], ...overrides,
+  code: 'ABC234', authorPseudo: 'Clément', lives: 3, tracksPerRound: 5, listenSeconds: 10, answerSeconds: 45, myStatus: 'none', mySessionId: null, themes: [], maxRounds: 8, ...overrides,
 });
 
 export const COMPARISON = (overrides: Partial<RunComparison> = {}): RunComparison => ({

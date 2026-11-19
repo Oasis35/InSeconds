@@ -1271,7 +1271,8 @@
     "link": {
       "guest": "Invité",
       "title": "{{ pseudo }} te lance une playlist",
-      "rounds": "Des manches de {{ tracks }} morceaux, de moins en moins connus, sans fin",
+      "rounds": "Jusqu’à {{ max }} manches de {{ tracks }} morceaux, de moins en moins connus",
+      "roundsNoMax": "Des manches de {{ tracks }} morceaux, de moins en moins connus, sans fin",
       "theme": "Manche {{ round }} : thème {{ name }}",
       "listen": "{{ seconds }} pour trouver l’artiste et le titre",
       "listenAndAnswer": "{{ seconds }} d’écoute, {{ answer }} pour trouver l’artiste et le titre",

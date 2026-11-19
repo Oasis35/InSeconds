@@ -1341,6 +1341,11 @@
             "items": {
               "$ref": "#/components/schemas/RunRoundThemeResponse"
             }
+          },
+          "maxRounds": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
           }
         }
       },

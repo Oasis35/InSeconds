@@ -25,8 +25,16 @@ describe('RunLinkScreenComponent', () => {
     expect(rules).toHaveLength(4);
     expect(rules[0]).toContain('runs.link.lives');
     expect(rules[1]).toContain('runs.link.rounds');
+    expect(rules[1]).not.toContain('roundsNoMax');
     expect(rules[2]).toContain('runs.link.listenAndAnswer');
     expect(rules[3]).toContain('runs.link.goal');
+  });
+
+  it('une playlist sans plafond de manches garde « sans fin »', () => {
+    const { element } = render(LINK({ maxRounds: 0 }));
+
+    const rules = Array.from(element.querySelectorAll('[data-testid="run-link-rules"] li')).map(item => item.textContent ?? '');
+    expect(rules[1]).toContain('runs.link.roundsNoMax');
   });
 
   it("une playlist sans chrono ne parle que de l'écoute", () => {
