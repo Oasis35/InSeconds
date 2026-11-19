@@ -2,14 +2,15 @@
 
 Stack **indépendante**, sur le même principe que `deploy/infra/` (Postgres partagé) : un seul
 Caddy pour tout le VPS, HTTPS automatique (Let's Encrypt), routage par nom de domaine vers les
-conteneurs des différents projets. Se déploie une fois, tourne en permanence.
+conteneurs des différents projets. Se déploie une fois, tourne en permanence, depuis le checkout
+de prod : `~/apps/InSeconds/deploy/caddy` (son `.env` y vit, non commité).
 
 ## Déploiement
 
 ```bash
-cd ~/caddy   # ou l'emplacement choisi sur le VPS
+cd ~/apps/InSeconds/deploy/caddy
 cp .env.example .env
-# éditer .env si besoin (domaines de test vs domaines définitifs)
+# éditer .env : CF_API_TOKEN (cf. plus bas), domaines si besoin
 docker compose up -d
 ```
 
@@ -28,6 +29,12 @@ cf. `docs/exploitation/deploiement.md` § Staging). Jamais déployé par la CI :
 `git pull` / `git reset --hard` qui modifie le `Caddyfile`, faire `docker restart caddy`, un
 `caddy reload` relirait l'ancien fichier (piège 26 du `CLAUDE.md` racine).
 
+Seule route qui ne suit pas le domaine : `/sitemap.xml` du domaine du front (et de
+`dev.inseconds.cc`) part vers l'API (`inseconds.api`, `inseconds-staging.api`), qui liste les jours
+dont les réponses sont publiées ; le `sitemap.xml` statique du front ne sert que si cette route
+manque. Une modification de cette route se recharge comme toute modification du `Caddyfile`
+(`docker restart caddy` après un `git pull`, piège 26).
+
 ## Ajouter un futur projet
 
 Ajouter un bloc au `Caddyfile` (un domaine → un conteneur), recharger sans downtime (fichier
@@ -40,6 +47,7 @@ mon-autre-projet.example.com {
 ```
 
 ```bash
+cd ~/apps/InSeconds/deploy/caddy
 docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
 ```
 
@@ -48,9 +56,11 @@ Le nouveau projet doit rejoindre `caddy-net` en réseau externe dans son propre
 
 ## Domaines
 
-`.env` porte les domaines de la prod (`FRONT_DOMAIN=inseconds.cc, www.inseconds.cc`,
-`API_DOMAIN=api.inseconds.cc`) ; le front a l'adresse de l'API figée au build
-(`https://api.inseconds.cc`). Le challenge **DNS-01 ne dépend pas de la cible DNS actuelle du
+`.env` porte les domaines de la prod, les mêmes que `.env.example` : `FRONT_DOMAIN=inseconds.cc, www.inseconds.cc`
+(une liste séparée par des virgules, que Caddy lit comme plusieurs adresses du même site ; les deux
+sont des origines autorisées de l'API, `appsettings.Production.json`) et `API_DOMAIN=api.inseconds.cc`.
+Le front a l'adresse de l'API figée au build (`https://api.inseconds.cc`). Les domaines du staging
+sont écrits en dur dans le `Caddyfile`. Le challenge **DNS-01 ne dépend pas de la cible DNS actuelle du
 domaine** (il crée seulement un enregistrement TXT via l'API Cloudflare) : le certificat d'un
 nouveau domaine s'obtient avant même de le faire pointer vers le VPS.
 
@@ -67,13 +77,11 @@ l'extérieur ne révèle jamais l'IP réelle du VPS).
 Nécessite `CF_API_TOKEN` (cf. `.env.example`) - token scopé en écriture DNS sur la zone
 `inseconds.cc` uniquement, jamais le token de compte Cloudflare global.
 
-Conteneur Caddy tourne en **utilisateur non-root** (`uid 1000`, capacité Linux
-`CAP_NET_BIND_SERVICE` posée sur le binaire via `setcap` pour bind les ports 80/443 sans être
-root) - corrige un finding SonarCloud "Security Rating on New Code" (B → A) détecté à l'ouverture
-de la première PR de ce stack. Nécessite de recréer les volumes `caddy_data`/`caddy_config` si
-appliqué après coup sur un déploiement déjà en place (permissions root existantes sur les
-certificats déjà stockés) - sans impact ici car domaines de test, certificats réémis en
-quelques secondes.
+Le conteneur Caddy tourne en **utilisateur non-root** (`uid 1000`, capacité Linux
+`CAP_NET_BIND_SERVICE` posée sur le binaire par `setcap` pour ouvrir les ports 80/443 sans être
+root). Les volumes `caddy_data`/`caddy_config` doivent lui appartenir : des certificats écrits
+par un Caddy lancé en root ne seraient pas relisibles (recréer alors les volumes, les certificats
+sont réémis en quelques secondes).
 
 ## IP réelle du visiteur (`trusted_proxies cloudflare`)
 
@@ -99,7 +107,7 @@ Vérifier après coup que l'API voit bien la vraie IP (pas celle de Cloudflare) 
 observant `docker logs inseconds.api` sur une requête de test, ou toute route qui logue l'IP
 source.
 
-## Ports 80/443 réservés à Cloudflare (`cloudflare-only.sh`, en place depuis le 2026-09-30)
+## Ports 80/443 réservés à Cloudflare (`cloudflare-only.sh`)
 
 UFW ouvre 80/443 au monde entier : quelqu'un qui connaît l'IP du VPS peut joindre Caddy en
 direct, sans le WAF ni l'anti-DDoS de Cloudflare. `cloudflare-only.sh` n'accepte ces deux ports
