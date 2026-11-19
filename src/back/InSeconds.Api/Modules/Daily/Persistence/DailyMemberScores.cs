@@ -40,6 +40,6 @@ public sealed class DailyMemberScores(InSecondsDbContext db, IGameCalendar calen
                            select new FinishedGame(session.PlayerId, challenge.Date, session.TotalScore)).ToListAsync(ct);
         var scores = DailyPeriodScores.Compute(games, today, ScorePeriods.WeekDays, hidden);
         return new ModeScores(today, revealed, scores.ToDictionary(
-            s => s.Key, s => new MemberPeriodScores(s.Value.PlayedToday, s.Value.TodayScore, s.Value.WeekPoints, s.Value.WeekDaysPlayed)));
+            s => s.Key, s => new MemberPeriodScores(s.Value.PlayedToday, s.Value.TodayScore, s.Value.WeekPoints, s.Value.WeekPlayedDays)));
     }
 }

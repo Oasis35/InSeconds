@@ -70,6 +70,8 @@ public class SocialDailyScoresTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal([1, 2, null], daily.Week.Select(e => e.Rank));
         Assert.Equal([1000, 950, null], daily.Week.Select(e => e.Points));
         Assert.Equal([2, 2, 0], daily.Week.Select(e => e.DaysPlayed));
+        // Les jours joués, pour les sept points de la semaine : du plus ancien au plus récent, sur la date des défis.
+        Assert.Equal([[Today.AddDays(-3), Today], [Today.AddDays(-1), Today], []], daily.Week.Select(e => e.PlayedDays));
     }
 
     [Fact]
@@ -92,6 +94,7 @@ public class SocialDailyScoresTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(["Bob", "Alice", "Carol"], daily.Week.Select(e => e.Pseudo));
         Assert.Equal([100, null, null], daily.Week.Select(e => e.Points));
         Assert.Equal([1, 0, 0], daily.Week.Select(e => e.DaysPlayed));
+        Assert.Equal([[Today.AddDays(-1)], [], []], daily.Week.Select(e => e.PlayedDays));
 
         // Bob, qui a fini, voit tout.
         var seenByBob = await DailyOfAsync(bob, group);
@@ -153,6 +156,7 @@ public class SocialDailyScoresTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.All(after.Today, e => Assert.False(e.Played));
         var aliceWeek = after.Week.Single(e => e.IsMe);
         Assert.Equal(1, aliceWeek.DaysPlayed);
+        Assert.Equal([Today], aliceWeek.PlayedDays);
         Assert.Equal(800, after.Week.Single(e => e.Pseudo == "Bob").Points);
     }
 

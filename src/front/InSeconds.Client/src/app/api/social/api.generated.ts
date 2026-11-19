@@ -1412,6 +1412,7 @@ export interface WeekScoreEntryResponse {
     isMe: boolean;
     points: number | undefined;
     daysPlayed: number;
+    playedDays: Date[];
 
     [key: string]: any;
 }

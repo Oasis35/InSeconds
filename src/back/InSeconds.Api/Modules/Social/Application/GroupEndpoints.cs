@@ -170,7 +170,7 @@ public static class GetGroupScoresEndpoint
         return new GroupScoresResponse(group.Id, group.Name, [.. modes.Select(m => new ModeScoresResponse(
             m.Mode, m.Day, m.TodayRevealed, ScorePeriods.WeekDays,
             [.. m.Today.Select(t => new TodayScoreEntryResponse(t.Row.Rank, t.Row.Pseudo, t.Row.PlayerId == playerId, t.Played, t.Row.Score))],
-            [.. m.Week.Select(w => new WeekScoreEntryResponse(w.Row.Rank, w.Row.Pseudo, w.Row.PlayerId == playerId, w.Row.Score, w.DaysPlayed))]))]);
+            [.. m.Week.Select(w => new WeekScoreEntryResponse(w.Row.Rank, w.Row.Pseudo, w.Row.PlayerId == playerId, w.Row.Score, w.PlayedDays.Count, w.PlayedDays))]))]);
     }
 }
 
