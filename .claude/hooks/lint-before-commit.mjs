@@ -114,7 +114,7 @@ function run(cmd, args, cwd, { shell = false } = {}) {
     });
     child.stderr?.on('data', (d) => (output += d));
     child.on('error', () => resolve({ ok: false, output: output.trim(), missing: true }));
-    child.on('close', (code) => resolve({ ok: code === 0, output: output.trim(), stdout: stdout.trim(), missing: false }));
+    child.on('close', (code) => resolve({ ok: code === 0, output: output.trim(), stdout: stdout.trim(), code, missing: false }));
   });
 }
 
@@ -184,11 +184,14 @@ export async function check(input) {
     checkFront(root, files),
   ]);
 
+  // Code 0 : rien ; 2 : constats sur stdout ; autre chose : git en erreur (pathspec...), signalé.
+  const gitErrors = [staged, working].filter((r) => r.code !== undefined && r.code !== 0 && r.code !== 2);
   const failures = [];
   const whitespace = [staged.stdout, working.stdout, checkUntracked(root, scope.untracked)].filter(Boolean);
   if (whitespace.length) failures.push(`Espaces en fin de ligne ou marqueurs de conflit :\n${tail(whitespace.join('\n'))}`);
   for (const r of [csharp, front]) if (r.failure) failures.push(r.failure);
   const skipped = [csharp, front].map((r) => r.skipped).filter(Boolean);
+  for (const r of gitErrors) skipped.push(`git diff --check (git en erreur : ${tail(r.output, 3)})`);
 
   if (failures.length) {
     return {

@@ -22,20 +22,23 @@ const CHECKS = [
 const GIT_WRITE = /\bgit(?:\.exe)?\b[\s\S]*\b(?:commit|push|merge|rebase|cherry-pick|revert|am|pull)\b/i;
 // Ce qui lance une commande que le découpage ne voit pas.
 const OPAQUE_RUNNER =
-  /^(?:invoke-expression|iex|start-process|saps|start|invoke-command|icm|start-job|sajb|powershell(?:\.exe)?|pwsh(?:\.exe)?|cmd(?:\.exe)?|bash(?:\.exe)?|sh|wsl(?:\.exe)?|\.)$/i;
+  /^(?:invoke-expression|iex|start-process|saps|start|invoke-command|icm|start-job|sajb|set-alias|sal|new-alias|nal|powershell(?:\.exe)?|pwsh(?:\.exe)?|cmd(?:\.exe)?|bash(?:\.exe)?|sh|wsl(?:\.exe)?|\.)$/i;
+// L'opérateur d'appel devant une variable ou une expression : `& $g ...`, `& (Get-Command git) ...`.
+const CALL_EXPRESSION = /(?:^|[\s;|{(])&\s*[$(]/;
+// Ce qui écrit une variable d'environnement sans passer par `$env:NOM = valeur`.
+const ENV_WRITER = /^(?:set-item|si|new-item|ni|set-content|sc|add-content|ac|copy-item|cpi|copy|cp)$/i;
 const IDENTITY_VAR = /GIT_(?:AUTHOR|COMMITTER)_(?:NAME|EMAIL|DATE)/i;
 const IS_GIT = (word) => /^(?:git|git\.exe)$/i.test(path.basename((word ?? '').replaceAll('\\', '/')));
 
-function unreadable(commands) {
+function unreadable(command, commands) {
+  if (CALL_EXPRESSION.test(command)) return 'opérateur d\'appel & sur une variable ou une expression';
   for (const words of commands) {
     const first = words[0] ?? '';
-    const callsVariable = first.startsWith('$') && !first.includes('=') && !/^[-+*/]?=/.test(words[1] ?? '');
-    if (OPAQUE_RUNNER.test(first) || callsVariable) {
-      if (!psEnvAssignment(words)) return `exécuteur opaque (${first})`;
-    }
-    if (words.some((w) => IDENTITY_VAR.test(w)) && !IS_GIT(first) && !psEnvAssignment(words) && !/^(?:remove-item|ri|rm|del)$/i.test(first)) {
-      return `variable d'identité posée sous une forme non lue (${first})`;
-    }
+    if (OPAQUE_RUNNER.test(first)) return `exécuteur opaque (${first})`;
+    if (/^\[.*::/.test(first) || words.some((w) => /::(?:Start|SetEnvironmentVariable)\b/i.test(w))) return `appel .NET (${first})`;
+    const writesIdentity =
+      (IDENTITY_VAR.test(first) && !psEnvAssignment(words)) || (ENV_WRITER.test(first) && words.some((w) => IDENTITY_VAR.test(w)));
+    if (writesIdentity) return `variable d'identité posée sous une forme non lue (${first})`;
   }
   return null;
 }
@@ -43,16 +46,19 @@ function unreadable(commands) {
 function opaqueReason(command, commands, cwd) {
   // Sur les mots découpés, pour ignorer les commentaires.
   if (!GIT_WRITE.test(commands.flat().join(' '))) return null;
-  return gitInvocations(command, cwd, 'powershell').length ? unreadable(commands) : 'aucun appel à git lisible';
+  return gitInvocations(command, cwd, 'powershell').length ? unreadable(command, commands) : 'aucun appel à git lisible';
 }
 
 function opaquePowerShell(input) {
   const command = input.tool_input?.command;
   if (shellOf(input) !== 'powershell' || typeof command !== 'string') return null;
   const commands = splitPowerShell(command);
-  // Le splatting cache les arguments, sous-commande comprise : refusé même sans mot de commit visible.
-  const splat = commands.some((words) => IS_GIT(words[0]) && words.some((w) => /^@[A-Za-z_]/.test(w)));
-  const reason = splat ? 'splatting sur git (git @args)' : opaqueReason(command, commands, input.cwd);
+  // Splatting ou sous-commande en variable : la sous-commande est cachée, refusé même sans mot de
+  // commit visible (`git @a`, `git @('commit')`, `git $s -m x`).
+  const hidden = commands.some(
+    (words) => IS_GIT(words[0]) && (words.some((w) => w.startsWith('@')) || (words.slice(1).find((w) => !w.startsWith('-')) ?? '').startsWith('$')),
+  );
+  const reason = hidden ? 'sous-commande de git cachée (splatting ou variable)' : opaqueReason(command, commands, input.cwd);
   if (!reason) return null;
   return {
     block:

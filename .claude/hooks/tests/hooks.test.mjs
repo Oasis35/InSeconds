@@ -359,6 +359,28 @@ describe('shell-guard (PowerShell)', { concurrency: true }, () => {
     assert.equal(pwsh(`${PS_CLEMENT}; $a = @('commit','-m','x'); git @a`, cwd).code, 2);
     assert.equal(pwsh(`${PS_CLEMENT}; $g = 'git'; & $g push origin main; git status`, cwd).code, 2);
     assert.equal(pwsh(`${PS_CLEMENT}; $sha = git rev-parse HEAD; git commit -m x`, cwd).code, 0);
+    for (const command of [
+      "$s = 'commit'; git $s -m x",
+      "git status; git @('commit','-m','x')",
+      'Set-Alias g git; g commit -m x; git status',
+      "git status; [Diagnostics.Process]::Start('git','commit -m x')",
+      'git status; & (Get-Command git) commit -m x',
+    ]) {
+      assert.equal(pwsh(`${PS_CLEMENT}; ${command}`, cwd).code, 2, command);
+    }
+  });
+
+  test('laisse passer les formes PowerShell courantes autour d\'un commit', () => {
+    const cwd = repo();
+    for (const command of [
+      'git commit -m x; if ($LASTEXITCODE -ne 0) { exit 1 }',
+      'git commit -m x; $LASTEXITCODE',
+      'foreach ($f in $files) { git add $f }; git commit -m x',
+      'git status --short | ForEach-Object { $_.Trim() }; git commit -m x',
+      'git commit -m x; Write-Host $env:GIT_AUTHOR_NAME',
+    ]) {
+      assert.equal(pwsh(`${PS_CLEMENT}; ${command}`, cwd).code, 0, command);
+    }
   });
 
   test('refuse une identité posée autrement que par $env:NOM = valeur', () => {
