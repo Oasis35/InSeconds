@@ -81,7 +81,7 @@ namespace Internal.Generated.WolverineHandlers
             var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, runRoundDealer, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, runGhosts, _runScoringPolicy, _runsRules3, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
             var efRunAccess = new InSeconds.Api.Modules.Runs.Persistence.EfRunAccess(inSecondsDbContext, claimsCurrentPlayer);
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Runs.Application.JoinRunEndpoint");
+            Wolverine.Http.HttpHandler.RequestActivity(httpContext)?.SetTag("handler.type", "InSeconds.Api.Modules.Runs.Application.JoinRunEndpoint").SetTag("http.route", "/api/runs/challenges/{code}/sessions").SetTag("http.request.method", "POST");
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
             var efCoreEnvelopeTransaction = new Wolverine.EntityFrameworkCore.Internals.EfCoreEnvelopeTransaction(inSecondsDbContext, messageContext, _domainEventScraperIEnumerable);

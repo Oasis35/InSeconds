@@ -47,8 +47,8 @@ namespace Internal.Generated.WolverineHandlers
             // The actual message body
             var computeWaveforms = (InSeconds.Api.Modules.Catalogue.Application.ComputeWaveforms)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "InSeconds.Api.Modules.Catalogue.Application.ComputeWaveformsHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.ComputeWaveformsHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "InSeconds.Api.Modules.Catalogue.Application.ComputeWaveformsHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.ComputeWaveformsHandler");
             
             // The actual message execution
             var outgoing1 = await InSeconds.Api.Modules.Catalogue.Application.ComputeWaveformsHandler.Handle(computeWaveforms, efCatalogueStore, previewProvider, waveformCalculator, postgresWaveformLock, _catalogueTelemetry, _timeProvider, _optionsMonitorOfWaveformOptions, _optionsMonitorOfRefreshOptions, _loggerForMessage, cancellation).ConfigureAwait(false);

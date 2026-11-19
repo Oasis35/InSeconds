@@ -42,7 +42,7 @@ namespace Internal.Generated.WolverineHandlers
             var efCatalogueQueries = new InSeconds.Api.Modules.Catalogue.Persistence.EfCatalogueQueries(inSecondsDbContext, _timeProvider);
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var trackPoolUsage = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Modules.Catalogue.Contracts.ITrackPoolUsage>(serviceScope.ServiceProvider);
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.GetTracksEndpoint");
+            Wolverine.Http.HttpHandler.RequestActivity(httpContext)?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.GetTracksEndpoint").SetTag("http.route", "/api/admin/catalogue/tracks").SetTag("http.request.method", "GET");
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
             var efCoreEnvelopeTransaction = new Wolverine.EntityFrameworkCore.Internals.EfCoreEnvelopeTransaction(inSecondsDbContext, messageContext, _domainEventScraperIEnumerable);

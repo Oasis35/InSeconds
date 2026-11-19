@@ -43,8 +43,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "InSeconds.Api.Modules.Players.Application.PlayersPurgeHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Players.Application.PlayersPurgeHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "InSeconds.Api.Modules.Players.Application.PlayersPurgeHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "InSeconds.Api.Modules.Players.Application.PlayersPurgeHandler");
                 
                 // The actual message execution
                 var outgoing1 = await InSeconds.Api.Modules.Players.Application.PlayersPurgeHandler.Handle(listInactiveAccounts, efPlayerStore, _timeProvider, cancellation).ConfigureAwait(false);

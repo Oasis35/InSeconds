@@ -63,6 +63,7 @@ namespace Internal.Generated.WolverineHandlers
             var efDailyStore = new InSeconds.Api.Modules.Daily.Persistence.EfDailyStore(inSecondsDbContext);
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
             var submitAnswerValidator = new InSeconds.Api.Modules.Daily.Application.SubmitAnswerValidator(_dailyRules);
+            Wolverine.Http.HttpHandler.RequestActivity(httpContext)?.SetTag("handler.type", "InSeconds.Api.Modules.Daily.Application.SubmitAnswerEndpoint").SetTag("http.route", "/api/daily/sessions/{id}/answers").SetTag("http.request.method", "POST");
             // Reading the request body via JSON deserialization
             var (request, jsonContinue) = await ReadJsonAsync<InSeconds.Api.Modules.Daily.Application.SubmitAnswer>(httpContext);
             if (jsonContinue == Wolverine.HandlerContinuation.Stop) return;
@@ -77,7 +78,6 @@ namespace Internal.Generated.WolverineHandlers
                 return;
             }
 
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Daily.Application.SubmitAnswerEndpoint");
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
             var efCoreEnvelopeTransaction = new Wolverine.EntityFrameworkCore.Internals.EfCoreEnvelopeTransaction(inSecondsDbContext, messageContext, _domainEventScraperIEnumerable);

@@ -47,8 +47,8 @@ namespace Internal.Generated.WolverineHandlers
             // The actual message body
             var refreshPreviews = (InSeconds.Api.Modules.Catalogue.Application.RefreshPreviews)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "InSeconds.Api.Modules.Catalogue.Application.RefreshPreviewsHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.RefreshPreviewsHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "InSeconds.Api.Modules.Catalogue.Application.RefreshPreviewsHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.RefreshPreviewsHandler");
             
             // The actual message execution
             var outgoing1 = await InSeconds.Api.Modules.Catalogue.Application.RefreshPreviewsHandler.Handle(refreshPreviews, efCatalogueStore, trackMetadataSource, albumSource, waveformCalculator, postgresWaveformLock, _catalogueTelemetry, _timeProvider, _optionsMonitorOfRefreshOptions, _loggerForMessage, cancellation).ConfigureAwait(false);

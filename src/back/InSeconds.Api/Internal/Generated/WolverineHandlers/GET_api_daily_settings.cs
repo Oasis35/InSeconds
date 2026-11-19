@@ -23,7 +23,7 @@ namespace Internal.Generated.WolverineHandlers
 
         public override async System.Threading.Tasks.Task Handle(Microsoft.AspNetCore.Http.HttpContext httpContext)
         {
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Daily.Application.GetDailySettingsEndpoint");
+            Wolverine.Http.HttpHandler.RequestActivity(httpContext)?.SetTag("handler.type", "InSeconds.Api.Modules.Daily.Application.GetDailySettingsEndpoint").SetTag("http.route", "/api/daily/settings").SetTag("http.request.method", "GET");
             
             // The actual HTTP request handler execution
             var dailySettingsResponse_response = InSeconds.Api.Modules.Daily.Application.GetDailySettingsEndpoint.Get(_dailyRules);

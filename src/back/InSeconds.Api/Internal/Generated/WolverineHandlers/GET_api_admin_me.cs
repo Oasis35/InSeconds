@@ -24,7 +24,7 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task Handle(Microsoft.AspNetCore.Http.HttpContext httpContext)
         {
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Players.Application.GetAdminMeEndpoint");
+            Wolverine.Http.HttpHandler.RequestActivity(httpContext)?.SetTag("handler.type", "InSeconds.Api.Modules.Players.Application.GetAdminMeEndpoint").SetTag("http.route", "/api/admin/me").SetTag("http.request.method", "GET");
             
             // The actual HTTP request handler execution
             var adminMeResponse_response = InSeconds.Api.Modules.Players.Application.GetAdminMeEndpoint.Get(claimsCurrentPlayer);

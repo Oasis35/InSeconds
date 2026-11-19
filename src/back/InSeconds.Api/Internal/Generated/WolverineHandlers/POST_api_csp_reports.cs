@@ -23,7 +23,7 @@ namespace Internal.Generated.WolverineHandlers
 
         public override async System.Threading.Tasks.Task Handle(Microsoft.AspNetCore.Http.HttpContext httpContext)
         {
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Infrastructure.Errors.ReportCspViolationEndpoint");
+            Wolverine.Http.HttpHandler.RequestActivity(httpContext)?.SetTag("handler.type", "InSeconds.Api.Infrastructure.Errors.ReportCspViolationEndpoint").SetTag("http.route", "/api/csp-reports").SetTag("http.request.method", "POST");
             
             // The actual HTTP request handler execution
             await InSeconds.Api.Infrastructure.Errors.ReportCspViolationEndpoint.Post(httpContext.Request, _loggerOfCspViolation, httpContext.RequestAborted).ConfigureAwait(false);

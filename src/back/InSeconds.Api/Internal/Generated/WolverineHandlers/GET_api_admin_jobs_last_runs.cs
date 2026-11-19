@@ -23,7 +23,7 @@ namespace Internal.Generated.WolverineHandlers
 
         public override async System.Threading.Tasks.Task Handle(Microsoft.AspNetCore.Http.HttpContext httpContext)
         {
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Infrastructure.Jobs.GetJobLastRunsEndpoint");
+            Wolverine.Http.HttpHandler.RequestActivity(httpContext)?.SetTag("handler.type", "InSeconds.Api.Infrastructure.Jobs.GetJobLastRunsEndpoint").SetTag("http.route", "/api/admin/jobs/last-runs").SetTag("http.request.method", "GET");
             
             // The actual HTTP request handler execution
             var jobLastRunArray_response = InSeconds.Api.Infrastructure.Jobs.GetJobLastRunsEndpoint.Get(_jobStorage);
