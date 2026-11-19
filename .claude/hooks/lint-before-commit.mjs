@@ -100,6 +100,7 @@ function checkUntracked(root, specs) {
 function run(cmd, args, cwd, { shell = false } = {}) {
   return new Promise((resolve) => {
     let output = '';
+    let stdout = '';
     let child;
     try {
       child = spawn(cmd, args, { cwd, shell, timeout: 240_000 });
@@ -107,10 +108,13 @@ function run(cmd, args, cwd, { shell = false } = {}) {
       resolve({ ok: false, output: '', missing: true });
       return;
     }
-    child.stdout?.on('data', (d) => (output += d));
+    child.stdout?.on('data', (d) => {
+      output += d;
+      stdout += d;
+    });
     child.stderr?.on('data', (d) => (output += d));
     child.on('error', () => resolve({ ok: false, output: output.trim(), missing: true }));
-    child.on('close', (code) => resolve({ ok: code === 0, output: output.trim(), missing: false }));
+    child.on('close', (code) => resolve({ ok: code === 0, output: output.trim(), stdout: stdout.trim(), missing: false }));
   });
 }
 
@@ -168,19 +172,20 @@ export async function check(input) {
   const files = committedFiles(root, scope);
   if (!files.length) return null;
 
-  // git diff --check sort en code 2 quand il trouve quelque chose : lire sa sortie, pas son code.
+  // git diff --check sort en code 2 quand il trouve quelque chose : lire sa sortie, pas son code ;
+  // stdout seulement (stderr porte des avertissements comme « LF will be replaced by CRLF »).
   const exclude = ['--', '.', ':(exclude)*.md'];
   const [staged, working, csharp, front] = await Promise.all([
     run('git', ['diff', '--cached', '--check', ...exclude], root),
     scope.modified.length
       ? run('git', ['diff', '--check', '--', ...scope.modified, ':(exclude)*.md'], root)
-      : Promise.resolve({ output: '' }),
+      : Promise.resolve({ stdout: '' }),
     checkCSharp(root, files),
     checkFront(root, files),
   ]);
 
   const failures = [];
-  const whitespace = [staged.output, working.output, checkUntracked(root, scope.untracked)].filter(Boolean);
+  const whitespace = [staged.stdout, working.stdout, checkUntracked(root, scope.untracked)].filter(Boolean);
   if (whitespace.length) failures.push(`Espaces en fin de ligne ou marqueurs de conflit :\n${tail(whitespace.join('\n'))}`);
   for (const r of [csharp, front]) if (r.failure) failures.push(r.failure);
   const skipped = [csharp, front].map((r) => r.skipped).filter(Boolean);
