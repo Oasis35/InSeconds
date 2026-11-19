@@ -45,4 +45,4 @@ Autres commandes : `npm run e2e:ui` (mode interactif), `npm run e2e:list` (liste
 - Un hôte de test resté d'un autre lancement (autre base, ancien code) est réutilisé : l'arrêter avant de relancer.
 - Après un changement de handler : régénérer le code Wolverine (`rm -rf InSeconds.Api/Internal/Generated && dotnet run --project InSeconds.Api -- codegen write` depuis `src/back`), l'hôte de test le relit.
 - Lien magique refusé : le port du front doit être dans `Auth:TrustedOrigins` de l'hôte de test (piège 22).
-- Les routes de l'hôte de test (`/api/e2e/reset`, `reseed`, `login-as-admin`...) : `src/back/CLAUDE.md` § Hôte de test.
+- Les routes de l'hôte de test (`/api/e2e/reset`, `reseed`, `login-as-admin`...) : `.claude/rules/back/test-host.md`.

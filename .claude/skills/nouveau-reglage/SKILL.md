@@ -6,7 +6,7 @@ argument-hint: <Module>:<Clé> <défaut> (ex. Social:MaxInvitesPerDay 20)
 
 # Nouveau réglage
 
-Argument : `$ARGUMENTS`. Référence : `src/back/CLAUDE.md` § Réglages ; modèle : `SocialOptions` et `SocialRules` (`src/back/InSeconds.Api/Modules/Social/Application/SocialSupport.cs`), `DailyOptions` pour les listes.
+Argument : `$ARGUMENTS`. Référence : `CLAUDE.md` § Réglages (mécanisme) et `.claude/rules/back/reglages.md` (tableau) ; modèle : `SocialOptions` et `SocialRules` (`src/back/InSeconds.Api/Modules/Social/Application/SocialSupport.cs`), `DailyOptions` pour les listes.
 
 ## Règles
 
@@ -26,4 +26,4 @@ Argument : `$ARGUMENTS`. Référence : `src/back/CLAUDE.md` § Réglages ; modè
 
 ## Documentation
 
-Le tableau des réglages de `CLAUDE.md` (racine) liste chaque clé, son défaut et ses bornes : à compléter dans la même PR.
+Le tableau de `.claude/rules/back/reglages.md` liste chaque clé, son défaut et ses bornes : à compléter dans la même PR.

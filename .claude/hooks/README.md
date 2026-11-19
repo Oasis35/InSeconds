@@ -8,4 +8,4 @@
 - `lib/shell.mjs` : lecture de l'entrée, découpage bash et PowerShell, appels à git.
 - Tests : `node --test .claude/hooks/tests/hooks.test.mjs` (dépôts git jetables, pas de CI).
 - Ajouter un contrôle de commande shell : un module qui exporte `check(input)` rendant `{ block, context }` ou `null`, l'ajouter à `CHECKS` de `shell-guard.mjs`, avec ses tests.
-- Ajouter un autre hook : un script lancé par `runCheck(check, '<Événement>')` (ou `runSafely`), branché dans `settings.json`, puis documenté dans `CLAUDE.md` (§ Hooks et sous-agents).
+- Ajouter un autre hook : un script lancé par `runCheck(check, '<Événement>')` (ou `runSafely`), branché dans `settings.json`, puis documenté dans `CLAUDE.md` (§ Conventions Git).

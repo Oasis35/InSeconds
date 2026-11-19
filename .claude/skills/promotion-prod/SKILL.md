@@ -43,4 +43,3 @@ Lister les PR fusionnées dans `env/staging` depuis la dernière promotion (num�
 
 - Suivre le run de `main` jusqu'au bout (`gh run list --branch main -L 1`, puis `gh run view <id>`) : job `deploy`, test de fumée, santé.
 - Un correctif urgent poussé directement sur `main` doit être remergé dans `env/staging` ensuite.
-- La ligne « dernier merge `env/staging` vers `main` » de `CLAUDE.md` (§ État du dépôt) est à mettre à jour dans une PR de doc.
