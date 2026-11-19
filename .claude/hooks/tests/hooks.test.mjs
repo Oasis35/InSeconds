@@ -296,16 +296,55 @@ describe('lint-before-commit', { concurrency: true }, () => {
     assert.doesNotMatch(r.stderr, /Generated|Migrations/);
   });
 
-  test('cherche toujours les marqueurs de conflit dans le code généré', () => {
+  test('code généré suivi puis modifié : ses espaces passent avec -a, git commit <chemin> ou git add -u', () => {
+    const cwd = repo();
+    const wolverine = 'src/back/InSeconds.Api/Internal/Generated/WolverineHandlers/GET_api_x.cs';
+    const migration = 'src/back/InSeconds.Api/Infrastructure/Persistence/Migrations/20260101000000_X.cs';
+    for (const file of [wolverine, migration]) {
+      mkdirSync(path.join(cwd, path.dirname(file)), { recursive: true });
+      writeFileSync(path.join(cwd, file), 'class X\n{\n}\n');
+    }
+    execFileSync('git', ['add', '.'], { cwd });
+    execFileSync('git', ['-c', 'user.name=C', '-c', 'user.email=c@c', 'commit', '-q', '-m', 'a'], { cwd });
+    for (const file of [wolverine, migration]) writeFileSync(path.join(cwd, file), 'class X\n{\n    \n}\n');
+    assert.equal(bash('lint-before-commit.mjs', `${CLEMENT} git commit -am "x"`, cwd).code, 0);
+    assert.equal(bash('lint-before-commit.mjs', `${CLEMENT} git commit -m "x" -- ${wolverine} ${migration}`, cwd).code, 0);
+    assert.equal(bash('lint-before-commit.mjs', `git add -u && ${CLEMENT} git commit -m "x"`, cwd).code, 0);
+  });
+
+  test('l\'exception ne vaut que pour le back : un dossier Migrations ailleurs reste contrôlé', () => {
+    const cwd = repo();
+    mkdirSync(path.join(cwd, 'src/front/app/Migrations'), { recursive: true });
+    writeFileSync(path.join(cwd, 'src/front/app/Migrations/b.ts'), 'const b = 1;   \n');
+    assert.equal(bash('lint-before-commit.mjs', `git add . && ${CLEMENT} git commit -m "x"`, cwd).code, 2);
+  });
+
+  test('cherche toujours les marqueurs de conflit dans le code généré, ceux de l\'index', () => {
     const cwd = repo();
     const file = 'src/back/InSeconds.Api/Internal/Generated/WolverineHandlers/GET_api_x.cs';
-    mkdirSync(path.join(cwd, path.dirname(file)), { recursive: true });
-    writeFileSync(path.join(cwd, file), 'class X\n{\n<<<<<<< HEAD\n}\n');
+    const full = path.join(cwd, file);
+    mkdirSync(path.dirname(full), { recursive: true });
+    writeFileSync(full, 'class X\n{\n    \n<<<<<<< HEAD\n=======\n>>>>>>> autre\n}\n');
+    // Non suivi, par le git add de la même commande (copie de travail en CRLF comprise).
     assert.equal(bash('lint-before-commit.mjs', `git add . && ${CLEMENT} git commit -m "x"`, cwd).code, 2);
+    writeFileSync(full, 'class X\r\n{\r\n=======\r\n}\r\n');
+    assert.equal(bash('lint-before-commit.mjs', `git add . && ${CLEMENT} git commit -m "x"`, cwd).code, 2);
+
+    // Indexé avec ses marqueurs, copie de travail régénérée propre : le commit partirait avec eux.
+    writeFileSync(full, 'class X\n{\n    \n<<<<<<< HEAD\n=======\n>>>>>>> autre\n}\n');
     execFileSync('git', ['add', '.'], { cwd });
+    writeFileSync(full, 'class X\n{\n    \n}\n');
     const r = bash('lint-before-commit.mjs', `${CLEMENT} git commit -m "x"`, cwd);
     assert.equal(r.code, 2);
-    assert.match(r.stderr, /GET_api_x\.cs:3: leftover conflict marker/);
+    assert.match(r.stderr, /GET_api_x\.cs:4: leftover conflict marker/);
+    assert.match(r.stderr, /GET_api_x\.cs:5: leftover conflict marker/);
+    assert.doesNotMatch(r.stderr, /trailing whitespace/);
+
+    // L'inverse : index propre, marqueur seulement dans la copie de travail non indexée.
+    execFileSync('git', ['add', '.'], { cwd });
+    writeFileSync(full, 'class X\n{\n<<<<<<< HEAD\n}\n');
+    assert.equal(bash('lint-before-commit.mjs', `${CLEMENT} git commit -m "x"`, cwd).code, 0);
+    assert.equal(bash('lint-before-commit.mjs', `${CLEMENT} git commit -am "x"`, cwd).code, 2);
   });
 });
 

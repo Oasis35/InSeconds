@@ -20,10 +20,14 @@ import { git, gitInvocations, isMain, resolvePath, runCheck, shellOf } from './l
 
 const FRONT_DIR = 'src/front/InSeconds.Client';
 const BACK_DIR = 'src/back';
-// Code généré, laissé tel que l'outil l'écrit : la regex et son équivalent en pathspec git.
-const GENERATED = /(^|\/)(Internal\/Generated|Migrations)\//;
-const GENERATED_EXCLUDES = [':(exclude,glob)**/Internal/Generated/**', ':(exclude,glob)**/Migrations/**'];
-const NOT_CHECKED = [':(exclude)*.md', ...GENERATED_EXCLUDES];
+// Code généré du back, laissé tel que l'outil l'écrit : la regex et son équivalent en pathspec git.
+const GENERATED = /^src\/back\/(.+\/)?(Internal\/Generated|Migrations)\//;
+const GENERATED_SPECS = [':(glob)src/back/**/Internal/Generated/**', ':(glob)src/back/**/Migrations/**'];
+const NOT_CHECKED = [':(exclude)*.md', ...GENERATED_SPECS.map((s) => s.replace(':(glob)', ':(exclude,glob)'))];
+// Règles d'espaces coupées : git diff --check ne signale plus que les marqueurs de conflit, qu'il
+// cherche quel que soit core.whitespace.
+const MARKERS_ONLY = ['-c', 'core.whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab'];
+const CONFLICT_MARKER = /^(<{7}|={7}|>{7}|\|{7})(\s|$)/;
 
 const lines = (text) => text.split('\n').filter(Boolean);
 
@@ -83,30 +87,25 @@ function committedFiles(root, scope) {
   return [...new Set(files)].filter((f) => existsSync(path.join(root, f)));
 }
 
-// Le contrôle de git diff --check refait à la main, dans le contenu des fichiers (texte seulement,
-// hors Markdown) : pour les non suivis, que git diff --check ignore alors qu'un `git add` de la même
-// commande les met dans le commit, et pour le code généré (marqueurs de conflit seulement, sans
-// les espaces).
-function scanFiles(root, files, { whitespace }) {
+// git diff --check ignore les fichiers non suivis : après un `git add` de la même commande, ils
+// partent pourtant dans le commit. Même contrôle à la main (texte seulement, hors Markdown ; code
+// généré : marqueurs de conflit seulement).
+function checkUntracked(root, specs) {
   const problems = [];
-  for (const file of files) {
+  if (!specs.length) return '';
+  for (const file of lines(git(['ls-files', '--others', '--exclude-standard', '--', ...specs], root))) {
     if (file.endsWith('.md')) continue;
     const full = path.join(root, file);
     if (!existsSync(full) || statSync(full).size > 1_000_000) continue;
     const content = readFileSync(full, 'utf8');
     if (content.includes('\0')) continue;
+    const whitespace = !GENERATED.test(file);
     content.split('\n').forEach((line, i) => {
       if (whitespace && /[ \t]+\r?$/.test(line)) problems.push(`${file}:${i + 1}: trailing whitespace.`);
-      else if (/^(<{7}|>{7})( |$)/.test(line)) problems.push(`${file}:${i + 1}: leftover conflict marker`);
+      else if (CONFLICT_MARKER.test(line)) problems.push(`${file}:${i + 1}: leftover conflict marker`);
     });
   }
   return problems.join('\n');
-}
-
-function checkUntracked(root, specs) {
-  if (!specs.length) return '';
-  const files = lines(git(['ls-files', '--others', '--exclude-standard', '--', ...specs], root));
-  return scanFiles(root, files.filter((f) => !GENERATED.test(f)), { whitespace: true });
 }
 
 function run(cmd, args, cwd, { shell = false } = {}) {
@@ -186,21 +185,26 @@ export async function check(input) {
 
   // git diff --check sort en code 2 quand il trouve quelque chose : lire sa sortie, pas son code ;
   // stdout seulement (stderr porte des avertissements comme « LF will be replaced by CRLF »).
-  // Le code généré en est exclu : scanFiles n'y cherche que les marqueurs de conflit.
-  const [staged, working, csharp, front] = await Promise.all([
+  // Le code généré passe à part, règles d'espaces coupées (marqueurs de conflit seulement) ; côté
+  // dossier de travail, ses fichiers modifiés dans la portée du commit sont nommés un à un.
+  const none = Promise.resolve({ stdout: '' });
+  const workingGenerated = scope.modified.length
+    ? lines(git(['ls-files', '--modified', '--', ...scope.modified], root)).filter((f) => GENERATED.test(f))
+    : [];
+  const [staged, working, stagedGenerated, workingGeneratedCheck, csharp, front] = await Promise.all([
     run('git', ['diff', '--cached', '--check', '--', '.', ...NOT_CHECKED], root),
-    scope.modified.length
-      ? run('git', ['diff', '--check', '--', ...scope.modified, ...NOT_CHECKED], root)
-      : Promise.resolve({ stdout: '' }),
+    scope.modified.length ? run('git', ['diff', '--check', '--', ...scope.modified, ...NOT_CHECKED], root) : none,
+    run('git', [...MARKERS_ONLY, 'diff', '--cached', '--check', '--', ...GENERATED_SPECS], root),
+    workingGenerated.length ? run('git', [...MARKERS_ONLY, 'diff', '--check', '--', ...workingGenerated], root) : none,
     checkCSharp(root, files),
     checkFront(root, files),
   ]);
 
   // Code 0 : rien ; 2 : constats sur stdout ; autre chose : git en erreur (pathspec...), signalé.
-  const gitErrors = [staged, working].filter((r) => r.code !== undefined && r.code !== 0 && r.code !== 2);
+  const diffs = [staged, working, stagedGenerated, workingGeneratedCheck];
+  const gitErrors = diffs.filter((r) => r.code !== undefined && r.code !== 0 && r.code !== 2);
   const failures = [];
-  const generated = scanFiles(root, files.filter((f) => GENERATED.test(f)), { whitespace: false });
-  const whitespace = [staged.stdout, working.stdout, checkUntracked(root, scope.untracked), generated].filter(Boolean);
+  const whitespace = [...diffs.map((r) => r.stdout), checkUntracked(root, scope.untracked)].filter(Boolean);
   if (whitespace.length) failures.push(`Espaces en fin de ligne ou marqueurs de conflit :\n${tail(whitespace.join('\n'))}`);
   for (const r of [csharp, front]) if (r.failure) failures.push(r.failure);
   const skipped = [csharp, front].map((r) => r.skipped).filter(Boolean);
