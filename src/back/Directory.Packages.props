@@ -8,7 +8,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.14" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.14" />
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.14" />
-    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.11.0" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="11.0.0" />
     <!-- Dépendance transitive de Hangfire, épinglée : la 11.0.1 qu'il tire a une faille connue. -->
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
     <!-- Décodeur MP3 en C# pur (licence MIT) : la forme des extraits (InSeconds.Waveform). -->
