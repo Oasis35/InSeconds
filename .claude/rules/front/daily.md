@@ -4,7 +4,7 @@ paths:
 ---
 # Domaine daily : le jeu du jour
 
-Le défi du jour, sa série et ses gels, ses statistiques, le partage, l'historique et les réponses des jours passés. Règles du jeu : `docs/regles-du-jeu.md`. `daily` importe `gameplay` et `account` (`SessionLoader`), jamais `runs` ; la carte Survie de l'accueil arrive par `<app-home-mode-entries>` (jeton `HOME_MODE_ENTRIES` de `core/shell`).
+Le défi du jour, sa série et ses gels, ses statistiques, le partage, l'historique et les réponses des jours passés. Règles du jeu : `docs/regles-du-jeu.md`. `daily` importe `gameplay` et `account` (`SessionLoader`), jamais `runs` ni `social` ; la carte amis puis la carte Survie de l'accueil arrivent par `<app-home-mode-entries>` (jeton `HOME_MODE_ENTRIES` de `core/shell`). Pour un invité, « Créer un compte » de l'accueil est porté par la carte amis (l'état « à jouer » n'a plus son propre bouton) ; la partie en pause garde « Ne plus perdre mes parties ».
 
 ## Coque et pages
 
