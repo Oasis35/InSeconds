@@ -14,13 +14,25 @@ public class DailyPeriodScoresTests
 
     private static FinishedGame Game(Guid player, int daysAgo, int score) => new(player, Today.AddDays(-daysAgo), score);
 
+    /// <summary>
+    /// Les scores d'un joueur ; <paramref name="playedDaysAgo"/> : les jours joués comptés dans la semaine, en jours avant <see cref="Today"/>, du plus
+    /// ancien au plus récent.
+    /// </summary>
+    private static void AssertScores(PlayerPeriodScores actual, bool playedToday, int? todayScore, int weekPoints, params int[] playedDaysAgo)
+    {
+        Assert.Equal(playedToday, actual.PlayedToday);
+        Assert.Equal(todayScore, actual.TodayScore);
+        Assert.Equal(weekPoints, actual.WeekPoints);
+        Assert.Equal(playedDaysAgo.Select(d => Today.AddDays(-d)), actual.WeekPlayedDays);
+    }
+
     [Fact]
     public void Semaine_SommeDesSeptDerniersJours_UnJourManqueVautZero()
     {
         // Joué aujourd'hui, avant-hier et il y a six jours (le premier jour de la semaine) ; hier et les autres jours manqués.
         var scores = DailyPeriodScores.Compute([Game(Alice, 0, 500), Game(Alice, 2, 300), Game(Alice, 6, 200)], Today, Week, NothingHidden);
 
-        Assert.Equal(new PlayerPeriodScores(true, 500, 1000, 3), scores[Alice]);
+        AssertScores(scores[Alice], true, 500, 1000, 6, 2, 0);
     }
 
     [Fact]
@@ -29,7 +41,7 @@ public class DailyPeriodScoresTests
         var scores = DailyPeriodScores.Compute([Game(Alice, 7, 900), Game(Bob, 7, 900), Game(Bob, 1, 100)], Today, Week, NothingHidden);
 
         Assert.False(scores.ContainsKey(Alice));
-        Assert.Equal(new PlayerPeriodScores(false, null, 100, 1), scores[Bob]);
+        AssertScores(scores[Bob], false, null, 100, 1);
     }
 
     [Fact]
@@ -44,8 +56,8 @@ public class DailyPeriodScoresTests
         var before = DailyPeriodScores.Compute(games, Today, Week, NothingHidden);
         var after = DailyPeriodScores.Compute(games, Today.AddDays(1), Week, NothingHidden);
 
-        Assert.Equal(new PlayerPeriodScores(true, 500, 500, 1), before[Alice]);
-        Assert.Equal(new PlayerPeriodScores(false, null, 500, 1), after[Alice]);
+        AssertScores(before[Alice], true, 500, 500, 0);
+        AssertScores(after[Alice], false, null, 500, 0);
     }
 
     [Fact]
@@ -54,7 +66,7 @@ public class DailyPeriodScoresTests
         // La partie porte la date de son défi (la veille), même finie à 0 h 30 : elle n'est pas la partie du jour.
         var scores = DailyPeriodScores.Compute([Game(Alice, 1, 400)], Today, Week, NothingHidden);
 
-        Assert.Equal(new PlayerPeriodScores(false, null, 400, 1), scores[Alice]);
+        AssertScores(scores[Alice], false, null, 400, 1);
     }
 
     [Fact]
@@ -62,8 +74,8 @@ public class DailyPeriodScoresTests
     {
         var scores = DailyPeriodScores.Compute([Game(Alice, 0, 500), Game(Alice, 1, 300), Game(Bob, 0, 700)], Today, Week, new HashSet<DateOnly> { Today });
 
-        Assert.Equal(new PlayerPeriodScores(true, null, 300, 1), scores[Alice]);
-        Assert.Equal(new PlayerPeriodScores(true, null, 0, 0), scores[Bob]);
+        AssertScores(scores[Alice], true, null, 300, 1);
+        AssertScores(scores[Bob], true, null, 0);
     }
 
     [Fact]
@@ -71,7 +83,7 @@ public class DailyPeriodScoresTests
     {
         var scores = DailyPeriodScores.Compute([Game(Bob, 0, 700), Game(Bob, 1, 900), Game(Bob, 2, 100)], Today, Week, new HashSet<DateOnly> { Yesterday });
 
-        Assert.Equal(new PlayerPeriodScores(true, 700, 800, 2), scores[Bob]);
+        AssertScores(scores[Bob], true, 700, 800, 2, 0);
     }
 
     [Fact]

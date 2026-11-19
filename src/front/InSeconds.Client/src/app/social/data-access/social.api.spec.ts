@@ -13,7 +13,7 @@ describe('SocialApi', () => {
   let api: SocialApi;
 
   beforeEach(() => {
-    client = { listMyGroups: vi.fn(), getGroupRanking: vi.fn(), createGroup: vi.fn(), joinGroup: vi.fn(), leaveGroup: vi.fn(), getInvitation: vi.fn(), getGeneralRanking: vi.fn(), setRankingIdentity: vi.fn(), drawRankingAlias: vi.fn() };
+    client = { listMyGroups: vi.fn(), getGroupRanking: vi.fn(), getGroupScores: vi.fn(), createGroup: vi.fn(), joinGroup: vi.fn(), leaveGroup: vi.fn(), getInvitation: vi.fn(), getGeneralRanking: vi.fn(), setRankingIdentity: vi.fn(), drawRankingAlias: vi.fn() };
     TestBed.configureTestingModule({ providers: [{ provide: SocialClient, useValue: client }, SocialApi] });
     api = TestBed.inject(SocialApi);
   });
@@ -22,6 +22,29 @@ describe('SocialApi', () => {
     client['listMyGroups'].mockReturnValue(of({ groups: [summary], maxGroups: 5 }));
 
     expect(await api.myGroups()).toEqual({ groups: [summary], maxGroups: 5 });
+  });
+
+  it('lit les scores du Défi : jours en texte, vides en null, sans mode Défi rien', async () => {
+    client['getGroupScores'].mockReturnValue(of({
+      groupId: 4, name: 'Potes',
+      modes: [{
+        mode: 'daily', day: '2026-11-19', todayRevealed: false, weekDays: 7,
+        today: [{ rank: undefined, pseudo: 'Théo', isMe: false, played: true, score: undefined }],
+        week: [{ rank: 1, pseudo: 'Théo', isMe: false, points: 1200, playedDays: ['2026-11-15', '2026-11-18'] }],
+      }],
+    }));
+
+    expect(await api.scores(4)).toEqual({
+      groupId: 4, name: 'Potes',
+      daily: {
+        day: '2026-11-19', todayRevealed: false, weekDays: 7,
+        today: [{ rank: null, pseudo: 'Théo', isMe: false, played: true, score: null }],
+        week: [{ rank: 1, pseudo: 'Théo', isMe: false, points: 1200, playedDays: ['2026-11-15', '2026-11-18'] }],
+      },
+    });
+
+    client['getGroupScores'].mockReturnValue(of({ groupId: 4, name: 'Potes', modes: [] }));
+    expect((await api.scores(4)).daily).toBeNull();
   });
 
   it('lit un classement, vides en null', async () => {

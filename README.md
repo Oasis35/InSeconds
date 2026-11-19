@@ -32,7 +32,8 @@
 - List of the devices signed in to your account, sign out one device or all the others
 - Your data (GDPR): download a JSON copy of all your data and permanently delete your account ("Your data" section of the profile); devices unseen for 91 days and accounts inactive for 3 years are deleted automatically every night; what you type as an answer is never stored
 - Survie mode (`Runs` in the code, invitation-only for now): you chain rounds of 3 tracks, less and less well known, until you lose your 3 lives or finish the 8th round ("complete Series", with a bonus per remaining life); a round without a lost life gives one back and shortens the listening time (10, 5, 3, 2, 1, 0.5 s), a round with a lost life keeps it the same; a found track earns the points of its step, 45 s per track to answer, a theme to pick for each round from the 2nd; send the same playlist to friends with a link, beat their ghost and compare scores once you have played it
-- Around Survie: a level shown as a disc (seven discs, from Scratched to Diamond), friend groups with their own ranking, a general ranking by level for the accounts that have access (under your pseudo or a musical alias), Hits (milestones earned by playing) and the history of your games (`/survie`; rules, screens and design in [`docs/runs/`](docs/runs/README.md))
+- Friend groups for every account: a private ranking on the daily challenge (this week and today), with an invite link
+- Around Survie: a level shown as a disc (seven discs, from Scratched to Diamond), your Survie place in each friend group, a general ranking by level for the accounts that have access (under your pseudo or a musical alias), Hits (milestones earned by playing) and the history of your games (`/survie`; rules, screens and design in [`docs/runs/`](docs/runs/README.md))
 
 ## Quick start
 
