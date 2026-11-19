@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // Hook PreToolUse (Bash, PowerShell ; lancé par shell-guard.mjs) : avant un `git commit`, contrôle
 // des fichiers qui partent dans le commit (l'index) :
-//  - espaces en fin de ligne et marqueurs de conflit (git diff --check, hors Markdown) ;
-//  - C# : formatage (dotnet format whitespace, sur les fichiers indexés seulement) ;
+//  - espaces en fin de ligne et marqueurs de conflit (git diff --check, hors Markdown) ; le code
+//    généré (Wolverine dans Internal/Generated, migrations EF) n'est contrôlé que pour les marqueurs :
+//    Wolverine écrit des lignes d'espaces seuls, et la CI exige ce code à l'identique ;
+//  - C# : formatage (dotnet format whitespace, sur les fichiers indexés seulement, hors code généré) ;
 //  - front : frontières Sheriff et domaine pur (npm run lint:arch, comme le job CI front).
 // Les deux derniers tournent en parallèle. Le hook passe avant la commande : un `git add` placé
 // devant le commit dans la même commande, `git commit -a` ou `git commit <chemins>` n'ont pas encore
@@ -18,7 +20,14 @@ import { git, gitInvocations, isMain, resolvePath, runCheck, shellOf } from './l
 
 const FRONT_DIR = 'src/front/InSeconds.Client';
 const BACK_DIR = 'src/back';
-const GENERATED_CS = /\/(Internal\/Generated|Migrations)\//;
+// Code généré du back, laissé tel que l'outil l'écrit : la regex et son équivalent en pathspec git.
+const GENERATED = /^src\/back\/(.+\/)?(Internal\/Generated|Migrations)\//;
+const GENERATED_SPECS = [':(glob)src/back/**/Internal/Generated/**', ':(glob)src/back/**/Migrations/**'];
+const NOT_CHECKED = [':(exclude)*.md', ...GENERATED_SPECS.map((s) => s.replace(':(glob)', ':(exclude,glob)'))];
+// Règles d'espaces coupées : git diff --check ne signale plus que les marqueurs de conflit, qu'il
+// cherche quel que soit core.whitespace.
+const MARKERS_ONLY = ['-c', 'core.whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab'];
+const CONFLICT_MARKER = /^(<{7}|={7}|>{7}|\|{7})(\s|$)/;
 
 const lines = (text) => text.split('\n').filter(Boolean);
 
@@ -79,7 +88,8 @@ function committedFiles(root, scope) {
 }
 
 // git diff --check ignore les fichiers non suivis : après un `git add` de la même commande, ils
-// partent pourtant dans le commit. Même contrôle à la main (texte seulement, hors Markdown).
+// partent pourtant dans le commit. Même contrôle à la main (texte seulement, hors Markdown ; code
+// généré : marqueurs de conflit seulement).
 function checkUntracked(root, specs) {
   const problems = [];
   if (!specs.length) return '';
@@ -89,9 +99,10 @@ function checkUntracked(root, specs) {
     if (!existsSync(full) || statSync(full).size > 1_000_000) continue;
     const content = readFileSync(full, 'utf8');
     if (content.includes('\0')) continue;
+    const whitespace = !GENERATED.test(file);
     content.split('\n').forEach((line, i) => {
-      if (/[ \t]+\r?$/.test(line)) problems.push(`${file}:${i + 1}: trailing whitespace.`);
-      else if (/^(<{7}|>{7})( |$)/.test(line)) problems.push(`${file}:${i + 1}: leftover conflict marker`);
+      if (whitespace && /[ \t]+\r?$/.test(line)) problems.push(`${file}:${i + 1}: trailing whitespace.`);
+      else if (CONFLICT_MARKER.test(line)) problems.push(`${file}:${i + 1}: leftover conflict marker`);
     });
   }
   return problems.join('\n');
@@ -135,7 +146,7 @@ const tail = (text, count = 25) => text.split('\n').slice(-count).join('\n');
 
 async function checkCSharp(root, files) {
   const csFiles = files
-    .filter((f) => f.startsWith(`${BACK_DIR}/`) && f.endsWith('.cs') && !GENERATED_CS.test(f))
+    .filter((f) => f.startsWith(`${BACK_DIR}/`) && f.endsWith('.cs') && !GENERATED.test(f))
     .map((f) => f.slice(BACK_DIR.length + 1));
   if (!csFiles.length) return {};
   const dotnet = findDotnet();
@@ -174,20 +185,26 @@ export async function check(input) {
 
   // git diff --check sort en code 2 quand il trouve quelque chose : lire sa sortie, pas son code ;
   // stdout seulement (stderr porte des avertissements comme « LF will be replaced by CRLF »).
-  const exclude = ['--', '.', ':(exclude)*.md'];
-  const [staged, working, csharp, front] = await Promise.all([
-    run('git', ['diff', '--cached', '--check', ...exclude], root),
-    scope.modified.length
-      ? run('git', ['diff', '--check', '--', ...scope.modified, ':(exclude)*.md'], root)
-      : Promise.resolve({ stdout: '' }),
+  // Le code généré passe à part, règles d'espaces coupées (marqueurs de conflit seulement) ; côté
+  // dossier de travail, ses fichiers modifiés dans la portée du commit sont nommés un à un.
+  const none = Promise.resolve({ stdout: '' });
+  const workingGenerated = scope.modified.length
+    ? lines(git(['ls-files', '--modified', '--', ...scope.modified], root)).filter((f) => GENERATED.test(f))
+    : [];
+  const [staged, working, stagedGenerated, workingGeneratedCheck, csharp, front] = await Promise.all([
+    run('git', ['diff', '--cached', '--check', '--', '.', ...NOT_CHECKED], root),
+    scope.modified.length ? run('git', ['diff', '--check', '--', ...scope.modified, ...NOT_CHECKED], root) : none,
+    run('git', [...MARKERS_ONLY, 'diff', '--cached', '--check', '--', ...GENERATED_SPECS], root),
+    workingGenerated.length ? run('git', [...MARKERS_ONLY, 'diff', '--check', '--', ...workingGenerated], root) : none,
     checkCSharp(root, files),
     checkFront(root, files),
   ]);
 
   // Code 0 : rien ; 2 : constats sur stdout ; autre chose : git en erreur (pathspec...), signalé.
-  const gitErrors = [staged, working].filter((r) => r.code !== undefined && r.code !== 0 && r.code !== 2);
+  const diffs = [staged, working, stagedGenerated, workingGeneratedCheck];
+  const gitErrors = diffs.filter((r) => r.code !== undefined && r.code !== 0 && r.code !== 2);
   const failures = [];
-  const whitespace = [staged.stdout, working.stdout, checkUntracked(root, scope.untracked)].filter(Boolean);
+  const whitespace = [...diffs.map((r) => r.stdout), checkUntracked(root, scope.untracked)].filter(Boolean);
   if (whitespace.length) failures.push(`Espaces en fin de ligne ou marqueurs de conflit :\n${tail(whitespace.join('\n'))}`);
   for (const r of [csharp, front]) if (r.failure) failures.push(r.failure);
   const skipped = [csharp, front].map((r) => r.skipped).filter(Boolean);
