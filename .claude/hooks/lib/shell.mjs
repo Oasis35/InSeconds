@@ -5,9 +5,9 @@
 // here-strings, guillemets, `$(...)`).
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const PROTECTED_BRANCHES = ['main', 'env/staging'];
 
@@ -44,9 +44,15 @@ export function runSafely(main) {
   }
 }
 
-// Vrai quand le module est le script lancé (node x.mjs), faux quand il est importé.
+// Vrai quand le module est le script lancé (node x.mjs), faux quand il est importé. Chemins réels
+// des deux côtés : lancé par une jonction ou un lien symbolique, import.meta.url donne le chemin
+// réel et process.argv[1] le chemin tapé (le hook ne faisait alors plus rien).
 export function isMain(moduleUrl) {
-  return !!process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === moduleUrl;
+  if (!process.argv[1]) return false;
+  const real = (p) => {
+    try { return realpathSync.native(p); } catch { return path.resolve(p); }
+  };
+  return real(process.argv[1]) === real(fileURLToPath(moduleUrl));
 }
 
 // Lance une vérification `check(input)` comme hook autonome. Elle rend `{ block, context }` :
@@ -76,7 +82,7 @@ export function git(args, cwd) {
 }
 
 // Sous Windows, Git Bash écrit les chemins `/c/Git/...` : node les lit `C:/Git/...`.
-function resolvePath(base, target) {
+export function resolvePath(base, target) {
   let t = target.replace(/^~(?=[\\/]|$)/, process.env.HOME ?? process.env.USERPROFILE ?? '~');
   if (process.platform === 'win32') t = t.replace(/^\/([a-zA-Z])(?=\/|$)/, '$1:');
   return path.resolve(base, t);

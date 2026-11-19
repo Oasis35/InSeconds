@@ -5,7 +5,7 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { EXPECTED_IDENTITY, git, gitInvocations, isMain, runCheck, shellOf } from './lib/shell.mjs';
+import { EXPECTED_IDENTITY, git, gitInvocations, isMain, resolvePath, runCheck, shellOf } from './lib/shell.mjs';
 
 // Commandes qui écrivent l'author et le committer depuis l'identité courante.
 const AUTHOR_AND_COMMITTER = new Set(['commit', 'merge', 'revert', 'pull']);
@@ -64,7 +64,7 @@ function messageFiles(inv) {
     else if (a.startsWith('--file=')) files.push(a.slice('--file='.length));
     else if (/^-F./.test(a)) files.push(a.slice(2));
   });
-  return files.filter(Boolean).map((f) => path.resolve(inv.cwd, f));
+  return files.filter(Boolean).map((f) => resolvePath(inv.cwd, f));
 }
 
 export function check(input) {
@@ -86,7 +86,11 @@ export function check(input) {
 
     if (inv.sub === 'commit') {
       const texts = [command, ...inv.args.filter((a) => a.startsWith('--trailer'))];
-      for (const file of messageFiles(inv)) if (existsSync(file)) texts.push(readFileSync(file, 'utf8'));
+      for (const file of messageFiles(inv)) {
+        // Un fichier de message introuvable ne se lit pas : refuser plutôt que laisser passer.
+        if (existsSync(file)) texts.push(readFileSync(file, 'utf8'));
+        else problems.push(`git commit : fichier de message introuvable (${file}), Co-Authored-By non vérifiable`);
+      }
       if (texts.some((t) => /co-authored-by\s*:/i.test(t))) {
         problems.push('git commit : le message contient une ligne Co-Authored-By');
       }

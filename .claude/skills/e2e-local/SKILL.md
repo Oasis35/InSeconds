@@ -16,7 +16,7 @@ Argument facultatif : `$ARGUMENTS` (un fichier de spec, ou `-g "<titre>"`).
 
 ## Préparer
 
-1. PostgreSQL local : `docker compose up -d database` à la racine (`.env` avec `DB_PASSWORD`).
+1. PostgreSQL local : `docker compose up -d database` à la racine (`.env` avec `DB_PASSWORD`). Claude ne lit pas les `.env` (refusé par `settings.json`) : si `E2E_DB_CONNECTION` n'est pas déjà posée dans l'environnement, demander la chaîne à Clément.
 2. Une base dédiée aux E2E, distincte de celle du dev (le `/api/e2e/reset` la vide). La chaîne passe par une variable, jamais par un fichier du dépôt :
 
    ```bash

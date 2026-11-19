@@ -5,15 +5,16 @@
 //  - C# : formatage (dotnet format whitespace, sur les fichiers indexés seulement) ;
 //  - front : frontières Sheriff et domaine pur (npm run lint:arch, comme le job CI front).
 // Les deux derniers tournent en parallèle. Le hook passe avant la commande : un `git add` placé
-// devant le commit dans la même commande, ou `git commit -a`, n'a pas encore rempli l'index, le
-// hook prend alors aussi les fichiers modifiés (et non suivis après un `git add`).
+// devant le commit dans la même commande, `git commit -a` ou `git commit <chemins>` n'ont pas encore
+// rempli l'index : le hook prend aussi les fichiers modifiés de ce qu'ils nomment (et les non suivis
+// nommés par le `git add`).
 // Le projet n'a ni Prettier ni ESLint : le hook ne lance que ce qui existe déjà.
 // Un outil absent (dotnet, node_modules) est signalé sans bloquer : la CI repasse derrière.
 
 import { execFileSync, spawn } from 'node:child_process';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { git, gitInvocations, isMain, runCheck, shellOf } from './lib/shell.mjs';
+import { git, gitInvocations, isMain, resolvePath, runCheck, shellOf } from './lib/shell.mjs';
 
 const FRONT_DIR = 'src/front/InSeconds.Client';
 const BACK_DIR = 'src/back';
@@ -24,18 +25,65 @@ const lines = (text) => text.split('\n').filter(Boolean);
 // `-a`, `--all`, ou un groupe d'options courtes qui le contient (`-am "msg"`).
 const commitsAll = (inv) => inv.args.some((a) => a === '--all' || /^-[a-zA-Z]*a[a-zA-Z]*$/.test(a));
 
-function committedFiles(root, { all, added }) {
+// Options de `git commit` et `git add` dont la valeur est l'argument suivant.
+const VALUE_OPTIONS = new Set(['-m', '--message', '-F', '--file', '-C', '--reuse-message', '-c', '--reedit-message',
+  '-t', '--template', '--author', '--date', '--cleanup', '--fixup', '--squash', '--trailer', '--pathspec-from-file', '--chmod']);
+
+// Les chemins nommés par une commande git (après `--`, ou ni option ni valeur d'option), relatifs
+// à la racine du dépôt. Un groupe d'options courtes qui finit par une option à valeur (`-am`) la prend.
+function pathspecs(inv, root) {
+  // Chemins réels des deux côtés : sous Windows, un dossier peut arriver en nom court (CLEMEN~1).
+  const real = (p) => {
+    try { return realpathSync.native(p); } catch { return path.resolve(p); }
+  };
+  const base = real(inv.cwd);
+  root = real(root);
+  const out = [];
+  let literal = false;
+  for (let i = 0; i < inv.args.length; i++) {
+    const a = inv.args[i];
+    if (!literal) {
+      if (a === '--') { literal = true; continue; }
+      if (VALUE_OPTIONS.has(a) || /^-[a-zA-Z]*[mFCct]$/.test(a)) { i++; continue; }
+      if (a.startsWith('-')) continue;
+    }
+    out.push(path.relative(root, resolvePath(base, a)).replace(/\\/g, '/') || '.');
+  }
+  return out;
+}
+
+// Ce que le commit prend dans le dossier de travail en plus de l'index (le hook passe avant la
+// commande) : tout le suivi avec `-a`, les chemins nommés par le commit (ils partent dans le commit
+// même non indexés), et ceux d'un `git add` de la même commande (non suivis compris, sauf `-u`).
+function workingScope(invocations, index, root) {
+  const commit = invocations[index];
+  const modified = commitsAll(commit) ? ['.'] : [];
+  modified.push(...pathspecs(commit, root));
+  const untracked = [];
+  for (const inv of invocations.slice(0, index)) {
+    if (inv.sub !== 'add') continue;
+    const named = pathspecs(inv, root);
+    const update = inv.args.some((a) => a === '-u' || a === '--update');
+    const specs = named.length ? named : inv.args.some((a) => ['-A', '--all', '-u', '--update'].includes(a)) ? ['.'] : [];
+    modified.push(...specs);
+    if (!update) untracked.push(...specs);
+  }
+  return { modified: [...new Set(modified)], untracked: [...new Set(untracked)] };
+}
+
+function committedFiles(root, scope) {
   const files = lines(git(['diff', '--cached', '--name-only', '--diff-filter=ACMR'], root));
-  if (all || added) files.push(...lines(git(['ls-files', '--modified'], root)));
-  if (added) files.push(...lines(git(['ls-files', '--others', '--exclude-standard'], root)));
+  if (scope.modified.length) files.push(...lines(git(['ls-files', '--modified', '--', ...scope.modified], root)));
+  if (scope.untracked.length) files.push(...lines(git(['ls-files', '--others', '--exclude-standard', '--', ...scope.untracked], root)));
   return [...new Set(files)].filter((f) => existsSync(path.join(root, f)));
 }
 
 // git diff --check ignore les fichiers non suivis : après un `git add` de la même commande, ils
 // partent pourtant dans le commit. Même contrôle à la main (texte seulement, hors Markdown).
-function checkUntracked(root) {
+function checkUntracked(root, specs) {
   const problems = [];
-  for (const file of lines(git(['ls-files', '--others', '--exclude-standard'], root))) {
+  if (!specs.length) return '';
+  for (const file of lines(git(['ls-files', '--others', '--exclude-standard', '--', ...specs], root))) {
     if (file.endsWith('.md')) continue;
     const full = path.join(root, file);
     if (!existsSync(full) || statSync(full).size > 1_000_000) continue;
@@ -116,22 +164,23 @@ export async function check(input) {
 
   const root = git(['rev-parse', '--show-toplevel'], commit.cwd);
   if (!root) return null;
-  const all = commitsAll(commit);
-  const added = invocations.slice(0, index).some((inv) => inv.sub === 'add');
-  const files = committedFiles(root, { all, added });
+  const scope = workingScope(invocations, index, root);
+  const files = committedFiles(root, scope);
   if (!files.length) return null;
 
   // git diff --check sort en code 2 quand il trouve quelque chose : lire sa sortie, pas son code.
   const exclude = ['--', '.', ':(exclude)*.md'];
   const [staged, working, csharp, front] = await Promise.all([
     run('git', ['diff', '--cached', '--check', ...exclude], root),
-    all || added ? run('git', ['diff', '--check', ...exclude], root) : Promise.resolve({ output: '' }),
+    scope.modified.length
+      ? run('git', ['diff', '--check', '--', ...scope.modified, ':(exclude)*.md'], root)
+      : Promise.resolve({ output: '' }),
     checkCSharp(root, files),
     checkFront(root, files),
   ]);
 
   const failures = [];
-  const whitespace = [staged.output, working.output, added ? checkUntracked(root) : ''].filter(Boolean);
+  const whitespace = [staged.output, working.output, checkUntracked(root, scope.untracked)].filter(Boolean);
   if (whitespace.length) failures.push(`Espaces en fin de ligne ou marqueurs de conflit :\n${tail(whitespace.join('\n'))}`);
   for (const r of [csharp, front]) if (r.failure) failures.push(r.failure);
   const skipped = [csharp, front].map((r) => r.skipped).filter(Boolean);

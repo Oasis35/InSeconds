@@ -3,7 +3,7 @@
 
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, describe, test } from 'node:test';
@@ -43,6 +43,14 @@ const PS_CLEMENT =
 
 describe('commit-identity', { concurrency: true }, () => {
   const cwd = repo();
+
+  test('lit un fichier -F donné en chemin Git Bash, refuse un fichier introuvable', () => {
+    const msg = path.join(cwd, 'msg.txt');
+    writeFileSync(msg, 'x\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n');
+    const bashPath = process.platform === 'win32' ? msg.replace(/\\/g, '/').replace(/^([A-Za-z]):/, (_, d) => '/' + d.toLowerCase()) : msg;
+    assert.equal(bash('commit-identity.mjs', `${CLEMENT} git commit -F ${bashPath}`, cwd).code, 2);
+    assert.equal(bash('commit-identity.mjs', `${CLEMENT} git commit -F absent.txt`, cwd).code, 2);
+  });
 
   test('refuse un commit avec l\'identité par défaut de Claude', () => {
     const r = bash('commit-identity.mjs', 'git commit -m "msg"', cwd);
@@ -249,6 +257,23 @@ describe('lint-before-commit', { concurrency: true }, () => {
     assert.equal(bash('lint-before-commit.mjs', `${CLEMENT} git commit -am "x"`, cwd).code, 2);
     assert.equal(bash('lint-before-commit.mjs', `${CLEMENT} git commit -m "x"`, cwd).code, 0);
   });
+
+  test('prend les chemins nommés par le commit, même non indexés', () => {
+    const cwd = repo();
+    writeFileSync(path.join(cwd, 'a.ts'), 'const a = 1;\n');
+    execFileSync('git', ['add', 'a.ts'], { cwd });
+    execFileSync('git', ['-c', 'user.name=C', '-c', 'user.email=c@c', 'commit', '-q', '-m', 'a'], { cwd });
+    writeFileSync(path.join(cwd, 'a.ts'), 'const a = 2;   \n');
+    assert.equal(bash('lint-before-commit.mjs', `${CLEMENT} git commit a.ts -m "x"`, cwd).code, 2);
+    assert.equal(bash('lint-before-commit.mjs', `${CLEMENT} git commit -i -m "x" -- a.ts`, cwd).code, 2);
+  });
+
+  test('après git add <fichier>, un brouillon non nommé ne bloque pas', () => {
+    const cwd = repo();
+    writeFileSync(path.join(cwd, 'a.ts'), 'const a = 1;\n');
+    writeFileSync(path.join(cwd, 'brouillon.ts'), 'const b = 1;   \n');
+    assert.equal(bash('lint-before-commit.mjs', `git add a.ts && ${CLEMENT} git commit -m "x"`, cwd).code, 0);
+  });
 });
 
 describe('shell-guard (Bash)', { concurrency: true }, () => {
@@ -356,6 +381,25 @@ describe('no-em-dash : redirections', { concurrency: true }, () => {
     assert.equal(run(`grep -c "${EM_DASH}" a.md > /dev/null`).code, 0);
     assert.equal(run(`node -e "x => '${EM_DASH}'" -> y`).code, 0);
     assert.equal(run(`echo "${EM_DASH}" >&2`).code, 0);
+    assert.equal(run(`grep "${EM_DASH}" a.md 2>&1`).code, 0);
+  });
+
+  test('refuse &>, &>> et >|', () => {
+    assert.equal(run(`echo "a ${EM_DASH} b" &> x.md`).code, 2);
+    assert.equal(run(`echo "a ${EM_DASH} b" &>> x.md`).code, 2);
+    assert.equal(run(`echo "a ${EM_DASH} b" >| x.md`).code, 2);
+  });
+});
+
+describe('lancement par un lien', () => {
+  test('shell-guard contrôle encore quand le dossier des hooks est atteint par une jonction', () => {
+    const cwd = repo();
+    const link = path.join(mkdtempSync(path.join(tmpdir(), 'hooks-link-')), 'hooks');
+    temps.push(path.dirname(link));
+    symlinkSync(HOOKS, link, 'junction');
+    const input = { tool_name: 'Bash', tool_input: { command: 'git push origin main' }, cwd };
+    const r = spawnSync('node', [path.join(link, 'shell-guard.mjs')], { input: JSON.stringify(input), encoding: 'utf8', env: cleanEnv });
+    assert.equal(r.status, 2);
   });
 });
 

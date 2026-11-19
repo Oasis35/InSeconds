@@ -14,9 +14,10 @@ const EM_DASH = String.fromCharCode(0x2014);
 // Une recherche du caractère reste permise.
 const WRITING_COMMAND = /\bgit\s+(?:\S+\s+)*?(?:commit|tag|notes)\b|\bgh\s|\btee\b|\bsed\s+-i|\b(?:Out-File|Set-Content|Add-Content|New-Item)\b/i;
 
-// Redirection de la sortie standard vers un fichier : `>`, `>>`, `1>`, mais ni `2>` (erreurs),
-// ni `->` / `=>` (flèches), ni `>&` (vers un descripteur), ni `/dev/null`, `$null` ou `NUL`.
-const FILE_REDIRECT = /(?:^|[^-=<>&0-9])1?>>?(?!&)\s*(?!(?:\/dev\/null|\$null|nul)(?![\w./\\-]))[^\s&|;<>]/i;
+// Redirection de la sortie standard vers un fichier : `>`, `>>`, `1>`, `&>`, `&>>`, `>|`, mais ni
+// `2>` (erreurs), ni `->` / `=>` (flèches), ni `>&` (vers un descripteur), ni `/dev/null`, `$null`
+// ou `NUL`.
+const FILE_REDIRECT = /(?:(?:^|[^-=<>&0-9])1?|&)>>?\|?(?!&)\s*(?!(?:\/dev\/null|\$null|nul)(?![\w./\\-]))[^\s&|;<>]/i;
 
 export function writesFile(command) {
   return WRITING_COMMAND.test(command) || FILE_REDIRECT.test(command);
