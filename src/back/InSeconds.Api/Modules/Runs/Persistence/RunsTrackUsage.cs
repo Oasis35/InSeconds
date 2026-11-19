@@ -23,6 +23,7 @@ public sealed class RunsTrackUsage(InSecondsDbContext db) : ITrackUsage
         var used = await db.Set<RunChallengeTrack>().AsNoTracking()
             .Where(t => trackIds.Contains(t.TrackId))
             .Select(t => t.TrackId)
+            .Distinct() // un morceau peut figurer dans plusieurs défis tirés à la volée
             .ToListAsync(ct);
         return used.ToDictionary(id => id, _ => TrackUsage.None with { UsedByMode = true });
     }
