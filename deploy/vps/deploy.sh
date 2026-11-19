@@ -69,8 +69,8 @@ compose run --rm -T api --migrate-only
 compose up -d
 
 # Ne retire que les images "dangling" (non taguées) - jamais -a, qui supprimerait aussi les
-# images d'autres projets partageant ce VPS (cf. CLAUDE.md racine § Architecture - plusieurs
-# stacks Compose indépendants sur le même hôte). Le rebuild ci-dessus délaisse le tag
+# images d'autres projets partageant ce VPS (piège 43, .claude/rules/deploy.md :
+# plusieurs stacks Compose indépendants sur le même hôte). Le rebuild ci-dessus délaisse le tag
 # `latest` de l'ancienne image sans la supprimer ; sans ce nettoyage régulier, ces images
 # orphelines s'accumulent et finissent par saturer les 40 Go de disque.
 docker image prune -f
