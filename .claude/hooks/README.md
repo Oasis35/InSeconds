@@ -2,6 +2,7 @@
 
 - `settings.json` (dossier parent) branche les hooks ; scripts Node sans dépendance, un hook qui plante laisse passer.
 - `shell-guard.mjs` : seul hook des outils Bash et PowerShell, un processus qui enchaîne `no-em-dash`, `protected-branches`, `commit-identity`, puis `lint-before-commit` (chacun chargé à part : un module qui plante est signalé, les autres tournent) ; refuse aussi un git PowerShell qu'il ne sait pas lire (exécuteur opaque comme `Invoke-Expression`, alias, appel .NET, identité posée autrement que par `$env:NOM = ...`, sous-commande cachée dans une variable ou un splatting). C'est un filet contre l'erreur, pas une barrière : un nom de programme calculé (`& ('gi'+'t') commit`) lui échappe.
+- `lint-before-commit.mjs` : sur ce qui part dans le commit, `git diff --check` (espaces en fin de ligne et marqueurs de conflit, hors Markdown), `dotnet format whitespace` sur les `.cs` du back, `npm run lint:arch` si le front est touché. Le code généré (`**/Internal/Generated/**` de Wolverine, `**/Migrations/**` d'EF) garde ses espaces : il n'y est cherché que des marqueurs de conflit, et `dotnet format` l'ignore (Wolverine écrit des lignes d'espaces seuls, et la CI exige ce code à l'identique).
 - `no-em-dash.mjs` est aussi branché seul sur Write, Edit, MultiEdit, NotebookEdit et les outils GitHub.
 - `session-start.mjs` (SessionStart) : branche courante, alerte sur `main` / `env/staging`, marque « [hooks InSeconds actifs] ».
 - `grafana-reminder.mjs` et `codegen-reminder.mjs` (PostToolUse) : rappels, jamais bloquants.

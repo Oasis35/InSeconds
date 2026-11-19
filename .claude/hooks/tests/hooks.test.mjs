@@ -274,6 +274,39 @@ describe('lint-before-commit', { concurrency: true }, () => {
     writeFileSync(path.join(cwd, 'brouillon.ts'), 'const b = 1;   \n');
     assert.equal(bash('lint-before-commit.mjs', `git add a.ts && ${CLEMENT} git commit -m "x"`, cwd).code, 0);
   });
+
+  test('laisse au code généré ses espaces en fin de ligne, pas à un .cs ordinaire', () => {
+    const cwd = repo();
+    const wolverine = 'src/back/InSeconds.Api/Internal/Generated/WolverineHandlers/GET_api_x.cs';
+    const migration = 'src/back/InSeconds.Api/Infrastructure/Persistence/Migrations/20260101000000_X.cs';
+    for (const file of [wolverine, migration]) {
+      mkdirSync(path.join(cwd, path.dirname(file)), { recursive: true });
+      writeFileSync(path.join(cwd, file), 'class X\n{\n    \n}\n');
+    }
+    // Non suivis, par le git add de la même commande, puis indexés.
+    assert.equal(bash('lint-before-commit.mjs', `git add . && ${CLEMENT} git commit -m "x"`, cwd).code, 0);
+    execFileSync('git', ['add', '.'], { cwd });
+    assert.equal(bash('lint-before-commit.mjs', `${CLEMENT} git commit -m "x"`, cwd).code, 0);
+
+    writeFileSync(path.join(cwd, 'Ordinaire.cs'), 'class Y\n{\n    \n}\n');
+    execFileSync('git', ['add', 'Ordinaire.cs'], { cwd });
+    const r = bash('lint-before-commit.mjs', `${CLEMENT} git commit -m "x"`, cwd);
+    assert.equal(r.code, 2);
+    assert.match(r.stderr, /Ordinaire\.cs:3: trailing whitespace/);
+    assert.doesNotMatch(r.stderr, /Generated|Migrations/);
+  });
+
+  test('cherche toujours les marqueurs de conflit dans le code généré', () => {
+    const cwd = repo();
+    const file = 'src/back/InSeconds.Api/Internal/Generated/WolverineHandlers/GET_api_x.cs';
+    mkdirSync(path.join(cwd, path.dirname(file)), { recursive: true });
+    writeFileSync(path.join(cwd, file), 'class X\n{\n<<<<<<< HEAD\n}\n');
+    assert.equal(bash('lint-before-commit.mjs', `git add . && ${CLEMENT} git commit -m "x"`, cwd).code, 2);
+    execFileSync('git', ['add', '.'], { cwd });
+    const r = bash('lint-before-commit.mjs', `${CLEMENT} git commit -m "x"`, cwd);
+    assert.equal(r.code, 2);
+    assert.match(r.stderr, /GET_api_x\.cs:3: leftover conflict marker/);
+  });
 });
 
 describe('shell-guard (Bash)', { concurrency: true }, () => {

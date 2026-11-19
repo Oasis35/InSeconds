@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // Hook PreToolUse (Bash, PowerShell ; lancé par shell-guard.mjs) : avant un `git commit`, contrôle
 // des fichiers qui partent dans le commit (l'index) :
-//  - espaces en fin de ligne et marqueurs de conflit (git diff --check, hors Markdown) ;
-//  - C# : formatage (dotnet format whitespace, sur les fichiers indexés seulement) ;
+//  - espaces en fin de ligne et marqueurs de conflit (git diff --check, hors Markdown) ; le code
+//    généré (Wolverine dans Internal/Generated, migrations EF) n'est contrôlé que pour les marqueurs :
+//    Wolverine écrit des lignes d'espaces seuls, et la CI exige ce code à l'identique ;
+//  - C# : formatage (dotnet format whitespace, sur les fichiers indexés seulement, hors code généré) ;
 //  - front : frontières Sheriff et domaine pur (npm run lint:arch, comme le job CI front).
 // Les deux derniers tournent en parallèle. Le hook passe avant la commande : un `git add` placé
 // devant le commit dans la même commande, `git commit -a` ou `git commit <chemins>` n'ont pas encore
@@ -18,7 +20,10 @@ import { git, gitInvocations, isMain, resolvePath, runCheck, shellOf } from './l
 
 const FRONT_DIR = 'src/front/InSeconds.Client';
 const BACK_DIR = 'src/back';
-const GENERATED_CS = /\/(Internal\/Generated|Migrations)\//;
+// Code généré, laissé tel que l'outil l'écrit : la regex et son équivalent en pathspec git.
+const GENERATED = /(^|\/)(Internal\/Generated|Migrations)\//;
+const GENERATED_EXCLUDES = [':(exclude,glob)**/Internal/Generated/**', ':(exclude,glob)**/Migrations/**'];
+const NOT_CHECKED = [':(exclude)*.md', ...GENERATED_EXCLUDES];
 
 const lines = (text) => text.split('\n').filter(Boolean);
 
@@ -78,23 +83,30 @@ function committedFiles(root, scope) {
   return [...new Set(files)].filter((f) => existsSync(path.join(root, f)));
 }
 
-// git diff --check ignore les fichiers non suivis : après un `git add` de la même commande, ils
-// partent pourtant dans le commit. Même contrôle à la main (texte seulement, hors Markdown).
-function checkUntracked(root, specs) {
+// Le contrôle de git diff --check refait à la main, dans le contenu des fichiers (texte seulement,
+// hors Markdown) : pour les non suivis, que git diff --check ignore alors qu'un `git add` de la même
+// commande les met dans le commit, et pour le code généré (marqueurs de conflit seulement, sans
+// les espaces).
+function scanFiles(root, files, { whitespace }) {
   const problems = [];
-  if (!specs.length) return '';
-  for (const file of lines(git(['ls-files', '--others', '--exclude-standard', '--', ...specs], root))) {
+  for (const file of files) {
     if (file.endsWith('.md')) continue;
     const full = path.join(root, file);
     if (!existsSync(full) || statSync(full).size > 1_000_000) continue;
     const content = readFileSync(full, 'utf8');
     if (content.includes('\0')) continue;
     content.split('\n').forEach((line, i) => {
-      if (/[ \t]+\r?$/.test(line)) problems.push(`${file}:${i + 1}: trailing whitespace.`);
+      if (whitespace && /[ \t]+\r?$/.test(line)) problems.push(`${file}:${i + 1}: trailing whitespace.`);
       else if (/^(<{7}|>{7})( |$)/.test(line)) problems.push(`${file}:${i + 1}: leftover conflict marker`);
     });
   }
   return problems.join('\n');
+}
+
+function checkUntracked(root, specs) {
+  if (!specs.length) return '';
+  const files = lines(git(['ls-files', '--others', '--exclude-standard', '--', ...specs], root));
+  return scanFiles(root, files.filter((f) => !GENERATED.test(f)), { whitespace: true });
 }
 
 function run(cmd, args, cwd, { shell = false } = {}) {
@@ -135,7 +147,7 @@ const tail = (text, count = 25) => text.split('\n').slice(-count).join('\n');
 
 async function checkCSharp(root, files) {
   const csFiles = files
-    .filter((f) => f.startsWith(`${BACK_DIR}/`) && f.endsWith('.cs') && !GENERATED_CS.test(f))
+    .filter((f) => f.startsWith(`${BACK_DIR}/`) && f.endsWith('.cs') && !GENERATED.test(f))
     .map((f) => f.slice(BACK_DIR.length + 1));
   if (!csFiles.length) return {};
   const dotnet = findDotnet();
@@ -174,11 +186,11 @@ export async function check(input) {
 
   // git diff --check sort en code 2 quand il trouve quelque chose : lire sa sortie, pas son code ;
   // stdout seulement (stderr porte des avertissements comme « LF will be replaced by CRLF »).
-  const exclude = ['--', '.', ':(exclude)*.md'];
+  // Le code généré en est exclu : scanFiles n'y cherche que les marqueurs de conflit.
   const [staged, working, csharp, front] = await Promise.all([
-    run('git', ['diff', '--cached', '--check', ...exclude], root),
+    run('git', ['diff', '--cached', '--check', '--', '.', ...NOT_CHECKED], root),
     scope.modified.length
-      ? run('git', ['diff', '--check', '--', ...scope.modified, ':(exclude)*.md'], root)
+      ? run('git', ['diff', '--check', '--', ...scope.modified, ...NOT_CHECKED], root)
       : Promise.resolve({ stdout: '' }),
     checkCSharp(root, files),
     checkFront(root, files),
@@ -187,7 +199,8 @@ export async function check(input) {
   // Code 0 : rien ; 2 : constats sur stdout ; autre chose : git en erreur (pathspec...), signalé.
   const gitErrors = [staged, working].filter((r) => r.code !== undefined && r.code !== 0 && r.code !== 2);
   const failures = [];
-  const whitespace = [staged.stdout, working.stdout, checkUntracked(root, scope.untracked)].filter(Boolean);
+  const generated = scanFiles(root, files.filter((f) => GENERATED.test(f)), { whitespace: false });
+  const whitespace = [staged.stdout, working.stdout, checkUntracked(root, scope.untracked), generated].filter(Boolean);
   if (whitespace.length) failures.push(`Espaces en fin de ligne ou marqueurs de conflit :\n${tail(whitespace.join('\n'))}`);
   for (const r of [csharp, front]) if (r.failure) failures.push(r.failure);
   const skipped = [csharp, front].map((r) => r.skipped).filter(Boolean);
