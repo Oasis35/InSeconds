@@ -47,6 +47,19 @@ public class RunsTrackUsageTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task UnMorceauDansPlusieursDefisDeRun_NeFaitPasPlanterLePool()
+    {
+        await _game.Api.ExecuteAsync("""
+            INSERT INTO runs.challenges (id, code, seed, rules, created_at) VALUES (2, 'P4R8T3', 2, '{}', now());
+            INSERT INTO runs.challenge_tracks (challenge_id, position, track_id, round) VALUES (2, 1, 1, 1);
+            """);
+
+        var list = (await _admin.GetFromJsonAsync<List<TrackListItem>>(Tracks, Ct))!;
+
+        Assert.Equal("runs", Assert.Single(list.Single(t => t.Id == 1).Usages).Mode);
+    }
+
+    [Fact]
     public async Task LePool_MontreLeMorceauUtilise_ParLeModeRuns()
     {
         var list = (await _admin.GetFromJsonAsync<List<TrackListItem>>(Tracks, Ct))!;
