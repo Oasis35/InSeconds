@@ -94,7 +94,8 @@ Les disques sont des points (`Runs:Levels:Discs`) : changer un seuil ne demande 
 - **15 membres** au plus par groupe (`Social:MaxMembersPerGroup`), **5 groupes** au plus par joueur (`Social:MaxGroupsPerPlayer`), un nom de **24 caractères** au plus (`Social:MaxNameLength`), contrôlé comme un pseudo.
 - On le rejoint par un **lien d'invitation** (`/ranking/join/<code>`, 8 caractères), que le créateur peut renouveler. Le lien d'une playlist peut aussi faire rejoindre un groupe (« Inviter dans un groupe »).
 - **Seuls les membres** voient le groupe, les pseudos des autres membres et le classement. L'aperçu d'une invitation ne montre que le nom du groupe et ses places.
-- **Le classement d'un groupe** : par niveau Survie (le disque et les points de chacun) ; un membre qui n'a pas encore fini de partie est « pas encore joué », sans rang.
+- Les groupes sont ouverts à **tous les comptes**, avec ou sans l'accès Survie : leur classement par défaut est celui du Défi du jour ([`regles-du-jeu.md`](../regles-du-jeu.md#les-groupes)).
+- **Le classement Survie d'un groupe** (onglet « Survie », pour un compte qui a l'accès) : par niveau Survie (le disque et les points de chacun) ; un membre qui n'a pas encore fini de partie est « pas encore joué », sans rang.
 - **Le classement du Défi du jour d'un groupe**, à part (un classement par mode, jamais une moyenne) : le score du jour et les points des 7 derniers jours de chacun ([`regles-du-jeu.md`](../regles-du-jeu.md#les-groupes)).
 - Le créateur qui quitte passe la main au plus ancien membre ; le dernier qui part supprime le groupe. L'admin peut renommer un groupe, remettre son nom à zéro (« Groupe 12 ») ou le supprimer.
 
@@ -110,7 +111,7 @@ Les disques sont des points (`Runs:Levels:Discs`) : changer un seuil ne demande 
 ## L'accès
 
 - **Sur invitation** : réservé aux comptes autorisés par l'admin (interrupteur de l'onglet Joueurs). Un admin n'a pas l'accès d'office : il a son interrupteur comme les autres, et peut se le couper pour voir le jeu sans Survie. Un invité n'a jamais l'accès.
-- L'accès ouvre aussi **l'interface Survie** : l'accueil à deux cartes, la barre du bas, l'historique, les classements et les groupes. Sans accès, l'interface publique du défi du jour reste telle quelle : pas de carte Survie, et `/survie` renvoie vers le défi du jour.
+- La barre du bas, l'historique du défi, les groupes et leur classement du Défi du jour sont **pour tous** ; l'accès ajoute ce qui touche la Survie : la carte Survie de l'accueil, l'onglet « Survie » de l'historique et du classement d'un groupe, la pastille « Général », le niveau, les Hits et le défi d'ami. Sans accès, `/survie` renvoie vers le défi du jour.
 - **Le lien d'un ami ne remplace pas l'accès** : sans accès (invité, compte non autorisé, visiteur sans identité), le lien ouvre l'écran « Survie n'est pas encore ouverte » avec un seul bouton, « Jouer le défi du jour », jamais une création de compte ; le serveur refuse le départ (403 `runs.access_denied`).
 - Retirer l'accès n'interrompt pas une partie en cours ; cela empêche seulement d'en lancer une nouvelle.
 

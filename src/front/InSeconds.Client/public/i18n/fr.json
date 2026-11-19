@@ -1479,7 +1479,7 @@
       "label": "Nom du groupe",
       "step1": "Tu crées le groupe",
       "step2": "Tu envoies le lien à tes amis",
-      "step3": "Chacun apparaît avec ses points après sa première Survie",
+      "step3": "Chacun apparaît avec ses points dès son premier défi du jour",
       "privacy": "Seuls les membres voient ton pseudo. Tu peux quitter le groupe quand tu veux.",
       "submit": "Créer et inviter",
       "cancel": "Annuler",
@@ -1509,6 +1509,23 @@
       "passed": "Tu passes devant {{ name }}",
       "empty": "Joue avec tes amis",
       "create": "Créer un groupe"
+    },
+    "scores": {
+      "periodLabel": "Période du classement",
+      "week": "Cette semaine",
+      "today": "Aujourd'hui",
+      "survie": "Survie",
+      "weekHint": "Les points des 7 derniers jours. Un jour manqué vaut 0.",
+      "daysPlayed": "{{ count }} jours joués sur {{ total }}",
+      "locked": "Les scores du jour s'affichent quand tu as fini ton défi.",
+      "playedCount": "{{ played }} sur {{ members }} ont joué",
+      "played": "A joué",
+      "notYet": "Pas encore",
+      "play": "Jouer le défi"
+    },
+    "alone": {
+      "title": "Tu es seul dans {{ name }}",
+      "body": "Envoie le lien à tes amis : chacun apparaît ici avec ses points du défi du jour."
     }
   }
 }

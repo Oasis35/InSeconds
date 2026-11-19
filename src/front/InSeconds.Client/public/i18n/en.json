@@ -1479,7 +1479,7 @@
       "label": "Group name",
       "step1": "You create the group",
       "step2": "You send the link to your friends",
-      "step3": "Everyone appears with their points after their first Survival run",
+      "step3": "Everyone appears with their points from their first daily challenge",
       "privacy": "Only members see your username. You can leave the group whenever you want.",
       "submit": "Create and invite",
       "cancel": "Cancel",
@@ -1509,6 +1509,23 @@
       "passed": "You pass {{ name }}",
       "empty": "Play with your friends",
       "create": "Create a group"
+    },
+    "scores": {
+      "periodLabel": "Ranking period",
+      "week": "This week",
+      "today": "Today",
+      "survie": "Survival",
+      "weekHint": "Points from the last 7 days. A missed day counts as 0.",
+      "daysPlayed": "{{ count }} days played out of {{ total }}",
+      "locked": "Today's scores show up once you've finished your challenge.",
+      "playedCount": "{{ played }} of {{ members }} have played",
+      "played": "Played",
+      "notYet": "Not yet",
+      "play": "Play the challenge"
+    },
+    "alone": {
+      "title": "You're alone in {{ name }}",
+      "body": "Send the link to your friends: everyone shows up here with their daily challenge points."
     }
   }
 }

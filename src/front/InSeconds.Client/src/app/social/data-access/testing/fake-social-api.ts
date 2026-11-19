@@ -1,4 +1,5 @@
 import { GeneralRanking, Group, GroupRanking, Invitation, MyGroups, RankingIdentity } from '../../domain/group';
+import { DailyScores, GroupScores } from '../../domain/group-scores';
 import { GroupOutcome, InvitationOutcome, SocialApi } from '../social.api';
 
 export const GROUP: Group = { id: 4, name: 'Potes', inviteCode: 'ABCD2345', memberCount: 3, maxMembers: 15, isOwner: true };
@@ -13,7 +14,28 @@ export const RANKING: GroupRanking = {
   ],
 };
 
-export const INVITATION: Invitation = { groupName: 'Potes', memberCount: 3, maxMembers: 15, isFull: false, alreadyMember: false };
+/** Le Défi du jour de « Potes » vu par un joueur qui a fini le sien : Théo devant, Sam pas encore joué. */
+export const DAILY: DailyScores = {
+  day: '2026-11-19', todayRevealed: true, weekDays: 7,
+  today: [
+    { rank: 1, pseudo: 'Théo', isMe: false, played: true, score: 900 },
+    { rank: 2, pseudo: 'Moi', isMe: true, played: true, score: 600 },
+    { rank: null, pseudo: 'Sam', isMe: false, played: false, score: null },
+  ],
+  week: [
+    { rank: 1, pseudo: 'Théo', isMe: false, points: 2400, playedDays: ['2026-11-15', '2026-11-17', '2026-11-19'] },
+    { rank: 2, pseudo: 'Moi', isMe: true, points: 1000, playedDays: ['2026-11-13', '2026-11-19'] },
+    { rank: null, pseudo: 'Sam', isMe: false, points: null, playedDays: [] },
+  ],
+};
+
+/** Le même avant que le joueur ait fini son défi : qui a joué, sans aucun score du jour. */
+export const DAILY_LOCKED: DailyScores = {
+  ...DAILY, todayRevealed: false,
+  today: DAILY.today.map(entry => ({ ...entry, rank: null, score: null, played: !entry.isMe && entry.played })),
+};
+
+export const INVITATION: Invitation ={ groupName: 'Potes', memberCount: 3, maxMembers: 15, isFull: false, alreadyMember: false };
 
 export const GENERAL: GeneralRanking = {
   top: [
@@ -31,6 +53,16 @@ export const GENERAL: GeneralRanking = {
 export class FakeSocialApi {
   groups: MyGroups = { groups: [GROUP, OTHER_GROUP], maxGroups: 5 };
   rankings = new Map<number, GroupRanking>([[4, RANKING], [7, { groupId: 7, name: 'Famille', entries: [{ rank: 1, pseudo: 'Moi', isMe: true, points: 1380, badge: 'runs.discs.silver' }] }]]);
+  scoresByGroup = new Map<number, GroupScores>([
+    [4, { groupId: 4, name: 'Potes', daily: DAILY }],
+    [7, {
+      groupId: 7, name: 'Famille', daily: {
+        ...DAILY,
+        today: [{ rank: 1, pseudo: 'Moi', isMe: true, played: true, score: 600 }],
+        week: [{ rank: 1, pseudo: 'Moi', isMe: true, points: 600, playedDays: ['2026-11-19'] }],
+      },
+    }],
+  ]);
   createOutcome: GroupOutcome = { kind: 'ok', group: GROUP };
   joinOutcome: GroupOutcome = { kind: 'ok', group: GROUP };
   invitationOutcome: InvitationOutcome = { kind: 'ok', invitation: INVITATION };
@@ -53,6 +85,13 @@ export class FakeSocialApi {
     const ranking = this.rankings.get(groupId);
     if (!ranking) return Promise.reject(new Error('not found'));
     return Promise.resolve(ranking);
+  }
+
+  scores(groupId: number): Promise<GroupScores> {
+    this.calls.push(`scores:${groupId}`);
+    const scores = this.scoresByGroup.get(groupId);
+    if (!scores) return Promise.reject(new Error('not found'));
+    return Promise.resolve(scores);
   }
 
   generalRanking(): Promise<GeneralRanking> {

@@ -5,7 +5,7 @@ import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { ShareService } from '../../../core/share/share.service';
 import { ModalService } from '../../../ui/modal/modal.service';
 import { PendingInvite } from '../../data-access/pending-invite';
-import { FakeSocialApi, provideFakeSocialApi } from '../../data-access/testing/fake-social-api';
+import { DAILY, DAILY_LOCKED, FakeSocialApi, GROUP, provideFakeSocialApi } from '../../data-access/testing/fake-social-api';
 import { signIn } from '../testing/session';
 import { RankingPage } from './ranking.page';
 
@@ -73,7 +73,7 @@ describe('RankingPage', () => {
     expect(find(el, 'general-ranking')).toBeNull();
   });
 
-  it('montre mes groupes en pastilles et le classement du premier', async () => {
+  it('montre mes groupes en pastilles et la semaine du premier au Défi du jour', async () => {
     const { el } = await render();
 
     const chips = [...el.querySelectorAll('[data-testid="ranking-group"]')];
@@ -81,14 +81,66 @@ describe('RankingPage', () => {
     expect(chips[0].getAttribute('aria-current')).toBe('page');
     expect(chips[1].getAttribute('href')).toBe('/ranking?group=7');
     expect(find(el, 'ranking-new')?.getAttribute('href')).toBe('/ranking/new');
-    expect(el.querySelectorAll('[data-testid="ranking-row"]')).toHaveLength(3);
+    expect(find(el, 'ranking-period-week')?.getAttribute('aria-current')).toBe('page');
+    expect(el.querySelectorAll('[data-testid="score-row"]')).toHaveLength(3);
+    expect(el.querySelectorAll('[data-testid="score-day"]')).toHaveLength(21);
+    expect(api.calls).toEqual(['myGroups', 'scores:4']);
   });
 
   it('ouvre le groupe de l\'adresse', async () => {
     const { el } = await render('/ranking?group=7');
 
-    expect(api.calls).toEqual(['myGroups', 'ranking:7']);
-    expect(el.querySelectorAll('[data-testid="ranking-row"]')).toHaveLength(1);
+    expect(api.calls).toEqual(['myGroups', 'scores:7']);
+    expect(el.querySelectorAll('[data-testid="score-row"]')).toHaveLength(1);
+  });
+
+  it('« Aujourd\'hui » après son défi : le classement du jour, sans points de semaine', async () => {
+    const { el } = await render('/ranking?period=today');
+
+    expect(find(el, 'ranking-period-today')?.getAttribute('aria-current')).toBe('page');
+    expect([...el.querySelectorAll('[data-testid="score-value"]')].map(value => value.textContent?.trim())).toEqual(['900', '600']);
+    expect(find(el, 'score-days')).toBeNull();
+    expect(find(el, 'today-locked')).toBeNull();
+    // Changer de groupe garde l'onglet.
+    expect(el.querySelectorAll('[data-testid="ranking-group"]')[1].getAttribute('href')).toBe('/ranking?group=7&period=today');
+  });
+
+  it('« Aujourd\'hui » avant son défi : fermé, qui a joué sans score, et « Jouer le défi »', async () => {
+    api.scoresByGroup.set(4, { groupId: 4, name: 'Potes', daily: DAILY_LOCKED });
+    const { el } = await render('/ranking?period=today');
+
+    expect(find(el, 'today-locked')).not.toBeNull();
+    expect(el.querySelectorAll('[data-testid="today-member"][data-played="true"]')).toHaveLength(1);
+    expect(find(el, 'score-value')).toBeNull();
+    expect(find(el, 'ranking-play')?.getAttribute('href')).toBe('/daily');
+  });
+
+  it("sans l'accès Survie, pas d'onglet « Survie » : demandé par l'adresse, c'est la semaine", async () => {
+    const { el } = await render('/ranking?period=survie', 'account', null, false);
+
+    expect(find(el, 'ranking-period-survie')).toBeNull();
+    expect(find(el, 'ranking-period-week')?.getAttribute('aria-current')).toBe('page');
+    expect(find(el, 'ranking-list')).toBeNull();
+    expect(api.calls).not.toContain('ranking:4');
+  });
+
+  it("avec l'accès Survie, l'onglet « Survie » garde le classement par niveau", async () => {
+    const { el } = await render('/ranking?period=survie');
+
+    expect(find(el, 'ranking-period-survie')?.getAttribute('aria-current')).toBe('page');
+    expect(el.querySelectorAll('[data-testid="ranking-row"]')).toHaveLength(3);
+    expect(find(el, 'score-list')).toBeNull();
+  });
+
+  it('seul dans son groupe : pas de classement, l\'invitation à faire venir ses amis', async () => {
+    api.groups = { groups: [{ ...GROUP, memberCount: 1 }], maxGroups: 5 };
+    const { el } = await render();
+
+    expect(find(el, 'ranking-alone')).not.toBeNull();
+    expect(find(el, 'ranking-period-week')).toBeNull();
+    expect(find(el, 'score-list')).toBeNull();
+    expect(el.querySelectorAll('[data-testid="ranking-invite"]')).toHaveLength(1);
+    expect(find(el, 'ranking-leave')).not.toBeNull();
   });
 
   it('à la limite de groupes, « + Groupe » disparaît', async () => {
@@ -156,6 +208,18 @@ describe('RankingPage', () => {
     api.failGroups = false;
     el.querySelector<HTMLButtonElement>('[data-testid="ranking-error"] button')!.click();
     await settle();
-    expect(find(el, 'ranking-list')).not.toBeNull();
+    expect(find(el, 'score-list')).not.toBeNull();
+  });
+
+  it('un classement du groupe en panne se dit et se réessaie, les pastilles restent', async () => {
+    api.scoresByGroup.delete(4);
+    const { el, settle } = await render();
+    expect(find(el, 'ranking-error')).not.toBeNull();
+    expect(el.querySelectorAll('[data-testid="ranking-group"]')).toHaveLength(2);
+
+    api.scoresByGroup.set(4, { groupId: 4, name: 'Potes', daily: DAILY });
+    el.querySelector<HTMLButtonElement>('[data-testid="ranking-error"] button')!.click();
+    await settle();
+    expect(find(el, 'score-list')).not.toBeNull();
   });
 });
