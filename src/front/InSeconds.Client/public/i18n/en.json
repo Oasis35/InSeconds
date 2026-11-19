@@ -577,7 +577,6 @@
       "colLastSeen": "Last visit",
       "colRun": "Run",
       "runAccessToggle": "Allow this account to play Run mode",
-      "runAccessAdmin": "Admins always have access to Run mode",
       "resetPseudo": "Reset pseudo",
       "resetPseudoConfirm": "Replace the pseudo with a neutral one?",
       "resetPseudoYes": "Reset",

@@ -211,8 +211,8 @@ public sealed class EfRunsQueries(InSecondsDbContext db) : IRunsQueries
             .ToListAsync(ct);
 }
 
-public sealed class EfRunAccess(InSecondsDbContext db, Players.Contracts.ICurrentPlayer current) : IRunAccess
+public sealed class EfRunAccess(InSecondsDbContext db) : IRunAccess
 {
-    public async Task<bool> CanPlayAsync(Guid playerId, CancellationToken ct) =>
-        (current.IsAdmin && current.PlayerId == playerId) || await db.Set<RunAccess>().AnyAsync(a => a.PlayerId == playerId, ct);
+    public Task<bool> CanPlayAsync(Guid playerId, CancellationToken ct) =>
+        db.Set<RunAccess>().AnyAsync(a => a.PlayerId == playerId, ct);
 }

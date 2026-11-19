@@ -44,7 +44,7 @@ describe('PlayerCardComponent', () => {
     expect(card.querySelector('button')?.getAttribute('aria-expanded')).toBe('true');
   });
 
-  it('demande le nouvel état de l\'interrupteur, désactivé pour un admin', () => {
+  it('demande le nouvel état de l\'interrupteur, pour un admin aussi', () => {
     const { card, host, fixture } = render();
     const toggle = card.querySelector('[data-testid="run-access"]') as HTMLButtonElement;
     toggle.click();
@@ -53,7 +53,9 @@ describe('PlayerCardComponent', () => {
     host.player.set(registeredPlayer({ id: 'a', pseudo: 'Alice', isAdmin: true }));
     host.runAccess.set(true);
     fixture.detectChanges();
-    expect(toggle.disabled).toBe(true);
+    expect(toggle.disabled).toBe(false);
     expect(toggle.getAttribute('aria-checked')).toBe('true');
+    toggle.click();
+    expect(host.requested).toBe(false);
   });
 });

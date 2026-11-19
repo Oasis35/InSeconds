@@ -41,6 +41,9 @@ public interface IPlayerDirectory
     /// </summary>
     Task<IReadOnlyDictionary<Guid, string>> GetPseudosAsync(IReadOnlyCollection<Guid> playerIds, CancellationToken ct);
 
+    /// <summary>Les comptes admins (rôle <c>is_admin</c>) : le classement général ne les montre jamais.</summary>
+    Task<IReadOnlyCollection<Guid>> ListAdminsAsync(CancellationToken ct);
+
     /// <summary>
     /// Les noms qu'on affiche à côté d'un joueur : le pseudo de son compte, à défaut celui que l'invité s'est donné. Un joueur sans pseudo
     /// (invité muet) et un joueur supprimé n'y figurent pas. Pour les écrans qui montrent les joueurs d'une playlist ; les statistiques

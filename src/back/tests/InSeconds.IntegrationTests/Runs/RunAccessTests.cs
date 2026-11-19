@@ -1,7 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using InSeconds.Api.Infrastructure.Persistence;
-using InSeconds.Api.Modules.Players.Contracts;
 using InSeconds.Api.Modules.Runs.Application;
 using InSeconds.IntegrationTests.Daily;
 using Microsoft.AspNetCore.Mvc;
@@ -108,20 +106,33 @@ public class RunAccessTests(PostgresFixture postgres) : IAsyncLifetime
     // --- IRunAccess ---
 
     [Fact]
-    public async Task CanPlay_UnCompteAutorise_OuUnAdminDOffice()
+    public async Task CanPlay_SeulementAvecUneLigneDAcces()
     {
         var invited = await _game.NewPlayerAsync("Invited");
         var other = await _game.NewPlayerAsync("Other");
-        var boss = await _game.NewPlayerAsync("Boss");
         await _admin.PutAsync($"{Route}/{invited.Id}", null, Ct);
 
-        Assert.True(await CanPlayAsync(invited.Id, current: null));
-        Assert.False(await CanPlayAsync(other.Id, current: null));
-        // Un admin joue d'office, sans ligne d'accès ; le rôle est celui de la requête en cours, jamais celui d'un autre joueur.
-        Assert.True(await CanPlayAsync(boss.Id, new FixedPlayer(boss.Id, IsAdmin: true)));
-        Assert.False(await CanPlayAsync(other.Id, new FixedPlayer(boss.Id, IsAdmin: true)));
-        Assert.False(await CanPlayAsync(other.Id, new FixedPlayer(other.Id, IsAdmin: false)));
+        Assert.True(await CanPlayAsync(invited.Id));
+        Assert.False(await CanPlayAsync(other.Id));
         Assert.Single(await ListAsync());
+    }
+
+    [Fact]
+    public async Task UnAdmin_SAllumeEtSEteintLAccesCommeUnAutreCompte()
+    {
+        // Le rôle ne donne rien d'office : l'admin se coupe l'accès pour voir le jeu sans Survie, et se le rend.
+        var boss = await _game.NewPlayerAsync("Boss");
+        await _game.Api.ExecuteAsync($"UPDATE players.accounts SET is_admin = true WHERE player_id = '{boss.Id}'");
+        var asBoss = _game.Api.CreateClient(new TestUser(boss.Id, IsAdmin: true));
+        Assert.False(await CanPlayAsync(boss.Id));
+
+        Assert.Equal(HttpStatusCode.NoContent, (await asBoss.PutAsync($"{Route}/{boss.Id}", null, Ct)).StatusCode);
+        Assert.True(await CanPlayAsync(boss.Id));
+        Assert.Equal([boss.Id], (await ListAsync()).Select(e => e.PlayerId));
+
+        Assert.Equal(HttpStatusCode.NoContent, (await asBoss.DeleteAsync($"{Route}/{boss.Id}", Ct)).StatusCode);
+        Assert.False(await CanPlayAsync(boss.Id));
+        Assert.Empty(await ListAsync());
     }
 
     [Fact]
@@ -135,12 +146,10 @@ public class RunAccessTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Empty(await ListAsync());
     }
 
-    private async Task<bool> CanPlayAsync(Guid playerId, ICurrentPlayer? current)
+    private async Task<bool> CanPlayAsync(Guid playerId)
     {
         using var scope = _game.Api.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<InSecondsDbContext>();
-        var access = new InSeconds.Api.Modules.Runs.Persistence.EfRunAccess(db, current ?? new FixedPlayer(null, IsAdmin: false));
-        return await access.CanPlayAsync(playerId, Ct);
+        return await scope.ServiceProvider.GetRequiredService<IRunAccess>().CanPlayAsync(playerId, Ct);
     }
 
     private static async Task AssertNotFoundAsync(HttpResponseMessage response)
@@ -148,13 +157,6 @@ public class RunAccessTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         var problem = (await response.Content.ReadFromJsonAsync<ProblemDetails>(Ct))!;
         Assert.Equal("common.not_found", problem.Extensions["code"]?.ToString());
-    }
-
-    private sealed record FixedPlayer(Guid? Id, bool IsAdmin) : ICurrentPlayer
-    {
-        public Guid? PlayerId => Id;
-
-        public int? DeviceSessionId => null;
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;

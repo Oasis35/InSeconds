@@ -52,11 +52,11 @@ export function filterPlayers(players: readonly RegisteredPlayer[], text: string
 }
 
 /**
- * Le compte peut lancer un run : un admin d'office (aucune ligne d'accès), sinon seulement si l'admin l'a autorisé
- * (`authorizedIds`, la liste de `GET /api/admin/runs/access`).
+ * Le compte peut lancer un run seulement si l'admin l'a autorisé (`authorizedIds`, la liste de `GET /api/admin/runs/access`).
+ * Un admin aussi : le rôle ne donne pas l'accès d'office, il peut se le retirer pour voir le jeu sans Survie.
  */
-export function canPlayRuns(player: Pick<RegisteredPlayer, 'id' | 'isAdmin'>, authorizedIds: readonly string[]): boolean {
-  return player.isAdmin || authorizedIds.includes(player.id);
+export function canPlayRuns(player: Pick<RegisteredPlayer, 'id'>, authorizedIds: readonly string[]): boolean {
+  return authorizedIds.includes(player.id);
 }
 
 /** Une lecture de l'onglet Joueurs : les comptes, et la part des joueurs d'un jour revenus le lendemain (`null` sans joueur sur la période). */

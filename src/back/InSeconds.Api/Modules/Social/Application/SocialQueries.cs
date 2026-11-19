@@ -48,13 +48,14 @@ public sealed class GroupRanking(IEnumerable<IMemberPerformanceSource> sources, 
 
     /// <summary>
     /// Les joueurs du classement général : ceux que les modes y mettent (l'accès et une partie finie), **comptes seulement** (un invité n'a pas de
-    /// pseudo de compte et n'y figure jamais).
+    /// pseudo de compte et n'y figure jamais) et **jamais un admin**, même s'il a l'accès (décision du 18/11).
     /// </summary>
     public async Task<IReadOnlyList<Guid>> ListGeneralRankingPlayersAsync(CancellationToken ct)
     {
         var ids = new HashSet<Guid>();
         foreach (var source in sources)
             ids.UnionWith(await source.ListGeneralRankingPlayersAsync(ct));
+        ids.ExceptWith(await players.ListAdminsAsync(ct));
         var accounts = await players.GetPseudosAsync(ids, ct);
         return [.. ids.Where(accounts.ContainsKey)];
     }

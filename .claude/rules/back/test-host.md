@@ -22,6 +22,7 @@ Conventions des tests d'intégration (fixture, `ApiFactory`, harnais, noms) : `s
 
 `reset`, `reseed`, `seed-catalogue`, `generate-today`, `delete-challenge`, `login-as-admin`, `set-streak`, `runs/settings`, `runs/latest-tracks`, `deezer/without-preview`, `last-email`, `throw`. Points à savoir :
 
+- `login-as-admin` donne aussi l'accès Survie (une ligne `runs.access`) : le rôle admin ne le donne pas d'office.
 - `reset` (`DatabaseResetter`, Respawn) vide **tous les schémas sauf** `public`, `infra`, `extensions`, `messaging` et `jobs`, lus en base à chaque appel : un nouveau module est couvert sans rien changer. Il remet aussi à zéro les emails capturés, le faux Deezer et son cache, et les réglages `Runs:` posés par un test.
 - `seed-catalogue` (`CatalogueSeed`) : 55 morceaux dans un **ordre fixe**, les index comptent (défis d'avant-hier, d'hier et du jour, cooldowns variés, morceaux sans extrait) ; l'usage est écrit en **vrais défis** que le vrai `IDailyTrackUsage` relit. Genres et album notés comme lus : un contrôle nocturne lancé sur ce pool ne les change pas.
 - `login-as-admin` : le compte `admin-e2e@e2e.test`, par le chemin du dev-login, puis `is_admin` en base ; la session est neuve, le rôle relu en base.

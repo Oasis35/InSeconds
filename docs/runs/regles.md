@@ -101,7 +101,7 @@ Les disques sont des points (`Runs:Levels:Discs`) : changer un seuil ne demande 
 ## Le classement général
 
 - **Par niveau**, pas par meilleur score.
-- Y figurent **les comptes autorisés par l'admin** (une ligne d'accès) **qui ont fini une partie** ; **jamais un invité, jamais un admin** (un admin a l'accès d'office, sans ligne).
+- Y figurent **les comptes autorisés par l'admin** (une ligne d'accès) **qui ont fini une partie** ; **jamais un invité, jamais un admin**, même s'il a l'accès.
 - On y voit **les 20 premiers**, puis sa propre place et ses deux voisins : le rang, le nom, le disque et les points, jamais le nombre de parties ni le record. Tout joueur identifié peut le lire.
 - Chacun y apparaît sous son **pseudo** (le défaut) ou sous un **alias musical** de son choix (« Hibou rêveur 12 » : un animal ou un objet musical, un adjectif, deux chiffres). L'alias est **unique** : ni l'alias d'un autre, ni le pseudo d'un compte ; un compte ne peut pas prendre pour pseudo l'alias d'un autre. Revenir à son pseudo libère l'alias. Dans les groupes, ce sont toujours les vrais pseudos.
 - La ligne « Tu apparais sous Léa · Modifier » ouvre le choix ; l'étape du pseudo à la création du compte prévient qu'il apparaîtra au classement.
@@ -109,7 +109,7 @@ Les disques sont des points (`Runs:Levels:Discs`) : changer un seuil ne demande 
 
 ## L'accès
 
-- **Sur invitation** : réservé aux comptes autorisés par l'admin (interrupteur de l'onglet Joueurs), et aux admins d'office. Un invité n'a jamais l'accès. L'interrupteur est distinct du rôle admin.
+- **Sur invitation** : réservé aux comptes autorisés par l'admin (interrupteur de l'onglet Joueurs). Un admin n'a pas l'accès d'office : il a son interrupteur comme les autres, et peut se le couper pour voir le jeu sans Survie. Un invité n'a jamais l'accès.
 - L'accès ouvre aussi **l'interface Survie** : l'accueil à deux cartes, la barre du bas, l'historique, les classements et les groupes. Sans accès, l'interface publique du défi du jour reste telle quelle : pas de carte Survie, et `/survie` renvoie vers le défi du jour.
 - **Le lien d'un ami ne remplace pas l'accès** : sans accès (invité, compte non autorisé, visiteur sans identité), le lien ouvre l'écran « Survie n'est pas encore ouverte » avec un seul bouton, « Jouer le défi du jour », jamais une création de compte ; le serveur refuse le départ (403 `runs.access_denied`).
 - Retirer l'accès n'interrompt pas une partie en cours ; cela empêche seulement d'en lancer une nouvelle.

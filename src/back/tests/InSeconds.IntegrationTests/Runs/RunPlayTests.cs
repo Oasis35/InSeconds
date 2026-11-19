@@ -59,12 +59,18 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task UnAdmin_ALAccesDOffice()
+    public async Task UnAdmin_SansLigneDAcces_403_AvecSaLigne_Lance()
     {
+        // Le rôle ne donne plus l'accès d'office : un admin qui s'est coupé l'accès voit le jeu comme un compte non autorisé.
         var admin = await _run.NewPlayerAsync("Admin");
         var client = _run.Api.CreateClient(new TestUser(admin.Id, IsAdmin: true));
 
+        await GameAsserts.ProblemAsync(await client.PostAsync("/api/runs/challenges", null, Ct), HttpStatusCode.Forbidden, RunsErrorCodes.AccessDenied);
+        Assert.Contains("\"hasAccess\":false", await client.GetStringAsync("/api/runs/me", Ct), StringComparison.Ordinal);
+
+        await _run.Api.ExecuteAsync($"INSERT INTO runs.access (player_id, granted_at) VALUES ('{admin.Id}', now())");
         Assert.Equal(HttpStatusCode.OK, (await client.PostAsync("/api/runs/challenges", null, Ct)).StatusCode);
+        Assert.Contains("\"hasAccess\":true", await client.GetStringAsync("/api/runs/me", Ct), StringComparison.Ordinal);
     }
 
     [Fact]
