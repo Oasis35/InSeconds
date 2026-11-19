@@ -353,6 +353,34 @@ describe('shell-guard (PowerShell)', { concurrency: true }, () => {
     assert.equal(pwsh('Start-Process git -ArgumentList "push","origin","main"', cwd).code, 2);
   });
 
+  test('refuse un exécuteur opaque ou un splatting à côté d\'un git lisible', () => {
+    const cwd = repo();
+    assert.equal(pwsh(`${PS_CLEMENT}; git status; iex $c; git commit -m x`, cwd).code, 2);
+    assert.equal(pwsh(`${PS_CLEMENT}; $a = @('commit','-m','x'); git @a`, cwd).code, 2);
+    assert.equal(pwsh(`${PS_CLEMENT}; $g = 'git'; & $g push origin main; git status`, cwd).code, 2);
+    assert.equal(pwsh(`${PS_CLEMENT}; $sha = git rev-parse HEAD; git commit -m x`, cwd).code, 0);
+  });
+
+  test('refuse une identité posée autrement que par $env:NOM = valeur', () => {
+    const cwd = repo();
+    const others = PS_CLEMENT.split('; ').slice(1).join('; ');
+    for (const setter of [
+      "Set-Item Env:GIT_AUTHOR_NAME 'Clément'",
+      "[Environment]::SetEnvironmentVariable('GIT_AUTHOR_NAME','Clément')",
+      "$env:GIT_AUTHOR_NAME += 'x'",
+    ]) {
+      assert.equal(pwsh(`${others}; ${setter}; git commit -m x`, cwd).code, 2, setter);
+    }
+  });
+
+  test('un contrôle qui plante au chargement n\'empêche pas les autres', async () => {
+    const { check } = await import(new URL('../shell-guard.mjs', import.meta.url));
+    const input = { tool_name: 'Bash', tool_input: { command: 'git push origin main' }, cwd: repo() };
+    const r = await check(input, [['absent', './absent.mjs'], ['protected-branches', './protected-branches.mjs']]);
+    assert.ok(r.block);
+    assert.match(r.context, /Hook absent en échec/);
+  });
+
   test('laisse passer la lecture et un commentaire qui parle de commit', () => {
     const cwd = repo();
     assert.equal(pwsh('git status; git log -1 --format=%H', cwd).code, 0);

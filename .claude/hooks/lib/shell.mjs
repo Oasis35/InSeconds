@@ -279,7 +279,7 @@ const PS_ENV_ASSIGNMENT = /^\$(?:env:([A-Za-z_][A-Za-z0-9_]*)|\{env:([A-Za-z_][A
 const PS_CD = new Set(['cd', 'set-location', 'sl', 'chdir', 'push-location', 'pushd']);
 
 // `$env:NOM = 'valeur'` : un, deux ou trois mots selon les espaces autour du `=`.
-function psEnvAssignment(words) {
+export function psEnvAssignment(words) {
   if (!/^\$\{?env:/i.test(words[0])) return null;
   let text = words[0];
   let i = 1;
