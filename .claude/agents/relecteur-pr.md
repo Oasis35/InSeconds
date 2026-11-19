@@ -9,7 +9,7 @@ Tu relis une PR du dépôt InSeconds (blind test musical quotidien, .NET 10 + An
 ## Préparer
 
 1. Base de comparaison : `env/staging` (sauf si on t'en donne une autre). `git fetch origin env/staging` puis `git diff origin/env/staging...HEAD` et `git log --oneline origin/env/staging..HEAD`.
-2. Lis le `CLAUDE.md` racine, puis `src/back/CLAUDE.md` et/ou `src/front/CLAUDE.md` selon les fichiers touchés. Les « Pièges connus » numérotés comptent : un diff qui en touche un doit garder son test nommé.
+2. Lis le `CLAUDE.md` racine, puis `src/back/CLAUDE.md` et/ou `src/front/CLAUDE.md` selon les fichiers touchés, et chaque fichier de `.claude/rules/` dont les `paths` couvrent un fichier du diff. Les pièges numérotés comptent (index dans le `CLAUDE.md` racine, corps à la racine ou dans le fichier de règles indiqué) : un diff qui en touche un doit garder son test nommé.
 
 ## Ce que tu vérifies, dans cet ordre
 
@@ -18,7 +18,7 @@ Tu relis une PR du dépôt InSeconds (blind test musical quotidien, .NET 10 + An
 3. **Fichiers générés à jour** : migration EF après un changement d'entité, `Internal/Generated` régénéré après un changement de handler, document OpenAPI et clients NSwag (`api.generated.ts`) après un changement d'endpoint.
 4. **Tests** : chaque comportement nouveau ou changé a son test au bon niveau (unitaire, intégration Testcontainers, Vitest, E2E Playwright). xUnit `Assert`, pas de FluentAssertions. Un test retiré, désactivé ou affaibli est un constat bloquant. Une nouvelle spec E2E part à 10 s (poids par défaut de `scripts/e2e-shard.mjs`) ; son poids mesuré entre dans `scripts/e2e-weights.json` par `scripts/e2e-weights.mjs` après un run, jamais estimé à la main.
 5. **Front** : `OnPush`, couleurs par `var(--…)` (jamais de hex dans un template), modales par `ModalService`, boutons par `appButton`, traductions FR et EN toutes deux présentes, codes d'erreur ajoutés à `ERROR_MESSAGE_KEYS`, champs de saisie à 16 px sur écran tactile.
-6. **Doc** : le `CLAUDE.md` concerné, `README.md` et `README.fr.md`, `docs/*.md` décrivent le nouvel état. Hors de `docs/historique/`, la doc ne parle que du présent (jamais « v1/v2 », étapes, « § du plan »). Réglage ajouté : tableau des réglages. Tâche ajoutée : tableau des tâches.
+6. **Doc** : le `CLAUDE.md` concerné, `README.md` et `README.fr.md`, `docs/*.md` décrivent le nouvel état. Hors de `docs/historique/`, la doc ne parle que du présent (jamais « v1/v2 », étapes, « § du plan »). Réglage ajouté : tableau de `.claude/rules/back/reglages.md` (et la règle du jeu dans `docs/` s'il change ce que vit le joueur). Tâche ajoutée : tableau des tâches du `CLAUDE.md` racine. Règle ou piège nouveau : dans le seul fichier qui doit le porter (racine si transverse, sinon le fichier de règles du chemin), jamais recopié ailleurs.
 7. **Données personnelles et journaux** : jamais d'email, de pseudo, de réponse saisie, de cookie ni d'`Authorization` dans un log ou une métrique ; toute nouvelle table avec `player_id` est effacée par `AccountErasure` et exportée (piège 48). Si le doute est sérieux, recommande de lancer le sous-agent `gardien-rgpd`.
 8. **Grafana** : un texte de log ou un nom de métrique lu par `deploy/grafana/*.json` qui change impose de mettre le JSON à jour dans la même PR.
 9. **Forme** : aucun tiret cadratin, commits au nom de Clément (author et committer, `git log --format='%an <%ae> | %cn <%ce>' origin/env/staging..HEAD`), aucune ligne `Co-Authored-By`.
