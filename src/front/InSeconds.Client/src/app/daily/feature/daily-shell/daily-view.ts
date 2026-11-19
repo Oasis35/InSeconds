@@ -1,6 +1,5 @@
-import { Injectable, Signal, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
-import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { ModalService } from '../../../ui/modal/modal.service';
 import { formatSeconds } from '../../../ui/format/format-seconds';
@@ -8,20 +7,9 @@ import { DailyGameStore } from '../../data-access/daily-game.store';
 import { DailyShare } from '../../data-access/daily-share';
 import { LostStreakNotice } from '../../data-access/lost-streak-notice';
 import { GuestStreakNotice } from '../../data-access/guest-streak-notice';
-import { DailyScreen } from '../../domain/daily-screen';
 import { rowsFromResults, rowsFromStats, shareTracksOf } from '../../ui/day-result-screen/result-rows';
 import { countUp } from '../../ui/score-count/count-up';
 import { StreakSheetComponent, StreakSheetData, StreakSheetResult } from '../../ui/streak-sheet/streak-sheet.component';
-
-/**
- * L'écran à montrer. Tant que le flag de la V4 n'est pas lu (l'accès se lit après l'identité, puis l'appel API), rien du jeu n'est montré,
- * sauf une manche en cours : un chargement neutre, jamais l'ancien accueil qui change de forme une seconde plus tard.
- */
-export function visibleScreen(): Signal<DailyScreen> {
-  const store = inject(DailyGameStore);
-  const chrome = inject(ShellChromeStore);
-  return computed(() => (!chrome.v4Known() && store.screen() !== 'playing' ? 'loading' : store.screen()));
-}
 
 /** Premier chargement du jour (ou « Réessayer ») : l'état du jour, puis le toast invité « série perdue » s'il est dû. Fourni par `DailyShellComponent`. */
 @Injectable()

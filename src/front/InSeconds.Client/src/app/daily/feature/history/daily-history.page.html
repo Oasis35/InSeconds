@@ -9,7 +9,7 @@
       </div>
     </app-brand>
 
-    <app-history-tabs active="daily" />
+    <app-history-tabs active="daily" [withSetlist]="chrome.survie()" />
 
     @if (store.history(); as history) {
       <app-history-summary countKey="ui.history.daily.count" bestKey="ui.history.daily.best" [count]="history.playedCount"

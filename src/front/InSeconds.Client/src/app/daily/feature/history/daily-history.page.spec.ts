@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { providePlayersApiFake, fakePlayersApi } from '../../../account/data-access/testing/fake-players-api';
+import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { utcDayOf } from '../../../ui/format/day-label';
 import { DailyApi } from '../../data-access/daily.api';
 import { DailyHistory } from '../../domain/history';
@@ -21,7 +22,7 @@ const HISTORY = (over: Partial<DailyHistory> = {}): DailyHistory => ({
 describe('DailyHistoryPage', () => {
   let history: ReturnType<typeof vi.fn>;
 
-  async function render(url = '/history/daily', result: () => Promise<DailyHistory> = async () => HISTORY()) {
+  async function render(url = '/history/daily', result: () => Promise<DailyHistory> = async () => HISTORY(), survie = true) {
     history = vi.fn(result);
     TestBed.configureTestingModule({
       providers: [
@@ -29,6 +30,7 @@ describe('DailyHistoryPage', () => {
         providePlayersApiFake(fakePlayersApi()), { provide: DailyApi, useValue: { history } },
       ],
     });
+    TestBed.inject(ShellChromeStore).setSurvie(survie);
     await TestBed.inject(Router).navigateByUrl(url);
     const fixture = TestBed.createComponent(DailyHistoryPage);
     fixture.detectChanges();
@@ -44,6 +46,13 @@ describe('DailyHistoryPage', () => {
     expect(el.querySelector('[data-testid="history-count"]')?.textContent).toBe('58');
     expect(el.querySelectorAll('[data-testid="history-game"]')).toHaveLength(2);
     expect(el.querySelector('[data-testid="history-tab-daily"]')?.getAttribute('aria-current')).toBe('page');
+  });
+
+  it("sans l'accès Survie, pas d'onglets : la page du défi est la seule", async () => {
+    const { el } = await render('/history/daily', async () => HISTORY(), false);
+
+    expect(el.querySelector('[data-testid="history-tab-daily"]')).toBeNull();
+    expect(el.querySelector('[data-testid="history-count"]')).not.toBeNull();
   });
 
   it("la partie d'aujourd'hui mène au résultat du jour, les autres aux réponses du jour", async () => {

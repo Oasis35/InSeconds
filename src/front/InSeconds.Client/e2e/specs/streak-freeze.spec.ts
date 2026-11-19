@@ -118,7 +118,8 @@ test.describe('Gel de série - compte connecté', () => {
 
     await expect(page.getByTestId('gel-earned-toast')).toContainText('+1 gel');
     await expect(page.getByTestId('gel-earned-toast')).toContainText('7 jours de série');
-    // Le relevé suit le partage sur le résultat du jour, relu après la partie : 7 jours, et le gel gagné.
+    // Le relevé est dans le détail de la carte du défi, relu après la partie : 7 jours, et le gel gagné.
+    await game.showTracksButton.click();
     await expect(pill(page)).toHaveText(/7 jours\s*·\s*2 gels/);
   });
 });

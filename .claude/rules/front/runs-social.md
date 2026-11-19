@@ -4,6 +4,7 @@ paths:
   - "src/front/InSeconds.Client/src/app/social/**"
   - "src/front/InSeconds.Client/src/app/core/shell/shell-chrome.store*"
   - "src/front/InSeconds.Client/src/app/core/shell/bottom-bar-slot/**"
+  - "src/front/InSeconds.Client/src/app/core/shell/bottom-bar/**"
   - "src/front/InSeconds.Client/src/app/core/shell/home-mode-entries/**"
   - "src/front/InSeconds.Client/src/app/core/shell/daily-done-loader.ts"
   - "src/front/InSeconds.Client/src/app/daily/feature/provide-daily-status*"
@@ -20,12 +21,12 @@ Règles du mode : `docs/runs/`. À l'écran le mode s'appelle « Survie » et un
 
 ## La coque de l'interface Survie
 
-L'interface Survie (barre du bas, accueil à deux cartes, historique, classements) est réservée aux comptes qui ont l'accès Survie ; tous les autres joueurs (invités, comptes sans accès, donc la prod hors testeurs) gardent l'interface sans barre du bas. Les deux branches sont vivantes.
+La coque V4 (barre du bas, accueil, historique du défi, classements) est pour tous les joueurs, invités compris. Seul ce qui touche Survie est réservé aux comptes qui ont l'accès : la carte Survie de l'accueil, le niveau, les Hits, le défi d'ami, la pastille « Général » du classement, l'onglet « Survie » de l'historique et le lien du nom au classement général du profil.
 
 - **Le flag** : `SetlistAccessStore` (`runs/data-access/setlist-access.store.ts`, à la racine, instancié au démarrage par `provideRuns()`) lit `hasAccess` de `GET /api/runs/me` une fois par compte, jamais pour un invité ; une erreur vaut « non ». Client chargé à la demande dans un injecteur jetable, derrière `SETLIST_ACCESS_LOADER`. Un invité qui se connecte repasse `loaded` à faux le temps de relire. C'est l'accès Survie posé par l'admin, pas un flag à part.
-- **`ShellChromeStore`** (`core/shell`, à la racine) : ce que les pages se disent sans s'importer. `v4` / `v4Known` (l'interface Survie est active / le flag est lu, poussés par `SetlistAccessStore`), `immersive` (une manche est en cours : la barre disparaît), `dailyDone` (défi du jour joué, `null` si inconnu). **Tant que `v4Known` est faux, les pages montrent un chargement neutre** : jamais l'ancien accueil qui change de forme une seconde plus tard.
-- **Jetons de `core/shell`** remplis par les domaines : `HOME_MODE_ENTRIES` (multi : la carte Survie, `RunsHomeEntryComponent`, sous l'accueil du jeu du jour), `BOTTOM_BAR_SLOT` (`SetlistBottomBarComponent`, `runs/feature/v4-shell`, chargé à la demande et posé dans `app.html`), `DAILY_DONE_LOADER` (rempli par `provideDailyStatus()` : à l'arrivée directe sur `/survie`, lit si le défi est joué par un client Daily dans un injecteur jetable).
-- **Barre du bas** : quatre entrées (Accueil, Classements, Historique, Mon compte ou Connexion), absente sans l'interface Survie, en manche (`immersive`) et hors des pages du jeu ; elle pose la classe `has-bottom-bar` sur `<html>`. Sous l'interface Survie, `<app-account-link>` ne garde que le cadenas admin et le pied de page du jeu du jour devient une ligne légale (`ui/legal-line`).
+- **`ShellChromeStore`** (`core/shell`, à la racine) : ce que les pages se disent sans s'importer. `survie` / `survieKnown` (le joueur a l'accès Survie / l'accès est lu, poussés par `SetlistAccessStore` : `survie` vaut faux tant qu'il n'est pas lu, donc ce qui en dépend apparaît à la lecture), `immersive` (une manche est en cours : la barre disparaît), `dailyDone` (défi du jour joué, `null` si inconnu). La coque elle-même ne dépend pas de l'accès.
+- **Jetons de `core/shell`** remplis par les domaines : `HOME_MODE_ENTRIES` (multi : la carte Survie, `RunsHomeEntryComponent`, sous l'accueil du jeu du jour), `DAILY_DONE_LOADER` (rempli par `provideDailyStatus()` : à l'arrivée directe sur une page de la barre, lit si le défi est joué par un client Daily dans un injecteur jetable, `BottomBarComponent` le demande). La barre du bas (`BottomBarComponent`, `core/shell/bottom-bar`) est celle de `BOTTOM_BAR_SLOT` par défaut, chargée à la demande et posée dans `app.html`.
+- **Barre du bas** : quatre entrées (Accueil, Classements, Historique, Mon compte ou Connexion), absente en manche (`immersive`) et hors des pages du jeu ; elle pose la classe `has-bottom-bar` sur `<html>`. `<app-account-link>` ne garde que le cadenas admin, et le pied de page est une ligne légale (`ui/legal-line`) ; la langue se change dans le profil (un compte).
 
 ## `RunGameStore`
 
@@ -52,4 +53,4 @@ L'interface Survie (barre du bas, accueil à deux cartes, historique, classement
 - Classement général : `?view=general` de `RankingPage`, choix pseudo ou alias par `RankingNameSheet` (`?edit=name` l'ouvre au chargement).
 - Seuls les membres d'un groupe voient ses pseudos : le front ne montre jamais un pseudo hors d'un groupe ou du classement général.
 
-Tests à connaître : `run-game.store.spec.ts`, `run.spec.ts`, `setlist-access.store.spec.ts`, `shell-chrome.store.spec.ts`, `setlist-bottom-bar.component.spec.ts`, `runs.page.spec.ts`, `run-share.spec.ts`, `groups.store.spec.ts` ; E2E `runs.spec.ts`, `groups.spec.ts`.
+Tests à connaître : `run-game.store.spec.ts`, `run.spec.ts`, `setlist-access.store.spec.ts`, `shell-chrome.store.spec.ts`, `bottom-bar.component.spec.ts`, `runs.page.spec.ts`, `run-share.spec.ts`, `groups.store.spec.ts` ; E2E `runs.spec.ts`, `groups.spec.ts`.

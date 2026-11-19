@@ -31,11 +31,11 @@ export class GamePage {
   constructor(readonly page: Page) {
     this.startButton           = page.getByRole('button', { name: 'Commencer' });
     this.noChallengeHeading    = page.getByText("Pas de défi aujourd'hui");
-    // Le même écran « résultat du jour » juste après la partie (data-fresh="true") et aux visites suivantes (data-fresh="false").
-    this.alreadyPlayedScreen   = page.locator('[data-testid="day-result"][data-fresh="false"]');
+    // La même carte du défi sur l'accueil juste après la partie (data-fresh="true") et aux visites suivantes (data-fresh="false").
+    this.alreadyPlayedScreen   = page.locator('[data-testid="home-v4"][data-fresh="false"]');
     this.abandonedHeading      = page.getByText('Partie abandonnée');
     this.countdown             = page.getByText(/^\d{2}:\d{2}:\d{2}$/);
-    this.doneScreen            = page.locator('[data-testid="day-result"][data-fresh="true"]');
+    this.doneScreen            = page.locator('[data-testid="home-v4"][data-fresh="true"]');
     this.shareButton           = page.getByRole('button', { name: /Partager mon score/i });
     this.shareCopiedButton     = page.getByRole('button', { name: /Copié/i });
     this.retryButton           = page.getByRole('button', { name: 'Réessayer' });
@@ -49,7 +49,7 @@ export class GamePage {
     this.leaveConfirmButton    = page.getByRole('button', { name: 'Quitter quand même' });
     this.leaveCancelButton     = page.getByRole('button', { name: 'Continuer à jouer' });
     this.serviceDownHeading    = page.getByRole('heading', { name: 'Service indisponible' });
-    this.showTracksButton      = page.getByTestId('tracks-toggle');
+    this.showTracksButton      = page.getByTestId('home-tracks-toggle');
     // Le bouton du score porte un aria-label (« Voir la répartition des temps ») qui prime sur le texte « +N ».
     this.trackScoreButtons     = page.locator('app-track-results-list')
       .getByRole('button', { name: /répartition des temps/i });

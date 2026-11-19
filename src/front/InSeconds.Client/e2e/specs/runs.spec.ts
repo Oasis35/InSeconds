@@ -77,29 +77,29 @@ test.describe('Mode Setlist', () => {
     await expect(run.startButton).toHaveCount(0);
   });
 
-  test("nouvelle interface : la barre du bas remplace le pied de page pour un joueur qui a l'accès, et pour lui seul", async ({ page, api }) => {
+  test("coque V4 : la barre du bas est pour tous, la carte Survie seulement pour qui a l'accès", async ({ page, api }) => {
     const game = new GamePage(page);
     const run = new RunPage(page);
     const bar = page.getByTestId('bottom-bar');
 
-    // Sans l'accès : l'ancienne coque, pied de page compris.
+    // Sans l'accès : la même coque (barre, Instagram, ligne légale), mais sans carte Survie.
     const playerId = await run.loginAsPlayer('joueur-v4@e2e.test', 'JoueurV4');
     await game.goto();
     await game.waitForWelcome();
-    // Sans l'accueil de la V4, la racine est le défi.
-    await expect(page).toHaveURL(/\/daily$/);
-    await expect(page.getByTestId('footer-language')).toBeVisible();
-    await expect(bar).toHaveCount(0);
-    await expect(page.getByTestId('header-instagram')).toHaveCount(0);
+    await expect(page).toHaveURL(/\/$/);
+    await expect(bar).toBeVisible();
+    await expect(page.getByTestId('header-instagram')).toBeVisible();
+    await expect(page.getByTestId('home-legal-line')).toBeVisible();
+    await expect(page.getByTestId('home-challenge')).toBeVisible();
+    await expect(page.getByTestId('run-home-card')).toHaveCount(0);
 
-    // Avec l'accès : la barre, Instagram dans l'en-tête, plus de pied de page, et le défi du jour qui se signale.
+    // Avec l'accès : la carte Survie apparaît sous celle du défi, et le défi du jour se signale.
     await api.grantRunAccess(playerId);
     await game.goto();
     await game.waitForWelcome();
     // L'accueil est la racine ; le défi seul est sur /daily.
     await expect(page).toHaveURL(/\/$/);
     await expect(bar).toBeVisible();
-    await expect(page.getByTestId('footer-language')).toHaveCount(0);
     await expect(page.getByTestId('header-instagram')).toBeVisible();
     await expect(page.getByTestId('tab-daily')).toHaveAttribute('aria-current', 'page');
     await expect(page.getByTestId('daily-pending')).toBeVisible();
