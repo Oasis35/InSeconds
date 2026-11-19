@@ -9,15 +9,17 @@ Un **noyau**, comme Players et Catalogue : il ne connaît aucun mode (`ModuleRul
 
 ## Contrats
 
-- `Contracts/IMemberPerformanceSource` : **défini par Social, implémenté par chaque mode** (`AddScoped<IMemberPerformanceSource, …>`, ajouté, jamais remplacé). `Source` (nom du mode), `GetAsync(joueurs)` (performance de 0 à 1, parties, meilleur score, points et clé de badge, pour ceux qui ont fini une partie), `ListGeneralRankingPlayersAsync` (qui le mode met au classement général). Aujourd'hui seul Runs l'implémente (`RunsMemberPerformance`). Daily et Runs ne voient de Social que ce contrat (`DailyEtRuns_NeVoientDeSocialQueSesContrats`).
+- `Contracts/IMemberPerformanceSource` : **défini par Social, implémenté par chaque mode** (`AddScoped<IMemberPerformanceSource, …>`, ajouté, jamais remplacé). `Source` (nom du mode), `GetAsync(joueurs)` (performance de 0 à 1, parties, meilleur score, points et clé de badge, pour ceux qui ont fini une partie), `ListGeneralRankingPlayersAsync` (qui le mode met au classement général). Aujourd'hui seul Runs l'implémente (`RunsMemberPerformance`). Daily et Runs ne voient de Social que ses contrats (`DailyEtRuns_NeVoientDeSocialQueSesContrats`).
+- `Contracts/IMemberScoreSource` : le classement **par score** d'un groupe, **un par mode** (jamais une moyenne des modes), même principe d'ajout. `GetAsync(joueur qui regarde, joueurs)` rend le jour de jeu, `TodayRevealed` et, par membre, `PlayedToday`, `TodayScore`, `WeekPoints`, `WeekDaysPlayed` (semaine : `ScorePeriods.WeekDays`, 7 jours glissants). **Le mode décide de ce que voit le joueur qui regarde**, et **la semaine est entièrement à sa charge** (il en retire tout jour que le joueur qui regarde peut encore jouer : Social ne peut pas le faire) ; Social retire seulement, par prudence, le score du jour si `TodayRevealed` est faux. Seul Daily l'implémente (`DailyMemberScores`), et Daily n'implémente pas `IMemberPerformanceSource` ; les deux contrats ne sont implémentés que dans un mode (`SourcesDesClassements_ImplementeesParLesModes_LeDefiDonneDesScoresPasUneMoyenne`).
 - Contrat inverse : `Players.Contracts.IReservedPseudos`, défini par Players, implémenté ici (`SocialReservedPseudos`) : Players refuse un pseudo égal à l'alias d'un autre joueur.
-- `GroupRanking` (service qui énumère les sources) est en service location dans `WolverineSetup`.
+- `GroupRanking` et `GroupScores` (services qui énumèrent les sources) sont en service location dans `WolverineSetup`.
 
 ## Ports et domaine
 
 - `IGroupStore` (`Domain/Group.cs`, écritures et verrous), `IRankingIdentityStore` (`Domain/GeneralRanking.cs`), `ISocialQueries` (`Application/SocialQueries.cs`).
 - `Group` : `Leave` rend `Left`, `OwnerChanged` (le plus ancien membre restant devient créateur) ou `Emptied` (le groupe se supprime) ; code d'invitation de 8 caractères (`GroupInviteCode`, `Normalize` accepte la saisie en minuscules) ; nom selon `PseudoRules`.
 - `GroupRankingPolicy` (pure) : performance moyenne bornée, puis points, puis parties jouées, puis pseudo ; les membres sans partie à la fin, sans rang. `GeneralRankingPolicy` la réutilise.
+- `ScoreRankingPolicy` (pure, `Domain/ScoreRanking.cs`) : le classement d'une période (jour, semaine), score le plus haut d'abord, ex æquo au même rang rangés par pseudo, membres sans score à la fin sans rang. Service `GroupScores` (`Application/SocialQueries.cs`, à côté de `GroupRanking`), route `GET /api/social/groups/{id}/scores` (`GetGroupScoresEndpoint`, `Application/GroupEndpoints.cs`), membre seulement (404 sinon).
 - Limites `Social:` relues à chaud ; une valeur hors bornes retombe sur le défaut (`SocialRules`). Une limite abaissée ne chasse personne.
 
 ## Concurrence

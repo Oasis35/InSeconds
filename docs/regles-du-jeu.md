@@ -134,6 +134,14 @@ Seuls les morceaux dont l'extrait est **disponible** (`preview_status` = 1, jama
 - **Invité** : série perdue ≥ `Daily:StreakLostNudgeMinDays` (2) → toast « Ta série de N jours s'est arrêtée… un gel l'aurait sauvée », une seule fois par série perdue ; palier de 7 jours atteint → « Tu aurais gagné un gel ! ». **[Front]**
 - Exemples (7/2) : série 12, dernier défi avant-hier, 1 gel → joue aujourd'hui → série 13, 0 gel. Série 5, week-end manqué, 2 gels → 6, 0 gel. Même cas avec 1 gel → 1, 1 gel. Série 13 → 14 avec 1 gel → 2 gels.
 
+## Les groupes
+
+Un groupe d'amis (compte obligatoire, règles des groupes : [`runs/regles.md`](runs/regles.md#les-groupes)) a un classement du Défi du jour, à part de celui de la Survie (un classement par mode, jamais une moyenne des modes). Tout se calcule à la lecture sur les parties du Défi, rien n'est stocké en plus.
+
+- **Le jour** : le score de la partie **terminée** du défi du jour (jour UTC) ; un membre qui n'a pas fini n'a pas de rang. Une partie abandonnée ou expirée n'a pas de score. Les scores du jour des autres ne sont montrés **qu'à un joueur qui a fini son propre défi du jour** (terminé, ou abandonné après au moins une réponse, comme les réponses du jour) ; avant, il voit seulement qui a joué.
+- **La semaine** : la somme des scores des défis des **7 derniers jours glissants** (le jour en cours et les six d'avant), comptés sur la **date du défi** (la partie de la veille finie après minuit compte pour la veille) ; un jour manqué vaut 0. Avec le nombre de jours joués (0 à 7). Un défi que le joueur peut encore jouer n'entre pas dans la semaine qu'il voit (l'écart trahirait les scores des autres) : le jour en cours tant qu'il ne l'a pas fini, et la veille aussi tant que sa partie de la veille est en cours (elle se finit après minuit, piège 18).
+- Les ex æquo partagent un rang (1, 1, 3). Seuls les membres voient ce classement (`GET /api/social/groups/{id}/scores`).
+
 ## Réglages modifiables (`infra.settings`)
 
 Tous relus à chaud (`IOptionsMonitor`), sans redémarrage. L'API refuse de démarrer si les réglages du jeu sont incohérents (plus de niveaux d'indice que de fournisseurs, seuils non croissants, paliers ou pourcentages aberrants).

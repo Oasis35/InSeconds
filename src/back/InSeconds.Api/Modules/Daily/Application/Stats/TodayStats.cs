@@ -109,12 +109,7 @@ public static class GetTodayStatsEndpoint
             : null;
         var abandoned = session is { Status: SessionStatus.Abandoned, Answers.Count: > 0 } ? session : null;
         var own = session is { Status: SessionStatus.Completed } ? session : null;
-        var revealTracks = row.SessionStatus switch
-        {
-            null or SessionStatus.Pending => false,
-            SessionStatus.Abandoned => abandoned is not null,
-            _ => true,
-        };
+        var revealTracks = TodayReveal.Allows(row.SessionStatus, session?.Answers.Count ?? 0);
 
         var isLinked = playerId is { } pid && await players.HasAccountAsync(pid, ct);
         var streak = row.Streak is { } s

@@ -48,6 +48,7 @@ L'implémentation de l'interface reste dans la partie privée du module (souvent
 | `TrackRound`, `RoundOutcome`, ports d'indice et de correction | Gameplay | Gameplay | Daily, Runs |
 | `IStreakGrants` | Daily | `DailyStreakGrants` | Players, à la création d'un compte (`AccountSignIn`) |
 | `IMemberPerformanceSource` | Social | `RunsMemberPerformance` **dans Runs** | Social (le classement d'un groupe et le classement général) |
+| `IMemberScoreSource` | Social | `DailyMemberScores` **dans Daily** | Social (le classement d'un groupe par score, jour et semaine, un par mode) |
 
 `TrackTitles` (le titre montré au joueur, sans parenthèses ni crochets) est aussi dans `Catalogue/Contracts` ; il n'est lu aujourd'hui que par Catalogue, qui remplit `TrackInfo.DisplayTitle` avec.
 
@@ -81,12 +82,13 @@ Partager un noyau ne veut pas dire lire ses tables. Runs utilise Players et Cata
               ▲                                  ▲      │
               └──────────────── Social ──────────┘      │
                                             Runs implémente IMemberPerformanceSource
+                                            Daily implémente IMemberScoreSource
 ```
 
 - **Le joueur** : `ICurrentPlayer` pour savoir qui joue, `IPlayerDirectory` pour afficher un pseudo, sans jamais voir l'email, les appareils ni le rôle admin.
 - **Les morceaux** : `ITrackDirectory` (rang Deezer, année, état de l'extrait, genres de l'album, thèmes), `ITrackPreviews`, `ITrackWaveforms`.
 - **L'effacement d'un compte** : Players expose `IPlayerDataContributor`, Daily, Runs et Social l'implémentent, `AccountErasure` et `PlayerDataExporter` les appellent tous dans la même transaction.
-- **Le classement** : Social ne connaît aucun mode ; la performance de chaque membre arrive par `IMemberPerformanceSource`, que Runs implémente. Daily et Runs ne voient de Social que ce contrat.
+- **Le classement** : Social ne connaît aucun mode ; la performance de chaque membre arrive par `IMemberPerformanceSource`, que Runs implémente, et ses scores du jour et de la semaine par `IMemberScoreSource`, que Daily implémente (un classement par mode, jamais une moyenne des modes). Daily et Runs ne voient de Social que ces contrats.
 
 Si Runs lisait directement les entités de Players ou de Catalogue, une évolution faite pour Runs dans ces noyaux pourrait casser Daily, et inversement.
 

@@ -64,6 +64,8 @@ public static class WolverineSetup
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Api.Modules.Players.Application.AccountErasure>();
         // Le classement d'un groupe interroge la performance que chaque mode fournit (plusieurs IMemberPerformanceSource enregistrés) : même raison.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Api.Modules.Social.Application.GroupRanking>();
+        // De même pour le classement par score, qui interroge les scores que chaque mode fournit (plusieurs IMemberScoreSource enregistrés).
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Api.Modules.Social.Application.GroupScores>();
         // L'écriture d'un réglage recharge la source de configuration : son rechargeur est interne à l'infrastructure, le code généré ne peut pas le
         // construire. Utilisé par le réglage du cooldown de l'admin.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Api.Infrastructure.Settings.SettingsStore>();

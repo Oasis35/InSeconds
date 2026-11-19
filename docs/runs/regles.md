@@ -95,6 +95,7 @@ Les disques sont des points (`Runs:Levels:Discs`) : changer un seuil ne demande 
 - On le rejoint par un **lien d'invitation** (`/ranking/join/<code>`, 8 caractères), que le créateur peut renouveler. Le lien d'une playlist peut aussi faire rejoindre un groupe (« Inviter dans un groupe »).
 - **Seuls les membres** voient le groupe, les pseudos des autres membres et le classement. L'aperçu d'une invitation ne montre que le nom du groupe et ses places.
 - **Le classement d'un groupe** : par niveau Survie (le disque et les points de chacun) ; un membre qui n'a pas encore fini de partie est « pas encore joué », sans rang.
+- **Le classement du Défi du jour d'un groupe**, à part (un classement par mode, jamais une moyenne) : le score du jour et les points des 7 derniers jours de chacun ([`regles-du-jeu.md`](../regles-du-jeu.md#les-groupes)).
 - Le créateur qui quitte passe la main au plus ancien membre ; le dernier qui part supprime le groupe. L'admin peut renommer un groupe, remettre son nom à zéro (« Groupe 12 ») ou le supprimer.
 
 ## Le classement général
