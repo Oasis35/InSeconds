@@ -1,3 +1,4 @@
+using System.Reflection;
 using Hangfire;
 using InSeconds.Api.Infrastructure.Jobs;
 using InSeconds.Api.Infrastructure.Settings;
@@ -342,12 +343,18 @@ public class GenerateChallengeTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public void TacheDeMinuit_ReessaieToutesLes10Minutes_AssezDeFoisPourCouvrirLaJournee()
     {
+        // Les arguments de l'attribut sont lus sans le construire : son constructeur demande un journal à Hangfire, qui le
+        // tient en global de l'API de test créée en dernier, peut-être déjà détruite (ObjectDisposedException, vu en CI).
         var retry = typeof(GenerateDailyChallengeJob).GetMethod(nameof(GenerateDailyChallengeJob.RunAsync))!
-            .GetCustomAttributes(typeof(AutomaticRetryAttribute), inherit: false).Cast<AutomaticRetryAttribute>().Single();
+            .GetCustomAttributesData().Single(data => data.AttributeType == typeof(AutomaticRetryAttribute));
+        var arguments = retry.NamedArguments.ToDictionary(argument => argument.MemberName, argument => argument.TypedValue.Value);
+        var attempts = (int)arguments[nameof(AutomaticRetryAttribute.Attempts)]!;
+        var delays = ((IEnumerable<CustomAttributeTypedArgument>)arguments[nameof(AutomaticRetryAttribute.DelaysInSeconds)]!)
+            .Select(delay => (int)delay.Value!);
 
-        Assert.Equal([600], retry.DelaysInSeconds);
+        Assert.Equal([600], delays);
         // Le défaut de Hangfire s'arrête à 10 essais, soit 1 h 40 : un pool vide ce soir-là laisserait la journée sans défi.
-        Assert.True(retry.Attempts * 10 >= 24 * 60, $"{retry.Attempts} essais ne couvrent pas la journée.");
+        Assert.True(attempts * 10 >= 24 * 60, $"{attempts} essais ne couvrent pas la journée.");
     }
 
     /// <summary>Un sélecteur qui prend son temps, pour qu'une seconde génération démarre pendant que la première tire.</summary>

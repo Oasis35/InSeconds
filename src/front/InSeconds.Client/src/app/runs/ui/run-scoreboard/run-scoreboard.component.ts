@@ -17,8 +17,8 @@ const OVERTAKE_MS = 3500;
 const GHOST_DELAY_MS = (COUNT_DELAY + 0.45) * 1000;
 
 /**
- * Le bloc du haut de la manche, de quoi ne jamais être perdu : le score (que les points d'une réponse rejoignent) et la série de bonnes réponses,
- * « Manche N » avec son thème et une pastille par morceau de la manche, l'écart avec le fantôme d'un ami, et la rangée des paliers d'écoute avec
+ * Le bloc du haut de la manche, de quoi ne jamais être perdu : « Manche N » avec une pastille par morceau de la manche, le score (que les points d'une réponse
+ * rejoignent) avec la série de bonnes réponses, les vies en cœurs rouges, l'écart avec le fantôme d'un ami, et la rangée des paliers d'écoute avec
  * celui de la manche en cyan (le temps). Pensé pour un téléphone : trois lignes serrées ; sur un écran bas (le clavier ouvert), la rangée des paliers se replie.
  */
 @Component({
@@ -28,33 +28,38 @@ const GHOST_DELAY_MS = (COUNT_DELAY + 0.45) * 1000;
   host: { class: 'block' },
   template: `
     <section class="px-3.5 py-3" style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)" data-testid="run-scoreboard">
-      <div class="flex items-start justify-between gap-3">
-        <div class="min-w-0">
-          <p class="flex items-baseline gap-2 text-[12px] leading-none" style="color:var(--text-muted)">
-            <span>{{ 'runs.scoreboard.score' | translate }}</span>
-            <!-- La série de bonnes réponses : à la couleur du joueur, c'est lui qui la fait ; elle ne rapporte rien. -->
-            @if (shownCombo(); as count) {
-              <span #comboChip class="inline-block shrink-0 whitespace-nowrap font-bold tabular-nums" style="color:var(--text-streak)" data-testid="run-combo">
-                {{ 'runs.combo' | translate: { count } }}
-              </span>
-            }
-          </p>
-          <b #total class="mt-1 inline-block tabular-nums text-[30px] font-black leading-none origin-left"
-            style="font-family:var(--font-score);color:var(--text-hi)" data-testid="run-total-score"></b>
-        </div>
-        <div class="flex flex-col items-end gap-1.5 shrink-0">
-          <h1 class="flex items-center gap-2 text-[15px] font-bold leading-none" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="run-round-title">
+      <!-- Trois zones lisibles d'un coup d'œil : « Manche N » et ses pastilles, le score au centre, les vies à droite. -->
+      <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+        <div class="flex flex-col items-start gap-2 min-w-0">
+          <h2 class="text-[15px] font-bold leading-none whitespace-nowrap" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="run-round-title">
             {{ (maxRounds() > 0 ? 'runs.header.roundOf' : 'runs.header.roundShort') | translate: { round: round(), max: maxRounds() } }}
-            @if (theme(); as name) {
-              <span class="px-2 py-0.5 rounded-full text-[11px] font-bold truncate max-w-[9rem]" style="border:1px solid var(--border-neutral);color:var(--text-light)" data-testid="run-theme-pill">{{ name }}</span>
-            }
-          </h1>
+          </h2>
           <!-- Une pastille par morceau : trouvé (vert), à moitié (ambre), raté (rouge), retiré (trait), celui en cours (anneau ambre), à venir. -->
           <ul class="flex items-center gap-1.5" data-testid="run-dots" [attr.aria-label]="'runs.scoreboard.dots' | translate">
             @for (dot of dots(); track $index) {
               <li class="size-2.5 rounded-full shrink-0" [attr.data-dot]="dot" [style]="dotStyle(dot)"></li>
             }
           </ul>
+        </div>
+        <div class="flex flex-col items-center gap-1 min-w-0 min-h-[3.25rem]">
+          <b #total class="inline-block tabular-nums text-[30px] font-black leading-none origin-center"
+            style="font-family:var(--font-score);color:var(--text-hi)" data-testid="run-total-score"></b>
+          <!-- La série de bonnes réponses : à la couleur du joueur, c'est lui qui la fait ; elle ne rapporte rien. -->
+          @if (shownCombo(); as count) {
+            <span #comboChip class="inline-block shrink-0 whitespace-nowrap text-[12px] font-bold tabular-nums" style="color:var(--text-streak)" data-testid="run-combo">
+              {{ 'runs.combo' | translate: { count } }}
+            </span>
+          }
+        </div>
+        <!-- Les vies : un cœur rouge plein par vie qui reste, un contour pour celle qui est perdue. -->
+        <div #heartsRow class="flex items-center justify-end gap-0.5" data-testid="run-lives" role="img"
+          [attr.aria-label]="'runs.header.lives' | translate: { left: livesLeft(), total: lives().length }">
+          @for (alive of lives(); track $index) {
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" [attr.data-alive]="alive">
+              <path d="M12 21 C5 15.5 2.5 12 2.5 8.5 A4.8 4.8 0 0 1 12 6.6 A4.8 4.8 0 0 1 21.5 8.5 C21.5 12 19 15.5 12 21 Z"
+                [attr.fill]="alive ? 'var(--color-fail)' : 'none'" [attr.stroke]="alive ? 'var(--color-fail)' : 'var(--text-faint)'" stroke-width="1.8" stroke-linejoin="round" />
+            </svg>
+          }
         </div>
       </div>
 
@@ -112,8 +117,8 @@ export class RunScoreboardComponent {
   readonly total = input.required<number>();
   /** Le numéro de la manche affichée. */
   readonly round = input.required<number>();
-  /** Le thème de la manche, s'il y en a un : une pastille à côté du titre. */
-  readonly theme = input<string | null>(null);
+  /** Une valeur par vie de départ : vrai pour celle qui reste. */
+  readonly lives = input<readonly boolean[]>([]);
   /** Le plafond de manches de la playlist (« Manche 3/8 ») ; 0 : sans plafond, « Manche 3 ». */
   readonly maxRounds = input(0);
   /** Les pastilles de la manche. */
@@ -131,6 +136,13 @@ export class RunScoreboardComponent {
   /** La série affichée : comme le fantôme, elle change quand le total a fini de compter, pas avant que la carte ait dit le verdict. */
   protected readonly shownCombo = signal<number | null>(null);
   private readonly comboChip = viewChild<ElementRef<HTMLElement>>('comboChip');
+  private readonly heartsRow = viewChild<ElementRef<HTMLElement>>('heartsRow');
+  /** Les vies du dernier affichage : le petit temps fort ne se joue que lorsqu'une vie vient de se perdre ou d'être rendue. */
+  private lastLives: number | null = null;
+
+  protected livesLeft(): number {
+    return this.lives().filter(Boolean).length;
+  }
   /**
    * Le fantôme affiché : il change en même temps que le total a fini de compter (les points s'envolent d'abord), sinon l'écart annoncerait le
    * verdict avant l'animation et contredirait un instant le total affiché. Tout de suite au premier affichage et en mouvement réduit.
@@ -147,6 +159,12 @@ export class RunScoreboardComponent {
   private readonly invitedLabel = inject(TranslateService).instant('runs.link.guest') as string;
 
   constructor() {
+    effect(() => {
+      const left = this.livesLeft();
+      const element = this.heartsRow()?.nativeElement;
+      if (element && this.lastLives !== null && left !== this.lastLives) pop(element);
+      this.lastLives = left;
+    });
     let ghostTimer: ReturnType<typeof setTimeout> | null = null;
     inject(DestroyRef).onDestroy(() => {
       if (ghostTimer !== null) clearTimeout(ghostTimer);

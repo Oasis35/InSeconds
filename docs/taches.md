@@ -1,20 +1,17 @@
 # InSeconds - Reste à faire
 
-> Mis à jour le 2026-11-16. Ce fichier ne liste que ce qui reste à faire : l'historique de ce qui est livré vit dans git et les PR, et l'état courant dans [`CLAUDE.md`](../CLAUDE.md) (§ Ce que fait l'application). Une tâche terminée est retirée d'ici, pas cochée. Le suivi du mode Run est dans l'epic #368 (cf. [`runs/plan.md`](runs/plan.md)).
+> Ce fichier ne liste que ce qui reste à faire : l'histoire de ce qui est livré vit dans git et les PR, l'état courant dans [`CLAUDE.md`](../CLAUDE.md) (§ Ce que fait l'application). Une tâche terminée est retirée d'ici, pas cochée.
 
 ## En cours
 
-- [ ] **Recette iPhone : page zoomée et son qui coupe** (#233 fermé, recette validée le 16/10) - lire les messages `Viewport:` et `AudioStall:` dans Grafana (`/api/client-errors`), corriger si besoin, puis retirer ces deux diagnostics (`src/front/CLAUDE.md` § Erreurs)
+- [ ] **Recette iPhone : page zoomée et son qui coupe** - lire les messages `Viewport:` et `AudioStall:` dans Grafana (`/api/client-errors`), corriger si besoin, puis retirer ces deux diagnostics ([`.claude/rules/front/core-pwa.md`](../.claude/rules/front/core-pwa.md) § Remontée des erreurs)
 - [ ] **Nettoyage hors du dépôt** - retirer l'exclusion `**/v1-schema.sql` de l'UI SonarCloud (Source File Exclusions : ce fichier n'existe plus) ; sur le checkout de prod, supprimer `docker-compose.prod-v2.yml` (non suivi) s'il traîne
 - [ ] **Fin de la reprise des anciens cookies** (#237, vers le 14/01/2027) - `legacy_tokens`, `LegacyCookieTransitionMiddleware`, anciennes clés Data Protection non chiffrées
-- [ ] **Petites dettes du front** - clés i18n de l'admin qui ne servent plus ; formats de date numériques qui ne suivent pas la langue ; `aria-label` des boutons ‹ › du tableau de bord
+- [ ] **Petites dettes du front** - clés i18n de l'admin qui ne servent plus ; formats de date numériques qui ne suivent pas la langue
 
-## Mode Setlist
+## Mode Survie
 
-> La Série (vies, manches sans fin, paliers d'écoute, thèmes) est livrée sur le staging, la V4 aussi ([`runs/`](runs/README.md), epic [#368](https://github.com/Oasis35/InSeconds/issues/368)). Reste (détail dans [`runs/plan.md`](runs/plan.md)) :
-
-- [ ] **Parties de test et réglage** - Clément joue sur le staging puis en prod avec quelques comptes, règle le barème (`Runs:StepPoints`, `Runs:ListenLadder`, `Runs:RankBands`) et le barème des disques de niveau (`Runs:Levels:Discs`, le score n'étant plus borné)
-- [ ] **Catalogue épuisé** - le tirage d'une manche renvoie une 500 quand il ne reste plus assez de morceaux libres : cas rare à traiter proprement
+Le reste à faire du mode (réglage des barèmes, catalogue épuisé, ouverture à tous) est dans [`runs/plan.md`](runs/plan.md).
 
 ## Mode entraînement (anciens défis)
 
@@ -32,7 +29,6 @@
 
 - [ ] **Badges de difficulté** - récompense visuelle selon la durée moyenne écoutée (ex : « Légende » si moyenne ≤ 1 s, « Explorateur » si ≤ 3 s)
 - [ ] **Meilleur score personnel** - stocker et afficher le record du joueur sur chaque morceau (écran « déjà joué »)
-- [ ] **Classement du jour anonyme** - top scores + médiane, sans leaderboard permanent
 
 ## Infra & exploitation
 
@@ -46,7 +42,7 @@
 
 - [ ] Tests sur vrai appareil iOS (Safari + Chrome iOS)
 - [ ] Tests sur vrai appareil Android (Chrome)
-- [ ] Vérifier l'audio en mode silencieux iOS (lecteur audio de #309)
+- [ ] Vérifier l'audio en mode silencieux iOS (lecteur sur élément `Audio`)
 - [ ] Installation de la PWA sur l'écran d'accueil (iOS et Android)
 
 ## Polish & conformité
@@ -54,7 +50,7 @@
 - [ ] Soft 404 : les URLs inexistantes renvoient 200 (fallback SPA), la page 404 n'est rendue que côté Angular
 - [ ] Charte graphique / `@theme` Tailwind (palette déjà centralisée en variables CSS `:root`)
 - [ ] Audit accessibilité WCAG 2.1 AA
-- [ ] CGU minimales (les mentions légales sont sur `/privacy`)
+- [ ] CGU minimales (les mentions légales sont sur `/legal`)
 
 ## Décisions définitives (ne pas réimplémenter)
 

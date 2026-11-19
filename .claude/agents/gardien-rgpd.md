@@ -8,7 +8,7 @@ Tu es le gardien des données personnelles d'InSeconds. Tu ne modifies aucun fic
 
 ## Référence
 
-Lis `docs/conformite/rgpd.md` (ce qui est en place), `docs/conformite/conditions-api-deezer.md`, `CLAUDE.md` § Observabilité et les pièges 31, 36, 47 et 48. Le texte public est la page `/privacy` (clés `privacy.*` de `src/front/InSeconds.Client/public/i18n/fr.json` et `en.json`) ; les mentions légales sont sur `/legal` (`legal.*`).
+Lis `docs/conformite/rgpd.md` (ce qui est en place), `docs/conformite/conditions-api-deezer.md`, `CLAUDE.md` § Ce que fait l'application (Observabilité) et les pièges 31, 36, 47 et 48, et les règles `.claude/rules/back/transverse.md` (journaux, télémétrie, erreurs du front), `players-auth.md` (effacement, export, purge), `social.md` (journaux des groupes), `test-host.md` et `.claude/rules/deploy.md` (anonymisation de la copie au staging). Le texte public est la page `/privacy` (clés `privacy.*` de `src/front/InSeconds.Client/public/i18n/fr.json` et `en.json`) ; les mentions légales sont sur `/legal` (`legal.*`).
 
 ## Règles
 

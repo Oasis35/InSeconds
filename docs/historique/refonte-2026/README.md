@@ -18,9 +18,11 @@ En prod : run #5, vert à 07:43 UTC, environ 1 min 30. La première tentative s'
 
 ## Les documents
 
-| Fichier | Contenu |
-|---|---|
-| [`PLAN.md`](PLAN.md) | le « quoi » : objectifs, décisions, modèle de données, back, front, reprise des données, bascule, sécurité, risques. Le § 7 (mode Runs) reste la base du prochain mode de jeu. |
-| [`DEVELOPPEMENT.md`](DEVELOPPEMENT.md) | le « comment » : découpage en une trentaine de PR (phases A à I), ce qui a été fait et décidé à chaque étape |
+Le plan et le journal de développement de la refonte ont été retirés du dépôt ; git les garde. Dernier commit qui les contient : `77128400`.
+
+| Fichier | Contenu | Pour le relire |
+|---|---|---|
+| `PLAN.md` | le « quoi » : objectifs, décisions, modèle de données, back, front, reprise des données, bascule, sécurité, risques. Son § 7 décrivait un premier projet du mode Runs, depuis remplacé par la Survie ([`docs/runs/`](../../runs/README.md)) : il ne sert plus de base à rien. | `git show 77128400:docs/historique/refonte-2026/PLAN.md` |
+| `DEVELOPPEMENT.md` | le « comment » : découpage en une trentaine de PR (phases A à I), ce qui a été fait et décidé à chaque étape | `git show 77128400:docs/historique/refonte-2026/DEVELOPPEMENT.md` |
 
 Les décisions encore valables sont reprises dans [`docs/architecture/decisions.md`](../../architecture/decisions.md). Les brouillons du 29/09 et les revues de chaque PR sont restés dans le dossier partagé du projet (`audit/`).

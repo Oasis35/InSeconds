@@ -25,6 +25,8 @@ public class RunSeriesRulesTests(PostgresFixture postgres) : IAsyncLifetime
         var start = (await alice.LaunchAsync()).Session;
 
         Assert.Equal((3, 8), (start.TracksPerRound, start.MaxRounds));
+        // Le lien d'un ami annonce le même plafond (« Jusqu'à 8 manches »).
+        Assert.Equal(8, (await alice.ChallengeAsync(start.ChallengeCode)).MaxRounds);
         Assert.Equal(8, await _run.Api.ScalarAsync<int>($"SELECT (rules->>'maxRounds')::int FROM runs.challenges WHERE code = '{start.ChallengeCode}'"));
         Assert.True(await _run.Api.ScalarAsync<bool>($"SELECT (rules->>'regainLife')::boolean FROM runs.challenges WHERE code = '{start.ChallengeCode}'"));
 
@@ -34,6 +36,7 @@ public class RunSeriesRulesTests(PostgresFixture postgres) : IAsyncLifetime
             + $" WHERE code = '{start.ChallengeCode}'");
         var resumed = await alice.SessionAsync(start.SessionId);
         Assert.Equal(0, resumed.MaxRounds);
+        Assert.Equal(0, (await alice.ChallengeAsync(start.ChallengeCode)).MaxRounds);
     }
 
     [Fact]

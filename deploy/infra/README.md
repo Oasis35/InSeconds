@@ -2,12 +2,14 @@
 
 Stack **indépendante** du cycle de vie de n'importe quel projet applicatif (InSeconds ou un
 futur projet) : une seule instance Postgres 17, une base + un utilisateur dédiés par projet.
-Se déploie une fois sur le VPS, tourne en permanence.
+Se déploie une fois sur le VPS, tourne en permanence. Elle vit dans le checkout de prod,
+`~/apps/InSeconds/deploy/infra` : c'est là que se trouvent son `.env`, ses scripts et le code
+lancé par les timers de sauvegarde.
 
 ## Premier déploiement
 
 ```bash
-cd ~/infra   # ou l'emplacement choisi sur le VPS
+cd ~/apps/InSeconds/deploy/infra
 cp .env.example .env
 # éditer .env : POSTGRES_SUPERUSER_PASSWORD + INSECONDS_DB_PASSWORD
 docker compose up -d
@@ -27,8 +29,8 @@ connectés au réseau `shared-postgres`.
 
 ### Contenu de la base `inseconds`
 
-Un schéma par module de l'API (`players`, `catalogue`, `daily`),
-plus `infra` (réglages, clés Data Protection), `messaging` (outbox Wolverine), `jobs`
+Un schéma par module de l'API (`players`, `catalogue`, `daily`, `runs`, `social`),
+plus `infra` (réglages, clés Data Protection, passages des sauvegardes), `messaging` (outbox Wolverine), `jobs`
 (Hangfire) et `extensions` (`citext`). Les migrations de l'API créent ces schémas : rien à
 faire à la main (détail : `CLAUDE.md` racine § Modèle de données). L'utilisateur `inseconds`
 étant propriétaire de la base, il peut les créer. `public` est vide.
@@ -175,10 +177,9 @@ est une erreur (le script s'arrête).
 
 ### Surveillance (healthchecks.io)
 
-Choisi le 14/10/2026 (#315) pour la sauvegarde et les tâches planifiées de l'API : un service fait
-pour ça, hors du VPS, réglé en quelques clics. Il remplace l'alerte Grafana « aucun Sauvegarde OK en
-26 h » d'avant (le script n'envoie plus rien à Grafana) : un échec, un VPS éteint ou un timer arrêté
-se voient tous comme un signal manquant ou un `/fail`.
+healthchecks.io surveille la sauvegarde, son contrôle de restauration et les tâches planifiées de
+l'API : un service fait pour ça, hors du VPS. Un échec, un VPS éteint ou un timer arrêté se voient
+tous comme un signal manquant ou un `/fail`. Grafana reçoit les journaux, sans alerte.
 
 **Qui envoie quoi.** Après chaque passage, un `POST` vers
 `https://hc-ping.com/<clé de ping>/<contrôle>` en cas de réussite, `…/<contrôle>/fail` en cas
@@ -232,15 +233,16 @@ en cinq étapes (chaque ligne du journal et chaque message d'échec les nomment,
 3. **restauration** : complète (`--exit-on-error`) dans un Postgres 17 jetable, conteneur à part de `shared-postgres` (sans réseau, 1 Go de
    mémoire au plus, aucun mot de passe), supprimé à la fin comme le fichier déchiffré ;
 4. **contenu** : défi du jour de la sauvegarde présent (ou celui de la veille), dernière migration de la sauvegarde connue de la prod, et
-   nombre de lignes des tables qui ne font que grossir (joueurs, comptes, morceaux, défis, parties, réponses, séries, playlists et parties de
-   Platines) au moins égal à 95 % de la prod (`BACKUP_VERIFY_MIN_ROW_PERCENT`) ; la prod n'est que lue ;
+   nombre de lignes des tables qui ne font que grossir au moins égal à 95 % de la prod (`BACKUP_VERIFY_MIN_ROW_PERCENT`) ; la prod n'est
+   que lue. Tables comptées (`CHECKED_TABLES` de `backup-verify.sh`) : `players.players`, `players.accounts`, `catalogue.tracks`,
+   `daily.challenges`, `daily.challenge_tracks`, `daily.sessions`, `daily.answers`, `daily.streaks`, `runs.challenges`, `runs.sessions` ;
 5. **compte rendu** : ligne `verify` dans `infra.backup_runs`, signal au contrôle healthchecks.io `inseconds-backup-restore`, logs vers Grafana.
 
 Il tourne **chaque nuit à 4 h UTC**, une heure après la sauvegarde, par le timer `inseconds-backup-verify.timer` (`systemd/`,
 `Persistent=true`), qui lance le script du checkout de prod. À la main : `sudo systemctl start inseconds-backup-verify` (journal :
 `journalctl -u inseconds-backup-verify -n 80`) ou `./backup-verify.sh`. Une à deux minutes pour la base actuelle.
 
-**Installation (une fois, sur le VPS, après le déploiement qui l'apporte)** :
+**Installation (une fois, sur le VPS)** :
 
 ```bash
 sudo cp ~/apps/InSeconds/deploy/infra/systemd/inseconds-backup-verify.{service,timer} /etc/systemd/system/

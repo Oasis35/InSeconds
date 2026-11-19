@@ -1,6 +1,6 @@
 # InSeconds et les conditions de l'API Deezer
 
-Lecture des textes faite le 02/10/2026, mise à jour le 17/10/2026. Ce n'est pas un avis juridique. Les règles qui en découlent pour le code sont résumées dans le piège 47 du [`CLAUDE.md`](../../CLAUDE.md#pièges-connus).
+Lecture des textes de Deezer (octobre 2026). Ce n'est pas un avis juridique. Les règles qui en découlent pour le code sont résumées dans le piège 47 du [`CLAUDE.md`](../../CLAUDE.md#pièges-connus).
 
 Sources :
 - Conditions : https://developers.deezer.com/termsofuse
@@ -11,7 +11,7 @@ Sources :
 
 ## Verdict
 
-Un jeu de quiz gratuit, sans publicité, qui joue les extraits de 30 s fournis par l'API est l'usage autorisé. Les trois écarts relevés le 02/10/2026 sont corrigés (cf. [plus bas](#écarts-relevés-le-02102026-tous-corrigés)).
+Un jeu de quiz gratuit, sans publicité, qui joue les extraits de 30 s fournis par l'API est l'usage autorisé. Les deux points d'information demandés par les textes sont en place (cf. [plus bas](#ce-que-les-pages-publiques-disent)).
 
 ## Point par point
 
@@ -26,7 +26,7 @@ Cette réponse vient d'un membre de la communauté, pas d'un employé de Deezer 
 
 ### 2. Lecture des extraits dans le navigateur : conforme
 
-- **Pas de stockage** : « Local Storage/Offline Storage of audio data is strictly forbidden. » L'élément audio lit l'extrait en flux, rien n'est gardé. Ne jamais mettre l'audio dans IndexedDB, Cache Storage ou le service worker : `ngsw-config.json` n'a aucun `dataGroups`. La forme d'onde du lecteur (barres et basses qui font bouger le bouton) est calculée **une fois par morceau par l'API** (02/11/2026, #474) : l'extrait est téléchargé en mémoire depuis le CDN de Deezer (jamais sur disque ni en base), décodé puis oublié ; seules des **valeurs dérivées** sont stockées dans `catalogue.tracks` (180 barres et 1800 valeurs de basses, environ 2 Ko, à partir desquelles l'audio ne peut pas être reconstitué). C'est une **zone grise** des conditions (« Local Storage/Offline Storage of audio data » vise l'audio, pas une silhouette de son énergie), assumée : le service concurrent blindtest.gg diffuse aussi une forme précalculée. À défaut de forme en base, le navigateur la calcule lui-même, en mémoire, à chaque morceau (`cache: 'no-store'`). Si Deezer le demandait, la colonne se vide et le repli navigateur reprend.
+- **Pas de stockage** : « Local Storage/Offline Storage of audio data is strictly forbidden. » L'élément audio lit l'extrait en flux, rien n'est gardé. Ne jamais mettre l'audio dans IndexedDB, Cache Storage ou le service worker : `ngsw-config.json` n'a aucun `dataGroups`. La forme d'onde du lecteur (barres et basses qui font bouger le bouton) est calculée **une fois par morceau par l'API** (piège 50) : l'extrait est téléchargé en mémoire depuis le CDN de Deezer (jamais sur disque ni en base), décodé puis oublié ; seules des **valeurs dérivées** sont stockées dans `catalogue.tracks` (180 barres et 1800 valeurs de basses, environ 2 Ko, à partir desquelles l'audio ne peut pas être reconstitué). C'est une **zone grise** des conditions (« Local Storage/Offline Storage of audio data » vise l'audio, pas une silhouette de son énergie), assumée : le service concurrent blindtest.gg diffuse aussi une forme précalculée. À défaut de forme en base, le navigateur la calcule lui-même, en mémoire, à chaque morceau (`cache: 'no-store'`). Si Deezer le demandait, la colonne se vide et le repli navigateur reprend.
 - **Pas de téléchargement** : « Except for 30s. extracts mp3s, full-length tracks URLs must never be accessible to the end-user ». Les extraits de 30 s sont exclus de cette règle : une URL d'extrait visible dans l'onglet réseau ne pose pas de problème.
 - **Pas de contournement des protections** (art. V, DRM) : les extraits sont des MP3 publics servis avec `Access-Control-Allow-Origin: *`.
 
@@ -47,21 +47,21 @@ Art. IV :
 
 ### 5. URL d'extrait côté serveur : conforme
 
-Les URL d'extrait ne sont plus mises en cache (retiré le 17/10/2026 : signées pour 15 min, le cache ne gardait rien, piège 14) ; l'audio ne l'a jamais été. La FAQ autorise le stockage des métadonnées :
+Les URL d'extrait ne sont pas mises en cache (signées pour 15 min, piège 14), l'audio non plus. La FAQ autorise le stockage des métadonnées :
 > « Is it possible to store artist and track names locally without stocking the audio? Yes, it is possible. »
 
 ### 6. Captures d'écran versionnées : aucune pochette
 
 Le dépôt est public : une capture de l'app qui montrerait une pochette y stockerait une image Deezer. Les captures de `docs/**/maquettes/` se prennent pochettes remplacées par un aplat (le navigateur de capture intercepte `cdn-images.dzcdn.net`) ; le catalogue de test porte de vrais hash de pochette, une capture prise sans cette précaution les montrerait. Le badge officiel « À écouter sur Deezer » y reste, tel quel (§ 3).
 
-**Exception assumée (09/11/2026)** : le premier commit de la PR #517 (mesure des Platines) a versé dix captures `docs/runs/maquettes/app/*.png` (depuis déplacées dans `docs/historique/runs-ancien-modele/maquettes/app/`) avec de vraies pochettes ; le second commit les remplace par un aplat, mais elles restent dans l'historique du dépôt. Décision de Clément : l'historique n'est pas réécrit. Les pochettes de ces captures sont visibles seulement dans ce commit ; toute nouvelle capture suit la règle ci-dessus.
+**Exception assumée** : dix captures de l'ancien modèle de Survie (`maquettes/app/*.png`, retirées du dépôt depuis) ont été versées une fois avec de vraies pochettes, remplacées par un aplat au commit suivant ; elles restent dans l'historique git, qui n'est pas réécrit. Toute nouvelle capture suit la règle ci-dessus.
 
-## Écarts relevés le 02/10/2026, tous corrigés
+## Ce que les pages publiques disent
 
-| Écart | Texte | Correctif |
+| Exigence | Texte | Où |
 |---|---|---|
-| Mention « usage privé, cadre familial » absente | art. IV : « inform […] that the streaming of the recordings is limited to a strictly private use within a family scope » | phrase ajoutée dans « Mentions légales : contenus musicaux » de `/privacy` (FR et EN) |
-| `/privacy` disait que Deezer ne reçoit rien du joueur | (RGPD) | reformulé : le navigateur charge extraits et pochettes depuis les CDN de Deezer (`cdnt-preview.dzcdn.net`, `cdn-images.dzcdn.net`), qui reçoivent l'IP du joueur |
+| Informer que l'écoute est limitée à un usage privé, dans le cadre familial | art. IV : « inform […] that the streaming of the recordings is limited to a strictly private use within a family scope » | `/legal`, section « Contenus musicaux (API Deezer) » (clé `legal.music.body`, FR et EN) |
+| Dire ce que Deezer reçoit du joueur | (RGPD) | `/privacy` : le navigateur charge extraits et pochettes depuis les serveurs de Deezer, qui reçoivent l'IP du joueur ; rien d'autre ne leur est transmis (clés `privacy.*`) |
 
 ## Rappels
 

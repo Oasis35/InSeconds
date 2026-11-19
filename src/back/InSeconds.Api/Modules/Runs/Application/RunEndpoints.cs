@@ -117,9 +117,10 @@ public static class LaunchRunEndpoint
 /// <param name="MySessionId">Sa partie sur cette playlist, s'il en a une.</param>
 /// <param name="AnswerSeconds">Le chrono de chaque morceau (règles figées) ; 0 : pas de chrono.</param>
 /// <param name="Themes">Les manches à thème déjà choisies (jamais la première), avec le nom du thème ; vide : aucune.</param>
+/// <param name="MaxRounds">Le plafond de manches (règles figées) ; 0 : pas de plafond.</param>
 public sealed record RunChallengeResponse(
     string Code, string? AuthorPseudo, int Lives, int TracksPerRound, decimal ListenSeconds, string MyStatus, int? MySessionId,
-    int AnswerSeconds, IReadOnlyList<RunRoundThemeResponse>? Themes = null);
+    int AnswerSeconds, IReadOnlyList<RunRoundThemeResponse>? Themes = null, int MaxRounds = 0);
 
 public static class GetRunChallengeEndpoint
 {
@@ -147,7 +148,8 @@ public static class GetRunChallengeEndpoint
         var rules = challenge.Rules;
         return new RunChallengeResponse(
             challenge.Code, author, rules.Lives, rules.TracksPerRound,
-            rules.ListenAt(0), mine is null ? "none" : RunViews.StatusOf(mine.Status), mine?.SessionId, rules.AnswerSeconds, RunViews.ThemesOf(rules));
+            rules.ListenAt(0), mine is null ? "none" : RunViews.StatusOf(mine.Status), mine?.SessionId, rules.AnswerSeconds, RunViews.ThemesOf(rules),
+            rules.MaxRounds);
     }
 }
 

@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-// Hook PreToolUse (Bash) : jamais de commit ni de push direct sur main ou env/staging.
-// Toujours une branche de travail puis une PR (CLAUDE.md racine, § Conventions Git).
-// GitHub refuse déjà ces pushes (ruleset) ; le hook arrête Claude avant, avec la marche à suivre.
+// Hook PreToolUse (Bash, PowerShell ; lancé par shell-guard.mjs) : jamais de commit ni de push
+// direct sur main ou env/staging. Toujours une branche de travail puis une PR (CLAUDE.md racine,
+// § Conventions Git). GitHub refuse déjà ces pushes (ruleset) ; le hook arrête Claude avant, avec
+// la marche à suivre.
 
-import { PROTECTED_BRANCHES, block, currentBranch, git, gitInvocations, readHookInput, runSafely } from './lib/shell.mjs';
+import { PROTECTED_BRANCHES, currentBranch, git, gitInvocations, isMain, runCheck, shellOf } from './lib/shell.mjs';
 
 // Commandes qui créent un commit sur la branche courante (un `git pull` qui met main à jour reste permis :
 // un commit de fusion local n'irait de toute façon nulle part, le push étant refusé).
@@ -45,14 +46,13 @@ function pushTargets(inv, branch) {
   });
 }
 
-runSafely(() => {
-  const input = readHookInput();
+export function check(input) {
   const command = input.tool_input?.command;
-  if (typeof command !== 'string' || !/\bgit\b/.test(command)) return;
+  if (typeof command !== 'string' || !/\bgit\b/i.test(command)) return null;
 
   const problems = [];
   let simulatedBranch = null;
-  for (const inv of gitInvocations(command, input.cwd)) {
+  for (const inv of gitInvocations(command, input.cwd, shellOf(input))) {
     const branch = simulatedBranch ?? currentBranch(inv.cwd);
     if (inv.sub === 'checkout' || inv.sub === 'switch') {
       simulatedBranch = branchAfterSwitch(inv) ?? simulatedBranch;
@@ -68,12 +68,14 @@ runSafely(() => {
     }
   }
 
-  if (problems.length) {
-    block(
+  if (!problems.length) return null;
+  return {
+    block:
       `Refusé par le hook protected-branches : ${problems.join(' ; ')}.\n` +
-        `Jamais de commit ni de push direct sur ${PROTECTED_BRANCHES.join(' ou ')}. ` +
-        `Créer une branche de travail (\`git checkout -b feat/<sujet>\`, ou la branche imposée par la session), ` +
-        `y committer, la pousser, puis ouvrir une PR vers env/staging (cf. CLAUDE.md, § Conventions Git).`,
-    );
-  }
-});
+      `Jamais de commit ni de push direct sur ${PROTECTED_BRANCHES.join(' ou ')}. ` +
+      `Créer une branche de travail (\`git checkout -b feat/<sujet>\`, ou la branche imposée par la session), ` +
+      `y committer, la pousser, puis ouvrir une PR vers env/staging (cf. CLAUDE.md, § Conventions Git).`,
+  };
+}
+
+if (isMain(import.meta.url)) await runCheck(check, 'PreToolUse');

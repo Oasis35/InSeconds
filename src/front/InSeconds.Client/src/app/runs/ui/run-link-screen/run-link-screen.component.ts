@@ -27,7 +27,11 @@ import { ButtonComponent } from '../../../ui/button/button.component';
       <ul class="w-full space-y-3 rounded-(--radius-card) p-4 text-sm" style="background:var(--bg-surface);border:1px solid var(--border-subtle);color:var(--text-light)"
         data-testid="run-link-rules">
         <li>{{ 'runs.link.lives' | translate: { lives: link().lives } }}</li>
-        <li>{{ 'runs.link.rounds' | translate: { tracks: link().tracksPerRound } }}</li>
+        @if (link().maxRounds > 0) {
+          <li>{{ 'runs.link.rounds' | translate: { tracks: link().tracksPerRound, max: link().maxRounds } }}</li>
+        } @else {
+          <li>{{ 'runs.link.roundsNoMax' | translate: { tracks: link().tracksPerRound } }}</li>
+        }
         @if (link().answerSeconds > 0) {
           <li>{{ 'runs.link.listenAndAnswer' | translate: { seconds: link().listenSeconds | appSeconds, answer: link().answerSeconds | appSeconds } }}</li>
         } @else {

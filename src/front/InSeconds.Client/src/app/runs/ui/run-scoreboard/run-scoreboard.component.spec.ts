@@ -6,7 +6,7 @@ import { RoundDot, RunGhostGap } from '../../domain/run';
 import { RunScoreboardComponent } from './run-scoreboard.component';
 
 describe('RunScoreboardComponent', () => {
-  function render(opts: { total?: number; ghost?: RunGhostGap | null; combo?: number | null; theme?: string | null; dots?: RoundDot[]; ladder?: number[]; listen?: number; maxRounds?: number } = {}) {
+  function render(opts: { total?: number; ghost?: RunGhostGap | null; combo?: number | null; lives?: boolean[]; dots?: RoundDot[]; ladder?: number[]; listen?: number; maxRounds?: number } = {}) {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     TestBed.inject(TranslateService).setTranslation('fr', fr);
     TestBed.inject(TranslateService).use('fr');
@@ -14,7 +14,7 @@ describe('RunScoreboardComponent', () => {
     fixture.componentRef.setInput('total', opts.total ?? 300);
     fixture.componentRef.setInput('round', 2);
     fixture.componentRef.setInput('maxRounds', opts.maxRounds ?? 0);
-    fixture.componentRef.setInput('theme', opts.theme ?? null);
+    fixture.componentRef.setInput('lives', opts.lives ?? [true, true, true]);
     fixture.componentRef.setInput('ghost', opts.ghost ?? null);
     fixture.componentRef.setInput('combo', opts.combo ?? null);
     fixture.componentRef.setInput('dots', opts.dots ?? []);
@@ -25,13 +25,22 @@ describe('RunScoreboardComponent', () => {
   }
   const text = (el: Element | null) => el?.textContent?.replace(/\s+/g, ' ').trim();
 
-  it('le score posé tel quel au premier affichage, « Manche N » et son thème', () => {
-    const { element } = render({ theme: 'Années 80' });
+  it('le score posé tel quel au premier affichage et « Manche N »', () => {
+    const { element } = render();
 
     expect(element.querySelector('[data-testid="run-total-score"]')?.textContent).toBe('300');
-    expect(text(element.querySelector('[data-testid="run-round-title"]'))).toBe('Manche 2 Années 80');
-    expect(element.querySelectorAll('h1')).toHaveLength(1);
-    expect(element.querySelector('[data-testid="run-theme-pill"]')?.textContent?.trim()).toBe('Années 80');
+    expect(text(element.querySelector('[data-testid="run-round-title"]'))).toBe('Manche 2');
+    expect(element.querySelectorAll('h1')).toHaveLength(0);
+  });
+
+  it('un cœur par vie de départ : rouge et plein pour celle qui reste, un contour pour celle qui est perdue', () => {
+    const { element } = render({ lives: [true, true, false] });
+
+    const hearts = [...element.querySelectorAll('[data-testid="run-lives"] svg')];
+    expect(hearts.map(h => h.getAttribute('data-alive'))).toEqual(['true', 'true', 'false']);
+    expect(hearts[0].querySelector('path')?.getAttribute('fill')).toBe('var(--color-fail)');
+    expect(hearts[2].querySelector('path')?.getAttribute('fill')).toBe('none');
+    expect(element.querySelector('[data-testid="run-lives"]')?.getAttribute('aria-label')).toBe('Vies : 2 sur 3');
   });
 
   it('avec un plafond de manches, « Manche 2/8 »', () => {

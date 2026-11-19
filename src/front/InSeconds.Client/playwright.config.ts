@@ -10,8 +10,9 @@ export default defineConfig({
   forbidOnly: !!process.env['CI'],
   retries: process.env['CI'] ? 1 : 0,
   workers: 1,
+  // En CI, le rapport JSON (durée de chaque test) sert à recalculer les poids des specs : scripts/e2e-weights.mjs.
   reporter: process.env['CI']
-    ? [['github'], ['html', { open: 'never' }]]
+    ? [['github'], ['html', { open: 'never' }], ['json', { outputFile: 'playwright-results/results.json' }]]
     : 'list',
 
   use: {

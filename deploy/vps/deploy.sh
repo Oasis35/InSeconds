@@ -66,22 +66,11 @@ fi
 # créés au démarrage de l'API).
 echo "Application des migrations ($target)..."
 compose run --rm -T api --migrate-only
-# Ancien nom du projet Compose (inseconds-v2) : ses conteneurs portent les mêmes noms, `up` buterait
-# dessus. Retirés une seule fois, juste avant de démarrer les nouveaux (quelques secondes d'arrêt).
-if [[ "$target" == prod ]]; then
-  old=$(docker ps -aq --filter label=com.docker.compose.project=inseconds-v2)
-  if [[ -n "$old" ]]; then
-    echo "Retrait des conteneurs de l'ancien projet Compose inseconds-v2..."
-    docker rm -f $old
-  fi
-  # Ses images (nommées d'après le projet) ne sont plus utilisées, et `image prune` ne retire que les images sans tag.
-  docker image rm inseconds-v2-api inseconds-v2-front 2>/dev/null || true
-fi
 compose up -d
 
 # Ne retire que les images "dangling" (non taguées) - jamais -a, qui supprimerait aussi les
-# images d'autres projets partageant ce VPS (cf. CLAUDE.md racine § Architecture - plusieurs
-# stacks Compose indépendants sur le même hôte). Le rebuild ci-dessus délaisse le tag
+# images d'autres projets partageant ce VPS (piège 43, .claude/rules/deploy.md :
+# plusieurs stacks Compose indépendants sur le même hôte). Le rebuild ci-dessus délaisse le tag
 # `latest` de l'ancienne image sans la supprimer ; sans ce nettoyage régulier, ces images
 # orphelines s'accumulent et finissent par saturer les 40 Go de disque.
 docker image prune -f

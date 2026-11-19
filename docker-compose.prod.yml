@@ -1,7 +1,6 @@
 # Prod, déployée par deploy/vps/deploy.sh à chaque push sur main.
 #
-# Projet Compose `inseconds` (`inseconds-v2` de la bascule du 16/10/2026 jusqu'à I2 : deploy.sh retire une fois ses
-# conteneurs). Conteneurs inseconds.api et inseconds.front, joints par Caddy sous ces noms. Base `inseconds`, un
+# Projet Compose `inseconds`. Conteneurs inseconds.api et inseconds.front, joints par Caddy sous ces noms. Base `inseconds`, un
 # schéma par module.
 # Variables dans .env.prod (non commité, cf. .env.prod.example).
 name: inseconds

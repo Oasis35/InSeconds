@@ -408,7 +408,7 @@ public sealed class RunAnswer
 }
 
 /// <summary>
-/// Le record personnel d'un joueur (une ligne par joueur, invité compris) : son meilleur score et son meilleur disque (manches passées), chacun le
+/// Le record personnel d'un joueur (une ligne par joueur, invité compris) : son meilleur score et son plus grand nombre de manches passées, chacun le
 /// meilleur de ses parties gagnées ou perdues ; une partie abandonnée ne compte pas. Mis à jour dans la transaction qui termine la partie.
 /// </summary>
 public sealed class RunRecord
@@ -440,7 +440,7 @@ public sealed class RunRecord
 
     /// <summary>
     /// Compare une partie terminée au record : un score strictement meilleur devient le record (et cette partie, celle qui l'a établi) ; plus de
-    /// manches passées améliorent le meilleur disque, même avec un score moindre.
+    /// manches passées améliorent le plus grand nombre de manches passées, même avec un score moindre.
     /// </summary>
     public void Improve(RunSession session, DateTimeOffset now)
     {

@@ -1,11 +1,12 @@
 version: 2
 updates:
+  # Les PR visent env/staging (testées au staging avant main), d'où le target-branch.
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "env/staging"
     schedule:
       interval: "monthly"
 
-  # Les PR visent env/staging (testées au staging avant main), d'où le target-branch.
   # Minor + patch groupés, majeures une par une (une majeure peut dépasser ce que le reste de la
   # toolchain supporte : typescript 7 / jasmine-core 7 avaient cassé `npm ci`, #119). Versions épinglées
   # exactes dans package.json et Directory.Packages.props : Dependabot les met à jour telles quelles.

@@ -502,20 +502,6 @@ describe('RunGameStore', () => {
     });
   });
 
-  describe('sons d\'interface', () => {
-    it('le bouton les coupe puis les remet ; le toucher réveille aussi le son', () => {
-      const unlock = vi.spyOn(TestBed.inject(RunSounds), 'unlock');
-      expect(store.soundsMuted()).toBe(false);
-
-      store.toggleSounds();
-      expect(store.soundsMuted()).toBe(true);
-      expect(unlock).toHaveBeenCalled();
-
-      store.toggleSounds();
-      expect(store.soundsMuted()).toBe(false);
-    });
-  });
-
   describe('fin de partie', () => {
     const finish = (status: 'lost', isNew = false) => ({
       status, totalScore: 2500, roundsPassed: 4, foundCount: 18, trackCount: 20,

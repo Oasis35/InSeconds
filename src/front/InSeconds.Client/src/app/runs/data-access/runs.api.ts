@@ -197,6 +197,7 @@ function toLink(link: RunChallengeResponse): RunLink {
     myStatus: link.myStatus === 'none' ? 'none' : toStatus(link.myStatus),
     mySessionId: link.mySessionId ?? null,
     themes: (link.themes ?? []).map(t => ({ round: t.round, name: t.name })),
+    maxRounds: link.maxRounds ?? 0,
   };
 }
 

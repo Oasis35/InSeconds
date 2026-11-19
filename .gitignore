@@ -133,7 +133,7 @@ out-tsc/
 .angular/
 .nx/
 
-# NSwag - le fichier généré est commité volontairement (pas de backend en CI)
+# NSwag - le fichier généré est commité volontairement, vérifié par le job CI api-clients
 
 # IDE for Angular
 *.launch
@@ -190,10 +190,12 @@ $RECYCLE.BIN/
 .docker/
 
 # ---------------------------------------------------------------
-# Claude Code : hooks, sous-agents et réglages partagés versionnés,
+# Claude Code : hooks, sous-agents, règles par chemin, skills et réglages partagés versionnés,
 # le reste (settings.local.json, caches) reste local
 # ---------------------------------------------------------------
 .claude/*
 !.claude/settings.json
 !.claude/hooks/
 !.claude/agents/
+!.claude/rules/
+!.claude/skills/

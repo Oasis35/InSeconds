@@ -47,3 +47,4 @@ Thumbs.db
 # Playwright - artefacts de run (résultats, rapports, traces)
 /test-results
 /playwright-report
+/playwright-results

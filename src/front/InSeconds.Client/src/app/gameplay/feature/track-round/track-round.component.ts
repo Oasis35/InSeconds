@@ -20,7 +20,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
  * Emplacements de projection du mode : `[roundActions]` (ses boutons, au-dessus de « Valider »),
  * `[roundBadge]` (à gauche de la pochette), `[roundScore]` (ses points) et `[roundNext]` (sa suite). En ligne
  * (`layout="inline"`, un mode à écoute fixe) : `[roundCorner]` (en haut à droite de la carte, son chrono), `[roundAids]` (au-dessus de la
- * saisie, dans les deux dispositions : les coups de pouce du mode) et `[roundReveal]` (sa révélation, dans la carte, à la place de la carte de révélation) ; « Passer »
+ * saisie, dans les deux dispositions : les coups de pouce du mode), `[roundTheme]` (tout en haut de la saisie : l'indice du mode) et `[roundReveal]` (sa révélation, dans la carte, à la place de la carte de révélation) ; « Passer »
  * y est un simple lien souligné sous « Valider », et `[roundLinks]` y met son propre lien à côté (même style). Avec `choices`, la saisie devient autant de réponses à toucher (une seule est juste,
  * le serveur corrige comme une saisie).
  */
@@ -49,6 +49,9 @@ import { ButtonComponent } from '../../../ui/button/button.component';
 
         @if (round.showsInput()) {
           <form (submit)="onSubmit($event)" class="space-y-3">
+            <!-- L'indice du mode, juste au-dessus de la saisie (le mode Run : le thème de la manche). -->
+            <ng-content select="[roundTheme]" />
+
             <app-hint-panel [levels]="round.availableHintLevels()" [kinds]="round.hintKinds()" [hints]="round.hints()" [pending]="hintPending()"
               (request)="hintRequested.emit($event)" />
 

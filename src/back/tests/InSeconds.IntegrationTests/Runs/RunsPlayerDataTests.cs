@@ -74,7 +74,7 @@ public class RunsPlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(_code, Assert.Single(runs.CreatedChallenges).Code);
         Assert.Equal(100, runs.Record!.BestScore);
         Assert.NotNull(runs.Access);
-        Assert.Equal((150, 2), (runs.Level!.Points, runs.Level.RunsPlayed));
+        Assert.Equal((150, 2, -50), (runs.Level!.Points, runs.Level.RunsPlayed, runs.Level.LastDelta));
     }
 
     [Fact]
