@@ -49,8 +49,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "InSeconds.Api.Modules.Daily.Application.ExpireStaleSessionsHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Daily.Application.ExpireStaleSessionsHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "InSeconds.Api.Modules.Daily.Application.ExpireStaleSessionsHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "InSeconds.Api.Modules.Daily.Application.ExpireStaleSessionsHandler");
                 
                 // The actual message execution
                 var outgoing1 = await InSeconds.Api.Modules.Daily.Application.ExpireStaleSessionsHandler.Handle(expireStaleSessions, efDailyStore, _gameCalendar, _dailyMetrics, _loggerForMessage, cancellation).ConfigureAwait(false);

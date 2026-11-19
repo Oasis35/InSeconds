@@ -86,6 +86,7 @@ namespace Internal.Generated.WolverineHandlers
             var runRoundDealer = new InSeconds.Api.Modules.Runs.Application.RunRoundDealer(efTrackDirectory, _seededShuffle, _runTrackSelector, efRunsStore, runDrawMemoryReader, _runsRules2);
             var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, runRoundDealer, deezerTrackPreviews, loggedTrackWaveforms, efRunsStore, runGhosts, _runScoringPolicy, _runsRules3, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
+            Wolverine.Http.HttpHandler.RequestActivity(httpContext)?.SetTag("handler.type", "InSeconds.Api.Modules.Runs.Application.ChooseRunThemeEndpoint").SetTag("http.route", "/api/runs/sessions/{id}/theme").SetTag("http.request.method", "POST");
             // Reading the request body via JSON deserialization
             var (request, jsonContinue) = await ReadJsonAsync<InSeconds.Api.Modules.Runs.Application.ChooseRunTheme>(httpContext);
             if (jsonContinue == Wolverine.HandlerContinuation.Stop) return;
@@ -100,7 +101,6 @@ namespace Internal.Generated.WolverineHandlers
                 return;
             }
 
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Runs.Application.ChooseRunThemeEndpoint");
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
             var efCoreEnvelopeTransaction = new Wolverine.EntityFrameworkCore.Internals.EfCoreEnvelopeTransaction(inSecondsDbContext, messageContext, _domainEventScraperIEnumerable);

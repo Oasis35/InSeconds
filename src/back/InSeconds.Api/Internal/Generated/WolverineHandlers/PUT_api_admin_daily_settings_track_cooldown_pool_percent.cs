@@ -46,6 +46,7 @@ namespace Internal.Generated.WolverineHandlers
             var trackCooldownPolicy = new InSeconds.Api.Modules.Daily.Application.TrackCooldownPolicy(efTrackDirectory, _optionsMonitorOfDailyOptions);
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var settingsStore = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Settings.SettingsStore>(serviceScope.ServiceProvider);
+            Wolverine.Http.HttpHandler.RequestActivity(httpContext)?.SetTag("handler.type", "InSeconds.Api.Modules.Daily.Application.UpdateTrackCooldownPoolPercentEndpoint").SetTag("http.route", "/api/admin/daily/settings/track-cooldown-pool-percent").SetTag("http.request.method", "PUT");
             // Reading the request body via JSON deserialization
             var (request, jsonContinue) = await ReadJsonAsync<InSeconds.Api.Modules.Daily.Application.UpdateTrackCooldownPoolPercent>(httpContext);
             if (jsonContinue == Wolverine.HandlerContinuation.Stop) return;
@@ -60,7 +61,6 @@ namespace Internal.Generated.WolverineHandlers
                 return;
             }
 
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Daily.Application.UpdateTrackCooldownPoolPercentEndpoint");
             
             // The actual HTTP request handler execution
             var adminDailySettingsResponse_response = await InSeconds.Api.Modules.Daily.Application.UpdateTrackCooldownPoolPercentEndpoint.Put(request, settingsStore, trackCooldownPolicy, httpContext.RequestAborted).ConfigureAwait(false);

@@ -31,7 +31,7 @@ namespace Internal.Generated.WolverineHandlers
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Wolverine.Runtime.ScopedMessageContextHolder>(serviceScope.ServiceProvider).Context = messageContext;
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var cachedTrackSearch = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Deezer.CachedTrackSearch>(serviceScope.ServiceProvider);
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.SearchTracksEndpoint");
+            Wolverine.Http.HttpHandler.RequestActivity(httpContext)?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.SearchTracksEndpoint").SetTag("http.route", "/api/catalogue/search").SetTag("http.request.method", "GET");
             var q = httpContext.Request.Query["q"];
             
             // The actual HTTP request handler execution

@@ -51,8 +51,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "InSeconds.Api.Modules.Players.Application.SendMagicLinkEmailHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Players.Application.SendMagicLinkEmailHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "InSeconds.Api.Modules.Players.Application.SendMagicLinkEmailHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "InSeconds.Api.Modules.Players.Application.SendMagicLinkEmailHandler");
                 
                 // The actual message execution
                 await InSeconds.Api.Modules.Players.Application.SendMagicLinkEmailHandler.Handle(sendMagicLinkEmail, efPlayerStore, _emailComposerOfMagicLinkEmail, emailSender, _optionsOfAppOptions, _timeProvider, cancellation).ConfigureAwait(false);

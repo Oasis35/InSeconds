@@ -37,7 +37,7 @@ namespace Internal.Generated.WolverineHandlers
             var efCandidateStore = new InSeconds.Api.Modules.Catalogue.Persistence.EfCandidateStore(inSecondsDbContext);
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var previewProvider = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Deezer.IPreviewProvider>(serviceScope.ServiceProvider);
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.GetCandidatePreviewEndpoint");
+            Wolverine.Http.HttpHandler.RequestActivity(httpContext)?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.GetCandidatePreviewEndpoint").SetTag("http.route", "/api/admin/catalogue/candidates/{id}/preview").SetTag("http.request.method", "GET");
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
             var efCoreEnvelopeTransaction = new Wolverine.EntityFrameworkCore.Internals.EfCoreEnvelopeTransaction(inSecondsDbContext, messageContext, _domainEventScraperIEnumerable);

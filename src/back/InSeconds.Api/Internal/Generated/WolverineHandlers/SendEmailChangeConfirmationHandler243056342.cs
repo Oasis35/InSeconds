@@ -51,8 +51,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "InSeconds.Api.Modules.Players.Application.SendEmailChangeConfirmationHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Players.Application.SendEmailChangeConfirmationHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "InSeconds.Api.Modules.Players.Application.SendEmailChangeConfirmationHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "InSeconds.Api.Modules.Players.Application.SendEmailChangeConfirmationHandler");
                 
                 // The actual message execution
                 await InSeconds.Api.Modules.Players.Application.SendEmailChangeConfirmationHandler.Handle(sendEmailChangeConfirmation, efPlayerStore, _emailComposerOfConfirmEmailChangeEmail, emailSender, _optionsOfAppOptions, _timeProvider, cancellation).ConfigureAwait(false);

@@ -33,8 +33,8 @@ namespace Internal.Generated.WolverineHandlers
             // The actual message body
             var readCandidates = (InSeconds.Api.Modules.Catalogue.Application.ReadCandidates)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "InSeconds.Api.Modules.Catalogue.Application.ReadCandidatesHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.ReadCandidatesHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "InSeconds.Api.Modules.Catalogue.Application.ReadCandidatesHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.ReadCandidatesHandler");
             
             // The actual message execution
             await InSeconds.Api.Modules.Catalogue.Application.ReadCandidatesHandler.Handle(readCandidates, efCandidateStore, trackMetadataSource, _timeProvider, _loggerForMessage, cancellation).ConfigureAwait(false);
