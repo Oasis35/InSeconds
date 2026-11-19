@@ -2,7 +2,7 @@ namespace InSeconds.Infrastructure.RateLimiting;
 
 /// <summary>
 /// Noms des politiques de rate limiting, stables. Un endpoint les pose avec
-/// <c>RequireRateLimiting(RateLimitPolicies.X)</c> ; les limites sont dans
+/// <c>[EnableRateLimiting(RateLimitPolicies.X)]</c> ; les limites sont dans
 /// <see cref="RateLimitingServiceCollectionExtensions"/>.
 /// </summary>
 public static class RateLimitPolicies

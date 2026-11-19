@@ -1393,7 +1393,6 @@
       "top": "The highest record",
       "review": "Review",
       "label": "Level: {{ disc }}, {{ points }} points",
-      "newSetlist": "New Survival run",
       "encoreBefore": "Just",
       "encorePoints": "{{ points }} pts",
       "encoreAfter": "to reach the {{ disc }}",

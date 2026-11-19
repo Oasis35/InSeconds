@@ -1393,7 +1393,6 @@
       "top": "Le plus haut disque",
       "review": "Revoir",
       "label": "Niveau : {{ disc }}, {{ points }} points",
-      "newSetlist": "Nouvelle Survie",
       "encoreBefore": "Encore",
       "encorePoints": "{{ points }} pts",
       "encoreAfter": "pour le {{ disc }}",
