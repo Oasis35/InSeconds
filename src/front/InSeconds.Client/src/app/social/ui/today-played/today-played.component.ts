@@ -5,7 +5,7 @@ import { TodayScoreEntry } from '../../domain/group-scores';
 
 /**
  * « Aujourd'hui » tant que le joueur n'a pas fini son défi : aucun score, seulement qui a joué (« 2 sur 5 ont joué ») et, par membre, « a joué » ou
- * « pas encore ». Ceux qui ont joué d'abord. Le bouton qui mène au défi est posé par la page.
+ * « pas encore ». Ceux qui ont joué d'abord. Le bouton qui mène au défi est posé par la page, sauf après un abandon sans réponse.
  */
 @Component({
   selector: 'app-today-played',
@@ -14,9 +14,11 @@ import { TodayScoreEntry } from '../../domain/group-scores';
   template: `
     <section class="p-4 flex flex-col gap-3" data-testid="today-locked"
              style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)">
-      <p class="text-sm leading-relaxed" style="color:var(--text-light)">{{ 'social.scores.locked' | translate }}</p>
+      <p class="text-sm leading-relaxed" style="color:var(--text-light)" data-testid="today-locked-reason">
+        {{ (abandoned() ? 'social.scores.lockedAbandoned' : 'social.scores.locked') | translate }}
+      </p>
       <p class="text-base font-bold" style="color:var(--text-hi)" data-testid="today-count">
-        {{ 'social.scores.playedCount' | translate: { played: played(), members: members().length } }}
+        {{ countKey() | translate: { played: played(), members: members().length } }}
       </p>
       <ul class="flex flex-col">
         @for (member of members(); track $index) {
@@ -39,6 +41,8 @@ import { TodayScoreEntry } from '../../domain/group-scores';
 })
 export class TodayPlayedComponent {
   readonly entries = input.required<readonly TodayScoreEntry[]>();
+  /** Le joueur a quitté son défi du jour sans répondre : les scores du jour lui restent fermés jusqu'au lendemain (piège 31). */
+  readonly abandoned = input(false);
 
   protected readonly members = computed(() =>
     [...this.entries()]
@@ -46,4 +50,10 @@ export class TodayPlayedComponent {
       .map(entry => ({ pseudo: entry.pseudo, isMe: entry.isMe, played: entry.played, initial: initialOf(entry.pseudo), avatar: avatarOf(entry.pseudo) })));
 
   protected readonly played = computed(() => this.entries().filter(entry => entry.played).length);
+  /** « Personne n'a encore joué », « 1 sur 5 a joué », « 2 sur 5 ont joué ». */
+  protected readonly countKey = computed(() => {
+    const played = this.played();
+    if (played === 0) return 'social.scores.playedNone';
+    return played === 1 ? 'social.scores.playedCountOne' : 'social.scores.playedCount';
+  });
 }

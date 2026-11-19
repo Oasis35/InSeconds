@@ -5,6 +5,7 @@ Les choix déjà faits, avec leur raison, pour ne pas les rediscuter ni les réi
 ## Produit
 
 - **Pas de classement public du défi du jour** : ses statistiques restent anonymes (médiane, égaliseur, histogrammes, rien sous 5 joueurs). Raison : on joue en invité, sans rien exposer à des inconnus.
+- **Les groupes entre amis sont ouverts à tout compte, avec ou sans l'accès Survie** (19/11/2026, #643) : leur classement par défaut est celui du Défi du jour (« Cette semaine », 7 jours glissants, et « Aujourd'hui », fermé tant que le joueur n'a pas fini son défi), l'onglet « Survie » s'ajoute pour qui a l'accès. Raison : sans Survie, l'app n'avait rien de social qui donne envie de revenir ; un groupe reste privé, il n'expose personne à des inconnus, donc la règle précédente tient.
 - **La Survie a des classements, d'une autre nature** :
   - **groupes entre amis** (module `Social`) : un compte crée un groupe de 15 joueurs au plus et invite par un lien ; le classement entre les pseudos des membres n'est visible que des membres (un non-membre reçoit un 404, jamais un pseudo). Un classement entre amis donne une raison de revenir sans exposer personne à des inconnus ; le groupe se quitte ou se supprime à volonté, et l'effacement d'un compte retire le joueur de ses groupes ;
   - **classement général par niveau**, jamais par meilleur score (un score obtenu avec Shazam y pèse peu) : le niveau suit 80 % de l'ancien niveau et 20 % du score de chaque série, un disque de plus au plus par série, et baisse avec l'inactivité ;

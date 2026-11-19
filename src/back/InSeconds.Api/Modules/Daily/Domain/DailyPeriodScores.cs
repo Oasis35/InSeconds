@@ -9,11 +9,7 @@ public sealed record ViewerGame(DateOnly ChallengeDate, SessionStatus Status, in
 /// <summary>Ce qu'un joueur a marqué au Défi du jour, par période.</summary>
 /// <param name="TodayScore">Le score de sa partie du jour, vide s'il ne l'a pas finie ou si le joueur qui regarde ne doit pas encore le voir.</param>
 /// <param name="WeekPlayedDays">Les jours de la semaine où il a fini une partie, du plus ancien au plus récent, sans les jours cachés.</param>
-public sealed record PlayerPeriodScores(bool PlayedToday, int? TodayScore, int WeekPoints, IReadOnlyList<DateOnly> WeekPlayedDays)
-{
-    /// <summary>Le nombre de jours de la semaine où il a fini une partie.</summary>
-    public int WeekDaysPlayed => WeekPlayedDays.Count;
-}
+public sealed record PlayerPeriodScores(bool PlayedToday, int? TodayScore, int WeekPoints, IReadOnlyList<DateOnly> WeekPlayedDays);
 
 /// <summary>
 /// Les scores du Défi du jour pour le classement d'un groupe, calculés à la lecture sur les parties terminées (rien n'est stocké) :

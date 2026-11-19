@@ -24,7 +24,6 @@ public class DailyPeriodScoresTests
         Assert.Equal(todayScore, actual.TodayScore);
         Assert.Equal(weekPoints, actual.WeekPoints);
         Assert.Equal(playedDaysAgo.Select(d => Today.AddDays(-d)), actual.WeekPlayedDays);
-        Assert.Equal(playedDaysAgo.Length, actual.WeekDaysPlayed);
     }
 
     [Fact]

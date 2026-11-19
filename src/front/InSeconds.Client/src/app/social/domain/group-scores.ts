@@ -92,8 +92,3 @@ export function weekRows(scores: DailyScores): ScoreRow[] {
 export function todayRows(scores: DailyScores): ScoreRow[] {
   return scores.today.map(entry => ({ rank: entry.rank, pseudo: entry.pseudo, isMe: entry.isMe, value: entry.score, days: null }));
 }
-
-/** Combien de membres ont fini leur défi du jour, et sur combien. */
-export function playedToday(scores: DailyScores): { readonly played: number; readonly members: number } {
-  return { played: scores.today.filter(entry => entry.played).length, members: scores.today.length };
-}

@@ -87,10 +87,7 @@ export class RankingPage {
   /** L'onglet tel qu'il s'écrit dans l'adresse (la semaine n'y figure pas) : changer de groupe le garde. */
   protected readonly periodParam = computed(() => (this.view() === 'week' ? null : this.view()));
 
-  protected readonly daily = computed(() => {
-    const scores = this.store.scores();
-    return scores && scores.groupId === this.store.selectedId() ? scores.daily : null;
-  });
+  protected readonly daily = computed(() => this.store.selectedScores()?.daily ?? null);
   protected readonly weekRows = computed(() => { const daily = this.daily(); return daily ? weekRows(daily) : []; });
   protected readonly todayRows = computed(() => { const daily = this.daily(); return daily ? todayRows(daily) : []; });
   /** Le joueur est seul dans le groupe choisi : rien à classer, il faut inviter. */

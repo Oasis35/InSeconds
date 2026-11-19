@@ -29,9 +29,9 @@ import { ScoreRow } from '../../domain/group-scores';
             </span>
             @if (row.days; as days) {
               <span class="flex items-center gap-1" role="img" data-testid="score-days" [attr.data-played]="row.played"
-                    [attr.aria-label]="'social.scores.daysPlayed' | translate: { count: row.played, total: days.length }">
+                    [attr.aria-label]="(row.played === 1 ? 'social.scores.daysPlayedOne' : 'social.scores.daysPlayed') | translate: { count: row.played, total: days.length }">
                 @for (played of days; track $index) {
-                  <span class="w-1.5 h-1.5 rounded-full" aria-hidden="true" data-testid="score-day" [attr.data-on]="played ? 'true' : null"
+                  <span class="w-1.5 h-1.5 shrink-0 rounded-full" aria-hidden="true" data-testid="score-day" [attr.data-on]="played ? 'true' : null"
                         [style.background]="played ? (row.isMe ? 'var(--color-accent-3)' : 'var(--color-violet)') : 'transparent'"
                         [style.border]="played ? null : '1px solid var(--border-neutral)'"></span>
                 }

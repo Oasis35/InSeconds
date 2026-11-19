@@ -30,7 +30,7 @@ describe('SocialApi', () => {
       modes: [{
         mode: 'daily', day: '2026-11-19', todayRevealed: false, weekDays: 7,
         today: [{ rank: undefined, pseudo: 'Théo', isMe: false, played: true, score: undefined }],
-        week: [{ rank: 1, pseudo: 'Théo', isMe: false, points: 1200, daysPlayed: 2, playedDays: ['2026-11-15', '2026-11-18'] }],
+        week: [{ rank: 1, pseudo: 'Théo', isMe: false, points: 1200, playedDays: ['2026-11-15', '2026-11-18'] }],
       }],
     }));
 

@@ -28,7 +28,7 @@ test.describe('Groupes entre amis', () => {
   });
 
   test("sans l'accès Survie : un compte crée un groupe, un invité garde l'invitation jusqu'à son compte, un ami rejoint, le classement suit le défi", async ({ page, api, browser }) => {
-    await new RunPage(page).loginAsPlayer('lea-groupes@e2e.test', 'LeaGroupes');
+    const ownerId = await new RunPage(page).loginAsPlayer('lea-groupes@e2e.test', 'LeaGroupes');
 
     // L'onglet de la barre du bas ouvre le classement : sans groupe, l'invitation à en créer un.
     await page.goto('/daily');
@@ -87,7 +87,7 @@ test.describe('Groupes entre amis', () => {
     await friend.page.getByTestId('ranking-period-today').click();
     await expect(friend.page).toHaveURL(/period=today/);
     await expect(friend.page.getByTestId('today-locked')).toBeVisible();
-    await expect(friend.page.getByTestId('today-count')).toHaveText('1 sur 3 ont joué');
+    await expect(friend.page.getByTestId('today-count')).toHaveText('1 sur 3 a joué');
     await expect(friend.page.getByTestId('score-value')).toHaveCount(0);
     await expect(friend.page.getByTestId('ranking-play')).toHaveAttribute('href', '/daily');
 
@@ -113,6 +113,15 @@ test.describe('Groupes entre amis', () => {
     await page.reload();
     await expect(page.getByTestId('score-row')).toHaveCount(2);
     await expect(page.locator('[data-testid="score-row"][data-me="true"]')).toHaveCount(1);
+
+    // L'accès Survie ajoute l'onglet « Survie » du groupe (le classement par niveau, personne n'a de partie) et la pastille « Général ».
+    await api.grantRunAccess(ownerId);
+    await page.goto('/ranking?period=survie');
+    await expect(page.getByTestId('ranking-period-survie')).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByTestId('ranking-row')).toHaveCount(2);
+    await expect(page.locator('[data-testid="ranking-row"][data-me="true"]')).toHaveCount(1);
+    await expect(page.getByTestId('ranking-unplayed')).toHaveCount(2);
+    await expect(page.getByTestId('ranking-general')).toBeVisible();
   });
 
   test("le classement général : vide sans partie finie, le profil y mène ; les Hits se lisent depuis la Survie", async ({ page, api }) => {

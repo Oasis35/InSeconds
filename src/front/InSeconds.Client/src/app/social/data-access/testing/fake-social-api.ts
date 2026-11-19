@@ -35,7 +35,7 @@ export const DAILY_LOCKED: DailyScores = {
   today: DAILY.today.map(entry => ({ ...entry, rank: null, score: null, played: !entry.isMe && entry.played })),
 };
 
-export const INVITATION: Invitation ={ groupName: 'Potes', memberCount: 3, maxMembers: 15, isFull: false, alreadyMember: false };
+export const INVITATION: Invitation = { groupName: 'Potes', memberCount: 3, maxMembers: 15, isFull: false, alreadyMember: false };
 
 export const GENERAL: GeneralRanking = {
   top: [

@@ -14,7 +14,7 @@ describe('RankingPage', () => {
   let shared: string[];
   let confirm: boolean;
 
-  async function render(url = '/ranking', who: 'account' | 'guest' | 'nobody' = 'account', pending: string | null = null, survie = true) {
+  async function render(url = '/ranking', who: 'account' | 'guest' | 'nobody' = 'account', pending: string | null = null, survie = true, dailyDone: boolean | null = null) {
     api ??= new FakeSocialApi();
     shared = [];
     TestBed.configureTestingModule({
@@ -28,6 +28,7 @@ describe('RankingPage', () => {
     invite.clear();
     if (pending) invite.set(pending);
     TestBed.inject(ShellChromeStore).setSurvie(survie);
+    TestBed.inject(ShellChromeStore).setDailyDone(dailyDone);
     signIn(who);
     await TestBed.inject(Router).navigateByUrl(url);
     const fixture = TestBed.createComponent(RankingPage);
@@ -113,6 +114,31 @@ describe('RankingPage', () => {
     expect(el.querySelectorAll('[data-testid="today-member"][data-played="true"]')).toHaveLength(1);
     expect(find(el, 'score-value')).toBeNull();
     expect(find(el, 'ranking-play')?.getAttribute('href')).toBe('/daily');
+    expect(find(el, 'today-locked-reason')?.textContent?.trim()).toBe('social.scores.locked');
+  });
+
+  it('« Aujourd\'hui » fermé alors que le défi est joué (abandonné sans réponse) : le dire, sans bouton vers un défi clos', async () => {
+    api.scoresByGroup.set(4, { groupId: 4, name: 'Potes', daily: DAILY_LOCKED });
+    const { el } = await render('/ranking?period=today', 'account', null, true, true);
+
+    expect(find(el, 'today-locked-reason')?.textContent?.trim()).toBe('social.scores.lockedAbandoned');
+    expect(find(el, 'ranking-play')).toBeNull();
+  });
+
+  it("l'onglet Survie ne montre jamais le classement d'un autre groupe pendant une lecture", async () => {
+    const { el, settle } = await render('/ranking?period=survie');
+    let release!: () => void;
+    const original = api.ranking.bind(api);
+    api.ranking = (groupId: number) => new Promise(resolve => { release = () => resolve(original(groupId)); }) as ReturnType<typeof original>;
+
+    await TestBed.inject(Router).navigateByUrl('/ranking?group=7&period=survie');
+    await settle();
+    expect(el.querySelectorAll('[data-testid="ranking-row"]')).toHaveLength(0);
+    expect(find(el, 'ranking-loading')).not.toBeNull();
+
+    release();
+    await settle();
+    expect(el.querySelectorAll('[data-testid="ranking-row"]')).toHaveLength(1);
   });
 
   it("sans l'accès Survie, pas d'onglet « Survie » : demandé par l'adresse, c'est la semaine", async () => {

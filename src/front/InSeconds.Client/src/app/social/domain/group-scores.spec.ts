@@ -1,4 +1,4 @@
-import { DailyScores, addDays, groupViewOf, playedToday, todayRows, weekDots, weekOf, weekRows } from './group-scores';
+import { DailyScores, addDays, groupViewOf, todayRows, weekDots, weekOf, weekRows } from './group-scores';
 
 const SCORES: DailyScores = {
   day: '2026-11-19', todayRevealed: true, weekDays: 7,
@@ -45,9 +45,5 @@ describe('group-scores (domaine social)', () => {
 
   it('les lignes du jour portent le score, sans jours', () => {
     expect(todayRows(SCORES).map(row => [row.pseudo, row.value, row.days])).toEqual([['Théo', 900, null], ['Moi', 600, null], ['Sam', null, null]]);
-  });
-
-  it('compte qui a joué aujourd\'hui', () => {
-    expect(playedToday(SCORES)).toEqual({ played: 2, members: 3 });
   });
 });

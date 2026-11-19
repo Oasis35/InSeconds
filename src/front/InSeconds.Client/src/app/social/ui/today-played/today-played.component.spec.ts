@@ -26,7 +26,7 @@ describe('TodayPlayedComponent', () => {
       'T Théo social.scores.played', 'M social.ranking.me social.scores.notYet', 'S Sam social.scores.notYet',
     ]);
     expect(members.map(member => member.getAttribute('data-played'))).toEqual(['true', null, null]);
-    expect(el.querySelector('[data-testid="today-count"]')?.textContent?.trim()).toBe('social.scores.playedCount');
+    expect(el.querySelector('[data-testid="today-count"]')?.textContent?.trim()).toBe('social.scores.playedCountOne');
     expect(el.querySelector('[data-testid="score-value"]')).toBeNull();
   });
 });

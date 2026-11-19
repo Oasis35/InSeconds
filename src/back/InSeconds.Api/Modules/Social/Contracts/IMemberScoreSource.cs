@@ -12,8 +12,9 @@ public static class ScorePeriods
 /// <param name="TodayScore">Son score du jour, vide s'il n'a pas fini, ou si le joueur qui regarde n'a pas encore le droit de le voir.</param>
 /// <param name="WeekPoints">La somme de ses scores sur la semaine (un jour manqué vaut 0).</param>
 /// <param name="WeekPlayedDays">
-/// Les jours de la semaine (dates des défis) où il a fini une partie, au plus <see cref="ScorePeriods.WeekDays"/>, sans ceux que le joueur qui
-/// regarde ne doit pas encore voir (les mêmes que pour les points).
+/// Les jours de la semaine (dates des défis) où il a fini une partie, sans ceux que le joueur qui regarde ne doit pas encore voir : les jours
+/// comptés dans <paramref name="WeekPoints"/>. La source garantit des jours uniques, croissants, dans les <see cref="ScorePeriods.WeekDays"/> jours
+/// qui finissent <see cref="ModeScores.Day"/> ; Social les reprend tels quels, comme les points.
 /// </param>
 public sealed record MemberPeriodScores(bool PlayedToday, int? TodayScore, int WeekPoints, IReadOnlyList<DateOnly> WeekPlayedDays);
 

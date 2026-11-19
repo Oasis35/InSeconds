@@ -31,9 +31,11 @@ public sealed record TodayScoreEntryResponse(int? Rank, string Pseudo, bool IsMe
 /// <summary>Un membre au classement de la semaine d'un mode.</summary>
 /// <param name="Rank">Vide s'il n'a fini aucune partie sur la semaine.</param>
 /// <param name="Points">La somme de ses scores sur la semaine (un jour manqué vaut 0), vide sans partie.</param>
-/// <param name="DaysPlayed">Les jours de la semaine où il a fini une partie, de 0 à 7.</param>
-/// <param name="PlayedDays">Ces jours (dates des défis), du plus ancien au plus récent : les sept points de la semaine à l'écran.</param>
-public sealed record WeekScoreEntryResponse(int? Rank, string Pseudo, bool IsMe, int? Points, int DaysPlayed, IReadOnlyList<DateOnly> PlayedDays);
+/// <param name="PlayedDays">
+/// Les jours de la semaine (dates des défis) où il a fini une partie, de 0 à 7, du plus ancien au plus récent : les sept points de la semaine à
+/// l'écran.
+/// </param>
+public sealed record WeekScoreEntryResponse(int? Rank, string Pseudo, bool IsMe, int? Points, IReadOnlyList<DateOnly> PlayedDays);
 
 /// <summary>Le classement d'un mode : le jour et la semaine.</summary>
 /// <param name="Mode">Le nom du mode (<c>daily</c>).</param>

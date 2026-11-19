@@ -4,7 +4,7 @@ Format : téléphone d'abord (390 × 844). Les textes sont dans les traductions 
 
 ## L'interface Survie
 
-Un compte qui a l'accès au mode voit une autre coque que l'interface publique du défi du jour : c'est le seul drapeau, il n'y en a pas d'autre. Sans l'accès, l'interface publique reste telle quelle, sans trous.
+La coque (barre du bas, accueil, historique du défi, classements des groupes) est la même pour tous ; un compte qui a l'accès au mode y voit en plus ce qui touche la Survie : c'est le seul drapeau, il n'y en a pas d'autre. Sans l'accès, rien de la Survie ne s'affiche, sans trous.
 
 - **Barre du bas** à 4 entrées : Accueil, Classements, Historique, Mon compte (« Connexion » pour un invité). Elle est masquée pendant une manche et sur les écrans de jeu. L'en-tête garde le logo, Instagram et, pour un admin, le cadenas ; le compte n'y est plus.
 - **Accueil « ta journée »** (`/`) : deux cartes pleine largeur, le défi du jour puis la Survie. La carte Survie montre le niveau (« Niveau Argent · 2 340 pts » ou « Pas encore de disque ») et l'échelle des 7 disques, avec au-dessus, la semaine qui précède une baisse, l'alerte cyan d'inactivité (« Ton disque d'argent baisse dans 3 jours »). La prochaine action est en orange : tant que le défi du jour reste à jouer, c'est lui. Un défi d'ami reçu s'affiche en bandeau violet dans la carte Survie ; la place « 2e dans Potes · 14e au général » s'y lit une fois, sous le niveau. Mentions légales, confidentialité et contact en ligne discrète sous la carte Survie.
