@@ -17,20 +17,29 @@ import { GroupShare } from '../../data-access/group-share';
 import { GroupsStore } from '../../data-access/groups.store';
 import { PendingInvite } from '../../data-access/pending-invite';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
+import { GroupView, groupViewOf, todayRows, weekRows } from '../../domain/group-scores';
 import { GeneralRankingComponent } from '../general-ranking/general-ranking.component';
-import { RankingListComponent } from '../../ui/ranking-list/ranking-list.component';
+import { ScoreListComponent } from '../../ui/score-list/score-list.component';
+import { TodayPlayedComponent } from '../../ui/today-played/today-played.component';
+
+/** Les deux onglets du classement d'un groupe, pour tous. */
+const VIEWS: readonly { readonly id: GroupView; readonly labelKey: string }[] = [
+  { id: 'week', labelKey: 'social.scores.week' },
+  { id: 'today', labelKey: 'social.scores.today' },
+];
 
 /**
- * Le classement (`/ranking`, `?group=<id>`, `?view=general`) : la pastille « Général » (le classement général, par niveau), une par groupe et
- * « + Groupe », le classement du groupe choisi (la ligne du
- * joueur en orange), « Inviter un ami » et « Quitter le groupe ». Sans groupe : « Joue contre tes amis ». Sans compte : l'invitation à en créer
- * un (un groupe exige un compte). Seuls les membres d'un groupe voient les pseudos des autres : le serveur le garantit.
+ * Le classement (`/ranking`, `?group=<id>`, `?period=today`, `?view=general`) : une pastille par groupe et « + Groupe » (plus « Général », le
+ * classement général par niveau, pour qui a l'accès Survie), puis le classement du Défi du jour du groupe choisi, « Cette semaine » (points des
+ * sept derniers jours et un point par jour joué) ou « Aujourd'hui » (fermé tant que le joueur n'a pas fini son défi : seulement qui a joué). La
+ * ligne du joueur est en orange. Puis « Inviter un ami » et « Quitter le groupe ». Seul dans son groupe : l'invitation à y faire venir ses amis. Sans groupe : « Joue contre tes amis ». Sans compte : l'invitation à en
+ * créer un (un groupe exige un compte). Seuls les membres d'un groupe voient les pseudos des autres : le serveur le garantit.
  */
 @Component({
   selector: 'app-ranking-page',
-  imports: [HomeLegalLineComponent, 
-    TranslatePipe, RouterLink, DecorBackgroundComponent, BrandComponent, AccountLinkComponent, InstagramLinkComponent, ButtonComponent, RankingListComponent,
-    GeneralRankingComponent,
+  imports: [HomeLegalLineComponent,
+    TranslatePipe, RouterLink, DecorBackgroundComponent, BrandComponent, AccountLinkComponent, InstagramLinkComponent, ButtonComponent,
+    GeneralRankingComponent, ScoreListComponent, TodayPlayedComponent,
   ],
   providers: [GroupsStore, GroupShare],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -45,6 +54,7 @@ export class RankingPage {
   private readonly modal = inject(ModalService);
   private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
+  private readonly params = inject(ActivatedRoute).queryParamMap;
 
   /** Une invitation reçue avant d'avoir un compte : proposée ici une fois connecté. */
   protected readonly pendingCode = signal(inject(PendingInvite).get());
@@ -52,7 +62,7 @@ export class RankingPage {
 
   /** Le groupe de l'adresse ; absent ou mal écrit : le premier. */
   private readonly groupId = toSignal(
-    inject(ActivatedRoute).queryParamMap.pipe(map(params => {
+    this.params.pipe(map(params => {
       const id = Number(params.get('group'));
       return Number.isInteger(id) && id > 0 ? id : null;
     })),
@@ -60,27 +70,51 @@ export class RankingPage {
   );
 
   /** `?edit=name` (le lien du profil) : le choix du nom s'ouvre avec le classement général. */
-  protected readonly editName = toSignal(inject(ActivatedRoute).queryParamMap.pipe(map(params => params.get('edit') === 'name')), { initialValue: false });
+  protected readonly editName = toSignal(this.params.pipe(map(params => params.get('edit') === 'name')), { initialValue: false });
 
   protected readonly chrome = inject(ShellChromeStore);
-  private readonly generalRequested = toSignal(inject(ActivatedRoute).queryParamMap.pipe(map(params => params.get('view') === 'general')), { initialValue: false });
+  private readonly generalRequested = toSignal(this.params.pipe(map(params => params.get('view') === 'general')), { initialValue: false });
   /** `?view=general` : le classement général à la place de celui d'un groupe, pour qui a l'accès Survie (il se classe par niveau). */
   protected readonly general = computed(() => this.generalRequested() && this.chrome.survieKnown() && this.chrome.survie());
+
+  private readonly period = toSignal(this.params.pipe(map(params => params.get('period'))), { initialValue: null });
+  /** L'onglet du groupe : la semaine par défaut. */
+  protected readonly view = computed(() => groupViewOf(this.period()));
+  protected readonly views = VIEWS;
+  /** L'onglet tel qu'il s'écrit dans l'adresse (la semaine n'y figure pas) : changer de groupe le garde. */
+  protected readonly periodParam = computed(() => (this.view() === 'week' ? null : this.view()));
+
+  protected readonly daily = computed(() => this.store.selectedScores()?.daily ?? null);
+  protected readonly weekRows = computed(() => { const daily = this.daily(); return daily ? weekRows(daily) : []; });
+  protected readonly todayRows = computed(() => { const daily = this.daily(); return daily ? todayRows(daily) : []; });
+  /** Le joueur est seul dans le groupe choisi : rien à classer, il faut inviter. */
+  protected readonly alone = computed(() => (this.store.selected()?.memberCount ?? 0) <= 1);
 
   constructor() {
     effect(() => {
       // L'identité se lit au démarrage de l'app : un invité n'a pas de groupe, on ne demande rien.
       if (!this.session.loaded() || !this.session.isLinked()) return;
       const groupId = this.groupId();
+      const status = this.store.status();
       untracked(() => {
-        if (this.store.status() === 'ready' && groupId !== null) void this.store.select(groupId);
-        else void this.store.load(groupId);
+        if (status === 'idle') void this.store.load(groupId);
+        else if (status === 'ready') {
+          // Le store ne relit que ce qui manque : les scores d'un autre groupe.
+          const target = groupId ?? this.store.selectedId();
+          if (target !== null) void this.store.select(target);
+        }
       });
     });
   }
 
   protected retry(): void {
     void this.store.load(this.groupId());
+  }
+
+  /** Le classement du groupe en panne : le store le relit. */
+  protected retryGroup(): void {
+    const id = this.store.selectedId();
+    if (id !== null) void this.store.select(id);
   }
 
   protected async leave(): Promise<void> {

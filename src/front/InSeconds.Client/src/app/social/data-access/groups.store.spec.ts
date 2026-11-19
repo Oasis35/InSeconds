@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { MemoryStoragePort, StoragePort } from '../../core/storage/storage.port';
 import { GroupsStore } from './groups.store';
 import { LastGroup } from './last-group';
-import { FakeSocialApi, GROUP, OTHER_GROUP, provideFakeSocialApi } from './testing/fake-social-api';
+import { DAILY, FakeSocialApi, GROUP, OTHER_GROUP, provideFakeSocialApi } from './testing/fake-social-api';
 
 describe('GroupsStore', () => {
   let api: FakeSocialApi;
@@ -14,14 +14,22 @@ describe('GroupsStore', () => {
     store = TestBed.inject(GroupsStore);
   });
 
-  it('lit mes groupes et le classement du premier', async () => {
+  it('lit mes groupes et le classement du Défi du premier, jamais celui de la Survie', async () => {
     await store.load();
 
     expect(store.status()).toBe('ready');
     expect(store.groups()).toEqual([GROUP, OTHER_GROUP]);
     expect(store.selected()).toEqual(GROUP);
-    expect(store.ranking()?.entries).toHaveLength(3);
+    expect(store.selectedScores()?.daily).toEqual(DAILY);
     expect(store.canCreate()).toBe(true);
+    expect(api.calls).toEqual(['myGroups', 'scores:4']);
+  });
+
+  it('lit les scores d\'un groupe une fois', async () => {
+    await store.load();
+
+    await store.select(4);
+    expect(api.calls).toEqual(['myGroups', 'scores:4']);
   });
 
   it('ouvre le groupe demandé, ou le premier si ce n\'est pas un des miens', async () => {
@@ -55,7 +63,7 @@ describe('GroupsStore', () => {
     await store.load();
 
     expect(store.selected()).toBeNull();
-    expect(store.ranking()).toBeNull();
+    expect(store.scores()).toBeNull();
     expect(api.calls).toEqual(['myGroups']);
   });
 
@@ -72,16 +80,21 @@ describe('GroupsStore', () => {
 
     await store.select(7);
 
-    expect(store.ranking()?.name).toBe('Famille');
+    expect(store.selectedId()).toBe(7);
+    expect(store.scores()?.name).toBe('Famille');
   });
 
-  it('un classement illisible passe en erreur, la liste reste', async () => {
-    api.rankings.delete(4);
+  it('un classement illisible passe en erreur, la liste reste ; le regarder à nouveau le relit', async () => {
+    api.scoresByGroup.delete(4);
 
     await store.load();
 
     expect(store.status()).toBe('ready');
-    expect(store.rankingStatus()).toBe('error');
+    expect(store.scoresStatus()).toBe('error');
+
+    api.scoresByGroup.set(4, { groupId: 4, name: 'Potes', daily: DAILY });
+    await store.select(4);
+    expect(store.scoresStatus()).toBe('ready');
   });
 
   it('une panne de la liste passe en erreur', async () => {
@@ -99,6 +112,7 @@ describe('GroupsStore', () => {
 
     expect(store.groups()).toEqual([OTHER_GROUP]);
     expect(store.selectedId()).toBe(7);
+    expect(store.scores()?.groupId).toBe(7);
   });
 
   it('un refus de quitter ne change rien', async () => {

@@ -38,11 +38,12 @@ export class SocialApi {
     return { groups: response.groups.map(toGroup), maxGroups: response.maxGroups };
   }
 
+  /** Le classement du groupe en Survie (par niveau). */
   async ranking(groupId: number): Promise<GroupRanking> {
     return toRanking(await firstValueFrom(this.client.getGroupRanking(groupId)));
   }
 
-  /** Le classement du groupe au Défi du jour : le jour (les scores seulement si j'ai fini ma partie) et la semaine glissante. */
+  /** Le classement du groupe au Défi du jour : le jour et la semaine glissante. */
   async scores(groupId: number): Promise<GroupScores> {
     return toScores(await firstValueFrom(this.client.getGroupScores(groupId)));
   }
@@ -122,11 +123,11 @@ function toScores(response: GroupScoresResponse): GroupScores {
 
 function toDailyScores(mode: ModeScoresResponse): DailyScores {
   return {
-    day: toDay(mode.day),
-    todayRevealed: mode.todayRevealed,
-    weekDays: mode.weekDays,
+    day: toDay(mode.day), todayRevealed: mode.todayRevealed, weekDays: mode.weekDays,
     today: mode.today.map(entry => ({ rank: entry.rank ?? null, pseudo: entry.pseudo, isMe: entry.isMe, played: entry.played, score: entry.score ?? null })),
-    week: mode.week.map(entry => ({ rank: entry.rank ?? null, pseudo: entry.pseudo, isMe: entry.isMe, points: entry.points ?? null, daysPlayed: entry.daysPlayed })),
+    week: mode.week.map(entry => ({
+      rank: entry.rank ?? null, pseudo: entry.pseudo, isMe: entry.isMe, points: entry.points ?? null, playedDays: (entry.playedDays ?? []).map(toDay),
+    })),
   };
 }
 

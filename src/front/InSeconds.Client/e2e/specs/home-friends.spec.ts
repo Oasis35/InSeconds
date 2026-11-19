@@ -86,8 +86,8 @@ test.describe("Accueil : la carte amis", () => {
     await expect(card.getByTestId('friends-card-row')).toHaveCount(2);
     await expect(card.locator('[data-testid="friends-card-row"][data-me="true"]')).toHaveCount(1);
 
-    // « Classement » ouvre le classement de ce groupe.
+    // « Classement » ouvre le classement du jour de ce groupe.
     await card.getByTestId('friends-card-ranking').click();
-    await expect(page).toHaveURL(new RegExp(`/ranking\\?group=${group.id}$`));
+    await expect(page).toHaveURL(new RegExp(`/ranking\\?group=${group.id}&period=today$`));
   });
 });

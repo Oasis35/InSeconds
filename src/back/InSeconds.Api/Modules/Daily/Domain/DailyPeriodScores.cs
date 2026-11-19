@@ -8,7 +8,8 @@ public sealed record ViewerGame(DateOnly ChallengeDate, SessionStatus Status, in
 
 /// <summary>Ce qu'un joueur a marqué au Défi du jour, par période.</summary>
 /// <param name="TodayScore">Le score de sa partie du jour, vide s'il ne l'a pas finie ou si le joueur qui regarde ne doit pas encore le voir.</param>
-public sealed record PlayerPeriodScores(bool PlayedToday, int? TodayScore, int WeekPoints, int WeekDaysPlayed);
+/// <param name="WeekPlayedDays">Les jours de la semaine où il a fini une partie, du plus ancien au plus récent, sans les jours cachés.</param>
+public sealed record PlayerPeriodScores(bool PlayedToday, int? TodayScore, int WeekPoints, IReadOnlyList<DateOnly> WeekPlayedDays);
 
 /// <summary>
 /// Les scores du Défi du jour pour le classement d'un groupe, calculés à la lecture sur les parties terminées (rien n'est stocké) :
@@ -60,9 +61,9 @@ public static class DailyPeriodScores
             // Une seule partie par joueur et par défi : un doublon (impossible en base) ne compte qu'une fois.
             var byDay = player.GroupBy(g => g.ChallengeDate).ToDictionary(d => d.Key, d => d.Max(g => g.Score));
             var playedToday = byDay.TryGetValue(today, out var todayScore);
-            var counted = byDay.Where(d => !hiddenDays.Contains(d.Key)).ToList();
+            var counted = byDay.Where(d => !hiddenDays.Contains(d.Key)).OrderBy(d => d.Key).ToList();
             result[player.Key] = new PlayerPeriodScores(
-                playedToday, playedToday && !hiddenDays.Contains(today) ? todayScore : null, counted.Sum(d => d.Value), counted.Count);
+                playedToday, playedToday && !hiddenDays.Contains(today) ? todayScore : null, counted.Sum(d => d.Value), [.. counted.Select(d => d.Key)]);
         }
 
         return result;

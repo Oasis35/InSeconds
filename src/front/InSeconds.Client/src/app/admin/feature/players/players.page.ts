@@ -15,7 +15,7 @@ import { PlayerRowComponent } from '../../ui/players/player-row/player-row.compo
  * `/admin/joueurs` : en haut, les séries en cours et la part des joueurs revenus le lendemain ; puis les comptes inscrits, les plus
  * récemment vus d'abord, avec un filtre texte et,
  * sous chaque ligne dépliée (une seule à la fois), l'historique des 30 derniers jours. Une colonne « Run » donne
- * l'interrupteur d'accès au mode Run (admins d'office).
+ * l'interrupteur d'accès au mode Run (admins compris).
  * Sur PC, un tableau élargi ; sur téléphone, une carte par compte (pseudo, série, gels, parties, dernière visite, accès à Setlist).
  * La liste n'est lue qu'à l'ouverture de l'onglet (la page n'existe qu'alors).
  */

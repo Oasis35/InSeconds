@@ -1537,7 +1537,7 @@
           "pseudo",
           "isMe",
           "points",
-          "daysPlayed"
+          "playedDays"
         ],
         "type": "object",
         "properties": {
@@ -1561,9 +1561,12 @@
             ],
             "format": "int32"
           },
-          "daysPlayed": {
-            "type": "integer",
-            "format": "int32"
+          "playedDays": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
           }
         }
       }

@@ -19,15 +19,15 @@ export interface WeekScoreEntry {
   readonly pseudo: string;
   readonly isMe: boolean;
   readonly points: number | null;
-  /** Les jours de la semaine où il a fini une partie (0 à 7). */
-  readonly daysPlayed: number;
+  /** Les jours de la semaine où il a fini une partie, du plus ancien au plus récent. */
+  readonly playedDays: readonly string[];
 }
 
 /** Le classement du Défi du jour d'un groupe. */
 export interface DailyScores {
   /** Le jour de jeu en cours (jour UTC). */
   readonly day: string;
-  /** Le joueur a fini son défi du jour : les scores du jour sont montrés ; avant, seulement qui a joué. */
+  /** Le joueur a fini son défi du jour : « Aujourd'hui » est ouvert. */
   readonly todayRevealed: boolean;
   /** La longueur de la semaine glissante (7). */
   readonly weekDays: number;
@@ -42,7 +42,51 @@ export interface GroupScores {
   readonly daily: DailyScores | null;
 }
 
-/** Combien de membres ont fini leur défi du jour, et sur combien. */
-export function playedToday(scores: DailyScores): { readonly played: number; readonly members: number } {
-  return { played: scores.today.filter(entry => entry.played).length, members: scores.today.length };
+/** Une ligne d'un classement par score, prête à afficher : la valeur (points ou score) et, pour la semaine, ses jours joués. */
+export interface ScoreRow {
+  readonly rank: number | null;
+  readonly pseudo: string;
+  readonly isMe: boolean;
+  /** Points de la semaine ou score du jour ; vide : « pas encore joué ». */
+  readonly value: number | null;
+  /** Un point par jour de la semaine, du plus ancien au jour en cours : `true` s'il l'a joué. Vide pour le jour. */
+  readonly days: readonly boolean[] | null;
+}
+
+/** Les vues du classement d'un groupe : la semaine (par défaut) et le jour. */
+export type GroupView = 'week' | 'today';
+
+/** La vue demandée par l'adresse (`?period=`) ; absente ou inconnue : la semaine. */
+export function groupViewOf(period: string | null): GroupView {
+  return period === 'today' ? 'today' : 'week';
+}
+
+/** Le jour `aaaa-mm-jj` décalé de `days` jours (calcul en UTC, sans heure d'été). */
+export function addDays(day: string, days: number): string {
+  const [year, month, date] = day.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, date + days)).toISOString().slice(0, 10);
+}
+
+/** Les jours de la semaine qui finit `day`, du plus ancien au plus récent. */
+export function weekOf(day: string, weekDays: number): string[] {
+  return Array.from({ length: weekDays }, (_, index) => addDays(day, index - weekDays + 1));
+}
+
+/** Les points de la semaine d'un membre : un par jour, allumé s'il l'a joué. */
+export function weekDots(day: string, weekDays: number, playedDays: readonly string[]): boolean[] {
+  const played = new Set(playedDays);
+  return weekOf(day, weekDays).map(date => played.has(date));
+}
+
+/** Les lignes de la semaine. */
+export function weekRows(scores: DailyScores): ScoreRow[] {
+  return scores.week.map(entry => ({
+    rank: entry.rank, pseudo: entry.pseudo, isMe: entry.isMe, value: entry.points,
+    days: weekDots(scores.day, scores.weekDays, entry.playedDays),
+  }));
+}
+
+/** Les lignes du jour (à n'afficher que si `todayRevealed`). */
+export function todayRows(scores: DailyScores): ScoreRow[] {
+  return scores.today.map(entry => ({ rank: entry.rank, pseudo: entry.pseudo, isMe: entry.isMe, value: entry.score, days: null }));
 }

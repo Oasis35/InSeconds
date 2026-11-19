@@ -19,7 +19,7 @@ interface PlayersState {
   histories: Readonly<Record<string, readonly PlayerGame[]>>;
   /** État de la lecture de l'historique du joueur déplié. */
   historyStatus: HistoryStatus;
-  /** Les comptes autorisés à lancer un run (hors admins, qui l'ont d'office). */
+  /** Les comptes autorisés à lancer un run (admins compris). */
   runAccess: readonly string[];
   /** Les comptes dont l'interrupteur attend la réponse de l'API. */
   runAccessPending: readonly string[];

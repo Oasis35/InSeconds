@@ -14,7 +14,7 @@ namespace InSeconds.Api.Modules.Runs.Application;
 // Les routes de la partie, calquées sur celles du Daily (LoadAsync / Validate / Post, jamais de SaveChangesAsync : la transaction est celle de
 // Wolverine). L'accès sur invitation n'est demandé que pour lancer un run ; relever une playlist demande seulement d'en avoir le lien.
 
-/// <param name="HasAccess">Le joueur peut lancer un run (admin, ou compte autorisé).</param>
+/// <param name="HasAccess">Le joueur peut lancer un run (compte autorisé, ligne <c>runs.access</c>, admin compris).</param>
 /// <param name="Record">Son record ; vide s'il n'en a pas.</param>
 /// <param name="Pending">Sa partie en cours la plus récente, à reprendre.</param>
 /// <param name="Level">Son niveau (points de niveau, disque, progression vers le suivant) ; vide avant sa première partie finie.</param>
@@ -184,7 +184,7 @@ public static class JoinRunEndpoint
 
     /// <summary>
     /// <c>POST /api/runs/challenges/{code}/sessions</c> : relève la playlist, ou reprend sa partie en cours dessus (comme <c>POST /api/daily/sessions</c>).
-    /// Comme le lancement, elle exige l'accès au mode (admin, ou compte autorisé) : le lien d'un ami ne l'ouvre plus à un invité ni à un compte sans
+    /// Comme le lancement, elle exige l'accès au mode (compte autorisé, admin compris) : le lien d'un ami ne l'ouvre plus à un invité ni à un compte sans
     /// accès, 403 <c>runs.access_denied</c> ; sans identité, 401. Une playlist se joue une fois : 409 <c>runs.already_played</c> / <c>runs.abandoned</c>
     /// si la partie est finie.
     /// </summary>

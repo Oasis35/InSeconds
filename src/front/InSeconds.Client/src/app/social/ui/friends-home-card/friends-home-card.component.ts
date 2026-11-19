@@ -39,7 +39,7 @@ import { FriendPresence, FriendsCardView } from '../../domain/friends-card';
               @if (view().kind === 'revealed') { {{ 'social.home.todayTitle' | translate: { name: title() } }} } @else { {{ title() }} }
             </h2>
             @if (groupId(); as id) {
-              <a routerLink="/ranking" [queryParams]="{ group: id }" data-testid="friends-card-ranking"
+              <a routerLink="/ranking" [queryParams]="rankingParams(id)" data-testid="friends-card-ranking"
                 class="shrink-0 inline-flex items-center min-h-11 -my-2 text-sm underline underline-offset-4" style="color:var(--text-light)">
                 {{ 'social.ranking.title' | translate }}
               </a>
@@ -51,9 +51,9 @@ import { FriendPresence, FriendsCardView } from '../../domain/friends-card';
               @if (pending.total <= 1) {
                 {{ 'social.home.alone' | translate }}
               } @else if (pending.played === 0) {
-                {{ 'social.home.nobodyPlayed' | translate }}
+                {{ 'social.scores.playedNone' | translate }}
               } @else {
-                {{ (pending.played === 1 ? 'social.home.playedOne' : 'social.home.playedMany') | translate: { played: pending.played, total: pending.total } }}
+                {{ (pending.played === 1 ? 'social.scores.playedCountOne' : 'social.scores.playedCount') | translate: { played: pending.played, members: pending.total } }}
               }
             </p>
             @if (pending.total > 1) {
@@ -138,6 +138,11 @@ export class FriendsHomeCardComponent {
   constructor() {
     // Elle arrive juste après la carte du défi, avant la carte Survie.
     afterNextRender(() => enterHomeCard(this.host.nativeElement, 0.06));
+  }
+
+  /** « Classement » ouvre le groupe ; une fois le défi fait, directement sur « Aujourd'hui », le classement que la carte résume. */
+  protected rankingParams(groupId: number): Record<string, string | number> {
+    return this.view().kind === 'revealed' ? { group: groupId, period: 'today' } : { group: groupId };
   }
 
   /** Le nom du groupe : seul titre avant le défi, « Potes, aujourd'hui » après. */

@@ -49,7 +49,7 @@ describe('FriendsHomeCardComponent', () => {
     });
 
     expect(one(element, 'friends-card-title')?.textContent?.trim()).toBe('Potes');
-    expect(one(element, 'friends-card-played')?.textContent?.trim()).toBe('social.home.playedMany');
+    expect(one(element, 'friends-card-played')?.textContent?.trim()).toBe('social.scores.playedCount');
     const members = all(element, 'friends-card-member');
     expect(members.map(member => member.dataset['played'])).toEqual(['true', 'true', 'false']);
     expect(members[2].dataset['me']).toBe('true');
@@ -70,7 +70,7 @@ describe('FriendsHomeCardComponent', () => {
       members: [{ pseudo: 'Moi', isMe: true, played: false }, { pseudo: 'Léa', isMe: false, played: false }],
     });
 
-    expect(one(element, 'friends-card-played')?.textContent?.trim()).toBe('social.home.nobodyPlayed');
+    expect(one(element, 'friends-card-played')?.textContent?.trim()).toBe('social.scores.playedNone');
   });
 
   it("défi fait : « Potes, aujourd'hui » et le haut du classement, la ligne du joueur marquée", () => {
@@ -80,6 +80,7 @@ describe('FriendsHomeCardComponent', () => {
     });
 
     expect(one(element, 'friends-card-title')?.textContent?.trim()).toBe('social.home.todayTitle');
+    expect(one(element, 'friends-card-ranking')?.getAttribute('href')).toBe('/ranking?group=4&period=today');
     const rows = all(element, 'friends-card-row');
     expect(rows).toHaveLength(2);
     expect(rows[1].dataset['me']).toBe('true');

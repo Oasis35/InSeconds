@@ -48,13 +48,14 @@ public sealed class GroupRanking(IEnumerable<IMemberPerformanceSource> sources, 
 
     /// <summary>
     /// Les joueurs du classement général : ceux que les modes y mettent (l'accès et une partie finie), **comptes seulement** (un invité n'a pas de
-    /// pseudo de compte et n'y figure jamais).
+    /// pseudo de compte et n'y figure jamais) et **jamais un admin**, même s'il a l'accès (décision du 18/11).
     /// </summary>
     public async Task<IReadOnlyList<Guid>> ListGeneralRankingPlayersAsync(CancellationToken ct)
     {
         var ids = new HashSet<Guid>();
         foreach (var source in sources)
             ids.UnionWith(await source.ListGeneralRankingPlayersAsync(ct));
+        ids.ExceptWith(await players.ListAdminsAsync(ct));
         var accounts = await players.GetPseudosAsync(ids, ct);
         return [.. ids.Where(accounts.ContainsKey)];
     }
@@ -86,7 +87,8 @@ public sealed record ModeScoresView(string Mode, DateOnly Day, bool TodayReveale
 
 public sealed record TodayScoreLine(ScoreRow Row, bool Played);
 
-public sealed record WeekScoreLine(ScoreRow Row, int DaysPlayed);
+/// <param name="PlayedDays">Les jours de la semaine où il a fini une partie, du plus ancien au plus récent.</param>
+public sealed record WeekScoreLine(ScoreRow Row, IReadOnlyList<DateOnly> PlayedDays);
 
 /// <summary>
 /// Le classement par score d'un groupe : les scores viennent des modes (<see cref="IMemberScoreSource"/>, chacun ajoute le sien), les pseudos de
@@ -109,11 +111,12 @@ public sealed class GroupScores(IEnumerable<IMemberScoreSource> sources, IPlayer
 
             // Le score du jour n'est jamais rendu avant que le joueur qui regarde ait fini sa partie, même si la source l'oubliait.
             var today = ScoreRankingPolicy.Rank(ids.Select(id => new ScoreInput(id, PseudoOf(id), scores.TodayRevealed && Of(id) is { PlayedToday: true } m ? m.TodayScore : null)));
-            var week = ScoreRankingPolicy.Rank(ids.Select(id => new ScoreInput(id, PseudoOf(id), Of(id) is { WeekDaysPlayed: > 0 } m ? m.WeekPoints : null)));
+            // La semaine est à la charge de la source (contrat) : ses points et ses jours joués sont repris tels quels.
+            var week = ScoreRankingPolicy.Rank(ids.Select(id => new ScoreInput(id, PseudoOf(id), Of(id) is { WeekPlayedDays.Count: > 0 } m ? m.WeekPoints : null)));
             modes.Add(new ModeScoresView(
                 source.Source, scores.Day, scores.TodayRevealed,
                 [.. today.Select(r => new TodayScoreLine(r, Of(r.PlayerId)?.PlayedToday ?? false))],
-                [.. week.Select(r => new WeekScoreLine(r, Math.Clamp(Of(r.PlayerId)?.WeekDaysPlayed ?? 0, 0, ScorePeriods.WeekDays)))]));
+                [.. week.Select(r => new WeekScoreLine(r, Of(r.PlayerId)?.WeekPlayedDays ?? []))]));
         }
 
         return modes;

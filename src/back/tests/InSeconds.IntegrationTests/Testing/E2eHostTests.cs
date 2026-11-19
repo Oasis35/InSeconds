@@ -253,6 +253,8 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, (await other.PostAsync("/api/e2e/login-as-admin", null, Ct)).StatusCode);
         Assert.Equal(me.PlayerId, (await other.GetFromJsonAsync<PlayerMeResponse>("/api/players/me", Ct))!.PlayerId);
         Assert.Equal(HttpStatusCode.OK, (await other.GetAsync("/api/admin/me", Ct)).StatusCode);
+        // Le rôle ne donne pas l'accès Survie : login-as-admin pose la ligne, une seule fois (les E2E de Survie s'y appuient).
+        Assert.Contains("\"hasAccess\":true", await other.GetStringAsync("/api/runs/me", Ct), StringComparison.Ordinal);
     }
 
     [Fact]

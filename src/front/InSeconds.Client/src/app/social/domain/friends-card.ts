@@ -1,4 +1,4 @@
-import { DailyScores, GroupScores, TodayScoreEntry, playedToday } from './group-scores';
+import { DailyScores, GroupScores, TodayScoreEntry } from './group-scores';
 
 /** Un membre sur la carte amis avant que le joueur ait fini son défi : son nom et s'il a joué, jamais un score. */
 export interface FriendPresence {
@@ -38,7 +38,8 @@ export function groupCardView(scores: GroupScores): FriendsCardView | null {
   const daily = scores.daily;
   if (!daily) return null;
   if (daily.todayRevealed) return { kind: 'revealed', groupId: scores.groupId, name: scores.name, top: todayTop(daily, FRIENDS_TOP_SIZE) };
-  const { played, members: total } = playedToday(daily);
+  const played = daily.today.filter(entry => entry.played).length;
+  const total = daily.today.length;
   // Ceux qui ont joué d'abord, le joueur en tête des autres : la rangée se lit « qui m'attend ».
   const members = [...daily.today]
     .sort((a, b) => Number(b.played) - Number(a.played) || Number(b.isMe) - Number(a.isMe))

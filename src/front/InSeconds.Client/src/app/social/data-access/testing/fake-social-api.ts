@@ -22,7 +22,11 @@ export const DAILY: DailyScores = {
     { rank: 2, pseudo: 'Moi', isMe: true, played: true, score: 600 },
     { rank: null, pseudo: 'Sam', isMe: false, played: false, score: null },
   ],
-  week: [],
+  week: [
+    { rank: 1, pseudo: 'Théo', isMe: false, points: 2400, playedDays: ['2026-11-15', '2026-11-17', '2026-11-19'] },
+    { rank: 2, pseudo: 'Moi', isMe: true, points: 1000, playedDays: ['2026-11-13', '2026-11-19'] },
+    { rank: null, pseudo: 'Sam', isMe: false, points: null, playedDays: [] },
+  ],
 };
 
 /** Le même avant que le joueur ait fini son défi : qui a joué, sans aucun score du jour. */
@@ -49,9 +53,18 @@ export const GENERAL: GeneralRanking = {
 export class FakeSocialApi {
   groups: MyGroups = { groups: [GROUP, OTHER_GROUP], maxGroups: 5 };
   rankings = new Map<number, GroupRanking>([[4, RANKING], [7, { groupId: 7, name: 'Famille', entries: [{ rank: 1, pseudo: 'Moi', isMe: true, points: 1380, badge: 'runs.discs.silver' }] }]]);
+  scoresByGroup = new Map<number, GroupScores>([
+    [4, { groupId: 4, name: 'Potes', daily: DAILY }],
+    [7, {
+      groupId: 7, name: 'Famille', daily: {
+        ...DAILY,
+        today: [{ rank: 1, pseudo: 'Moi', isMe: true, played: true, score: 600 }],
+        week: [{ rank: 1, pseudo: 'Moi', isMe: true, points: 600, playedDays: ['2026-11-19'] }],
+      },
+    }],
+  ]);
   createOutcome: GroupOutcome = { kind: 'ok', group: GROUP };
   joinOutcome: GroupOutcome = { kind: 'ok', group: GROUP };
-  scoresByGroup = new Map<number, GroupScores>([[4, { groupId: 4, name: 'Potes', daily: DAILY }], [7, { groupId: 7, name: 'Famille', daily: DAILY }]]);
   invitationOutcome: InvitationOutcome = { kind: 'ok', invitation: INVITATION };
   general: GeneralRanking = GENERAL;
   failGeneral = false;

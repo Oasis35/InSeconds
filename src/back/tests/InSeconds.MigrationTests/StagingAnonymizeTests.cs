@@ -15,6 +15,7 @@ public class StagingAnonymizeTests(ScriptDatabase database)
         var cs = await database.CreateDatabaseAsync();
         var kept = await ScriptDatabase.InsertPlayerAsync(cs, "Garde@example.com", "Garde", isAdmin: true);
         var other = await ScriptDatabase.InsertPlayerAsync(cs, "joueur@example.com", "Joueur", isAdmin: true);
+        var invited = await ScriptDatabase.InsertPlayerAsync(cs, "invite@example.com", "Invite");
         await ScriptDatabase.InsertPlayerAsync(cs);
         await ScriptDatabase.ExecuteAsync(cs, $"""
             INSERT INTO players.auth_tokens (created_at, email, expires_at, purpose, token_hash) VALUES (now(), 'joueur@example.com', now() + interval '10 minutes', 1, '\x010203');
@@ -25,6 +26,7 @@ public class StagingAnonymizeTests(ScriptDatabase database)
             INSERT INTO infra.backup_runs (finished_at, off_site) VALUES (now(), true);
             INSERT INTO social.groups (id, name, invite_code, owner_id, created_at) VALUES (1, 'Les copains', 'ABCD2345', '{other}', now());
             INSERT INTO social.group_members (group_id, player_id, joined_at) VALUES (1, '{other}', now());
+            INSERT INTO runs.access (player_id, granted_at) VALUES ('{kept}', now()), ('{other}', now()), ('{invited}', now());
             """);
         // Les tables de messaging : créées par Wolverine au premier démarrage de l'API (pas par les migrations), noms compris.
         await using (var api = new TestApi(cs))
@@ -44,6 +46,10 @@ public class StagingAnonymizeTests(ScriptDatabase database)
         var pseudo = "joueur-" + other.ToString("N")[..12];
         Assert.Equal(1L, await Count(cs, $"players.accounts WHERE player_id = '{other}' AND email = 'player-{other}@example.invalid' AND pseudo = '{pseudo}' AND NOT is_admin"));
         Assert.Equal(0L, await Count(cs, "players.accounts WHERE pseudo = 'Joueur'"));
+        // Un admin de la prod qui perd son rôle perd aussi son accès Survie (il entrerait au classement général) ; le compte gardé et un compte autorisé le gardent.
+        Assert.Equal(0L, await Count(cs, $"runs.access WHERE player_id = '{other}'"));
+        Assert.Equal(1L, await Count(cs, $"runs.access WHERE player_id = '{kept}'"));
+        Assert.Equal(1L, await Count(cs, $"runs.access WHERE player_id = '{invited}'"));
         // Le nom d'un groupe d'amis est un texte libre : remplacé ; le code d'invitation de la prod ne sert plus.
         Assert.Equal(1L, await Count(cs, "social.groups WHERE name = 'groupe-1' AND invite_code <> 'ABCD2345'"));
         foreach (var table in new[] { "players.auth_tokens", "players.device_sessions", "players.legacy_tokens", "infra.data_protection_keys", "infra.backup_runs" })
