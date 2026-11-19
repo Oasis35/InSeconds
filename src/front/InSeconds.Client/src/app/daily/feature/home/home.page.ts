@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
 import { LanguageService } from '../../../core/i18n/language.service';
@@ -7,6 +8,7 @@ import { AccountLinkComponent } from '../../../core/shell/account-link/account-l
 import { HomeModeEntriesComponent } from '../../../core/shell/home-mode-entries/home-mode-entries.component';
 import { secondsUntilMidnightUtc, timeLeft, todayUtc } from '../../../core/game-day/game-day';
 import { BrandComponent } from '../../../ui/brand/brand.component';
+import { ButtonComponent } from '../../../ui/button/button.component';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
 import { HomeLegalLineComponent } from '../../../ui/legal-line/home-legal-line.component';
 import { ModalService } from '../../../ui/modal/modal.service';
@@ -26,7 +28,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
 @Component({
   selector: 'app-home-page',
   imports: [
-    TranslatePipe, DecorBackgroundComponent, BrandComponent, InstagramLinkComponent, AccountLinkComponent, HomeModeEntriesComponent, HomeLegalLineComponent,
+    TranslatePipe, RouterLink, ButtonComponent, DecorBackgroundComponent, BrandComponent, InstagramLinkComponent, AccountLinkComponent, HomeModeEntriesComponent, HomeLegalLineComponent,
     HomeChallengeCardComponent, HomeDoneCardComponent, HomeAbandonedCardComponent, StatusScreenComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -59,6 +61,11 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                 [linked]="store.linked()"
                 (startGame)="store.begin()"
                 (openStreak)="streakSheet.open()" />
+              <!-- Un invité garde ses parties en créant un compte (masqué pendant le toast de série perdue, qui porte le même appel). -->
+              @if (!store.linked() && !store.showLostToast()) {
+                <a appButton variant="neutral" [block]="true" routerLink="/account/login" data-testid="home-login">{{ 'daily.welcome.loginCta' | translate }}</a>
+                <p class="text-xs leading-snug text-center" style="color:var(--text-muted)">{{ 'daily.welcome.loginHint' | translate }}</p>
+              }
             </div>
             <app-home-mode-entries />
           }
@@ -74,11 +81,14 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                 (startGame)="store.begin()"
                 (abandon)="confirmAbandonFromResume()"
                 (openStreak)="streakSheet.open()" />
+              @if (!store.linked()) {
+                <a appButton variant="neutral" [block]="true" routerLink="/account/login" data-testid="home-login">{{ 'daily.resume.loginCta' | translate }}</a>
+              }
             </div>
             <app-home-mode-entries />
           }
           @case ('already_played') {
-            <div class="screen-enter flex flex-col gap-3" data-testid="home-v4">
+            <div class="screen-enter flex flex-col gap-3" data-testid="home-v4" data-fresh="false">
               @if (store.abandoned()) {
                 <app-home-abandoned-card [countdown]="store.countdown()" [score]="store.stats()?.abandonedScore ?? null" [pending]="store.stats() === null" [rows]="result.rows()" [lang]="language.current()" />
               } @else {

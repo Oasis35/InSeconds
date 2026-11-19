@@ -6,9 +6,18 @@ test.describe('Confirmation de sortie en cours de partie (guard CanDeactivate)',
     await api.reset();
   });
 
+  /** Arrive sur l'accueil depuis l'historique (une entrée d'historique à laquelle revenir), puis lance la partie. */
+  async function startFromHistory(game: GamePage): Promise<void> {
+    await game.page.clock.install({ time: Date.now() });
+    await game.page.goto('/history/daily');
+    await game.page.getByTestId('tab-daily').click();
+    await game.waitForWelcome();
+    await game.clickStart();
+  }
+
   test('annuler la sortie garde le joueur sur la partie', async ({ page }) => {
     const game = new GamePage(page);
-    await game.startWithFakeClock();
+    await startFromHistory(game);
     await expect(page.getByText('Piste 1 / 5')).toBeVisible();
 
     // Tenter de quitter par le retour du navigateur (aucun lien en manche : ni barre, ni ligne légale)
@@ -25,17 +34,17 @@ test.describe('Confirmation de sortie en cours de partie (guard CanDeactivate)',
     expect(new URL(page.url()).pathname).toBe('/daily');
   });
 
-  test('confirmer la sortie ferme la confirmation', async ({ page }) => {
+  test('confirmer la sortie navigue hors de la partie', async ({ page }) => {
     const game = new GamePage(page);
-    await game.startWithFakeClock();
+    await startFromHistory(game);
     await expect(page.getByText('Piste 1 / 5')).toBeVisible();
 
     await page.goBack();
     await expect(game.leaveConfirmButton).toBeVisible();
 
-    // « Quitter quand même » ferme la confirmation
+    // « Quitter quand même » → retour à l'historique
     await game.leaveConfirmButton.click();
-    await expect(game.leaveConfirmButton).not.toBeVisible();
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/history/daily');
   });
 
   test('aucune confirmation si la partie n\'est pas commencée', async ({ page }) => {

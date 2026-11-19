@@ -14,7 +14,7 @@ export function pathOf(url: string): string {
  * Le profil affiche le pseudo, c'est lui qu'on lit.
  */
 export async function expectSignedIn(page: Page, pseudo: string): Promise<void> {
-  await page.goto('/');
+  // La connexion se termine sur la page en cours (le pseudo part au serveur) : on n'en sort qu'une fois le compte lié, vu par la barre du bas de l'accueil.
   await expect(page.getByTestId('tab-account')).toHaveAttribute('href', '/account/profile');
   await page.getByTestId('tab-account').click();
   await expect(page.getByPlaceholder('Ton pseudo')).toHaveValue(pseudo);
