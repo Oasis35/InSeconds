@@ -8,7 +8,7 @@ import { PlayerIconComponent } from '../player-icon/player-icon.component';
  * Une ligne du tableau des comptes inscrits. Le bouton chevron sur le pseudo déplie ou replie
  * l'historique (rendu par le tableau, sous cette ligne). Les instants s'affichent en heure locale
  * du navigateur : « JJ/MM/AA à HH:MM » pour la dernière visite, « JJ/MM/AAAA » pour l'inscription.
- * Un interrupteur donne l'accès au mode Run (posé d'office pour un admin, non modifiable). L'email est masqué (`c•••@gmail.com`) tant qu'on ne clique pas dessus (minimisation, RGPD) ;
+ * Un interrupteur donne ou retire l'accès au mode Run, à un admin comme à un autre compte. L'email est masqué (`c•••@gmail.com`) tant qu'on ne clique pas dessus (minimisation, RGPD) ;
  * le filtre de la page cherche quand même dans l'adresse complète.
  */
 @Component({
@@ -65,11 +65,11 @@ import { PlayerIconComponent } from '../player-icon/player-icon.component';
     </td>
     <td class="px-3 py-2.5 text-center">
       <!-- Le title est porté par un span : un bouton désactivé n'affiche pas son tooltip partout. -->
-      <span [title]="(player().isAdmin ? 'admin.players.runAccessAdmin' : 'admin.players.runAccessToggle') | translate">
+      <span [title]="'admin.players.runAccessToggle' | translate">
         <button type="button" role="switch" data-testid="run-access"
           [attr.aria-checked]="runAccess()"
           [attr.aria-label]="'admin.players.runAccessToggle' | translate"
-          [disabled]="player().isAdmin || runAccessPending()"
+          [disabled]="runAccessPending()"
           (click)="runAccessToggled.emit(!runAccess())"
           class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
           [style.background]="runAccess() ? 'var(--color-success)' : 'var(--border-strong)'">
@@ -90,7 +90,7 @@ import { PlayerIconComponent } from '../player-icon/player-icon.component';
 export class PlayerRowComponent {
   readonly player = input.required<RegisteredPlayer>();
   readonly expanded = input(false);
-  /** Le compte peut lancer un run (admin d'office, ou autorisé par l'interrupteur). */
+  /** Le compte peut lancer un run (autorisé par l'interrupteur, admin compris). */
   readonly runAccess = input(false);
   /** L'API n'a pas encore répondu à un changement d'accès de ce compte. */
   readonly runAccessPending = input(false);

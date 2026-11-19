@@ -3,6 +3,11 @@
 -- Aucune adresse, aucun pseudo ni aucun rôle admin de la prod ne reste, sauf ceux de l'adresse gardée. Jamais en prod.
 BEGIN;
 
+-- Un admin de la prod perd son rôle juste après : sa ligne d'accès Survie le mettrait au classement général du staging (jamais un admin).
+-- Hors d'un bloc DO, sinon :'keep' n'est pas remplacé.
+DELETE FROM runs.access a USING players.accounts c
+ WHERE c.player_id = a.player_id AND c.is_admin AND lower(c.email::text) <> lower(:'keep');
+
 UPDATE players.accounts
    SET email = 'player-' || player_id || '@example.invalid',
        is_admin = false,

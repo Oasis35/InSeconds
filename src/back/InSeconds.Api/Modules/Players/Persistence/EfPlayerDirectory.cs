@@ -35,6 +35,9 @@ public sealed class EfPlayerDirectory(InSecondsDbContext db) : IPlayerDirectory
             .ToDictionaryAsync(a => a.PlayerId, a => a.Pseudo, ct);
     }
 
+    public async Task<IReadOnlyCollection<Guid>> ListAdminsAsync(CancellationToken ct) =>
+        await db.Set<Account>().AsNoTracking().Where(a => a.IsAdmin).Select(a => a.PlayerId).ToListAsync(ct);
+
     public async Task<IReadOnlyDictionary<Guid, string>> GetDisplayNamesAsync(IReadOnlyCollection<Guid> playerIds, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(playerIds);

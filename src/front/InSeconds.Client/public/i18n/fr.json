@@ -577,7 +577,6 @@
       "colLastSeen": "Dernière visite",
       "colRun": "Run",
       "runAccessToggle": "Autoriser ce compte à jouer au mode Run",
-      "runAccessAdmin": "Les admins ont l'accès d'office au mode Run",
       "resetPseudo": "Remettre le pseudo à zéro",
       "resetPseudoConfirm": "Remplacer le pseudo par un pseudo neutre ?",
       "resetPseudoYes": "Remettre à zéro",

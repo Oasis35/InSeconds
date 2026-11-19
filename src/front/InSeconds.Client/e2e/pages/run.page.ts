@@ -96,7 +96,7 @@ export class RunPage {
     this.statusScreen        = page.getByTestId('run-status');
   }
 
-  /** Connecte la page comme le compte admin des tests, qui a l'accès d'office (hôte de test, `POST /api/e2e/login-as-admin`). */
+  /** Connecte la page comme le compte admin des tests, avec sa ligne d'accès Survie (hôte de test, `POST /api/e2e/login-as-admin`). */
   async loginAsAdmin(): Promise<void> {
     const res = await this.page.request.post(`${BASE}/api/e2e/login-as-admin`);
     if (!res.ok()) throw new Error(`login-as-admin failed: ${res.status()}`);

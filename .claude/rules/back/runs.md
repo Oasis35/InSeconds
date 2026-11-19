@@ -13,7 +13,7 @@ Le second mode : défis sans fin tirés à la volée, accès sur invitation, par
 - **Runs n'a pas de dossier `Contracts/`** : aucun module ne l'utilise. Il ne voit de Players, Catalogue et Gameplay que leurs `Contracts`, jamais Deezer (`Runs_NeDependQueDesContratsDesAutresModules_EtPasDeDeezer`), ni Daily (`DailyEtRuns_NeSeVoientPas`), et de Social que `IMemberPerformanceSource`.
 - Il implémente : `IPlayerDataContributor` (`RunsPlayerData`, section `runs` : parties, défis créés, record, niveau, accès, défis reçus), `ITrackUsage` (`RunsTrackUsage`, mode `runs` : un morceau d'un défi n'est plus supprimable, pas de cooldown propre), `IMemberPerformanceSource` (`RunsMemberPerformance`, source `runs` : le niveau du joueur, son disque, son record).
 - Ports : `IRunsStore` (`Domain/RunSession.cs`), `IRunsQueries` et `IRunAccess` (`Application/RunAccess.cs`), `IRunHistoryQueries` (`RunHistory.cs`), `IRunHitsQueries` (`RunHitsEndpoint.cs`). Politiques : `IRunTrackSelector` (`RankBandSelector`), `IRunScoringPolicy`.
-- Accès : `IRunAccess.CanPlayAsync` vrai pour un admin d'office, sinon pour un compte qui a une ligne `runs.access`. Lancer **et** rejoindre un défi l'exigent (403 `runs.access_denied`) : le lien d'un ami n'ouvre pas le mode.
+- Accès : `IRunAccess.CanPlayAsync` vrai pour un compte qui a une ligne `runs.access`, admin compris (le rôle ne donne rien d'office : un admin se coupe l'accès par son interrupteur ; la migration `AdminRunAccess` a donné leur ligne aux admins d'alors). Lancer **et** rejoindre un défi l'exigent (403 `runs.access_denied`) : le lien d'un ami n'ouvre pas le mode.
 
 ## Défi et règles figées
 

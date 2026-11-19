@@ -459,7 +459,7 @@ public sealed class RunRecord
     }
 }
 
-/// <summary>L'interrupteur de l'admin : ce compte peut lancer un run (les admins le peuvent d'office, sans ligne).</summary>
+/// <summary>L'interrupteur de l'admin : ce compte peut lancer un run. Un admin aussi n'a l'accès que par sa ligne (il peut se le retirer pour voir le jeu sans Survie).</summary>
 public sealed class RunAccess
 {
     private RunAccess()

@@ -128,14 +128,28 @@ describe('PlayersPage', () => {
   describe('interrupteur du mode Run', () => {
     const toggleOf = (row: Element) => row.querySelector('[data-testid="run-access"]') as HTMLButtonElement;
 
-    it('montre l\'accès d\'office d\'un admin (non modifiable) et celui, lu une fois, des comptes autorisés', async () => {
+    it('montre l\'accès, lu une fois, des comptes autorisés ; un admin sans ligne n\'a pas l\'accès', async () => {
       const carol = registeredPlayer({ id: 'c', pseudo: 'Carol' });
       const { rows } = await render({ players: [alice, bob, carol], api: { listRunAccess: vi.fn(async () => ['c']) } });
       expect(api.listRunAccess).toHaveBeenCalledTimes(1);
-      expect(toggleOf(rows()[0]).getAttribute('aria-checked')).toBe('true');
-      expect(toggleOf(rows()[0]).disabled).toBe(true);
+      expect(toggleOf(rows()[0]).getAttribute('aria-checked')).toBe('false');
       expect(toggleOf(rows()[1]).getAttribute('aria-checked')).toBe('false');
       expect(toggleOf(rows()[2]).getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('un admin se retire l\'accès, puis se le rend', async () => {
+      const { settle, rows } = await render({ api: { listRunAccess: vi.fn(async () => ['a']) } });
+      expect(toggleOf(rows()[0]).disabled).toBe(false);
+
+      toggleOf(rows()[0]).click();
+      await settle();
+      expect(api.setRunAccess).toHaveBeenCalledWith('a', false);
+      expect(toggleOf(rows()[0]).getAttribute('aria-checked')).toBe('false');
+
+      toggleOf(rows()[0]).click();
+      await settle();
+      expect(api.setRunAccess).toHaveBeenLastCalledWith('a', true);
+      expect(toggleOf(rows()[0]).getAttribute('aria-checked')).toBe('true');
     });
 
     it('autorise un compte au clic', async () => {
