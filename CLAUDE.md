@@ -37,7 +37,7 @@ Tous les ports en `51xx` (4200 est pris par d'autres projets). Avant d'en change
 ## Structure
 
 ```
-.claude/        hooks, sous-agents, règles par chemin (rules/)
+.claude/        hooks, sous-agents, skills, règles par chemin (rules/)
 .github/        workflows (ci.yml, staging-db-copy.yml), actions (stop-run, vps-ssh), modèle de brief, dependabot
 deploy/         infra (Postgres partagé, sauvegardes), caddy, grafana (tableaux JSON), vps (deploy.sh, smoke-test.sh, copie prod → staging)
 docs/           sommaire dans docs/README.md
@@ -155,7 +155,9 @@ Référence complète : [`docs/exploitation/deploiement.md`](docs/exploitation/d
 - Commits atomiques, messages en français ou en anglais.
 - Un commit déjà poussé avec un mauvais committer se corrige par `git filter-branch --env-filter …` sur la plage concernée (jamais `rebase -i`), puis `git push --force-with-lease` sur la branche de travail, jamais sur `main`.
 
-Hooks (`.claude/hooks/*.mjs`, branchés dans `.claude/settings.json`, tests : `node --test .claude/hooks/tests/hooks.test.mjs`) : `protected-branches` (refuse commit, merge et push vers `main` ou `env/staging`), `commit-identity` (refuse un author, un committer ou une ligne `Co-Authored-By` hors règle), `lint-before-commit` (`git diff --check`, `dotnet format whitespace` sur les `.cs` touchés, `npm run lint:arch` si le front est touché), `no-em-dash`, `grafana-reminder` (rappel quand un texte lu par un tableau Grafana disparaît d'un `.cs`). Un hook qui plante laisse passer. En session cloud, les hooks peuvent ne pas se déclencher : appliquer leurs règles à la main (identité par les variables `GIT_*`, aucune ligne `Co-Authored-By`, aucun tiret cadratin, `npm run lint:arch` et `dotnet format whitespace` avant de commiter).
+Hooks (`.claude/hooks/*.mjs`, branchés dans `.claude/settings.json`, détail et ajout d'un hook : `.claude/hooks/README.md`, tests : `node --test .claude/hooks/tests/hooks.test.mjs`) : `shell-guard` (seul hook des commandes Bash et PowerShell, qui enchaîne les quatre suivants et refuse un git PowerShell qu'il ne sait pas lire), `protected-branches` (refuse commit, merge et push vers `main` ou `env/staging`), `commit-identity` (refuse un author, un committer ou une ligne `Co-Authored-By` hors règle), `lint-before-commit` (`git diff --check`, `dotnet format whitespace` sur les `.cs` touchés, `npm run lint:arch` si le front est touché), `no-em-dash`, `grafana-reminder` (rappel quand un texte lu par un tableau Grafana disparaît d'un `.cs`), `codegen-reminder` (rappel du code Wolverine, du document OpenAPI et du client NSwag après un changement d'endpoint ou de handler), `session-start` (branche courante, alerte sur `main` ou `env/staging`). Un hook qui plante laisse passer. En session cloud, les hooks peuvent ne pas se déclencher : appliquer leurs règles à la main (identité par les variables `GIT_*`, aucune ligne `Co-Authored-By`, aucun tiret cadratin, `npm run lint:arch` et `dotnet format whitespace` avant de commiter).
+
+Skills de projet (`.claude/skills/`, à suivre quand la tâche correspond) : `nouvel-endpoint`, `migration-ef`, `nouveau-reglage`, `e2e-local`, `pr-staging`, `promotion-prod` (sur demande explicite seulement).
 
 Sous-agents (`.claude/agents/`, lecture seule) : `relecteur-pr` **avant de sortir une PR du brouillon ou de la dire prête**, `gardien-code` dès qu'un module, une couche ou un port est touché, `gardien-da` pour un écran ou un style, `gardien-rgpd` pour un journal, une table avec `player_id`, l'export ou l'effacement. Leurs constats se traitent dans la même PR. Un sous-agent qui n'est pas listé sous son nom (session cloud) se remplace par un agent générique qui lit `.claude/agents/<nom>.md`. Une règle qui change ici change aussi dans l'agent ou le hook qui la porte.
 

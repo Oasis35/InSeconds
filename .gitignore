@@ -190,7 +190,7 @@ $RECYCLE.BIN/
 .docker/
 
 # ---------------------------------------------------------------
-# Claude Code : hooks, sous-agents, règles par chemin et réglages partagés versionnés,
+# Claude Code : hooks, sous-agents, règles par chemin, skills et réglages partagés versionnés,
 # le reste (settings.local.json, caches) reste local
 # ---------------------------------------------------------------
 .claude/*
@@ -198,3 +198,4 @@ $RECYCLE.BIN/
 !.claude/hooks/
 !.claude/agents/
 !.claude/rules/
+!.claude/skills/
