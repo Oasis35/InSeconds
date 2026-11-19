@@ -13,7 +13,7 @@ describe('SocialApi', () => {
   let api: SocialApi;
 
   beforeEach(() => {
-    client = { listMyGroups: vi.fn(), getGroupRanking: vi.fn(), createGroup: vi.fn(), joinGroup: vi.fn(), leaveGroup: vi.fn(), getInvitation: vi.fn(), getGeneralRanking: vi.fn(), setRankingIdentity: vi.fn(), drawRankingAlias: vi.fn() };
+    client = { listMyGroups: vi.fn(), getGroupRanking: vi.fn(), createGroup: vi.fn(), joinGroup: vi.fn(), leaveGroup: vi.fn(), getInvitation: vi.fn(), getGeneralRanking: vi.fn(), getGroupScores: vi.fn(), setRankingIdentity: vi.fn(), drawRankingAlias: vi.fn() };
     TestBed.configureTestingModule({ providers: [{ provide: SocialClient, useValue: client }, SocialApi] });
     api = TestBed.inject(SocialApi);
   });
@@ -50,6 +50,36 @@ describe('SocialApi', () => {
       top: [{ rank: 1, pseudo: 'Nova', isMe: false, points: 3100, badge: 'runs.discs.platinum' }],
       around: [], total: 1, hasAccount: true, identity: { mode: 'pseudo', name: 'Léa', alias: null },
     });
+  });
+
+  it("lit les scores du Défi du jour d'un groupe : le jour en texte, vides en null, les autres modes ignorés", async () => {
+    client['getGroupScores'].mockReturnValue(of({
+      groupId: 4, name: 'Potes',
+      modes: [
+        { mode: 'other', day: '2026-11-19', todayRevealed: true, weekDays: 7, today: [], week: [] },
+        {
+          mode: 'daily', day: '2026-11-19', todayRevealed: false, weekDays: 7,
+          today: [{ rank: undefined, pseudo: 'Léa', isMe: false, played: true, score: undefined }],
+          week: [{ rank: 1, pseudo: 'Léa', isMe: false, points: 4200, daysPlayed: 5 }, { rank: undefined, pseudo: 'Moi', isMe: true, points: undefined, daysPlayed: 0 }],
+        },
+      ],
+    }));
+
+    expect(await api.scores(4)).toEqual({
+      groupId: 4, name: 'Potes',
+      daily: {
+        day: '2026-11-19', todayRevealed: false, weekDays: 7,
+        today: [{ rank: null, pseudo: 'Léa', isMe: false, played: true, score: null }],
+        week: [{ rank: 1, pseudo: 'Léa', isMe: false, points: 4200, daysPlayed: 5 }, { rank: null, pseudo: 'Moi', isMe: true, points: null, daysPlayed: 0 }],
+      },
+    });
+    expect(client['getGroupScores']).toHaveBeenCalledWith(4);
+  });
+
+  it('sans le Défi du jour dans la réponse, pas de scores', async () => {
+    client['getGroupScores'].mockReturnValue(of({ groupId: 4, name: 'Potes', modes: [] }));
+
+    expect((await api.scores(4)).daily).toBeNull();
   });
 
   it('un invité : pas de nom au classement', async () => {

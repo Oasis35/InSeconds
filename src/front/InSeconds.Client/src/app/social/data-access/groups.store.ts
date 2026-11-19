@@ -1,6 +1,7 @@
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 import { Group, GroupRanking, GroupStanding, standingOf } from '../domain/group';
+import { LastGroup } from './last-group';
 import { SocialApi } from './social.api';
 
 type Status = 'idle' | 'loading' | 'ready' | 'error';
@@ -24,11 +25,13 @@ export const GroupsStore = signalStore(
     selected: computed(() => store.groups().find(group => group.id === store.selectedId()) ?? null),
     canCreate: computed(() => store.status() === 'ready' && store.groups().length < store.maxGroups()),
   })),
-  withMethods((store, api = inject(SocialApi)) => {
+  withMethods((store, api = inject(SocialApi), lastGroup = inject(LastGroup)) => {
     let request = 0;
 
     async function loadRanking(groupId: number): Promise<void> {
       const id = ++request;
+      // Le groupe regardé devient celui de la carte amis de l'accueil.
+      lastGroup.set(groupId);
       patchState(store, { selectedId: groupId, rankingStatus: 'loading' });
       try {
         const ranking = await api.ranking(groupId);

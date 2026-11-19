@@ -22,7 +22,8 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
 
 /**
  * L'accueil (`/`), neutre : ni le défi ni la Survie, mais leurs cartes. La carte du défi porte tous ses états (à jouer, en pause,
- * abandonné, fait avec le score qui monte juste après la partie), la carte Survie (projetée par `<app-home-mode-entries>`) est dessous. Les stores
+ * abandonné, fait avec le score qui monte juste après la partie) ; dessous, la carte amis puis la carte Survie (projetées par `<app-home-mode-entries>`,
+ * le Daily n'importe ni `social` ni `runs`). Les stores
  * sont ceux de la coquille du jeu du jour : « Commencer » lance la partie dans ce toucher, et la coquille passe sur `/daily` pour la manche.
  */
 @Component({
@@ -61,11 +62,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                 [linked]="store.linked()"
                 (startGame)="store.begin()"
                 (openStreak)="streakSheet.open()" />
-              <!-- Un invité garde ses parties en créant un compte (masqué pendant le toast de série perdue, qui porte le même appel). -->
-              @if (!store.linked() && !store.showLostToast()) {
-                <a appButton variant="neutral" [block]="true" routerLink="/account/login" data-testid="home-login">{{ 'daily.welcome.loginCta' | translate }}</a>
-                <p class="text-xs leading-snug text-center" style="color:var(--text-muted)">{{ 'daily.welcome.loginHint' | translate }}</p>
-              }
+              <!-- « Créer un compte » d'un invité : porté par la carte amis, juste dessous (un groupe et la série gardée exigent un compte). -->
             </div>
             <app-home-mode-entries />
           }

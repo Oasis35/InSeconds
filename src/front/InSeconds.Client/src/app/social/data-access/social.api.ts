@@ -1,10 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import {
-  GroupRankingResponse, GroupSummaryResponse, InvitationResponse, RankingEntryResponse, RankingIdentityResponse, SocialClient,
+  GroupRankingResponse, GroupScoresResponse, GroupSummaryResponse, InvitationResponse, ModeScoresResponse, RankingEntryResponse, RankingIdentityResponse,
+  SocialClient,
 } from '../../api/social/api.generated';
 import { toAppError } from '../../core/errors/app-error';
 import { GeneralRanking, Group, GroupRanking, Invitation, MyGroups, RankingEntry, RankingIdentity } from '../domain/group';
+import { DAILY_MODE, GroupScores, ModeScores } from '../domain/group-scores';
 
 /** Les refus que les écrans connaissent : ils deviennent des issues, pas des erreurs. */
 const REFUSALS = ['account_required', 'invalid_name', 'too_many_groups', 'group_full', 'invitation_not_found', 'group_not_found'] as const;
@@ -38,6 +40,11 @@ export class SocialApi {
 
   async ranking(groupId: number): Promise<GroupRanking> {
     return toRanking(await firstValueFrom(this.client.getGroupRanking(groupId)));
+  }
+
+  /** Les scores du Défi du jour d'un de mes groupes : le jour (les scores seulement si j'ai fini ma partie) et la semaine glissante. */
+  async scores(groupId: number): Promise<GroupScores> {
+    return toScores(await firstValueFrom(this.client.getGroupScores(groupId)));
   }
 
   /** Le classement général : la tête, ma place et le nom sous lequel j'y apparais. */
@@ -106,6 +113,27 @@ function toRanking(response: GroupRankingResponse): GroupRanking {
     name: response.name,
     entries: response.entries.map(toEntry),
   };
+}
+
+function toScores(response: GroupScoresResponse): GroupScores {
+  const daily = response.modes.find(mode => mode.mode === DAILY_MODE);
+  return { groupId: response.groupId, name: response.name, daily: daily ? toModeScores(daily) : null };
+}
+
+function toModeScores(mode: ModeScoresResponse): ModeScores {
+  return {
+    day: toDateText(mode.day),
+    todayRevealed: mode.todayRevealed,
+    weekDays: mode.weekDays,
+    today: mode.today.map(entry => ({ rank: entry.rank ?? null, pseudo: entry.pseudo, isMe: entry.isMe, played: entry.played, score: entry.score ?? null })),
+    week: mode.week.map(entry => ({ rank: entry.rank ?? null, pseudo: entry.pseudo, isMe: entry.isMe, points: entry.points ?? null, daysPlayed: entry.daysPlayed })),
+  };
+}
+
+/** Un jour en texte (`2026-11-19`) : le client annonce une `Date` mais le JSON livre un texte. */
+function toDateText(value: unknown): string {
+  if (typeof value === 'string') return value.slice(0, 10);
+  return value instanceof Date ? value.toISOString().slice(0, 10) : '';
 }
 
 function toIdentity(identity: RankingIdentityResponse): RankingIdentity {

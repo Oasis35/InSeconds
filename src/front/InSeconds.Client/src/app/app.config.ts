@@ -11,6 +11,7 @@ import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 import { provideAccount } from './account/feature/provide-account';
 import { provideDailyStatus } from './daily/feature/provide-daily-status';
 import { provideRuns } from './runs/feature/provide-runs';
+import { provideSocial } from './social/feature/provide-social';
 import { routes } from './app.routes';
 import { provideViewportReporting } from './core/diagnostics/viewport-reporter';
 import { GlobalErrorHandler } from './core/errors/global-error-handler';
@@ -37,6 +38,8 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => inject(PageMetaService).init()),
     provideAccount(),
     provideDailyStatus(),
+    // Avant `provideRuns()` : la carte amis de l'accueil passe au-dessus de la carte Survie.
+    provideSocial(),
     provideRuns(),
     // Désactivé en dev (`ng serve`) : un service worker y servirait d'anciens fichiers.
     provideServiceWorker('ngsw-worker.js', {
