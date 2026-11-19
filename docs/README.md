@@ -1,92 +1,42 @@
-# InSeconds 🎵 - COMMENCE ICI
+# Documentation d'InSeconds
 
-> **Point d'entrée** de la documentation projet. Pour le quick start utilisateur, voir [README.fr.md](../README.fr.md) à la racine. Pour les conventions code et pièges connus, voir [CLAUDE.md](../CLAUDE.md).
-
-## Pitch
-
-InSeconds est un **blind test musical quotidien**. La lecture démarre au palier le plus court (0,5 s) et le joueur prolonge l'écoute s'il le souhaite (paliers : 0.5, 1, 1.5, 2, 3, 5, 10) avant de tenter artiste + titre. Moins il écoute, plus il marque. Même défi pour tout le monde, chaque jour, à minuit UTC. Mode invité disponible (joue sans s'inscrire).
-
-## Stack
-
-| Couche | Tech |
-|--------|------|
-| Backend | .NET 10, monolithe modulaire (Players, Catalogue, Gameplay, Daily), Wolverine (endpoints HTTP, transactions, outbox), FluentValidation, EF Core 10, Hangfire (tâches planifiées) |
-| Base de données | PostgreSQL 17, un schéma par module (conteneur partagé sur le VPS en prod, image Docker en dev) |
-| Frontend | Angular 22 (standalone, zoneless, signals), NgRx SignalStore, Tailwind CSS v4, élément audio HTML (son), PWA (service worker) |
-| Musique | API Deezer (recherche, extraits de 30 s, pochettes), client découpé en ports, recherche publique en cache |
-| Tests | xUnit v3 + Testcontainers, tests d'architecture (NetArchTest), Vitest en mode navigateur, Sheriff (frontières du front), Playwright |
-| CI | GitHub Actions (check agrégateur « CI OK »), Dependabot, SonarCloud |
-| Observabilité | OpenTelemetry (logs, traces, métriques) → Grafana Cloud, erreurs front relayées par l'API |
-| Déploiement | VPS OVH (Debian) - front + API + Postgres en Docker derrière Caddy et Cloudflare, déploiement par la CI |
-
-## Architecture en deux mots
-
-- **Backend** : une API découpée en **modules** (`Players`, `Catalogue`, `Gameplay`, `Daily`) qui ne se parlent que par leurs `Contracts`, règle vérifiée par des tests d'architecture. Endpoints Wolverine.Http, une transaction par requête, messages durables dans une outbox PostgreSQL, tâches de nuit dans Hangfire.
-- **Frontend** : domaines calqués sur les modules (`account`, `gameplay`, `daily`, `admin`), chacun en quatre couches (`domain`, `data-access`, `feature`, `ui`), frontières vérifiées par Sheriff ; un client NSwag par module.
-- **Modèle de données** : schémas `players`, `catalogue`, `daily`, plus `infra`, `messaging` et `jobs`. Détail dans le [`CLAUDE.md`](../CLAUDE.md) racine.
-- **Anti-triche** : score calculé uniquement par le serveur, une partie par joueur et par défi, plancher d'écoute et niveau d'indice tenus par le serveur, rien qui identifie un morceau avant la réponse.
-
-## État du dépôt
-
-Le code est dans `src/` ; le staging (`dev.inseconds.cc`) reçoit d'abord chaque PR (`env/staging`), la prod suit par un merge vers `main`. Prochaines étapes : CSP bloquante (#300), fin de la reprise des anciens cookies (#237), puis la suite du mode Run, jouable sur invitation ([`runs/`](runs/README.md)). Le détail est dans [`taches.md`](taches.md).
+InSeconds est un blind test musical : un défi du jour, le même pour tout le monde, et un second mode, la Survie (`Runs` dans le code), sur invitation. Ce tableau dit où vit chaque information ; chacune n'est écrite qu'à un seul endroit, pour qu'aucune copie ne dérive du code.
 
 ## Où trouver quoi
 
-Chaque information n'est écrite qu'à un seul endroit, pour éviter que des copies parallèles dérivent du code.
-
 | Besoin | Document |
 |--------|----------|
-| Installer et lancer le projet | [`README.fr.md`](../README.fr.md) |
-| Conventions, modèle de données, pièges connus | [`CLAUDE.md`](../CLAUDE.md) racine |
-| Détail backend (modules, routes, tâches, authentification) | [`src/back/CLAUDE.md`](../src/back/CLAUDE.md) |
-| Détail frontend (domaines, stores, lecteur, E2E) | [`src/front/CLAUDE.md`](../src/front/CLAUDE.md) |
-| Règles de jeu (scoring, anti-triche, série, indices) | [`regles-du-jeu.md`](regles-du-jeu.md) |
+| **Démarrer** | |
+| Présentation, installation, lancement, tests | [`README.fr.md`](../README.fr.md) |
+| Règles dures, conventions, modèle de données, index des pièges connus | [`CLAUDE.md`](../CLAUDE.md) racine |
+| Back : commandes, structure, recettes, tests | [`src/back/CLAUDE.md`](../src/back/CLAUDE.md) |
+| Front : commandes, couches, frontières, recettes, tests | [`src/front/CLAUDE.md`](../src/front/CLAUDE.md) |
+| Le savoir de chaque module, domaine front et du déploiement (invariants, pièges, où regarder), en règles à portée de chemin : chaque fichier déclare ses `paths` et n'est chargé par Claude Code que quand on touche un fichier qui correspond ; le tableau des réglages est dans `back/reglages.md` | `.claude/rules/` |
+| Sous-agents de relecture (`relecteur-pr`, `gardien-code`, `gardien-da`, `gardien-rgpd`) | [`.claude/agents/`](../.claude/agents/) |
+| **Le jeu** | |
+| Règles du défi du jour (score, anti-triche, série, indices) | [`regles-du-jeu.md`](regles-du-jeu.md) |
 | Ce qui reste à faire | [`taches.md`](taches.md) |
-| **Nouveau mode Run (Setlist)**, livré sur invitation : partie, lien d'un ami et comparaison | |
+| **La Survie** | |
 | Sommaire du mode | [`runs/README.md`](runs/README.md) |
-| Règles de la Série (vies, paliers, thèmes, fantôme) | [`runs/regles.md`](runs/regles.md) |
-| Écrans de la partie | [`runs/ecrans.md`](runs/ecrans.md) |
+| Règles (vies, paliers, thèmes, fantôme, niveau) | [`runs/regles.md`](runs/regles.md) |
+| Écrans | [`runs/ecrans.md`](runs/ecrans.md) |
 | Conception technique | [`runs/conception.md`](runs/conception.md) |
-| Proto 4 (V4, Setlist, groupes), plan en 8 PR | [`runs/proto4.md`](runs/proto4.md) |
-| Ce qui reste, idées, décisions | [`runs/plan.md`](runs/plan.md) |
+| Ce qui reste, idées | [`runs/plan.md`](runs/plan.md) |
 | **Architecture** | |
 | Décisions déjà prises, et pourquoi | [`architecture/decisions.md`](architecture/decisions.md) |
 | Frontières entre modules (`Contracts/`) | [`architecture/contrats-entre-modules.md`](architecture/contrats-entre-modules.md) |
 | **Exploitation** | |
-| VPS, stacks, staging, sauvegardes, commandes utiles | [`exploitation/deploiement.md`](exploitation/deploiement.md) |
-| CI, SonarCloud, Dependabot | [`exploitation/ci.md`](exploitation/ci.md) |
+| VPS, stacks, déploiement, staging, commandes utiles | [`exploitation/deploiement.md`](exploitation/deploiement.md) |
+| Secrets : inventaire, rôle, renouvellement | [`exploitation/secrets.md`](exploitation/secrets.md) |
+| CI, SonarCloud, Dependabot, quand un job casse | [`exploitation/ci.md`](exploitation/ci.md) |
 | Accès SSH de secours | [`exploitation/acces-secours-ssh.md`](exploitation/acces-secours-ssh.md) |
-| Postgres partagé, sauvegardes (mode d'emploi) | [`deploy/infra/README.md`](../deploy/infra/README.md) |
+| Postgres partagé, sauvegardes, contrôle de restauration | [`deploy/infra/README.md`](../deploy/infra/README.md) |
 | Caddy, filtre Cloudflare | [`deploy/caddy/README.md`](../deploy/caddy/README.md) |
 | Tableaux de bord Grafana | [`deploy/grafana/README.md`](../deploy/grafana/README.md) |
 | **Conformité** | |
 | Conditions de l'API Deezer | [`conformite/conditions-api-deezer.md`](conformite/conditions-api-deezer.md) |
 | RGPD : ce qui est en place | [`conformite/rgpd.md`](conformite/rgpd.md) |
 | **Historique** | |
-| Refonte de 2026 (plan, découpage en PR, bascule) | [`historique/refonte-2026/`](historique/refonte-2026/) |
-| Mode Run : découpage du proto 1 en PR | [`historique/runs-proto1-decoupage.md`](historique/runs-proto1-decoupage.md) |
-| Mode Run : l'ancien modèle (jauge, difficultés, cartes, protos 2 et 3) | [`historique/runs-ancien-modele/`](historique/runs-ancien-modele/) |
+| L'histoire du projet (refonte, anciens modèles et prototypes de la Survie) | [`historique/README.md`](historique/README.md) |
 
-## Quick start technique
-
-```bash
-# Base PostgreSQL locale (créer .env avec DB_PASSWORD la première fois)
-cp .env.example .env
-docker compose up -d database
-
-# API (hôte de test : faux Deezer et faux email, http://localhost:5175)
-cd src/back
-ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=inseconds;Username=inseconds;Password=<DB_PASSWORD>" \
-  dotnet run --project InSeconds.Api.Testing
-
-# Front (http://localhost:5176)
-cd src/front/InSeconds.Client
-npm ci
-npm start
-```
-
-Voir le [README](../README.fr.md) pour les détails.
-
----
-
-**Pour démarrer une nouvelle fonctionnalité, lire [CLAUDE.md](../CLAUDE.md), [`architecture/decisions.md`](architecture/decisions.md) puis [`taches.md`](taches.md).**
+Avant une nouvelle fonctionnalité : [`CLAUDE.md`](../CLAUDE.md), [`architecture/decisions.md`](architecture/decisions.md), puis [`taches.md`](taches.md).

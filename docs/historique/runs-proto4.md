@@ -1,8 +1,10 @@
 # Proto 4 : la V4, une nouvelle navigation, des niveaux et des groupes
 
-**Codé sur le staging** (état de chaque PR sous son titre). **Depuis la refonte « la Série » (novembre 2026), les écrans de la partie ne sont plus ceux des maquettes** : plus de jauge, de difficulté ni de disque de manche, des vies et un palier d'écoute ([`regles.md`](regles.md), [`ecrans.md`](ecrans.md)) ; les maquettes gardent l'accueil, la navigation, l'historique, le niveau et les groupes. Le proto 4 ([#555](https://github.com/Oasis35/InSeconds/issues/555)) donne envie de rejouer et de partager sans obliger ceux qui se moquent des classements. Il apporte une barre du bas, un accueil qui met le défi du jour et le mode côte à côte, un niveau qui progresse, des groupes entre amis et un classement. Il se livre en **8 PR** vers `env/staging`, chacune testée au staging avant la suivante. Les chiffres (niveau, limites) sont des réglages, à ajuster aux parties de test.
+> **Archive figée** : journal du chantier du proto 4 de Survie, terminé. Il ne décrit plus forcément le code. Les règles en vigueur sont dans [`docs/runs/regles.md`](../runs/regles.md), les écrans dans [`docs/runs/ecrans.md`](../runs/ecrans.md), les décisions durables dans [`docs/runs/conception.md`](../runs/conception.md).
 
-Les 16 écrans de référence sont dans [`maquettes/proto4/`](maquettes/proto4/), numérotés dans l'ordre de lecture. Ils viennent de la maquette interactive du 11/11/2026 (artifact Design privé) ; les pochettes y sont remplacées par des aplats de couleur (règle du piège 47).
+**Codé sur le staging** (état de chaque PR sous son titre). **Depuis la refonte « la Série » (novembre 2026), les écrans de la partie ne sont plus ceux des maquettes** : plus de jauge, de difficulté ni de disque de manche, des vies et un palier d'écoute ([`regles.md`](../runs/regles.md), [`ecrans.md`](../runs/ecrans.md)) ; les maquettes gardent l'accueil, la navigation, l'historique, le niveau et les groupes. Le proto 4 ([#555](https://github.com/Oasis35/InSeconds/issues/555)) donne envie de rejouer et de partager sans obliger ceux qui se moquent des classements. Il apporte une barre du bas, un accueil qui met le défi du jour et le mode côte à côte, un niveau qui progresse, des groupes entre amis et un classement. Il se livre en **8 PR** vers `env/staging`, chacune testée au staging avant la suivante. Les chiffres (niveau, limites) sont des réglages, à ajuster aux parties de test.
+
+Les 16 écrans de référence sont dans [`maquettes/proto4/`](../runs/maquettes/proto4/), numérotés dans l'ordre de lecture. Ils viennent de la maquette interactive du 11/11/2026 (artifact Design privé) ; les pochettes y sont remplacées par des aplats de couleur (règle du piège 47).
 
 ## Ce qui est décidé
 
@@ -56,7 +58,7 @@ Deux onglets, Défis du jour et Survie (écrans 9 et 10) : résumé en haut (nom
 
 ## PR 4 : niveau, disques et fin de run
 
-- **Points de niveau** (refonte du 18/11, #607, cf. [`niveau-classement.md`](niveau-classement.md)) : 80 % de l'ancien niveau et 20 % du score de chaque série, 10 % de baisse au plus, un disque de plus au plus, plus de niveau provisoire ; inactivité calculée à la lecture (14 jours de grâce, -5 % par semaine, plancher à la moitié). **Disques** : Rayé 300, Bronze 900, Argent 2 000, Or 3 600, Platine 6 000, Double platine 9 600, Diamant 13 000 (le disque de cire a disparu). Formule et seuils en réglages `Runs:Levels...`.
+- **Points de niveau** (refonte du 18/11, #607, cf. [`runs-niveau-classement/`](runs-niveau-classement/README.md)) : 80 % de l'ancien niveau et 20 % du score de chaque série, 10 % de baisse au plus, un disque de plus au plus, plus de niveau provisoire ; inactivité calculée à la lecture (14 jours de grâce, -5 % par semaine, plancher à la moitié). **Disques** : Rayé 300, Bronze 900, Argent 2 000, Or 3 600, Platine 6 000, Double platine 9 600, Diamant 13 000 (le disque de cire a disparu). Formule et seuils en réglages `Runs:Levels...`.
 - Table `runs.player_levels`, politique pure dans `Runs/Domain`, migration EF, code Wolverine régénéré.
 **État : codée (#570).** Back : `runs.player_levels`, `RunLevelPolicy`, réglages `Runs:Levels:*`, le niveau dans `GET /api/runs/me` et dans la fin d'une partie. Front : la carte du niveau (`runs/ui/run-level-card` : disque, points, « +38 », jauge, « Disque d’or dans 220 pts ») sur l'accueil du mode et sur la fin de run, où « Rejouer » devient « Nouvelle setlist » et le partage « Défier un ami », avec « Revoir » vers `/history/survie/<partie>` et le rappel du défi du jour ; trois disques de plus (platine, double platine, diamant). La fin de run a ensuite été mise au niveau de la maquette 04 (cf. § Mise au niveau).
 
@@ -97,25 +99,25 @@ Un onglet « Groupes » de l'admin : liste, renommer ou supprimer un groupe, rem
 
 ## Défi d'ami, place au classement et partage animé
 
-Le défi d'un ami reçu (serveur, lié au compte, 7 jours, refus par la croix) est un bandeau violet dans la carte Survie de l'accueil. La place « 2e dans Potes · 14e au général » s'y lit une seule fois, sous le niveau. « Tu passes devant Léa » est dans « Tes groupes » de la fin de Survie. Au partage, les barres du score se remplissent une à une ; quand la grille est copiée, le bouton donne « Score copié », fait un rebond et un toast le confirme (le menu natif n'est pas animé). Détail : `src/back/CLAUDE.md` (module Runs) et `src/front/CLAUDE.md`.
+Le défi d'un ami reçu (serveur, lié au compte, 7 jours, refus par la croix) est un bandeau violet dans la carte Survie de l'accueil. La place « 2e dans Potes · 14e au général » s'y lit une seule fois, sous le niveau. « Tu passes devant Léa » est dans « Tes groupes » de la fin de Survie. Au partage, les barres du score se remplissent une à une ; quand la grille est copiée, le bouton donne « Score copié », fait un rebond et un toast le confirme (le menu natif n'est pas animé). Détail : [`.claude/rules/back/runs.md`](../../.claude/rules/back/runs.md) et [`.claude/rules/front/runs-social.md`](../../.claude/rules/front/runs-social.md).
 
 ## Écrans de référence
 
 | | |
 |---|---|
-| ![Accueil, première visite](maquettes/proto4/01-accueil-premiere-visite.png) | ![Accueil, retour : défi pas fait](maquettes/proto4/02-accueil-retour-defi-pas-fait.png) |
+| ![Accueil, première visite](../runs/maquettes/proto4/01-accueil-premiere-visite.png) | ![Accueil, retour : défi pas fait](../runs/maquettes/proto4/02-accueil-retour-defi-pas-fait.png) |
 | 1. Accueil, première visite | 2. Accueil, retour dans la journée, défi pas fait |
-| ![Accueil, défi fait](maquettes/proto4/03-accueil-defi-fait.png) | ![Fin de run](maquettes/proto4/04-fin-de-run.png) |
+| ![Accueil, défi fait](../runs/maquettes/proto4/03-accueil-defi-fait.png) | ![Fin de run](runs-proto4-maquettes/04-fin-de-run.png) |
 | 3. Accueil, défi fait | 4. Fin de run |
-| ![Fin de run sans groupe](maquettes/proto4/05-fin-de-run-sans-groupe.png) | ![Partager](maquettes/proto4/06-partage.png) |
+| ![Fin de run sans groupe](runs-proto4-maquettes/05-fin-de-run-sans-groupe.png) | ![Partager](../runs/maquettes/proto4/06-partage.png) |
 | 5. Fin de run sans groupe | 6. Partager |
-| ![Partager sans groupe](maquettes/proto4/07-partage-sans-groupe.png) | ![Résultat du jour](maquettes/proto4/08-resultat-du-jour.png) |
+| ![Partager sans groupe](../runs/maquettes/proto4/07-partage-sans-groupe.png) | ![Résultat du jour](../runs/maquettes/proto4/08-resultat-du-jour.png) |
 | 7. Partager sans groupe | 8. Résultat du Daily |
-| ![Historique, défis](maquettes/proto4/09-historique-defis.png) | ![Historique, setlists](maquettes/proto4/10-historique-setlists.png) |
+| ![Historique, défis](../runs/maquettes/proto4/09-historique-defis.png) | ![Historique, setlists](../runs/maquettes/proto4/10-historique-setlists.png) |
 | 9. Historique, défis | 10. Historique, setlists |
-| ![Détail des morceaux](maquettes/proto4/11-detail-des-morceaux.png) | ![Classement, groupes](maquettes/proto4/12-classement-groupes.png) |
+| ![Détail des morceaux](../runs/maquettes/proto4/11-detail-des-morceaux.png) | ![Classement, groupes](../runs/maquettes/proto4/12-classement-groupes.png) |
 | 11. Détail des morceaux (commun aux deux modes) | 12. Classement, un groupe |
-| ![Classement général](maquettes/proto4/13-classement-general.png) | ![Classement sans groupe](maquettes/proto4/14-classement-sans-groupe.png) |
+| ![Classement général](../runs/maquettes/proto4/13-classement-general.png) | ![Classement sans groupe](../runs/maquettes/proto4/14-classement-sans-groupe.png) |
 | 13. Classement général | 14. Classement sans groupe |
-| ![Créer un groupe](maquettes/proto4/15-creer-un-groupe.png) | ![Hits](maquettes/proto4/16-hits.png) |
+| ![Créer un groupe](../runs/maquettes/proto4/15-creer-un-groupe.png) | ![Hits](../runs/maquettes/proto4/16-hits.png) |
 | 15. Créer un groupe | 16. Hits |

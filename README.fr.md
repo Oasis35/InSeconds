@@ -21,8 +21,8 @@
 - Indices optionnels (année de sortie, puis nom d'artiste masqué) débloqués à 5s/10s d'écoute - coûte des points, contrôlé côté serveur
 - Le scoring est entièrement côté serveur - impossible de tricher côté client
 - À chaque révélation, un histogramme montre en combien de temps les autres joueurs ont trouvé ce morceau
-- Mode guest : joue sans créer de compte (pas de classement, seulement des stats globales)
-- Comptes utilisateurs optionnels (inscription ouverte à tous, connexion sans mot de passe par lien magique) - conserve historique/streak entre appareils ; le jeu guest reste ouvert à tous
+- Mode invité : joue sans créer de compte (seulement les stats globales et anonymes du jour ; les groupes entre amis et le classement général de la Survie demandent un compte)
+- Comptes utilisateurs optionnels (inscription ouverte à tous, connexion sans mot de passe par lien magique) - conserve historique/streak entre appareils ; le jeu en invité reste ouvert à tous
 - Série quotidienne affichée sous « Commencer » (panneau de détail au toucher), avec des gels de série pour les comptes connectés (1 offert à l'inscription, +1 tous les 7 jours, 2 max, utilisés automatiquement sur un jour manqué)
 - Après la partie, un seul écran « résultat du jour » : ton score avec ta partie en cinq petites barres, le compte à rebours, une phrase sous le score (ton moment fort s'il y en a un, sinon la part des joueurs que tu bats, à partir de 5 joueurs), un égaliseur des scores du jour (plus bas, médiane, plus haut), tes morceaux repliés
 - Partage du score (une ligne par morceau : ✅ / ❌ pour l'artiste puis le titre, et le temps d'écoute), commençant par le score, le nom et la date (menu de partage du téléphone, copie dans le presse-papier sur ordinateur)
@@ -31,7 +31,8 @@
 - Installable sur l'écran d'accueil (PWA), mise à jour automatiquement à un moment sûr (jamais en pleine manche)
 - Liste des appareils connectés à ton compte, déconnexion d'un appareil ou de tous les autres
 - Tes données (RGPD) : copie de toutes tes données en JSON et suppression définitive de ton compte (section « Tes données » du profil) ; appareils sans visite depuis 91 jours et comptes inactifs depuis 3 ans supprimés automatiquement chaque nuit ; ce que tu tapes en réponse n'est jamais stocké
-- Mode Run (« Survie » à l'écran, sur invitation pour l'instant) : la Série. Tu enchaînes des manches de 3 morceaux, de moins en moins connus, jusqu'à perdre tes 3 vies ou finir la 8e manche (« Série complète », avec un bonus par vie restante) ; une manche sans vie perdue te rend une vie, l'écoute raccourcit (10, 5, 3, 2, 1, 0,5 s) et rallonge après une vie perdue, un morceau trouvé rapporte les points de son palier, 45 s par morceau pour répondre, un thème à choisir à chaque manche dès la 2e ; envoie la même playlist à tes amis par un lien, bats leur fantôme et comparez vos scores une fois la partie jouée (`/survie` ; règles et écrans dans [`docs/runs/`](docs/runs/README.md))
+- Mode Survie (`Runs` dans le code, sur invitation pour l'instant) : tu enchaînes des manches de 3 morceaux, de moins en moins connus, jusqu'à perdre tes 3 vies ou finir la 8e manche (« Série complète », avec un bonus par vie restante) ; une manche sans vie perdue te rend une vie et raccourcit l'écoute (10, 5, 3, 2, 1, 0,5 s), une manche avec une vie perdue la laisse la même ; un morceau trouvé rapporte les points de son palier, 45 s par morceau pour répondre, un thème à choisir à chaque manche dès la 2e ; envoie la même playlist à tes amis par un lien, bats leur fantôme et comparez vos scores une fois la partie jouée
+- Autour de la Survie : un niveau affiché en disque (sept disques, du disque rayé au disque de diamant), des groupes entre amis avec leur classement, un classement général par niveau pour les comptes qui ont l'accès (sous ton pseudo ou un alias musical), des Hits (jalons obtenus en jouant) et l'historique de tes parties (`/survie` ; règles, écrans et conception dans [`docs/runs/`](docs/runs/README.md))
 
 ## Démarrage rapide
 
@@ -77,7 +78,7 @@ Ouvre `http://localhost:5176`.
 
 | Couche | Tech |
 |--------|------|
-| Backend | .NET 10, monolithe modulaire (Players, Catalogue, Gameplay, Daily), Wolverine (endpoints HTTP, transactions, outbox), FluentValidation, EF Core 10, Hangfire |
+| Backend | .NET 10, monolithe modulaire (Players, Catalogue, Gameplay, Daily, Runs, Social), Wolverine (endpoints HTTP, transactions, outbox), FluentValidation, EF Core 10, Hangfire |
 | Base de données | PostgreSQL 17, un schéma par module (Docker en dev, conteneur Postgres partagé sur le VPS en prod) |
 | Frontend | Angular 22 (standalone, zoneless, signals), NgRx SignalStore, Tailwind CSS v4, élément audio HTML, PWA |
 | Musique | API Deezer (recherche, extraits de 30 s, pochettes) |
@@ -90,10 +91,10 @@ Ouvre `http://localhost:5176`.
 ```
 InSeconds/
 ├── deploy/                    # VPS : Postgres partagé et sauvegardes, Caddy, scripts de déploiement, tableaux Grafana
-├── docs/                      # Documentation (FR) : point d'entrée, règles du jeu, tâches, architecture, exploitation, conformité, mode Run, historique
+├── docs/                      # Documentation (FR) : point d'entrée, règles du jeu, tâches, architecture, exploitation, conformité, mode Survie, historique
 ├── src/
-│   ├── back/                  # InSeconds.slnx : Api (modules), Infrastructure, Deezer, Api.Testing, tests/
-│   └── front/InSeconds.Client/  # Application Angular (domaines account, gameplay, daily, admin)
+│   ├── back/                  # InSeconds.slnx : Api (modules), Infrastructure, Deezer, Waveform, Api.Testing, tests/
+│   └── front/InSeconds.Client/  # Application Angular (domaines account, gameplay, daily, runs, social, admin)
 ├── docker-compose.yml         # Dev : base
 ├── docker-compose.staging.yml # Staging
 ├── docker-compose.prod.yml    # Prod
@@ -102,16 +103,8 @@ InSeconds/
 
 ## Intégration continue
 
-Workflow GitHub Actions sur chaque push (toutes branches). Seuls tournent les jobs des zones que la branche change (back ou front, les tests de bout en bout et le contrôle des clients NSwag pour l'un comme pour l'autre, rien pour la doc), tout sur `main` et `env/staging` :
-
-- **back** - tests d'intégration (Testcontainers), répartis sur 3 jobs par dossier de tests
-- **back-checks** - migrations à jour, codegen Wolverine à jour, image Docker sans l'hôte de test, puis tests unitaires, d'architecture et des scripts du VPS
-- **front** - build de prod, tests Vitest, frontières Sheriff
-- **api-clients** - clients NSwag à jour par rapport aux documents OpenAPI du back
-- **nginx-headers** - construit l'image nginx du front et vérifie en-têtes de cache et de sécurité, types MIME et redirection de l'ancienne adresse
-- **e2e** - Playwright contre l'hôte de test, réparti sur 6 jobs selon la durée mesurée des specs
-
-Le check **« CI OK »** les agrège (c'est lui qu'exige la protection des branches). Les runs obsolètes sont annulés automatiquement, et sur une branche de travail le premier job en échec annule le run. Détail : [`docs/exploitation/ci.md`](docs/exploitation/ci.md).
+Un workflow GitHub Actions tourne à chaque push : back, front, clients NSwag, en-têtes nginx et tests de bout en bout, seulement pour les zones que la branche change (tout sur `main` et `env/staging`).
+Le check **« CI OK »** les agrège, c'est le seul qu'exige la protection des branches. Les jobs, et quoi faire quand l'un casse : [`docs/exploitation/ci.md`](docs/exploitation/ci.md).
 
 Livraison : les PR visent `env/staging`, déployée sur le staging une fois « CI OK » passé ; après test, `env/staging` est mergée dans `main` (merge commit), qui déploie la prod de la même façon. Détail : [`docs/exploitation/deploiement.md`](docs/exploitation/deploiement.md).
 
@@ -124,7 +117,7 @@ cd src/back
 dotnet test --solution InSeconds.slnx   # unitaires + architecture + intégration (Docker requis)
 ```
 
-Quatre projets dans `tests/` : unitaires (règles du domaine, sans base), architecture (frontières des modules, NetArchTest), intégration (Testcontainers : un vrai PostgreSQL avec une base neuve par classe de tests, l'API en mémoire) et les scripts SQL lancés à la main sur le VPS (`deploy/vps`).
+Quatre projets dans `tests/` : unitaires (règles du domaine, sans base), architecture (frontières des modules, NetArchTest), intégration (Testcontainers : un vrai PostgreSQL avec une base neuve par classe de tests, l'API en mémoire) et les scripts du VPS (scripts SQL de `deploy/vps`, scripts de sauvegarde de `deploy/infra`).
 
 ### Frontend
 
@@ -141,19 +134,21 @@ cd src/front/InSeconds.Client
 E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=<DB_PASSWORD>" npm run e2e
 ```
 
-`playwright.config.ts` démarre l'hôte de test (port 5177) et `ng serve` (port 5178). **181 tests** répartis sur 37 fichiers : jeu, connexion, profil, appareils, tes données, série et gels, mode Run, admin…
+`playwright.config.ts` démarre l'hôte de test (port 5177) et `ng serve` (port 5178). Les specs couvrent le jeu, la connexion, le profil, les appareils, tes données, la série et les gels, la Survie, les groupes, l'admin…
 
 ## Documentation
 
-- [`docs/README.md`](docs/README.md) - point d'entrée : pitch, stack, où trouver quoi
-- [`CLAUDE.md`](CLAUDE.md) - conventions, modèle de données, pièges connus (à lire avant de contribuer)
-- Architecture : [`src/back/CLAUDE.md`](src/back/CLAUDE.md) (backend), [`src/front/CLAUDE.md`](src/front/CLAUDE.md) (frontend), [`docs/architecture/`](docs/architecture/) (décisions, frontières entre modules)
+- [`docs/README.md`](docs/README.md) - point d'entrée : où trouver quoi
+- [`CLAUDE.md`](CLAUDE.md) - règles dures, conventions, modèle de données, index des pièges connus (à lire avant de contribuer)
+- [`src/back/CLAUDE.md`](src/back/CLAUDE.md) et [`src/front/CLAUDE.md`](src/front/CLAUDE.md) - commandes, structure, recettes et tests de chaque côté
+- `.claude/rules/` - le savoir de chaque module, domaine front et du déploiement, en règles à portée de chemin : chaque fichier déclare ses `paths` et n'est chargé que quand on touche un fichier qui correspond (tableau des réglages dans `back/reglages.md`)
+- [`docs/architecture/`](docs/architecture/) - décisions, frontières entre modules
 - [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md) - règles de jeu (scoring, prolongation, anti-triche, série) - ce qui est réellement appliqué vs juste configuré
 - [`docs/exploitation/`](docs/exploitation/) - déploiement sur le VPS, staging, sauvegardes, CI, accès de secours
 - [`docs/conformite/`](docs/conformite/) - conditions de l'API Deezer, RGPD
-- [`docs/runs/`](docs/runs/README.md) - le mode Run (livré sur invitation : la partie, le lien d'un ami et la comparaison)
+- [`docs/runs/`](docs/runs/README.md) - le mode Survie (règles, écrans, conception, ce qui reste)
 - [`docs/taches.md`](docs/taches.md) - ce qui reste à faire
-- [`docs/historique/`](docs/historique/) - la refonte de 2026
+- [`docs/historique/`](docs/historique/) - l'histoire du projet
 
 ## Licence
 

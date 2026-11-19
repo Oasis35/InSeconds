@@ -6,7 +6,7 @@ paths:
 ---
 # Module Runs (la Série, « Survie » à l'écran)
 
-Le second mode : défis sans fin tirés à la volée, accès sur invitation, partie à vies et paliers d'écoute, thèmes, fantôme, comparaison, niveau, Hits. Règles du jeu : [`docs/runs/regles.md`](../../../docs/runs/regles.md), niveau et classement : [`docs/runs/niveau-classement.md`](../../../docs/runs/niveau-classement.md), conception : [`docs/runs/conception.md`](../../../docs/runs/conception.md). Point d'entrée `RunsModule.AddRuns()` (+ `AddRunsPlayerData()`).
+Le second mode : défis sans fin tirés à la volée, accès sur invitation, partie à vies et paliers d'écoute, thèmes, fantôme, comparaison, niveau, Hits. Règles du jeu : [`docs/runs/regles.md`](../../../docs/runs/regles.md), conception : [`docs/runs/conception.md`](../../../docs/runs/conception.md). Point d'entrée `RunsModule.AddRuns()` (+ `AddRunsPlayerData()`).
 
 ## Frontières
 

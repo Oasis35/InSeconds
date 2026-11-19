@@ -21,7 +21,7 @@
 - Optional hints (release year, then a masked artist name) unlockable at 5s/10s of listening - costs points, server-authoritative
 - Scoring is entirely server-side - no client-side manipulation possible
 - On each reveal, see a histogram of how long other players needed to guess that track
-- Guest mode: play without signing up (no leaderboard, only global stats)
+- Guest mode: play without signing up (only the anonymous global stats of the day; friend groups and the Survie general ranking need an account)
 - Optional linked accounts (open signup, passwordless magic-link login) - keeps history/streak across devices; guest play stays fully open regardless
 - Daily streak shown under the Start button (details panel on tap), with streak freezes for linked accounts (1 free on signup, +1 every 7 days, 2 max, used automatically on a missed day)
 - After playing, a single "today's result" screen: your score with your game as five small bars, the countdown, one line under the score (your standout moment when there is one, otherwise the share of players you beat, from 5 players), an equalizer of today's scores (lowest, median, highest), your tracks folded away
@@ -31,7 +31,8 @@
 - Installable on the home screen (PWA), updated automatically at a safe moment (never in the middle of a round)
 - List of the devices signed in to your account, sign out one device or all the others
 - Your data (GDPR): download a JSON copy of all your data and permanently delete your account ("Your data" section of the profile); devices unseen for 91 days and accounts inactive for 3 years are deleted automatically every night; what you type as an answer is never stored
-- Run mode (shown as "Survie", invitation-only for now): the Series. You chain rounds of 3 tracks, less and less well known, until you lose your 3 lives or finish the 8th round ("complete Series", with a bonus per remaining life); a round without a lost life gives one back, the listening time gets shorter (10, 5, 3, 2, 1, 0.5 s) and longer after a lost life, a found track earns the points of its step, 45 s per track to answer, a theme to pick for each round from the 2nd; send the same playlist to friends with a link, beat their ghost and compare scores once you have played it (`/survie`; rules and screens in [`docs/runs/`](docs/runs/README.md))
+- Survie mode (`Runs` in the code, invitation-only for now): you chain rounds of 3 tracks, less and less well known, until you lose your 3 lives or finish the 8th round ("complete Series", with a bonus per remaining life); a round without a lost life gives one back and shortens the listening time (10, 5, 3, 2, 1, 0.5 s), a round with a lost life keeps it the same; a found track earns the points of its step, 45 s per track to answer, a theme to pick for each round from the 2nd; send the same playlist to friends with a link, beat their ghost and compare scores once you have played it
+- Around Survie: a level shown as a disc (seven discs, from Scratched to Diamond), friend groups with their own ranking, a general ranking by level for the accounts that have access (under your pseudo or a musical alias), Hits (milestones earned by playing) and the history of your games (`/survie`; rules, screens and design in [`docs/runs/`](docs/runs/README.md))
 
 ## Quick start
 
@@ -77,7 +78,7 @@ Open `http://localhost:5176`.
 
 | Layer | Tech |
 |-------|------|
-| Backend | .NET 10, modular monolith (Players, Catalogue, Gameplay, Daily), Wolverine (HTTP endpoints, transactions, outbox), FluentValidation, EF Core 10, Hangfire |
+| Backend | .NET 10, modular monolith (Players, Catalogue, Gameplay, Daily, Runs, Social), Wolverine (HTTP endpoints, transactions, outbox), FluentValidation, EF Core 10, Hangfire |
 | Database | PostgreSQL 17, one schema per module (Docker in dev, shared Postgres container on the VPS in production) |
 | Frontend | Angular 22 (standalone, zoneless, signals), NgRx SignalStore, Tailwind CSS v4, HTML audio element, PWA |
 | Music | Deezer API (search, 30s previews, covers) |
@@ -90,10 +91,10 @@ Open `http://localhost:5176`.
 ```
 InSeconds/
 ├── deploy/                    # VPS: shared Postgres and backups, Caddy, deploy scripts, Grafana dashboards
-├── docs/                      # Documentation (FR): entry point, game rules, tasks, architecture, operations, compliance, Run mode, history
+├── docs/                      # Documentation (FR): entry point, game rules, tasks, architecture, operations, compliance, Survie mode, history
 ├── src/
-│   ├── back/                  # InSeconds.slnx: Api (modules), Infrastructure, Deezer, Api.Testing, tests/
-│   └── front/InSeconds.Client/  # Angular app (account, gameplay, daily, admin domains)
+│   ├── back/                  # InSeconds.slnx: Api (modules), Infrastructure, Deezer, Waveform, Api.Testing, tests/
+│   └── front/InSeconds.Client/  # Angular app (account, gameplay, daily, runs, social, admin domains)
 ├── docker-compose.yml         # Dev: database
 ├── docker-compose.staging.yml # Staging
 ├── docker-compose.prod.yml    # Production
@@ -102,16 +103,8 @@ InSeconds/
 
 ## Continuous integration
 
-GitHub Actions workflow on every push (all branches). Only the jobs of the areas a branch changes run (backend or frontend, the end-to-end tests and the NSwag client check for either one, nothing for docs), everything on `main` and `env/staging`:
-
-- **back** - integration tests (Testcontainers), split across 3 jobs by test folder
-- **back-checks** - migrations up to date, Wolverine codegen up to date, Docker image without the test host, then unit, architecture and VPS script tests
-- **front** - production build, Vitest tests, Sheriff boundaries
-- **api-clients** - NSwag clients up to date with the backend OpenAPI documents
-- **nginx-headers** - builds the frontend nginx image and checks cache and security headers, MIME types and the old-address redirect
-- **e2e** - Playwright against the test host, split across 6 jobs by measured spec duration
-
-The **"CI OK"** check aggregates them (it is the one branch protection requires). Stale runs are cancelled automatically, and on a work branch the first failing job cancels the run. Details: [`docs/exploitation/ci.md`](docs/exploitation/ci.md).
+A GitHub Actions workflow runs on every push: backend, frontend, NSwag clients, nginx headers and end-to-end tests, only for the areas a branch changes (everything on `main` and `env/staging`).
+The **"CI OK"** check aggregates them and is the one branch protection requires. Jobs, and what to do when one fails: [`docs/exploitation/ci.md`](docs/exploitation/ci.md).
 
 Delivery: pull requests target `env/staging`, which is deployed to the staging site once "CI OK" passes; after testing there, `env/staging` is merged into `main` (merge commit), which deploys production the same way. Details: [`docs/exploitation/deploiement.md`](docs/exploitation/deploiement.md).
 
@@ -124,7 +117,7 @@ cd src/back
 dotnet test --solution InSeconds.slnx   # unit + architecture + integration (Docker required)
 ```
 
-Four projects in `tests/`: unit (domain rules, no database), architecture (module boundaries, NetArchTest), integration (Testcontainers: a real PostgreSQL with a fresh database per test class, the API in memory) and the SQL scripts run by hand on the VPS (`deploy/vps`).
+Four projects in `tests/`: unit (domain rules, no database), architecture (module boundaries, NetArchTest), integration (Testcontainers: a real PostgreSQL with a fresh database per test class, the API in memory) and the VPS scripts (`deploy/vps` SQL scripts, `deploy/infra` backup scripts).
 
 ### Frontend
 
@@ -141,21 +134,23 @@ cd src/front/InSeconds.Client
 E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=<DB_PASSWORD>" npm run e2e
 ```
 
-`playwright.config.ts` starts the test host (port 5177) and `ng serve` (port 5178). **181 tests** across 37 files: game, login, profile, devices, your data, streak and freezes, Run mode, admin…
+`playwright.config.ts` starts the test host (port 5177) and `ng serve` (port 5178). The specs cover the game, login, profile, devices, your data, streak and freezes, Survie, groups, admin…
 
 ## Documentation
 
 The detailed docs are in French.
 
-- [`docs/README.md`](docs/README.md) - entry point: pitch, stack, where to find what
-- [`CLAUDE.md`](CLAUDE.md) - conventions, data model, known pitfalls (read before contributing)
-- Architecture: [`src/back/CLAUDE.md`](src/back/CLAUDE.md) (backend), [`src/front/CLAUDE.md`](src/front/CLAUDE.md) (frontend), [`docs/architecture/`](docs/architecture/) (decisions, module boundaries)
+- [`docs/README.md`](docs/README.md) - entry point: where to find what
+- [`CLAUDE.md`](CLAUDE.md) - hard rules, conventions, data model, index of known pitfalls (read before contributing)
+- [`src/back/CLAUDE.md`](src/back/CLAUDE.md) and [`src/front/CLAUDE.md`](src/front/CLAUDE.md) - commands, structure, recipes and tests of each side
+- `.claude/rules/` - the knowledge of each module, frontend domain and the deployment, as path-scoped rules: each file declares its `paths` and is loaded only when a matching file is touched (settings table in `back/reglages.md`)
+- [`docs/architecture/`](docs/architecture/) - decisions, module boundaries
 - [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md) - game rules (scoring, extensions, anti-cheat, streak) - what is actually enforced vs merely configured
 - [`docs/exploitation/`](docs/exploitation/) - VPS deployment, staging, backups, CI, emergency access
 - [`docs/conformite/`](docs/conformite/) - Deezer API terms, GDPR
-- [`docs/runs/`](docs/runs/README.md) - the Run mode (delivered behind an invitation: the game, friend links and comparison)
+- [`docs/runs/`](docs/runs/README.md) - the Survie mode (rules, screens, design, what is left)
 - [`docs/taches.md`](docs/taches.md) - what is left to do
-- [`docs/historique/`](docs/historique/) - the 2026 rewrite
+- [`docs/historique/`](docs/historique/) - the project's history
 
 ## License
 

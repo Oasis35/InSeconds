@@ -1,10 +1,8 @@
-# Règles de jeu (scoring, anti-triche, streak)
+# Règles du défi du jour (score, anti-triche, série)
 
-> Référence unique des règles produit du blind test. Avant, ces règles étaient éparpillées entre le sommaire de `docs/` (rappel rapide), l'ancienne doc d'architecture du back (formule `ScoreCalculator`) et les pièges du [`CLAUDE.md`](../CLAUDE.md) - ce qui a d'ailleurs causé une ambiguïté réelle lors d'un audit de code (le comportement exact de la prolongation "écouter plus" n'était tranché nulle part). Ce document est la source de vérité produit ; si le code diverge, c'est le code qui a raison, mais ce doc doit alors être corrigé.
->
-> **2026-07-17** : la prolongation "écouter plus" a été repensée - plus de malus de score, plus de limite au nombre de prolongations. Voir la section dédiée ci-dessous pour le raisonnement.
->
-> Pour chaque règle, la mention **[Back]** / **[Front]** indique où elle est réellement appliquée (utile pour savoir si modifier un réglage en base suffit, ou s'il faut aussi toucher au code).
+Les règles du défi du jour (Daily), en une seule source : si le code diverge, c'est le code qui fait foi et ce document qui se corrige. Les règles du mode Survie sont dans [`runs/regles.md`](runs/regles.md).
+
+Pour chaque règle, la mention **[Back]** / **[Front]** indique où elle est réellement appliquée (utile pour savoir si modifier un réglage en base suffit, ou s'il faut aussi toucher au code).
 
 ## Déroulé d'une partie
 
@@ -38,9 +36,9 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
   - Si l'audio est **en cours de lecture**, la prolongation continue sans coupure - pas de replay de l'intro, l'arrêt est simplement repoussé au nouveau palier.
   - Si l'audio **n'est pas en cours de lecture** (palier précédent déjà terminé), la prolongation **relit le morceau depuis le début** jusqu'au nouveau palier.
 - **Aucun malus de score** : le score ne dépend que du **palier finalement écouté** - qu'il ait été atteint directement au premier choix ou via une ou plusieurs prolongations, le calcul est strictement identique (le barème ne lit pas `wasExtended`). **[Back]**
-  - Raisonnement produit : le barème par palier (ci-dessus) est déjà dégressif - écouter plus longtemps rapporte déjà moins de points. Ajouter un malus *en plus* du barème pénalisait deux fois un joueur parti prudent sur un petit palier (ex. 0,5s) qui doit ensuite prolonger : il finissait avec **moins de points qu'un joueur ayant choisi le palier final directement**, pour un temps d'écoute identique - ce qui décourageait exactement la stratégie qu'on veut encourager (tenter petit, sécuriser si besoin).
+  - Raison : le barème par palier (ci-dessus) est déjà dégressif. Un malus en plus pénaliserait deux fois le joueur qui tente un petit palier puis prolonge : il finirait avec moins de points qu'un joueur qui a choisi directement le palier final, pour la même écoute, alors que c'est la stratégie qu'on veut encourager (tenter petit, sécuriser si besoin).
 - `was_extended` (`daily.answers`) reste enregistré (à des fins de stats admin uniquement, voir plus bas), mais n'a aucun effet sur le calcul du score. La relecture (↺) après la réponse ne l'efface pas.
-- Il n'y a pas de nombre maximal de prolongations (l'ancien réglage `MaxExtensionsPerAnswer`, jamais appliqué, a été supprimé).
+- Il n'y a pas de nombre maximal de prolongations.
 
 ## Scoring partiel
 
@@ -67,7 +65,7 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
 - Par morceau : artiste, titre (une ligne chacun, en entier au toucher), année, pochette, lien Deezer, « Écouter l'extrait » (la fenêtre d'écoute de l'admin, l'extrait de 30 s de Deezer) ; « Joueurs » (part des réponses qui ont trouvé l'artiste, le titre) ; l'histogramme des paliers (part des réponses trouvées à chaque palier, et la part « rien trouvé » écrite au-dessus de la barre ✗) ; « le plus raté » en rouge sur le morceau au plus fort « rien trouvé ». En tête, l'égaliseur des scores du jour (médiane, plus bas, plus haut). **Que des pourcentages arrondis, jamais un nombre de joueurs.**
 - Sous **5 parties terminées** ce jour-là (le seuil de « déjà joué »), les morceaux s'affichent sans aucune statistique (« Pas assez de joueurs ce jour-là »), filtrés par le serveur.
 - Un joueur reconnu par son cookie (compte ou invité) voit en plus son score, « tu as fait mieux que X % » (à partir de 5 joueurs), et par morceau « Toi » : ✓/✗ pour l'artiste et le titre, ses points, sa barre de l'histogramme en orange. Seule une partie **terminée** compte. On y lit des réponses : rien ne se rejoue, le seul bouton mène au défi du jour.
-- Accès depuis le jeu : le lien « Réponses des jours passés » en bas de l'accueil. Navigation : ‹ › vers le jour publié d'avant et d'après (de vrais liens), un toucher sur la date ouvre un calendrier des jours publiés. `/history/daily/latest` ouvre le jour publié le plus récent. Le résultat du jour se termine par la ligne « Les réponses d'hier » (pochettes, date, et la médiane à partir de 5 joueurs).
+- Accès depuis le jeu : le lien « Réponses des jours passés », en bas de l'accueil du défi ; avec l'interface Survie (un compte qui a l'accès au mode), il quitte l'accueil et vit en bas de l'historique (`/history/daily`). Navigation : ‹ › vers le jour publié d'avant et d'après (de vrais liens), un toucher sur la date ouvre un calendrier des jours publiés. `/history/daily/latest` ouvre le jour publié le plus récent. Le résultat du jour se termine par la ligne « Les réponses d'hier » (pochettes, date, et la médiane à partir de 5 joueurs).
 - Moteurs de recherche : titre « Blind test du 21 octobre 2026 : artistes… », la date en `h1`, `sitemap.xml` servi par l'API avec tous les jours publiés.
 
 ## Stats admin sur la prolongation
@@ -93,11 +91,11 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
   | Prolonge direct jusqu'à 10s sans jamais cliquer indice 1, révèle indice 2 | 10s | niveau 2 | 100 × 0.40 = 40 |
 
 - **Année absente** (inconnue de Deezer, qui renvoie `0000-00-00`) : l'indice niveau 1 renvoie `null`, le front masque simplement la pastille année - pas d'erreur, l'indice niveau 2 (artiste) reste disponible indépendamment.
-- **Feedback** : `hintLevelUsed`/`hintPenaltyPercentApplied` de la réponse (pourcentage **réellement appliqué**, pas à recalculer côté front) - donnée disponible mais **pas affichée** sur l'écran de révélation depuis le 2026-09-19 (retiré à la demande produit, cf. issue #153).
+- **Feedback** : `hintLevelUsed`/`hintPenaltyPercentApplied` de la réponse (pourcentage **réellement appliqué**, pas à recalculer côté front) : donnée disponible mais **pas affichée** sur l'écran de révélation (choix produit).
 
 ## Passer un morceau
 
-Pendant l'écoute, un lien **« Passer (0 pts) »** sous « Valider » (le même aux Setlist) permet d'abandonner le morceau en cours sans répondre. Il demande une confirmation (même encart que la confirmation d'une réponse vide), puis envoie une réponse vide au palier déjà écouté : **0 point**, le morceau compte comme « pas trouvé » dans les stats. Aucune règle serveur spécifique : c'est une réponse vide ordinaire. **[Front]**
+Pendant l'écoute, un lien **« Passer (0 pts) »** sous « Valider » permet d'abandonner le morceau en cours sans répondre. Il demande une confirmation (même encart que la confirmation d'une réponse vide), puis envoie une réponse vide au palier déjà écouté : **0 point**, le morceau compte comme « pas trouvé » dans les stats. Aucune règle serveur spécifique : c'est une réponse vide ordinaire. **[Front]** En Survie, le même lien s'appelle « Passer (une vie) » et coûte une vie ([`runs/regles.md`](runs/regles.md#un-morceau)).
 
 ## Morceaux sans preview
 
@@ -105,7 +103,7 @@ Seuls les morceaux dont l'extrait est **disponible** (`preview_status` = 1, jama
 
 ## Anti-triche
 
-- **Scoring 100 % serveur** - le client n'envoie que le palier choisi et le texte saisi ; le serveur recalcule tout, le front ne fait qu'afficher le résultat renvoyé. Les **points en jeu** affichés pendant l'écoute (barème du palier moins la pénalité d'indice, `daily/domain/stake.ts`) ne sont qu'un affichage, calqué sur `DurationScoringPolicy` ; le coût d'un indice n'est plus écrit sur son bouton, il se voit à la baisse des points en jeu. **[Front]**
+- **Scoring 100 % serveur** - le client n'envoie que le palier choisi et le texte saisi ; le serveur recalcule tout, le front ne fait qu'afficher le résultat renvoyé. Les **points en jeu** affichés pendant l'écoute (barème du palier moins la pénalité d'indice, `daily/domain/stake.ts`) ne sont qu'un affichage, calqué sur `DurationScoringPolicy` ; le coût d'un indice n'est pas écrit sur son bouton, il se voit à la baisse des points en jeu. **[Front]**
 - **Rien qui identifie le morceau avant la réponse** - ni artiste, ni titre, ni année, ni identifiant Deezer au démarrage de la partie ; pochette et lien Deezer n'arrivent qu'avec la réponse. **[Back]**
 - **Anti-rejeu** : contrainte unique `(player_id, challenge_id)` - impossible de rejouer un défi déjà terminé, abandonné ou expiré en re-soumettant une requête ; une seule réponse par morceau (clé `(session_id, position)`). **[Back]**
 - **Verrou du morceau en cours** : le morceau en cours est le premier sans réponse, un autre morceau ne peut pas prendre le verrou (409 `daily.track_lock_not_released`). **[Back]**
@@ -114,13 +112,13 @@ Seuls les morceaux dont l'extrait est **disponible** (`preview_status` = 1, jama
 
 ## Timer de saisie
 
-⚠️ **`Daily:GuessTimerSeconds` (défaut 20 s) est exposé par `GET /api/daily/settings` et lu par le front, mais n'est appliqué nulle part** - aucun compte à rebours n'interrompt la saisie ni ne force une soumission automatique après ce délai. Le joueur peut aujourd'hui prendre le temps qu'il veut pour répondre après avoir écouté. À implémenter si le produit veut vraiment un timer de saisie contraignant.
+⚠️ **`Daily:GuessTimerSeconds` (défaut 20 s) est exposé par `GET /api/daily/settings` et lu par le front, mais n'est appliqué nulle part** - aucun compte à rebours n'interrompt la saisie ni ne force une soumission automatique après ce délai. Le joueur peut prendre le temps qu'il veut pour répondre après avoir écouté. À implémenter si le produit veut vraiment un timer de saisie contraignant.
 
-## Streak
+## Série (streak)
 
 - `daily.streaks` (`current_streak`, `last_played_date`, `freezes`) mis à jour uniquement à la **complétion** d'une partie (`DailyStreak.RecordCompletion`, dans la transaction de la dernière réponse), jamais à l'abandon. **[Back]**
 - Basée sur **la date du défi**, jamais sur l'heure réelle de complétion : la série monte de 1 si `last_played_date` = date du défi − 1 jour, sinon elle repart à `1` (hors gels, ci-dessous). `last_played_date` stocke la date du défi.
-- Conséquence : terminer le défi de la veille après minuit UTC (ex. à 00h15) ne casse pas la streak - seul un vrai jour manqué la remet à 1. Voir piège 18 du [`CLAUDE.md`](../CLAUDE.md) pour l'historique du bug corrigé.
+- Conséquence : terminer le défi de la veille après minuit UTC (ex. à 00h15) ne casse pas la série : seul un vrai jour manqué la remet à 1 (piège 18 du [`CLAUDE.md`](../CLAUDE.md#pièges-connus)).
 - **Série effective** : la valeur affichée (en-tête, accueil, récap, admin) est recalculée à la lecture (`DailyStreak.Compute`) - une série cassée s'affiche à 0 tout de suite, sans attendre la prochaine partie. **[Back]**
 
 ### Gel de série (streak freeze)
@@ -128,7 +126,7 @@ Seuls les morceaux dont l'extrait est **disponible** (`preview_status` = 1, jama
 - **Comptes connectés uniquement.** Un invité n'a jamais de gel. **[Back]**
 - **1 gel offert** à la création du compte (conversion invité → compte ; une reconnexion n'en redonne pas). **[Back]**
 - **+1 gel à chaque multiple de `Daily:StreakFreezeEveryDays`** (7) jours de série, dans la limite de **`Daily:StreakFreezeMax`** (2). Stock plein → rien de gagné. **[Back]**
-- **Panneau série (relevé de série → `streak-sheet`)** : le bloc « Prochain gel à N jours » + barre de progression n'est affiché que si le stock n'est pas déjà au plafond (2026-09-24) - une fois à 2/2, le panneau affiche un message « Stock plein » à la place, pour ne pas annoncer un gel qui ne peut pas être gagné tant qu'aucun n'a été consommé. **[Front]**
+- **Panneau série (relevé de série → `streak-sheet`)** : le bloc « Prochain gel à N jours » + barre de progression n'est affiché que si le stock n'est pas déjà au plafond ; une fois à 2/2, le panneau affiche un message « Stock plein » à la place, pour ne pas annoncer un gel qui ne peut pas être gagné tant qu'aucun n'a été consommé. **[Front]**
 - **Consommation automatique** : à la complétion du défi suivant, chaque jour manqué consomme un gel. La série **ne monte pas** pour le jour gelé mais **ne casse pas** (+1 pour le défi joué). Pas assez de gels pour tous les jours manqués → la série repart à 1 et les gels restent en stock. **[Back]**
 - **Affichage d'une série protégée** : avant de rejouer, les gels qui couvriront les jours manqués sont déjà retirés du compteur affiché (relevé de série sous « Commencer », panneau, onglet Joueurs admin), même si le stock en base ne baisse qu'à la complétion. Ex. : 2 gels, hier manqué → le relevé affiche 1 gel. **[Back]**
 - Entre-temps, une série dont les jours manqués sont couverts par le stock est **« protégée »** (accueil : « Un gel a protégé ta série hier. » sous le relevé) ; sinon elle est **« perdue »** (0). **[Back + Front]**
@@ -145,11 +143,11 @@ Tous relus à chaud (`IOptionsMonitor`), sans redémarrage. L'API refuse de dém
 | `Daily:TracksPerChallenge` | `5` | ✅ Back (génération des défis à venir ; la fin de partie compte les morceaux réels du défi) |
 | `Daily:AllowedDurationsSeconds` | `[0.5,1,1.5,2,3,5,10]` | ✅ Back (scoring, histogrammes) + Front (paliers proposés) |
 | `Daily:DurationScores` | voir table ci-dessus | ✅ Back (scoring) |
-| `Daily:TrackCooldownPoolPercent` | `75` (de 10 à 90) | ✅ Back (part du pool jouable en cooldown, modifiable en haut de l'onglet Morceaux de l'admin ; le délai avant qu'un morceau déjà joué redevienne tirable s'en déduit : ⌊ jouables × part ÷ morceaux par défi ⌋ jours, recalculé à chaque tirage, #275) |
-| `Daily:StreakFreezeEveryDays` / `StreakFreezeMax` / `StreakLostNudgeMinDays` | `7` / `2` / `2` | ✅ Back (gel de série, cf. § Streak) |
+| `Daily:TrackCooldownPoolPercent` | `75` (de 10 à 90) | ✅ Back (part du pool jouable en cooldown, modifiable en haut de l'onglet Morceaux de l'admin ; le délai avant qu'un morceau déjà joué redevienne tirable s'en déduit : ⌊ jouables × part ÷ morceaux par défi ⌋ jours, recalculé à chaque tirage) |
+| `Daily:StreakFreezeEveryDays` / `StreakFreezeMax` / `StreakLostNudgeMinDays` | `7` / `2` / `2` | ✅ Back (gel de série, cf. § Série) |
 | `Catalogue:CoverUrlTemplate` | URL Deezer | ✅ Back (reconstruction des pochettes depuis leur hash) |
-| `Daily:GuessTimerSeconds` | `20` | ❌ Non appliqué - aucun timer réel en jeu aujourd'hui |
+| `Daily:GuessTimerSeconds` | `20` | ❌ Non appliqué : aucun chrono réel au défi du jour |
 | `Daily:HintUnlockDurationsSeconds` | `[5,10]` | ✅ Back (déblocage côté serveur) + Front (affichage des boutons) |
 | `Daily:HintPenaltyPercent` | `{"1":30,"2":60}` | ✅ Back (pénalité appliquée au score) |
 
-Mécanisme de chargement : [`CLAUDE.md`](../CLAUDE.md) (§ Réglages) et [`src/back/CLAUDE.md`](../src/back/CLAUDE.md) (§ Réglages).
+Mécanisme de chargement : [`CLAUDE.md`](../CLAUDE.md) (§ Réglages) et [`.claude/rules/back/reglages.md`](../.claude/rules/back/reglages.md).

@@ -1,5 +1,7 @@
 # Niveau et classement général de Survie : plan de dev
 
+> **Archive figée** : journal du chantier du niveau et du classement général de Survie, terminé. Il ne décrit plus forcément le code. Les règles en vigueur sont dans [`docs/runs/regles.md`](../../runs/regles.md), les décisions durables dans [`docs/runs/conception.md`](../../runs/conception.md), ce qui reste dans [`docs/runs/plan.md`](../../runs/plan.md).
+
 Chantier en cours : le niveau est codé (#607 back, #608 front), le classement général suit. Tickets [#607](https://github.com/Oasis35/InSeconds/issues/607) (niveau, back), [#608](https://github.com/Oasis35/InSeconds/issues/608) (niveau, front), [#609](https://github.com/Oasis35/InSeconds/issues/609) (classement général, back), [#610](https://github.com/Oasis35/InSeconds/issues/610) (classement général, front). Go de Clément donné le 18/11 : les quatre tickets sont codés dans l'ordre, une PR chacun.
 
 ## Décisions
@@ -35,12 +37,12 @@ Captures du jeu (staging) avec le texte des nouvelles règles injecté, pochette
 
 **Accueil** : niveau Argent, avant le premier disque, alerte d'inactivité.
 
-![Accueil](maquettes/niveau-classement/planche-1-accueil.png)
+![Accueil](maquettes/planche-1-accueil.png)
 
 **Classement général** : ligne « Tu apparais sous… », choix pseudo ou alias, profil, création du compte.
 
-![Général](maquettes/niveau-classement/planche-2-general.png)
+![Général](maquettes/planche-2-general.png)
 
 **Fin de série** : passage au premier disque, mauvaise série.
 
-![Fin de série](maquettes/niveau-classement/planche-3-fin-de-serie.png)
+![Fin de série](maquettes/planche-3-fin-de-serie.png)

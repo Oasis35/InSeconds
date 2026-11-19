@@ -5,7 +5,7 @@ paths:
 ---
 # Module Social (groupes entre amis, classements)
 
-Un **noyau**, comme Players et Catalogue : il ne connaît aucun mode (`ModuleRules.Cores`, `Social_NeDependQueDesContratsDesAutresModules_EtDAucunMode`). De Players, il n'utilise que `ICurrentPlayer`, `IPlayerDirectory` et `PseudoRules`. Conception : [`docs/runs/proto4.md`](../../../docs/runs/proto4.md), [`docs/runs/niveau-classement.md`](../../../docs/runs/niveau-classement.md). Point d'entrée `SocialModule.AddSocial()` (+ `AddSocialPlayerData()`).
+Un **noyau**, comme Players et Catalogue : il ne connaît aucun mode (`ModuleRules.Cores`, `Social_NeDependQueDesContratsDesAutresModules_EtDAucunMode`). De Players, il n'utilise que `ICurrentPlayer`, `IPlayerDirectory` et `PseudoRules`. Règles : [`docs/runs/regles.md`](../../../docs/runs/regles.md) (Groupes, Classement général), conception : [`docs/runs/conception.md`](../../../docs/runs/conception.md). Point d'entrée `SocialModule.AddSocial()` (+ `AddSocialPlayerData()`).
 
 ## Contrats
 
