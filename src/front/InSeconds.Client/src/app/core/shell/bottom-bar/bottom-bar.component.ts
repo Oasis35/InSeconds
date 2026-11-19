@@ -1,18 +1,19 @@
-import { ChangeDetectionStrategy, Component, DOCUMENT, computed, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DOCUMENT, computed, effect, inject, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { filter, map } from 'rxjs';
-import { SessionStore } from '../../../core/session/session.store';
-import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
+import { SessionStore } from '../../session/session.store';
+import { DAILY_DONE_LOADER } from '../daily-done-loader';
+import { ShellChromeStore } from '../shell-chrome.store';
 
 /**
- * La barre du bas de la V4 : Accueil (le jeu du jour et la carte Setlist), Classements, Historique et Mon compte (« Connexion » pour un invité).
- * Visible seulement sous l'accès Setlist, sur l'accueil, sur Setlist, sur le classement, l'historique et le profil, et jamais pendant une manche.
- * « Accueil » respire en cyan tant que le défi du jour n'est pas joué. Les liens légaux ne sont plus dans la barre : ils vivent sous la carte Setlist.
+ * La barre du bas : Accueil (le jeu du jour et la carte Survie), Classements, Historique et Mon compte (« Connexion » pour un invité).
+ * Pour tous les joueurs, sur l'accueil, sur Survie, sur le classement, l'historique et le profil, et jamais pendant une manche.
+ * « Accueil » respire en cyan tant que le défi du jour n'est pas joué. Les liens légaux ne sont plus dans la barre : ils vivent sous la carte Survie.
  */
 @Component({
-  selector: 'app-setlist-bottom-bar',
+  selector: 'app-bottom-bar',
   imports: [RouterLink, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -58,7 +59,7 @@ import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
     @media (prefers-reduced-motion: reduce) { .bar-pulse { animation: none; } }
   `,
 })
-export class SetlistBottomBarComponent {
+export class BottomBarComponent {
   protected readonly chrome = inject(ShellChromeStore);
   private readonly session = inject(SessionStore);
   private readonly router = inject(Router);
@@ -83,7 +84,7 @@ export class SetlistBottomBarComponent {
     return null;
   });
 
-  protected readonly visible = computed(() => this.chrome.v4() && !this.chrome.immersive() && this.section() !== null);
+  protected readonly visible = computed(() => !this.chrome.immersive() && this.section() !== null);
 
   /** Quatre entrées : Setlist n'a plus d'onglet (sa carte est sur l'accueil, qui reste allumé sur ses pages). */
   protected readonly tabs = computed(() => [
@@ -96,6 +97,14 @@ export class SetlistBottomBarComponent {
   ]);
 
   constructor() {
+    // Arrivé directement sur Survie, le classement ou l'historique, la page du jeu du jour n'a rien dit : on lit si le défi est joué, pour le point qui s'agite.
+    const dailyDone = inject(DAILY_DONE_LOADER);
+    let dailyAsked = false;
+    effect(() => {
+      if (this.chrome.dailyDone() !== null || dailyAsked) return;
+      dailyAsked = true;
+      untracked(() => void dailyDone().then(done => { if (this.chrome.dailyDone() === null) this.chrome.setDailyDone(done); }).catch(() => undefined));
+    });
     // La page réserve la place de la barre (règle `has-bottom-bar` de styles.scss).
     effect(onCleanup => {
       const root = this.doc.documentElement;

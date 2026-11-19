@@ -30,12 +30,11 @@ test.describe('Réponses des jours passés', () => {
     await expect(page.getByTestId('archive-not-found')).toBeVisible();
   });
 
-  test("l'accueil y mène par « Réponses des jours passés », en bas de l'écran (plus de calendrier dans l'en-tête)", async ({ page }) => {
-    await page.goto('/daily');
-    await expect(page.getByRole('button', { name: 'Commencer' })).toBeVisible();
+  test("l'historique y mène par « Réponses des jours passés » (plus de calendrier dans l'en-tête)", async ({ page }) => {
+    await page.goto('/history/daily');
     await expect(page.locator('app-account-link a[href="/history/daily/latest"]')).toHaveCount(0);
 
-    await page.getByRole('link', { name: 'Réponses des jours passés' }).click();
+    await page.getByTestId('history-archive').click();
     await expect(page).toHaveURL(/\/history\/daily\/\d{4}-\d{2}-\d{2}$/);
   });
 
@@ -60,7 +59,7 @@ test.describe('Réponses des jours passés', () => {
     await expect(page).toHaveURL(new RegExp(`/history/daily/${latest}$`));
 
     await page.getByTestId('archive-play-today').click();
-    await expect(page).toHaveURL(/\/daily$/);
+    await expect(page).toHaveURL(/\/$/);
   });
 
   test("un morceau s'écoute dans la fenêtre de l'admin, et son nom se déplie au toucher", async ({ page }) => {

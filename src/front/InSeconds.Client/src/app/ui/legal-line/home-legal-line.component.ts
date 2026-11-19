@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
 /**
- * La ligne discrète des liens légaux (mentions légales, confidentialité, contact), posée sous la carte Setlist de l'accueil de la V4 : ils ont
+ * La ligne discrète des liens légaux (mentions légales, confidentialité, contact), posée sous la carte du défi et la carte Survie de l'accueil : ils ont
  * quitté la barre du bas, qui ne porte plus que les quatre pages du joueur.
  */
 @Component({

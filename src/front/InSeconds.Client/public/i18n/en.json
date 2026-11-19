@@ -115,9 +115,6 @@
       "later": "Later"
     },
     "header": {
-      "login": "Log in",
-      "profile": "My profile",
-      "avatarTitle": "My profile: {{ pseudo }}",
       "admin": "Admin"
     }
   },

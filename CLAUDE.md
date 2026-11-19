@@ -228,10 +228,10 @@ Les numéros sont stables : le code et les tests y renvoient (`PiegeNN_…`, « 
 
 Une ligne par surface ; le détail fonctionnel est dans la doc citée, les libellés dans `public/i18n/{fr,en}.json`.
 
-- **Défi du jour** (`/daily`, `/` sans l'accès Survie) : accueil, manche par paliers avec indices et autocomplétion, révélation, résultat du jour, partage, série et gels (comptes seulement). [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md).
+- **Défi du jour** (`/` pour l'accueil, `/daily` pour la manche) : accueil, manche par paliers avec indices et autocomplétion, révélation, résultat du jour, partage, série et gels (comptes seulement). [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md).
 - **Réponses des jours passés** (`/history/daily/aaaa-mm-jj`) : publiées dès le lendemain, en pourcentages, **rien sous 5 joueurs**. [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md).
 - **Survie** (`/survie`, `/survie/<code>` ; sur invitation : lien d'un ami **réservé aux comptes qui ont l'accès**) : vies, manches, paliers, thèmes, fantôme, duels, niveau et disques, Hits (`/survie/hits`). [`docs/runs/regles.md`](docs/runs/regles.md), [`docs/runs/ecrans.md`](docs/runs/ecrans.md).
-- **Interface Survie** (pour un compte qui a l'accès) : accueil à deux cartes, barre du bas (Accueil, Classements, Historique, Mon compte), historique `/history/daily` et `/history/survie`.
+- **Coque V4** (pour tout le monde, invité compris) : accueil (la carte du défi, plus la carte Survie pour un compte qui a l'accès), barre du bas (Accueil, Classements, Historique, Mon compte ou Connexion), historique `/history/daily`. **Ce qui touche Survie reste derrière l'accès** : carte Survie, niveau, Hits, défi d'ami, pastille « Général » du classement, onglet « Survie » de l'historique, lien du nom au classement général du profil.
 - **Groupes et classements** (`/ranking`, `/ranking/new`, `/ranking/join/<code>`, `?view=general`) : seuls les membres d'un groupe voient ses pseudos ; le classement général réunit les comptes autorisés qui ont fini une partie, **jamais un admin**, sous leur pseudo ou un alias musical. [`docs/runs/regles.md`](docs/runs/regles.md).
 - **Compte** (`/account/**`) : lien magique, pseudo, changement d'email, appareils, « Tes données » (export, suppression). [`docs/conformite/rgpd.md`](docs/conformite/rgpd.md).
 - **Admin** (`/admin/**`, rôle `is_admin`) : Accueil, Défis, Contenu (Morceaux, Thèmes, À valider), Groupes, Joueurs, panneau technique. `.claude/rules/front/admin.md`.

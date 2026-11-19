@@ -1,7 +1,6 @@
 import { EnvironmentInjector, InjectionToken, createEnvironmentInjector, effect, inject, untracked } from '@angular/core';
 import { patchState, signalStore, withHooks, withMethods, withState } from '@ngrx/signals';
 import { SessionStore } from '../../core/session/session.store';
-import { DAILY_DONE_LOADER } from '../../core/shell/daily-done-loader';
 import { ShellChromeStore } from '../../core/shell/shell-chrome.store';
 
 /**
@@ -24,15 +23,15 @@ export const SETLIST_ACCESS_LOADER = new InjectionToken<() => Promise<boolean>>(
 });
 
 interface SetlistAccessState {
-  /** `true` pour un compte que l'admin a autorisé : c'est le flag de toute la V4 (barre du bas, nouvel accueil, classement...). */
+  /** `true` pour un compte que l'admin a autorisé : seul ce qui touche Survie en dépend (carte, niveau, Hits, défi d'ami, classement général). */
   hasAccess: boolean;
   /** `true` une fois la question posée et répondue (ou écartée pour un invité) : avant, `hasAccess` n'est pas encore une réponse. */
   loaded: boolean;
 }
 
 /**
- * Le flag de la V4 : le joueur voit-il la nouvelle interface Setlist ? Un seul interrupteur, l'accès au mode posé par l'admin ; sans lui,
- * l'interface actuelle reste telle quelle. Un invité ne le demande pas (l'accès est lié à un compte), une erreur vaut « pas d'accès ».
+ * L'accès à Survie : le joueur voit-il ce qui touche au mode ? Un seul interrupteur, l'accès posé par l'admin ; la coque (barre du bas, accueil)
+ * n'en dépend pas. Un invité ne le demande pas (l'accès est lié à un compte), une erreur vaut « pas d'accès ».
  */
 export const SetlistAccessStore = signalStore(
   { providedIn: 'root' },
@@ -64,16 +63,8 @@ export const SetlistAccessStore = signalStore(
     onInit(store) {
       const session = inject(SessionStore);
       const chrome = inject(ShellChromeStore);
-      // Le flag est lu par la coque (barre du bas...), qui ne connaît pas ce domaine.
-      effect(() => chrome.setV4(store.hasAccess(), store.loaded()));
-      // Arrivé directement sur la Setlist, la page du jeu du jour n'a rien dit : on lit si le défi est joué, pour la barre du bas et la fin de Setlist.
-      const dailyDone = inject(DAILY_DONE_LOADER);
-      let dailyAsked = false;
-      effect(() => {
-        if (!store.hasAccess() || chrome.dailyDone() !== null || dailyAsked) return;
-        dailyAsked = true;
-        untracked(() => void dailyDone().then(done => { if (chrome.dailyDone() === null) chrome.setDailyDone(done); }).catch(() => undefined));
-      });
+      // L'accès est lu par la coque et par les pages des autres domaines, qui ne connaissent pas celui-ci.
+      effect(() => chrome.setSurvie(store.hasAccess(), store.loaded()));
       effect(() => {
         // L'identité se lit au démarrage de l'app : tant qu'elle n'est pas connue, on ne conclut rien.
         if (!session.loaded()) return;

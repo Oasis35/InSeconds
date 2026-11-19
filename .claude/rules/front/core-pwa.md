@@ -17,7 +17,7 @@ paths:
 - `HealthService` sonde `/health` toutes les `HEALTH_POLL_MS` ; l'overlay « Service indisponible » vient après `HEALTH_KO_THRESHOLD` échecs de suite et part au premier succès.
 - `from=legacy` (redirection nginx de l'ancienne adresse `code.run`) ouvre l'avis « l'adresse a changé » par `ModalService` ; le paramètre est retiré avant la première navigation. Son élément hôte est en `block` : resté inline, Chromium le plaçait au-dessus du bouton dans `elementsFromPoint` et Playwright refusait le clic.
 - Drapeaux E2E : `window.__disableAnimations` (classe `no-anim`) et `window.__disableHealthPolling`.
-- `<app-account-link>` (`core/shell/account-link`) : les accès de l'en-tête (cadenas `/admin`, initiale du compte ou « Connexion »), projetés par les pages du jeu, de l'historique et des classements ; il n'y a pas d'en-tête global.
+- `<app-account-link>` (`core/shell/account-link`) : les accès de l'en-tête (le cadenas `/admin` seulement : le compte est dans la barre du bas), projetés par les pages du jeu, de l'historique et des classements ; il n'y a pas d'en-tête global.
 - `PageMetaService` (`core/seo`) : canonique, `og:url`, `noindex`, titre et description à chaque navigation ; pas de `hreflang` (les deux langues partagent les adresses).
 
 ## Nouvelle version (`VersionService`)

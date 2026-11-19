@@ -10,10 +10,14 @@ export function pathOf(url: string): string {
 }
 
 /**
- * Attend que le compte `pseudo` soit connecté dans ce navigateur : le lien de compte (en-tête, ou bandeau du jeu du jour) affiche son avatar (titre = pseudo).
+ * Attend qu'un compte soit connecté dans ce navigateur : sur l'accueil, l'onglet « Mon compte » de la barre du bas mène au profil (un invité y a « Connexion »).
+ * Le profil affiche le pseudo, c'est lui qu'on lit.
  */
 export async function expectSignedIn(page: Page, pseudo: string): Promise<void> {
-  await expect(page.locator('app-account-link').getByTitle(pseudo)).toBeVisible();
+  // La connexion se termine sur la page en cours (le pseudo part au serveur) : on n'en sort qu'une fois le compte lié, vu par la barre du bas de l'accueil.
+  await expect(page.getByTestId('tab-account')).toHaveAttribute('href', '/account/profile');
+  await page.getByTestId('tab-account').click();
+  await expect(page.getByPlaceholder('Ton pseudo')).toHaveValue(pseudo);
 }
 
 /**

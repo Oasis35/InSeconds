@@ -19,7 +19,7 @@ test.describe('Anciennes adresses', () => {
 
   test('redirige les anciennes adresses vers les routes actuelles en gardant la query string', async ({ page }) => {
     const cases: [from: string, to: string][] = [
-      [`/${QUERY}`, `/daily${QUERY}`],
+      [`/${QUERY}`, `/${QUERY}`],
       [`/blindtest${QUERY}`, `/daily${QUERY}`],
       [`/login${QUERY}`, `/account/login${QUERY}`],
       ['/login/verify?token=jeton-e2e', '/account/login/verify?token=jeton-e2e'],
@@ -57,8 +57,8 @@ test.describe('Anciennes adresses', () => {
 
     await page.goto(`/${QUERY}&from=legacy`);
     await expect(notice).toBeVisible();
-    // Le paramètre est retiré avant la première navigation : les autres restent, la redirection / → /daily a lieu.
-    await expect(page).toHaveURL(endsWith(`/daily${QUERY}`));
+    // Le paramètre est retiré avant la première navigation : les autres restent, on reste sur l'accueil.
+    await expect(page).toHaveURL(endsWith(`/${QUERY}`));
 
     await page.getByRole('button', { name: "J'ai compris" }).click();
     await expect(notice).toBeHidden();
@@ -68,6 +68,6 @@ test.describe('Anciennes adresses', () => {
     await page.reload();
     await expect(game.startButton).toBeVisible();
     await expect(notice).toBeHidden();
-    await expect(page).toHaveURL(endsWith(`/daily${QUERY}`));
+    await expect(page).toHaveURL(endsWith(`/${QUERY}`));
   });
 });

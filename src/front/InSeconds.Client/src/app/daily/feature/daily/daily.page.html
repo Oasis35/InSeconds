@@ -9,7 +9,7 @@
              de la partie se lit à la révélation de chaque morceau. -->
         @if (screen() !== 'playing' && screen() !== 'loading') {
           <div brandRight class="flex items-center gap-2">
-            @if (chrome.v4()) { <app-instagram-link /> }
+            <app-instagram-link />
             <app-account-link />
           </div>
         }
@@ -135,12 +135,8 @@
     }
 
   </main>
-  <!-- Sous la V4, les liens légaux sont une ligne discrète sous la carte Setlist (pas pendant une manche) et la langue est dans le profil. -->
-  @if (screen() === 'loading') {
-    <!-- Le flag n'est pas lu : ni ancien pied de page, ni ligne légale de la V4. -->
-  } @else if (!chrome.v4()) {
-    <app-daily-footer class="mt-auto" [lang]="language.current()" (toggleLanguage)="toggleLanguage()" />
-  } @else if (screen() !== 'playing') {
+  <!-- Les liens légaux sont une ligne discrète sous la carte Survie (pas pendant une manche) et la langue est dans le profil. -->
+  @if (screen() !== 'loading' && screen() !== 'playing') {
     <app-home-legal-line class="mt-auto" />
   }
 </div>

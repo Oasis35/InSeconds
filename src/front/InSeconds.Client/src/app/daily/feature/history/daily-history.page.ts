@@ -6,6 +6,7 @@ import { map } from 'rxjs';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { AccountLinkComponent } from '../../../core/shell/account-link/account-link.component';
+import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { InstagramLinkComponent } from '../../../core/shell/instagram-link/instagram-link.component';
 import { HomeLegalLineComponent } from '../../../ui/legal-line/home-legal-line.component';
 import { BrandComponent } from '../../../ui/brand/brand.component';
@@ -40,6 +41,7 @@ import { StatusScreenComponent } from '../../ui/status-screen/status-screen.comp
 export class DailyHistoryPage {
   protected readonly store = inject(DailyHistoryStore);
   protected readonly language = inject(LanguageService);
+  protected readonly chrome = inject(ShellChromeStore);
   protected readonly errorReporting = inject(ErrorReportingService);
 
   /** Le mois de l'adresse ; mal écrit ou absent : le mois en cours (le serveur le choisit). */

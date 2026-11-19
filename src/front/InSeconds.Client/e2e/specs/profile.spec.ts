@@ -10,26 +10,36 @@ test.describe('Profil', () => {
     await api.reset();
   });
 
-  test('l\'avatar du header (compte connecté) mène au profil', async ({ page, api }) => {
+  test("l'onglet « Mon compte » de la barre du bas (compte connecté) mène au profil", async ({ page, api }) => {
     await linkAccount(page, api, EMAIL_A, 'AvatarUserE2E');
 
-    // Le profil porte aussi des éléments avec le même texte - scoper au header.
-    await page.locator('app-account-link').getByTitle('AvatarUserE2E').click();
+    await page.goto('/');
+    await page.getByTestId('tab-account').click();
     await expect(page).toHaveURL(/\/profile$/);
   });
 
-  test('le lien de compte du header disparaît pendant la manche', async ({ page, api }) => {
+  test('la barre du bas disparaît pendant la manche', async ({ page, api }) => {
     await linkAccount(page, api, EMAIL_A, 'MancheUserE2E');
     const game = new GamePage(page);
-    const avatar = page.locator('app-account-link').getByTitle('Mon profil : MancheUserE2E');
 
     await game.openWithFakeClock();
-    await expect(avatar).toBeVisible();
+    await expect(page.getByTestId('tab-account')).toBeVisible();
 
-    // En pleine manche, un toucher par erreur ouvrirait la confirmation de sortie : ni accès de l'en-tête ni « Connexion » (#318).
+    // En pleine manche, un toucher par erreur ouvrirait la confirmation de sortie : ni barre ni accès de l'en-tête (#318).
     await game.clickStart();
     await expect(page.getByText('Piste 1 / 5')).toBeVisible();
+    await expect(page.getByTestId('bottom-bar')).toHaveCount(0);
     await expect(page.locator('app-account-link a')).toHaveCount(0);
+  });
+
+  test('la langue se change dans le profil', async ({ page, api }) => {
+    await linkAccount(page, api, EMAIL_A, 'LangueUserE2E');
+
+    await page.goto('/profile');
+    await page.getByTestId('language-en').click();
+
+    await expect(page.getByTestId('language-en')).toHaveAttribute('aria-pressed', 'true');
+    expect(await page.evaluate(() => document.documentElement.lang)).toBe('en');
   });
 
   test('change de pseudo avec succès', async ({ page, api }) => {
