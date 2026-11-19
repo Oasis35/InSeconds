@@ -79,7 +79,17 @@ export class DailyShellComponent implements OnInit {
       else if (screen === 'already_played' || screen === 'done') done = true;
       this.chrome.setDailyDone(done);
     });
-    this.destroyRef.onDestroy(() => this.chrome.setImmersive(false));
+    // Un appel à créer un compte est déjà à l'écran (toast de série d'un invité, « Ne plus perdre mes parties » de la partie en pause) : la carte
+    // amis de l'accueil ne pose pas le sien en plus.
+    effect(() => {
+      const screen = this.store.screen();
+      const guestPaused = screen === 'resume_prompt' && !this.store.linked();
+      this.chrome.setAccountCtaShown(this.store.showLostToast() || this.store.toasts().guestStreak || guestPaused);
+    });
+    this.destroyRef.onDestroy(() => {
+      this.chrome.setImmersive(false);
+      this.chrome.setAccountCtaShown(false);
+    });
 
     // Quelle page montre quoi : une manche est sur `/daily`, le reste (carte du défi, pause, abandon, résultat) sur `/`.
     effect(() => {

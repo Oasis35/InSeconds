@@ -5,7 +5,8 @@ import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { LastGroup } from '../../data-access/last-group';
 import { SocialApi } from '../../data-access/social.api';
 import { provideSocialApi } from '../../data-access/social.providers';
-import { FriendsCardView, cardGroupId, groupCardView } from '../../domain/group-scores';
+import { FriendsCardView, groupCardView } from '../../domain/friends-card';
+import { preferredGroupId } from '../../domain/group';
 import { FriendsHomeCardComponent } from '../../ui/friends-home-card/friends-home-card.component';
 
 /**
@@ -22,18 +23,25 @@ import { FriendsHomeCardComponent } from '../../ui/friends-home-card/friends-hom
   host: { class: 'block' },
   template: `
     @if (view(); as view) {
-      <div class="pt-3"><app-friends-home-card [view]="view" [lang]="lang()" /></div>
+      <div class="pt-3"><app-friends-home-card [view]="view" [lang]="lang()" [showLogin]="!chrome.accountCtaShown()" /></div>
+    } @else if (reserving()) {
+      <!-- La place de la carte pendant sa lecture : la carte Survie, souvent prête avant, ne saute pas quand celle-ci arrive au-dessus. -->
+      <div class="pt-3" aria-hidden="true" data-testid="friends-card-placeholder">
+        <div class="rounded-(--radius-card) min-h-36" style="background:var(--bg-surface);border:1px solid var(--border-medium)"></div>
+      </div>
     }
   `,
 })
 export class SocialHomeEntryComponent {
   private readonly session = inject(SessionStore);
-  private readonly chrome = inject(ShellChromeStore);
+  protected readonly chrome = inject(ShellChromeStore);
   private readonly api = inject(SocialApi);
   private readonly lastGroup = inject(LastGroup);
   private readonly language = inject(LanguageService);
 
   protected readonly view = signal<FriendsCardView | null>(null);
+  /** La carte d'un compte se lit (deux appels) : sa place est gardée, vide, tant qu'elle n'est pas là. */
+  protected readonly reserving = signal(false);
   protected readonly lang = computed<'fr' | 'en'>(() => (this.language.current() === 'en' ? 'en' : 'fr'));
   private latest = 0;
 
@@ -55,13 +63,16 @@ export class SocialHomeEntryComponent {
       return;
     }
     let view: FriendsCardView | null;
+    if (this.view() === null) this.reserving.set(true);
     try {
       const { groups } = await this.api.myGroups();
-      const groupId = cardGroupId(groups.map(group => group.id), this.lastGroup.get());
+      const groupId = preferredGroupId(groups.map(group => group.id), this.lastGroup.get());
       view = groupId === null ? { kind: 'no_group' } : groupCardView(await this.api.scores(groupId));
     } catch {
       view = null;
     }
-    if (request === this.latest) this.view.set(view);
+    if (request !== this.latest) return;
+    this.view.set(view);
+    this.reserving.set(false);
   }
 }

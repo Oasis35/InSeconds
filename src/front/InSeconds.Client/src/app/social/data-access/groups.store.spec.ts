@@ -40,6 +40,15 @@ describe('GroupsStore', () => {
     expect(TestBed.inject(LastGroup).get()).toBe(7);
   });
 
+  it('sans groupe demandé, le classement rouvre le dernier groupe regardé (sans le remplacer par le premier)', async () => {
+    TestBed.inject(LastGroup).set(7);
+
+    await store.load();
+
+    expect(store.selectedId()).toBe(7);
+    expect(TestBed.inject(LastGroup).get()).toBe(7);
+  });
+
   it('sans groupe, rien à classer', async () => {
     api.groups = { groups: [], maxGroups: 5 };
 

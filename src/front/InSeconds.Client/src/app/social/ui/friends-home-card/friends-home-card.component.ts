@@ -4,7 +4,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { enterHomeCard } from '../../../ui/motion/motion';
 import { avatarOf, initialOf } from '../../domain/group';
-import { FriendsCardView } from '../../domain/group-scores';
+import { FriendPresence, FriendsCardView } from '../../domain/friends-card';
 
 /**
  * La carte amis de l'accueil, sous la carte du défi. Tant que le défi du jour reste à faire : le groupe, « 3 sur 5 ont joué » et une pastille par
@@ -24,7 +24,9 @@ import { FriendsCardView } from '../../domain/group-scores';
         @case ('guest') {
           <h2 class="text-xl font-bold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.empty.title' | translate }}</h2>
           <p class="text-sm leading-snug" style="color:var(--text-light)">{{ 'social.home.guestBody' | translate }}</p>
-          <a appButton variant="neutral" [block]="true" routerLink="/account/login" data-testid="friends-card-login">{{ 'social.empty.createAccount' | translate }}</a>
+          @if (showLogin()) {
+            <a appButton variant="neutral" [block]="true" routerLink="/account/login" data-testid="friends-card-login">{{ 'social.empty.createAccount' | translate }}</a>
+          }
         }
         @case ('no_group') {
           <h2 class="text-xl font-bold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.empty.title' | translate }}</h2>
@@ -32,8 +34,8 @@ import { FriendsCardView } from '../../domain/group-scores';
           <a appButton variant="accent" [block]="true" routerLink="/ranking/new" data-testid="friends-card-create">{{ 'social.empty.create' | translate }}</a>
         }
         @default {
-          <div class="flex items-center gap-3">
-            <h2 class="min-w-0 flex-1 truncate text-xl font-bold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="friends-card-title">
+          <div class="flex items-start gap-3">
+            <h2 class="min-w-0 flex-1 break-words text-xl font-bold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="friends-card-title">
               @if (view().kind === 'revealed') { {{ 'social.home.todayTitle' | translate: { name: title() } }} } @else { {{ title() }} }
             </h2>
             @if (groupId(); as id) {
@@ -62,9 +64,9 @@ import { FriendsCardView } from '../../domain/group-scores';
                     [attr.data-played]="member.played" [attr.data-me]="member.isMe ? 'true' : null" [attr.title]="member.isMe ? null : member.pseudo"
                     [style.background]="member.played ? 'var(--avatar-' + member.avatar + ')' : 'var(--bg-inactive)'"
                     [style.color]="member.played ? 'var(--text-hi)' : 'var(--text-faint)'"
-                    [style.border]="member.isMe ? '1px solid var(--color-accent-3)' : null">
+                    [style.border]="member.isMe ? '1px solid var(--color-accent-3)' : member.played ? null : '1px solid var(--border-neutral)'">
                     <span aria-hidden="true">{{ member.initial }}</span>
-                    <span class="sr-only">{{ member.isMe ? ('social.ranking.me' | translate) : member.pseudo }} : {{ (member.played ? 'social.home.hasPlayed' : 'social.ranking.unplayed') | translate }}</span>
+                    <span class="sr-only">{{ member.label | translate: { name: member.pseudo } }}</span>
                   </li>
                 }
               </ul>
@@ -72,6 +74,9 @@ import { FriendsCardView } from '../../domain/group-scores';
           }
 
           @if (rows(); as rows) {
+            @if (rows.length === 0) {
+              <p class="text-sm leading-snug" style="color:var(--text-light)" data-testid="friends-card-nobody">{{ 'social.home.nobodyFinished' | translate }}</p>
+            } @else {
             <ol class="flex flex-col" data-testid="friends-card-top">
               @for (row of rows; track $index) {
                 <li class="flex items-center gap-3 px-2 py-1.5 min-h-12" data-testid="friends-card-row" [attr.data-me]="row.isMe ? 'true' : null"
@@ -89,6 +94,7 @@ import { FriendsCardView } from '../../domain/group-scores';
                 </li>
               }
             </ol>
+            }
           }
         }
       }
@@ -99,6 +105,8 @@ export class FriendsHomeCardComponent {
   readonly view = input.required<FriendsCardView>();
   /** La langue des nombres (« 1 380 »). */
   readonly lang = input<'fr' | 'en'>('fr');
+  /** Invité : « Créer un compte » ; masqué quand le jeu du jour montre déjà son propre appel (toast de série, partie en pause). */
+  readonly showLogin = input(true);
 
   private readonly numbers = computed(() => new Intl.NumberFormat(this.lang()));
 
@@ -113,7 +121,7 @@ export class FriendsHomeCardComponent {
   });
 
   protected readonly members = computed(() =>
-    (this.pending()?.members ?? []).map(member => ({ ...member, initial: initialOf(member.pseudo), avatar: avatarOf(member.pseudo) })));
+    (this.pending()?.members ?? []).map(member => ({ ...member, initial: initialOf(member.pseudo), avatar: avatarOf(member.pseudo), label: presenceLabel(member) })));
 
   protected readonly rows = computed(() => {
     const view = this.view();
@@ -137,4 +145,10 @@ export class FriendsHomeCardComponent {
     const view = this.view();
     return view.kind === 'pending' || view.kind === 'revealed' ? view.name : '';
   }
+}
+
+/** Ce qu'un lecteur d'écran dit d'une pastille : une phrase accordée par cas (« Léa a joué », « Tu n'as pas encore joué »). */
+function presenceLabel(member: FriendPresence): string {
+  if (member.isMe) return member.played ? 'social.home.mePlayed' : 'social.home.meWaiting';
+  return member.played ? 'social.home.memberPlayed' : 'social.home.memberWaiting';
 }

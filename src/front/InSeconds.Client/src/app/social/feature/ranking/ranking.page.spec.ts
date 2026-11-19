@@ -3,6 +3,7 @@ import { Router, provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { ShareService } from '../../../core/share/share.service';
+import { MemoryStoragePort, StoragePort } from '../../../core/storage/storage.port';
 import { ModalService } from '../../../ui/modal/modal.service';
 import { PendingInvite } from '../../data-access/pending-invite';
 import { FakeSocialApi, provideFakeSocialApi } from '../../data-access/testing/fake-social-api';
@@ -22,6 +23,8 @@ describe('RankingPage', () => {
         provideTranslateService(), provideRouter([{ path: 'ranking', component: RankingPage }, { path: '**', children: [] }]), provideFakeSocialApi(api),
         { provide: ShareService, useValue: { share: (text: string) => { shared.push(text); return Promise.resolve('copied'); } } },
         { provide: ModalService, useValue: { confirm: () => Promise.resolve(confirm) } },
+        // Un stockage neuf par test : le dernier groupe regardé ne passe pas d'un test à l'autre.
+        { provide: StoragePort, useValue: new MemoryStoragePort() },
       ],
     });
     const invite = TestBed.inject(PendingInvite);

@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
-import { FriendsCardView } from '../../domain/group-scores';
+import { FriendsCardView } from '../../domain/friends-card';
 import { FriendsHomeCardComponent } from './friends-home-card.component';
 
 describe('FriendsHomeCardComponent', () => {
@@ -23,6 +23,16 @@ describe('FriendsHomeCardComponent', () => {
     expect(login?.getAttribute('href')).toBe('/account/login');
     expect(login?.classList).toContain('app-button--neutral');
     expect(one(element, 'friends-card-create')).toBeNull();
+  });
+
+  it("un invité dont le jeu du jour montre déjà l'appel : pas de second bouton", () => {
+    TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
+    const fixture = TestBed.createComponent(FriendsHomeCardComponent);
+    fixture.componentRef.setInput('view', { kind: 'guest' });
+    fixture.componentRef.setInput('showLogin', false);
+    fixture.detectChanges();
+
+    expect(one(fixture.nativeElement as HTMLElement, 'friends-card-login')).toBeNull();
   });
 
   it('un compte sans groupe : « Créer un groupe »', () => {
@@ -77,5 +87,23 @@ describe('FriendsHomeCardComponent', () => {
       new Intl.NumberFormat('fr').format(1910), new Intl.NumberFormat('fr').format(1380),
     ]);
     expect(one(element, 'friends-card-members')).toBeNull();
+  });
+
+  it("défi fait mais personne de classé (abandon sans score) : une phrase plutôt qu'une liste vide", () => {
+    const element = render({ kind: 'revealed', groupId: 4, name: 'Potes', top: [] });
+
+    expect(one(element, 'friends-card-nobody')?.textContent?.trim()).toBe('social.home.nobodyFinished');
+    expect(one(element, 'friends-card-top')).toBeNull();
+  });
+
+  it("une pastille dit qui a joué au lecteur d'écran, phrase accordée", () => {
+    const element = render({
+      kind: 'pending', groupId: 4, name: 'Potes', played: 1, total: 2,
+      members: [{ pseudo: 'Léa', isMe: false, played: true }, { pseudo: 'Moi', isMe: true, played: false }],
+    });
+
+    expect(all(element, 'friends-card-member').map(member => member.querySelector('.sr-only')?.textContent?.trim())).toEqual([
+      'social.home.memberPlayed', 'social.home.meWaiting',
+    ]);
   });
 });

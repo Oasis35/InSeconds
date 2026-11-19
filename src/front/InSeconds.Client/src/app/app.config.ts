@@ -38,7 +38,6 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => inject(PageMetaService).init()),
     provideAccount(),
     provideDailyStatus(),
-    // Avant `provideRuns()` : la carte amis de l'accueil passe au-dessus de la carte Survie.
     provideSocial(),
     provideRuns(),
     // Désactivé en dev (`ng serve`) : un service worker y servirait d'anciens fichiers.

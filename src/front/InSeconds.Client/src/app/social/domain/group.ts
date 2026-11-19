@@ -150,3 +150,12 @@ export function bestStanding(standings: readonly GroupStanding[]): (GroupStandin
 export function generalRankOf(ranking: GeneralRanking): number | null {
   return [...ranking.top, ...ranking.around].find(entry => entry.isMe)?.rank ?? null;
 }
+
+/**
+ * Le groupe à montrer parmi les miens : celui qu'on préfère (le dernier regardé, ou celui de l'adresse) s'il en est encore un, sinon le premier ;
+ * `null` sans groupe. La même règle pour le classement et la carte amis de l'accueil.
+ */
+export function preferredGroupId(groupIds: readonly number[], preferredId: number | null): number | null {
+  if (preferredId !== null && groupIds.includes(preferredId)) return preferredId;
+  return groupIds[0] ?? null;
+}

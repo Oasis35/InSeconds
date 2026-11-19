@@ -5,7 +5,7 @@ import { SessionPlayer, SessionStore } from '../../../core/session/session.store
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { MemoryStoragePort, StoragePort } from '../../../core/storage/storage.port';
 import { LastGroup } from '../../data-access/last-group';
-import { DAILY_REVEALED, FakeSocialApi, provideFakeSocialApi } from '../../data-access/testing/fake-social-api';
+import { DAILY, DAILY_LOCKED, FakeSocialApi, provideFakeSocialApi } from '../../data-access/testing/fake-social-api';
 import { SocialHomeEntryComponent } from './social-home-entry.component';
 
 describe('SocialHomeEntryComponent', () => {
@@ -15,6 +15,9 @@ describe('SocialHomeEntryComponent', () => {
 
   beforeEach(() => {
     api = new FakeSocialApi();
+    // Défi à faire : qui a joué, sans score, dans les deux groupes.
+    api.scoresByGroup.set(4, { groupId: 4, name: 'Potes', daily: DAILY_LOCKED });
+    api.scoresByGroup.set(7, { groupId: 7, name: 'Famille', daily: DAILY_LOCKED });
   });
 
   async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
@@ -25,7 +28,7 @@ describe('SocialHomeEntryComponent', () => {
     fixture.detectChanges();
   }
 
-  async function render(signedIn: SessionPlayer | null, options: { lastGroup?: number; dailyDone?: boolean } = {}) {
+  async function render(signedIn: SessionPlayer | null, options: { lastGroup?: number; dailyDone?: boolean; accountCta?: boolean } = {}) {
     TestBed.configureTestingModule({
       providers: [provideTranslateService(), provideRouter([]), { provide: StoragePort, useValue: new MemoryStoragePort() }],
     });
@@ -33,6 +36,7 @@ describe('SocialHomeEntryComponent', () => {
     TestBed.overrideComponent(SocialHomeEntryComponent, { set: { providers: [provideFakeSocialApi(api)] } });
     if (options.lastGroup !== undefined) TestBed.inject(LastGroup).set(options.lastGroup);
     TestBed.inject(ShellChromeStore).setDailyDone(options.dailyDone ?? false);
+    TestBed.inject(ShellChromeStore).setAccountCtaShown(options.accountCta ?? false);
     const session = TestBed.inject(SessionStore);
     if (signedIn) session.signedIn(signedIn);
     session.markLoaded();
@@ -82,7 +86,7 @@ describe('SocialHomeEntryComponent', () => {
     const fixture = await render(player(false));
     expect(card(fixture)?.dataset['kind']).toBe('pending');
 
-    api.scoresByGroup.set(4, { groupId: 4, name: 'Potes', daily: DAILY_REVEALED });
+    api.scoresByGroup.set(4, { groupId: 4, name: 'Potes', daily: DAILY });
     TestBed.inject(ShellChromeStore).setDailyDone(true);
     await settle(fixture);
 
@@ -90,11 +94,35 @@ describe('SocialHomeEntryComponent', () => {
     expect(api.calls).toEqual(['myGroups', 'scores:4', 'myGroups', 'scores:4']);
   });
 
-  it('une erreur ne montre rien', async () => {
-    api.failScores = true;
+  it('une erreur ne montre rien, pas même la place gardée', async () => {
+    api.scoresByGroup.delete(4);
 
     const fixture = await render(player(false));
 
     expect(card(fixture)).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="friends-card-placeholder"]')).toBeNull();
+  });
+
+  it("garde la place de la carte pendant qu'elle se lit", async () => {
+    let release!: () => void;
+    const myGroups = api.myGroups.bind(api);
+    api.myGroups = () => new Promise(resolve => { release = () => resolve(myGroups()); });
+
+    const fixture = await render(player(false));
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('[data-testid="friends-card-placeholder"]')).not.toBeNull();
+    expect(card(fixture)).toBeNull();
+
+    release();
+    await settle(fixture);
+    expect(element.querySelector('[data-testid="friends-card-placeholder"]')).toBeNull();
+    expect(card(fixture)?.dataset['kind']).toBe('pending');
+  });
+
+  it("un invité dont le jeu du jour montre déjà un appel à créer un compte : la carte sans son bouton", async () => {
+    const fixture = await render(player(true), { accountCta: true });
+
+    expect(card(fixture)?.dataset['kind']).toBe('guest');
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="friends-card-login"]')).toBeNull();
   });
 });

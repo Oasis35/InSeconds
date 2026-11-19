@@ -1,6 +1,6 @@
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
-import { Group, GroupRanking, GroupStanding, standingOf } from '../domain/group';
+import { Group, GroupRanking, GroupStanding, preferredGroupId, standingOf } from '../domain/group';
 import { LastGroup } from './last-group';
 import { SocialApi } from './social.api';
 
@@ -42,14 +42,15 @@ export const GroupsStore = signalStore(
     }
 
     return {
-      /** Lit mes groupes puis le classement du groupe demandé (à défaut, du premier). */
+      /** Lit mes groupes puis le classement du groupe demandé (à défaut, du dernier regardé, puis du premier). */
       async load(preferredId: number | null = null): Promise<void> {
         patchState(store, { status: 'loading' });
         try {
           const { groups, maxGroups } = await api.myGroups();
           patchState(store, { status: 'ready', groups, maxGroups });
-          const target = groups.find(group => group.id === preferredId) ?? groups[0];
-          if (target) await loadRanking(target.id);
+          // Sans groupe demandé (l'onglet « Classements »), le dernier regardé : la barre du bas ne le remplace pas par le premier.
+          const target = preferredGroupId(groups.map(group => group.id), preferredId ?? lastGroup.get());
+          if (target !== null) await loadRanking(target);
           else patchState(store, { selectedId: null, ranking: null, rankingStatus: 'idle' });
         } catch {
           patchState(store, { status: 'error' });

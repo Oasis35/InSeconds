@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, ViewContainerRe
 import { HOME_MODE_ENTRIES } from './home-mode-entries';
 
 /**
- * L'emplacement des entrées des autres modes (`HOME_MODE_ENTRIES`), chacune chargée à la demande et posée à sa place : rien n'est montré tant
- * qu'aucune n'est prête. (`ViewContainerRef` plutôt que `NgComponentOutlet`, qui alourdirait le bundle initial.)
+ * L'emplacement des entrées des autres domaines (`HOME_MODE_ENTRIES`), chacune chargée à la demande et posée à sa place (`order`, quel que soit
+ * l'ordre des fournisseurs) : rien n'est montré tant qu'aucune n'est prête. (`ViewContainerRef` plutôt que `NgComponentOutlet`, qui alourdirait le bundle initial.)
  */
 @Component({
   selector: 'app-home-mode-entries',
@@ -21,7 +21,8 @@ export class HomeModeEntriesComponent implements OnInit {
 
   ngOnInit(): void {
     // Une entrée qui ne se charge pas (réseau) ne casse pas l'accueil : elle n'apparaît simplement pas.
-    void Promise.all(this.entries.map(entry => entry.load().catch(() => null))).then(components => {
+    const entries = [...this.entries].sort((a, b) => a.order - b.order);
+    void Promise.all(entries.map(entry => entry.load().catch(() => null))).then(components => {
       if (this.destroyed) return;
       for (const component of components) {
         if (component) this.slot().createComponent(component);

@@ -6,7 +6,7 @@ import {
 } from '../../api/social/api.generated';
 import { toAppError } from '../../core/errors/app-error';
 import { GeneralRanking, Group, GroupRanking, Invitation, MyGroups, RankingEntry, RankingIdentity } from '../domain/group';
-import { DAILY_MODE, GroupScores, ModeScores } from '../domain/group-scores';
+import { DailyScores, GroupScores } from '../domain/group-scores';
 
 /** Les refus que les écrans connaissent : ils deviennent des issues, pas des erreurs. */
 const REFUSALS = ['account_required', 'invalid_name', 'too_many_groups', 'group_full', 'invitation_not_found', 'group_not_found'] as const;
@@ -42,7 +42,7 @@ export class SocialApi {
     return toRanking(await firstValueFrom(this.client.getGroupRanking(groupId)));
   }
 
-  /** Les scores du Défi du jour d'un de mes groupes : le jour (les scores seulement si j'ai fini ma partie) et la semaine glissante. */
+  /** Le classement du groupe au Défi du jour : le jour (les scores seulement si j'ai fini ma partie) et la semaine glissante. */
   async scores(groupId: number): Promise<GroupScores> {
     return toScores(await firstValueFrom(this.client.getGroupScores(groupId)));
   }
@@ -116,13 +116,13 @@ function toRanking(response: GroupRankingResponse): GroupRanking {
 }
 
 function toScores(response: GroupScoresResponse): GroupScores {
-  const daily = response.modes.find(mode => mode.mode === DAILY_MODE);
-  return { groupId: response.groupId, name: response.name, daily: daily ? toModeScores(daily) : null };
+  const daily = response.modes.find(mode => mode.mode === 'daily');
+  return { groupId: response.groupId, name: response.name, daily: daily ? toDailyScores(daily) : null };
 }
 
-function toModeScores(mode: ModeScoresResponse): ModeScores {
+function toDailyScores(mode: ModeScoresResponse): DailyScores {
   return {
-    day: toDateText(mode.day),
+    day: toDay(mode.day),
     todayRevealed: mode.todayRevealed,
     weekDays: mode.weekDays,
     today: mode.today.map(entry => ({ rank: entry.rank ?? null, pseudo: entry.pseudo, isMe: entry.isMe, played: entry.played, score: entry.score ?? null })),
@@ -130,10 +130,9 @@ function toModeScores(mode: ModeScoresResponse): ModeScores {
   };
 }
 
-/** Un jour en texte (`2026-11-19`) : le client annonce une `Date` mais le JSON livre un texte. */
-function toDateText(value: unknown): string {
-  if (typeof value === 'string') return value.slice(0, 10);
-  return value instanceof Date ? value.toISOString().slice(0, 10) : '';
+/** Un jour `aaaa-mm-jj` : le JSON le livre en texte, le client généré l'annonce en `Date`. */
+function toDay(value: Date | string): string {
+  return (typeof value === 'string' ? value : value.toISOString()).slice(0, 10);
 }
 
 function toIdentity(identity: RankingIdentityResponse): RankingIdentity {

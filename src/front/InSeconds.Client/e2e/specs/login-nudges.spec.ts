@@ -38,6 +38,8 @@ test.describe('Nudges de connexion (guest)', () => {
     await game.waitForResumePrompt();
 
     await expect(page.getByRole('link', { name: 'Ne plus perdre mes parties' })).toBeVisible();
+    // Un seul appel à créer un compte : la carte amis ne répète pas le sien sur la partie en pause.
+    await expect(page.getByTestId('friends-card-login')).toHaveCount(0);
   });
 
   test('pas de bannière "Garde ce score" sur le récap final', async ({ page, api }) => {
