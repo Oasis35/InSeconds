@@ -80,3 +80,42 @@ public sealed class GroupRanking(IEnumerable<IMemberPerformanceSource> sources, 
         return GroupRankingPolicy.Rank(ids.Select(id => new RankingInput(id, pseudos.GetValueOrDefault(id, "?"), performances[id])));
     }
 }
+
+/// <summary>Le classement d'un mode pour un groupe, ses lignes encore avec l'identifiant des membres.</summary>
+public sealed record ModeScoresView(string Mode, DateOnly Day, bool TodayRevealed, IReadOnlyList<TodayScoreLine> Today, IReadOnlyList<WeekScoreLine> Week);
+
+public sealed record TodayScoreLine(ScoreRow Row, bool Played);
+
+public sealed record WeekScoreLine(ScoreRow Row, int DaysPlayed);
+
+/// <summary>
+/// Le classement par score d'un groupe : les scores viennent des modes (<see cref="IMemberScoreSource"/>, chacun ajoute le sien), les pseudos de
+/// Players ; un classement par mode, jamais une moyenne des modes. La règle de classement est celle du domaine (<see cref="ScoreRankingPolicy"/>).
+/// </summary>
+public sealed class GroupScores(IEnumerable<IMemberScoreSource> sources, IPlayerDirectory players)
+{
+    public async Task<IReadOnlyList<ModeScoresView>> RankAsync(GroupView group, Guid viewerId, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(group);
+        IReadOnlyList<Guid> ids = [.. group.Members.Select(m => m.PlayerId)];
+        var pseudos = await players.GetPseudosAsync(ids, ct);
+        var modes = new List<ModeScoresView>();
+        foreach (var source in sources.OrderBy(s => s.Source, StringComparer.Ordinal))
+        {
+            var scores = await source.GetAsync(viewerId, ids, ct);
+            // Une source qui rend un joueur qu'on ne lui a pas demandé est ignorée (il n'est pas dans la liste des membres).
+            MemberPeriodScores? Of(Guid id) => scores.Members.GetValueOrDefault(id);
+            string PseudoOf(Guid id) => pseudos.GetValueOrDefault(id, "?");
+
+            // Le score du jour n'est jamais rendu avant que le joueur qui regarde ait fini sa partie, même si la source l'oubliait.
+            var today = ScoreRankingPolicy.Rank(ids.Select(id => new ScoreInput(id, PseudoOf(id), scores.TodayRevealed && Of(id) is { PlayedToday: true } m ? m.TodayScore : null)));
+            var week = ScoreRankingPolicy.Rank(ids.Select(id => new ScoreInput(id, PseudoOf(id), Of(id) is { WeekDaysPlayed: > 0 } m ? m.WeekPoints : null)));
+            modes.Add(new ModeScoresView(
+                source.Source, scores.Day, scores.TodayRevealed,
+                [.. today.Select(r => new TodayScoreLine(r, Of(r.PlayerId)?.PlayedToday ?? false))],
+                [.. week.Select(r => new WeekScoreLine(r, Math.Clamp(Of(r.PlayerId)?.WeekDaysPlayed ?? 0, 0, ScorePeriods.WeekDays)))]));
+        }
+
+        return modes;
+    }
+}

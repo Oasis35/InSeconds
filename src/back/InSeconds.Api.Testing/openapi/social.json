@@ -503,6 +503,67 @@
         }
       }
     },
+    "/api/social/groups/{id}/scores": {
+      "get": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "getGroupScores",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupScoresResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/social/invitations/{code}": {
       "get": {
         "tags": [
@@ -1163,6 +1224,29 @@
           }
         }
       },
+      "GroupScoresResponse": {
+        "required": [
+          "groupId",
+          "name",
+          "modes"
+        ],
+        "type": "object",
+        "properties": {
+          "groupId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "modes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModeScoresResponse"
+            }
+          }
+        }
+      },
       "GroupSummaryResponse": {
         "required": [
           "id",
@@ -1234,6 +1318,45 @@
         "properties": {
           "inviteCode": {
             "type": "string"
+          }
+        }
+      },
+      "ModeScoresResponse": {
+        "required": [
+          "mode",
+          "day",
+          "todayRevealed",
+          "weekDays",
+          "today",
+          "week"
+        ],
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "day": {
+            "type": "string",
+            "format": "date"
+          },
+          "todayRevealed": {
+            "type": "boolean"
+          },
+          "weekDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "today": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TodayScoreEntryResponse"
+            }
+          },
+          "week": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeekScoreEntryResponse"
+            }
           }
         }
       },
@@ -1372,6 +1495,77 @@
             "type": "string"
           }
         }
+      },
+      "TodayScoreEntryResponse": {
+        "required": [
+          "rank",
+          "pseudo",
+          "isMe",
+          "played",
+          "score"
+        ],
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "pseudo": {
+            "type": "string"
+          },
+          "isMe": {
+            "type": "boolean"
+          },
+          "played": {
+            "type": "boolean"
+          },
+          "score": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "WeekScoreEntryResponse": {
+        "required": [
+          "rank",
+          "pseudo",
+          "isMe",
+          "points",
+          "daysPlayed"
+        ],
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "pseudo": {
+            "type": "string"
+          },
+          "isMe": {
+            "type": "boolean"
+          },
+          "points": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "daysPlayed": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       }
     }
   },
@@ -1411,6 +1605,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Social.Application.GetGroupRankingEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Social.Application.GetGroupScoresEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Social.Application.GetInvitationEndpoint"

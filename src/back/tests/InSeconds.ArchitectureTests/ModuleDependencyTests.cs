@@ -1,4 +1,5 @@
 using System.Reflection;
+using InSeconds.Api.Modules.Social.Contracts;
 using NetArchTest.Rules;
 
 namespace InSeconds.ArchitectureTests;
@@ -147,7 +148,7 @@ public class ModuleDependencyTests
 
     /// <summary>
     /// Social (les groupes entre amis) est un noyau : il ne voit ni Daily, ni Runs, ni Catalogue, ni Gameplay, ni Deezer, et des joueurs que leurs
-    /// <c>Contracts</c>. Il reçoit la performance de chaque mode par un contrat qu'il définit (<c>IMemberPerformanceSource</c>).
+    /// <c>Contracts</c>. Il reçoit la performance et les scores de chaque mode par des contrats qu'il définit (<c>IMemberPerformanceSource</c>, <c>IMemberScoreSource</c>).
     /// </summary>
     [Fact]
     public void Social_NeDependQueDesContratsDesAutresModules_EtDAucunMode()
@@ -180,6 +181,27 @@ public class ModuleDependencyTests
 
             Assert.True(result.IsSuccessful, $"{mode} voit Social : {string.Join(", ", result.FailingTypeNames ?? [])}");
         }
+    }
+
+    /// <summary>
+    /// Les sources des classements d'un groupe sont des contrats de Social que **les modes** implémentent, jamais Social lui-même. Le Défi du jour donne
+    /// des scores (<c>IMemberScoreSource</c> : un classement par mode) et pas de performance (<c>IMemberPerformanceSource</c>) : Social ne fait pas la
+    /// moyenne du Défi et de la Survie.
+    /// </summary>
+    [Fact]
+    public void SourcesDesClassements_ImplementeesParLesModes_LeDefiDonneDesScoresPasUneMoyenne()
+    {
+        var implementations = Api.GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false })
+            .SelectMany(t => new[] { typeof(IMemberScoreSource), typeof(IMemberPerformanceSource) }
+                .Where(contract => contract.IsAssignableFrom(t)).Select(contract => (Type: t, Contract: contract.Name)))
+            .ToList();
+
+        Assert.All(implementations, i => Assert.True(
+            ModuleRules.Modes.Any(mode => i.Type.Namespace!.StartsWith(ModuleRules.Namespace(mode) + ".", StringComparison.Ordinal)),
+            $"{i.Type.FullName} implémente {i.Contract} hors d'un mode"));
+        Assert.Contains(implementations, i => i.Contract == nameof(IMemberScoreSource) && i.Type.Namespace!.Contains(".Daily.", StringComparison.Ordinal));
+        Assert.DoesNotContain(implementations, i => i.Contract == nameof(IMemberPerformanceSource) && i.Type.Namespace!.Contains(".Daily.", StringComparison.Ordinal));
     }
 
     /// <summary>

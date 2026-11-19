@@ -63,7 +63,7 @@ Couches d'un module : `Domain/` (entités, politiques, store), `Application/` (e
 
 ### Règles dures (vérifiées en CI)
 
-- **Frontières** (`ArchitectureTests`, NetArchTest) : un module n'utilise des autres que leurs `Contracts/`. Un noyau ne connaît aucun mode : un mode **implémente** un contrat du noyau (`IPlayerDataContributor`, `ITrackUsage`, `IMemberPerformanceSource`) ; seule exception nommée, Players → `Daily.Contracts.IStreakGrants`. Daily et Runs ne se voient pas. Le dossier `InSeconds.Api/Infrastructure` ne connaît aucun module, sauf les points d'entrée nommés (`ApiComposition`, `WolverineSetup`, `PlayerDataCommand`, `FreezeDayStatsCommand`). Pas de navigation EF entre modules : des identifiants, et des clés étrangères déclarées par le nom du type.
+- **Frontières** (`ArchitectureTests`, NetArchTest) : un module n'utilise des autres que leurs `Contracts/`. Un noyau ne connaît aucun mode : un mode **implémente** un contrat du noyau (`IPlayerDataContributor`, `ITrackUsage`, `IMemberPerformanceSource`, `IMemberScoreSource`) ; seule exception nommée, Players → `Daily.Contracts.IStreakGrants`. Daily et Runs ne se voient pas. Le dossier `InSeconds.Api/Infrastructure` ne connaît aucun module, sauf les points d'entrée nommés (`ApiComposition`, `WolverineSetup`, `PlayerDataCommand`, `FreezeDayStatsCommand`). Pas de navigation EF entre modules : des identifiants, et des clés étrangères déclarées par le nom du type.
 - **Schémas** : rien dans `public` (vide), chaque entité déclare son schéma, noms en snake_case.
 - **Horloge** : jamais `DateTime.UtcNow`/`Now`/`Today` (ni `DateTimeOffset`) dans `InSeconds.Api` : `TimeProvider` ou `IGameCalendar` (`ClockUsageTests`).
 - **Ports nommés** par l'intention (`IPlayerStore`, `ICatalogueQueries`…), jamais de repository générique.
@@ -203,7 +203,7 @@ Les numéros sont stables : le code et les tests y renvoient (`PiegeNN_…`, « 
 28. **Filtre texte sur plusieurs champs** (« Artiste Titre ») : `.claude/rules/front/admin.md`.
 29. **État `[LoggerMessage]` recyclé après l'appel** : un logger de test copie les propriétés au moment de l'appel (`CapturingLogger`).
 30. **Lien magique ouvert dans un navigateur déjà connecté** : un compte déjà lié n'est **jamais** converti, l'adresse sans compte obtient un nouveau joueur (`AccountSignIn`). Tests : `MagicLinkTests`.
-31. **Rien qui identifie un morceau avant la réponse** : ni artiste, ni titre, ni année, ni identifiant Deezer au démarrage d'une partie ; pochette et lien Deezer n'arrivent qu'avec la réponse ; les stats du jour ne montrent les morceaux qu'à qui a fini (partie terminée, expirée, ou abandonnée après au moins une réponse ; abandonnée sans réponse : rien). Tests : `TodayStatsTests`, `StartSessionTests`, E2E `answers-hidden.spec.ts`.
+31. **Rien qui identifie un morceau avant la réponse** : ni artiste, ni titre, ni année, ni identifiant Deezer au démarrage d'une partie ; pochette et lien Deezer n'arrivent qu'avec la réponse ; les stats du jour ne montrent les morceaux qu'à qui a fini (partie terminée, expirée, ou abandonnée après au moins une réponse ; abandonnée sans réponse : rien), règle partagée avec les scores du jour des groupes (`TodayReveal`). Tests : `TodayStatsTests`, `StartSessionTests`, `TodayRevealTests`, `SocialDailyScoresTests`, E2E `answers-hidden.spec.ts`.
 32. **Réponse perdue sur coupure réseau** : `.claude/rules/front/daily.md`.
 33. **Échec de lecture = état `error`, jamais `idle`** : `.claude/rules/front/gameplay-audio.md`.
 34. **`trusted_proxies` dans le Caddyfile** : `.claude/rules/deploy.md`.

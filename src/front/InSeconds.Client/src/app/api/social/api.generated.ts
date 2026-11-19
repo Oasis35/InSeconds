@@ -688,6 +688,77 @@ export class SocialClient {
     /**
      * @return OK
      */
+    getGroupScores(id: number): Observable<GroupScoresResponse> {
+        let url_ = this.baseUrl + "/api/social/groups/{id}/scores";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetGroupScores(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetGroupScores(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<GroupScoresResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<GroupScoresResponse>;
+        }));
+    }
+
+    protected processGetGroupScores(response: HttpResponseBase): Observable<GroupScoresResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as GroupScoresResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
     getInvitation(code: string): Observable<InvitationResponse> {
         let url_ = this.baseUrl + "/api/social/invitations/{code}";
         if (code === undefined || code === null)
@@ -1236,6 +1307,14 @@ export interface GroupRankingResponse {
     [key: string]: any;
 }
 
+export interface GroupScoresResponse {
+    groupId: number;
+    name: string;
+    modes: ModeScoresResponse[];
+
+    [key: string]: any;
+}
+
 export interface GroupSummaryResponse {
     id: number;
     name: string;
@@ -1259,6 +1338,17 @@ export interface InvitationResponse {
 
 export interface InviteCodeResponse {
     inviteCode: string;
+
+    [key: string]: any;
+}
+
+export interface ModeScoresResponse {
+    mode: string;
+    day: Date;
+    todayRevealed: boolean;
+    weekDays: number;
+    today: TodayScoreEntryResponse[];
+    week: WeekScoreEntryResponse[];
 
     [key: string]: any;
 }
@@ -1302,6 +1392,26 @@ export interface RankingIdentityResponse {
 
 export interface SetRankingIdentity {
     mode: string;
+
+    [key: string]: any;
+}
+
+export interface TodayScoreEntryResponse {
+    rank: number | undefined;
+    pseudo: string;
+    isMe: boolean;
+    played: boolean;
+    score: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface WeekScoreEntryResponse {
+    rank: number | undefined;
+    pseudo: string;
+    isMe: boolean;
+    points: number | undefined;
+    daysPlayed: number;
 
     [key: string]: any;
 }
