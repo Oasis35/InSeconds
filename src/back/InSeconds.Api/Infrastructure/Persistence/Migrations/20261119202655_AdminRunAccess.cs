@@ -22,7 +22,12 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // Rien à défaire : l'ancien code donnait l'accès d'office aux admins, une ligne de plus ne change rien pour lui.
+            // L'ancien code donne l'accès d'office aux admins et ne les retire du classement général que parce qu'ils n'ont pas de ligne :
+            // on retire celle des admins (rien n'est perdu pour eux). Un retour de l'image sans ce Down demande ce SQL à la main.
+            migrationBuilder.Sql("""
+                DELETE FROM runs.access a USING players.accounts c
+                 WHERE c.player_id = a.player_id AND c.is_admin;
+                """);
         }
     }
 }

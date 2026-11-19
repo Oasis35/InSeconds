@@ -38,7 +38,7 @@ describe('registered-player', () => {
     expect(maskEmail('fin@')).toBe('•••');
   });
 
-  it('un admin joue au mode Run d\'office, les autres seulement s\'ils sont autorisés', () => {
+  it('un compte, admin compris, ne joue au mode Run que s\'il est autorisé', () => {
     expect(canPlayRuns({ id: 'b' }, [])).toBe(false);
     expect(canPlayRuns({ id: 'b' }, ['a', 'b'])).toBe(true);
   });

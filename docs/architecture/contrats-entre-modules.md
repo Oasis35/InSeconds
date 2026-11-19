@@ -36,7 +36,7 @@ L'implémentation de l'interface reste dans la partie privée du module (souvent
 |---|---|---|---|
 | `ICurrentPlayer` | Players | `ClaimsCurrentPlayer` (`Players/Auth`, claims du cookie) | Players, Daily, Runs, Social |
 | `IPlayerSessions` | Players | `EfPlayerSessions` | l'authentification par cookie (`Players/Auth`) |
-| `IPlayerDirectory` | Players | `EfPlayerDirectory` | Daily, Runs, Social (pseudos affichés ; Social vérifie aussi qu'un alias n'est pas le pseudo d'un compte) |
+| `IPlayerDirectory` | Players | `EfPlayerDirectory` | Daily, Runs, Social (pseudos affichés ; Social vérifie aussi qu'un alias n'est pas le pseudo d'un compte, et retire les admins du classement général par `ListAdminsAsync`) |
 | `IReservedPseudos` | Players | `SocialReservedPseudos` **dans Social** | Players (un compte ne prend pas pour pseudo l'alias d'un autre : `AccountSignIn`, profil) |
 | `PseudoRules` | Players | règle pure (caractères permis) | Players (pseudos), Social (noms de groupe) |
 | `IPlayerDataContributor` | Players | `DailyPlayerData`, `RunsPlayerData`, `SocialPlayerData`, enregistrés en un seul endroit (`ApiComposition.AddPlayerDataContributors`, partagé par l'API et les commandes de secours) | Players (`PlayerDataExporter`, `AccountErasure` : export et effacement d'un compte), commandes `--export-player` / `--delete-player` |
@@ -85,7 +85,7 @@ Partager un noyau ne veut pas dire lire ses tables. Runs utilise Players et Cata
                                             Daily implémente IMemberScoreSource
 ```
 
-- **Le joueur** : `ICurrentPlayer` pour savoir qui joue, `IPlayerDirectory` pour afficher un pseudo, sans jamais voir l'email, les appareils ni le rôle admin.
+- **Le joueur** : `ICurrentPlayer` pour savoir qui joue, `IPlayerDirectory` pour afficher un pseudo, sans jamais voir l'email, les appareils ni le rôle admin (seul Social lit la liste des admins, pour les retirer du classement général).
 - **Les morceaux** : `ITrackDirectory` (rang Deezer, année, état de l'extrait, genres de l'album, thèmes), `ITrackPreviews`, `ITrackWaveforms`.
 - **L'effacement d'un compte** : Players expose `IPlayerDataContributor`, Daily, Runs et Social l'implémentent, `AccountErasure` et `PlayerDataExporter` les appellent tous dans la même transaction.
 - **Le classement** : Social ne connaît aucun mode ; la performance de chaque membre arrive par `IMemberPerformanceSource`, que Runs implémente, et ses scores du jour et de la semaine par `IMemberScoreSource`, que Daily implémente (un classement par mode, jamais une moyenne des modes). Daily et Runs ne voient de Social que ces contrats.

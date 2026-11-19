@@ -41,7 +41,7 @@ public interface IPlayerDirectory
     /// </summary>
     Task<IReadOnlyDictionary<Guid, string>> GetPseudosAsync(IReadOnlyCollection<Guid> playerIds, CancellationToken ct);
 
-    /// <summary>Les comptes admins (rôle <c>is_admin</c>) : le classement général ne les montre jamais.</summary>
+    /// <summary>Les comptes qui ont le rôle admin (<c>is_admin</c>, posé à la main, piège 5).</summary>
     Task<IReadOnlyCollection<Guid>> ListAdminsAsync(CancellationToken ct);
 
     /// <summary>
