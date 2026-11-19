@@ -12,25 +12,22 @@ describe('GroupsStore', () => {
     store = TestBed.inject(GroupsStore);
   });
 
-  it('lit mes groupes et le classement du Défi du premier, sans demander la Survie', async () => {
+  it('lit mes groupes et le classement du Défi du premier, jamais celui de la Survie', async () => {
     await store.load();
 
     expect(store.status()).toBe('ready');
     expect(store.groups()).toEqual([GROUP, OTHER_GROUP]);
     expect(store.selected()).toEqual(GROUP);
-    expect(store.scores()?.daily).toEqual(DAILY);
-    expect(store.ranking()).toBeNull();
+    expect(store.selectedScores()?.daily).toEqual(DAILY);
     expect(store.canCreate()).toBe(true);
     expect(api.calls).toEqual(['myGroups', 'scores:4']);
   });
 
-  it('avec la Survie, lit aussi son classement, une fois par groupe', async () => {
-    await store.load(null, true);
-    expect(store.ranking()?.entries).toHaveLength(3);
+  it('lit les scores d\'un groupe une fois', async () => {
+    await store.load();
 
-    await store.select(4, true);
     await store.select(4);
-    expect(api.calls).toEqual(['myGroups', 'scores:4', 'ranking:4']);
+    expect(api.calls).toEqual(['myGroups', 'scores:4']);
   });
 
   it('ouvre le groupe demandé, ou le premier si ce n\'est pas un des miens', async () => {
@@ -70,13 +67,11 @@ describe('GroupsStore', () => {
 
   it('un classement illisible passe en erreur, la liste reste ; le regarder à nouveau le relit', async () => {
     api.scoresByGroup.delete(4);
-    api.rankings.delete(4);
 
-    await store.load(null, true);
+    await store.load();
 
     expect(store.status()).toBe('ready');
     expect(store.scoresStatus()).toBe('error');
-    expect(store.rankingStatus()).toBe('error');
 
     api.scoresByGroup.set(4, { groupId: 4, name: 'Potes', daily: DAILY });
     await store.select(4);

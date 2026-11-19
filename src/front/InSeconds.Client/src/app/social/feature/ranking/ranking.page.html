@@ -78,7 +78,7 @@
               </section>
             } @else {
               <nav class="flex gap-1 p-1" style="background:var(--bg-surface);border:1px solid var(--border-neutral);border-radius:var(--radius-button)" [attr.aria-label]="'social.scores.periodLabel' | translate">
-                @for (tab of views(); track tab.id) {
+                @for (tab of views; track tab.id) {
                   <a [routerLink]="['/ranking']" [queryParams]="{ group: group.id, period: tab.id === 'week' ? null : tab.id }"
                      [attr.aria-current]="view() === tab.id ? 'page' : null" [attr.data-testid]="'ranking-period-' + tab.id"
                      class="flex-1 flex items-center justify-center min-h-11 px-1.5 text-sm text-center leading-tight touch-manipulation rounded-(--radius-button)"
@@ -89,23 +89,7 @@
                 }
               </nav>
 
-              @if (view() === 'survie') {
-                @switch (store.rankingStatus()) {
-                  @case ('error') {
-                    <div class="flex flex-col items-center gap-3 py-6 text-center" data-testid="ranking-error">
-                      <p class="text-sm" style="color:var(--text-muted)">{{ 'social.ranking.error' | translate }}</p>
-                      <button appButton type="button" variant="secondary" (click)="retryGroup()">{{ 'common.retry' | translate }}</button>
-                    </div>
-                  }
-                  @default {
-                    @if (store.selectedRanking(); as ranking) {
-                      <app-ranking-list [entries]="ranking.entries" [lang]="language.current()" />
-                    } @else {
-                      <p class="text-sm text-center animate-pulse py-6 min-h-40" style="color:var(--text-faint)" data-testid="ranking-loading">{{ 'social.ranking.loading' | translate }}</p>
-                    }
-                  }
-                }
-              } @else if (store.scoresStatus() === 'error') {
+              @if (store.scoresStatus() === 'error') {
                 <div class="flex flex-col items-center gap-3 py-6 text-center" data-testid="ranking-error">
                   <p class="text-sm" style="color:var(--text-muted)">{{ 'social.ranking.error' | translate }}</p>
                   <button appButton type="button" variant="secondary" (click)="retryGroup()">{{ 'common.retry' | translate }}</button>

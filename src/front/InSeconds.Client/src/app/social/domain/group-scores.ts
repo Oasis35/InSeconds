@@ -53,14 +53,12 @@ export interface ScoreRow {
   readonly days: readonly boolean[] | null;
 }
 
-/** Les vues du classement d'un groupe : la semaine (par défaut), le jour, et la Survie pour qui en a l'accès. */
-export type GroupView = 'week' | 'today' | 'survie';
+/** Les vues du classement d'un groupe : la semaine (par défaut) et le jour. */
+export type GroupView = 'week' | 'today';
 
-/** La vue demandée par l'adresse (`?period=`) ; inconnue, ou Survie sans l'accès : la semaine. */
-export function groupViewOf(period: string | null, survie: boolean): GroupView {
-  if (period === 'today') return 'today';
-  if (period === 'survie' && survie) return 'survie';
-  return 'week';
+/** La vue demandée par l'adresse (`?period=`) ; absente ou inconnue : la semaine. */
+export function groupViewOf(period: string | null): GroupView {
+  return period === 'today' ? 'today' : 'week';
 }
 
 /** Le jour `aaaa-mm-jj` décalé de `days` jours (calcul en UTC, sans heure d'été). */

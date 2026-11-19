@@ -14,12 +14,11 @@ const SCORES: DailyScores = {
 };
 
 describe('group-scores (domaine social)', () => {
-  it("la vue de l'adresse : la semaine par défaut, la Survie seulement avec l'accès", () => {
-    expect(groupViewOf(null, false)).toBe('week');
-    expect(groupViewOf('today', false)).toBe('today');
-    expect(groupViewOf('survie', true)).toBe('survie');
-    expect(groupViewOf('survie', false)).toBe('week');
-    expect(groupViewOf('n-importe', true)).toBe('week');
+  it("la vue de l'adresse : la semaine par défaut, « Aujourd'hui » sur demande, rien d'autre", () => {
+    expect(groupViewOf(null)).toBe('week');
+    expect(groupViewOf('today')).toBe('today');
+    expect(groupViewOf('survie')).toBe('week');
+    expect(groupViewOf('n-importe')).toBe('week');
   });
 
   it('décale un jour, fin de mois et d\'année comprises', () => {

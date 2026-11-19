@@ -12,21 +12,17 @@ interface GroupsState {
   maxGroups: number;
   /** Le groupe dont on lit le classement. */
   selectedId: number | null;
-  /** Son classement au Défi du jour (le jour et la semaine), pour tous ; `scoresFor` : le groupe lu ou en cours de lecture. */
+  /** Son classement au Défi du jour (le jour et la semaine) ; `scoresFor` : le groupe lu ou en cours de lecture. */
   scores: GroupScores | null;
   scoresFor: number | null;
   scoresStatus: Status;
-  /** Son classement en Survie (par niveau), lu seulement quand on le regarde (l'accès Survie) ; `rankingFor` : idem. */
-  ranking: GroupRanking | null;
-  rankingFor: number | null;
-  rankingStatus: Status;
-  /** La place du joueur dans chacun de ses groupes ; `null` tant qu'elle n'est pas lue. */
+  /** La place du joueur dans chacun de ses groupes, par niveau Survie (la fin d'une partie de Survie) ; `null` tant qu'elle n'est pas lue. */
   standings: readonly GroupStanding[] | null;
 }
 
-const NOTHING_READ = { scores: null, scoresFor: null, scoresStatus: 'idle', ranking: null, rankingFor: null, rankingStatus: 'idle' } as const;
+const NOTHING_READ = { scores: null, scoresFor: null, scoresStatus: 'idle' } as const;
 
-/** Les groupes du joueur, les classements de celui qu'il regarde et sa place dans chacun. À fournir à la page. */
+/** Les groupes du joueur, le classement du Défi de celui qu'il regarde et sa place Survie dans chacun. À fournir à la page. */
 export const GroupsStore = signalStore(
   withState<GroupsState>({ status: 'idle', groups: [], maxGroups: 0, selectedId: null, ...NOTHING_READ, standings: null }),
   withComputed(store => ({
@@ -34,12 +30,9 @@ export const GroupsStore = signalStore(
     canCreate: computed(() => store.status() === 'ready' && store.groups().length < store.maxGroups()),
     /** Les scores du groupe regardé : jamais ceux d'un autre groupe le temps d'une lecture. */
     selectedScores: computed(() => (store.scores()?.groupId === store.selectedId() ? store.scores() : null)),
-    /** Son classement Survie, avec la même garantie. */
-    selectedRanking: computed(() => (store.ranking()?.groupId === store.selectedId() ? store.ranking() : null)),
   })),
   withMethods((store, api = inject(SocialApi)) => {
     let scoresRequest = 0;
-    let rankingRequest = 0;
 
     async function loadScores(groupId: number): Promise<void> {
       const id = ++scoresRequest;
@@ -52,47 +45,32 @@ export const GroupsStore = signalStore(
       }
     }
 
-    async function loadRanking(groupId: number): Promise<void> {
-      const id = ++rankingRequest;
-      patchState(store, { rankingFor: groupId, rankingStatus: 'loading' });
-      try {
-        const ranking = await api.ranking(groupId);
-        if (id === rankingRequest) patchState(store, { ranking, rankingStatus: 'ready' });
-      } catch {
-        if (id === rankingRequest) patchState(store, { ranking: null, rankingFor: null, rankingStatus: 'error' });
-      }
-    }
-
-    /** Lit ce qui manque au groupe regardé : ses scores, et son classement Survie si on le demande. Une lecture en échec se refait. */
-    async function show(groupId: number, survie: boolean): Promise<void> {
+    /** Regarde un groupe : ses scores sont lus une fois, une lecture en échec se refait. */
+    async function show(groupId: number): Promise<void> {
       patchState(store, { selectedId: groupId });
-      const reads: Promise<void>[] = [];
-      if (store.scoresFor() !== groupId) reads.push(loadScores(groupId));
-      if (survie && store.rankingFor() !== groupId) reads.push(loadRanking(groupId));
-      await Promise.all(reads);
+      if (store.scoresFor() !== groupId) await loadScores(groupId);
     }
 
     return {
-      /** Lit mes groupes puis le classement du groupe demandé (à défaut, du premier) ; avec `survie`, aussi son classement Survie. */
-      async load(preferredId: number | null = null, survie = false): Promise<void> {
+      /** Lit mes groupes puis le classement du groupe demandé (à défaut, du premier). */
+      async load(preferredId: number | null = null): Promise<void> {
         patchState(store, { status: 'loading' });
         try {
           const { groups, maxGroups } = await api.myGroups();
           // Une relecture (après « Quitter ») repart de zéro : une réponse encore en route est ignorée, rien d'un groupe quitté ne reste affiché.
           scoresRequest++;
-          rankingRequest++;
           patchState(store, { status: 'ready', groups, maxGroups, ...NOTHING_READ });
           const target = groups.find(group => group.id === preferredId) ?? groups[0];
-          if (target) await show(target.id, survie);
+          if (target) await show(target.id);
           else patchState(store, { selectedId: null });
         } catch {
           patchState(store, { status: 'error' });
         }
       },
 
-      /** Regarde un autre de mes groupes, ou la Survie du même. */
-      async select(groupId: number, survie = false): Promise<void> {
-        if (store.groups().some(group => group.id === groupId)) await show(groupId, survie);
+      /** Regarde un autre de mes groupes. */
+      async select(groupId: number): Promise<void> {
+        if (store.groups().some(group => group.id === groupId)) await show(groupId);
       },
 
       /** Quitte un groupe puis relit la liste ; `false` si le serveur a refusé. */

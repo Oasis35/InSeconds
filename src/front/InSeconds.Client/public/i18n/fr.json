@@ -1514,7 +1514,6 @@
       "periodLabel": "Période du classement",
       "week": "Cette semaine",
       "today": "Aujourd'hui",
-      "survie": "Survie",
       "weekHint": "La somme des {{ days }} derniers jours, un rond par jour joué. Un jour manqué vaut 0.",
       "daysPlayed": "{{ count }} jours joués sur {{ total }}",
       "daysPlayedOne": "{{ count }} jour joué sur {{ total }}",

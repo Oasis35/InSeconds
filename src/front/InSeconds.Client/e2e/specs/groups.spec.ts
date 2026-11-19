@@ -114,14 +114,14 @@ test.describe('Groupes entre amis', () => {
     await expect(page.getByTestId('score-row')).toHaveCount(2);
     await expect(page.locator('[data-testid="score-row"][data-me="true"]')).toHaveCount(1);
 
-    // L'accès Survie ajoute l'onglet « Survie » du groupe (le classement par niveau, personne n'a de partie) et la pastille « Général ».
+    // L'accès Survie n'ajoute que la pastille « Général » : le groupe garde son classement du Défi, sans onglet « Survie ».
     await api.grantRunAccess(ownerId);
     await page.goto('/ranking?period=survie');
-    await expect(page.getByTestId('ranking-period-survie')).toHaveAttribute('aria-current', 'page');
-    await expect(page.getByTestId('ranking-row')).toHaveCount(2);
-    await expect(page.locator('[data-testid="ranking-row"][data-me="true"]')).toHaveCount(1);
-    await expect(page.getByTestId('ranking-unplayed')).toHaveCount(2);
     await expect(page.getByTestId('ranking-general')).toBeVisible();
+    await expect(page.getByTestId('ranking-period-week')).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByTestId('ranking-period-survie')).toHaveCount(0);
+    await expect(page.getByTestId('score-row')).toHaveCount(2);
+    await expect(page.getByTestId('ranking-row')).toHaveCount(0);
   });
 
   test("le classement général : vide sans partie finie, le profil y mène ; les Hits se lisent depuis la Survie", async ({ page, api }) => {

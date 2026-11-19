@@ -125,37 +125,29 @@ describe('RankingPage', () => {
     expect(find(el, 'ranking-play')).toBeNull();
   });
 
-  it("l'onglet Survie ne montre jamais le classement d'un autre groupe pendant une lecture", async () => {
-    const { el, settle } = await render('/ranking?period=survie');
+  it("ne montre jamais le classement d'un autre groupe pendant une lecture", async () => {
+    const { el, settle } = await render();
     let release!: () => void;
-    const original = api.ranking.bind(api);
-    api.ranking = (groupId: number) => new Promise(resolve => { release = () => resolve(original(groupId)); }) as ReturnType<typeof original>;
+    const original = api.scores.bind(api);
+    api.scores = (groupId: number) => new Promise(resolve => { release = () => resolve(original(groupId)); }) as ReturnType<typeof original>;
 
-    await TestBed.inject(Router).navigateByUrl('/ranking?group=7&period=survie');
+    await TestBed.inject(Router).navigateByUrl('/ranking?group=7');
     await settle();
-    expect(el.querySelectorAll('[data-testid="ranking-row"]')).toHaveLength(0);
+    expect(el.querySelectorAll('[data-testid="score-row"]')).toHaveLength(0);
     expect(find(el, 'ranking-loading')).not.toBeNull();
 
     release();
     await settle();
-    expect(el.querySelectorAll('[data-testid="ranking-row"]')).toHaveLength(1);
+    expect(el.querySelectorAll('[data-testid="score-row"]')).toHaveLength(1);
   });
 
-  it("sans l'accès Survie, pas d'onglet « Survie » : demandé par l'adresse, c'est la semaine", async () => {
-    const { el } = await render('/ranking?period=survie', 'account', null, false);
+  it("même avec l'accès Survie, deux onglets seulement et jamais le classement par niveau d'un groupe", async () => {
+    const { el } = await render('/ranking?period=survie');
 
-    expect(find(el, 'ranking-period-survie')).toBeNull();
+    expect(el.querySelectorAll('[data-testid^="ranking-period-"]')).toHaveLength(2);
     expect(find(el, 'ranking-period-week')?.getAttribute('aria-current')).toBe('page');
     expect(find(el, 'ranking-list')).toBeNull();
     expect(api.calls).not.toContain('ranking:4');
-  });
-
-  it("avec l'accès Survie, l'onglet « Survie » garde le classement par niveau", async () => {
-    const { el } = await render('/ranking?period=survie');
-
-    expect(find(el, 'ranking-period-survie')?.getAttribute('aria-current')).toBe('page');
-    expect(el.querySelectorAll('[data-testid="ranking-row"]')).toHaveLength(3);
-    expect(find(el, 'score-list')).toBeNull();
   });
 
   it('seul dans son groupe : pas de classement, l\'invitation à faire venir ses amis', async () => {

@@ -1514,7 +1514,6 @@
       "periodLabel": "Ranking period",
       "week": "This week",
       "today": "Today",
-      "survie": "Survival",
       "weekHint": "Total of the last {{ days }} days, one dot per day played. A missed day counts as 0.",
       "daysPlayed": "{{ count }} days played out of {{ total }}",
       "daysPlayedOne": "{{ count }} day played out of {{ total }}",

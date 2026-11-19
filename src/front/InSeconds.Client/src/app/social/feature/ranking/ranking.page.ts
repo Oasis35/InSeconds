@@ -19,29 +19,26 @@ import { PendingInvite } from '../../data-access/pending-invite';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { GroupView, groupViewOf, todayRows, weekRows } from '../../domain/group-scores';
 import { GeneralRankingComponent } from '../general-ranking/general-ranking.component';
-import { RankingListComponent } from '../../ui/ranking-list/ranking-list.component';
 import { ScoreListComponent } from '../../ui/score-list/score-list.component';
 import { TodayPlayedComponent } from '../../ui/today-played/today-played.component';
 
-/** Les onglets du classement d'un groupe ; « Survie » n'existe que pour qui en a l'accès. */
+/** Les deux onglets du classement d'un groupe, pour tous. */
 const VIEWS: readonly { readonly id: GroupView; readonly labelKey: string }[] = [
   { id: 'week', labelKey: 'social.scores.week' },
   { id: 'today', labelKey: 'social.scores.today' },
-  { id: 'survie', labelKey: 'social.scores.survie' },
 ];
 
 /**
- * Le classement (`/ranking`, `?group=<id>`, `?period=today|survie`, `?view=general`) : une pastille par groupe et « + Groupe » (plus « Général »,
- * le classement général par niveau, pour qui a l'accès Survie), puis le classement du Défi du jour du groupe choisi, « Cette semaine » (points des
- * sept derniers jours et un point par jour joué) ou « Aujourd'hui » (fermé tant que le joueur n'a pas fini son défi : seulement qui a joué). Avec
- * l'accès Survie, un troisième onglet garde le classement par niveau. La ligne du joueur est en orange. Puis « Inviter un ami » et « Quitter le
- * groupe ». Seul dans son groupe : l'invitation à y faire venir ses amis. Sans groupe : « Joue contre tes amis ». Sans compte : l'invitation à en
+ * Le classement (`/ranking`, `?group=<id>`, `?period=today`, `?view=general`) : une pastille par groupe et « + Groupe » (plus « Général », le
+ * classement général par niveau, pour qui a l'accès Survie), puis le classement du Défi du jour du groupe choisi, « Cette semaine » (points des
+ * sept derniers jours et un point par jour joué) ou « Aujourd'hui » (fermé tant que le joueur n'a pas fini son défi : seulement qui a joué). La
+ * ligne du joueur est en orange. Puis « Inviter un ami » et « Quitter le groupe ». Seul dans son groupe : l'invitation à y faire venir ses amis. Sans groupe : « Joue contre tes amis ». Sans compte : l'invitation à en
  * créer un (un groupe exige un compte). Seuls les membres d'un groupe voient les pseudos des autres : le serveur le garantit.
  */
 @Component({
   selector: 'app-ranking-page',
   imports: [HomeLegalLineComponent,
-    TranslatePipe, RouterLink, DecorBackgroundComponent, BrandComponent, AccountLinkComponent, InstagramLinkComponent, ButtonComponent, RankingListComponent,
+    TranslatePipe, RouterLink, DecorBackgroundComponent, BrandComponent, AccountLinkComponent, InstagramLinkComponent, ButtonComponent,
     GeneralRankingComponent, ScoreListComponent, TodayPlayedComponent,
   ],
   providers: [GroupsStore, GroupShare],
@@ -81,9 +78,9 @@ export class RankingPage {
   protected readonly general = computed(() => this.generalRequested() && this.chrome.survieKnown() && this.chrome.survie());
 
   private readonly period = toSignal(this.params.pipe(map(params => params.get('period'))), { initialValue: null });
-  /** L'onglet du groupe : la semaine par défaut ; « Survie » seulement avec l'accès. */
-  protected readonly view = computed(() => groupViewOf(this.period(), this.chrome.survie()));
-  protected readonly views = computed(() => VIEWS.filter(view => view.id !== 'survie' || this.chrome.survie()));
+  /** L'onglet du groupe : la semaine par défaut. */
+  protected readonly view = computed(() => groupViewOf(this.period()));
+  protected readonly views = VIEWS;
   /** L'onglet tel qu'il s'écrit dans l'adresse (la semaine n'y figure pas) : changer de groupe le garde. */
   protected readonly periodParam = computed(() => (this.view() === 'week' ? null : this.view()));
 
@@ -98,27 +95,26 @@ export class RankingPage {
       // L'identité se lit au démarrage de l'app : un invité n'a pas de groupe, on ne demande rien.
       if (!this.session.loaded() || !this.session.isLinked()) return;
       const groupId = this.groupId();
-      const survie = this.view() === 'survie';
       const status = this.store.status();
       untracked(() => {
-        if (status === 'idle') void this.store.load(groupId, survie);
+        if (status === 'idle') void this.store.load(groupId);
         else if (status === 'ready') {
-          // Le store ne relit que ce qui manque (un autre groupe, ou la Survie demandée pour la première fois).
+          // Le store ne relit que ce qui manque : les scores d'un autre groupe.
           const target = groupId ?? this.store.selectedId();
-          if (target !== null) void this.store.select(target, survie);
+          if (target !== null) void this.store.select(target);
         }
       });
     });
   }
 
   protected retry(): void {
-    void this.store.load(this.groupId(), this.view() === 'survie');
+    void this.store.load(this.groupId());
   }
 
-  /** Un classement du groupe en panne : le store relit ce qui a échoué. */
+  /** Le classement du groupe en panne : le store le relit. */
   protected retryGroup(): void {
     const id = this.store.selectedId();
-    if (id !== null) void this.store.select(id, this.view() === 'survie');
+    if (id !== null) void this.store.select(id);
   }
 
   protected async leave(): Promise<void> {
