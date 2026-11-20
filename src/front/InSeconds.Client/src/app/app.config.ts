@@ -14,7 +14,7 @@ import { provideRuns } from './runs/feature/provide-runs';
 import { provideSocial } from './social/feature/provide-social';
 import { routes } from './app.routes';
 import { provideViewportReporting } from './core/diagnostics/viewport-reporter';
-import { GlobalErrorHandler } from './core/errors/global-error-handler';
+import { GlobalErrorHandler } from './core/error-handler/global-error-handler';
 import { credentialsInterceptor } from './core/http/credentials.interceptor';
 import { httpErrorReportingInterceptor } from './core/http/http-error-reporting.interceptor';
 import { LanguageService } from './core/i18n/language.service';

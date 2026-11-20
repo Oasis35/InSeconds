@@ -1,7 +1,7 @@
 import { ErrorHandler, Injectable, Injector, inject } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { isStaleChunkError, VersionService } from '../version/version.service';
-import { ErrorReportingService } from './error-reporting.service';
+import { ErrorReportingService } from '../errors/error-reporting.service';
 
 /**
  * Remplace l'ErrorHandler par défaut : garde le `console.error` (utile en dev) et remonte
