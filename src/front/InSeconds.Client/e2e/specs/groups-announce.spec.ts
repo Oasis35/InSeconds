@@ -8,9 +8,15 @@ import { RunPage } from '../pages/run.page';
 test.describe("Accueil : l'annonce des groupes", () => {
   test.beforeEach(async ({ page, api }) => {
     await api.reset();
-    // Les autres parcours la ferment d'office (fixture) : ici elle est neuve.
+    // Les autres parcours la ferment d'office (fixture, script enregistré avant celui-ci) : ici elle est remise à neuf une seule fois par onglet
+    // (le `sessionStorage` survit au rechargement), pour que la croix reste fermée après `reload()`.
     await page.addInitScript(() => {
-      try { localStorage.setItem('e2e.announce', '1'); } catch { /* localStorage indisponible - ignore */ }
+      try {
+        if (sessionStorage.getItem('e2e.announceReset')) return;
+        sessionStorage.setItem('e2e.announceReset', '1');
+        localStorage.removeItem('inseconds.announce.groups.closed');
+        localStorage.removeItem('inseconds.announce.groups.rankingSeen');
+      } catch { /* stockage indisponible - ignore */ }
     });
   });
 

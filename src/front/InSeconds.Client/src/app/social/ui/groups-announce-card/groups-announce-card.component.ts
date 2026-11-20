@@ -21,7 +21,7 @@ import { AnnounceVariant } from '../../domain/groups-announce';
         <span class="inline-flex items-center h-[22px] px-2 rounded-md text-xs font-bold"
           style="color:var(--color-violet);border:1px solid rgb(var(--rgb-violet) / 0.6);background:rgb(var(--rgb-violet) / 0.12)">{{ 'social.announce.chip' | translate }}</span>
         <button type="button" (click)="dismiss.emit()" data-testid="groups-announce-close" [attr.aria-label]="'social.announce.close' | translate"
-          class="inline-flex items-center justify-center w-11 h-11 -mt-3 -mr-3 touch-manipulation" style="color:var(--text-faint)">
+          class="inline-flex items-center justify-center w-11 h-11 -mt-3 -mr-3 touch-manipulation" style="color:var(--text-light)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
         </button>
       </div>

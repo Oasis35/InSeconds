@@ -84,15 +84,6 @@
       "track_not_found": "Ce morceau n'existe pas dans cette playlist."
     },
     "social": {
-    "announce": {
-      "chip": "Nouveau",
-      "close": "Fermer",
-      "title": "Les groupes sont là",
-      "noGroup": "Un classement rien qu'à vous : qui devine le plus vite ?",
-      "guest": "Un classement entre amis. Il faut un compte pour en monter un.",
-      "member": "Envoie le lien de « {{ name }} » : chacun apparaît dans votre classement.",
-      "invite": "Inviter des amis"
-    },
       "account_required": "Il faut un compte pour les groupes.",
       "group_full": "Ce groupe est complet.",
       "alias_taken": "Cet alias vient d'être pris : tires-en un autre.",
@@ -1515,6 +1506,15 @@
     }
   },
   "social": {
+    "announce": {
+      "chip": "Nouveau",
+      "close": "Fermer",
+      "title": "Les groupes sont là",
+      "noGroup": "Un classement rien qu'à toi et tes amis : qui devine le plus vite ?",
+      "guest": "Un classement entre amis. Il faut un compte pour en monter un.",
+      "member": "Envoie le lien de « {{ name }} » : chacun apparaît dans votre classement.",
+      "invite": "Inviter des amis"
+    },
     "general": {
       "tab": "Général",
       "empty": "Personne n'apparaît encore ici.",

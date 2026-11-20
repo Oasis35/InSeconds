@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { SessionStore } from '../../core/session/session.store';
 import { ShellChromeStore } from '../../core/shell/shell-chrome.store';
 import { MemoryStoragePort, StoragePort } from '../../core/storage/storage.port';
 import { Group } from '../domain/group';
@@ -60,6 +61,19 @@ describe('GroupsAnnounce', () => {
     announce.setGroups('failed');
     TestBed.tick();
     expect(announce.chip()).toBe(false);
+  });
+
+  it("la déconnexion efface les groupes lus : l'ancien compte ne s'affiche plus", () => {
+    const { announce } = setup();
+    const session = TestBed.inject(SessionStore);
+    session.signedIn({ id: 'p1', pseudo: 'Clem', email: 'c@x.fr', isGuest: false, isAdmin: false });
+    TestBed.tick();
+    announce.setGroups([group]);
+
+    session.signedOut();
+    TestBed.tick();
+
+    expect(announce.groups()).toBeNull();
   });
 
   it('une carte déjà fermée au dernier passage reste fermée', () => {

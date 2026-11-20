@@ -1,5 +1,6 @@
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { todayUtc } from '../../core/game-day/game-day';
+import { SessionStore } from '../../core/session/session.store';
 import { ShellChromeStore } from '../../core/shell/shell-chrome.store';
 import { StoragePort } from '../../core/storage/storage.port';
 import { Group } from '../domain/group';
@@ -18,6 +19,7 @@ const RANKING_SEEN_KEY = 'inseconds.announce.groups.rankingSeen';
 export class GroupsAnnounce {
   private readonly storage = inject(StoragePort);
   private readonly chrome = inject(ShellChromeStore);
+  private readonly session = inject(SessionStore);
 
   private readonly active = announceActive(todayUtc(new Date()));
   private readonly _closed = signal(this.storage.get(CLOSED_KEY) === '1');
@@ -36,6 +38,13 @@ export class GroupsAnnounce {
 
   constructor() {
     effect(() => this.chrome.setGroupsNew(this.dot()));
+    // Les groupes sont ceux du compte connecté : un autre compte (ou la déconnexion) les efface, la carte amis les relit.
+    let wasLinked: boolean | null = null;
+    effect(() => {
+      const linked = this.session.isLinked();
+      if (wasLinked !== null && wasLinked !== linked) untracked(() => this._groups.set(null));
+      wasLinked = linked;
+    });
   }
 
   setGroups(groups: readonly Group[] | 'failed'): void {

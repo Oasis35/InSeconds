@@ -84,15 +84,6 @@
       "track_not_found": "This track isn't in this playlist."
     },
     "social": {
-    "announce": {
-      "chip": "New",
-      "close": "Close",
-      "title": "Groups are here",
-      "noGroup": "A leaderboard just for you and your friends: who guesses fastest?",
-      "guest": "A leaderboard with friends. You need an account to start one.",
-      "member": "Send the link to \"{{ name }}\": everyone shows up in your leaderboard.",
-      "invite": "Invite friends"
-    },
       "account_required": "You need an account for groups.",
       "group_full": "This group is full.",
       "alias_taken": "This alias was just taken: draw another one.",
@@ -1515,6 +1506,15 @@
     }
   },
   "social": {
+    "announce": {
+      "chip": "New",
+      "close": "Close",
+      "title": "Groups are here",
+      "noGroup": "A leaderboard just for you and your friends: who guesses fastest?",
+      "guest": "A leaderboard with friends. You need an account to start one.",
+      "member": "Send the link to \"{{ name }}\": everyone shows up in your leaderboard.",
+      "invite": "Invite friends"
+    },
     "general": {
       "tab": "Overall",
       "empty": "Nobody appears here yet.",
