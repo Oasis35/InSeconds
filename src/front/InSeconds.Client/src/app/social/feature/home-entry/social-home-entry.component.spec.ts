@@ -241,6 +241,24 @@ describe('SocialHomeEntryComponent', () => {
     expect(TestBed.inject(LastGroup).get()).toBe(4);
   });
 
+  it("le groupe touché pendant que la carte se relit, puis sa lecture en échec : la carte garde le groupe déjà lu, elle ne disparaît pas", async () => {
+    const fixture = await render(player(false));
+    const held: { groupId: number; resolve: (scores: Awaited<ReturnType<typeof api.scores>>) => void; reject: () => void }[] = [];
+    api.scores = (groupId: number) => new Promise((resolve, reject) => held.push({ groupId, resolve, reject: () => reject(new Error('down')) }));
+
+    TestBed.inject(ShellChromeStore).setDailyDone(true);
+    await settle(fixture);
+    chip(fixture, 7)?.click();
+    held[0].resolve({ groupId: 4, name: 'Potes', daily: DAILY });
+    await settle(fixture);
+    held.slice(1).forEach(call => call.reject());
+    await settle(fixture);
+
+    expect(card(fixture)).not.toBeNull();
+    expect(chip(fixture, 4)?.getAttribute('aria-pressed')).toBe('true');
+    expect(TestBed.inject(LastGroup).get()).toBe(4);
+  });
+
   it("une pastille touchée : la carte passe à ce groupe, qui n'est lu que lui, et il devient le dernier regardé", async () => {
     const fixture = await render(player(false));
 

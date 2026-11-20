@@ -89,8 +89,12 @@ export class SocialHomeEntryComponent {
 
   private async load(linked: boolean): Promise<void> {
     const request = ++this.latest;
+    // Une lecture de pastille commencée avant ce chargement (autre compte, déconnexion) est périmée.
+    this.loaded++;
     if (!linked) {
       this.announce.setGroups([]);
+      this.groups.set([]);
+      this.maxGroups.set(0);
       this.view.set({ kind: 'guest' });
       return;
     }
@@ -106,9 +110,20 @@ export class SocialHomeEntryComponent {
       const ids = mine.map(group => group.id);
       const groupId = preferredGroupId(ids, this.lastGroup.get());
       view = groupId === null ? { kind: 'no_group' } : groupCardView(await this.api.scores(groupId));
-      // Une pastille touchée pendant cette lecture : on suit le dernier choix du joueur, pas celui d'avant.
-      const wanted = preferredGroupId(ids, this.lastGroup.get());
-      if (groupId !== null && wanted !== null && wanted !== groupId) view = groupCardView(await this.api.scores(wanted));
+      // Une pastille touchée pendant cette lecture : on suit le dernier choix du joueur, pas celui d'avant, tant qu'il change.
+      // Un échec de cette relecture garde la carte déjà lue (jamais de carte qui disparaît sous le doigt).
+      let shownId = groupId;
+      while (shownId !== null) {
+        const wanted = preferredGroupId(ids, this.lastGroup.get());
+        if (wanted === null || wanted === shownId) break;
+        try {
+          view = groupCardView(await this.api.scores(wanted));
+          shownId = wanted;
+        } catch {
+          this.lastGroup.set(shownId);
+          break;
+        }
+      }
     } catch {
       this.announce.setGroups('failed');
       view = null;
