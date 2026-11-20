@@ -1530,7 +1530,7 @@
       "loading": "Chargement…",
       "error": "Le classement ne répond pas.",
       "groupsLabel": "Mes groupes",
-      "newGroup": "+ Groupe",
+      "newGroup": "Créer un nouveau groupe",
       "me": "Toi",
       "unplayed": "Pas encore joué",
       "privacy": "Seuls les membres du groupe voient ton pseudo."
@@ -1544,6 +1544,9 @@
     },
     "home": {
       "guestBody": "Gratuit, sans mot de passe. Tes parties te suivent sur tous tes appareils.",
+      "groups": "Tes groupes",
+      "openRanking": "Classement du groupe",
+      "newGroup": "Créer un nouveau groupe",
       "todayTitle": "{{ name }}, aujourd'hui",
       "alone": "Tu es seul dans ce groupe. Invite tes amis depuis le classement.",
       "nobodyFinished": "Personne n'a encore fini le défi aujourd'hui.",

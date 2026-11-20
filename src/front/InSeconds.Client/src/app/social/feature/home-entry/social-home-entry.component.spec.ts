@@ -4,6 +4,8 @@ import { provideTranslateService } from '@ngx-translate/core';
 import { SessionPlayer, SessionStore } from '../../../core/session/session.store';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { MemoryStoragePort, StoragePort } from '../../../core/storage/storage.port';
+import { ShareService } from '../../../core/share/share.service';
+import { GroupShare } from '../../data-access/group-share';
 import { LastGroup } from '../../data-access/last-group';
 import { DAILY, DAILY_LOCKED, FakeSocialApi, provideFakeSocialApi } from '../../data-access/testing/fake-social-api';
 import { SocialHomeEntryComponent } from './social-home-entry.component';
@@ -12,9 +14,11 @@ describe('SocialHomeEntryComponent', () => {
   const player = (isGuest: boolean): SessionPlayer => ({ id: 'p1', pseudo: 'Clem', email: isGuest ? null : 'c@x.fr', isGuest, isAdmin: false });
 
   let api: FakeSocialApi;
+  let shared: string[];
 
   beforeEach(() => {
     api = new FakeSocialApi();
+    shared = [];
     // Défi à faire : qui a joué, sans score, dans les deux groupes.
     api.scoresByGroup.set(4, { groupId: 4, name: 'Potes', daily: DAILY_LOCKED });
     api.scoresByGroup.set(7, { groupId: 7, name: 'Famille', daily: DAILY_LOCKED });
@@ -30,10 +34,13 @@ describe('SocialHomeEntryComponent', () => {
 
   async function render(signedIn: SessionPlayer | null, options: { lastGroup?: number; dailyDone?: boolean; accountCta?: boolean } = {}) {
     TestBed.configureTestingModule({
-      providers: [provideTranslateService(), provideRouter([]), { provide: StoragePort, useValue: new MemoryStoragePort() }],
+      providers: [
+        provideTranslateService(), provideRouter([]), { provide: StoragePort, useValue: new MemoryStoragePort() },
+        { provide: ShareService, useValue: { share: (text: string) => { shared.push(text); return Promise.resolve('copied'); } } },
+      ],
     });
     // Le client de l'API est fourni par le composant lui-même (chargé à la demande) : le test le remplace là.
-    TestBed.overrideComponent(SocialHomeEntryComponent, { set: { providers: [provideFakeSocialApi(api)] } });
+    TestBed.overrideComponent(SocialHomeEntryComponent, { set: { providers: [provideFakeSocialApi(api), GroupShare] } });
     if (options.lastGroup !== undefined) TestBed.inject(LastGroup).set(options.lastGroup);
     TestBed.inject(ShellChromeStore).setDailyDone(options.dailyDone ?? false);
     TestBed.inject(ShellChromeStore).setAccountCtaShown(options.accountCta ?? false);
@@ -80,6 +87,88 @@ describe('SocialHomeEntryComponent', () => {
     await render(player(false), { lastGroup: 7 });
 
     expect(api.calls).toEqual(['myGroups', 'scores:7']);
+  });
+
+  const chip = (fixture: ComponentFixture<unknown>, groupId: number) =>
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(`[data-testid="friends-card-group-${groupId}"]`);
+  const title = (fixture: ComponentFixture<unknown>) =>
+    (fixture.nativeElement as HTMLElement).querySelector('[data-testid="friends-card-title"]')?.textContent?.trim();
+
+  it('dans plusieurs groupes : une pastille chacun, celle du groupe montré marquée', async () => {
+    const fixture = await render(player(false));
+
+    expect(chip(fixture, 4)?.getAttribute('aria-pressed')).toBe('true');
+    expect(chip(fixture, 7)?.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it("dans un seul groupe : aucune pastille", async () => {
+    api.groups = { groups: [api.groups.groups[0]], maxGroups: 5 };
+
+    const fixture = await render(player(false));
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="friends-card-groups"]')).toBeNull();
+  });
+
+  const newGroup = (fixture: ComponentFixture<unknown>) =>
+    (fixture.nativeElement as HTMLElement).querySelector('[data-testid="friends-card-new-group"]');
+
+  it('un membre sous le maximum de groupes : « Créer un nouveau groupe » ; au maximum, plus rien', async () => {
+    expect(newGroup(await render(player(false)))).not.toBeNull();
+
+    TestBed.resetTestingModule();
+    api.groups = { ...api.groups, maxGroups: 2 };
+    expect(newGroup(await render(player(false)))).toBeNull();
+  });
+
+  const inviteButton = (fixture: ComponentFixture<unknown>) =>
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="friends-card-invite"]');
+
+  it("« Inviter un ami » partage le lien du groupe en cours, celui qu'on a choisi, et le dit", async () => {
+    const fixture = await render(player(false));
+    chip(fixture, 7)?.click();
+    await settle(fixture);
+
+    inviteButton(fixture)?.click();
+    await settle(fixture);
+
+    expect(shared).toHaveLength(1);
+    expect(shared[0]).toContain('/ranking/join/WXYZ6789?utm_source=share');
+    expect(inviteButton(fixture)?.textContent).toContain('social.invite.copied');
+  });
+
+  it("une pastille touchée : la carte passe à ce groupe, qui n'est lu que lui, et il devient le dernier regardé", async () => {
+    const fixture = await render(player(false));
+
+    chip(fixture, 7)?.click();
+    await settle(fixture);
+
+    expect(title(fixture)).toBe('Famille');
+    expect(chip(fixture, 7)?.getAttribute('aria-pressed')).toBe('true');
+    expect(api.calls).toEqual(['myGroups', 'scores:4', 'scores:7']);
+    expect(TestBed.inject(LastGroup).get()).toBe(7);
+  });
+
+  it('le groupe choisi reste celui que la carte relit quand le défi se termine', async () => {
+    const fixture = await render(player(false));
+    chip(fixture, 7)?.click();
+    await settle(fixture);
+
+    TestBed.inject(ShellChromeStore).setDailyDone(true);
+    await settle(fixture);
+
+    expect(api.calls).toEqual(['myGroups', 'scores:4', 'scores:7', 'myGroups', 'scores:7']);
+  });
+
+  it('un échec de lecture du groupe touché garde la carte sur le groupe précédent', async () => {
+    const fixture = await render(player(false));
+    api.scoresByGroup.delete(7);
+
+    chip(fixture, 7)?.click();
+    await settle(fixture);
+
+    expect(title(fixture)).toBe('Potes');
+    expect(chip(fixture, 4)?.getAttribute('aria-pressed')).toBe('true');
+    expect(TestBed.inject(LastGroup).get()).toBeNull();
   });
 
   it('le défi du jour fini : la carte se relit et montre le classement du jour', async () => {

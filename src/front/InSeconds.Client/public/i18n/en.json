@@ -1530,7 +1530,7 @@
       "loading": "Loading…",
       "error": "The ranking is not responding.",
       "groupsLabel": "My groups",
-      "newGroup": "+ Group",
+      "newGroup": "Create a new group",
       "me": "You",
       "unplayed": "Not played yet",
       "privacy": "Only the group's members see your username."
@@ -1544,6 +1544,9 @@
     },
     "home": {
       "guestBody": "Free, no password. Your games follow you on all your devices.",
+      "groups": "Your groups",
+      "openRanking": "Group ranking",
+      "newGroup": "Create a new group",
       "todayTitle": "{{ name }}, today",
       "alone": "You're alone in this group. Invite your friends from the ranking.",
       "nobodyFinished": "Nobody has finished today's challenge yet.",
