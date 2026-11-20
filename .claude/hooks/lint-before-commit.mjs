@@ -2,8 +2,9 @@
 // Hook PreToolUse (Bash, PowerShell ; lancé par shell-guard.mjs) : avant un `git commit`, contrôle
 // des fichiers qui partent dans le commit (l'index) :
 //  - espaces en fin de ligne et marqueurs de conflit (git diff --check, hors Markdown) ; le code
-//    généré (Wolverine dans Internal/Generated, migrations EF) n'est contrôlé que pour les marqueurs :
-//    Wolverine écrit des lignes d'espaces seuls, et la CI exige ce code à l'identique ;
+//    généré (Wolverine dans Internal/Generated, migrations EF, clients NSwag du front) n'est contrôlé que pour
+//    les marqueurs : Wolverine écrit des lignes d'espaces seuls, NSwag des « @param x (optional) » suivis d'un
+//    espace, et la CI exige ce code à l'identique ;
 //  - C# : formatage (dotnet format whitespace, sur les fichiers indexés seulement, hors code généré) ;
 //  - front : frontières Sheriff et domaine pur (npm run lint:arch, comme le job CI front).
 // Les deux derniers tournent en parallèle. Le hook passe avant la commande : un `git add` placé
@@ -21,8 +22,11 @@ import { git, gitInvocations, isMain, resolvePath, runCheck, shellOf } from './l
 const FRONT_DIR = 'src/front/InSeconds.Client';
 const BACK_DIR = 'src/back';
 // Code généré du back, laissé tel que l'outil l'écrit : la regex et son équivalent en pathspec git.
-const GENERATED = /^src\/back\/(.+\/)?(Internal\/Generated|Migrations)\//;
-const GENERATED_SPECS = [':(glob)src/back/**/Internal/Generated/**', ':(glob)src/back/**/Migrations/**'];
+// Les clients NSwag du front aussi : NSwag écrit « @param x (optional) » suivi d'un espace, et le job CI api-clients les veut tels quels.
+const GENERATED = /^(src\/back\/(.+\/)?(Internal\/Generated|Migrations)\/|src\/front\/InSeconds\.Client\/src\/app\/api\/[^/]+\/api\.generated\.ts$)/;
+const GENERATED_SPECS = [
+  ':(glob)src/back/**/Internal/Generated/**', ':(glob)src/back/**/Migrations/**', ':(glob)src/front/InSeconds.Client/src/app/api/*/api.generated.ts',
+];
 const NOT_CHECKED = [':(exclude)*.md', ...GENERATED_SPECS.map((s) => s.replace(':(glob)', ':(exclude,glob)'))];
 // Règles d'espaces coupées : git diff --check ne signale plus que les marqueurs de conflit, qu'il
 // cherche quel que soit core.whitespace.
