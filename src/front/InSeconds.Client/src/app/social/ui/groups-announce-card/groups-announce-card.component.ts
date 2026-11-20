@@ -7,7 +7,7 @@ import { AnnounceVariant } from '../../domain/groups-announce';
 /**
  * La carte d'annonce des groupes, au-dessus du défi : pastille « Nouveau » en violet (la couleur des autres joueurs), un titre, une phrase et une
  * action selon le joueur : « Créer un compte » (invité, contour neutre), « Créer un groupe » (compte sans groupe, contour ambre) ou « Créer un
- * nouveau groupe » (membre, contour neutre) ; la même phrase pour tous les comptes, qui n'invite dans aucun groupe précis. Contour plat, jamais la
+ * nouveau groupe » (membre, contour neutre), chacun avec sa phrase ; aucune n'invite dans un groupe précis. Contour plat, jamais la
  * tuile de focus : le bouton plein reste celui du défi. La croix la ferme.
  */
 @Component({
@@ -37,8 +37,8 @@ import { AnnounceVariant } from '../../domain/groups-announce';
           <a appButton variant="accent" [block]="true" routerLink="/ranking/new" data-testid="groups-announce-action">{{ 'social.empty.create' | translate }}</a>
         }
         @default {
-          <!-- Déjà dans un groupe : la même phrase, « Créer un nouveau groupe » comme sur la carte amis, en contour neutre (l'ambre est pour qui n'a pas de groupe). -->
-          <p class="text-sm leading-snug" style="color:var(--text-light)">{{ 'social.announce.noGroup' | translate }}</p>
+          <!-- Déjà dans un groupe : sa propre phrase, « Créer un nouveau groupe » comme sur la carte amis, en contour neutre (l'ambre est pour qui n'a pas de groupe). -->
+          <p class="text-sm leading-snug" style="color:var(--text-light)">{{ 'social.announce.member' | translate }}</p>
           <a appButton variant="neutral" [block]="true" routerLink="/ranking/new" data-testid="groups-announce-action">{{ 'social.home.newGroup' | translate }}</a>
         }
       }
