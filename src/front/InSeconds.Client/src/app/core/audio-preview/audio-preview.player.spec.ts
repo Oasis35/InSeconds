@@ -143,4 +143,36 @@ describe('AudioPreviewPlayer', () => {
     expect(player.playing()).toBe(false);
     expect(player.url()).toBeNull();
   });
+  it('listen : demande une adresse neuve pour un nouveau morceau, met en pause puis reprend le même', async () => {
+    const load = vi.fn(async () => 'https://preview/1.mp3');
+
+    await player.listen('a', load);
+    await flush();
+    expect(player.playingKey()).toBe('a');
+
+    await player.listen('a', load);
+    expect(player.playingKey()).toBeNull();
+    expect(player.key()).toBe('a');
+    await player.listen('a', load);
+    await flush();
+    expect(player.playingKey()).toBe('a');
+    expect(load).toHaveBeenCalledOnce();
+
+    await player.listen('b', async () => 'https://preview/2.mp3');
+    await flush();
+    expect(player.playingKey()).toBe('b');
+    expect(created).toHaveLength(2);
+  });
+
+  it("listen : une adresse arrivée après qu'un autre morceau a été demandé est ignorée ; sans adresse, rien ne joue", async () => {
+    let resolveFirst!: (url: string) => void;
+    const first = player.listen('a', () => new Promise<string>(resolve => { resolveFirst = resolve; }));
+    await player.listen('b', async () => null);
+    resolveFirst('https://preview/1.mp3');
+    await first;
+    await flush();
+
+    expect(created).toHaveLength(0);
+    expect(player.playingKey()).toBeNull();
+  });
 });

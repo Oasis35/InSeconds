@@ -49,6 +49,7 @@ const WEEKDAYS: Record<'fr' | 'en', readonly string[]> = {
           <span class="swatch" style="background:rgb(var(--rgb-accent-3) / 0.92)"></span>
           {{ 'daily.history.calendar.legendMore' | translate }}
         </span>
+        <span class="inline-flex items-center gap-1.5"><span class="swatch" style="border:1px solid rgb(var(--rgb-accent-3) / 0.7)"></span>{{ 'daily.history.calendar.legendResumable' | translate }}</span>
         <span class="inline-flex items-center gap-1.5"><span class="swatch" style="border:1px dashed rgb(var(--rgb-accent-3) / 0.7)"></span>{{ 'daily.history.calendar.legendUnfinished' | translate }}</span>
         <span class="inline-flex items-center gap-1.5"><span class="swatch" style="border:1px dashed var(--border-neutral)"></span>{{ 'daily.history.calendar.legendMissed' | translate }}</span>
       </div>

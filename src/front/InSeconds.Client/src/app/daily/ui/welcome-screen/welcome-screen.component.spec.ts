@@ -64,12 +64,8 @@ describe('WelcomeScreenComponent', () => {
     expect(none.querySelector('[data-testid="welcome-record"]')).toBeNull();
   });
 
-  it('donne l’accès aux réponses des jours passés', () => {
-    expect(render().el.querySelector('[data-testid="welcome-archive"]')?.getAttribute('href')).toBe('/history/daily/latest');
-  });
-
-  it("sous la V4, ce lien n'est plus sur l'accueil (il vit dans l'historique)", () => {
-    expect(render({ hideArchive: true }).el.querySelector('[data-testid="welcome-archive"]')).toBeNull();
+  it("plus de lien vers les jours passés : l'historique est dans la barre du bas", () => {
+    expect(render().el.querySelector('[data-testid="welcome-archive"]')).toBeNull();
   });
 
   it('invité avec une série protégée : pas de ligne de gel', () => {

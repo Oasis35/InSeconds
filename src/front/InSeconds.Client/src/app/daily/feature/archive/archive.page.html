@@ -64,7 +64,7 @@
             <h2 class="pt-3.5 pb-1 text-[15px] font-semibold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'daily.archive.tracks' | translate: { count: day.tracks.length } }}</h2>
             @for (track of day.tracks; track track.position) {
               <app-archive-track-row [track]="track" [mine]="answerAt(store.me(), track.position)" [mostMissed]="track.position === store.mostMissed()"
-                                     [lang]="language.current()" [playing]="playingPosition() === track.position" (listen)="listen(track)"
+                                     [lang]="language.current()" [playing]="playingPosition() === '' + track.position" (listen)="listen(track)"
                                      style="border-top:1px solid var(--border-medium)" class="block" />
             }
           </section>

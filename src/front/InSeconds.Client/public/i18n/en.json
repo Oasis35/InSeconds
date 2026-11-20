@@ -844,8 +844,7 @@
       "loginCta": "Create an account",
       "loginHint": "To keep your streak across all your devices.",
       "record": "Your best",
-      "target": "Score to beat",
-      "archive": "Answers from past days"
+      "target": "Score to beat"
     },
     "resume": {
       "title": "Game paused",
@@ -1081,6 +1080,7 @@
         "today": "{{ day }}: today's challenge",
         "legendLess": "Fewer points",
         "legendMore": "More",
+        "legendResumable": "To finish",
         "legendUnfinished": "Unfinished",
         "legendMissed": "Not played"
       },

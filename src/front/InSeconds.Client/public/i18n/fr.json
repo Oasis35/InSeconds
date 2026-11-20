@@ -844,8 +844,7 @@
       "loginCta": "Créer un compte",
       "loginHint": "Pour garder ta série sur tous tes appareils.",
       "record": "Ton record",
-      "target": "Score à battre",
-      "archive": "Réponses des jours passés"
+      "target": "Score à battre"
     },
     "resume": {
       "title": "Partie en pause",
@@ -1081,6 +1080,7 @@
         "today": "{{ day }} : le défi du jour",
         "legendLess": "Moins de points",
         "legendMore": "Plus",
+        "legendResumable": "À finir",
         "legendUnfinished": "Pas fini",
         "legendMissed": "Pas joué"
       },

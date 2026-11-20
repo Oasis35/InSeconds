@@ -23,7 +23,7 @@ describe('DayFriendsSlotComponent', () => {
 
   it('charge le composant fourni et lui passe le jour, puis le suivant', async () => {
     const fixture = await render(true);
-    const loaded = () => (fixture.nativeElement as HTMLElement).nextElementSibling;
+    const loaded = () => (fixture.nativeElement as HTMLElement).querySelector('[data-testid="friends"]');
     expect(loaded()?.textContent).toBe('2026-11-19');
 
     fixture.componentRef.setInput('date', '2026-11-18');
@@ -36,6 +36,6 @@ describe('DayFriendsSlotComponent', () => {
   it('sans fournisseur, rien', async () => {
     const fixture = await render(false);
 
-    expect((fixture.nativeElement as HTMLElement).nextElementSibling).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="friends"]')).toBeNull();
   });
 });

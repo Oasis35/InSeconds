@@ -45,7 +45,7 @@ export class ReplayPage {
   protected readonly errorReporting = inject(ErrorReportingService);
 
   protected readonly now = signal<NowPlaying | null>(null);
-  protected readonly playingKey = computed(() => (this.player.playing() ? this.now()?.key ?? null : null));
+  protected readonly playingKey = this.player.playingKey;
   protected readonly replayKey = replayKey;
 
   protected readonly filters = computed(() => [
@@ -75,16 +75,9 @@ export class ReplayPage {
   }
 
   /** Joue l'extrait du morceau, ou le met en pause ; une nouvelle écoute redemande l'adresse (piège 14). */
-  protected async listen(date: string, track: ReplayTrack): Promise<void> {
+  protected listen(date: string, track: ReplayTrack): void {
     const key = replayKey(date, track.position);
-    const loaded = this.player.url();
-    if (this.now()?.key === key && loaded) {
-      this.player.toggle(loaded);
-      return;
-    }
-    this.player.stop();
-    this.now.set({ key, date, track });
-    const url = await this.store.previewUrl(date, track.position);
-    if (this.now()?.key === key) this.player.toggle(url);
+    if (this.now()?.key !== key) this.now.set({ key, date, track });
+    void this.player.listen(key, () => this.store.previewUrl(date, track.position));
   }
 }

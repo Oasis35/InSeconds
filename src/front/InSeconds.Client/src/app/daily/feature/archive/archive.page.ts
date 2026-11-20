@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AudioPreviewPlayer } from '../../../core/audio-preview/audio-preview.player';
@@ -49,9 +49,8 @@ export class ArchivePage implements OnInit {
 
   protected readonly answerAt = answerAt;
 
-  /** La position du morceau dont l'extrait est chargé (en lecture ou en pause). */
-  private readonly current = signal<number | null>(null);
-  protected readonly playingPosition = computed(() => (this.player.playing() ? this.current() : null));
+  /** La position du morceau dont l'extrait joue (la clé du lecteur). */
+  protected readonly playingPosition = computed(() => this.player.playingKey());
 
   /** Le mois du jour affiché, pour revenir au bon mois de l'historique. */
   protected readonly backMonth = computed(() => this.store.date().slice(0, 7));
@@ -91,7 +90,6 @@ export class ArchivePage implements OnInit {
   ngOnInit(): void {
     this.route.paramMap.subscribe(params => {
       this.player.stop();
-      this.current.set(null);
       void this.store.load(params.get('date') ?? '');
     });
   }
@@ -101,15 +99,7 @@ export class ArchivePage implements OnInit {
   }
 
   /** Joue l'extrait du morceau, ou le met en pause ; l'adresse est demandée à chaque nouvelle écoute (piège 14). */
-  protected async listen(track: ArchiveTrack): Promise<void> {
-    const loaded = this.player.url();
-    if (this.current() === track.position && loaded) {
-      this.player.toggle(loaded);
-      return;
-    }
-    this.player.stop();
-    this.current.set(track.position);
-    const url = await this.store.previewUrl(track.position).catch(() => null);
-    if (this.current() === track.position) this.player.toggle(url);
+  protected listen(track: ArchiveTrack): void {
+    void this.player.listen(String(track.position), () => this.store.previewUrl(track.position));
   }
 }
