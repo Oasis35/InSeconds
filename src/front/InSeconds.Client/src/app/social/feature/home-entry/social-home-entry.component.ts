@@ -25,12 +25,12 @@ import { FriendsHomeCardComponent } from '../../ui/friends-home-card/friends-hom
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
-    @if (view(); as view) {
+    @if (shownView(); as view) {
       <div class="pt-3">
         <app-friends-home-card [view]="view" [lang]="lang()" [showLogin]="!chrome.accountCtaShown()" [showNew]="announce.chip()" [groups]="groups()" [canCreate]="canCreate()"
           [inviteState]="inviteState()" (groupSelected)="select($event)" (invite)="invite($event)" />
       </div>
-    } @else if (reserving()) {
+    } @else if (reserving() && view() === null) {
       <!-- La place de la carte pendant sa lecture : la carte Survie, souvent prête avant, ne saute pas quand celle-ci arrive au-dessus. -->
       <div class="pt-3" aria-hidden="true" data-testid="friends-card-placeholder">
         <div class="rounded-(--radius-card) min-h-36" style="background:var(--bg-surface);border:1px solid var(--border-medium)"></div>
@@ -54,10 +54,24 @@ export class SocialHomeEntryComponent {
   private readonly maxGroups = signal(0);
   /** Sous le maximum de groupes (`Social:MaxGroupsPerPlayer`, rendu par le serveur) : « Créer un nouveau groupe » reste offert. */
   protected readonly canCreate = computed(() => this.groups().length > 0 && this.groups().length < this.maxGroups());
+  /**
+   * La carte amis, sauf pour un invité ou un compte sans groupe tant que l'annonce des groupes est ouverte : elle dit déjà la même chose
+   * (« Créer un compte », « Créer un groupe »), une seule tuile s'ajoute au défi. Fermée, la carte revient avec sa pastille « Nouveau ».
+   */
+  protected readonly shownView = computed(() => {
+    const view = this.view();
+    return view !== null && this.announce.card() && (view.kind === 'guest' || view.kind === 'no_group') ? null : view;
+  });
   /** La carte d'un compte se lit (deux appels) : sa place est gardée, vide, tant qu'elle n'est pas là. */
   protected readonly reserving = signal(false);
   protected readonly lang = computed<'fr' | 'en'>(() => (this.language.current() === 'en' ? 'en' : 'fr'));
   private latest = 0;
+  /** Les touchers de pastille : seul le dernier compte. */
+  private selection = 0;
+  /** Le groupe touché dont les scores arrivent, jamais montré avant : le chargement de la carte le suit au lieu de le défaire. */
+  private chosen: number | null = null;
+  /** Les cartes posées par un chargement : une lecture de pastille commencée avant l'une d'elles est périmée. */
+  private loaded = 0;
 
   constructor() {
     effect(() => {
@@ -86,13 +100,18 @@ export class SocialHomeEntryComponent {
       mine = mygroups.groups;
       max = mygroups.maxGroups;
       this.announce.setGroups(mine, max);
-      const groupId = preferredGroupId(mine.map(group => group.id), this.lastGroup.get());
+      const ids = mine.map(group => group.id);
+      const groupId = preferredGroupId(ids, this.lastGroup.get());
       view = groupId === null ? { kind: 'no_group' } : groupCardView(await this.api.scores(groupId));
+      // Une pastille touchée pendant cette lecture : on suit le dernier choix du joueur, pas celui d'avant.
+      const wanted = preferredGroupId(ids, this.lastGroup.get());
+      if (groupId !== null && wanted !== null && wanted !== groupId) view = groupCardView(await this.api.scores(wanted));
     } catch {
       this.announce.setGroups('failed');
       view = null;
     }
     if (request !== this.latest) return;
+    this.loaded++;
     this.groups.set(mine);
     this.maxGroups.set(max);
     this.view.set(view);
@@ -106,20 +125,34 @@ export class SocialHomeEntryComponent {
   }
 
   /**
-   * Une pastille touchée : les scores de ce groupe seulement (les autres ne se lisent pas), et il devient celui que l'accueil et le classement
-   * rouvrent. Un échec garde la carte telle qu'elle est : elle ne disparaît jamais sous le doigt.
+   * Une pastille touchée : les scores de ce groupe seulement (les autres ne se lisent pas), et il devient tout de suite celui que l'accueil et le
+   * classement rouvrent, y compris pour un chargement de la carte en cours (le défi qui se termine). Plusieurs touchers de suite : le dernier
+   * l'emporte. Un échec garde la carte telle qu'elle est, elle ne disparaît jamais sous le doigt.
    */
   protected async select(groupId: number): Promise<void> {
     const current = this.view();
-    if (current === null || (current.kind !== 'pending' && current.kind !== 'revealed') || current.groupId === groupId) return;
-    const request = ++this.latest;
+    if (current === null || (current.kind !== 'pending' && current.kind !== 'revealed')) return;
+    if ((this.chosen ?? current.groupId) === groupId) return;
+    const request = ++this.selection;
+    const loaded = this.loaded;
+    this.chosen = groupId;
+    this.lastGroup.set(groupId);
+    let view: FriendsCardView | null = null;
     try {
-      const view = groupCardView(await this.api.scores(groupId));
-      if (request !== this.latest || view === null) return;
-      this.lastGroup.set(groupId);
-      this.view.set(view);
+      view = groupCardView(await this.api.scores(groupId));
     } catch {
-      // La carte reste sur le groupe d'avant.
+      view = null;
     }
+    if (request !== this.selection) return;
+    this.chosen = null;
+    // Un chargement a posé la carte entre-temps : il a suivi ce choix, sa carte est plus récente.
+    if (loaded !== this.loaded) return;
+    if (view !== null) {
+      this.view.set(view);
+      return;
+    }
+    // La carte reste sur le groupe d'avant, qui redevient aussi celui que l'accueil et le classement rouvrent.
+    const shown = this.view();
+    if (shown !== null && (shown.kind === 'pending' || shown.kind === 'revealed')) this.lastGroup.set(shown.groupId);
   }
 }

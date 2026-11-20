@@ -172,7 +172,7 @@ describe('FriendsHomeCardComponent', () => {
       expect(one(render({ kind: 'no_group' }), 'friends-card-invite')).toBeNull();
     });
 
-    it('« Créer un nouveau groupe » : un vrai bouton neutre vers la création, seulement sous le maximum', () => {
+    it('« Créer un nouveau groupe » : un lien souligné discret vers la création, seulement sous le maximum', () => {
       TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
       const fixture = TestBed.createComponent(FriendsHomeCardComponent);
       fixture.componentRef.setInput('view', pending);
@@ -182,7 +182,8 @@ describe('FriendsHomeCardComponent', () => {
 
       const create = one(element, 'friends-card-new-group');
       expect(create?.getAttribute('href')).toBe('/ranking/new');
-      expect(create?.classList).toContain('app-button--neutral');
+      expect(create?.classList).not.toContain('app-button');
+      expect(create?.classList).toContain('underline');
 
       fixture.componentRef.setInput('canCreate', false);
       fixture.detectChanges();

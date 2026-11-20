@@ -7,7 +7,7 @@ import { GroupsAnnounceCardComponent } from '../../ui/groups-announce-card/group
 /**
  * L'annonce des groupes en tête de l'accueil (`HOME_ANNOUNCE`), chargée à la demande. Un invité la voit tout de suite ; pour un compte, elle attend
  * ses groupes (lus par la carte amis) et garde sa place vide en attendant, pour que le défi ne saute pas. Une lecture en échec : rien. Un compte,
- * avec ou sans groupe, y trouve « Créer un groupe » (sauf au maximum de groupes). La fermer la remplace par la pastille de la carte amis et le point de Classements (`GroupsAnnounce`).
+ * avec ou sans groupe, y trouve de quoi créer un groupe ; au maximum de groupes, elle s'efface. La fermer la remplace par la pastille de la carte amis et le point de l'onglet Groupes (`GroupsAnnounce`).
  */
 @Component({
   selector: 'app-groups-announce-entry',
@@ -18,7 +18,7 @@ import { GroupsAnnounceCardComponent } from '../../ui/groups-announce-card/group
     @if (announce.card() && session.loaded()) {
       @if (variant(); as variant) {
         <div class="pb-3">
-          <app-groups-announce-card [variant]="variant" [canCreate]="announce.canCreate()" (dismiss)="announce.close()" />
+          <app-groups-announce-card [variant]="variant" (dismiss)="announce.close()" />
         </div>
       } @else if (announce.groups() === null) {
         <div class="pb-3" aria-hidden="true" data-testid="groups-announce-placeholder">
@@ -36,6 +36,8 @@ export class GroupsAnnounceEntryComponent {
   protected readonly variant = computed(() => {
     if (!this.session.isLinked()) return announceVariant(false, 0);
     const groups = this.announce.groups();
-    return Array.isArray(groups) ? announceVariant(true, groups.length) : null;
+    if (!Array.isArray(groups)) return null;
+    // Au maximum de groupes, rien à proposer : la tuile s'efface plutôt que de n'offrir qu'une phrase.
+    return groups.length > 0 && !this.announce.canCreate() ? null : announceVariant(true, groups.length);
   });
 }

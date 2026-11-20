@@ -11,7 +11,7 @@ const RANKING_SEEN_KEY = 'inseconds.announce.groups.rankingSeen';
 
 /**
  * L'annonce « Les groupes sont là » : d'abord une carte au-dessus du défi (`card`), puis, une fois fermée, une pastille « Nouveau » sur la carte
- * amis et un point sur l'onglet Classements (`chip`, `dot`) pour un joueur qui n'a pas de groupe. Tout s'arrête au dernier jour de
+ * amis et un point sur l'onglet Groupes (`chip`, `dot`) pour un joueur qui n'a pas de groupe. Tout s'arrête au dernier jour de
  * `GROUPS_ANNOUNCE_UNTIL`. Ce que le joueur a fermé ou vu ne vit que dans son navigateur (`localStorage`, deux drapeaux, aucun identifiant, rien
  * n'est envoyé au serveur). Les groupes du joueur sont posés par la carte amis, qui les lit déjà.
  */
@@ -40,7 +40,7 @@ export class GroupsAnnounce {
   private readonly member = computed(() => { const groups = this._groups(); return Array.isArray(groups) ? groups.length > 0 : null; });
   /** La pastille « Nouveau » de la carte amis : carte fermée, pas de groupe. */
   readonly chip = computed(() => this.active && this._closed() && this.member() === false);
-  /** Le point de l'onglet Classements : comme la pastille, jusqu'à ce que le joueur ait ouvert Classements. */
+  /** Le point de l'onglet Groupes : comme la pastille, jusqu'à ce que le joueur ait ouvert l'onglet Groupes. */
   readonly dot = computed(() => this.chip() && !this._rankingSeen());
 
   constructor() {

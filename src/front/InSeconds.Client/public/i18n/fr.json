@@ -1449,7 +1449,7 @@
         "account": "Profil",
         "login": "Connexion",
         "history": "Historique",
-        "ranking": "Classements"
+        "ranking": "Groupes"
       },
       "band": {
         "title": "Le défi du jour t’attend",
@@ -1599,7 +1599,7 @@
       "already": "Tu es déjà dans ce groupe.",
       "seeRanking": "Voir le classement",
       "full": "Ce groupe est complet.",
-      "accountRequired": "Il faut un compte pour rejoindre un groupe. L'invitation t'attendra dans l'onglet Classements.",
+      "accountRequired": "Il faut un compte pour rejoindre un groupe. L'invitation t'attendra dans l'onglet Groupes.",
       "failed": "L'adhésion n'a pas marché. Réessaie.",
       "notFoundTitle": "Invitation introuvable",
       "notFoundBody": "Ce lien ne mène plus à un groupe. Demande un nouveau lien à ton ami.",

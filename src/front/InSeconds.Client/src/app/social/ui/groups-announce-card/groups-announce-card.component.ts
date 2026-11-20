@@ -6,9 +6,9 @@ import { AnnounceVariant } from '../../domain/groups-announce';
 
 /**
  * La carte d'annonce des groupes, au-dessus du défi : pastille « Nouveau » en violet (la couleur des autres joueurs), un titre, une phrase et une
- * action selon le joueur : « Créer un compte » (invité, contour neutre) ou « Créer un groupe » (compte, avec ou sans groupe, contour ambre ; la même
- * phrase pour tous les comptes, qui n'invite dans aucun groupe précis). Contour plat, jamais la tuile de focus : le bouton plein reste celui du
- * défi. La croix la ferme.
+ * action selon le joueur : « Créer un compte » (invité, contour neutre), « Créer un groupe » (compte sans groupe, contour ambre) ou « Créer un
+ * nouveau groupe » (membre, contour neutre) ; la même phrase pour tous les comptes, qui n'invite dans aucun groupe précis. Contour plat, jamais la
+ * tuile de focus : le bouton plein reste celui du défi. La croix la ferme.
  */
 @Component({
   selector: 'app-groups-announce-card',
@@ -32,12 +32,14 @@ import { AnnounceVariant } from '../../domain/groups-announce';
           <p class="text-sm leading-snug" style="color:var(--text-light)">{{ 'social.announce.guest' | translate }}</p>
           <a appButton variant="neutral" [block]="true" routerLink="/account/login" data-testid="groups-announce-action">{{ 'social.empty.createAccount' | translate }}</a>
         }
-        @default {
-          <!-- Sans groupe comme dans des groupes : la même phrase et « Créer un groupe », jamais l'invitation d'un groupe précis. -->
+        @case ('no_group') {
           <p class="text-sm leading-snug" style="color:var(--text-light)">{{ 'social.announce.noGroup' | translate }}</p>
-          @if (canCreate()) {
-            <a appButton variant="accent" [block]="true" routerLink="/ranking/new" data-testid="groups-announce-action">{{ 'social.empty.create' | translate }}</a>
-          }
+          <a appButton variant="accent" [block]="true" routerLink="/ranking/new" data-testid="groups-announce-action">{{ 'social.empty.create' | translate }}</a>
+        }
+        @default {
+          <!-- Déjà dans un groupe : la même phrase, « Créer un nouveau groupe » comme sur la carte amis, en contour neutre (l'ambre est pour qui n'a pas de groupe). -->
+          <p class="text-sm leading-snug" style="color:var(--text-light)">{{ 'social.announce.noGroup' | translate }}</p>
+          <a appButton variant="neutral" [block]="true" routerLink="/ranking/new" data-testid="groups-announce-action">{{ 'social.home.newGroup' | translate }}</a>
         }
       }
     </section>
@@ -45,7 +47,5 @@ import { AnnounceVariant } from '../../domain/groups-announce';
 })
 export class GroupsAnnounceCardComponent {
   readonly variant = input.required<AnnounceVariant>();
-  /** Un membre qui a déjà le maximum de groupes n'a plus de « Créer un groupe » : la phrase seule. */
-  readonly canCreate = input(true);
   readonly dismiss = output();
 }

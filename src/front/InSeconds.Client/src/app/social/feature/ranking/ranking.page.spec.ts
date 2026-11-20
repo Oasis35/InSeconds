@@ -164,7 +164,7 @@ describe('RankingPage', () => {
     expect(find(el, 'ranking-leave')).not.toBeNull();
   });
 
-  it('à la limite de groupes, « + Groupe » disparaît', async () => {
+  it('à la limite de groupes, « Créer un nouveau groupe » disparaît', async () => {
     api.groups = { ...api.groups, maxGroups: 2 };
 
     const { el } = await render();

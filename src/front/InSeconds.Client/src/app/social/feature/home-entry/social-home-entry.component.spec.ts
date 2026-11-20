@@ -8,7 +8,7 @@ import { ShareService } from '../../../core/share/share.service';
 import { GroupShare } from '../../data-access/group-share';
 import { GroupsAnnounce } from '../../data-access/groups-announce';
 import { LastGroup } from '../../data-access/last-group';
-import { DAILY, DAILY_LOCKED, FakeSocialApi, provideFakeSocialApi } from '../../data-access/testing/fake-social-api';
+import { DAILY, DAILY_LOCKED, FakeSocialApi, GROUP, provideFakeSocialApi } from '../../data-access/testing/fake-social-api';
 import { SocialHomeEntryComponent } from './social-home-entry.component';
 
 describe('SocialHomeEntryComponent', () => {
@@ -33,10 +33,13 @@ describe('SocialHomeEntryComponent', () => {
     fixture.detectChanges();
   }
 
-  async function render(signedIn: SessionPlayer | null, options: { lastGroup?: number; dailyDone?: boolean; accountCta?: boolean } = {}) {
+  async function render(signedIn: SessionPlayer | null, options: { lastGroup?: number; dailyDone?: boolean; accountCta?: boolean; announceOpen?: boolean } = {}) {
+    const storage = new MemoryStoragePort();
+    // L'annonce des groupes est fermée d'office (elle cache la carte d'un invité et d'un compte sans groupe) : sauf `announceOpen`.
+    if (!options.announceOpen) storage.set('inseconds.announce.groups.closed', '1');
     TestBed.configureTestingModule({
       providers: [
-        provideTranslateService(), provideRouter([]), { provide: StoragePort, useValue: new MemoryStoragePort() },
+        provideTranslateService(), provideRouter([]), { provide: StoragePort, useValue: storage },
         { provide: ShareService, useValue: { share: (text: string) => { shared.push(text); return Promise.resolve('copied'); } } },
       ],
     });
@@ -62,12 +65,39 @@ describe('SocialHomeEntryComponent', () => {
     expect(api.calls).toEqual([]);
   });
 
+  it("annonce ouverte : un invité et un compte sans groupe n'ont pas la carte (l'annonce dit déjà la même chose), un membre l'a", async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-21T10:00:00Z'));
+    try {
+      const guest = await render(player(true), { announceOpen: true });
+      expect(card(guest)).toBeNull();
+      TestBed.resetTestingModule();
+
+      api.groups = { groups: [], maxGroups: 5 };
+      const noGroup = await render(player(false), { announceOpen: true });
+      expect(card(noGroup)).toBeNull();
+      TestBed.resetTestingModule();
+
+      api.groups = { groups: [GROUP], maxGroups: 5 };
+      api.scoresByGroup.set(GROUP.id, { groupId: GROUP.id, name: 'Potes', daily: DAILY_LOCKED });
+      const member = await render(player(false), { announceOpen: true });
+      expect(card(member)?.dataset['kind']).toBe('pending');
+      TestBed.resetTestingModule();
+
+      // Annonce fermée : la carte revient pour un invité.
+      const closed = await render(player(true));
+      expect(card(closed)?.dataset['kind']).toBe('guest');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("elle donne les groupes à l'annonce ; carte d'annonce fermée, un compte sans groupe voit la pastille « Nouveau »", async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-11-21T10:00:00Z'));
     try {
       api.groups = { groups: [], maxGroups: 5 };
-      const fixture = await render(player(false));
+      const fixture = await render(player(false), { announceOpen: true });
       const announce = TestBed.inject(GroupsAnnounce);
       const pill = () => (fixture.nativeElement as HTMLElement).querySelector('[data-testid="friends-card-new"]');
       expect(announce.groups()).toEqual([]);
@@ -156,6 +186,61 @@ describe('SocialHomeEntryComponent', () => {
     expect(inviteButton(fixture)?.textContent).toContain('social.invite.copied');
   });
 
+  /** Les lectures de scores restent en attente jusqu'à `release` : pour jouer les réponses dans l'ordre voulu. */
+  function holdScores() {
+    const original = api.scores.bind(api);
+    const held: { groupId: number; release: () => void }[] = [];
+    api.scores = (groupId: number) => new Promise(resolve => { held.push({ groupId, release: () => resolve(original(groupId)) }); });
+    return held;
+  }
+
+  it("plusieurs touchers de suite : le dernier groupe touché reste, quel que soit l'ordre des réponses", async () => {
+    const fixture = await render(player(false));
+    const held = holdScores();
+
+    chip(fixture, 7)?.click();
+    chip(fixture, 4)?.click();
+    held[0].release();
+    await settle(fixture);
+    held[1].release();
+    await settle(fixture);
+
+    expect(held.map(call => call.groupId)).toEqual([7, 4]);
+    expect(title(fixture)).toBe('Potes');
+    expect(TestBed.inject(LastGroup).get()).toBe(4);
+  });
+
+  it("le défi qui se termine pendant la lecture d'une pastille : la carte suit le groupe touché, et garde ses groupes", async () => {
+    api.scoresByGroup.set(7, { groupId: 7, name: 'Famille', daily: DAILY });
+    const fixture = await render(player(false));
+    const held = holdScores();
+
+    chip(fixture, 7)?.click();
+    TestBed.inject(ShellChromeStore).setDailyDone(true);
+    await settle(fixture);
+    held.slice(1).forEach(call => call.release());
+    await settle(fixture);
+    held[0].release();
+    await settle(fixture);
+
+    expect(card(fixture)?.dataset['kind']).toBe('revealed');
+    expect(title(fixture)).toBe('social.home.todayTitle');
+    expect(chip(fixture, 7)?.getAttribute('aria-pressed')).toBe('true');
+    expect(newGroup(fixture)).not.toBeNull();
+  });
+
+  it("une pastille dont la lecture échoue pendant que la carte se relit : la carte revient au groupe d'avant", async () => {
+    const fixture = await render(player(false));
+    const original = api.scores.bind(api);
+    api.scores = (groupId: number) => (groupId === 7 ? Promise.reject(new Error('down')) : original(groupId));
+
+    chip(fixture, 7)?.click();
+    await settle(fixture);
+
+    expect(title(fixture)).toBe('Potes');
+    expect(TestBed.inject(LastGroup).get()).toBe(4);
+  });
+
   it("une pastille touchée : la carte passe à ce groupe, qui n'est lu que lui, et il devient le dernier regardé", async () => {
     const fixture = await render(player(false));
 
@@ -188,7 +273,7 @@ describe('SocialHomeEntryComponent', () => {
 
     expect(title(fixture)).toBe('Potes');
     expect(chip(fixture, 4)?.getAttribute('aria-pressed')).toBe('true');
-    expect(TestBed.inject(LastGroup).get()).toBeNull();
+    expect(TestBed.inject(LastGroup).get()).toBe(4);
   });
 
   it('le défi du jour fini : la carte se relit et montre le classement du jour', async () => {

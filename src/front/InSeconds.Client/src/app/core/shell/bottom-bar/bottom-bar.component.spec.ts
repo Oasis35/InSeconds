@@ -49,7 +49,7 @@ describe('BottomBarComponent', () => {
     expect(el.querySelector('[data-testid="daily-pending"]')).toBeNull();
   });
 
-  it("un point violet sur Classements tant que l'annonce des groupes le demande", async () => {
+  it("un point violet sur Groupes tant que l'annonce des groupes le demande", async () => {
     const { el, fixture, chrome } = await render('/', {});
     expect(el.querySelector('[data-testid="ranking-new"]')).toBeNull();
     chrome.setGroupsNew(true);
@@ -66,7 +66,7 @@ describe('BottomBarComponent', () => {
     expect((await render('/history/daily?mois=2026-10', {})).el.querySelector('[data-testid="tab-daily"]')?.getAttribute('aria-current')).toBeNull();
   });
 
-  it('« Classements » ouvre le classement entre amis et s\'allume sur ses pages', async () => {
+  it('« Groupes » ouvre le classement entre amis et s\'allume sur ses pages', async () => {
     const { el } = await render('/ranking?group=4', {});
     expect(el.querySelector('[data-testid="tab-ranking"]')?.getAttribute('href')).toBe('/ranking');
     expect(el.querySelector('[data-testid="tab-ranking"]')?.getAttribute('aria-current')).toBe('page');

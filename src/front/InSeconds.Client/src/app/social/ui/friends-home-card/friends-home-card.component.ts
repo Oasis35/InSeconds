@@ -11,7 +11,7 @@ import { FriendPresence, FriendsCardView } from '../../domain/friends-card';
  * membre (pleine s'il a joué, éteinte sinon), **jamais un score**. Défi fait : « Potes, aujourd'hui », le haut du classement du jour, la ligne du
  * joueur en ambre. Dans plusieurs groupes : une rangée de pastilles en tête pour choisir celui qu'elle montre. Sans groupe : « Créer un groupe » ;
  * invité : « Créer un compte » en contour neutre (un groupe exige un compte). Un membre a en bas « Inviter un ami dans … » (le groupe en cours) et,
- * sous le maximum de groupes, « Créer un nouveau groupe », tous deux en contour neutre. Jamais la tuile de focus : contour plat, aucune lueur.
+ * sous le maximum de groupes, « Créer un nouveau groupe » en lien souligné discret. Jamais la tuile de focus : contour plat, aucune lueur.
  */
 @Component({
   selector: 'app-friends-home-card',
@@ -124,7 +124,7 @@ import { FriendPresence, FriendsCardView } from '../../domain/friends-card';
 
           @if (groupId(); as id) {
             <!-- Inviter dans le groupe en cours, sans passer par le classement : le même partage que la page des classements. -->
-            <button appButton type="button" variant="neutral" [block]="true" (click)="invite.emit(id)" data-testid="friends-card-invite">
+            <button appButton type="button" variant="neutral" [block]="true" class="[overflow-wrap:anywhere]" (click)="invite.emit(id)" data-testid="friends-card-invite">
               @if (inviteState() === 'copied') { {{ 'social.invite.copied' | translate }} }
               @else if (inviteState() === 'failed') { {{ 'social.invite.failed' | translate }} }
               @else { {{ 'social.invite.button' | translate: { name: title() } }} }
@@ -132,8 +132,11 @@ import { FriendPresence, FriendsCardView } from '../../domain/friends-card';
           }
 
           @if (canCreate()) {
-            <!-- Déjà dans un groupe, on peut en ouvrir un autre tant qu'on n'a pas atteint le maximum : contour neutre, le bouton plein reste celui du défi. -->
-            <a appButton variant="neutral" [block]="true" routerLink="/ranking/new" data-testid="friends-card-new-group">{{ 'social.home.newGroup' | translate }}</a>
+            <!-- Déjà dans un groupe, on peut en ouvrir un autre tant qu'on n'a pas atteint le maximum : un lien discret, « Inviter un ami » reste le seul bouton. -->
+            <a routerLink="/ranking/new" data-testid="friends-card-new-group"
+              class="self-center inline-flex items-center min-h-11 -my-2 px-3 text-sm underline underline-offset-4 touch-manipulation" style="color:var(--text-light)">
+              {{ 'social.home.newGroup' | translate }}
+            </a>
           }
         }
       }

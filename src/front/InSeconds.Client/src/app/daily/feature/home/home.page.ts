@@ -51,7 +51,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
           </app-brand>
         </header>
 
-        @if (screen() === 'welcome' || screen() === 'resume_prompt' || screen() === 'already_played' || screen() === 'done') {
+        @if (screen() === 'welcome' || screen() === 'resume_prompt' || screen() === 'already_played' || screen() === 'done' || screen() === 'no_challenge') {
           <app-home-announce-slot />
         }
 

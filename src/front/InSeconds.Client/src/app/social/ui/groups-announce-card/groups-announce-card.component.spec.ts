@@ -28,22 +28,14 @@ describe('GroupsAnnounceCardComponent', () => {
     expect(action(element)?.classList).toContain('app-button--accent');
   });
 
-  it("un membre : la même phrase et « Créer un groupe », sans invitation dans un groupe précis", () => {
+  it("un membre : la même phrase et « Créer un nouveau groupe » en contour neutre, sans invitation dans un groupe précis", () => {
     const { element } = render('member');
 
     expect(action(element)?.getAttribute('href')).toBe('/ranking/new');
-    expect(action(element)?.classList).toContain('app-button--accent');
+    expect(action(element)?.classList).toContain('app-button--neutral');
+    expect(action(element)?.textContent?.trim()).toBe('social.home.newGroup');
     expect(element.textContent).toContain('social.announce.noGroup');
     expect(element.textContent).not.toContain('social.announce.member');
-  });
-
-  it('au maximum de groupes : la phrase seule, sans bouton', () => {
-    const { fixture, element } = render('member');
-    fixture.componentRef.setInput('canCreate', false);
-    fixture.detectChanges();
-
-    expect(action(element)).toBeNull();
-    expect(element.textContent).toContain('social.announce.noGroup');
   });
 
   it('la croix ferme', () => {
