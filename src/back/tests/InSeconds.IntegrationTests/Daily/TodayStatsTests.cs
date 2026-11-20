@@ -127,6 +127,43 @@ public class TodayStatsTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Historique_LaCarteDuProfil_MoyenneApres_MeilleurDepuis_TrouvesAuPremierPalier()
+    {
+        await _game.GenerateAsync();
+        await _game.App.AddChallengeAsync(Today.AddDays(-5), 1, 2, 3, 4, 5);
+        await _game.App.AddChallengeAsync(Today.AddDays(-2), 6, 7, 8, 9, 10);
+        var alice = await _game.NewPlayerAsync();
+        await _game.AddSessionAsync(alice.Id, Today.AddDays(-5), 1,
+            (0.5m, true, true, false, 1000), (1m, true, true, false, 850), (1m, true, true, false, 850), (1m, true, true, false, 850), (1m, true, true, false, 950));
+        await _game.AddSessionAsync(alice.Id, Today.AddDays(-2), 1, (2m, true, true, false, 1000));
+        var session = (await alice.StartAsync()).SessionId;
+        await alice.AnswerCorrectlyAsync(session, 1, 0.5m);
+        await alice.FinishAsync(session, fromPosition: 2, seconds: 1);
+
+        var history = (await StatsAsync(alice.Client)).History!;
+
+        // Aujourd'hui 1000 + 4 × 850 = 4400 ; moyenne (4500 + 1000 + 4400) / 3 ; la dernière partie au moins aussi bonne date d'il y a 5 jours.
+        Assert.Equal((2, 4500, 2750), (history.PreviousGames, history.PreviousBestScore, history.PreviousAverageScore));
+        Assert.Equal((3300, (int?)5), (history.AverageScoreAfter, history.BestSinceDays));
+        Assert.Equal((2, 1), (history.FirstStepFoundTotal, history.FirstStepFoundToday));
+    }
+
+    [Fact]
+    public async Task Historique_UnRecord_NAPasDeMeilleurDepuis()
+    {
+        await _game.GenerateAsync();
+        await _game.App.AddChallengeAsync(Today.AddDays(-2), 6, 7, 8, 9, 10);
+        var alice = await _game.NewPlayerAsync();
+        await _game.AddSessionAsync(alice.Id, Today.AddDays(-2), 1, (2m, true, true, false, 1000));
+        await alice.FinishAsync((await alice.StartAsync()).SessionId, seconds: 1);
+
+        var history = (await StatsAsync(alice.Client)).History!;
+
+        Assert.Null(history.BestSinceDays);
+        Assert.Equal((2625, 0, 0), (history.AverageScoreAfter, history.FirstStepFoundTotal, history.FirstStepFoundToday));
+    }
+
+    [Fact]
     public async Task PartieAbandonneeApresUneReponse_RevelelesMorceaux_AvecSonScorePartiel_SansLeComparer()
     {
         await _game.GenerateAsync();

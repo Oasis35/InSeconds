@@ -942,6 +942,52 @@
               }
             }
           },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyHistoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/daily/replay": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getReplayTracks",
+        "parameters": [
+          {
+            "name": "filter",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -957,7 +1003,56 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DailyHistoryResponse"
+                  "$ref": "#/components/schemas/ReplayResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/daily/profile": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getEarProfile",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EarProfileResponse"
                 }
               }
             }
@@ -2453,7 +2548,11 @@
           "fastestFoundPercent",
           "previousGames",
           "previousBestScore",
-          "previousAverageScore"
+          "previousAverageScore",
+          "averageScoreAfter",
+          "bestSinceDays",
+          "firstStepFoundTotal",
+          "firstStepFoundToday"
         ],
         "type": "object",
         "properties": {
@@ -2487,6 +2586,25 @@
               "null",
               "integer"
             ],
+            "format": "int32"
+          },
+          "averageScoreAfter": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bestSinceDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "firstStepFoundTotal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firstStepFoundToday": {
+            "type": "integer",
             "format": "int32"
           }
         }
@@ -2797,7 +2915,12 @@
           "playedCount",
           "averageScore",
           "bestScore",
-          "games"
+          "games",
+          "days",
+          "monthPlayedCount",
+          "monthPublishedCount",
+          "monthAverageScore",
+          "monthBestScore"
         ],
         "type": "object",
         "properties": {
@@ -2839,6 +2962,34 @@
             "items": {
               "$ref": "#/components/schemas/DailyHistoryGameResponse"
             }
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyHistoryDayResponse"
+            }
+          },
+          "monthPlayedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "monthPublishedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "monthAverageScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "monthBestScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -2853,6 +3004,306 @@
           "position": {
             "type": "integer",
             "format": "int32"
+          },
+          "artistCorrect": {
+            "type": "boolean"
+          },
+          "titleCorrect": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DailyHistoryDayResponse": {
+        "required": [
+          "date",
+          "state",
+          "score",
+          "maxPossibleScore"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "state": {
+            "type": "string"
+          },
+          "score": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "maxPossibleScore": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "EarProfilePointResponse": {
+        "required": [
+          "start",
+          "average",
+          "playersAverage",
+          "games"
+        ],
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date"
+          },
+          "average": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "playersAverage": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "games": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "EarProfileResponse": {
+        "required": [
+          "period",
+          "points",
+          "averageScore",
+          "trendPercent",
+          "gamesPlayed",
+          "bestScore",
+          "bestStreak",
+          "firstStepSeconds",
+          "firstStepFound",
+          "steps",
+          "notFoundPercent",
+          "playersNotFoundPercent",
+          "artistFoundPercent",
+          "titleFoundPercent",
+          "playersArtistFoundPercent",
+          "playersTitleFoundPercent"
+        ],
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EarProfilePointResponse"
+            }
+          },
+          "averageScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "trendPercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "gamesPlayed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bestScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "bestStreak": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firstStepSeconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "firstStepFound": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EarProfileStepResponse"
+            }
+          },
+          "notFoundPercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "playersNotFoundPercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "artistFoundPercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "titleFoundPercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "playersArtistFoundPercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "playersTitleFoundPercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "EarProfileStepResponse": {
+        "required": [
+          "seconds",
+          "percent",
+          "playersPercent"
+        ],
+        "type": "object",
+        "properties": {
+          "seconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "percent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "playersPercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ReplayDayResponse": {
+        "required": [
+          "date",
+          "tracks"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReplayTrackResponse"
+            }
+          }
+        }
+      },
+      "ReplayResponse": {
+        "required": [
+          "days",
+          "nextBefore",
+          "allCount",
+          "noneCount",
+          "halfCount"
+        ],
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReplayDayResponse"
+            }
+          },
+          "nextBefore": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "allCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "noneCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "halfCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ReplayTrackResponse": {
+        "required": [
+          "position",
+          "artist",
+          "title",
+          "deezerTrackId",
+          "coverUrl",
+          "artistCorrect",
+          "titleCorrect"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "artist": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "deezerTrackId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "coverUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "artistCorrect": {
             "type": "boolean"
@@ -2905,6 +3356,9 @@
       "name": "InSeconds.Api.Modules.Daily.Application.GetDailyHistoryEndpoint"
     },
     {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetReplayTracksEndpoint"
+    },
+    {
       "name": "InSeconds.Api.Modules.Daily.Application.RecomputeDayStatsEndpoint"
     },
     {
@@ -2927,6 +3381,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.SubmitAnswerEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetEarProfileEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.GetTodayStatsEndpoint"

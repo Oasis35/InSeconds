@@ -23,6 +23,20 @@ public class DailyStreakTests
     // --- RecordCompletion ---
 
     [Fact]
+    public void LaMeilleureSerie_SuitLaSerieEnCours_EtResteApresUneCassure()
+    {
+        var streak = Streak(4, Day.AddDays(-1), 0);
+        Set(streak, nameof(DailyStreak.BestStreak), 4);
+
+        streak.RecordCompletion(Day, isLinked: false, Rules);
+        Assert.Equal((5, 5), (streak.CurrentStreak, streak.BestStreak));
+
+        // Trois jours manqués sans gel : la série repart à 1, la meilleure reste.
+        streak.RecordCompletion(Day.AddDays(4), isLinked: false, Rules);
+        Assert.Equal((1, 5), (streak.CurrentStreak, streak.BestStreak));
+    }
+
+    [Fact]
     public void PremiereCompletion_SerieA1_SurLaDateDuDefi()
     {
         var streak = DailyStreak.Create(Guid.NewGuid());

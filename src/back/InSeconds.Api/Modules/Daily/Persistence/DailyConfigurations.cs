@@ -99,6 +99,7 @@ internal sealed class DailyStreakConfiguration : IEntityTypeConfiguration<DailyS
         builder.ToTable("streaks", DbSchemas.Daily);
         builder.HasKey(s => s.PlayerId);
         builder.Property(s => s.Freezes).HasDefaultValue((short)0);
+        builder.Property(s => s.BestStreak).HasDefaultValue(0);
         builder.HasOne("InSeconds.Api.Modules.Players.Domain.Player", navigationName: null).WithMany()
             .HasForeignKey(nameof(DailyStreak.PlayerId)).OnDelete(DeleteBehavior.Restrict);
     }

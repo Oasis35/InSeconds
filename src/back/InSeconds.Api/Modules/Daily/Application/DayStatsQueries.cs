@@ -96,9 +96,6 @@ public interface IDailyStatsQueries
     /// </summary>
     Task<AnswerSpeedHistory> GetAnswerSpeedHistoryAsync(DateOnly since, DateOnly before, CancellationToken ct);
 
-    /// <summary>Les scores des parties **terminées** de ce joueur sur les défis d'avant <paramref name="before"/> (exclu) : tout ce qu'il faut à <c>PersonalHistory</c>.</summary>
-    Task<IReadOnlyList<int>> GetPreviousScoresAsync(Guid playerId, DateOnly before, CancellationToken ct);
-
     /// <summary>Les parties de ce joueur sur les défis de ce jour et des suivants, de la plus récente à la plus ancienne.</summary>
     Task<IReadOnlyList<PlayerHistoryRow>> GetPlayerHistoryAsync(Guid playerId, DateOnly since, CancellationToken ct);
 }

@@ -13,8 +13,8 @@ public class DailyOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(
 
         Assert.Equal(
             [
-                "abandonSession", "getAdminDailySettings", "getArchiveDay", "getArchiveIndex", "getArchivePreview", "getChallengeStats", "getDailyHistory", "getDailySettings", "getDashboard",
-                "getMyArchiveDay", "getNextChallenge", "getPlayerHistory", "getToday", "getTodayStats", "listChallenges", "listRegisteredPlayers", "recomputeDayStats", "requestHint",
+                "abandonSession", "getAdminDailySettings", "getArchiveDay", "getArchiveIndex", "getArchivePreview", "getChallengeStats", "getDailyHistory", "getDailySettings", "getDashboard", "getEarProfile",
+                "getMyArchiveDay", "getNextChallenge", "getPlayerHistory", "getReplayTracks", "getToday", "getTodayStats", "listChallenges", "listRegisteredPlayers", "recomputeDayStats", "requestHint",
                 "startSession", "submitAnswer", "updateListening", "updateTrackCooldownPoolPercent",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));

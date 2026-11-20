@@ -536,6 +536,12 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("player_id");
 
+                    b.Property<int>("BestStreak")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("best_streak");
+
                     b.Property<int>("CurrentStreak")
                         .HasColumnType("integer")
                         .HasColumnName("current_streak");

@@ -50,6 +50,17 @@ public sealed record ModeScoresResponse(
 
 public sealed record GroupScoresResponse(int GroupId, string Name, IReadOnlyList<ModeScoresResponse> Modes);
 
+/// <summary>Le classement d'un mode pour un groupe sur le défi d'un jour.</summary>
+/// <param name="Day">Le jour du défi.</param>
+/// <param name="Revealed">
+/// Le joueur peut voir les scores de ce jour : faux tant qu'il peut encore jouer ce défi (le jour en cours qu'il n'a pas fini, la veille tant que sa
+/// partie de la veille est en cours). Tant que non, aucune ligne n'a de rang ni de score.
+/// </param>
+/// <param name="Entries">Les membres, les classés d'abord ; <c>Played</c> dit s'il a fini sa partie ce jour-là (faux pour tous tant que caché).</param>
+public sealed record ModeDayScoresResponse(string Mode, DateOnly Day, bool Revealed, IReadOnlyList<TodayScoreEntryResponse> Entries);
+
+public sealed record GroupDayScoresResponse(int GroupId, string Name, IReadOnlyList<ModeDayScoresResponse> Modes);
+
 /// <summary>Le classement général : sa tête, puis le joueur et ses voisins s'il y est classé plus bas.</summary>
 /// <param name="Total">Combien de joueurs sont classés.</param>
 /// <param name="HasAccount">Le joueur a un compte (un invité n'y figure jamais).</param>

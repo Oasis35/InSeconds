@@ -66,6 +66,9 @@ public static class SocialErrorCodes
 
     /// <summary>Le nom au classement général se choisit entre <c>pseudo</c> et <c>alias</c>.</summary>
     public const string InvalidRankingMode = "social.invalid_ranking_mode";
+
+    /// <summary>Le jour des scores d'un groupe s'écrit <c>aaaa-mm-jj</c> et n'est pas dans le futur.</summary>
+    public const string InvalidDate = "social.invalid_date";
 }
 
 internal static class SocialProblems
@@ -75,6 +78,9 @@ internal static class SocialProblems
 
     public static ProblemDetails AccountRequired() =>
         ApiProblem.Of(StatusCodes.Status403Forbidden, SocialErrorCodes.AccountRequired, "Il faut un compte pour utiliser un groupe.");
+
+    public static ProblemDetails InvalidDate() =>
+        ApiProblem.Of(StatusCodes.Status400BadRequest, SocialErrorCodes.InvalidDate, "Le jour doit être au format aaaa-mm-jj et ne pas être dans le futur.");
 
     public static ProblemDetails GroupNotFound() =>
         ApiProblem.Of(StatusCodes.Status404NotFound, SocialErrorCodes.GroupNotFound, "Groupe introuvable.");
