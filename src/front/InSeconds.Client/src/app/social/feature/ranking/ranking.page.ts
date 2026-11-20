@@ -93,7 +93,7 @@ export class RankingPage {
   protected readonly alone = computed(() => (this.store.selected()?.memberCount ?? 0) <= 1);
 
   constructor() {
-    // Classements ouvert : le point « Nouveau » de l'onglet a fait son travail.
+    // Onglet Groupes ouvert : le point « Nouveau » de l'onglet a fait son travail.
     this.announce.markRankingSeen();
     effect(() => {
       // L'identité se lit au démarrage de l'app : un invité n'a pas de groupe, on ne demande rien.

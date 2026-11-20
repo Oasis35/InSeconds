@@ -23,9 +23,9 @@ import { FriendsHomeCardComponent } from '../../ui/friends-home-card/friends-hom
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
-    @if (view(); as view) {
+    @if (shownView(); as view) {
       <div class="pt-3"><app-friends-home-card [view]="view" [lang]="lang()" [showLogin]="!chrome.accountCtaShown()" [showNew]="announce.chip()" /></div>
-    } @else if (reserving()) {
+    } @else if (reserving() && view() === null) {
       <!-- La place de la carte pendant sa lecture : la carte Survie, souvent prête avant, ne saute pas quand celle-ci arrive au-dessus. -->
       <div class="pt-3" aria-hidden="true" data-testid="friends-card-placeholder">
         <div class="rounded-(--radius-card) min-h-36" style="background:var(--bg-surface);border:1px solid var(--border-medium)"></div>
@@ -42,6 +42,14 @@ export class SocialHomeEntryComponent {
   private readonly language = inject(LanguageService);
 
   protected readonly view = signal<FriendsCardView | null>(null);
+  /**
+   * La carte amis, sauf pour un invité ou un compte sans groupe tant que l'annonce des groupes est ouverte : elle dit déjà la même chose
+   * (« Créer un compte », « Créer un groupe »), une seule tuile s'ajoute au défi. Fermée, la carte revient avec sa pastille « Nouveau ».
+   */
+  protected readonly shownView = computed(() => {
+    const view = this.view();
+    return view !== null && this.announce.card() && (view.kind === 'guest' || view.kind === 'no_group') ? null : view;
+  });
   /** La carte d'un compte se lit (deux appels) : sa place est gardée, vide, tant qu'elle n'est pas là. */
   protected readonly reserving = signal(false);
   protected readonly lang = computed<'fr' | 'en'>(() => (this.language.current() === 'en' ? 'en' : 'fr'));

@@ -1449,7 +1449,7 @@
         "account": "Profile",
         "login": "Log in",
         "history": "History",
-        "ranking": "Rankings"
+        "ranking": "Groups"
       },
       "band": {
         "title": "Today’s challenge is waiting",
@@ -1598,7 +1598,7 @@
       "already": "You are already in this group.",
       "seeRanking": "See the ranking",
       "full": "This group is full.",
-      "accountRequired": "You need an account to join a group. The invitation will wait for you in the Ranking tab.",
+      "accountRequired": "You need an account to join a group. The invitation will wait for you in the Groups tab.",
       "failed": "Joining did not work. Try again.",
       "notFoundTitle": "Invitation not found",
       "notFoundBody": "This link no longer leads to a group. Ask your friend for a new one.",

@@ -6,7 +6,7 @@ import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { MemoryStoragePort, StoragePort } from '../../../core/storage/storage.port';
 import { GroupsAnnounce } from '../../data-access/groups-announce';
 import { LastGroup } from '../../data-access/last-group';
-import { DAILY, DAILY_LOCKED, FakeSocialApi, provideFakeSocialApi } from '../../data-access/testing/fake-social-api';
+import { DAILY, DAILY_LOCKED, FakeSocialApi, GROUP, provideFakeSocialApi } from '../../data-access/testing/fake-social-api';
 import { SocialHomeEntryComponent } from './social-home-entry.component';
 
 describe('SocialHomeEntryComponent', () => {
@@ -29,9 +29,12 @@ describe('SocialHomeEntryComponent', () => {
     fixture.detectChanges();
   }
 
-  async function render(signedIn: SessionPlayer | null, options: { lastGroup?: number; dailyDone?: boolean; accountCta?: boolean } = {}) {
+  async function render(signedIn: SessionPlayer | null, options: { lastGroup?: number; dailyDone?: boolean; accountCta?: boolean; announceOpen?: boolean } = {}) {
+    const storage = new MemoryStoragePort();
+    // L'annonce des groupes est fermée d'office (elle cache la carte d'un invité et d'un compte sans groupe) : sauf `announceOpen`.
+    if (!options.announceOpen) storage.set('inseconds.announce.groups.closed', '1');
     TestBed.configureTestingModule({
-      providers: [provideTranslateService(), provideRouter([]), { provide: StoragePort, useValue: new MemoryStoragePort() }],
+      providers: [provideTranslateService(), provideRouter([]), { provide: StoragePort, useValue: storage }],
     });
     // Le client de l'API est fourni par le composant lui-même (chargé à la demande) : le test le remplace là.
     TestBed.overrideComponent(SocialHomeEntryComponent, { set: { providers: [provideFakeSocialApi(api)] } });
@@ -55,12 +58,39 @@ describe('SocialHomeEntryComponent', () => {
     expect(api.calls).toEqual([]);
   });
 
+  it("annonce ouverte : un invité et un compte sans groupe n'ont pas la carte (l'annonce dit déjà la même chose), un membre l'a", async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-21T10:00:00Z'));
+    try {
+      const guest = await render(player(true), { announceOpen: true });
+      expect(card(guest)).toBeNull();
+      TestBed.resetTestingModule();
+
+      api.groups = { groups: [], maxGroups: 5 };
+      const noGroup = await render(player(false), { announceOpen: true });
+      expect(card(noGroup)).toBeNull();
+      TestBed.resetTestingModule();
+
+      api.groups = { groups: [GROUP], maxGroups: 5 };
+      api.scoresByGroup.set(GROUP.id, { groupId: GROUP.id, name: 'Potes', daily: DAILY_LOCKED });
+      const member = await render(player(false), { announceOpen: true });
+      expect(card(member)?.dataset['kind']).toBe('pending');
+      TestBed.resetTestingModule();
+
+      // Annonce fermée : la carte revient pour un invité.
+      const closed = await render(player(true));
+      expect(card(closed)?.dataset['kind']).toBe('guest');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("elle donne les groupes à l'annonce ; carte d'annonce fermée, un compte sans groupe voit la pastille « Nouveau »", async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-11-21T10:00:00Z'));
     try {
       api.groups = { groups: [], maxGroups: 5 };
-      const fixture = await render(player(false));
+      const fixture = await render(player(false), { announceOpen: true });
       const announce = TestBed.inject(GroupsAnnounce);
       const pill = () => (fixture.nativeElement as HTMLElement).querySelector('[data-testid="friends-card-new"]');
       expect(announce.groups()).toEqual([]);

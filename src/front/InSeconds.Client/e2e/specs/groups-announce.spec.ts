@@ -2,8 +2,8 @@ import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
 import { RunPage } from '../pages/run.page';
 
-// L'annonce des groupes : une carte au-dessus du défi ; la croix la remplace par la pastille de la carte amis et un point sur Classements, que
-// l'ouverture de Classements éteint. Tout reste dans le navigateur.
+// L'annonce des groupes : une carte au-dessus du défi ; la croix la remplace par la pastille de la carte amis et un point sur l'onglet Groupes, que
+// l'ouverture de l'onglet Groupes éteint. Tout reste dans le navigateur.
 
 test.describe("Accueil : l'annonce des groupes", () => {
   test.beforeEach(async ({ page, api }) => {
@@ -20,7 +20,7 @@ test.describe("Accueil : l'annonce des groupes", () => {
     });
   });
 
-  test("un invité : la carte, puis la croix la remplace par la pastille et le point, qui s'éteint avec Classements", async ({ page }) => {
+  test("un invité : la carte, puis la croix la remplace par la pastille et le point, qui s'éteint avec l'onglet Groupes", async ({ page }) => {
     const game = new GamePage(page);
     await game.goto();
     await game.waitForWelcome();

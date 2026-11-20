@@ -39,7 +39,7 @@ describe('GroupsAnnounce', () => {
     expect(storage.get('inseconds.announce.groups.closed')).toBe('1');
   });
 
-  it("ouvrir Classements éteint le point, la pastille reste", () => {
+  it("ouvrir l'onglet Groupes éteint le point, la pastille reste", () => {
     const { announce, chrome } = setup();
     announce.setGroups([]);
     announce.close();
