@@ -27,7 +27,7 @@ import { FriendsHomeCardComponent } from '../../ui/friends-home-card/friends-hom
   template: `
     @if (shownView(); as view) {
       <div class="pt-3">
-        <app-friends-home-card [view]="view" [lang]="lang()" [showLogin]="!chrome.accountCtaShown()" [showNew]="announce.chip()" [groups]="groups()" [canCreate]="canCreate()"
+        <app-friends-home-card [view]="view" [lang]="lang()" [showLogin]="!chrome.accountCtaShown()" [showNew]="announce.chip()" [groups]="groups()" [canCreate]="canCreate() && !announce.card()"
           [inviteState]="inviteState()" (groupSelected)="select($event)" (invite)="invite($event)" />
       </div>
     } @else if (reserving() && view() === null) {

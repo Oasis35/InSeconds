@@ -1556,7 +1556,7 @@
       "openRanking": "Group ranking",
       "newGroup": "Create a new group",
       "todayTitle": "{{ name }}, today",
-      "alone": "You're alone in this group. Invite your friends from the ranking.",
+      "alone": "You're alone in this group. Invite your friends below.",
       "nobodyFinished": "Nobody has finished today's challenge yet.",
       "memberPlayed": "{{ name }} has played",
       "memberWaiting": "{{ name }} hasn't played yet",

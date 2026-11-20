@@ -52,7 +52,7 @@ import { FriendPresence, FriendsCardView } from '../../domain/friends-card';
             <div class="flex flex-wrap gap-2" role="group" [attr.aria-label]="'social.home.groups' | translate" data-testid="friends-card-groups">
               @for (group of groups(); track group.id) {
                 <button type="button" (click)="groupSelected.emit(group.id)" [attr.aria-pressed]="group.id === groupId()" [attr.data-testid]="'friends-card-group-' + group.id"
-                  [attr.title]="group.name" class="min-h-11 max-w-[calc(50%-0.25rem)] truncate px-3 text-[13px] rounded-(--radius-button) touch-manipulation"
+                  [attr.title]="group.name" class="min-h-11 max-w-full truncate px-3 text-[13px] rounded-(--radius-button) touch-manipulation"
                   [style.border]="group.id === groupId() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
                   [style.color]="group.id === groupId() ? 'var(--text-hi)' : 'var(--text-muted)'">{{ group.name }}</button>
               }
@@ -134,7 +134,7 @@ import { FriendPresence, FriendsCardView } from '../../domain/friends-card';
           @if (canCreate()) {
             <!-- Déjà dans un groupe, on peut en ouvrir un autre tant qu'on n'a pas atteint le maximum : un lien discret, « Inviter un ami » reste le seul bouton. -->
             <a routerLink="/ranking/new" data-testid="friends-card-new-group"
-              class="self-center inline-flex items-center min-h-11 -my-2 px-3 text-sm underline underline-offset-4 touch-manipulation" style="color:var(--text-light)">
+              class="self-start inline-flex items-center min-h-11 -my-2 text-sm underline underline-offset-4 touch-manipulation" style="color:var(--text-light)">
               {{ 'social.home.newGroup' | translate }}
             </a>
           }

@@ -58,6 +58,9 @@
 
           @if (general()) {
             <app-general-ranking [lang]="language.current()" [openNameOnLoad]="editName()" />
+            @if (store.canCreate()) {
+              <a appButton variant="neutral" routerLink="/ranking/new" [block]="true" data-testid="ranking-new-group">{{ 'social.home.newGroup' | translate }}</a>
+            }
           } @else if (store.selected(); as group) {
             @if (alone()) {
               <!-- Seul dans le groupe : rien à classer, l'invitation est la seule action. -->
@@ -121,7 +124,7 @@
             }
             @if (store.canCreate()) {
               <!-- Même dans des groupes, on peut en ouvrir un autre tant qu'on n'a pas atteint le maximum : un vrai bouton, en contour neutre. -->
-              <a appButton variant="neutral" routerLink="/ranking/new" [block]="true" data-testid="ranking-new-group">{{ 'social.ranking.newGroup' | translate }}</a>
+              <a appButton variant="neutral" routerLink="/ranking/new" [block]="true" data-testid="ranking-new-group">{{ 'social.home.newGroup' | translate }}</a>
             }
             <button type="button" class="self-center text-xs underline cursor-pointer min-h-11 px-3" style="color:var(--text-muted)" (click)="leave()" data-testid="ranking-leave">
               {{ 'social.leave.link' | translate }}

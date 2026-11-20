@@ -259,6 +259,32 @@ describe('SocialHomeEntryComponent', () => {
     expect(TestBed.inject(LastGroup).get()).toBe(4);
   });
 
+  it("une déconnexion pendant la lecture d'une pastille : la carte invité reste, jamais les scores du groupe", async () => {
+    const fixture = await render(player(false));
+    const held = holdScores();
+
+    chip(fixture, 7)?.click();
+    TestBed.inject(SessionStore).signedOut();
+    await settle(fixture);
+    held[0].release();
+    await settle(fixture);
+
+    expect(card(fixture)?.dataset['kind']).toBe('guest');
+  });
+
+  it("annonce ouverte : un membre n'a pas, sur la carte amis, le lien « Créer un nouveau groupe » que l'annonce porte déjà", async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-21T10:00:00Z'));
+    try {
+      const fixture = await render(player(false), { announceOpen: true });
+
+      expect(card(fixture)?.dataset['kind']).toBe('pending');
+      expect(newGroup(fixture)).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("une pastille touchée : la carte passe à ce groupe, qui n'est lu que lui, et il devient le dernier regardé", async () => {
     const fixture = await render(player(false));
 
