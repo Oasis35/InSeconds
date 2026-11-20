@@ -3,7 +3,7 @@ import { GamePage } from '../pages/game.page';
 import { RunPage } from '../pages/run.page';
 
 // L'annonce des groupes : une carte au-dessus du défi ; la croix la remplace par la pastille de la carte amis et un point sur l'onglet Groupes, que
-// l'ouverture de Classements éteint. Tout reste dans le navigateur.
+// l'ouverture de l'onglet Groupes éteint. Tout reste dans le navigateur.
 
 test.describe("Accueil : l'annonce des groupes", () => {
   test.beforeEach(async ({ page, api }) => {

@@ -75,6 +75,11 @@ describe('SocialHomeEntryComponent', () => {
       api.scoresByGroup.set(GROUP.id, { groupId: GROUP.id, name: 'Potes', daily: DAILY_LOCKED });
       const member = await render(player(false), { announceOpen: true });
       expect(card(member)?.dataset['kind']).toBe('pending');
+      TestBed.resetTestingModule();
+
+      // Annonce fermée : la carte revient pour un invité.
+      const closed = await render(player(true));
+      expect(card(closed)?.dataset['kind']).toBe('guest');
     } finally {
       vi.useRealTimers();
     }

@@ -42,7 +42,6 @@ export class SocialHomeEntryComponent {
   private readonly language = inject(LanguageService);
 
   protected readonly view = signal<FriendsCardView | null>(null);
-  /** La carte d'un compte se lit (deux appels) : sa place est gardée, vide, tant qu'elle n'est pas là. */
   /**
    * La carte amis, sauf pour un invité ou un compte sans groupe tant que l'annonce des groupes est ouverte : elle dit déjà la même chose
    * (« Créer un compte », « Créer un groupe »), une seule tuile s'ajoute au défi. Fermée, la carte revient avec sa pastille « Nouveau ».
@@ -51,6 +50,7 @@ export class SocialHomeEntryComponent {
     const view = this.view();
     return view !== null && this.announce.card() && (view.kind === 'guest' || view.kind === 'no_group') ? null : view;
   });
+  /** La carte d'un compte se lit (deux appels) : sa place est gardée, vide, tant qu'elle n'est pas là. */
   protected readonly reserving = signal(false);
   protected readonly lang = computed<'fr' | 'en'>(() => (this.language.current() === 'en' ? 'en' : 'fr'));
   private latest = 0;
