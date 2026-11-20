@@ -51,4 +51,18 @@ describe('withMonthHistory', () => {
 
     expect(store.history()?.month).toBe('2026-10');
   });
+
+  it("ignore l'échec d'un mois quitté entre-temps", async () => {
+    let rejectFirst!: (error: Error) => void;
+    const first = new Promise<Month>((_, reject) => (rejectFirst = reject));
+    const store = create(month => (month === '2026-09' ? first : Promise.resolve({ month: '2026-10' })));
+
+    const slow = store.load('2026-09');
+    await store.load('2026-10');
+    rejectFirst(new Error('panne tardive'));
+    await slow;
+
+    expect(store.status()).toBe('ready');
+    expect(store.history()?.month).toBe('2026-10');
+  });
 });
