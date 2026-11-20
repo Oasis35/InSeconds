@@ -52,7 +52,7 @@ import { FriendPresence, FriendsCardView } from '../../domain/friends-card';
             <div class="flex flex-wrap gap-2" role="group" [attr.aria-label]="'social.home.groups' | translate" data-testid="friends-card-groups">
               @for (group of groups(); track group.id) {
                 <button type="button" (click)="groupSelected.emit(group.id)" [attr.aria-pressed]="group.id === groupId()" [attr.data-testid]="'friends-card-group-' + group.id"
-                  [attr.title]="group.name" class="min-h-11 max-w-full truncate px-3 text-[13px] rounded-(--radius-button) touch-manipulation"
+                  [attr.title]="group.name" class="min-h-11 max-w-full px-3 py-1.5 text-left text-[13px] leading-tight line-clamp-2 [overflow-wrap:anywhere] rounded-(--radius-button) touch-manipulation"
                   [style.border]="group.id === groupId() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
                   [style.color]="group.id === groupId() ? 'var(--text-hi)' : 'var(--text-muted)'">{{ group.name }}</button>
               }
