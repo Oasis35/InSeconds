@@ -8,7 +8,7 @@ Le défi du jour, sa série et ses gels, ses statistiques, le partage, l'histori
 
 ## Coque et pages
 
-- `DAILY_ROUTES` : la coque `DailyShellComponent` (route parente, `provideDailyApi()` et `provideGameplay()`) et ses deux pages, `HomePage` (`/`) et `DailyPage` (`/daily`, garde `leaveGameGuard`). `DAILY_HISTORY_ROUTES` (`provideDailyApi()` seul, sans lecteur) : `DailyHistoryPage`, `latestArchiveGuard`, `ArchivePage`.
+- `DAILY_ROUTES` : la coque `DailyShellComponent` (route parente, `provideDailyApi()` et `provideGameplay()`) et ses deux pages, `HomePage` (`/`) et `DailyPage` (`/daily`, garde `leaveGameGuard`). `DAILY_HISTORY_ROUTES` (`provideDailyApi()` seul, sans lecteur de manche) : `DailyHistoryPage`, `latestArchiveGuard`, `ReplayPage` (`a-reecouter`) et `EarProfilePage` (`profil`), déclarées avant `:date`, puis `ArchivePage`.
 - La coque fournit `DailyGameStore`, `TrackRoundStore`, `DailyShare`, `LostStreakNotice`, `GuestStreakNotice`, et les trois services de `feature/daily-shell/daily-view.ts` : `DailyStartup` (premier chargement : état du jour, puis toast « série perdue » d'un invité), `StreakSheetOpener` (panneau de série), `DailyResultView` (morceaux du résultat, score qui monte, partage). Les stores vivent tant qu'on passe d'une page à l'autre : le son lancé depuis la carte de l'accueil continue sur `/daily`.
 - La coque décide de la page : une manche (`playing`) est toujours sur `/daily`, tout écran d'accueil (`isHomeScreen`) est sur `/` (`replaceUrl`, query string gardée), pour tous les joueurs.
 - La coque pose dans `ShellChromeStore` `immersive` (manche en cours) et `dailyDone` (`welcome` / `resume_prompt` : faux, `done` / `already_played` : vrai), remis à faux à sa destruction.
@@ -40,16 +40,20 @@ Le défi du jour, sa série et ses gels, ses statistiques, le partage, l'histori
 
 ## Réponses des jours passés (`ArchivePage`)
 
-- `ArchiveStore` lit `GET /api/daily/archive/{date}` (public, en cache, que des pourcentages) et `…/me` (la partie du navigateur, jamais en cache, ne crée rien ; un échec n'empêche rien). Le seuil de 5 joueurs n'existe que côté serveur.
-- « Écouter l'extrait » ouvre `PreviewTrackDialog` avec une adresse **demandée à chaque ouverture** (`ArchiveStore.previewUrl`), jamais gardée.
-- Domaine pur `domain/archive.ts` (types, calendrier, dates dans la langue en UTC). Titre et description de la page (`PageMetaService.setPageText`) nomment le jour et ses artistes et reviennent à ceux du site en quittant la page (`resetPageText`) ; la date est le seul `h1`, le logo devient un lien (`homeLink`).
+- `ArchiveStore` lit `GET /api/daily/archive/{date}` (public, en cache, que des pourcentages) et `…/me` (la partie du navigateur, jamais en cache, ne crée rien ; un échec n'empêche rien). Le seuil de 5 joueurs n'existe que côté serveur. Les réponses s'affichent **d'office**, même pour un jour qu'il n'a pas joué : rien n'est caché derrière un bouton (pas de mode entraînement, `docs/architecture/decisions.md`).
+- Lignes compactes (`ArchiveTrackRowComponent`) : le détail (stats des joueurs, histogramme, écoute, badge Deezer) s'ouvre au toucher. L'écoute se fait **sur place** par l'`AudioPreviewPlayer` fourni par la page, avec une adresse **demandée à chaque nouvelle écoute** (`ArchiveStore.previewUrl`), jamais gardée (piège 14) ; un second toucher met en pause.
+- « Tes amis ce jour-là » arrive par `<app-day-friends-slot>` (jeton `DAY_FRIENDS_SLOT` de `core/shell`, rempli par `provideSocial()`) : le Daily ne voit pas les groupes. « Jouer le défi du jour » seulement si `ShellChromeStore.dailyDone` est faux. « ‹ Historique » ramène au mois du jour (`?mois=`).
+- Domaine pur `domain/archive.ts` (types, dates dans la langue en UTC). Titre et description de la page (`PageMetaService.setPageText`) nomment le jour et ses artistes et reviennent à ceux du site en quittant la page (`resetPageText`) ; la date est le seul `h1`, le logo devient un lien (`homeLink`).
 
 ## Historique du joueur
 
-`DailyHistoryPage` / `DailyHistoryStore` (`/history/daily`, `?mois=aaaa-mm`) ; la Survie a sa propre page (`RunHistoryPage`), les deux reliées par les pièces communes de `ui/history/` et les formats de `ui/format/day-label.ts` (les modes ne s'importent pas). Un navigateur inconnu du serveur (401) a un historique vide, pas une erreur.
+`DailyHistoryPage` (`/history/daily`, `?mois=aaaa-mm`) : la tuile du défi d'aujourd'hui (tuile de focus s'il reste à jouer), la carte du profil (`EarProfileCardComponent`, s'il a joué sur 8 semaines), le calendrier du mois (`HistoryCalendarComponent`, règles pures dans `domain/history.ts` : `calendarWeeks`, `scoreTint`, `dayLink`) et l'entrée « À réécouter ». Stores fournis par la page : `DailyHistoryStore`, `EarProfileStore`. La Survie a sa propre page (`RunHistoryPage`), les deux reliées par les onglets de `ui/history/` et les formats de `ui/format/day-label.ts` (les modes ne s'importent pas). Un navigateur inconnu du serveur (401) a un historique vide, pas une erreur.
+
+- **À réécouter** (`ReplayPage`, `ReplayStore`, `domain/replay.ts`) : pages de dix jours (`loadMore`), un filtre relit la première page, compteur `latest` contre les réponses périmées. Même écoute sur place que la page d'un jour ; le lecteur du bas (cadre cyan, la tuile de focus) porte le badge Deezer.
+- **Profil d'oreille** (`EarProfilePage`, `EarProfileStore`, `domain/ear-profile.ts` : `chartLine`, `chartBounds`, `favouriteStep`) : la courbe est `EarProfileChartComponent` (SVG, sa moyenne en ambre, les joueurs en pointillé violet). Sur le résultat du jour, `GameProfileCardComponent` lit les champs de `stats/today` (`averageScoreAfter`, `bestSinceDays`, `firstStepFound…`), sans appel de plus ; jamais la tuile de focus.
 
 ## Composants
 
 `ui/` ne voit aucun service de `core/` : langue, série et identité arrivent par des entrées. Les toasts de série utilisent le cadre `ui/toast-frame` (liseré orange pour la série, cyan pour le gel). Les accès de l'en-tête sont projetés dans `[brandRight]` du bandeau (`<app-account-link>`) et disparaissent en pleine manche : un toucher par erreur ouvrirait la confirmation de sortie. Le badge Deezer projeté dans `[roundBadge]` se place par rapport à la carte de révélation (`relative`), jamais par rapport à la page, sinon il remonte sur le logo.
 
-Tests à connaître : `daily-game.store.spec.ts`, `daily-screen.spec.ts`, `highlight.spec.ts`, `share-text.spec.ts`, `toasts.spec.ts`, `archive.store.spec.ts` ; E2E `happy-path`, `resume-game`, `streak-freeze`, `archive`, `share-button`, `multi-tab`.
+Tests à connaître : `daily-game.store.spec.ts`, `daily-screen.spec.ts`, `highlight.spec.ts`, `share-text.spec.ts`, `toasts.spec.ts`, `archive.store.spec.ts`, `history.spec.ts`, `replay.store.spec.ts`, `archive.page.spec.ts` ; E2E `happy-path`, `resume-game`, `streak-freeze`, `archive`, `share-button`, `multi-tab`.

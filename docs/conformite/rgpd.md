@@ -25,7 +25,7 @@ Panneau technique de l'admin : lecture anonyme de l'API publique de GitHub (`api
 
 ## Droits du joueur
 
-- **Copie** : `GET /api/players/me/export` (JSON : source d'arrivée, compte, appareils, puis une section par mode de jeu sous `modules` : `modules.daily` pour la série et les parties, `modules.runs` pour les parties (réponses), les playlists créées, le record, l'accès, le niveau et les défis d'amis reçus, `modules.social` pour les groupes), bouton « Tes données » du profil.
+- **Copie** : `GET /api/players/me/export` (JSON : source d'arrivée, compte, appareils, puis une section par mode de jeu sous `modules` : `modules.daily` pour la série (en cours et la meilleure) et les parties, `modules.runs` pour les parties (réponses), les playlists créées, le record, l'accès, le niveau et les défis d'amis reçus, `modules.social` pour les groupes), bouton « Tes données » du profil.
 - **Effacement** : `POST /api/players/me/delete` (pseudo retapé pour confirmer), effacement réel (`AccountErasure`, qui appelle l'`IPlayerDataContributor` de chaque mode de jeu dans la même transaction).
 - **Sans connexion possible** : commandes de secours sur le VPS `--export-player` / `--delete-player` (cf. [`src/back/CLAUDE.md`](../../src/back/CLAUDE.md) § Commandes), réponse sous un mois, uniquement à l'adresse du compte.
 
