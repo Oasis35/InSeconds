@@ -1,0 +1,54 @@
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { todayUtc } from '../../core/game-day/game-day';
+import { ShellChromeStore } from '../../core/shell/shell-chrome.store';
+import { StoragePort } from '../../core/storage/storage.port';
+import { Group } from '../domain/group';
+import { announceActive } from '../domain/groups-announce';
+
+const CLOSED_KEY = 'inseconds.announce.groups.closed';
+const RANKING_SEEN_KEY = 'inseconds.announce.groups.rankingSeen';
+
+/**
+ * L'annonce « Les groupes sont là » : d'abord une carte au-dessus du défi (`card`), puis, une fois fermée, une pastille « Nouveau » sur la carte
+ * amis et un point sur l'onglet Classements (`chip`, `dot`) pour un joueur qui n'a pas de groupe. Tout s'arrête au dernier jour de
+ * `GROUPS_ANNOUNCE_UNTIL`. Ce que le joueur a fermé ou vu ne vit que dans son navigateur (`localStorage`, deux drapeaux, aucun identifiant, rien
+ * n'est envoyé au serveur). Les groupes du joueur sont posés par la carte amis, qui les lit déjà.
+ */
+@Injectable({ providedIn: 'root' })
+export class GroupsAnnounce {
+  private readonly storage = inject(StoragePort);
+  private readonly chrome = inject(ShellChromeStore);
+
+  private readonly active = announceActive(todayUtc(new Date()));
+  private readonly _closed = signal(this.storage.get(CLOSED_KEY) === '1');
+  private readonly _rankingSeen = signal(this.storage.get(RANKING_SEEN_KEY) === '1');
+  private readonly _groups = signal<readonly Group[] | 'failed' | null>(null);
+
+  /** Les groupes du joueur : `null` tant qu'ils ne sont pas lus, `'failed'` si la lecture a échoué (la carte ne s'affiche pas). */
+  readonly groups = this._groups.asReadonly();
+  /** La carte d'annonce est à montrer (pas encore fermée). */
+  readonly card = computed(() => this.active && !this._closed());
+  private readonly member = computed(() => { const groups = this._groups(); return Array.isArray(groups) ? groups.length > 0 : null; });
+  /** La pastille « Nouveau » de la carte amis : carte fermée, pas de groupe. */
+  readonly chip = computed(() => this.active && this._closed() && this.member() === false);
+  /** Le point de l'onglet Classements : comme la pastille, jusqu'à ce que le joueur ait ouvert Classements. */
+  readonly dot = computed(() => this.chip() && !this._rankingSeen());
+
+  constructor() {
+    effect(() => this.chrome.setGroupsNew(this.dot()));
+  }
+
+  setGroups(groups: readonly Group[] | 'failed'): void {
+    this._groups.set(groups);
+  }
+
+  close(): void {
+    this.storage.set(CLOSED_KEY, '1');
+    this._closed.set(true);
+  }
+
+  markRankingSeen(): void {
+    this.storage.set(RANKING_SEEN_KEY, '1');
+    this._rankingSeen.set(true);
+  }
+}

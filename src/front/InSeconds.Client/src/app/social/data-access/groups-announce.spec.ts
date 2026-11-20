@@ -1,0 +1,83 @@
+import { TestBed } from '@angular/core/testing';
+import { ShellChromeStore } from '../../core/shell/shell-chrome.store';
+import { MemoryStoragePort, StoragePort } from '../../core/storage/storage.port';
+import { Group } from '../domain/group';
+import { GroupsAnnounce } from './groups-announce';
+
+describe('GroupsAnnounce', () => {
+  const group: Group = { id: 4, name: 'Potes', inviteCode: 'ABCD2345', memberCount: 3, maxMembers: 15, isOwner: true };
+
+  function setup(storage = new MemoryStoragePort(), today = '2026-11-21') {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(`${today}T10:00:00Z`));
+    TestBed.configureTestingModule({ providers: [{ provide: StoragePort, useValue: storage }] });
+    return { announce: TestBed.inject(GroupsAnnounce), chrome: TestBed.inject(ShellChromeStore), storage };
+  }
+
+  afterEach(() => vi.useRealTimers());
+
+  it("d'abord la carte, ni pastille ni point", () => {
+    const { announce, chrome } = setup();
+    announce.setGroups([]);
+    TestBed.tick();
+
+    expect(announce.card()).toBe(true);
+    expect(announce.chip()).toBe(false);
+    expect(chrome.groupsNew()).toBe(false);
+  });
+
+  it('la fermer la garde dans le navigateur et passe à la pastille et au point, pour un compte sans groupe', () => {
+    const { announce, chrome, storage } = setup();
+    announce.setGroups([]);
+    announce.close();
+    TestBed.tick();
+
+    expect(announce.card()).toBe(false);
+    expect(announce.chip()).toBe(true);
+    expect(chrome.groupsNew()).toBe(true);
+    expect(storage.get('inseconds.announce.groups.closed')).toBe('1');
+  });
+
+  it("ouvrir Classements éteint le point, la pastille reste", () => {
+    const { announce, chrome } = setup();
+    announce.setGroups([]);
+    announce.close();
+    announce.markRankingSeen();
+    TestBed.tick();
+
+    expect(chrome.groupsNew()).toBe(false);
+    expect(announce.chip()).toBe(true);
+  });
+
+  it('un membre, ou des groupes illisibles : ni pastille ni point', () => {
+    const { announce, chrome } = setup();
+    announce.close();
+    announce.setGroups([group]);
+    TestBed.tick();
+    expect(announce.chip()).toBe(false);
+    expect(chrome.groupsNew()).toBe(false);
+
+    announce.setGroups('failed');
+    TestBed.tick();
+    expect(announce.chip()).toBe(false);
+  });
+
+  it('une carte déjà fermée au dernier passage reste fermée', () => {
+    const storage = new MemoryStoragePort();
+    storage.set('inseconds.announce.groups.closed', '1');
+    const { announce } = setup(storage);
+
+    expect(announce.card()).toBe(false);
+  });
+
+  it('après le dernier jour, plus rien', () => {
+    const { announce, chrome } = setup(new MemoryStoragePort(), '2026-12-12');
+    announce.setGroups([]);
+    announce.close();
+    TestBed.tick();
+
+    expect(announce.card()).toBe(false);
+    expect(announce.chip()).toBe(false);
+    expect(chrome.groupsNew()).toBe(false);
+  });
+});

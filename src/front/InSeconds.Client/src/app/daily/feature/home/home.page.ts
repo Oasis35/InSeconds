@@ -5,6 +5,7 @@ import { ErrorReportingService } from '../../../core/errors/error-reporting.serv
 import { LanguageService } from '../../../core/i18n/language.service';
 import { InstagramLinkComponent } from '../../../core/shell/instagram-link/instagram-link.component';
 import { AccountLinkComponent } from '../../../core/shell/account-link/account-link.component';
+import { HomeAnnounceSlotComponent } from '../../../core/shell/home-announce-slot/home-announce-slot.component';
 import { HomeModeEntriesComponent } from '../../../core/shell/home-mode-entries/home-mode-entries.component';
 import { secondsUntilMidnightUtc, timeLeft, todayUtc } from '../../../core/game-day/game-day';
 import { BrandComponent } from '../../../ui/brand/brand.component';
@@ -30,7 +31,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
 @Component({
   selector: 'app-home-page',
   imports: [
-    TranslatePipe, RouterLink, ButtonComponent, DecorBackgroundComponent, BrandComponent, InstagramLinkComponent, AccountLinkComponent, HomeModeEntriesComponent, HomeLegalLineComponent,
+    TranslatePipe, RouterLink, ButtonComponent, DecorBackgroundComponent, BrandComponent, InstagramLinkComponent, AccountLinkComponent, HomeAnnounceSlotComponent, HomeModeEntriesComponent, HomeLegalLineComponent,
     HomeChallengeCardComponent, HomeDoneCardComponent, HomeAbandonedCardComponent, StatusScreenComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,6 +50,10 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
             }
           </app-brand>
         </header>
+
+        @if (screen() === 'welcome' || screen() === 'resume_prompt' || screen() === 'already_played' || screen() === 'done') {
+          <app-home-announce-slot />
+        }
 
         @switch (screen()) {
           @case ('welcome') {

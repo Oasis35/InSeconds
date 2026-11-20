@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, u
 import { LanguageService } from '../../../core/i18n/language.service';
 import { SessionStore } from '../../../core/session/session.store';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
+import { GroupsAnnounce } from '../../data-access/groups-announce';
 import { LastGroup } from '../../data-access/last-group';
 import { SocialApi } from '../../data-access/social.api';
 import { provideSocialApi } from '../../data-access/social.providers';
@@ -23,7 +24,7 @@ import { FriendsHomeCardComponent } from '../../ui/friends-home-card/friends-hom
   host: { class: 'block' },
   template: `
     @if (view(); as view) {
-      <div class="pt-3"><app-friends-home-card [view]="view" [lang]="lang()" [showLogin]="!chrome.accountCtaShown()" /></div>
+      <div class="pt-3"><app-friends-home-card [view]="view" [lang]="lang()" [showLogin]="!chrome.accountCtaShown()" [showNew]="announce.chip()" /></div>
     } @else if (reserving()) {
       <!-- La place de la carte pendant sa lecture : la carte Survie, souvent prête avant, ne saute pas quand celle-ci arrive au-dessus. -->
       <div class="pt-3" aria-hidden="true" data-testid="friends-card-placeholder">
@@ -37,6 +38,7 @@ export class SocialHomeEntryComponent {
   protected readonly chrome = inject(ShellChromeStore);
   private readonly api = inject(SocialApi);
   private readonly lastGroup = inject(LastGroup);
+  protected readonly announce = inject(GroupsAnnounce);
   private readonly language = inject(LanguageService);
 
   protected readonly view = signal<FriendsCardView | null>(null);
@@ -59,6 +61,7 @@ export class SocialHomeEntryComponent {
   private async load(linked: boolean): Promise<void> {
     const request = ++this.latest;
     if (!linked) {
+      this.announce.setGroups([]);
       this.view.set({ kind: 'guest' });
       return;
     }
@@ -66,9 +69,11 @@ export class SocialHomeEntryComponent {
     if (this.view() === null) this.reserving.set(true);
     try {
       const { groups } = await this.api.myGroups();
+      this.announce.setGroups(groups);
       const groupId = preferredGroupId(groups.map(group => group.id), this.lastGroup.get());
       view = groupId === null ? { kind: 'no_group' } : groupCardView(await this.api.scores(groupId));
     } catch {
+      this.announce.setGroups('failed');
       view = null;
     }
     if (request !== this.latest) return;

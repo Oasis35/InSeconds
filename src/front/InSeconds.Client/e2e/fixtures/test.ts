@@ -27,6 +27,11 @@ export const test = base.extend<E2EFixtures>({
       (window as { __disableHealthPolling?: boolean }).__disableHealthPolling = true;
       try {
         localStorage.setItem('lang', 'fr');
+        // L'annonce des groupes est déjà passée (sauf pour `groups-announce.spec.ts`, qui pose `e2e.announce`) : elle ne s'ajoute pas aux autres parcours.
+        if (!localStorage.getItem('e2e.announce')) {
+          localStorage.setItem('inseconds.announce.groups.closed', '1');
+          localStorage.setItem('inseconds.announce.groups.rankingSeen', '1');
+        }
       } catch {
         // localStorage indisponible - ignore
       }
