@@ -1449,7 +1449,7 @@
         "account": "Profile",
         "login": "Log in",
         "history": "History",
-        "ranking": "Rankings"
+        "ranking": "Groups"
       },
       "band": {
         "title": "Today’s challenge is waiting",
@@ -1511,9 +1511,8 @@
       "close": "Close",
       "title": "Groups are here",
       "noGroup": "A leaderboard just for you and your friends: who guesses fastest?",
-      "guest": "A leaderboard with friends. You need an account to start one.",
-      "member": "Send the link to \"{{ name }}\": everyone shows up in your leaderboard.",
-      "invite": "Invite friends"
+      "member": "Another group of friends? It will have its own leaderboard.",
+      "guest": "A leaderboard with friends. You need an account to start one."
     },
     "general": {
       "tab": "Overall",
@@ -1540,7 +1539,6 @@
       "loading": "Loading…",
       "error": "The ranking is not responding.",
       "groupsLabel": "My groups",
-      "newGroup": "+ Group",
       "me": "You",
       "unplayed": "Not played yet",
       "privacy": "Only the group's members see your username."
@@ -1554,8 +1552,11 @@
     },
     "home": {
       "guestBody": "Free, no password. Your games follow you on all your devices.",
+      "groups": "Your groups",
+      "openRanking": "Group ranking",
+      "newGroup": "Create a new group",
       "todayTitle": "{{ name }}, today",
-      "alone": "You're alone in this group. Invite your friends from the ranking.",
+      "alone": "You're alone in this group. Invite your friends below.",
       "nobodyFinished": "Nobody has finished today's challenge yet.",
       "memberPlayed": "{{ name }} has played",
       "memberWaiting": "{{ name }} hasn't played yet",
@@ -1598,7 +1599,7 @@
       "already": "You are already in this group.",
       "seeRanking": "See the ranking",
       "full": "This group is full.",
-      "accountRequired": "You need an account to join a group. The invitation will wait for you in the Ranking tab.",
+      "accountRequired": "You need an account to join a group. The invitation will wait for you in the Groups tab.",
       "failed": "Joining did not work. Try again.",
       "notFoundTitle": "Invitation not found",
       "notFoundBody": "This link no longer leads to a group. Ask your friend for a new one.",

@@ -63,7 +63,7 @@ export const GroupsStore = signalStore(
           // Une relecture (après « Quitter ») repart de zéro : une réponse encore en route est ignorée, rien d'un groupe quitté ne reste affiché.
           scoresRequest++;
           patchState(store, { status: 'ready', groups, maxGroups, ...NOTHING_READ });
-          // Sans groupe demandé (l'onglet « Classements »), le dernier regardé : la barre du bas ne le remplace pas par le premier.
+          // Sans groupe demandé (l'onglet « Groupes »), le dernier regardé : la barre du bas ne le remplace pas par le premier.
           const target = preferredGroupId(groups.map(group => group.id), preferredId ?? lastGroup.get());
           if (target !== null) await show(target);
           else patchState(store, { selectedId: null });

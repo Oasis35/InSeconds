@@ -110,6 +110,93 @@ describe('FriendsHomeCardComponent', () => {
     expect(one(element, 'friends-card-top')).toBeNull();
   });
 
+  describe('plusieurs groupes', () => {
+    const pending: FriendsCardView = {
+      kind: 'pending', groupId: 4, name: 'Potes', played: 0, total: 2,
+      members: [{ pseudo: 'Moi', isMe: true, played: false }, { pseudo: 'Léa', isMe: false, played: false }],
+    };
+    const groups = [
+      { id: 4, name: 'Potes', inviteCode: 'A', memberCount: 2, maxMembers: 15, isOwner: true },
+      { id: 7, name: 'Famille', inviteCode: 'B', memberCount: 2, maxMembers: 15, isOwner: false },
+    ];
+
+    function renderWith(view: FriendsCardView, list: typeof groups) {
+      TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
+      const fixture = TestBed.createComponent(FriendsHomeCardComponent);
+      fixture.componentRef.setInput('view', view);
+      fixture.componentRef.setInput('groups', list);
+      fixture.detectChanges();
+      return fixture;
+    }
+
+    it('une pastille par groupe, celui qu\'on regarde marqué ; toucher une autre la signale', () => {
+      const fixture = renderWith(pending, groups);
+      const element = fixture.nativeElement as HTMLElement;
+      const chosen: number[] = [];
+      fixture.componentInstance.groupSelected.subscribe(id => chosen.push(id));
+
+      expect(all(element, 'friends-card-groups')).toHaveLength(1);
+      expect(one(element, 'friends-card-group-4')?.getAttribute('aria-pressed')).toBe('true');
+      expect(one(element, 'friends-card-group-7')?.getAttribute('aria-pressed')).toBe('false');
+      one(element, 'friends-card-group-7')?.click();
+      expect(chosen).toEqual([7]);
+    });
+
+    it('le lien du classement nomme le groupe en cours', () => {
+      const element = renderWith(pending, groups).nativeElement as HTMLElement;
+
+      expect(one(element, 'friends-card-ranking')?.textContent?.trim()).toBe('social.home.openRanking');
+    });
+
+    it("« Inviter un ami » : un vrai bouton neutre qui signale le groupe en cours, et dit l'état du partage", () => {
+      const fixture = renderWith(pending, groups);
+      const element = fixture.nativeElement as HTMLElement;
+      const invited: number[] = [];
+      fixture.componentInstance.invite.subscribe(id => invited.push(id));
+
+      const invite = one(element, 'friends-card-invite');
+      expect(invite?.tagName).toBe('BUTTON');
+      expect(invite?.classList).toContain('app-button--neutral');
+      expect(invite?.textContent).toContain('social.alone.invite');
+      invite?.click();
+      expect(invited).toEqual([4]);
+
+      fixture.componentRef.setInput('inviteState', 'copied');
+      fixture.detectChanges();
+      expect(one(element, 'friends-card-invite')?.textContent).toContain('social.invite.copied');
+    });
+
+    it("pas d'invitation pour un invité ni pour un compte sans groupe", () => {
+      expect(one(render({ kind: 'guest' }), 'friends-card-invite')).toBeNull();
+      TestBed.resetTestingModule();
+      expect(one(render({ kind: 'no_group' }), 'friends-card-invite')).toBeNull();
+    });
+
+    it('« Créer un nouveau groupe » : un lien souligné discret vers la création, seulement sous le maximum', () => {
+      TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
+      const fixture = TestBed.createComponent(FriendsHomeCardComponent);
+      fixture.componentRef.setInput('view', pending);
+      fixture.componentRef.setInput('canCreate', true);
+      fixture.detectChanges();
+      const element = fixture.nativeElement as HTMLElement;
+
+      const create = one(element, 'friends-card-new-group');
+      expect(create?.getAttribute('href')).toBe('/ranking/new');
+      expect(create?.classList).not.toContain('app-button');
+      expect(create?.classList).toContain('underline');
+
+      fixture.componentRef.setInput('canCreate', false);
+      fixture.detectChanges();
+      expect(one(element, 'friends-card-new-group')).toBeNull();
+    });
+
+    it("un seul groupe, un invité ou un compte sans groupe : aucune pastille", () => {
+      expect(one(renderWith(pending, groups.slice(0, 1)).nativeElement as HTMLElement, 'friends-card-groups')).toBeNull();
+      TestBed.resetTestingModule();
+      expect(one(renderWith({ kind: 'no_group' }, groups).nativeElement as HTMLElement, 'friends-card-groups')).toBeNull();
+    });
+  });
+
   it("une pastille dit qui a joué au lecteur d'écran, phrase accordée", () => {
     const element = render({
       kind: 'pending', groupId: 4, name: 'Potes', played: 1, total: 2,

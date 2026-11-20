@@ -54,14 +54,13 @@
                  [style.background]="!general() && group.id === store.selectedId() ? 'rgb(var(--rgb-accent-3) / 0.1)' : null"
                  [style.color]="!general() && group.id === store.selectedId() ? 'var(--text-hi)' : 'var(--text-muted)'">{{ group.name }}</a>
             }
-            @if (store.groups().length && store.canCreate()) {
-              <a routerLink="/ranking/new" class="flex items-center px-4 min-h-11 text-sm touch-manipulation rounded-(--radius-button)" data-testid="ranking-new"
-                 style="border:1px solid var(--color-accent-3);color:var(--color-accent-3)">{{ 'social.ranking.newGroup' | translate }}</a>
-            }
           </nav>
 
           @if (general()) {
             <app-general-ranking [lang]="language.current()" [openNameOnLoad]="editName()" />
+            @if (store.canCreate()) {
+              <a appButton variant="neutral" routerLink="/ranking/new" [block]="true" data-testid="ranking-new-group">{{ (store.groups().length > 0 ? 'social.home.newGroup' : 'social.empty.create') | translate }}</a>
+            }
           } @else if (store.selected(); as group) {
             @if (alone()) {
               <!-- Seul dans le groupe : rien à classer, l'invitation est la seule action. -->
@@ -115,13 +114,17 @@
               }
 
               <div class="flex flex-col gap-2">
-                <button appButton type="button" variant="accent" [block]="true" (click)="share.invite(group)" data-testid="ranking-invite">
+                <button appButton type="button" variant="accent" [block]="true" class="[overflow-wrap:anywhere]" (click)="share.invite(group)" data-testid="ranking-invite">
                   @if (share.copied()) { {{ 'social.invite.copied' | translate }} }
                   @else if (share.failed()) { {{ 'social.invite.failed' | translate }} }
                   @else { {{ 'social.invite.button' | translate: { name: group.name } }} }
                 </button>
                 <p class="text-xs text-center" style="color:var(--text-muted)">{{ 'social.ranking.privacy' | translate }}</p>
               </div>
+            }
+            @if (store.canCreate()) {
+              <!-- Même dans des groupes, on peut en ouvrir un autre tant qu'on n'a pas atteint le maximum : un vrai bouton, en contour neutre. -->
+              <a appButton variant="neutral" routerLink="/ranking/new" [block]="true" data-testid="ranking-new-group">{{ 'social.home.newGroup' | translate }}</a>
             }
             <button type="button" class="self-center text-xs underline cursor-pointer min-h-11 px-3" style="color:var(--text-muted)" (click)="leave()" data-testid="ranking-leave">
               {{ 'social.leave.link' | translate }}

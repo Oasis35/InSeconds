@@ -39,7 +39,7 @@ describe('GroupsAnnounce', () => {
     expect(storage.get('inseconds.announce.groups.closed')).toBe('1');
   });
 
-  it("ouvrir Classements éteint le point, la pastille reste", () => {
+  it("ouvrir l'onglet Groupes éteint le point, la pastille reste", () => {
     const { announce, chrome } = setup();
     announce.setGroups([]);
     announce.close();
@@ -61,6 +61,20 @@ describe('GroupsAnnounce', () => {
     announce.setGroups('failed');
     TestBed.tick();
     expect(announce.chip()).toBe(false);
+  });
+
+  it('un compte peut créer un groupe sous le maximum du serveur, plus au maximum ni sans lecture', () => {
+    const { announce } = setup();
+    expect(announce.canCreate()).toBe(false);
+
+    announce.setGroups([group], 5);
+    expect(announce.canCreate()).toBe(true);
+
+    announce.setGroups([group], 1);
+    expect(announce.canCreate()).toBe(false);
+
+    announce.setGroups('failed');
+    expect(announce.canCreate()).toBe(false);
   });
 
   it("la déconnexion efface les groupes lus : l'ancien compte ne s'affiche plus", () => {

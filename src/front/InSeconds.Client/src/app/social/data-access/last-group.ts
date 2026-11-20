@@ -4,8 +4,8 @@ import { StoragePort } from '../../core/storage/storage.port';
 const KEY = 'inseconds.lastGroup';
 
 /**
- * Le dernier groupe que le joueur a regardé au classement, gardé dans le navigateur pour que la carte amis de l'accueil montre celui-là quand il
- * est dans plusieurs groupes. Un identifiant seulement, jamais un nom ni un pseudo.
+ * Le dernier groupe que le joueur a regardé (au classement, ou choisi sur la carte amis de l'accueil), gardé dans le navigateur pour que la carte
+ * montre celui-là quand il est dans plusieurs groupes. Un identifiant seulement, jamais un nom ni un pseudo.
  */
 @Injectable({ providedIn: 'root' })
 export class LastGroup {

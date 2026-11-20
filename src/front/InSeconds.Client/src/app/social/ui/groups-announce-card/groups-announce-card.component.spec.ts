@@ -9,7 +9,6 @@ describe('GroupsAnnounceCardComponent', () => {
     TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
     const fixture = TestBed.createComponent(GroupsAnnounceCardComponent);
     fixture.componentRef.setInput('variant', variant);
-    fixture.componentRef.setInput('groupName', 'Potes');
     fixture.detectChanges();
     return { fixture, element: fixture.nativeElement as HTMLElement };
   }
@@ -29,17 +28,23 @@ describe('GroupsAnnounceCardComponent', () => {
     expect(action(element)?.classList).toContain('app-button--accent');
   });
 
-  it("un membre : le bouton demande le partage du lien, la croix ferme", () => {
-    const { fixture, element } = render('member');
-    let invited = 0;
+  it("un membre : sa propre phrase et « Créer un nouveau groupe » en contour neutre, sans invitation dans un groupe précis", () => {
+    const { element } = render('member');
+
+    expect(action(element)?.getAttribute('href')).toBe('/ranking/new');
+    expect(action(element)?.classList).toContain('app-button--neutral');
+    expect(action(element)?.textContent?.trim()).toBe('social.home.newGroup');
+    expect(element.textContent).toContain('social.announce.member');
+    expect(element.textContent).not.toContain('social.announce.noGroup');
+  });
+
+  it('la croix ferme', () => {
+    const { fixture, element } = render('no_group');
     let dismissed = 0;
-    fixture.componentInstance.invite.subscribe(() => invited++);
     fixture.componentInstance.dismiss.subscribe(() => dismissed++);
 
-    action(element)?.click();
     element.querySelector<HTMLElement>('[data-testid="groups-announce-close"]')?.click();
 
-    expect(invited).toBe(1);
     expect(dismissed).toBe(1);
   });
 });
