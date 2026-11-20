@@ -1,7 +1,7 @@
 import { HttpBackend, HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { environment } from '../../../environments/environment';
-import { DEPLOYED_AT } from '../shell/deployed-at';
+import { DEPLOYED_AT } from '../build/deployed-at';
 import { maskLinkCodes } from './link-path';
 
 export type ClientErrorSource = 'js' | 'http';

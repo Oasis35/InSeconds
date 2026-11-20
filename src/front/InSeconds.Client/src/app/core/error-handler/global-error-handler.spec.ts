@@ -2,7 +2,7 @@ import type { MockedObject } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { GlobalErrorHandler } from './global-error-handler';
-import { ErrorReportingService } from './error-reporting.service';
+import { ErrorReportingService } from '../errors/error-reporting.service';
 import { VersionService } from '../version/version.service';
 
 describe('GlobalErrorHandler', () => {

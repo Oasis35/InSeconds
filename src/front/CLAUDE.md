@@ -63,7 +63,7 @@ Un client par module dans `src/app/api/<module>/api.generated.ts` (fichier gén�
 ## Stores et adaptateurs
 
 - **Adaptateur `XApi`** (`data-access/`, seule porte vers son client généré) : rend des types du domaine. Le JSON livre les dates en texte alors que le client les annonce en `Date`, `undefined` devient `null`, un `204` levé par le client devient `null`. Un refus attendu rend une issue typée (`{ kind: 'ok', … } | { kind: 'already_played' } | …`), pas une exception. **Le store ne lit jamais un DTO NSwag.**
-- **Store** (`signalStore`) : méthodes `async`/`await` avec `try/catch`, statut local par action (`…Status`) ou `withRequestStatus()` (`core/store/`, optionnel : `setPending()`, `setFulfilled()`, `setError(await toAppError(e))`). Une lecture qui peut être doublée garde un compteur (`let latest = 0`) et ignore une réponse périmée. Minuteries et abonnements libérés dans `withHooks({ onDestroy })`.
+- **Store** (`signalStore`) : méthodes `async`/`await` avec `try/catch`, statut local par action (`…Status`) ou `withRequestStatus()` (`core/store/`, optionnel : `setPending()`, `setFulfilled()`, `setError(await toAppError(e))`). Une lecture qui peut être doublée garde un compteur (`let latest = 0`) et ignore une réponse périmée. L'historique d'un mois d'un mode (`DailyHistoryStore`, `RunHistoryStore`) est `withMonthHistory<H>(() => lecture)` de `core/store/` : le mode ne fournit que sa lecture. Minuteries et abonnements libérés dans `withHooks({ onDestroy })`.
 - État protégé (défaut de SignalStore), exposé en lecture seule, modifié par les méthodes. Un nom d'état n'est jamais celui d'une méthode du même store (ils se masquent : suffixe `…Status`).
 - Après une écriture, relire plutôt que muter l'état localement (règle de l'admin et des groupes).
 

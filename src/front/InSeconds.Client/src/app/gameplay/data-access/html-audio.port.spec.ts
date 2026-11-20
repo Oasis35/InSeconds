@@ -46,6 +46,15 @@ describe('HtmlAudioPort', () => {
     }
   }
 
+  /** Attend que la position dépasse `min` (le démarrage du son n'a pas de durée garantie). */
+  async function untilPositionAbove(min: number, timeout = 4000): Promise<void> {
+    const since = performance.now();
+    while (port.position() <= min) {
+      if (performance.now() - since > timeout) throw new Error(`position jamais au-dessus de ${min} (état : ${port.state()})`);
+      await sleep(4);
+    }
+  }
+
   async function loaded(url = tone): Promise<void> {
     port.load(url);
     await until('ready');
@@ -77,8 +86,9 @@ describe('HtmlAudioPort', () => {
     const elapsed = await until('finished');
 
     expect(elapsed).toBeGreaterThanOrEqual(470);
-    expect(elapsed).toBeLessThan(1500);
+    // « Ni plus » se mesure sur le son (l'extrait dure 1,5 s), pas sur l'horloge : le démarrage varie avec la charge de la machine.
     expect(element.currentTime).toBeGreaterThanOrEqual(0.49);
+    expect(element.currentTime).toBeLessThan(1);
     expect(port.position()).toBe(0.5);
     expect(history).toEqual(['loading', 'ready', 'playing', 'finished']);
   });
@@ -86,9 +96,9 @@ describe('HtmlAudioPort', () => {
   it('avance la position pendant la lecture', async () => {
     await loaded();
     port.playUntil(1);
-    await sleep(400);
+    // Le son peut démarrer tard sur une machine chargée : on attend que la position bouge, sans supposer un délai.
+    await untilPositionAbove(0.1);
     expect(port.state()).toBe('playing');
-    expect(port.position()).toBeGreaterThan(0.1);
     expect(port.position()).toBeLessThan(1);
     await until('finished');
     expect(port.position()).toBe(1);
@@ -599,8 +609,8 @@ describe('HtmlAudioPort', () => {
       expect(play).toHaveBeenCalledTimes(1);
       expect(element.src).toMatch(/^blob:/);
       expect(port.state()).toBe('idle');
-      await sleep(100);
-      expect(element.paused).toBe(true);
+      // Le silence dure 10 ms ; sur une machine chargée, sa fin peut tarder bien plus que 100 ms.
+      await vi.waitFor(() => expect(element.paused).toBe(true), { timeout: 2000 });
     });
 
     it("déverrouillé avant le lecteur (clic de l'accueil), l'élément est le même et le lecteur ne rejoue pas de silence", async () => {

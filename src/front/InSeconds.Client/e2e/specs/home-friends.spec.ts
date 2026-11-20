@@ -41,10 +41,7 @@ test.describe("Accueil : la carte amis", () => {
   });
 
   test("un compte sans groupe : « Créer un groupe » ouvre la création", async ({ page }) => {
-    await new RunPage(page).loginAsPlayer('nina-accueil@e2e.test', 'NinaAccueil');
-    const game = new GamePage(page);
-    await game.goto();
-    await game.waitForWelcome();
+    await new GamePage(page).gotoAsNewPlayer('nina-accueil@e2e.test', 'NinaAccueil');
 
     const card = page.getByTestId('friends-card');
     await expect(card).toHaveAttribute('data-kind', 'no_group');
