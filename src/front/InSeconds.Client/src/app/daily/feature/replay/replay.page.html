@@ -14,7 +14,7 @@
       <p class="text-sm" style="color:var(--text-muted)">{{ 'daily.replay.intro' | translate }}</p>
     </header>
 
-    <div class="flex gap-1.5" role="group" [attr.aria-label]="'daily.replay.filters' | translate">
+    <fieldset class="flex gap-1.5 border-0 p-0 m-0 min-w-0" [attr.aria-label]="'daily.replay.filters' | translate">
       @for (f of filters(); track f.id) {
         <button type="button" (click)="select(f.id)" [attr.aria-pressed]="store.filter() === f.id" [attr.data-testid]="'replay-filter-' + f.id"
                 class="flex-1 min-h-11 px-1 text-[13px] rounded-(--radius-button) touch-manipulation"
@@ -22,7 +22,7 @@
                 [style.background]="store.filter() === f.id ? 'rgb(var(--rgb-accent-3) / 0.1)' : null"
                 [style.color]="store.filter() === f.id ? 'var(--text-hi)' : 'var(--text-muted)'">{{ 'daily.replay.filter.' + f.id | translate: { count: f.count } }}</button>
       }
-    </div>
+    </fieldset>
 
     @switch (store.status()) {
       @case ('loading') {
@@ -66,8 +66,8 @@
         </span>
         <app-deezer-badge class="shrink-0" [deezerTrackId]="playing.track.deezerTrackId" [lang]="language.current()" width="98" height="14" />
       </div>
-      <div class="h-[3px] rounded-full" style="background:rgb(var(--rgb-accent-2) / 0.18)" role="progressbar"
-           [attr.aria-valuenow]="player.progress()" aria-valuemin="0" aria-valuemax="100" [attr.aria-label]="'daily.archive.preview30s' | translate">
+      <!-- Décoratif : le rond d'écoute dit déjà si l'extrait joue. -->
+      <div class="h-[3px] rounded-full" style="background:rgb(var(--rgb-accent-2) / 0.18)" aria-hidden="true">
         <div class="h-full rounded-full" style="background:var(--color-accent-2)" [style.width.%]="player.progress()"></div>
       </div>
     </div>

@@ -13,7 +13,7 @@
       <h1 class="text-2xl font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'daily.profile.title' | translate }}</h1>
     </header>
 
-    <div class="flex gap-1.5" role="group" [attr.aria-label]="'daily.profile.periods' | translate">
+    <fieldset class="flex gap-1.5 border-0 p-0 m-0 min-w-0" [attr.aria-label]="'daily.profile.periods' | translate">
       @for (period of periods; track period) {
         <button type="button" (click)="select(period)" [attr.aria-pressed]="store.period() === period" [attr.data-testid]="'profile-period-' + period"
                 class="flex-1 min-h-11 px-1 text-[13px] rounded-(--radius-button) touch-manipulation"
@@ -21,7 +21,7 @@
                 [style.background]="store.period() === period ? 'rgb(var(--rgb-accent-3) / 0.1)' : null"
                 [style.color]="store.period() === period ? 'var(--text-hi)' : 'var(--text-muted)'">{{ 'daily.profile.period.' + period | translate }}</button>
       }
-    </div>
+    </fieldset>
 
     @if (store.status() === 'error') {
       <app-status-screen titleKey="daily.error.title" bodyKey="daily.error.body" [errorCode]="errorReporting.lastErrorCode()" (retry)="retry()" />

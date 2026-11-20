@@ -107,7 +107,14 @@ export class HistoryCalendarComponent {
       link: dayLink(cell, this.today),
       scoreText: this.format(cell.score),
       background: played ? `rgb(var(--rgb-accent-3) / ${cell.tint})` : null,
-      color: played && cell.tint > 0.6 ? 'var(--text-on-orange)' : cell.state === 'missed' || cell.state === 'unfinished' || cell.state === 'resumable' ? 'var(--text-muted)' : 'var(--text-hi)',
+      color: textColor(cell),
     };
   }
+}
+
+/** La couleur du chiffre d'une case : foncé sur un ambre vif, atténué pour un jour pas joué ou pas fini, clair sinon. */
+function textColor(cell: CalendarCell): string {
+  if (cell.state === 'played' && cell.tint > 0.6) return 'var(--text-on-orange)';
+  if (cell.state === 'missed' || cell.state === 'unfinished' || cell.state === 'resumable') return 'var(--text-muted)';
+  return 'var(--text-hi)';
 }

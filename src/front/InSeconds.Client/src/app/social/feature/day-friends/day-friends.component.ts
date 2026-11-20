@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { PointsPipe } from '../../../ui/format/points.pipe';
 import { LastGroup } from '../../data-access/last-group';
@@ -63,7 +63,7 @@ import { GroupDayScores } from '../../domain/group-scores';
     }
   `,
 })
-export class DayFriendsComponent {
+export class DayFriendsComponent implements OnInit {
   /** Le jour (`aaaa-mm-jj`), posé par l'emplacement de `core`. */
   readonly date = input.required<string>();
 
@@ -79,12 +79,15 @@ export class DayFriendsComponent {
     (this.scores()?.entries ?? []).map(entry => ({ ...entry, initial: initialOf(entry.pseudo), avatar: avatarOf(entry.pseudo) })));
 
   constructor() {
-    void this.loadGroups();
     effect(() => {
       const date = this.date();
       const groupId = this.groupId();
       if (groupId !== null) untracked(() => void this.loadScores(groupId, date));
     });
+  }
+
+  ngOnInit(): void {
+    void this.loadGroups();
   }
 
   protected select(groupId: number): void {
