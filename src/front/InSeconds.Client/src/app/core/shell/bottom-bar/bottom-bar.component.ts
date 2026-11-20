@@ -8,9 +8,9 @@ import { DAILY_DONE_LOADER } from '../daily-done-loader';
 import { ShellChromeStore } from '../shell-chrome.store';
 
 /**
- * La barre du bas : Jouer (l’accueil : le jeu du jour et la carte Survie), Classements, Historique et Profil (« Connexion » pour un invité).
+ * La barre du bas : Jouer (l’accueil : le jeu du jour et la carte Survie), Groupes (`/ranking`), Historique et Profil (« Connexion » pour un invité).
  * Pour tous les joueurs, sur l'accueil, sur Survie, sur le classement, l'historique et le profil, et jamais pendant une manche.
- * « Jouer » respire en cyan tant que le défi du jour n'est pas joué. « Classements » porte un point violet tant que l'annonce des groupes n'est pas passée par là (`ShellChromeStore.groupsNew`). Les liens légaux ne sont plus dans la barre : ils vivent sous la carte Survie.
+ * « Jouer » respire en cyan tant que le défi du jour n'est pas joué. « Groupes » porte un point violet tant que l'annonce des groupes n'est pas passée par là (`ShellChromeStore.groupsNew`). Les liens légaux ne sont plus dans la barre : ils vivent sous la carte Survie.
  */
 @Component({
   selector: 'app-bottom-bar',
@@ -33,7 +33,7 @@ import { ShellChromeStore } from '../shell-chrome.store';
                 } @else if (tab.id === 'account') {
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-5.5 7-5.5s6 1.5 7 5.5"/></svg>
                 } @else if (tab.id === 'ranking') {
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 20v-6M12 20V5M18 20v-9"/></svg>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 19c.6-3.4 3-5 6-5s5.4 1.6 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.6.1 4.1 1.5 4.5 4.3"/></svg>
                   @if (chrome.groupsNew()) {
                     <span class="absolute -top-0.5 -right-1 h-2 w-2 rounded-full" data-testid="ranking-new" style="background:var(--color-violet)"></span>
                   }

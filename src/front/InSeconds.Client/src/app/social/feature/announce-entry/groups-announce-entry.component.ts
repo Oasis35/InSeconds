@@ -10,7 +10,7 @@ import { GroupsAnnounceCardComponent } from '../../ui/groups-announce-card/group
 /**
  * L'annonce des groupes en tête de l'accueil (`HOME_ANNOUNCE`), chargée à la demande. Un invité la voit tout de suite ; pour un compte, elle attend
  * ses groupes (lus par la carte amis) et garde sa place vide en attendant, pour que le défi ne saute pas. Une lecture en échec : rien. La
- * fermer la remplace par la pastille de la carte amis et le point de Classements (`GroupsAnnounce`).
+ * fermer la remplace par la pastille de la carte amis et le point de l'onglet Groupes (`GroupsAnnounce`).
  */
 @Component({
   selector: 'app-groups-announce-entry',

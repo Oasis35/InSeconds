@@ -14,7 +14,7 @@ interface ShellChromeState {
    * répètent pas. Posé par le jeu du jour, lu par la carte amis.
    */
   accountCtaShown: boolean;
-  /** Le point « Nouveau » de l'onglet Classements (l'annonce des groupes, une fois sa carte fermée). Posé par le domaine des groupes, lu par la barre. */
+  /** Le point « Nouveau » de l'onglet Groupes (l'annonce des groupes, une fois sa carte fermée). Posé par le domaine des groupes, lu par la barre. */
   groupsNew: boolean;
 }
 
