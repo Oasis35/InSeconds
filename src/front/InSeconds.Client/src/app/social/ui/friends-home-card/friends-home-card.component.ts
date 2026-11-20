@@ -10,7 +10,7 @@ import { FriendPresence, FriendsCardView } from '../../domain/friends-card';
  * La carte amis de l'accueil, sous la carte du défi. Tant que le défi du jour reste à faire : le groupe, « 3 sur 5 ont joué » et une pastille par
  * membre (pleine s'il a joué, éteinte sinon), **jamais un score**. Défi fait : « Potes, aujourd'hui », le haut du classement du jour, la ligne du
  * joueur en ambre. Dans plusieurs groupes : une rangée de pastilles en tête pour choisir celui qu'elle montre. Sans groupe : « Créer un groupe » ;
- * invité : « Créer un compte » en contour neutre (un groupe exige un compte). Un membre a en bas « Inviter un ami dans … » (le groupe en cours) et,
+ * invité : « Créer un compte » en contour neutre (un groupe exige un compte). Un membre a en bas « Inviter un ami » (le groupe en cours, dont le nom est le titre de la carte) et,
  * sous le maximum de groupes, « Créer un nouveau groupe » en lien souligné discret. Jamais la tuile de focus : contour plat, aucune lueur.
  */
 @Component({
