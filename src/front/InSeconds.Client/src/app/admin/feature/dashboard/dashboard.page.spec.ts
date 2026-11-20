@@ -67,26 +67,24 @@ describe('DashboardPage', () => {
     expect(challenges.loadStats).toHaveBeenCalledTimes(1);
   });
 
-  it('la carte du jour : le jour, les trois tuiles, et leur détail replié qui se déplie au clic', async () => {
+  it('la carte du jour : le jour, les trois tuiles, et leur détail déplié d\'office qui se replie au clic', async () => {
     const { element, detect } = await render();
 
     expect(byTestId(element, 'dashboard-selected-day')?.textContent).toContain('lundi 5 octobre');
     expect(byTestId(element, 'kpi-completed')?.textContent).toContain('4');
     expect(byTestId(element, 'kpi-new')?.textContent).toContain('2');
     expect(byTestId(element, 'kpi-median')?.textContent).toContain('4,200');
-    expect(byTestId(element, 'kpi-details')).toBeNull();
-    byTestId(element, 'kpi-toggle')!.click();
-    await detect();
     const details = byTestId(element, 'kpi-details')?.textContent ?? '';
     expect(details).toContain('admin.dashboard.expired');
     expect(details).toContain('admin.dashboard.completionRate');
     expect(details).toContain('admin.dashboard.accountCreated');
+    byTestId(element, 'kpi-toggle')!.click();
+    await detect();
+    expect(byTestId(element, 'kpi-details')).toBeNull();
   });
 
   it('le détail du jour : les arrivés par source, les habitués et les nouveaux parmi ceux qui ont fini', async () => {
-    const { element, detect } = await render();
-    byTestId(element, 'kpi-toggle')!.click();
-    await detect();
+    const { element } = await render();
 
     const arrivals = byTestId(element, 'kpi-arrivals')?.textContent?.replace(/\s+/g, ' ') ?? '';
     expect(arrivals).toContain('admin.dashboard.arrived');
@@ -131,15 +129,16 @@ describe('DashboardPage', () => {
     expect(byTestId(element, 'day-card')?.querySelector('[data-testid="day-tracks"]')?.textContent).toContain('Eminem');
   });
 
-  it('PC : les morceaux du jour repliés dans la colonne de droite, et se déplient', async () => {
+  it('PC : les morceaux du jour dépliés d\'office dans la colonne de droite, et se replient', async () => {
     const { element, detect } = await render({ wide: true });
-    expect(byTestId(element, 'day-tracks')).toBeNull();
+
+    expect(byTestId(element, 'day-card')?.querySelector('[data-testid="day-tracks"]')).toBeNull();
+    expect(byTestId(element, 'day-detail')?.querySelector('[data-testid="day-tracks"]')?.textContent).toContain('Eminem');
 
     byTestId(element, 'day-tracks-toggle')!.click();
     await detect();
 
-    expect(byTestId(element, 'day-card')?.querySelector('[data-testid="day-tracks"]')).toBeNull();
-    expect(byTestId(element, 'day-detail')?.querySelector('[data-testid="day-tracks"]')?.textContent).toContain('Eminem');
+    expect(byTestId(element, 'day-tracks')).toBeNull();
   });
 
   it('un jour sans défi affiche le message à la place des chiffres', async () => {

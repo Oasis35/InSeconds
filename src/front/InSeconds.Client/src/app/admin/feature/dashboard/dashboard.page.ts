@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, linkedSignal, untracked } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { errorMessageKey } from '../../../core/errors/error-messages';
@@ -27,9 +27,9 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
 /**
  * `/admin/dashboard` (onglet « Accueil ») : tout ce qu'on regarde dans la journée, sans changer d'onglet.
  * - La carte du jour : ‹ jour › (« Aujourd'hui · en direct »), trois tuiles (ont fini, nouveaux joueurs, score médian) et leur
- *   détail replié (en cours, abandons, part qui finit, comptes créés, arrivés, habitués et nouveaux).
+ *   détail déplié (en cours, abandons, part qui finit, comptes créés, arrivés, habitués et nouveaux).
  * - Le détail du défi du jour, rangé comme dans l'onglet Défis : sur PC, une colonne à droite (la répartition des scores, les joueurs
- *   du jour, puis les morceaux du jour, repliés) ; sur téléphone, dans la carte (les joueurs, puis les morceaux, repliés ; pas de
+ *   du jour, puis les morceaux du jour, dépliés) ; sur téléphone, dans la carte (les joueurs, puis les morceaux, repliés ; pas de
  *   répartition).
  * - L'activité des 30 derniers jours (un clic sur une barre change de jour), puis les totaux des joueurs, en une ligne.
  * Le jour affiché vit dans l'adresse (`?jour=2026-11-03`, absent pour aujourd'hui) : un F5 rouvre le même jour.
@@ -45,7 +45,7 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
   host: { class: 'flex w-full min-w-0 justify-center' },
   template: `
     <ng-template #tracks let-list>
-      <!-- Les morceaux du jour, repliés par défaut (sur téléphone comme sur PC). -->
+      <!-- Les morceaux du jour : dépliés d'office sur PC, repliés sur téléphone. -->
       <button type="button" (click)="tracksOpen.set(!tracksOpen())" [attr.aria-expanded]="tracksOpen()"
         class="self-start py-2 -my-2 text-xs hover:text-(--text-hi)" style="color:var(--text-muted)" data-testid="day-tracks-toggle">
         {{ 'admin.dashboard.dayTracks' | translate }} <span aria-hidden="true">{{ tracksOpen() ? '▴' : '▾' }}</span>
@@ -135,8 +135,8 @@ export class DashboardPage {
 
   protected readonly locale = computed(() => this.language.current());
   protected readonly youId = computed(() => this.session.player()?.id ?? null);
-  /** Les morceaux du jour sont dépliés (repliés par défaut). */
-  protected readonly tracksOpen = signal(false);
+  /** Les morceaux du jour sont dépliés : d'office sur PC, repliés sur téléphone ; un clic garde le choix jusqu'au prochain changement de mise en page. */
+  protected readonly tracksOpen = linkedSignal(() => this.wide());
   /** Le défi du jour affiché, s'il est parmi les 30 derniers (ses joueurs et ses morceaux) ; sinon rien. */
   protected readonly dayChallenge = computed(() => this.challenges.stats().find(c => c.date === this.store.selectedDay()) ?? null);
 
