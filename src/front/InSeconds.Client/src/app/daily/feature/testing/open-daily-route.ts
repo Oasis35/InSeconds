@@ -28,7 +28,7 @@ export async function openDailyRoute(url: string, today = TODAY()): Promise<Rout
       provideFakeAudio(new FakeAudioPort()),
       provideFakeWaveform(new FakeWaveformPort()),
       providePlayersApiFake(fakePlayersApi()),
-      { provide: SessionLoader, useValue: { ensureGuest: async () => undefined } },
+      { provide: SessionLoader, useValue: { ensureGuest: () => Promise.resolve() } },
       { provide: SwUpdate, useValue: { isEnabled: false } },
     ],
   });
