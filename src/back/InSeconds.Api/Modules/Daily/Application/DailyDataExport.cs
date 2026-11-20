@@ -7,7 +7,8 @@ namespace InSeconds.Api.Modules.Daily.Application;
 public sealed record DailyDataExport(StreakExport? Streak, IReadOnlyList<GameExport> Games);
 
 /// <param name="LastPlayedDate">Date du dernier défi terminé (jour UTC).</param>
-public sealed record StreakExport(int CurrentStreak, DateOnly? LastPlayedDate, int Freezes);
+/// <param name="BestStreak">La plus longue série atteinte.</param>
+public sealed record StreakExport(int CurrentStreak, DateOnly? LastPlayedDate, int Freezes, int BestStreak);
 
 /// <param name="Date">Le jour du défi.</param>
 /// <param name="Status"><c>Pending</c>, <c>Completed</c>, <c>Abandoned</c> ou <c>Expired</c>.</param>

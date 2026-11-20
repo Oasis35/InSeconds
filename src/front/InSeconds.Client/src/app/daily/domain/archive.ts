@@ -92,32 +92,6 @@ export function answerAt(me: ArchiveMe, position: number): ArchiveMyAnswer | nul
   return me.answers.find(a => a.position === position) ?? null;
 }
 
-/** Une case du calendrier : un jour du mois, publié ou non. */
-export interface CalendarCell {
-  readonly date: string;
-  readonly day: number;
-  readonly published: boolean;
-}
-
-/**
- * Les semaines d'un mois (lundi en premier), pour le calendrier : `null` pour les cases hors du mois.
- * `month` va de 1 à 12.
- */
-export function monthGrid(year: number, month: number, published: ReadonlySet<string>): readonly (CalendarCell | null)[][] {
-  const first = new Date(Date.UTC(year, month - 1, 1));
-  const days = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const offset = (first.getUTCDay() + 6) % 7;
-  const cells: (CalendarCell | null)[] = Array.from({ length: offset }, () => null);
-  for (let day = 1; day <= days; day++) {
-    const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    cells.push({ date, day, published: published.has(date) });
-  }
-  while (cells.length % 7 !== 0) cells.push(null);
-  const weeks: (CalendarCell | null)[][] = [];
-  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
-  return weeks;
-}
-
 /** Une date du jeu dans la langue : « 21 octobre 2026 », ou avec le jour et sans l'année : « mardi 21 octobre ». */
 export function formatGameDate(dateText: string, lang: 'fr' | 'en', style: 'long' | 'weekday' = 'long'): string {
   const [y, m, d] = dateText.split('-').map(Number);
@@ -125,10 +99,4 @@ export function formatGameDate(dateText: string, lang: 'fr' | 'en', style: 'long
     ? { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }
     : { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' };
   return new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'fr-FR', options).format(new Date(Date.UTC(y, m - 1, d)));
-}
-
-/** Le mois d'une date (« octobre 2026 »), pour l'en-tête du calendrier. */
-export function formatMonth(year: number, month: number, lang: 'fr' | 'en'): string {
-  return new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' })
-    .format(new Date(Date.UTC(year, month - 1, 1)));
 }

@@ -22,9 +22,11 @@
 - Scoring is entirely server-side - no client-side manipulation possible
 - On each reveal, see a histogram of how long other players needed to guess that track
 - Guest mode: play without signing up (only the anonymous global stats of the day; friend groups and the Survie general ranking need an account)
+- History of the daily challenge: a calendar of the month (one square per day, tinted by your score), the answers of every past day with your friends' scores that day, "Listen again" (the tracks you missed) and your "ear profile" (your average over time against the players, your best streak, when you find)
 - Optional linked accounts (open signup, passwordless magic-link login) - keeps history/streak across devices; guest play stays fully open regardless
 - Daily streak shown under the Start button (details panel on tap), with streak freezes for linked accounts (1 free on signup, +1 every 7 days, 2 max, used automatically on a missed day)
 - After playing, a single "today's result" screen: your score with your game as five small bars, the countdown, one line under the score (your standout moment when there is one, otherwise the share of players you beat, from 5 players), an equalizer of today's scores (lowest, median, highest), your tracks folded away
+- On the home page, under today's challenge, a friends card: who in your group has played today (no scores) until you finish your own challenge, then the top of the day in your group; a guest or an account without a group can create one from there
 - Share your score (one line per track: ✅ / ❌ for the artist, then the title, and the listening time), starting with the score, name and date, through the phone's share menu (clipboard on a computer)
 - Available in French and English - auto-detected from the browser, switchable anytime from the footer (choice saved in localStorage)
 - Legal notice at `/legal` (also `/mentions-legales`) and privacy policy at `/privacy` (also `/confidentialite`)
@@ -32,7 +34,8 @@
 - List of the devices signed in to your account, sign out one device or all the others
 - Your data (GDPR): download a JSON copy of all your data and permanently delete your account ("Your data" section of the profile); devices unseen for 91 days and accounts inactive for 3 years are deleted automatically every night; what you type as an answer is never stored
 - Survie mode (`Runs` in the code, invitation-only for now): you chain rounds of 3 tracks, less and less well known, until you lose your 3 lives or finish the 8th round ("complete Series", with a bonus per remaining life); a round without a lost life gives one back and shortens the listening time (10, 5, 3, 2, 1, 0.5 s), a round with a lost life keeps it the same; a found track earns the points of its step, 45 s per track to answer, a theme to pick for each round from the 2nd; send the same playlist to friends with a link, beat their ghost and compare scores once you have played it
-- Around Survie: a level shown as a disc (seven discs, from Scratched to Diamond), friend groups with their own ranking, a general ranking by level for the accounts that have access (under your pseudo or a musical alias), Hits (milestones earned by playing) and the history of your games (`/survie`; rules, screens and design in [`docs/runs/`](docs/runs/README.md))
+- Friend groups for every account: a private ranking on the daily challenge (this week and today), with an invite link
+- Around Survie: a level shown as a disc (seven discs, from Scratched to Diamond), your Survie place in each friend group, a general ranking by level for the accounts that have access (under your pseudo or a musical alias), Hits (milestones earned by playing) and the history of your games (`/survie`; rules, screens and design in [`docs/runs/`](docs/runs/README.md))
 
 ## Quick start
 

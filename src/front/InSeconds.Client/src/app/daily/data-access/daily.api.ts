@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom, retry, throwError, timer } from 'rxjs';
 import {
-  ArchiveDayResponse, ArchiveMeResponse, DailyClient, DailyHistoryResponse, DailySettingsResponse, GuessBucketResponse, ResumedAnswer, StartSessionResponse, StreakResponse, SubmitAnswerResponse, TodayResponse,
+  ArchiveDayResponse, ArchiveMeResponse, DailyClient, DailyHistoryResponse, DailySettingsResponse, EarProfileResponse, ReplayResponse, GuessBucketResponse, ResumedAnswer, StartSessionResponse, StreakResponse, SubmitAnswerResponse, TodayResponse,
   TodayStatsResponse,
 } from '../../api/daily/api.generated';
 import { toAppError } from '../../core/errors/app-error';
@@ -10,7 +10,9 @@ import {
 } from '../domain/daily';
 import { Streak } from '../domain/streak';
 import { ArchiveDay, ArchiveMe } from '../domain/archive';
-import { DailyHistory } from '../domain/history';
+import { DailyHistory, HistoryDayState, emptyHistory } from '../domain/history';
+import { ReplayFilter, ReplayPage } from '../domain/replay';
+import { EarProfile, ProfilePeriod } from '../domain/ear-profile';
 
 /** Des réponses d'erreur que le jeu connaît : refus du démarrage (la partie est finie, pas de défi). */
 const ALREADY_PLAYED = 'daily.already_played';
@@ -117,14 +119,34 @@ export class DailyApi {
   }
 
   /**
-   * Les défis terminés du joueur sur un mois (`aaaa-mm` ; le mois en cours sans mois), avec le résumé de toutes ses parties. Un navigateur que le
-   * serveur ne connaît pas encore (401) n'a rien joué : un historique vide, pas une erreur.
+   * Le calendrier d'un mois du joueur (`aaaa-mm` ; le mois en cours sans mois) et ses chiffres. Un navigateur que le serveur ne connaît pas encore
+   * (401) n'a rien joué : un historique vide, pas une erreur.
    */
   async history(month: string | null): Promise<DailyHistory> {
     try {
       return toHistory(await firstValueFrom(this.client.getDailyHistory(month ?? undefined)));
     } catch (error) {
-      if ((await toAppError(error)).status === 401) return { month: month ?? '', previousMonth: null, nextMonth: null, playedCount: 0, averageScore: null, bestScore: null, games: [] };
+      if ((await toAppError(error)).status === 401) return emptyHistory(month ?? '');
+      throw error;
+    }
+  }
+
+  /** « À réécouter » : une page de ses morceaux ratés (avant `before`, tous sans) ; 401 : rien. */
+  async replay(filter: ReplayFilter, before: string | null): Promise<ReplayPage> {
+    try {
+      return toReplay(await firstValueFrom(this.client.getReplayTracks(filter, before ?? undefined)));
+    } catch (error) {
+      if ((await toAppError(error)).status === 401) return { days: [], nextBefore: null, allCount: 0, noneCount: 0, halfCount: 0 };
+      throw error;
+    }
+  }
+
+  /** Son profil d'oreille sur une période ; 401 : `null` (rien joué). */
+  async earProfile(period: ProfilePeriod): Promise<EarProfile | null> {
+    try {
+      return toEarProfile(await firstValueFrom(this.client.getEarProfile(period)));
+    } catch (error) {
+      if ((await toAppError(error)).status === 401) return null;
       throw error;
     }
   }
@@ -272,6 +294,11 @@ function toStats(s: TodayStatsResponse): DayStats {
           previousGames: s.history.previousGames,
           previousBestScore: s.history.previousBestScore ?? null,
           previousAverageScore: s.history.previousAverageScore ?? null,
+          averageScoreAfter: s.history.averageScoreAfter,
+          bestSinceDays: s.history.bestSinceDays ?? null,
+          firstStepSeconds: s.history.firstStepSeconds,
+          firstStepFoundTotal: s.history.firstStepFoundTotal,
+          firstStepFoundToday: s.history.firstStepFoundToday,
         }
       : null,
   };
@@ -319,13 +346,52 @@ function toHistory(history: DailyHistoryResponse): DailyHistory {
     month: history.month,
     previousMonth: history.previousMonth ?? null,
     nextMonth: history.nextMonth ?? null,
-    playedCount: history.playedCount,
-    averageScore: history.averageScore ?? null,
-    bestScore: history.bestScore ?? null,
-    games: history.games.map(game => ({
-      date: toDateText(game.date) ?? '',
-      score: game.score,
-      tracks: game.tracks.map(t => ({ position: t.position, artistCorrect: t.artistCorrect, titleCorrect: t.titleCorrect })),
+    days: history.days.map(d => ({
+      date: toDateText(d.date) ?? '',
+      state: d.state as HistoryDayState,
+      score: d.score ?? null,
+      maxPossibleScore: d.maxPossibleScore,
     })),
+    monthPlayedCount: history.monthPlayedCount,
+    monthPublishedCount: history.monthPublishedCount,
+    monthAverageScore: history.monthAverageScore ?? null,
+    monthBestScore: history.monthBestScore ?? null,
+  };
+}
+
+function toReplay(page: ReplayResponse): ReplayPage {
+  return {
+    days: page.days.map(d => ({
+      date: toDateText(d.date) ?? '',
+      tracks: d.tracks.map(t => ({
+        position: t.position, artist: t.artist, title: t.title, deezerTrackId: t.deezerTrackId, coverUrl: t.coverUrl ?? null,
+        artistCorrect: t.artistCorrect, titleCorrect: t.titleCorrect,
+      })),
+    })),
+    nextBefore: toDateText(page.nextBefore),
+    allCount: page.allCount,
+    noneCount: page.noneCount,
+    halfCount: page.halfCount,
+  };
+}
+
+function toEarProfile(p: EarProfileResponse): EarProfile {
+  return {
+    period: p.period as ProfilePeriod,
+    points: p.points.map(x => ({ start: toDateText(x.start) ?? '', average: x.average ?? null, playersAverage: x.playersAverage ?? null, games: x.games })),
+    averageScore: p.averageScore ?? null,
+    trendPercent: p.trendPercent ?? null,
+    gamesPlayed: p.gamesPlayed,
+    bestScore: p.bestScore ?? null,
+    bestStreak: p.bestStreak,
+    firstStepSeconds: p.firstStepSeconds,
+    firstStepFound: p.firstStepFound,
+    steps: p.steps.map(s => ({ seconds: s.seconds, percent: s.percent, playersPercent: s.playersPercent ?? null })),
+    notFoundPercent: p.notFoundPercent ?? null,
+    playersNotFoundPercent: p.playersNotFoundPercent ?? null,
+    artistFoundPercent: p.artistFoundPercent ?? null,
+    titleFoundPercent: p.titleFoundPercent ?? null,
+    playersArtistFoundPercent: p.playersArtistFoundPercent ?? null,
+    playersTitleFoundPercent: p.playersTitleFoundPercent ?? null,
   };
 }

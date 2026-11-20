@@ -6,11 +6,10 @@ import { DeezerBadgeComponent } from '../../../gameplay/ui/deezer-badge/deezer-b
 import { PointsPipe } from '../../../ui/format/points.pipe';
 
 /**
- * Un morceau d'un jour passé : pochette numérotée, artiste (« le plus raté » en rouge), titre et année, chacun sur une ligne (tronqués, déplié au
- * toucher, replié au suivant : le texte entier reste dans la page), le bouton « Écouter l'extrait » (cyan, le son), badge Deezer carré en haut
- * à droite ; puis, s'il y a des
- * statistiques, « Joueurs » (violet : part des joueurs qui ont trouvé l'artiste, le titre) et, pour un joueur reconnu, « Toi » (orange : ✓ ou ✗
- * comme à la révélation, ses points), et l'histogramme des paliers, sa barre en orange. Sans statistiques, « Toi » seul.
+ * Un morceau d'un jour passé, en ligne compacte : pochette numérotée, titre, artiste et année ; à droite, pour un joueur reconnu, « Toi » (✓ ou ✗
+ * pour l'artiste et le titre, ses points en orange), sinon la part des joueurs qui l'ont trouvé (violet). Un toucher déplie le détail : « le plus
+ * raté » en rouge, « Joueurs » (parts de l'artiste et du titre trouvés), l'histogramme des paliers (sa barre en orange), puis l'écoute de l'extrait
+ * (rond cyan, le son) et le badge Deezer. Sans statistiques, le détail n'a que l'écoute.
  */
 @Component({
   selector: 'app-archive-track-row',
@@ -24,16 +23,21 @@ export class ArchiveTrackRowComponent {
   readonly mine = input<ArchiveMyAnswer | null>(null);
   readonly mostMissed = input(false);
   readonly lang = input<'fr' | 'en'>('fr');
-  /** « Écouter l'extrait » : la page ouvre la fenêtre d'écoute. */
+  /** Son extrait est en cours de lecture (le lecteur est celui de la page). */
+  readonly playing = input(false);
+  /** Le bouton d'écoute : la page joue l'extrait, ou le met en pause. */
   readonly listen = output();
 
-  /** Artiste et titre en entier (sinon, une ligne chacun). */
-  protected readonly expanded = signal(false);
+  /** Le détail est déplié. */
+  protected readonly open = signal(false);
 
   /** Badge Deezer vertical (logo carré) : ses proportions ne sont pas les mêmes en français et en anglais. */
   protected readonly badgeSize = computed(() => (this.lang() === 'en' ? { width: '30', height: '42' } : { width: '47', height: '42' }));
 
   protected readonly hasStats = computed(() => this.track().artistFoundPercent !== null);
+
+  /** La part des joueurs qui ont trouvé quelque chose (artiste ou titre). */
+  protected readonly foundPercent = computed(() => 100 - (this.track().notFoundPercent ?? 0));
 
   protected readonly distribution = computed(() =>
     this.track().guessSteps.map(s => ({ durationSeconds: s.durationSeconds, count: s.percent })));

@@ -48,13 +48,14 @@ public sealed class GroupRanking(IEnumerable<IMemberPerformanceSource> sources, 
 
     /// <summary>
     /// Les joueurs du classement général : ceux que les modes y mettent (l'accès et une partie finie), **comptes seulement** (un invité n'a pas de
-    /// pseudo de compte et n'y figure jamais).
+    /// pseudo de compte et n'y figure jamais) et **jamais un admin**, même s'il a l'accès (décision du 18/11).
     /// </summary>
     public async Task<IReadOnlyList<Guid>> ListGeneralRankingPlayersAsync(CancellationToken ct)
     {
         var ids = new HashSet<Guid>();
         foreach (var source in sources)
             ids.UnionWith(await source.ListGeneralRankingPlayersAsync(ct));
+        ids.ExceptWith(await players.ListAdminsAsync(ct));
         var accounts = await players.GetPseudosAsync(ids, ct);
         return [.. ids.Where(accounts.ContainsKey)];
     }
@@ -80,3 +81,69 @@ public sealed class GroupRanking(IEnumerable<IMemberPerformanceSource> sources, 
         return GroupRankingPolicy.Rank(ids.Select(id => new RankingInput(id, pseudos.GetValueOrDefault(id, "?"), performances[id])));
     }
 }
+
+/// <summary>Le classement d'un mode pour un groupe, ses lignes encore avec l'identifiant des membres.</summary>
+public sealed record ModeScoresView(string Mode, DateOnly Day, bool TodayRevealed, IReadOnlyList<TodayScoreLine> Today, IReadOnlyList<WeekScoreLine> Week);
+
+public sealed record TodayScoreLine(ScoreRow Row, bool Played);
+
+/// <param name="PlayedDays">Les jours de la semaine où il a fini une partie, du plus ancien au plus récent.</param>
+public sealed record WeekScoreLine(ScoreRow Row, IReadOnlyList<DateOnly> PlayedDays);
+
+/// <summary>
+/// Le classement par score d'un groupe : les scores viennent des modes (<see cref="IMemberScoreSource"/>, chacun ajoute le sien), les pseudos de
+/// Players ; un classement par mode, jamais une moyenne des modes. La règle de classement est celle du domaine (<see cref="ScoreRankingPolicy"/>).
+/// </summary>
+public sealed class GroupScores(IEnumerable<IMemberScoreSource> sources, IPlayerDirectory players)
+{
+    public async Task<IReadOnlyList<ModeScoresView>> RankAsync(GroupView group, Guid viewerId, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(group);
+        IReadOnlyList<Guid> ids = [.. group.Members.Select(m => m.PlayerId)];
+        var pseudos = await players.GetPseudosAsync(ids, ct);
+        var modes = new List<ModeScoresView>();
+        foreach (var source in sources.OrderBy(s => s.Source, StringComparer.Ordinal))
+        {
+            var scores = await source.GetAsync(viewerId, ids, ct);
+            // Une source qui rend un joueur qu'on ne lui a pas demandé est ignorée (il n'est pas dans la liste des membres).
+            MemberPeriodScores? Of(Guid id) => scores.Members.GetValueOrDefault(id);
+            string PseudoOf(Guid id) => pseudos.GetValueOrDefault(id, "?");
+
+            // Le score du jour n'est jamais rendu avant que le joueur qui regarde ait fini sa partie, même si la source l'oubliait.
+            var today = ScoreRankingPolicy.Rank(ids.Select(id => new ScoreInput(id, PseudoOf(id), scores.TodayRevealed && Of(id) is { PlayedToday: true } m ? m.TodayScore : null)));
+            // La semaine est à la charge de la source (contrat) : ses points et ses jours joués sont repris tels quels.
+            var week = ScoreRankingPolicy.Rank(ids.Select(id => new ScoreInput(id, PseudoOf(id), Of(id) is { WeekPlayedDays.Count: > 0 } m ? m.WeekPoints : null)));
+            modes.Add(new ModeScoresView(
+                source.Source, scores.Day, scores.TodayRevealed,
+                [.. today.Select(r => new TodayScoreLine(r, Of(r.PlayerId)?.PlayedToday ?? false))],
+                [.. week.Select(r => new WeekScoreLine(r, Of(r.PlayerId)?.WeekPlayedDays ?? []))]));
+        }
+
+        return modes;
+    }
+
+    /// <summary>
+    /// Le classement du groupe sur le défi d'un jour, un par mode : le score de chaque membre qui a fini sa partie ce jour-là, rendu seulement si le
+    /// mode le permet au joueur qui regarde (sinon, ni rang ni score : la ligne dit seulement qui l'a fini, et même cela reste caché).
+    /// </summary>
+    public async Task<IReadOnlyList<ModeDayScoresView>> RankDayAsync(GroupView group, Guid viewerId, DateOnly day, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(group);
+        IReadOnlyList<Guid> ids = [.. group.Members.Select(m => m.PlayerId)];
+        var pseudos = await players.GetPseudosAsync(ids, ct);
+        var modes = new List<ModeDayScoresView>();
+        foreach (var source in sources.OrderBy(s => s.Source, StringComparer.Ordinal))
+        {
+            var scores = await source.GetDayAsync(viewerId, day, ids, ct);
+            // Rien n'est montré tant que le mode ne le permet pas, même si la source rendait des scores.
+            int? ScoreOf(Guid id) => scores.Revealed && scores.Scores.TryGetValue(id, out var score) ? score : null;
+            var rows = ScoreRankingPolicy.Rank(ids.Select(id => new ScoreInput(id, pseudos.GetValueOrDefault(id, "?"), ScoreOf(id))));
+            modes.Add(new ModeDayScoresView(source.Source, day, scores.Revealed, [.. rows.Select(r => new TodayScoreLine(r, r.Score is not null))]));
+        }
+
+        return modes;
+    }
+}
+
+/// <summary>Le classement d'un mode pour un groupe sur le défi d'un jour, ses lignes encore avec l'identifiant des membres.</summary>
+public sealed record ModeDayScoresView(string Mode, DateOnly Day, bool Revealed, IReadOnlyList<TodayScoreLine> Lines);

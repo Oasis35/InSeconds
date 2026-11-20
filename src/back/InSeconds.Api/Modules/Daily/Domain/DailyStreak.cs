@@ -49,6 +49,9 @@ public sealed class DailyStreak
 
     public DateOnly? LastPlayedDate { get; private set; }
 
+    /// <summary>La plus longue série atteinte (gels compris) : jamais en dessous de la série en cours au moment d'une partie terminée.</summary>
+    public int BestStreak { get; private set; }
+
     /// <summary>Gels en stock : toujours 0 pour un invité.</summary>
     public short Freezes { get; private set; }
 
@@ -84,6 +87,7 @@ public sealed class DailyStreak
         }
 
         LastPlayedDate = challengeDate;
+        BestStreak = Math.Max(BestStreak, CurrentStreak);
 
         var freezeEarned = isLinked
             && rules.FreezeEveryDays > 0

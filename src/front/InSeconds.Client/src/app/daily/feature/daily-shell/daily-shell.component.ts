@@ -9,7 +9,7 @@ import { DailyGameStore } from '../../data-access/daily-game.store';
 import { DailyShare } from '../../data-access/daily-share';
 import { GuestStreakNotice } from '../../data-access/guest-streak-notice';
 import { LostStreakNotice } from '../../data-access/lost-streak-notice';
-import { isHomeScreen } from '../../domain/daily-screen';
+import { redirectFor } from '../../domain/daily-screen';
 import { GelEarnedToastComponent } from '../../ui/gel-earned-toast/gel-earned-toast.component';
 import { GelUsedToastComponent } from '../../ui/gel-used-toast/gel-used-toast.component';
 import { GuestStreakToastComponent } from '../../ui/guest-streak-toast/guest-streak-toast.component';
@@ -79,17 +79,23 @@ export class DailyShellComponent implements OnInit {
       else if (screen === 'already_played' || screen === 'done') done = true;
       this.chrome.setDailyDone(done);
     });
-    this.destroyRef.onDestroy(() => this.chrome.setImmersive(false));
-
-    // Quelle page montre quoi. Sans l'accès Survie, la racine n'a pas d'accueil à part : c'est le défi. Avec lui, une manche est sur `/daily`, le
-    // reste (carte du défi, pause, abandon, résultat) sur `/`.
+    // Un appel à créer un compte est déjà à l'écran (toast de série d'un invité, « Ne plus perdre mes parties » de la partie en pause) : la carte
+    // amis de l'accueil ne pose pas le sien en plus.
     effect(() => {
       const screen = this.store.screen();
-      const path = this.path();
-      const known = this.chrome.v4Known();
-      const v4 = this.chrome.v4();
-      if (path === '/' && ((known && !v4) || screen === 'playing')) this.goTo('/daily');
-      else if (path === '/daily' && v4 && isHomeScreen(screen)) this.goTo('/');
+      const guestPaused = screen === 'resume_prompt' && !this.store.linked();
+      this.chrome.setAccountCtaShown(this.store.showLostToast() || this.store.toasts().guestStreak || guestPaused);
+    });
+    this.destroyRef.onDestroy(() => {
+      this.chrome.setImmersive(false);
+      this.chrome.setAccountCtaShown(false);
+    });
+
+    // Quelle page montre quoi : une manche est sur `/daily`, le reste (carte du défi, pause, abandon, résultat court) sur `/` ; le résultat complet
+    // (`/daily/resultat`) n'existe qu'une fois le défi fini.
+    effect(() => {
+      const target = redirectFor(this.path(), this.store.screen());
+      if (target) this.goTo(target);
     });
 
     // Une nouvelle version du site ne recharge jamais la page en pleine manche (cf. `reloadMomentFor`).

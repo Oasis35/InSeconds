@@ -32,6 +32,8 @@ public class PlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
     {
         var device = await _app.SignInDeviceAsync("alice@example.com", "Alice", SafariIphone);
         await PlayerDataSeed.AddGameAsync(_app.Api, device.PlayerId);
+        // Une meilleure série différente de la série en cours : elle sort aussi dans l'export.
+        await _app.Api.ExecuteAsync($"UPDATE daily.streaks SET best_streak = 9 WHERE player_id = '{device.PlayerId}'");
 
         var response = await device.Client.GetAsync("/api/players/me/export", Ct);
 
@@ -49,6 +51,7 @@ public class PlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(["daily", "runs", "social"], export.Modules.Keys.Order(StringComparer.Ordinal));
         var daily = ExportReading.Daily(export);
         Assert.Equal(1, daily.Streak!.Freezes);
+        Assert.Equal(9, daily.Streak.BestStreak);
 
         var game = Assert.Single(daily.Games);
         Assert.Equal(PlayerDataSeed.Day, game.Date);

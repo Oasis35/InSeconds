@@ -5,6 +5,7 @@ using InSeconds.Api.Modules.Daily.Contracts;
 using InSeconds.Api.Modules.Daily.Domain;
 using InSeconds.Api.Modules.Daily.Persistence;
 using InSeconds.Api.Modules.Players.Contracts;
+using InSeconds.Api.Modules.Social.Contracts;
 
 namespace InSeconds.Api.Modules.Daily;
 
@@ -23,6 +24,7 @@ public static class DailyModule
         services.AddScoped<IDailyQueries, EfDailyQueries>();
         services.AddScoped<IDailyStatsQueries, EfDailyStatsQueries>();
         services.AddScoped<IDailyHistoryQueries, EfDailyHistoryQueries>();
+        services.AddScoped<IDailyProfileQueries, EfDailyProfileQueries>();
         services.AddSingleton<ITrackSelector, CooldownSeededSelector>();
         // Les règles du jeu lues à chaud dans les réglages (paliers, barème, indices, gels), et le contrôle de leur cohérence au démarrage.
         services.AddSingleton<DailyRules>();
@@ -40,6 +42,8 @@ public static class DailyModule
         // Fige les statistiques de l'avant-veille. Tourne aussi en staging : elle n'appelle pas Deezer.
         services.AddScheduledJob<DailyCloseDayJob>(DailyCloseDayJob.Id, DailyCloseDayJob.DefaultCron);
         services.AddScoped<IStreakGrants, DailyStreakGrants>();
+        // Les scores du jour et de la semaine pour le classement d'un groupe. **Ajouté, jamais remplacé** : Social réunit les sources de chaque mode.
+        services.AddScoped<IMemberScoreSource, DailyMemberScores>();
         return services;
     }
 

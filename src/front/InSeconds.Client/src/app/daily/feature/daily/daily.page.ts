@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@a
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
 import { LanguageService } from '../../../core/i18n/language.service';
-import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { InstagramLinkComponent } from '../../../core/shell/instagram-link/instagram-link.component';
 import { AccountLinkComponent } from '../../../core/shell/account-link/account-link.component';
 import { TrackRoundComponent } from '../../../gameplay/feature/track-round/track-round.component';
@@ -13,11 +12,8 @@ import { ModalService } from '../../../ui/modal/modal.service';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { DailyGameStore } from '../../data-access/daily-game.store';
-import { DailyStartup, DailyResultView, StreakSheetOpener, visibleScreen } from '../daily-shell/daily-view';
-import { AbandonedScreenComponent } from '../../ui/abandoned-screen/abandoned-screen.component';
-import { DayResultScreenComponent } from '../../ui/day-result-screen/day-result-screen.component';
+import { DailyStartup, StreakSheetOpener } from '../daily-shell/daily-view';
 import { BrandComponent } from '../../../ui/brand/brand.component';
-import { DailyFooterComponent } from '../../ui/daily-footer/daily-footer.component';
 import { HomeLegalLineComponent } from '../../../ui/legal-line/home-legal-line.component';
 import { DailyProgressComponent } from '../../ui/daily-progress/daily-progress.component';
 import { DeezerBadgeComponent } from '../../../gameplay/ui/deezer-badge/deezer-badge.component';
@@ -31,15 +27,15 @@ import { isHomeScreen } from '../../domain/daily-screen';
 import { todayUtc } from '../../../core/game-day/game-day';
 
 /**
- * La page du défi (`/daily`) : la manche, et sans la V4 tous les écrans du jeu du jour (accueil, reprise, résultat). Elle affiche l'écran que le
+ * La page du défi (`/daily`) : la manche (les autres écrans du jeu du jour sont sur l'accueil, le résultat complet sur `/daily/resultat`). Elle affiche l'écran que le
  * `DailyGameStore` indique et branche ce qui est propre au navigateur : les fenêtres (abandon, sortie de partie), le compte dans le bandeau.
  * Les stores sont ceux de la coquille (`DailyShellComponent`), partagés avec l'accueil (`/`).
  */
 @Component({
   selector: 'app-daily-page',
   imports: [
-    TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, BrandComponent, DailyProgressComponent, DailyFooterComponent, HomeLegalLineComponent,
-    WelcomeScreenComponent, ResumeScreenComponent, StatusScreenComponent, AbandonedScreenComponent, DayResultScreenComponent,
+    TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, BrandComponent, DailyProgressComponent, HomeLegalLineComponent,
+    WelcomeScreenComponent, ResumeScreenComponent, StatusScreenComponent,
     DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent, StreakPillComponent, ButtonComponent, InstagramLinkComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,10 +44,8 @@ import { todayUtc } from '../../../core/game-day/game-day';
 export class DailyPage {
   protected readonly store = inject(DailyGameStore);
   protected readonly language = inject(LanguageService);
-  protected readonly chrome = inject(ShellChromeStore);
   protected readonly errorReporting = inject(ErrorReportingService);
   protected readonly streakSheet = inject(StreakSheetOpener);
-  protected readonly result = inject(DailyResultView);
   private readonly startup = inject(DailyStartup);
   private readonly modal = inject(ModalService);
   private readonly translate = inject(TranslateService);
@@ -60,14 +54,12 @@ export class DailyPage {
 
   /** La date du jour de jeu (UTC) dans la langue, en tête de l'accueil et de la reprise : « mardi 28 octobre ». */
   protected readonly dateLabel = computed(() => formatGameDate(todayUtc(new Date()), this.language.current(), 'weekday'));
-  private readonly flagged = visibleScreen();
   /**
-   * L'écran affiché. Sous la V4, l'accueil (`/`) montre tout sauf la manche : ici, un chargement le temps que la coquille y renvoie, jamais
-   * l'ancien accueil du défi.
+   * L'écran affiché. L'accueil (`/`) montre tout sauf la manche : ici, un chargement le temps que la coquille y renvoie.
    */
   protected readonly screen = computed(() => {
-    const screen = this.flagged();
-    return this.chrome.v4() && isHomeScreen(screen) ? 'loading' : screen;
+    const screen = this.store.screen();
+    return isHomeScreen(screen) ? 'loading' : screen;
   });
 
   constructor() {
@@ -113,9 +105,5 @@ export class DailyPage {
 
   protected onAnswered(submission: RoundSubmission): void {
     void this.store.submit(submission);
-  }
-
-  protected toggleLanguage(): void {
-    this.language.use(this.language.current() === 'fr' ? 'en' : 'fr');
   }
 }

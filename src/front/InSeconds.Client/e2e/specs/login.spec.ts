@@ -137,23 +137,22 @@ test.describe('Connexion par lien magique', () => {
     await page.getByPlaceholder('Ton pseudo').fill('CarlE2E');
     await page.getByRole('button', { name: 'Valider' }).click();
 
-    await expectSignedIn(page, 'CarlE2E');
-
-    // Le clic sur l'avatar du header ouvre l'écran Profil (plus de déconnexion
+    // L’onglet « Profil » de la barre du bas ouvre l'écran Profil (plus de déconnexion
     // directe) - il faut confirmer explicitement via son bouton "Se déconnecter".
-    await page.locator('app-account-link').getByTitle('CarlE2E').click();
+    await expectSignedIn(page, 'CarlE2E');
     await expect(page).toHaveURL(/\/profile$/);
     await page.getByRole('button', { name: 'Se déconnecter', exact: true }).click();
     await expect(page.getByText('Se déconnecter ?')).toBeVisible();
     // Même libellé que le bouton du profil : la confirmation du panneau est rendue après lui.
     await page.getByRole('button', { name: 'Se déconnecter', exact: true }).last().click();
 
-    // Revenu à l'état guest : « Connexion », en haut à droite du jeu, mène à la page de connexion.
-    const loginLink = page.locator('app-account-link').getByRole('link', { name: 'Connexion' });
-    await expect(loginLink).toBeVisible();
-    await loginLink.click();
+    // Revenu à l'état guest : « Connexion », dans la barre du bas, mène à la page de connexion.
+    await page.goto('/');
+    const loginTab = page.getByTestId('tab-account');
+    await expect(loginTab).toHaveAttribute('href', '/account/login');
+    await loginTab.click();
     await expect(page).toHaveURL(/\/account\/login$/);
-    // La page de connexion n'a plus de lien de compte en haut à droite (il y renvoyait sur elle-même).
-    await expect(page.locator('app-account-link')).toHaveCount(0);
+    // La page de connexion n'a ni barre du bas ni lien de compte.
+    await expect(page.getByTestId('bottom-bar')).toHaveCount(0);
   });
 });

@@ -1,39 +1,36 @@
-import {
-  ChangeDetectionStrategy, Component, DestroyRef, Injector, OnInit, computed, effect, inject,
-} from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject } from '@angular/core';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { PageMetaService } from '../../../core/seo/page-meta.service';
 import { AudioPreviewPlayer } from '../../../core/audio-preview/audio-preview.player';
-import { PreviewTrackData, PreviewTrackDialog } from '../../../core/audio-preview/preview-track.dialog';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
 import { LanguageService } from '../../../core/i18n/language.service';
+import { PageMetaService } from '../../../core/seo/page-meta.service';
 import { AccountLinkComponent } from '../../../core/shell/account-link/account-link.component';
+import { DayFriendsSlotComponent } from '../../../core/shell/day-friends-slot/day-friends-slot.component';
+import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
+import { BrandComponent } from '../../../ui/brand/brand.component';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
-import { ModalService } from '../../../ui/modal/modal.service';
+import { PointsPipe } from '../../../ui/format/points.pipe';
+import { HomeLegalLineComponent } from '../../../ui/legal-line/home-legal-line.component';
+import { ScoreChartData, ScoreDistributionChartComponent } from '../../../ui/score-distribution-chart/score-distribution-chart.component';
 import { ArchiveStore } from '../../data-access/archive.store';
 import { ArchiveTrack, answerAt, artistsSummary, formatGameDate } from '../../domain/archive';
-import { ArchiveCalendarData, ArchiveCalendarResult, ArchiveCalendarSheetComponent } from '../../ui/archive-calendar-sheet/archive-calendar-sheet.component';
 import { ArchiveDayHeaderComponent } from '../../ui/archive-day-header/archive-day-header.component';
 import { ArchiveTrackRowComponent } from '../../ui/archive-track-row/archive-track-row.component';
-import { BrandComponent } from '../../../ui/brand/brand.component';
-import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
-import { HomeLegalLineComponent } from '../../../ui/legal-line/home-legal-line.component';
-import { DailyFooterComponent } from '../../ui/daily-footer/daily-footer.component';
-import { ScoreChartData, ScoreDistributionChartComponent } from '../../../ui/score-distribution-chart/score-distribution-chart.component';
 import { StatusScreenComponent } from '../../ui/status-screen/status-screen.component';
-import { PointsPipe } from '../../../ui/format/points.pipe';
 
 /**
- * La page d'un jour passé (`/history/daily/aaaa-mm-jj`, #407) : les réponses du défi de ce jour-là, ce qu'en ont fait les joueurs (en
- * pourcentages, à partir de 5 joueurs) et, pour un joueur reconnu par son cookie, ce qu'il y a fait. On y lit des réponses : rien ne s'y rejoue.
- * Le titre et la description de la page nomment le jour et ses artistes (moteurs de recherche) ; ceux du site reviennent en quittant la page.
+ * La page d'un jour passé (`/history/daily/aaaa-mm-jj`) : retour à l'historique, ‹ jour ›, la répartition des scores (son score s'il a joué),
+ * « Tes amis ce jour-là » (fourni par les groupes, `DAY_FRIENDS_SLOT`), puis les morceaux en lignes compactes dont le détail s'ouvre au toucher.
+ * Les réponses et les stats s'affichent d'office, même pour un jour qu'il n'a pas joué : on y lit, rien ne s'y rejoue. « Jouer le défi du jour »
+ * seulement s'il reste à jouer. Le titre et la description de la page nomment le jour et ses artistes (moteurs de recherche) ; ceux du site
+ * reviennent en quittant la page.
  */
 @Component({
   selector: 'app-archive-page',
   imports: [
-    PointsPipe, TranslatePipe, RouterLink, DecorBackgroundComponent, BrandComponent, DailyFooterComponent, HomeLegalLineComponent, AccountLinkComponent,
+    PointsPipe, TranslatePipe, RouterLink, DecorBackgroundComponent, BrandComponent, HomeLegalLineComponent, AccountLinkComponent, DayFriendsSlotComponent,
     ArchiveDayHeaderComponent, ArchiveTrackRowComponent, ScoreDistributionChartComponent, StatusScreenComponent, ButtonComponent,
   ],
   providers: [ArchiveStore, AudioPreviewPlayer],
@@ -43,16 +40,20 @@ import { PointsPipe } from '../../../ui/format/points.pipe';
 export class ArchivePage implements OnInit {
   protected readonly store = inject(ArchiveStore);
   protected readonly language = inject(LanguageService);
-  protected readonly chrome = inject(ShellChromeStore);
   protected readonly errorReporting = inject(ErrorReportingService);
+  protected readonly chrome = inject(ShellChromeStore);
+  protected readonly player = inject(AudioPreviewPlayer);
   private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
-  private readonly modal = inject(ModalService);
-  private readonly injector = inject(Injector);
   private readonly translate = inject(TranslateService);
   private readonly pageMeta = inject(PageMetaService);
 
   protected readonly answerAt = answerAt;
+
+  /** La position du morceau dont l'extrait joue (la clé du lecteur). */
+  protected readonly playingPosition = computed(() => this.player.playingKey());
+
+  /** Le mois du jour affiché, pour revenir au bon mois de l'historique. */
+  protected readonly backMonth = computed(() => this.store.date().slice(0, 7));
 
   /** L'égaliseur : les pourcentages des tranches en guise de comptes (seules les hauteurs relatives comptent). */
   protected readonly chart = computed<ScoreChartData | null>(() => {
@@ -87,32 +88,18 @@ export class ArchivePage implements OnInit {
   }
 
   ngOnInit(): void {
-    this.route.paramMap.subscribe(params => void this.store.load(params.get('date') ?? ''));
+    this.route.paramMap.subscribe(params => {
+      this.player.stop();
+      void this.store.load(params.get('date') ?? '');
+    });
   }
 
   protected retry(): void {
     void this.store.load(this.store.date());
   }
 
-  protected async openCalendar(): Promise<void> {
-    const day = this.store.day();
-    if (!day) return;
-    const dates = await this.store.loadDates();
-    const data: ArchiveCalendarData = { dates, current: day.date, lang: this.language.current() };
-    const ref = this.modal.openSheet<ArchiveCalendarResult, ArchiveCalendarData, ArchiveCalendarSheetComponent>(
-      ArchiveCalendarSheetComponent, { data, injector: this.injector });
-    ref.closed.subscribe(date => {
-      if (date && date !== day.date) void this.router.navigate(['/history/daily', date]);
-    });
-  }
-
-  /** La fenêtre d'écoute de l'admin, avec une adresse d'extrait neuve à chaque ouverture. */
+  /** Joue l'extrait du morceau, ou le met en pause ; l'adresse est demandée à chaque nouvelle écoute (piège 14). */
   protected listen(track: ArchiveTrack): void {
-    const data: PreviewTrackData = { artist: track.artist, title: track.title, loadPreviewUrl: () => this.store.previewUrl(track.position) };
-    this.modal.open(PreviewTrackDialog, { data, maxWidth: '26rem', injector: this.injector });
-  }
-
-  protected toggleLanguage(): void {
-    this.language.use(this.language.current() === 'fr' ? 'en' : 'fr');
+    void this.player.listen(String(track.position), () => this.store.previewUrl(track.position));
   }
 }

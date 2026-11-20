@@ -1,6 +1,8 @@
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
-import { Group, GroupRanking, GroupStanding, standingOf } from '../domain/group';
+import { Group, GroupRanking, GroupStanding, preferredGroupId, standingOf } from '../domain/group';
+import { GroupScores } from '../domain/group-scores';
+import { LastGroup } from './last-group';
 import { SocialApi } from './social.api';
 
 type Status = 'idle' | 'loading' | 'ready' | 'error';
@@ -11,43 +13,60 @@ interface GroupsState {
   maxGroups: number;
   /** Le groupe dont on lit le classement. */
   selectedId: number | null;
-  ranking: GroupRanking | null;
-  rankingStatus: Status;
-  /** La place du joueur dans chacun de ses groupes ; `null` tant qu'elle n'est pas lue. */
+  /** Son classement au Défi du jour (le jour et la semaine) ; `scoresFor` : le groupe lu ou en cours de lecture. */
+  scores: GroupScores | null;
+  scoresFor: number | null;
+  scoresStatus: Status;
+  /** La place du joueur dans chacun de ses groupes, par niveau Survie (la fin d'une partie de Survie) ; `null` tant qu'elle n'est pas lue. */
   standings: readonly GroupStanding[] | null;
 }
 
-/** Les groupes du joueur, le classement de celui qu'il regarde et sa place dans chacun. À fournir à la page. */
+const NOTHING_READ = { scores: null, scoresFor: null, scoresStatus: 'idle' } as const;
+
+/** Les groupes du joueur, le classement du Défi de celui qu'il regarde et sa place Survie dans chacun. À fournir à la page. */
 export const GroupsStore = signalStore(
-  withState<GroupsState>({ status: 'idle', groups: [], maxGroups: 0, selectedId: null, ranking: null, rankingStatus: 'idle', standings: null }),
+  withState<GroupsState>({ status: 'idle', groups: [], maxGroups: 0, selectedId: null, ...NOTHING_READ, standings: null }),
   withComputed(store => ({
     selected: computed(() => store.groups().find(group => group.id === store.selectedId()) ?? null),
     canCreate: computed(() => store.status() === 'ready' && store.groups().length < store.maxGroups()),
+    /** Les scores du groupe regardé : jamais ceux d'un autre groupe le temps d'une lecture. */
+    selectedScores: computed(() => (store.scores()?.groupId === store.selectedId() ? store.scores() : null)),
   })),
-  withMethods((store, api = inject(SocialApi)) => {
-    let request = 0;
+  withMethods((store, api = inject(SocialApi), lastGroup = inject(LastGroup)) => {
+    let scoresRequest = 0;
 
-    async function loadRanking(groupId: number): Promise<void> {
-      const id = ++request;
-      patchState(store, { selectedId: groupId, rankingStatus: 'loading' });
+    async function loadScores(groupId: number): Promise<void> {
+      const id = ++scoresRequest;
+      patchState(store, { scoresFor: groupId, scoresStatus: 'loading' });
       try {
-        const ranking = await api.ranking(groupId);
-        if (id === request) patchState(store, { ranking, rankingStatus: 'ready' });
+        const scores = await api.scores(groupId);
+        if (id === scoresRequest) patchState(store, { scores, scoresStatus: 'ready' });
       } catch {
-        if (id === request) patchState(store, { ranking: null, rankingStatus: 'error' });
+        if (id === scoresRequest) patchState(store, { scores: null, scoresFor: null, scoresStatus: 'error' });
       }
     }
 
+    /** Regarde un groupe : ses scores sont lus une fois, une lecture en échec se refait. */
+    async function show(groupId: number): Promise<void> {
+      // Le groupe regardé devient celui de la carte amis de l'accueil.
+      lastGroup.set(groupId);
+      patchState(store, { selectedId: groupId });
+      if (store.scoresFor() !== groupId) await loadScores(groupId);
+    }
+
     return {
-      /** Lit mes groupes puis le classement du groupe demandé (à défaut, du premier). */
+      /** Lit mes groupes puis le classement du groupe demandé (à défaut, du dernier regardé, puis du premier). */
       async load(preferredId: number | null = null): Promise<void> {
         patchState(store, { status: 'loading' });
         try {
           const { groups, maxGroups } = await api.myGroups();
-          patchState(store, { status: 'ready', groups, maxGroups });
-          const target = groups.find(group => group.id === preferredId) ?? groups[0];
-          if (target) await loadRanking(target.id);
-          else patchState(store, { selectedId: null, ranking: null, rankingStatus: 'idle' });
+          // Une relecture (après « Quitter ») repart de zéro : une réponse encore en route est ignorée, rien d'un groupe quitté ne reste affiché.
+          scoresRequest++;
+          patchState(store, { status: 'ready', groups, maxGroups, ...NOTHING_READ });
+          // Sans groupe demandé (l'onglet « Classements »), le dernier regardé : la barre du bas ne le remplace pas par le premier.
+          const target = preferredGroupId(groups.map(group => group.id), preferredId ?? lastGroup.get());
+          if (target !== null) await show(target);
+          else patchState(store, { selectedId: null });
         } catch {
           patchState(store, { status: 'error' });
         }
@@ -55,8 +74,7 @@ export const GroupsStore = signalStore(
 
       /** Regarde un autre de mes groupes. */
       async select(groupId: number): Promise<void> {
-        if (groupId === store.selectedId() && store.rankingStatus() !== 'error') return;
-        if (store.groups().some(group => group.id === groupId)) await loadRanking(groupId);
+        if (store.groups().some(group => group.id === groupId)) await show(groupId);
       },
 
       /** Quitte un groupe puis relit la liste ; `false` si le serveur a refusé. */

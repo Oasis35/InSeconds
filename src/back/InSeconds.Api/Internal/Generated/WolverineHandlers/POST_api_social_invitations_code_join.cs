@@ -50,7 +50,7 @@ namespace Internal.Generated.WolverineHandlers
             var efGroupStore = new InSeconds.Api.Modules.Social.Persistence.EfGroupStore(inSecondsDbContext);
             var efPlayerDirectory = new InSeconds.Api.Modules.Players.Persistence.EfPlayerDirectory(inSecondsDbContext);
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Social.Application.JoinGroupEndpoint");
+            Wolverine.Http.HttpHandler.RequestActivity(httpContext)?.SetTag("handler.type", "InSeconds.Api.Modules.Social.Application.JoinGroupEndpoint").SetTag("http.route", "/api/social/invitations/{code}/join").SetTag("http.request.method", "POST");
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
             var efCoreEnvelopeTransaction = new Wolverine.EntityFrameworkCore.Internals.EfCoreEnvelopeTransaction(inSecondsDbContext, messageContext, _domainEventScraperIEnumerable);

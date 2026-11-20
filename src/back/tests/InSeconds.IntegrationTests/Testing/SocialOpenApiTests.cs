@@ -10,8 +10,8 @@ public class SocialOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests
 
         Assert.Equal(
             [
-                "createGroup", "deleteAdminGroup", "deleteGroup", "drawRankingAlias", "getGeneralRanking", "getGroup", "getGroupRanking", "getInvitation", "joinGroup",
-                "leaveGroup", "listAdminGroups", "listMyGroups", "renameAdminGroup", "resetAdminGroupName", "rotateGroupInviteCode", "setRankingIdentity",
+                "createGroup", "deleteAdminGroup", "deleteGroup", "drawRankingAlias", "getGeneralRanking", "getGroup", "getGroupDayScores", "getGroupRanking", "getGroupScores",
+                "getInvitation", "joinGroup", "leaveGroup", "listAdminGroups", "listMyGroups", "renameAdminGroup", "resetAdminGroupName", "rotateGroupInviteCode", "setRankingIdentity",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));
         Assert.All(document["paths"]!.AsObject().Select(p => p.Key), path =>
@@ -23,12 +23,13 @@ public class SocialOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests
     {
         var document = await ReadDocumentAsync();
 
-        foreach (var id in new[] { "listMyGroups", "getGroup", "getGroupRanking", "getInvitation", "joinGroup", "leaveGroup", "deleteGroup", "rotateGroupInviteCode" })
+        foreach (var id in new[] { "listMyGroups", "getGroup", "getGroupRanking", "getGroupScores", "getGroupDayScores", "getInvitation", "joinGroup", "leaveGroup", "deleteGroup", "rotateGroupInviteCode" })
             Assert.Null(Operation(document, id)["requestBody"]);
         Assert.NotNull(Operation(document, "createGroup")["requestBody"]);
         foreach (var status in new[] { "400", "403", "409" })
             Assert.NotNull(Operation(document, "createGroup")["responses"]![status]);
         Assert.NotNull(Operation(document, "getGroupRanking")["responses"]!["404"]);
+        Assert.NotNull(Operation(document, "getGroupScores")["responses"]!["404"]);
         Assert.NotNull(Operation(document, "joinGroup")["responses"]!["409"]);
         foreach (var id in new[] { "deleteAdminGroup", "resetAdminGroupName", "listAdminGroups" })
             Assert.Null(Operation(document, id)["requestBody"]);

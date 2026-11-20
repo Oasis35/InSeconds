@@ -26,7 +26,7 @@ export class AdminPlayersApi {
     return (await firstValueFrom(this.client.getPlayerHistory(playerId))).games.map(toGame);
   }
 
-  /** Les comptes autorisés à lancer un run (l'interrupteur de l'admin), en un appel pour tous. Les admins ont l'accès d'office, sans y figurer. */
+  /** Les comptes autorisés à lancer un run (l'interrupteur de l'admin), en un appel pour tous. Admins compris. */
   async listRunAccess(): Promise<string[]> {
     return (await firstValueFrom(this.runs.listRunAccess())).entries.map(entry => entry.playerId);
   }

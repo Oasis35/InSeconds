@@ -52,8 +52,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "InSeconds.Api.Modules.Catalogue.Application.AddCandidatesToCatalogueHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.AddCandidatesToCatalogueHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "InSeconds.Api.Modules.Catalogue.Application.AddCandidatesToCatalogueHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.AddCandidatesToCatalogueHandler");
                 
                 // The actual message execution
                 var outgoing1 = await InSeconds.Api.Modules.Catalogue.Application.AddCandidatesToCatalogueHandler.Handle(addCandidatesToCatalogue, efCatalogueStore, efCandidateStore, albumSource, _optionsMonitorOfWaveformOptions, _timeProvider, _loggerForMessage, cancellation).ConfigureAwait(false);

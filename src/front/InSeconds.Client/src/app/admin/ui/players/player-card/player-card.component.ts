@@ -6,7 +6,7 @@ import { PlayerIconComponent } from '../player-icon/player-icon.component';
 
 /**
  * Un compte inscrit en carte (onglet Joueurs, téléphone) : le pseudo (qui déplie l'historique, rendu par la page sous la carte), la
- * série et les gels, puis les parties, la dernière visite et l'interrupteur d'accès à Setlist (posé d'office pour un admin). L'email
+ * série et les gels, puis les parties, la dernière visite et l'interrupteur d'accès à Setlist (admin compris). L'email
  * n'y est pas : il reste dans le tableau du PC, masqué tant qu'on ne clique pas dessus (minimisation, RGPD).
  */
 @Component({
@@ -49,10 +49,10 @@ import { PlayerIconComponent } from '../player-icon/player-icon.component';
           {{ 'admin.players.neverSeen' | translate }}
         }
       </span>
-      <span class="ml-auto shrink-0 inline-flex items-center gap-1.5" [title]="(player().isAdmin ? 'admin.players.runAccessAdmin' : 'admin.players.runAccessToggle') | translate">
+      <span class="ml-auto shrink-0 inline-flex items-center gap-1.5" [title]="'admin.players.runAccessToggle' | translate">
         {{ 'admin.players.colRun' | translate }}
         <button type="button" role="switch" data-testid="run-access" [attr.aria-checked]="runAccess()"
-          [attr.aria-label]="'admin.players.runAccessToggle' | translate" [disabled]="player().isAdmin || runAccessPending()"
+          [attr.aria-label]="'admin.players.runAccessToggle' | translate" [disabled]="runAccessPending()"
           (click)="runAccessToggled.emit(!runAccess())"
           class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
           [style.background]="runAccess() ? 'var(--color-success)' : 'var(--border-strong)'">
@@ -66,7 +66,7 @@ import { PlayerIconComponent } from '../player-icon/player-icon.component';
 export class PlayerCardComponent {
   readonly player = input.required<RegisteredPlayer>();
   readonly expanded = input(false);
-  /** Le compte peut lancer un run (admin d'office, ou autorisé par l'interrupteur). */
+  /** Le compte peut lancer un run (autorisé par l'interrupteur, admin compris). */
   readonly runAccess = input(false);
   /** L'API n'a pas encore répondu à un changement d'accès de ce compte. */
   readonly runAccessPending = input(false);

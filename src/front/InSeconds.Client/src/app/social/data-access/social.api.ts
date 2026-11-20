@@ -1,10 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import {
-  GroupRankingResponse, GroupSummaryResponse, InvitationResponse, RankingEntryResponse, RankingIdentityResponse, SocialClient,
+  GroupRankingResponse, GroupScoresResponse, GroupSummaryResponse, InvitationResponse, ModeScoresResponse, RankingEntryResponse, RankingIdentityResponse,
+  SocialClient,
 } from '../../api/social/api.generated';
 import { toAppError } from '../../core/errors/app-error';
 import { GeneralRanking, Group, GroupRanking, Invitation, MyGroups, RankingEntry, RankingIdentity } from '../domain/group';
+import { DailyScores, GroupDayScores, GroupScores } from '../domain/group-scores';
 
 /** Les refus que les écrans connaissent : ils deviennent des issues, pas des erreurs. */
 const REFUSALS = ['account_required', 'invalid_name', 'too_many_groups', 'group_full', 'invitation_not_found', 'group_not_found'] as const;
@@ -36,8 +38,26 @@ export class SocialApi {
     return { groups: response.groups.map(toGroup), maxGroups: response.maxGroups };
   }
 
+  /** Le classement du groupe en Survie (par niveau). */
   async ranking(groupId: number): Promise<GroupRanking> {
     return toRanking(await firstValueFrom(this.client.getGroupRanking(groupId)));
+  }
+
+  /** Le classement du groupe au Défi du jour : le jour et la semaine glissante. */
+  async scores(groupId: number): Promise<GroupScores> {
+    return toScores(await firstValueFrom(this.client.getGroupScores(groupId)));
+  }
+
+  /** Le classement du groupe sur le défi d'un jour passé (ou du jour) ; `null` si le serveur ne rend pas le Défi du jour. */
+  async dayScores(groupId: number, day: string): Promise<GroupDayScores | null> {
+    const response = await firstValueFrom(this.client.getGroupDayScores(groupId, day));
+    const daily = response.modes.find(mode => mode.mode === 'daily');
+    return daily
+      ? {
+          groupId: response.groupId, name: response.name, day: toDay(daily.day), revealed: daily.revealed,
+          entries: daily.entries.map(entry => ({ rank: entry.rank ?? null, pseudo: entry.pseudo, isMe: entry.isMe, played: entry.played, score: entry.score ?? null })),
+        }
+      : null;
   }
 
   /** Le classement général : la tête, ma place et le nom sous lequel j'y apparais. */
@@ -106,6 +126,26 @@ function toRanking(response: GroupRankingResponse): GroupRanking {
     name: response.name,
     entries: response.entries.map(toEntry),
   };
+}
+
+function toScores(response: GroupScoresResponse): GroupScores {
+  const daily = response.modes.find(mode => mode.mode === 'daily');
+  return { groupId: response.groupId, name: response.name, daily: daily ? toDailyScores(daily) : null };
+}
+
+function toDailyScores(mode: ModeScoresResponse): DailyScores {
+  return {
+    day: toDay(mode.day), todayRevealed: mode.todayRevealed, weekDays: mode.weekDays,
+    today: mode.today.map(entry => ({ rank: entry.rank ?? null, pseudo: entry.pseudo, isMe: entry.isMe, played: entry.played, score: entry.score ?? null })),
+    week: mode.week.map(entry => ({
+      rank: entry.rank ?? null, pseudo: entry.pseudo, isMe: entry.isMe, points: entry.points ?? null, playedDays: (entry.playedDays ?? []).map(toDay),
+    })),
+  };
+}
+
+/** Un jour `aaaa-mm-jj` : le JSON le livre en texte, le client généré l'annonce en `Date`. */
+function toDay(value: Date | string): string {
+  return (typeof value === 'string' ? value : value.toISOString()).slice(0, 10);
 }
 
 function toIdentity(identity: RankingIdentityResponse): RankingIdentity {

@@ -12,8 +12,8 @@ Tokens dans `:root` de `src/front/InSeconds.Client/src/styles.scss`. Jamais de h
 ## Fond et surfaces
 
 - Fond bleu nuit violacé sombre (`--rgb-bg`, `--bg-page`) sous une grille synthwave discrète (environ 14 % d'intensité, un halo à peine marqué ; `ui/decor-background`, classes `.da-bg`, `.da-grid`).
-- Tuiles et cartes en bleu nuit profond translucide (`--bg-surface`, 68 % de `--rgb-surface` ; `--bg-surface-2` / `--rgb-panel` opaques), filet plat bleuté `--border-medium`.
-- **Le flou est le seul effet de verre permis** (flou seul, sans lueur ni reflet) : 20 px (`--blur-tile`) sur tout ce qui prend `--bg-surface` et sur les barres fixes du bas (`--bg-bar`). La grille passe derrière en tache floue au lieu de traverser le texte ; ne pas le remplacer par un fond plus opaque. Le flou est posé par un sélecteur d'attribut (`[style*="--bg-surface)"]`, `[class*="--bg-surface)"]`) : écrire le fond `background:var(--bg-surface)` pour qu'il s'applique. Sans `backdrop-filter` ou en « moins de transparence », `styles.scss` rend déjà les fonds presque opaques.
+- Tuiles et cartes en verre dépoli bleu nuit (`--bg-surface`, 45 % de `--rgb-surface` ; `--bg-surface-2` / `--rgb-panel` opaques), filet plat bleuté `--border-medium`.
+- **Le flou est le seul effet de verre permis** (flou seul, sans lueur ni reflet) : 8 px (`--blur-tile`) sur tout ce qui prend `--bg-surface` et sur les barres fixes du bas (`--bg-bar`). La grille se devine derrière en flou sans traverser le texte ; ne pas le remplacer par un fond plus opaque. Le flou est posé par un sélecteur d'attribut (`[style*="--bg-surface)"]`, `[class*="--bg-surface)"]`) : écrire le fond `background:var(--bg-surface)` pour qu'il s'applique. Sans `backdrop-filter`, `styles.scss` rend les fonds presque opaques ; en « moins de transparence » (iOS, ou Windows sans effets de transparence, que Chrome traduit ainsi), le verre s'épaissit (60 %) mais garde son flou.
 - Le bandeau IN//SECONDS des pages (`ui/brand`, `BrandComponent`) est transparent et non collant : seul élément posé sur la grille sans flou.
 
 ## Néon : une tuile de focus par écran

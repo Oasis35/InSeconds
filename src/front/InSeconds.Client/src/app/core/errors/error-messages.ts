@@ -39,6 +39,8 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'daily.already_played': 'errors.daily.already_played',
   'daily.hint_locked': 'errors.daily.hint_locked',
   'daily.invalid_month': 'errors.daily.invalid_month',
+  'daily.invalid_replay_query': 'errors.daily.invalid_replay_query',
+  'daily.invalid_period': 'errors.daily.invalid_period',
   'daily.listened_duration_below_verified_minimum': 'errors.daily.listened_duration_below_verified_minimum',
   'daily.no_challenge': 'errors.daily.no_challenge',
   'daily.session_not_found': 'errors.daily.session_not_found',
@@ -75,6 +77,7 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'social.invalid_name': 'errors.social.invalid_name',
   'social.invalid_ranking_mode': 'errors.social.invalid_ranking_mode',
   'social.invitation_not_found': 'errors.social.invitation_not_found',
+  'social.invalid_date': 'errors.social.invalid_date',
   'social.not_owner': 'errors.social.not_owner',
   'social.too_many_groups': 'errors.social.too_many_groups',
 };

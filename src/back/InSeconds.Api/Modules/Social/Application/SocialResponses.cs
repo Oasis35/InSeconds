@@ -22,6 +22,45 @@ public sealed record RankingEntryResponse(int? Rank, string Pseudo, bool IsMe, d
 
 public sealed record GroupRankingResponse(int GroupId, string Name, IReadOnlyList<RankingEntryResponse> Entries);
 
+/// <summary>Un membre au classement du jour d'un mode.</summary>
+/// <param name="Rank">Vide s'il n'a pas fini sa partie du jour, ou tant que le joueur qui regarde n'a pas fini la sienne.</param>
+/// <param name="Played">Il a fini sa partie du jour (montré même avant que le joueur qui regarde ait fini la sienne).</param>
+/// <param name="Score">Son score du jour, vide dans les mêmes cas que le rang.</param>
+public sealed record TodayScoreEntryResponse(int? Rank, string Pseudo, bool IsMe, bool Played, int? Score);
+
+/// <summary>Un membre au classement de la semaine d'un mode.</summary>
+/// <param name="Rank">Vide s'il n'a fini aucune partie sur la semaine.</param>
+/// <param name="Points">La somme de ses scores sur la semaine (un jour manqué vaut 0), vide sans partie.</param>
+/// <param name="PlayedDays">
+/// Les jours de la semaine (dates des défis) où il a fini une partie, de 0 à 7, du plus ancien au plus récent : les sept points de la semaine à
+/// l'écran.
+/// </param>
+public sealed record WeekScoreEntryResponse(int? Rank, string Pseudo, bool IsMe, int? Points, IReadOnlyList<DateOnly> PlayedDays);
+
+/// <summary>Le classement d'un mode : le jour et la semaine.</summary>
+/// <param name="Mode">Le nom du mode (<c>daily</c>).</param>
+/// <param name="Day">Le jour de jeu en cours (jour UTC).</param>
+/// <param name="TodayRevealed">
+/// Le joueur a fini sa partie du jour : les scores du jour sont montrés. Tant que non, aucun score du jour, ni dans la semaine ; la veille en sort
+/// aussi tant que sa partie de la veille est en cours.
+/// </param>
+/// <param name="WeekDays">La longueur de la semaine glissante, en jours (7).</param>
+public sealed record ModeScoresResponse(
+    string Mode, DateOnly Day, bool TodayRevealed, int WeekDays, IReadOnlyList<TodayScoreEntryResponse> Today, IReadOnlyList<WeekScoreEntryResponse> Week);
+
+public sealed record GroupScoresResponse(int GroupId, string Name, IReadOnlyList<ModeScoresResponse> Modes);
+
+/// <summary>Le classement d'un mode pour un groupe sur le défi d'un jour.</summary>
+/// <param name="Day">Le jour du défi.</param>
+/// <param name="Revealed">
+/// Le joueur peut voir les scores de ce jour : faux tant qu'il peut encore jouer ce défi (le jour en cours qu'il n'a pas fini, la veille tant que sa
+/// partie de la veille est en cours). Tant que non, aucune ligne n'a de rang ni de score.
+/// </param>
+/// <param name="Entries">Les membres, les classés d'abord ; <c>Played</c> dit s'il a fini sa partie ce jour-là (faux pour tous tant que caché).</param>
+public sealed record ModeDayScoresResponse(string Mode, DateOnly Day, bool Revealed, IReadOnlyList<TodayScoreEntryResponse> Entries);
+
+public sealed record GroupDayScoresResponse(int GroupId, string Name, IReadOnlyList<ModeDayScoresResponse> Modes);
+
 /// <summary>Le classement général : sa tête, puis le joueur et ses voisins s'il y est classé plus bas.</summary>
 /// <param name="Total">Combien de joueurs sont classés.</param>
 /// <param name="HasAccount">Le joueur a un compte (un invité n'y figure jamais).</param>

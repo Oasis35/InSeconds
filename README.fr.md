@@ -22,9 +22,11 @@
 - Le scoring est entièrement côté serveur - impossible de tricher côté client
 - À chaque révélation, un histogramme montre en combien de temps les autres joueurs ont trouvé ce morceau
 - Mode invité : joue sans créer de compte (seulement les stats globales et anonymes du jour ; les groupes entre amis et le classement général de la Survie demandent un compte)
+- Historique du défi du jour : le calendrier du mois (une case par jour, teintée selon ton score), les réponses de chaque jour passé avec les scores de tes amis ce jour-là, « À réécouter » (les morceaux qui t'ont échappé) et ton « profil d'oreille » (ta moyenne dans la durée face aux joueurs, ta meilleure série, quand tu trouves)
 - Comptes utilisateurs optionnels (inscription ouverte à tous, connexion sans mot de passe par lien magique) - conserve historique/streak entre appareils ; le jeu en invité reste ouvert à tous
 - Série quotidienne affichée sous « Commencer » (panneau de détail au toucher), avec des gels de série pour les comptes connectés (1 offert à l'inscription, +1 tous les 7 jours, 2 max, utilisés automatiquement sur un jour manqué)
 - Après la partie, un seul écran « résultat du jour » : ton score avec ta partie en cinq petites barres, le compte à rebours, une phrase sous le score (ton moment fort s'il y en a un, sinon la part des joueurs que tu bats, à partir de 5 joueurs), un égaliseur des scores du jour (plus bas, médiane, plus haut), tes morceaux repliés
+- Sur l'accueil, sous le défi du jour, une carte amis : qui a joué aujourd'hui dans ton groupe (sans les scores) tant que tu n'as pas fini ton défi, puis le haut du classement du jour de ton groupe ; un invité ou un compte sans groupe peut en créer un de là
 - Partage du score (une ligne par morceau : ✅ / ❌ pour l'artiste puis le titre, et le temps d'écoute), commençant par le score, le nom et la date (menu de partage du téléphone, copie dans le presse-papier sur ordinateur)
 - Disponible en français et en anglais - détecté automatiquement depuis le navigateur, changeable à tout moment depuis le pied de page (choix sauvegardé en localStorage)
 - Mentions légales sur `/legal` (alias `/mentions-legales`) et confidentialité sur `/privacy` (alias `/confidentialite`)
@@ -32,7 +34,8 @@
 - Liste des appareils connectés à ton compte, déconnexion d'un appareil ou de tous les autres
 - Tes données (RGPD) : copie de toutes tes données en JSON et suppression définitive de ton compte (section « Tes données » du profil) ; appareils sans visite depuis 91 jours et comptes inactifs depuis 3 ans supprimés automatiquement chaque nuit ; ce que tu tapes en réponse n'est jamais stocké
 - Mode Survie (`Runs` dans le code, sur invitation pour l'instant) : tu enchaînes des manches de 3 morceaux, de moins en moins connus, jusqu'à perdre tes 3 vies ou finir la 8e manche (« Série complète », avec un bonus par vie restante) ; une manche sans vie perdue te rend une vie et raccourcit l'écoute (10, 5, 3, 2, 1, 0,5 s), une manche avec une vie perdue la laisse la même ; un morceau trouvé rapporte les points de son palier, 45 s par morceau pour répondre, un thème à choisir à chaque manche dès la 2e ; envoie la même playlist à tes amis par un lien, bats leur fantôme et comparez vos scores une fois la partie jouée
-- Autour de la Survie : un niveau affiché en disque (sept disques, du disque rayé au disque de diamant), des groupes entre amis avec leur classement, un classement général par niveau pour les comptes qui ont l'accès (sous ton pseudo ou un alias musical), des Hits (jalons obtenus en jouant) et l'historique de tes parties (`/survie` ; règles, écrans et conception dans [`docs/runs/`](docs/runs/README.md))
+- Des groupes entre amis pour tout compte : un classement privé du défi du jour (cette semaine et aujourd'hui), avec un lien d'invitation
+- Autour de la Survie : un niveau affiché en disque (sept disques, du disque rayé au disque de diamant), ta place Survie dans chaque groupe, un classement général par niveau pour les comptes qui ont l'accès (sous ton pseudo ou un alias musical), des Hits (jalons obtenus en jouant) et l'historique de tes parties (`/survie` ; règles, écrans et conception dans [`docs/runs/`](docs/runs/README.md))
 
 ## Démarrage rapide
 

@@ -1,4 +1,7 @@
+using System.Globalization;
+using InSeconds.Api.Infrastructure.Time;
 using InSeconds.Api.Modules.Players.Contracts;
+using InSeconds.Api.Modules.Social.Contracts;
 using InSeconds.Api.Modules.Social.Domain;
 using InSeconds.Infrastructure.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
@@ -143,6 +146,65 @@ public static class GetGroupRankingEndpoint
         var rows = await ranking.RankAsync(group, ct);
         return new GroupRankingResponse(
             group.Id, group.Name, [.. rows.Select(r => new RankingEntryResponse(r.Rank, r.Pseudo, r.PlayerId == playerId, r.Performance, r.GamesPlayed, r.BestScore, r.Points, r.Badge))]);
+    }
+}
+
+public static class GetGroupScoresEndpoint
+{
+    public static Task<GroupView?> LoadAsync(int id, ICurrentPlayer current, ISocialQueries queries, CancellationToken ct) =>
+        queries.FindGroupForMemberAsync(id, current.PlayerId!.Value, ct);
+
+    public static ProblemDetails Validate(GroupView? group) => group is null ? SocialProblems.GroupNotFound() : WolverineContinue.NoProblems;
+
+    /// <summary>
+    /// <c>GET /api/social/groups/{id}/scores</c> : le classement du groupe par score, un par mode qui en donne (le Défi du jour) : le jour (score de
+    /// la partie finie, montré seulement à un joueur qui a fini la sienne) et la semaine glissante (somme des scores des sept derniers jours, un jour
+    /// manqué vaut 0). Pour un membre seulement : un non-membre, 404 <c>social.group_not_found</c>.
+    /// </summary>
+    [Authorize]
+    [WolverineGet("/api/social/groups/{id}/scores", OperationId = "getGroupScores")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public static async Task<GroupScoresResponse> Get([NotBody] GroupView group, ICurrentPlayer current, GroupScores scores, CancellationToken ct)
+    {
+        var playerId = current.PlayerId!.Value;
+        var modes = await scores.RankAsync(group, playerId, ct);
+        return new GroupScoresResponse(group.Id, group.Name, [.. modes.Select(m => new ModeScoresResponse(
+            m.Mode, m.Day, m.TodayRevealed, ScorePeriods.WeekDays,
+            [.. m.Today.Select(t => new TodayScoreEntryResponse(t.Row.Rank, t.Row.Pseudo, t.Row.PlayerId == playerId, t.Played, t.Row.Score))],
+            [.. m.Week.Select(w => new WeekScoreEntryResponse(w.Row.Rank, w.Row.Pseudo, w.Row.PlayerId == playerId, w.Row.Score, w.PlayedDays))]))]);
+    }
+}
+
+public static class GetGroupDayScoresEndpoint
+{
+    public static Task<GroupView?> LoadAsync(int id, ICurrentPlayer current, ISocialQueries queries, CancellationToken ct) =>
+        queries.FindGroupForMemberAsync(id, current.PlayerId!.Value, ct);
+
+    public static ProblemDetails Validate(GroupView? group, string date, IGameCalendar calendar)
+    {
+        if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var day) || day > calendar.Today)
+            return SocialProblems.InvalidDate();
+        return group is null ? SocialProblems.GroupNotFound() : WolverineContinue.NoProblems;
+    }
+
+    /// <summary>
+    /// <c>GET /api/social/groups/{id}/scores/{date}</c> : le classement du groupe sur le défi d'un jour (la page d'un jour de l'historique), un par mode
+    /// qui en donne : le score de chaque membre qui a fini sa partie ce jour-là, montré seulement si le joueur ne peut plus jouer ce défi (piège 18 :
+    /// la veille reste cachée tant que sa partie de la veille est en cours). Pour un membre seulement : un non-membre, 404 <c>social.group_not_found</c> ;
+    /// un jour mal écrit ou futur, 400 <c>social.invalid_date</c>.
+    /// </summary>
+    [Authorize]
+    [WolverineGet("/api/social/groups/{id}/scores/{date}", OperationId = "getGroupDayScores")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public static async Task<GroupDayScoresResponse> Get([NotBody] GroupView group, string date, ICurrentPlayer current, GroupScores scores, CancellationToken ct)
+    {
+        var playerId = current.PlayerId!.Value;
+        var day = DateOnly.ParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var modes = await scores.RankDayAsync(group, playerId, day, ct);
+        return new GroupDayScoresResponse(group.Id, group.Name, [.. modes.Select(m => new ModeDayScoresResponse(
+            m.Mode, m.Day, m.Revealed, [.. m.Lines.Select(l => new TodayScoreEntryResponse(l.Row.Rank, l.Row.Pseudo, l.Row.PlayerId == playerId, l.Played, l.Row.Score))]))]);
     }
 }
 

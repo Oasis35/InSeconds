@@ -5,6 +5,9 @@ import {
 } from '../../domain/daily';
 import { EMPTY_STREAK } from '../../domain/streak';
 import { ArchiveDay, ArchiveMe, ArchiveTrack, NOBODY } from '../../domain/archive';
+import { DailyHistory } from '../../domain/history';
+import { ReplayFilter, ReplayPage } from '../../domain/replay';
+import { EarProfile, ProfilePeriod } from '../../domain/ear-profile';
 
 export const SETTINGS: DailySettings = {
   guessTimerSeconds: 20,
@@ -81,6 +84,11 @@ export class FakeDailyApi {
   archiveDays: Record<string, ArchiveDay | Error> = { '2026-10-21': ARCHIVE_DAY() };
   archiveMe: ArchiveMe | Error = NOBODY;
   archivePreview: string | null | Error = 'https://preview/archive.mp3';
+  /** L'historique d'un mois (le mois demandé est noté dans `calls`). */
+  history: DailyHistory | Error = HISTORY();
+  /** Les pages de « À réécouter », par jour de départ (`''` : la première). */
+  replayPages: Record<string, ReplayPage | Error> = { '': REPLAY_PAGE() };
+  earProfile: EarProfile | null | Error = EAR_PROFILE();
   /** La réponse du serveur à chaque réponse envoyée ; `Error` pour un échec. */
   answer: (answer: AnswerToSend) => AnsweredTrack | Error = a => ANSWERED(a.position);
   hintFacts: readonly { kind: string; value: string | null }[] = [{ kind: 'year', value: '2013' }];
@@ -145,6 +153,21 @@ export class FakeDailyApi {
     return this.result(this.archivePreview);
   }
 
+  historyCall(month: string | null): Promise<DailyHistory> {
+    this.calls.push(`history ${month ?? ''}`);
+    return this.result(this.history);
+  }
+
+  replayCall(filter: ReplayFilter, before: string | null): Promise<ReplayPage> {
+    this.calls.push(`replay ${filter} ${before ?? ''}`);
+    return this.result(this.replayPages[before ?? ''] ?? { days: [], nextBefore: null, allCount: 0, noneCount: 0, halfCount: 0 });
+  }
+
+  earProfileCall(period: ProfilePeriod): Promise<EarProfile | null> {
+    this.calls.push(`earProfile ${period}`);
+    return this.result(this.earProfile);
+  }
+
   statsCall(): Promise<DayStats> {
     this.calls.push('stats');
     return this.result(this.stats);
@@ -168,6 +191,69 @@ export function provideFakeDailyApi(fake: FakeDailyApi): Provider {
       archiveDay: (date: string) => fake.archiveDayCall(date),
       myArchiveDay: (date: string) => fake.myArchiveDayCall(date),
       archivePreviewUrl: (date: string, position: number) => fake.archivePreviewCall(date, position),
+      history: (month: string | null) => fake.historyCall(month),
+      replay: (filter: ReplayFilter, before: string | null) => fake.replayCall(filter, before),
+      earProfile: (period: ProfilePeriod) => fake.earProfileCall(period),
     } satisfies Partial<Record<keyof DailyApi, unknown>>,
   };
 }
+
+export const HISTORY = (over: Partial<DailyHistory> = {}): DailyHistory => ({
+  month: '2026-11',
+  previousMonth: '2026-10',
+  nextMonth: null,
+  days: [
+    { date: '2026-11-18', state: 'missed', score: null, maxPossibleScore: 5000 },
+    { date: '2026-11-19', state: 'played', score: 2140, maxPossibleScore: 5000 },
+    { date: '2026-11-20', state: 'today', score: null, maxPossibleScore: 5000 },
+  ],
+  monthPlayedCount: 1,
+  monthPublishedCount: 2,
+  monthAverageScore: 2140,
+  monthBestScore: 2140,
+  ...over,
+});
+
+export const REPLAY_PAGE = (over: Partial<ReplayPage> = {}): ReplayPage => ({
+  days: [
+    {
+      date: '2026-11-19',
+      tracks: [
+        { position: 2, artist: 'Marguerite Vale', title: 'Fil de soie', deezerTrackId: 1002, coverUrl: null, artistCorrect: false, titleCorrect: false },
+        { position: 4, artist: 'Cap Nord', title: 'Rue des Lilas', deezerTrackId: 1004, coverUrl: null, artistCorrect: true, titleCorrect: false },
+      ],
+    },
+  ],
+  nextBefore: null,
+  allCount: 2,
+  noneCount: 1,
+  halfCount: 1,
+  ...over,
+});
+
+export const EAR_PROFILE = (over: Partial<EarProfile> = {}): EarProfile => ({
+  period: '8w',
+  points: [
+    { start: '2026-11-09', average: 1800, playersAverage: 1900, games: 3 },
+    { start: '2026-11-16', average: 2180, playersAverage: 1950, games: 4 },
+  ],
+  averageScore: 2000,
+  trendPercent: 12,
+  gamesPlayed: 7,
+  bestScore: 3100,
+  bestStreak: 14,
+  firstStepSeconds: 0.5,
+  firstStepFound: 11,
+  steps: [
+    { seconds: 0.5, percent: 10, playersPercent: 5 },
+    { seconds: 1, percent: 20, playersPercent: 12 },
+    { seconds: 2, percent: 30, playersPercent: 22 },
+  ],
+  notFoundPercent: 40,
+  playersNotFoundPercent: 61,
+  artistFoundPercent: 78,
+  titleFoundPercent: 61,
+  playersArtistFoundPercent: 66,
+  playersTitleFoundPercent: 54,
+  ...over,
+});

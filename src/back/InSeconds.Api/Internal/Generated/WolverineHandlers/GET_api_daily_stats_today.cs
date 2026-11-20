@@ -46,12 +46,13 @@ namespace Internal.Generated.WolverineHandlers
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Wolverine.Runtime.ScopedMessageContextHolder>(serviceScope.ServiceProvider).Context = messageContext;
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
+            var efDailyProfileQueries = new InSeconds.Api.Modules.Daily.Persistence.EfDailyProfileQueries(inSecondsDbContext);
             var efPlayerDirectory = new InSeconds.Api.Modules.Players.Persistence.EfPlayerDirectory(inSecondsDbContext);
             var efTrackDirectory = new InSeconds.Api.Modules.Catalogue.Persistence.EfTrackDirectory(inSecondsDbContext, _optionsMonitorOfCatalogueOptions);
             var efDailyStatsQueries = new InSeconds.Api.Modules.Daily.Persistence.EfDailyStatsQueries(inSecondsDbContext);
             var efDailyQueries = new InSeconds.Api.Modules.Daily.Persistence.EfDailyQueries(inSecondsDbContext);
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Daily.Application.GetTodayStatsEndpoint");
+            Wolverine.Http.HttpHandler.RequestActivity(httpContext)?.SetTag("handler.type", "InSeconds.Api.Modules.Daily.Application.GetTodayStatsEndpoint").SetTag("http.route", "/api/daily/stats/today").SetTag("http.request.method", "GET");
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
             var efCoreEnvelopeTransaction = new Wolverine.EntityFrameworkCore.Internals.EfCoreEnvelopeTransaction(inSecondsDbContext, messageContext, _domainEventScraperIEnumerable);
@@ -66,7 +67,7 @@ namespace Internal.Generated.WolverineHandlers
             {
                 
                 // The actual HTTP request handler execution
-                var todayStatsResponse_response = await InSeconds.Api.Modules.Daily.Application.GetTodayStatsEndpoint.Get(claimsCurrentPlayer, efDailyQueries, efDailyStatsQueries, efTrackDirectory, efPlayerDirectory, _gameCalendar, _dailyRules, httpContext.RequestAborted).ConfigureAwait(false);
+                var todayStatsResponse_response = await InSeconds.Api.Modules.Daily.Application.GetTodayStatsEndpoint.Get(claimsCurrentPlayer, efDailyQueries, efDailyStatsQueries, efTrackDirectory, efPlayerDirectory, _gameCalendar, _dailyRules, efDailyProfileQueries, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

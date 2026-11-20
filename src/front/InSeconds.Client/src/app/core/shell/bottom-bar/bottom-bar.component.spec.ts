@@ -1,26 +1,26 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
-import { SessionStore } from '../../../core/session/session.store';
-import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
-import { SetlistBottomBarComponent } from './setlist-bottom-bar.component';
+import { SessionStore } from '../../session/session.store';
+import { ShellChromeStore } from '../shell-chrome.store';
+import { DAILY_DONE_LOADER } from '../daily-done-loader';
+import { BottomBarComponent } from './bottom-bar.component';
 
-describe('SetlistBottomBarComponent', () => {
-  async function render(url: string, state: { v4?: boolean; immersive?: boolean; dailyDone?: boolean | null }) {
+describe('BottomBarComponent', () => {
+  async function render(url: string, state: { immersive?: boolean; dailyDone?: boolean | null }) {
     TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([{ path: '**', children: [] }])] });
     const chrome = TestBed.inject(ShellChromeStore);
-    chrome.setV4(state.v4 ?? true);
     chrome.setImmersive(state.immersive ?? false);
     chrome.setDailyDone(state.dailyDone ?? null);
     await TestBed.inject(Router).navigateByUrl(url);
-    const fixture = TestBed.createComponent(SetlistBottomBarComponent);
+    const fixture = TestBed.createComponent(BottomBarComponent);
     fixture.detectChanges();
     return { fixture, el: fixture.nativeElement as HTMLElement, chrome };
   }
 
   afterEach(() => document.documentElement.classList.remove('has-bottom-bar'));
 
-  it('apparaît sur le jeu du jour sous la V4 et réserve sa place', async () => {
+  it('apparaît sur le jeu du jour, pour tout le monde, et réserve sa place', async () => {
     const { el } = await render('/daily', {});
     expect(el.querySelector('[data-testid="bottom-bar"]')).not.toBeNull();
     expect(el.querySelector('[data-testid="tab-daily"]')?.getAttribute('aria-current')).toBe('page');
@@ -29,16 +29,10 @@ describe('SetlistBottomBarComponent', () => {
     expect(document.documentElement.classList.contains('has-bottom-bar')).toBe(true);
   });
 
-  it("l'onglet Accueil mène à la racine et s'allume sur la racine comme sur /daily", async () => {
+  it("l'onglet Jouer mène à la racine et s'allume sur la racine comme sur /daily", async () => {
     const { el } = await render('/', {});
     expect(el.querySelector('[data-testid="tab-daily"]')?.getAttribute('href')).toBe('/');
     expect(el.querySelector('[data-testid="tab-daily"]')?.getAttribute('aria-current')).toBe('page');
-  });
-
-  it('ne montre rien sans la V4', async () => {
-    const { el } = await render('/daily', { v4: false });
-    expect(el.querySelector('[data-testid="bottom-bar"]')).toBeNull();
-    expect(document.documentElement.classList.contains('has-bottom-bar')).toBe(false);
   });
 
   it('disparaît pendant une manche et hors du jeu', async () => {
@@ -78,18 +72,36 @@ describe('SetlistBottomBarComponent', () => {
     expect(el.querySelector('a[href="/legal"]')).toBeNull();
   });
 
-  it('« Mon compte » ouvre le profil d\'un compte, « Connexion » est l\'entrée d\'un invité', async () => {
+  it('« Profil » ouvre le profil d\'un compte, « Connexion » est l\'entrée d\'un invité', async () => {
     const { el } = await render('/daily', {});
     expect(el.querySelector('[data-testid="tab-account"]')?.getAttribute('href')).toBe('/account/login');
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([{ path: '**', children: [] }])] });
     TestBed.inject(SessionStore).signedIn({ id: 'p1', pseudo: 'Léa', email: 'l@e.fr', isGuest: false, isAdmin: false });
-    TestBed.inject(ShellChromeStore).setV4(true);
     await TestBed.inject(Router).navigateByUrl('/account/profile');
-    const fixture = TestBed.createComponent(SetlistBottomBarComponent);
+    const fixture = TestBed.createComponent(BottomBarComponent);
     fixture.detectChanges();
     const tab = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="tab-account"]');
     expect(tab?.getAttribute('href')).toBe('/account/profile');
     expect(tab?.getAttribute('aria-current')).toBe('page');
+  });
+
+  it("arrivé directement sur une page de la barre, il lit si le défi du jour est joué, sans écraser ce que le jeu du jour a dit", async () => {
+    const daily = vi.fn(async () => true);
+    TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([{ path: '**', children: [] }]), { provide: DAILY_DONE_LOADER, useValue: daily }] });
+    const chrome = TestBed.inject(ShellChromeStore);
+    await TestBed.inject(Router).navigateByUrl('/survie');
+    TestBed.createComponent(BottomBarComponent).detectChanges();
+    for (let i = 0; i < 6; i++) { TestBed.tick(); await Promise.resolve(); }
+    expect(daily).toHaveBeenCalledTimes(1);
+    expect(chrome.dailyDone()).toBe(true);
+
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([{ path: '**', children: [] }]), { provide: DAILY_DONE_LOADER, useValue: async () => true }] });
+    const other = TestBed.inject(ShellChromeStore);
+    other.setDailyDone(false);
+    TestBed.createComponent(BottomBarComponent).detectChanges();
+    for (let i = 0; i < 6; i++) { TestBed.tick(); await Promise.resolve(); }
+    expect(other.dailyDone()).toBe(false);
   });
 });

@@ -1,18 +1,19 @@
-import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, inject, input } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { PointsPipe } from '../../../ui/format/points.pipe';
 import { enterHomeCard } from '../../../ui/motion/motion';
-import { TrackResultRow, TrackResultsListComponent } from '../../../gameplay/ui/track-results-list/track-results-list.component';
+import { TrackResultRow } from '../../../gameplay/ui/track-results-list/track-results-list.component';
 import { trackBar } from '../day-result-screen/result-rows';
 
 /**
  * La carte du défi du jour abandonné sur l'accueil de la V4. Abandonné après au moins une réponse : le score des morceaux répondus, « partie abandonnée »,
- * une petite barre par morceau et « Détail » qui déplie les morceaux. Abandonné sans réponse : ni score ni détail, seulement ce qui s'est passé. Dans les
+ * une petite barre par morceau et « Voir le résultat » (les morceaux sur `/daily/resultat`). Abandonné sans réponse : ni score ni lien, seulement ce qui s'est passé. Dans les
  * deux cas, le compte à rebours du prochain défi. Contour discret : la prochaine action est la carte Survie.
  */
 @Component({
   selector: 'app-home-abandoned-card',
-  imports: [TranslatePipe, PointsPipe, TrackResultsListComponent],
+  imports: [TranslatePipe, PointsPipe, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
@@ -40,24 +41,15 @@ import { trackBar } from '../day-result-screen/result-rows';
           <p class="text-sm" style="color:var(--text-light)" data-testid="home-abandoned-noplay">{{ 'daily.home.abandonedNoPlay' | translate }}</p>
         }
       } @else if (rows().length) {
-        <button type="button" (click)="showTracks.set(!showTracks())" [attr.aria-expanded]="showTracks()" data-testid="home-abandoned-toggle"
-          class="self-start flex items-center gap-2.5 min-h-11 -my-2 touch-manipulation cursor-pointer">
-          <span class="flex gap-1" aria-hidden="true">
-            @for (row of rows(); track row.position) {
-              <span class="w-4 h-1.5 rounded-full" [style.background]="bar(row)" data-testid="track-bar"></span>
-            }
-          </span>
-          <span class="flex items-center gap-1 text-[13px]" style="color:var(--text-muted)" aria-hidden="true">
-            {{ (showTracks() ? 'daily.result.hideTracks' : 'daily.result.showTracks') | translate }}
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              class="transition-transform" [class.rotate-180]="showTracks()"><path d="M6 9l6 6 6-6" /></svg>
-          </span>
-        </button>
-        @if (showTracks()) {
-          <div class="-mx-5" style="border-top:1px solid var(--border-medium);border-bottom:1px solid var(--border-medium)" data-testid="home-abandoned-tracks">
-            <app-track-results-list [rows]="rows()" [lang]="lang()" />
-          </div>
-        }
+        <!-- La partie en un coup d'œil ; les morceaux sont sur le résultat complet, comme pour une partie finie. -->
+        <span class="flex gap-1" role="img" [attr.aria-label]="'daily.result.yourTracks' | translate: { count: rows().length }">
+          @for (row of rows(); track row.position) {
+            <span class="w-4 h-1.5 rounded-full" [style.background]="bar(row)" data-testid="track-bar"></span>
+          }
+        </span>
+        <a routerLink="/daily/resultat" class="self-end inline-flex items-center gap-1 min-h-11 -mb-2 text-sm" style="color:var(--text-light)" data-testid="home-abandoned-see-result">
+          {{ 'daily.home.seeResult' | translate }} <span aria-hidden="true">›</span>
+        </a>
       }
     </section>
   `,
@@ -75,8 +67,6 @@ export class HomeAbandonedCardComponent {
   /** Les stats du jour ne sont pas encore là (ou ont échoué) : on ne dit pas « pas joué » à tort. */
   readonly pending = input(false);
   readonly rows = input<readonly TrackResultRow[]>([]);
-  readonly lang = input<'fr' | 'en'>('fr');
 
-  protected readonly showTracks = signal(false);
   protected readonly bar = trackBar;
 }

@@ -235,13 +235,6 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
                select new PlayerHistoryRow(c.Date, s.Status, s.TotalScore, s.FreezesUsed, s.FreezeEarned))
             .ToListAsync(ct);
 
-    public async Task<IReadOnlyList<int>> GetPreviousScoresAsync(Guid playerId, DateOnly before, CancellationToken ct) =>
-        await (from s in db.Set<DailySession>().AsNoTracking()
-               join c in db.Set<DailyChallenge>().AsNoTracking() on s.ChallengeId equals c.Id
-               where s.PlayerId == playerId && s.Status == SessionStatus.Completed && c.Date < before
-               select s.TotalScore)
-            .ToListAsync(ct);
-
     public async Task<AnswerSpeedHistory> GetAnswerSpeedHistoryAsync(DateOnly since, DateOnly before, CancellationToken ct)
     {
         var answers = from a in db.Set<SessionAnswer>().AsNoTracking()

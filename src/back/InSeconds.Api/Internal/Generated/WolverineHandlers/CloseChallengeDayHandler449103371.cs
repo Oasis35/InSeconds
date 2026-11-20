@@ -50,8 +50,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "InSeconds.Api.Modules.Daily.Application.CloseChallengeDayHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Daily.Application.CloseChallengeDayHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "InSeconds.Api.Modules.Daily.Application.CloseChallengeDayHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "InSeconds.Api.Modules.Daily.Application.CloseChallengeDayHandler");
                 
                 // The actual message execution
                 var outgoing1 = await InSeconds.Api.Modules.Daily.Application.CloseChallengeDayHandler.Handle(closeChallengeDay, efDailyStore, efDailyStatsQueries, _dailyRules, _gameCalendar, _loggerForMessage, cancellation).ConfigureAwait(false);

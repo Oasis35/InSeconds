@@ -2,27 +2,29 @@ import { TestBed } from '@angular/core/testing';
 import { ShellChromeStore } from './shell-chrome.store';
 
 describe('ShellChromeStore', () => {
-  it('commence sans V4, hors manche, défi inconnu', () => {
+  it("commence sans accès Survie, hors manche, défi inconnu", () => {
     const store = TestBed.inject(ShellChromeStore);
-    expect(store.v4()).toBe(false);
+    expect(store.survie()).toBe(false);
     expect(store.immersive()).toBe(false);
     expect(store.dailyDone()).toBeNull();
+    expect(store.accountCtaShown()).toBe(false);
   });
 
   it("garde ce que les pages posent", () => {
     const store = TestBed.inject(ShellChromeStore);
-    store.setV4(true);
+    store.setSurvie(true);
     store.setImmersive(true);
     store.setDailyDone(false);
-    expect([store.v4(), store.immersive(), store.dailyDone()]).toEqual([true, true, false]);
+    store.setAccountCtaShown(true);
+    expect([store.survie(), store.immersive(), store.dailyDone(), store.accountCtaShown()]).toEqual([true, true, false, true]);
   });
 
-  it("sait si le flag de la V4 a été lu", () => {
+  it("sait si l'accès Survie a été lu", () => {
     const store = TestBed.inject(ShellChromeStore);
-    expect(store.v4Known()).toBe(false);
-    store.setV4(false, false);
-    expect(store.v4Known()).toBe(false);
-    store.setV4(false);
-    expect(store.v4Known()).toBe(true);
+    expect(store.survieKnown()).toBe(false);
+    store.setSurvie(false, false);
+    expect(store.survieKnown()).toBe(false);
+    store.setSurvie(false);
+    expect(store.survieKnown()).toBe(true);
   });
 });

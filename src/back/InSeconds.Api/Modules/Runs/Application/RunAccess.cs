@@ -7,9 +7,9 @@ using Wolverine.Http;
 namespace InSeconds.Api.Modules.Runs.Application;
 
 /// <summary>
-/// Qui peut lancer un run : un admin d'office (le rôle est relu en base par la validation du cookie), ou un compte que l'admin a autorisé
-/// (<c>runs.access</c>). Relever un défi existant demande le même accès : le lien d'un ami ne le remplace pas. Players n'est pas modifié : l'accès est une
-/// affaire du mode.
+/// Qui peut lancer un run : un compte que l'admin a autorisé (<c>runs.access</c>), admin compris : le rôle ne donne rien d'office, un admin peut
+/// se retirer l'accès pour voir le jeu sans Survie. Relever un défi existant demande le même accès : le lien d'un ami ne le remplace pas. Players
+/// n'est pas modifié : l'accès est une affaire du mode.
 /// </summary>
 public interface IRunAccess
 {
@@ -30,7 +30,7 @@ public sealed record RunReceivedEntry(int ChallengeId, string Code, Guid? Author
 
 public interface IRunsQueries
 {
-    /// <summary>Les comptes autorisés par l'admin (les admins, qui ont l'accès d'office, n'y figurent que s'ils ont aussi une ligne).</summary>
+    /// <summary>Les comptes autorisés par l'admin, admins compris.</summary>
     Task<IReadOnlyList<RunAccessEntry>> ListAccessAsync(CancellationToken ct);
 
     /// <summary>La partie en cours la plus récente de ce joueur, toutes playlists confondues.</summary>
@@ -67,8 +67,7 @@ public interface IRunsQueries
 public static class ListRunAccessEndpoint
 {
     /// <summary>
-    /// <c>GET /api/admin/runs/access</c> : les comptes autorisés, en un appel pour tous les interrupteurs de l'onglet Joueurs. L'accès d'un admin
-    /// est d'office : l'onglet le déduit du rôle, pas de cette liste.
+    /// <c>GET /api/admin/runs/access</c> : les comptes autorisés, admins compris, en un appel pour tous les interrupteurs de l'onglet Joueurs.
     /// </summary>
     [WolverineGet("/api/admin/runs/access", OperationId = "listRunAccess")]
     public static async Task<RunAccessList> Get(IRunsQueries queries, CancellationToken ct) => new(await queries.ListAccessAsync(ct));

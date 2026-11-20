@@ -67,6 +67,7 @@ namespace Internal.Generated.WolverineHandlers
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor1);
             var efPlayerStore = new InSeconds.Api.Modules.Players.Persistence.EfPlayerStore(inSecondsDbContext);
             var accountSignIn = new InSeconds.Api.Modules.Players.Application.AccountSignIn(efPlayerStore, claimsCurrentPlayer, playerSignIn, streakGrants, _deviceSessionValidationCache, _httpContextAccessor3, _timeProvider, socialReservedPseudos);
+            Wolverine.Http.HttpHandler.RequestActivity(httpContext)?.SetTag("handler.type", "InSeconds.Api.Modules.Players.Application.VerifyMagicLinkEndpoint").SetTag("http.route", "/api/players/auth/magic-link/verify").SetTag("http.request.method", "POST");
             // Reading the request body via JSON deserialization
             var (request, jsonContinue) = await ReadJsonAsync<InSeconds.Api.Modules.Players.Application.VerifyMagicLink>(httpContext);
             if (jsonContinue == Wolverine.HandlerContinuation.Stop) return;
@@ -81,7 +82,6 @@ namespace Internal.Generated.WolverineHandlers
                 return;
             }
 
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Players.Application.VerifyMagicLinkEndpoint");
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
             var efCoreEnvelopeTransaction = new Wolverine.EntityFrameworkCore.Internals.EfCoreEnvelopeTransaction(inSecondsDbContext, messageContext, _domainEventScraperIEnumerable);

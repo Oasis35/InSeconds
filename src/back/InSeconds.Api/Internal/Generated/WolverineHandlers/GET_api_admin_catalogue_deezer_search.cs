@@ -34,7 +34,7 @@ namespace Internal.Generated.WolverineHandlers
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Wolverine.Runtime.ScopedMessageContextHolder>(serviceScope.ServiceProvider).Context = messageContext;
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var trackSearch = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Deezer.ITrackSearch>(serviceScope.ServiceProvider);
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.AdminDeezerSearchEndpoint");
+            Wolverine.Http.HttpHandler.RequestActivity(httpContext)?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.AdminDeezerSearchEndpoint").SetTag("http.route", "/api/admin/catalogue/deezer-search").SetTag("http.request.method", "GET");
             var q = httpContext.Request.Query["q"];
             var searchLookup = await InSeconds.Api.Modules.Catalogue.Application.AdminDeezerSearchEndpoint.LoadAsync(q, trackSearch, httpContext.RequestAborted).ConfigureAwait(false);
             var problemDetails1 = InSeconds.Api.Modules.Catalogue.Application.AdminDeezerSearchEndpoint.Validate(searchLookup);

@@ -29,6 +29,7 @@ namespace Internal.Generated.WolverineHandlers
 
         public override async System.Threading.Tasks.Task Handle(Microsoft.AspNetCore.Http.HttpContext httpContext)
         {
+            Wolverine.Http.HttpHandler.RequestActivity(httpContext)?.SetTag("handler.type", "InSeconds.Api.Infrastructure.Errors.ReportClientErrorEndpoint").SetTag("http.route", "/api/client-errors").SetTag("http.request.method", "POST");
             // Reading the request body via JSON deserialization
             var (report, jsonContinue) = await ReadJsonAsync<InSeconds.Api.Infrastructure.Errors.ClientErrorReport>(httpContext);
             if (jsonContinue == Wolverine.HandlerContinuation.Stop) return;
@@ -43,7 +44,6 @@ namespace Internal.Generated.WolverineHandlers
                 return;
             }
 
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Infrastructure.Errors.ReportClientErrorEndpoint");
             
             // The actual HTTP request handler execution
             InSeconds.Api.Infrastructure.Errors.ReportClientErrorEndpoint.Post(report, httpContext.Request, _loggerForMessage);

@@ -7,39 +7,39 @@ import { ErrorReportingService } from '../../../core/errors/error-reporting.serv
 import { LanguageService } from '../../../core/i18n/language.service';
 import { AccountLinkComponent } from '../../../core/shell/account-link/account-link.component';
 import { InstagramLinkComponent } from '../../../core/shell/instagram-link/instagram-link.component';
-import { HomeLegalLineComponent } from '../../../ui/legal-line/home-legal-line.component';
+import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { BrandComponent } from '../../../ui/brand/brand.component';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
-import { dayLabel, formatScore, isMonthText, utcDayOf } from '../../../ui/format/day-label';
-import { HistorySummaryComponent } from '../../../ui/history/history-summary.component';
+import { dayLabel, isMonthText, utcDayOf } from '../../../ui/format/day-label';
+import { PointsPipe } from '../../../ui/format/points.pipe';
 import { HistoryTabsComponent } from '../../../ui/history/history-tabs.component';
-import { MonthNavComponent } from '../../../ui/history/month-nav.component';
+import { HomeLegalLineComponent } from '../../../ui/legal-line/home-legal-line.component';
 import { DailyHistoryStore } from '../../data-access/daily-history.store';
-import { gameLink, verdictOf } from '../../domain/history';
+import { EarProfileStore } from '../../data-access/ear-profile.store';
+import { EarProfileCardComponent } from '../../ui/ear-profile-card/ear-profile-card.component';
+import { HistoryCalendarComponent } from '../../ui/history-calendar/history-calendar.component';
 import { StatusScreenComponent } from '../../ui/status-screen/status-screen.component';
 
 /**
- * L'historique du joueur sur le défi du jour (`/history/daily`, `?mois=aaaa-mm`) : le résumé de toutes ses parties, puis un mois à la fois.
- * Une ligne mène aux réponses du jour. L'onglet « Setlists » est la page du mode Setlist (`/history/survie`) : les modes ne se connaissent pas.
+ * L'historique du joueur sur le défi du jour (`/history/daily`, `?mois=aaaa-mm`) : le défi d'aujourd'hui en tête, la carte de son profil d'oreille,
+ * le calendrier du mois (une case par jour de défi, qui mène à ses réponses) et l'entrée « À réécouter ». L'onglet « Survie » est la page du mode
+ * (`/history/survie`) : les modes ne se connaissent pas.
  */
 @Component({
   selector: 'app-daily-history-page',
-  imports: [HomeLegalLineComponent, 
-    TranslatePipe, RouterLink, DecorBackgroundComponent, BrandComponent, AccountLinkComponent, InstagramLinkComponent,
-    HistoryTabsComponent, HistorySummaryComponent, MonthNavComponent, StatusScreenComponent,
+  imports: [
+    HomeLegalLineComponent, TranslatePipe, RouterLink, PointsPipe, DecorBackgroundComponent, BrandComponent, InstagramLinkComponent, AccountLinkComponent,
+    HistoryTabsComponent, HistoryCalendarComponent, EarProfileCardComponent, StatusScreenComponent,
   ],
-  providers: [DailyHistoryStore],
+  providers: [DailyHistoryStore, EarProfileStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './daily-history.page.html',
-  styles: `
-    .bar { width: 14px; height: 4px; border-radius: 2px; background: var(--color-fail); }
-    .bar[data-verdict='found'] { background: var(--color-success); }
-    .bar[data-verdict='half'] { background: linear-gradient(90deg, var(--color-success) 50%, var(--color-fail) 50%); }
-  `,
 })
 export class DailyHistoryPage {
   protected readonly store = inject(DailyHistoryStore);
+  protected readonly profile = inject(EarProfileStore);
   protected readonly language = inject(LanguageService);
+  protected readonly chrome = inject(ShellChromeStore);
   protected readonly errorReporting = inject(ErrorReportingService);
 
   /** Le mois de l'adresse ; mal écrit ou absent : le mois en cours (le serveur le choisit). */
@@ -50,16 +50,18 @@ export class DailyHistoryPage {
 
   private readonly today = utcDayOf(new Date());
 
-  /** Les lignes du mois : le jour en toutes lettres, les petites barres, le score et où mène la ligne. */
-  protected readonly rows = computed(() => {
-    const lang = this.language.current();
-    return (this.store.history()?.games ?? []).map(game => ({
-      date: game.date,
-      score: formatScore(game.score, lang),
-      day: dayLabel(game.date, this.today, lang),
-      link: gameLink(game.date, this.today),
-      bars: game.tracks.map(track => ({ position: track.position, verdict: verdictOf(track) })),
-    }));
+  /** Le défi d'aujourd'hui, s'il est dans le mois affiché : à jouer (la tuile de focus) ou joué (son score). */
+  protected readonly todayDay = computed(() => {
+    const day = this.store.history()?.days.find(d => d.date === this.today);
+    if (!day) return null;
+    const label = dayLabel(day.date, this.today, this.language.current());
+    return { label: label.text.toLowerCase(), done: day.state !== 'today' || this.chrome.dailyDone() === true, score: day.score };
+  });
+
+  /** La carte du profil : seulement s'il a joué sur les 8 dernières semaines. */
+  protected readonly earProfile = computed(() => {
+    const profile = this.profile.profile();
+    return profile && profile.gamesPlayed > 0 ? profile : null;
   });
 
   constructor() {
@@ -68,6 +70,7 @@ export class DailyHistoryPage {
       const month = this.month();
       untracked(() => void this.store.load(month));
     });
+    void this.profile.load('8w');
   }
 
   protected retry(): void {

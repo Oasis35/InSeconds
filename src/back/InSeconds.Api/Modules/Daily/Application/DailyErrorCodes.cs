@@ -32,6 +32,12 @@ public static class DailyErrorCodes
     /// <summary>Le mois de l'historique n'est pas écrit `aaaa-mm`.</summary>
     public const string InvalidMonth = "daily.invalid_month";
 
+    /// <summary>« À réécouter » : le filtre n'est pas `all`, `none` ou `half`, ou le jour de départ n'est pas écrit `aaaa-mm-jj`.</summary>
+    public const string InvalidReplayQuery = "daily.invalid_replay_query";
+
+    /// <summary>Le profil d'oreille : la période n'est pas `8w`, `6m` ou `all`.</summary>
+    public const string InvalidPeriod = "daily.invalid_period";
+
     /// <summary>Le palier annoncé est inférieur à la durée que le serveur a vu écouter sur ce morceau (anti-triche).</summary>
     public const string ListenedBelowMinimum = "daily.listened_duration_below_verified_minimum";
 }

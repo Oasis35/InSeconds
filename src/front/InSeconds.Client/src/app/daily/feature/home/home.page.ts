@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
 import { LanguageService } from '../../../core/i18n/language.service';
-import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { InstagramLinkComponent } from '../../../core/shell/instagram-link/instagram-link.component';
 import { AccountLinkComponent } from '../../../core/shell/account-link/account-link.component';
 import { HomeModeEntriesComponent } from '../../../core/shell/home-mode-entries/home-mode-entries.component';
 import { secondsUntilMidnightUtc, timeLeft, todayUtc } from '../../../core/game-day/game-day';
 import { BrandComponent } from '../../../ui/brand/brand.component';
+import { ButtonComponent } from '../../../ui/button/button.component';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
 import { HomeLegalLineComponent } from '../../../ui/legal-line/home-legal-line.component';
 import { ModalService } from '../../../ui/modal/modal.service';
@@ -17,18 +18,19 @@ import { HomeAbandonedCardComponent } from '../../ui/home-abandoned-card/home-ab
 import { HomeChallengeCardComponent } from '../../ui/home-challenge-card/home-challenge-card.component';
 import { HomeDoneCardComponent } from '../../ui/home-done-card/home-done-card.component';
 import { StatusScreenComponent } from '../../ui/status-screen/status-screen.component';
-import { DailyResultView, DailyStartup, StreakSheetOpener, visibleScreen } from '../daily-shell/daily-view';
+import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell/daily-view';
 
 /**
- * L'accueil (`/`), neutre : ni le défi ni la Survie, mais leurs cartes. Sous la V4, la carte du défi porte tous ses états (à jouer, en pause,
- * abandonné, fait avec le score qui monte juste après la partie), la carte Survie (projetée par `<app-home-mode-entries>`) est dessous. Les stores
+ * L'accueil (`/`), neutre : ni le défi ni la Survie, mais leurs cartes, avec **une seule tuile du moment** (la prochaine action). Défi à jouer :
+ * la carte du défi en tête, puis la carte amis et la carte Survie. Défi fait : la carte Survie passe devant si le joueur y a accès
+ * (`placement="lead"`), puis le résultat court (« Voir le résultat » ouvre `/daily/resultat`), puis la carte amis. Les cartes des autres domaines
+ * arrivent par `<app-home-mode-entries>` : le Daily n'importe ni `social` ni `runs`. Les stores
  * sont ceux de la coquille du jeu du jour : « Commencer » lance la partie dans ce toucher, et la coquille passe sur `/daily` pour la manche.
- * Sans la V4, la coquille renvoie la racine au défi : la page n'affiche alors qu'un chargement.
  */
 @Component({
   selector: 'app-home-page',
   imports: [
-    TranslatePipe, DecorBackgroundComponent, BrandComponent, InstagramLinkComponent, AccountLinkComponent, HomeModeEntriesComponent, HomeLegalLineComponent,
+    TranslatePipe, RouterLink, ButtonComponent, DecorBackgroundComponent, BrandComponent, InstagramLinkComponent, AccountLinkComponent, HomeModeEntriesComponent, HomeLegalLineComponent,
     HomeChallengeCardComponent, HomeDoneCardComponent, HomeAbandonedCardComponent, StatusScreenComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -58,9 +60,11 @@ import { DailyResultView, DailyStartup, StreakSheetOpener, visibleScreen } from 
                 [bestScore]="store.bestScore()"
                 [yesterdayMedian]="store.yesterdayMedian()"
                 [remaining]="remaining()"
+                [firstGame]="store.firstGame()"
                 [linked]="store.linked()"
                 (startGame)="store.begin()"
                 (openStreak)="streakSheet.open()" />
+              <!-- « Créer un compte » d'un invité : porté par la carte amis, juste dessous (un groupe et la série gardée exigent un compte). -->
             </div>
             <app-home-mode-entries />
           }
@@ -76,13 +80,18 @@ import { DailyResultView, DailyStartup, StreakSheetOpener, visibleScreen } from 
                 (startGame)="store.begin()"
                 (abandon)="confirmAbandonFromResume()"
                 (openStreak)="streakSheet.open()" />
+              @if (!store.linked()) {
+                <a appButton variant="neutral" [block]="true" routerLink="/account/login" data-testid="home-login">{{ 'daily.resume.loginCta' | translate }}</a>
+              }
             </div>
             <app-home-mode-entries />
           }
           @case ('already_played') {
-            <div class="screen-enter flex flex-col gap-3" data-testid="home-v4">
+            <!-- Défi fait : la carte Survie (si le joueur y a accès) passe devant, c'est la prochaine action. -->
+            <app-home-mode-entries #lead placement="lead" class="block" [class.-mt-3]="lead.hasLeadingEntry()" [class.mb-3]="lead.hasLeadingEntry()" />
+            <div class="screen-enter flex flex-col gap-3" data-testid="home-v4" data-fresh="false">
               @if (store.abandoned()) {
-                <app-home-abandoned-card [countdown]="store.countdown()" [score]="store.stats()?.abandonedScore ?? null" [pending]="store.stats() === null" [rows]="result.rows()" [lang]="language.current()" />
+                <app-home-abandoned-card [countdown]="store.countdown()" [score]="store.stats()?.abandonedScore ?? null" [pending]="store.stats() === null" [rows]="result.rows()" />
               } @else {
                 <app-home-done-card
                   [score]="store.stats()?.yourScore ?? null"
@@ -90,6 +99,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener, visibleScreen } from 
                   [countdown]="store.countdown()"
                   [betterThanPercent]="store.stats()?.betterThanPercent ?? null"
                   [history]="store.stats()?.history ?? null"
+                  [focus]="!lead.hasLeadingEntry()"
                   [lang]="language.current()"
                   [streak]="store.pillStreak()"
                   [linked]="store.linked()"
@@ -100,9 +110,11 @@ import { DailyResultView, DailyStartup, StreakSheetOpener, visibleScreen } from 
                   (share)="result.share()" />
               }
             </div>
-            <app-home-mode-entries />
+            <app-home-mode-entries placement="rest" />
           }
           @case ('done') {
+            <!-- Défi fait : la carte Survie (si le joueur y a accès) passe devant, c'est la prochaine action. -->
+            <app-home-mode-entries #lead placement="lead" class="block" [class.-mt-3]="lead.hasLeadingEntry()" [class.mb-3]="lead.hasLeadingEntry()" />
             <div class="screen-enter flex flex-col gap-3" data-testid="home-v4" data-fresh="true">
               <app-home-done-card
                 [score]="result.displayedTotal()"
@@ -110,6 +122,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener, visibleScreen } from 
                 [countdown]="store.countdown()"
                 [betterThanPercent]="store.stats()?.betterThanPercent ?? null"
                 [history]="store.stats()?.history ?? null"
+                [focus]="!lead.hasLeadingEntry()"
                 [lang]="language.current()"
                 [streak]="store.pillStreak()"
                 [linked]="store.linked()"
@@ -119,7 +132,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener, visibleScreen } from 
                 [canShare]="store.canShare()"
                 (share)="result.share()" />
             </div>
-            <app-home-mode-entries />
+            <app-home-mode-entries placement="rest" />
           }
           @case ('no_challenge') {
             <app-status-screen titleKey="daily.noChallenge.title" bodyKey="daily.noChallenge.body" (retry)="store.retryNoChallenge()" />
@@ -146,13 +159,11 @@ export class HomePage {
   protected readonly streakSheet = inject(StreakSheetOpener);
   protected readonly result = inject(DailyResultView);
   protected readonly startup = inject(DailyStartup);
-  private readonly chrome = inject(ShellChromeStore);
   private readonly modal = inject(ModalService);
   private readonly translate = inject(TranslateService);
 
-  private readonly flagged = visibleScreen();
-  /** L'écran affiché : un chargement tant que le flag n'est pas lu, et sans la V4 (la coquille renvoie alors au défi), jamais l'ancien accueil. */
-  protected readonly screen = computed(() => (this.chrome.v4() ? this.flagged() : 'loading'));
+  /** L'écran affiché : celui du jeu du jour. */
+  protected readonly screen = this.store.screen;
 
   protected readonly dateLabel = computed(() => formatGameDate(todayUtc(new Date()), this.language.current(), 'weekday'));
   /** Le temps qu'il reste pour jouer le défi, dit à côté du score à battre (« plus que 6 h »). */

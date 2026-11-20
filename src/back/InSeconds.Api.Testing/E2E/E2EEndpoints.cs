@@ -104,7 +104,7 @@ public static class E2EEndpoints
             return Results.Ok();
         });
 
-        // Connecte le navigateur appelant comme un compte lié admin dédié aux tests (créé au besoin), par le chemin du dev-login.
+        // Connecte le navigateur appelant comme un compte lié admin dédié aux tests (créé au besoin), par le chemin du dev-login, avec l'accès Survie.
         e2e.MapPost("/login-as-admin", async (AccountSignIn accountSignIn, InSecondsDbContext db, CancellationToken ct) =>
         {
             var plan = await accountSignIn.PrepareAsync(AdminEmail, AdminPseudo, ct);
@@ -124,6 +124,9 @@ public static class E2EEndpoints
             // créée : aucune validation périmée n'est en cache, la requête suivante voit déjà le rôle admin.
             await db.Set<Account>().Where(a => a.PlayerId == result.PlayerId)
                 .ExecuteUpdateAsync(set => set.SetProperty(a => a.IsAdmin, true), ct);
+            // Le rôle ne donne plus l'accès Survie : le compte admin des tests a sa ligne, comme les admins à la migration AdminRunAccess.
+            await db.Database.ExecuteSqlInterpolatedAsync(
+                $"INSERT INTO runs.access (player_id, granted_at) VALUES ({result.PlayerId}, now()) ON CONFLICT (player_id) DO NOTHING", ct);
             return Results.Ok();
         });
 

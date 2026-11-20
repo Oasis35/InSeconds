@@ -4,7 +4,7 @@ namespace InSeconds.Api.Modules.Runs.Application;
 /// La section « runs » de la copie des données d'un joueur (RGPD) : ses parties (réponses), les défis qu'il a
 /// créés, son record, son accès, son niveau et les défis d'amis reçus. Une section vide (rien joué) reste une section.
 /// </summary>
-/// <param name="Access">Quand l'admin l'a autorisé, rien s'il n'a pas de ligne d'accès (un admin l'a d'office).</param>
+/// <param name="Access">Quand l'admin l'a autorisé, rien s'il n'a pas de ligne d'accès.</param>
 public sealed record RunsDataExport(
     IReadOnlyList<RunGameExport> Games, IReadOnlyList<RunChallengeExport> CreatedChallenges, RunRecordExport? Record, DateTimeOffset? Access,
     RunLevelExport? Level = null, IReadOnlyList<RunReceivedChallengeExport>? ReceivedChallenges = null);

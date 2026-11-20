@@ -1,3 +1,4 @@
+using DotNet.Testcontainers.Builders;
 using InSeconds.Api.Infrastructure.Hosting;
 using Npgsql;
 using Testcontainers.PostgreSql;
@@ -23,7 +24,7 @@ public sealed class ScriptDatabase : IAsyncLifetime
         foreach (var file in Directory.GetFiles(Path.Combine(RepositoryRoot, "deploy", "vps"), "*.sql"))
             builder = builder.WithResourceMapping(
                 System.Text.Encoding.UTF8.GetBytes(File.ReadAllText(file).Replace("\r\n", "\n", StringComparison.Ordinal)),
-                $"{ScriptDirectory}/{Path.GetFileName(file)}");
+                FilePath.Of($"{ScriptDirectory}/{Path.GetFileName(file)}"));
         _container = builder.Build();
     }
 

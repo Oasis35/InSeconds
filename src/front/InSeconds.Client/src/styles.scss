@@ -18,9 +18,9 @@
 
   /* Fonds */
   --bg-page:       rgb(var(--rgb-bg));
-  --bg-surface:    rgb(var(--rgb-surface) / 0.68); /* translucide : le flou (--blur-tile, règle plus bas) cache la grille derrière */
+  --bg-surface:    rgb(var(--rgb-surface) / 0.45); /* verre dépoli : la grille se devine derrière en flou (--blur-tile, règle plus bas), sans traverser le texte */
   --bg-bar:        rgb(var(--rgb-bg) / 0.72);      /* les barres fixes (onglets du bas) : même principe, le contenu défile en flou dessous */
-  --blur-tile:     blur(20px) saturate(1.15);
+  --blur-tile:     blur(8px) saturate(1.3);
   --bg-surface-2:  rgb(var(--rgb-panel));
   --bg-inactive:   rgb(var(--rgb-panel));
   --bg-primary:    rgb(var(--rgb-accent));
@@ -242,13 +242,14 @@ h1, h2, h3, .font-display {
   -webkit-backdrop-filter: var(--blur-tile);
 }
 
-/* Sans flou (navigateur ancien) ou avec la préférence « moins de transparence » : les tuiles et les barres deviennent presque opaques,
-   pour que la grille ne traverse pas le texte. */
+/* Sans flou (navigateur ancien) : les tuiles et les barres deviennent presque opaques, pour que la grille ne traverse pas le texte. */
 @supports not (backdrop-filter: blur(1px)) {
   :root { --bg-surface: rgb(var(--rgb-surface) / 0.92); --bg-bar: rgb(var(--rgb-bg) / 0.96); }
 }
+/* « Moins de transparence » (iOS, ou Windows sans effets de transparence, que Chrome traduit ainsi) : le verre s'épaissit mais garde son
+   flou, jamais un fond plein. */
 @media (prefers-reduced-transparency: reduce) {
-  :root { --bg-surface: rgb(var(--rgb-surface) / 0.94); --bg-bar: rgb(var(--rgb-bg) / 0.98); --blur-tile: none; }
+  :root { --bg-surface: rgb(var(--rgb-surface) / 0.6); --bg-bar: rgb(var(--rgb-bg) / 0.86); }
 }
 
 /* ── Modales et panneaux bas (CDK Dialog, cf. ui/modal/modal.service.ts) ── */
@@ -365,4 +366,12 @@ summary {
 /* V4 : la barre du bas (fixe, quatre onglets, ~62px) ; les pages en tiennent compte pour que rien ne passe dessous. */
 html.has-bottom-bar .da-bg {
   padding-bottom: calc(4.25rem + env(safe-area-inset-bottom)); /* les onglets et un souffle : les liens légaux restent collés au-dessus */
+}
+/* Les toasts (série, gels) se posent au-dessus de la barre du bas, sinon elle les recouvre et « Fermer » ne se touche plus. */
+html.has-bottom-bar app-toast-frame {
+  bottom: calc(4.25rem + 18px + env(safe-area-inset-bottom));
+}
+/* Le lecteur collant de « À réécouter » se cale au-dessus de la barre du bas, jamais dessous. */
+html.has-bottom-bar .above-bottom-bar {
+  bottom: calc(4.25rem + 12px + env(safe-area-inset-bottom));
 }

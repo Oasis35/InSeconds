@@ -118,7 +118,7 @@ test.describe('Gel de série - compte connecté', () => {
 
     await expect(page.getByTestId('gel-earned-toast')).toContainText('+1 gel');
     await expect(page.getByTestId('gel-earned-toast')).toContainText('7 jours de série');
-    // Le relevé suit le partage sur le résultat du jour, relu après la partie : 7 jours, et le gel gagné.
+    // Le relevé est sous le partage de la carte du défi, relu après la partie : 7 jours, et le gel gagné.
     await expect(pill(page)).toHaveText(/7 jours\s*·\s*2 gels/);
   });
 });
@@ -141,10 +141,13 @@ test.describe('Gel de série - invité', () => {
     await expect(toast).toContainText('Le premier est offert.');
     // Plus de série en cours : pas de relevé sous « Commencer ».
     await expect(pill(page)).toHaveCount(0);
-    await expect(page.getByText('Pour garder ta série sur tous tes appareils.')).toBeHidden();
+    // Le toast porte l'appel à créer un compte : la carte amis de l'accueil ne pose pas le sien en plus, et le reprend une fois le toast fermé.
+    await expect(page.getByTestId('friends-card')).toHaveAttribute('data-kind', 'guest');
+    await expect(page.getByTestId('friends-card-login')).toHaveCount(0);
 
     await toast.getByRole('button', { name: 'Fermer' }).click();
     await expect(toast).toBeHidden();
+    await expect(page.getByTestId('friends-card-login')).toBeVisible();
 
     // Rechargement : déjà vu pour cette série perdue.
     await game.goto();

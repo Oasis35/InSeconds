@@ -15,10 +15,10 @@
       <!-- Identité pas encore lue : rien à conclure. -->
     } @else if (!session.isLinked()) {
       <section class="p-5 flex flex-col gap-3" data-testid="ranking-guest"
-               style="background:rgb(var(--rgb-accent-3) / 0.1);border:1px solid var(--color-accent-3);border-radius:var(--radius-card)">
+               style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)">
         <h2 class="text-lg font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.empty.title' | translate }}</h2>
         <p class="text-sm leading-relaxed" style="color:var(--text-light)">{{ 'social.empty.guestBody' | translate }}</p>
-        <a appButton routerLink="/account/login" [block]="true" data-testid="ranking-login">{{ 'social.empty.createAccount' | translate }}</a>
+        <a appButton variant="neutral" routerLink="/account/login" [block]="true" data-testid="ranking-login">{{ 'social.empty.createAccount' | translate }}</a>
       </section>
     } @else {
       @if (pendingCode(); as code) {
@@ -40,13 +40,15 @@
         }
         @case ('ready') {
           <nav class="flex flex-wrap gap-2" [attr.aria-label]="'social.ranking.groupsLabel' | translate">
-            <a [routerLink]="['/ranking']" [queryParams]="{ view: 'general' }" [attr.aria-current]="general() ? 'page' : null"
-               class="flex items-center px-4 min-h-11 text-sm touch-manipulation rounded-(--radius-button)" data-testid="ranking-general"
-               [style.border]="general() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
-               [style.background]="general() ? 'rgb(var(--rgb-accent-3) / 0.1)' : null"
-               [style.color]="general() ? 'var(--text-hi)' : 'var(--text-muted)'">{{ 'social.general.tab' | translate }}</a>
+            @if (chrome.survie()) {
+              <a [routerLink]="['/ranking']" [queryParams]="{ view: 'general' }" [attr.aria-current]="general() ? 'page' : null"
+                 class="flex items-center px-4 min-h-11 text-sm touch-manipulation rounded-(--radius-button)" data-testid="ranking-general"
+                 [style.border]="general() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
+                 [style.background]="general() ? 'rgb(var(--rgb-accent-3) / 0.1)' : null"
+                 [style.color]="general() ? 'var(--text-hi)' : 'var(--text-muted)'">{{ 'social.general.tab' | translate }}</a>
+            }
             @for (group of store.groups(); track group.id) {
-              <a [routerLink]="['/ranking']" [queryParams]="{ group: group.id }" [attr.aria-current]="!general() && group.id === store.selectedId() ? 'page' : null"
+              <a [routerLink]="['/ranking']" [queryParams]="{ group: group.id, period: periodParam() }" [attr.aria-current]="!general() && group.id === store.selectedId() ? 'page' : null"
                  class="flex items-center px-4 min-h-11 text-sm touch-manipulation rounded-(--radius-button) max-w-full truncate" data-testid="ranking-group"
                  [style.border]="!general() && group.id === store.selectedId() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
                  [style.background]="!general() && group.id === store.selectedId() ? 'rgb(var(--rgb-accent-3) / 0.1)' : null"
@@ -60,20 +62,58 @@
 
           @if (general()) {
             <app-general-ranking [lang]="language.current()" [openNameOnLoad]="editName()" />
-          } @else if (store.groups().length) {
-
-            @switch (store.rankingStatus()) {
-              @case ('error') {
-                <p class="text-sm text-center py-6" style="color:var(--text-muted)" data-testid="ranking-error">{{ 'social.ranking.error' | translate }}</p>
-              }
-              @default {
-                @if (store.ranking(); as ranking) {
-                  <app-ranking-list [entries]="ranking.entries" [lang]="language.current()" />
+          } @else if (store.selected(); as group) {
+            @if (alone()) {
+              <!-- Seul dans le groupe : rien à classer, l'invitation est la seule action. -->
+              <section class="p-5 flex flex-col gap-3" data-testid="ranking-alone"
+                       style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)">
+                <h2 class="text-lg font-bold break-words" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.alone.title' | translate: { name: group.name } }}</h2>
+                <p class="text-sm leading-relaxed" style="color:var(--text-light)">{{ 'social.alone.body' | translate }}</p>
+                <button appButton type="button" [block]="true" (click)="share.invite(group)" data-testid="ranking-invite">
+                  @if (share.copied()) { {{ 'social.invite.copied' | translate }} }
+                  @else if (share.failed()) { {{ 'social.invite.failed' | translate }} }
+                  @else { {{ 'social.alone.invite' | translate }} }
+                </button>
+                <p class="text-xs text-center" style="color:var(--text-muted)">{{ 'social.ranking.privacy' | translate }}</p>
+              </section>
+            } @else {
+              <nav class="flex gap-1 p-1" style="background:var(--bg-surface);border:1px solid var(--border-neutral);border-radius:var(--radius-button)" [attr.aria-label]="'social.scores.periodLabel' | translate">
+                @for (tab of views; track tab.id) {
+                  <a [routerLink]="['/ranking']" [queryParams]="{ group: group.id, period: tab.id === 'week' ? null : tab.id }"
+                     [attr.aria-current]="view() === tab.id ? 'page' : null" [attr.data-testid]="'ranking-period-' + tab.id"
+                     class="flex-1 flex items-center justify-center min-h-11 px-1.5 text-sm text-center leading-tight touch-manipulation rounded-(--radius-button)"
+                     [class.font-semibold]="view() === tab.id"
+                     [style.border]="view() === tab.id ? '1px solid var(--color-accent-3)' : '1px solid transparent'"
+                     [style.background]="view() === tab.id ? 'rgb(var(--rgb-accent-3) / 0.1)' : null"
+                     [style.color]="view() === tab.id ? 'var(--text-hi)' : 'var(--text-muted)'">{{ tab.labelKey | translate }}</a>
                 }
-              }
-            }
+              </nav>
 
-            @if (store.selected(); as group) {
+              @if (store.scoresStatus() === 'error') {
+                <div class="flex flex-col items-center gap-3 py-6 text-center" data-testid="ranking-error">
+                  <p class="text-sm" style="color:var(--text-muted)">{{ 'social.ranking.error' | translate }}</p>
+                  <button appButton type="button" variant="secondary" (click)="retryGroup()">{{ 'common.retry' | translate }}</button>
+                </div>
+              } @else if (daily(); as scores) {
+                @if (view() === 'week') {
+                  <div class="flex flex-col gap-2">
+                    <app-score-list [rows]="weekRows()" [lang]="language.current()" unplayedKey="social.scores.notYet" />
+                    <p class="text-xs text-center" style="color:var(--text-muted)">{{ 'social.scores.weekHint' | translate: { days: scores.weekDays } }}</p>
+                  </div>
+                } @else if (scores.todayRevealed) {
+                  <app-score-list [rows]="todayRows()" [lang]="language.current()" unplayedKey="social.scores.notYet" />
+                } @else {
+                  <!-- Fermé alors que le défi du jour est joué : il a été abandonné sans réponse, il n'y a plus rien à jouer aujourd'hui. -->
+                  <app-today-played [entries]="scores.today" [abandoned]="chrome.dailyDone() === true" />
+                  @if (chrome.dailyDone() !== true) {
+                    <a appButton routerLink="/daily" [block]="true" data-testid="ranking-play">{{ 'social.scores.play' | translate }}</a>
+                  }
+                }
+              } @else {
+                <!-- Les scores du groupe se lisent : une hauteur réservée, pour que l'invitation ne saute pas. -->
+                <p class="text-sm text-center animate-pulse py-6 min-h-40" style="color:var(--text-faint)" data-testid="ranking-loading">{{ 'social.ranking.loading' | translate }}</p>
+              }
+
               <div class="flex flex-col gap-2">
                 <button appButton type="button" variant="accent" [block]="true" (click)="share.invite(group)" data-testid="ranking-invite">
                   @if (share.copied()) { {{ 'social.invite.copied' | translate }} }
@@ -82,16 +122,16 @@
                 </button>
                 <p class="text-xs text-center" style="color:var(--text-muted)">{{ 'social.ranking.privacy' | translate }}</p>
               </div>
-              <button type="button" class="self-center text-xs underline cursor-pointer min-h-11 px-3" style="color:var(--text-muted)" (click)="leave()" data-testid="ranking-leave">
-                {{ 'social.leave.link' | translate }}
-              </button>
-              @if (leaveFailed()) {
-                <p class="text-xs text-center" role="alert" style="color:var(--text-error)">{{ 'social.leave.failed' | translate }}</p>
-              }
+            }
+            <button type="button" class="self-center text-xs underline cursor-pointer min-h-11 px-3" style="color:var(--text-muted)" (click)="leave()" data-testid="ranking-leave">
+              {{ 'social.leave.link' | translate }}
+            </button>
+            @if (leaveFailed()) {
+              <p class="text-xs text-center" role="alert" style="color:var(--text-error)">{{ 'social.leave.failed' | translate }}</p>
             }
           } @else {
             <section class="p-5 flex flex-col gap-3" data-testid="ranking-empty"
-                     style="background:rgb(var(--rgb-accent-3) / 0.1);border:1px solid var(--color-accent-3);border-radius:var(--radius-card)">
+                     style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)">
               <h2 class="text-lg font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.empty.title' | translate }}</h2>
               <p class="text-sm leading-relaxed" style="color:var(--text-light)">{{ 'social.empty.body' | translate }}</p>
               <a appButton routerLink="/ranking/new" [block]="true" data-testid="ranking-create">{{ 'social.empty.create' | translate }}</a>

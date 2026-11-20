@@ -1,0 +1,75 @@
+<div class="da-bg min-h-dvh flex flex-col relative" style="color:var(--text-body)">
+  <app-decor-background />
+
+  <main class="relative flex-1 flex flex-col gap-4 px-5 pt-2 pb-5 w-full max-w-lg mx-auto overflow-x-clip">
+    <header class="flex flex-col gap-2">
+      <app-brand [homeLink]="true">
+        <app-account-link brandRight />
+      </app-brand>
+      <a routerLink="/history/daily" data-testid="replay-back"
+         class="self-start inline-flex items-center gap-1.5 min-h-11 pr-2 text-sm touch-manipulation" style="color:var(--text-light)">
+        <span aria-hidden="true" class="text-xl">‹</span> {{ 'daily.archive.back' | translate }}
+      </a>
+      <h1 class="text-2xl font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'daily.replay.title' | translate }}</h1>
+      <p class="text-sm" style="color:var(--text-muted)">{{ 'daily.replay.intro' | translate }}</p>
+    </header>
+
+    <fieldset class="flex gap-1.5 border-0 p-0 m-0 min-w-0" [attr.aria-label]="'daily.replay.filters' | translate">
+      @for (f of filters(); track f.id) {
+        <button type="button" (click)="select(f.id)" [attr.aria-pressed]="store.filter() === f.id" [attr.data-testid]="'replay-filter-' + f.id"
+                class="flex-1 min-h-11 px-1 text-[13px] rounded-(--radius-button) touch-manipulation"
+                [style.border]="store.filter() === f.id ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
+                [style.background]="store.filter() === f.id ? 'rgb(var(--rgb-accent-3) / 0.1)' : null"
+                [style.color]="store.filter() === f.id ? 'var(--text-hi)' : 'var(--text-muted)'">{{ 'daily.replay.filter.' + f.id | translate: { count: f.count } }}</button>
+      }
+    </fieldset>
+
+    @switch (store.status()) {
+      @case ('loading') {
+        <p class="text-sm text-center animate-pulse" style="color:var(--text-faint)">{{ 'ui.history.loading' | translate }}</p>
+      }
+      @case ('error') {
+        <app-status-screen titleKey="daily.error.title" bodyKey="daily.error.body" [errorCode]="errorReporting.lastErrorCode()" (retry)="retry()" />
+      }
+      @case ('ready') {
+        @for (day of days(); track day.date) {
+          <section class="flex flex-col gap-2" data-testid="replay-day">
+            <h2 class="text-xs font-medium" style="color:var(--text-muted)">{{ day.label }}</h2>
+            <ul class="px-3.5" style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)">
+              @for (track of day.tracks; track track.position; let first = $first) {
+                <li [style.border-top]="first ? null : '1px solid var(--border-medium)'">
+                  <app-replay-track-row [track]="track" [playing]="playingKey() === replayKey(day.date, track.position)" (listen)="listen(day.date, track)" />
+                </li>
+              }
+            </ul>
+          </section>
+        } @empty {
+          <p class="text-sm text-center py-6" style="color:var(--text-muted)" data-testid="replay-empty">{{ 'daily.replay.empty' | translate }}</p>
+        }
+        @if (store.nextBefore() !== null) {
+          <button appButton variant="neutral" type="button" (click)="store.loadMore()" [disabled]="store.moreStatus() === 'loading'" data-testid="replay-more">
+            {{ 'daily.replay.more' | translate }}
+          </button>
+        }
+      }
+    }
+    <app-home-legal-line class="mt-auto" />
+  </main>
+
+  @if (now(); as playing) {
+    <div class="above-bottom-bar sticky bottom-3 z-10 mx-3 mb-3 flex flex-col gap-2 px-3 py-2.5 w-auto max-w-lg sm:mx-auto sm:w-full" data-testid="replay-player"
+         style="background:var(--bg-surface);border:1px solid var(--core-cyan);box-shadow:var(--tube-frame);border-radius:var(--radius-card)">
+      <div class="flex items-center gap-3">
+        <span class="flex-1 min-w-0 flex flex-col">
+          <span class="text-[13px] font-semibold truncate" style="color:var(--text-hi)">{{ playing.track.title }}</span>
+          <span class="text-xs truncate" style="color:var(--text-muted)">{{ playing.track.artist }}</span>
+        </span>
+        <app-deezer-badge class="shrink-0" [deezerTrackId]="playing.track.deezerTrackId" [lang]="language.current()" width="98" height="14" />
+      </div>
+      <!-- Décoratif : le rond d'écoute dit déjà si l'extrait joue. -->
+      <div class="h-[3px] rounded-full" style="background:rgb(var(--rgb-accent-2) / 0.18)" aria-hidden="true">
+        <div class="h-full rounded-full" style="background:var(--color-accent-2)" [style.width.%]="player.progress()"></div>
+      </div>
+    </div>
+  }
+</div>

@@ -30,6 +30,7 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task Handle(Microsoft.AspNetCore.Http.HttpContext httpContext)
         {
             var messageContext = new Wolverine.Runtime.MessageContext(_wolverineRuntime);
+            Wolverine.Http.HttpHandler.RequestActivity(httpContext)?.SetTag("handler.type", "InSeconds.Api.Modules.Players.Application.RequestMagicLinkEndpoint").SetTag("http.route", "/api/players/auth/magic-link").SetTag("http.request.method", "POST");
             // Reading the request body via JSON deserialization
             var (request, jsonContinue) = await ReadJsonAsync<InSeconds.Api.Modules.Players.Application.RequestMagicLink>(httpContext);
             if (jsonContinue == Wolverine.HandlerContinuation.Stop) return;
@@ -44,7 +45,6 @@ namespace Internal.Generated.WolverineHandlers
                 return;
             }
 
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Players.Application.RequestMagicLinkEndpoint");
             
             // The actual HTTP request handler execution
             var sendMagicLinkEmail = InSeconds.Api.Modules.Players.Application.RequestMagicLinkEndpoint.Post(request);

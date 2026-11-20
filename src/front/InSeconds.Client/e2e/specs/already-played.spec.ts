@@ -14,7 +14,7 @@ test.describe('Déjà joué - état already_played', () => {
 
     await expect(game.alreadyPlayedScreen).toBeVisible();
     await expect(game.countdown).toBeVisible();
-    await expect(page.getByText('Ton score du jour')).toBeVisible();
+    await expect(page.getByTestId('home-score')).toBeVisible();
   });
 
   test('affiche le bouton partager sur l\'écran déjà joué', async ({ page, api }) => {
@@ -43,7 +43,7 @@ test.describe('Déjà joué - état already_played', () => {
     await expect(game.alreadyPlayedScreen).toBeVisible();
 
     // Déplier la liste - mêmes lignes que le récap (chips ✓/✗, score cliquable)
-    await game.showTracksButton.click();
+    await game.openTrackDetails();
     await expect(game.trackChip).toBeVisible();
     await expect(game.trackScoreButtons.first()).toBeVisible();
 

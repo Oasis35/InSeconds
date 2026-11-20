@@ -9,7 +9,7 @@
              de la partie se lit à la révélation de chaque morceau. -->
         @if (screen() !== 'playing' && screen() !== 'loading') {
           <div brandRight class="flex items-center gap-2">
-            @if (chrome.v4()) { <app-instagram-link /> }
+            <app-instagram-link />
             <app-account-link />
           </div>
         }
@@ -63,27 +63,6 @@
         <app-status-screen titleKey="daily.error.title" bodyKey="daily.error.body" [errorCode]="errorReporting.lastErrorCode()" (retry)="init()" />
       }
 
-      @case ('already_played') {
-        @if (store.abandoned()) {
-          <app-abandoned-screen [countdown]="store.countdown()" />
-        } @else {
-          <app-day-result-screen
-            [score]="store.stats()?.yourScore ?? null"
-            [rows]="result.rows()"
-            [stats]="store.stats()"
-            [yesterday]="store.yesterday()"
-            [countdown]="store.countdown()"
-            [shareCopied]="result.copied()"
-            [shareFailed]="result.failed()"
-            [canShare]="store.stats()?.yourScore != null"
-            [lang]="language.current()"
-            [streak]="store.pillStreak()"
-            [linked]="store.linked()"
-            (share)="result.share()"
-            (openStreak)="streakSheet.open()" />
-        }
-      }
-
       @case ('playing') {
         <div class="screen-enter flex-1 flex flex-col justify-start pt-4">
           <app-track-round [result]="store.roundResult()" [hintPending]="store.hintPending()"
@@ -114,33 +93,11 @@
           </app-track-round>
         </div>
       }
-
-      @case ('done') {
-        <app-day-result-screen
-          [fresh]="true"
-          [score]="result.displayedTotal()"
-          [rows]="result.rows()"
-          [stats]="store.stats()"
-          [yesterday]="store.yesterday()"
-          [countdown]="store.countdown()"
-          [shareCopied]="result.copied()"
-          [shareFailed]="result.failed()"
-          [canShare]="store.canShare()"
-          [lang]="language.current()"
-          [streak]="store.pillStreak()"
-          [linked]="store.linked()"
-          (share)="result.share()"
-          (openStreak)="streakSheet.open()" />
-      }
     }
 
   </main>
-  <!-- Sous la V4, les liens légaux sont une ligne discrète sous la carte Setlist (pas pendant une manche) et la langue est dans le profil. -->
-  @if (screen() === 'loading') {
-    <!-- Le flag n'est pas lu : ni ancien pied de page, ni ligne légale de la V4. -->
-  } @else if (!chrome.v4()) {
-    <app-daily-footer class="mt-auto" [lang]="language.current()" (toggleLanguage)="toggleLanguage()" />
-  } @else if (screen() !== 'playing') {
+  <!-- Les liens légaux sont une ligne discrète sous la carte Survie (pas pendant une manche) et la langue est dans le profil. -->
+  @if (screen() !== 'loading' && screen() !== 'playing') {
     <app-home-legal-line class="mt-auto" />
   }
 </div>

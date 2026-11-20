@@ -8,7 +8,8 @@ namespace InSeconds.Api.Modules.Social;
 
 /// <summary>
 /// Module Social : les groupes entre amis (un compte par membre), leurs codes d'invitation et leur classement. Un noyau, comme Players et Catalogue : il
-/// ne connaît aucun mode de jeu (chacun lui donne la performance de ses joueurs par <c>IMemberPerformanceSource</c>) et n'utilise des autres modules que
+/// ne connaît aucun mode de jeu (chacun lui donne la performance de ses joueurs par <c>IMemberPerformanceSource</c>, ses scores du jour et de la semaine par
+/// <c>IMemberScoreSource</c>) et n'utilise des autres modules que
 /// leurs <c>Contracts</c>. Schéma <c>social</c>.
 /// </summary>
 public static class SocialModule
@@ -23,6 +24,7 @@ public static class SocialModule
         services.AddScoped<IRankingIdentityStore, EfRankingIdentityStore>();
         services.AddScoped<IReservedPseudos, SocialReservedPseudos>();
         services.AddScoped<GroupRanking>();
+        services.AddScoped<GroupScores>();
         services.TryAddSingleton<GeneralRankingCache>();
         services.AddExceptionHandler<AliasConflictExceptionHandler>();
         return services;
