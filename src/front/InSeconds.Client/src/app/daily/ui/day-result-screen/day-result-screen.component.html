@@ -60,7 +60,7 @@
   }
 
   @if (score() !== null && stats()?.history; as history) {
-    <app-game-profile-card [history]="history" [score]="score()!" />
+    <app-game-profile-card [history]="history" [score]="score()!" [lang]="lang()" />
   }
 
   @if (yesterday(); as y) {

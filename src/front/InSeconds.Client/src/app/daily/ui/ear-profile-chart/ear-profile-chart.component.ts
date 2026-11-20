@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
+import { formatPoints } from '../../../ui/format/format-points';
 import { ProfilePoint, chartBounds, chartLine } from '../../domain/ear-profile';
 
 /**
@@ -19,7 +20,8 @@ import { ProfilePoint, chartBounds, chartLine } from '../../domain/ear-profile';
         }
         <polyline [attr.points]="l.mine" fill="none" style="stroke:var(--color-accent-3)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
         @if (l.last; as last) {
-          <circle [attr.cx]="last.x" [attr.cy]="last.y" r="3.5" style="fill:var(--color-accent-3)" />
+          <!-- Un segment de longueur nulle à bout rond : il reste rond malgré preserveAspectRatio="none" (un cercle s'écraserait). -->
+          <polyline [attr.points]="last.x + ',' + last.y + ' ' + last.x + ',' + last.y" fill="none" style="stroke:var(--color-accent-3)" stroke-width="7" stroke-linecap="round" vector-effect="non-scaling-stroke" />
         }
       </svg>
     }
@@ -28,6 +30,7 @@ import { ProfilePoint, chartBounds, chartLine } from '../../domain/ear-profile';
 export class EarProfileChartComponent {
   readonly points = input.required<readonly ProfilePoint[]>();
   readonly height = input(100);
+  readonly lang = input<'fr' | 'en'>('fr');
 
   protected readonly width = 320;
 
@@ -42,8 +45,8 @@ export class EarProfileChartComponent {
       mine: mine.points,
       last: mine.last,
       players: players.points,
-      from: played[0]?.average ?? 0,
-      to: played.at(-1)?.average ?? 0,
+      from: formatPoints(played[0]?.average ?? 0, this.lang()),
+      to: formatPoints(played.at(-1)?.average ?? 0, this.lang()),
     };
   });
 }

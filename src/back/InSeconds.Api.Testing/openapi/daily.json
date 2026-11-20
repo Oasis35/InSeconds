@@ -2551,6 +2551,7 @@
           "previousAverageScore",
           "averageScoreAfter",
           "bestSinceDays",
+          "firstStepSeconds",
           "firstStepFoundTotal",
           "firstStepFoundToday"
         ],
@@ -2606,6 +2607,10 @@
           "firstStepFoundToday": {
             "type": "integer",
             "format": "int32"
+          },
+          "firstStepSeconds": {
+            "type": "number",
+            "format": "double"
           }
         }
       },
@@ -2883,39 +2888,11 @@
           }
         }
       },
-      "DailyHistoryGameResponse": {
-        "required": [
-          "date",
-          "score",
-          "tracks"
-        ],
-        "type": "object",
-        "properties": {
-          "date": {
-            "type": "string",
-            "format": "date"
-          },
-          "score": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "tracks": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DailyHistoryTrackResponse"
-            }
-          }
-        }
-      },
       "DailyHistoryResponse": {
         "required": [
           "month",
           "previousMonth",
           "nextMonth",
-          "playedCount",
-          "averageScore",
-          "bestScore",
-          "games",
           "days",
           "monthPlayedCount",
           "monthPublishedCount",
@@ -2938,30 +2915,6 @@
               "null",
               "string"
             ]
-          },
-          "playedCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "averageScore": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "bestScore": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "games": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DailyHistoryGameResponse"
-            }
           },
           "days": {
             "type": "array",
@@ -2990,26 +2943,6 @@
               "integer"
             ],
             "format": "int32"
-          }
-        }
-      },
-      "DailyHistoryTrackResponse": {
-        "required": [
-          "position",
-          "artistCorrect",
-          "titleCorrect"
-        ],
-        "type": "object",
-        "properties": {
-          "position": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "artistCorrect": {
-            "type": "boolean"
-          },
-          "titleCorrect": {
-            "type": "boolean"
           }
         }
       },

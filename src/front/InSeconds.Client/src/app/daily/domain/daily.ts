@@ -145,7 +145,9 @@ export interface DayHistory {
   readonly averageScoreAfter: number;
   /** Les jours depuis sa dernière partie au moins aussi bonne ; `null` s'il n'en a aucune (record, ou première partie). */
   readonly bestSinceDays: number | null;
-  /** Ses réponses trouvées au premier palier (0,5 s), celles du jour comprises, et celles du jour. */
+  /** Le premier palier d'écoute (0,5 s par défaut, un réglage). */
+  readonly firstStepSeconds: number;
+  /** Ses réponses trouvées au premier palier, celles du jour comprises, et celles du jour. */
   readonly firstStepFoundTotal: number;
   readonly firstStepFoundToday: number;
 }

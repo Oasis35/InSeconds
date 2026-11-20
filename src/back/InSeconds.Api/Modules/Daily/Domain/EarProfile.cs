@@ -94,7 +94,13 @@ public static class EarProfile
     /// L'évolution de sa moyenne : les <paramref name="days"/> derniers jours (aujourd'hui compris) contre les <paramref name="days"/> d'avant, en
     /// pourcentage arrondi ; vide s'il manque des parties d'un côté.
     /// </summary>
-    public static int? TrendPercent(IReadOnlyCollection<DatedScore> mine, DateOnly today, int days = 28)
+    /// <summary>La fenêtre de la tendance : 28 jours, comparés aux 28 d'avant.</summary>
+    public const int TrendDays = 28;
+
+    /// <summary>Le premier jour à lire pour la tendance (les deux fenêtres).</summary>
+    public static DateOnly TrendReadStart(DateOnly today) => today.AddDays(-(2 * TrendDays - 1));
+
+    public static int? TrendPercent(IReadOnlyCollection<DatedScore> mine, DateOnly today, int days = TrendDays)
     {
         ArgumentNullException.ThrowIfNull(mine);
         var recentStart = today.AddDays(-(days - 1));
@@ -127,4 +133,22 @@ public static class EarProfile
     public static int? Percent(int part, int total) => total <= 0 ? null : Round(part * 100.0 / total);
 
     private static int Round(double value) => (int)Math.Round(value, MidpointRounding.AwayFromZero);
+}
+
+/// <summary>
+/// Ce que la partie du jour change à son historique (la carte « Ton profil d'oreille » du résultat), calcul pur sur ses parties terminées
+/// d'avant aujourd'hui (date du défi, piège 18).
+/// </summary>
+/// <param name="AverageAfter">Sa moyenne, la partie du jour comprise.</param>
+/// <param name="BestSinceDays">Les jours depuis sa dernière partie au moins aussi bonne ; vide s'il n'en a aucune (record, ou première partie).</param>
+public sealed record GameDelta(int AverageAfter, int? BestSinceDays)
+{
+    public static GameDelta Of(IReadOnlyCollection<DatedScore> previous, int todayScore, DateOnly today)
+    {
+        ArgumentNullException.ThrowIfNull(previous);
+        var before = previous.Where(s => s.Date < today).ToList();
+        var average = (int)Math.Round(before.Select(s => s.Score).Append(todayScore).Average(), MidpointRounding.AwayFromZero);
+        var lastAsGood = before.Where(s => s.Score >= todayScore).Select(s => (DateOnly?)s.Date).Max();
+        return new GameDelta(average, lastAsGood is { } day ? today.DayNumber - day.DayNumber : null);
+    }
 }

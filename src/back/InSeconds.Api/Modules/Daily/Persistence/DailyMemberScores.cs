@@ -21,8 +21,9 @@ public sealed class DailyMemberScores(InSecondsDbContext db, IGameCalendar calen
         var today = calendar.Today;
         var hidden = await HiddenDaysAsync(viewerId, today, ct);
         var ids = playerIds.Distinct().ToList();
-        if (day > today || hidden.Contains(day) || ids.Count == 0)
-            return new DayModeScores(day, day <= today && !hidden.Contains(day), new Dictionary<Guid, int>());
+        var revealed = DailyPeriodScores.DayRevealed(day, today, hidden);
+        if (!revealed || ids.Count == 0)
+            return new DayModeScores(day, revealed, new Dictionary<Guid, int>());
 
         var scores = await (from session in db.Set<DailySession>().AsNoTracking()
                             join challenge in db.Set<DailyChallenge>().AsNoTracking() on session.ChallengeId equals challenge.Id

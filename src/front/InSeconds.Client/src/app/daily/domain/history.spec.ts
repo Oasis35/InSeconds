@@ -25,9 +25,13 @@ describe('historique du défi du jour', () => {
     expect(scoreTint(100, 0)).toBe(0.18);
   });
 
-  it("une case mène aux réponses du jour, aujourd'hui au défi, un jour sans défi nulle part", () => {
-    expect(dayLink({ date: '2026-11-10', day: 10, state: 'missed', score: null, tint: 0 })).toEqual(['/history/daily', '2026-11-10']);
-    expect(dayLink({ date: '2026-11-11', day: 11, state: 'today', score: null, tint: 0 })).toEqual(['/daily']);
-    expect(dayLink({ date: '2026-11-12', day: 12, state: 'none', score: null, tint: 0 })).toBeNull();
+  it("une case mène aux réponses du jour ; aujourd'hui, même joué, et la veille en cours, au défi ; un jour sans défi nulle part", () => {
+    const today = '2026-11-11';
+    expect(dayLink({ date: '2026-11-10', day: 10, state: 'missed', score: null, tint: 0 }, today)).toEqual(['/history/daily', '2026-11-10']);
+    expect(dayLink({ date: '2026-11-10', day: 10, state: 'resumable', score: null, tint: 0 }, today)).toEqual(['/daily']);
+    expect(dayLink({ date: today, day: 11, state: 'today', score: null, tint: 0 }, today)).toEqual(['/daily']);
+    expect(dayLink({ date: today, day: 11, state: 'played', score: 2400, tint: 0.5 }, today)).toEqual(['/daily']);
+    expect(dayLink({ date: today, day: 11, state: 'unfinished', score: null, tint: 0 }, today)).toEqual(['/daily']);
+    expect(dayLink({ date: '2026-11-12', day: 12, state: 'none', score: null, tint: 0 }, today)).toBeNull();
   });
 });

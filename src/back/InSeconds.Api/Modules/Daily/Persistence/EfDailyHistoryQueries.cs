@@ -5,50 +5,22 @@ using Microsoft.EntityFrameworkCore;
 
 namespace InSeconds.Api.Modules.Daily.Persistence;
 
-/// <summary>L'historique d'un joueur : ses parties **terminées**, jamais celles d'un autre (tout part de son identifiant).</summary>
+/// <summary>L'historique d'un joueur : ses parties, jamais celles d'un autre (tout part de son identifiant).</summary>
 public sealed class EfDailyHistoryQueries(InSecondsDbContext db) : IDailyHistoryQueries
 {
-    private IQueryable<DailySession> Finished(Guid playerId) =>
-        db.Set<DailySession>().AsNoTracking().Where(s => s.PlayerId == playerId && s.Status == SessionStatus.Completed);
-
-    public async Task<DailyHistorySummary> GetSummaryAsync(Guid playerId, CancellationToken ct)
-    {
-        var totals = await Finished(playerId)
-            .GroupBy(_ => 1)
-            .Select(g => new { Count = g.Count(), Average = g.Average(s => (double)s.TotalScore), Best = g.Max(s => s.TotalScore) })
-            .SingleOrDefaultAsync(ct);
-        return totals is null
-            ? new DailyHistorySummary(0, null, null)
-            : new DailyHistorySummary(totals.Count, (int)Math.Round(totals.Average, MidpointRounding.AwayFromZero), totals.Best);
-    }
-
-    public async Task<IReadOnlyList<DailyHistoryGame>> ListGamesAsync(Guid playerId, DateOnly start, DateOnly end, CancellationToken ct)
-    {
-        var rows = await (from session in Finished(playerId)
-                          join challenge in db.Set<DailyChallenge>().AsNoTracking() on session.ChallengeId equals challenge.Id
-                          where challenge.Date >= start && challenge.Date < end
-                          orderby challenge.Date descending
-                          select new
-                          {
-                              challenge.Date,
-                              session.TotalScore,
-                              Answers = session.Answers.Select(a => new { a.Position, a.ArtistCorrect, a.TitleCorrect }).ToList(),
-                          }).ToListAsync(ct);
-        return rows.Select(r => new DailyHistoryGame(
-            r.Date, r.TotalScore, r.Answers.Select(a => new DailyHistoryAnswer(a.Position, a.ArtistCorrect, a.TitleCorrect)).ToList())).ToList();
-    }
-
-    public async Task<IReadOnlyList<HistoryCalendarInput>> ListMonthDaysAsync(Guid playerId, DateOnly start, DateOnly end, CancellationToken ct)
+    public async Task<IReadOnlyList<HistoryCalendarInput>> ListMonthDaysAsync(Guid? playerId, DateOnly start, DateOnly end, CancellationToken ct)
     {
         var challenges = await db.Set<DailyChallenge>().AsNoTracking()
             .Where(c => c.Date >= start && c.Date < end)
             .OrderBy(c => c.Date)
             .Select(c => new { c.Id, c.Date, TrackCount = c.Tracks.Count })
             .ToListAsync(ct);
+        if (playerId is not { } id)
+            return [.. challenges.Select(c => new HistoryCalendarInput(c.Date, c.TrackCount, null, 0, 0))];
         // Une partie au plus par joueur et par défi (index unique).
         var sessions = await (from session in db.Set<DailySession>().AsNoTracking()
                               join challenge in db.Set<DailyChallenge>().AsNoTracking() on session.ChallengeId equals challenge.Id
-                              where session.PlayerId == playerId && challenge.Date >= start && challenge.Date < end
+                              where session.PlayerId == id && challenge.Date >= start && challenge.Date < end
                               select new { session.ChallengeId, session.Status, session.TotalScore, AnswerCount = session.Answers.Count })
             .ToDictionaryAsync(s => s.ChallengeId, ct);
         return challenges.Select(c => sessions.TryGetValue(c.Id, out var s)
@@ -88,15 +60,15 @@ public sealed class EfDailyHistoryQueries(InSecondsDbContext db) : IDailyHistory
         };
 
     public async Task<IReadOnlyList<MissedAnswer>> ListMissedAnswersAsync(
-        Guid playerId, DateOnly lastDay, DateOnly? before, string filter, int takeDays, CancellationToken ct)
+        Guid playerId, DateOnly lastDay, DateOnly? before, ReplayFilter filter, int takeDays, CancellationToken ct)
     {
         var missed = Missed(playerId, lastDay);
         if (before is { } limit)
             missed = missed.Where(m => m.Date < limit);
         missed = filter switch
         {
-            ReplayFilters.None => missed.Where(m => !m.ArtistCorrect && !m.TitleCorrect),
-            ReplayFilters.Half => missed.Where(m => m.ArtistCorrect != m.TitleCorrect),
+            ReplayFilter.None => missed.Where(m => !m.ArtistCorrect && !m.TitleCorrect),
+            ReplayFilter.Half => missed.Where(m => m.ArtistCorrect != m.TitleCorrect),
             _ => missed,
         };
         var days = await missed.Select(m => m.Date).Distinct().OrderByDescending(d => d).Take(takeDays).ToListAsync(ct);

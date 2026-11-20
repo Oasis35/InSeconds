@@ -160,14 +160,14 @@ describe('DailyApi', () => {
     client['getTodayStats'].mockReturnValueOnce(of({
       ...base, history: {
         fastestSeconds: 1, fastestFoundPercent: undefined, previousGames: 0, previousBestScore: undefined, previousAverageScore: undefined,
-        averageScoreAfter: 2400, bestSinceDays: undefined, firstStepFoundTotal: 1, firstStepFoundToday: 1,
+        averageScoreAfter: 2400, bestSinceDays: undefined, firstStepSeconds: 0.5, firstStepFoundTotal: 1, firstStepFoundToday: 1,
       },
     }));
     client['getTodayStats'].mockReturnValueOnce(of(base));
 
     expect((await api.stats()).history).toEqual({
       fastestSeconds: 1, fastestFoundPercent: null, previousGames: 0, previousBestScore: null, previousAverageScore: null,
-      averageScoreAfter: 2400, bestSinceDays: null, firstStepFoundTotal: 1, firstStepFoundToday: 1,
+      averageScoreAfter: 2400, bestSinceDays: null, firstStepSeconds: 0.5, firstStepFoundTotal: 1, firstStepFoundToday: 1,
     });
     expect((await api.stats()).history).toBeNull();
   });

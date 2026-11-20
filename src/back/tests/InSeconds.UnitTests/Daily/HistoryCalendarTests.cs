@@ -10,29 +10,29 @@ public class HistoryCalendarTests
         new(new DateOnly(2026, 11, day), 5, status, score, answers);
 
     [Theory]
-    [InlineData(SessionStatus.Completed, 5, "played")]
-    [InlineData(SessionStatus.Abandoned, 2, "unfinished")]
-    [InlineData(SessionStatus.Expired, 1, "unfinished")]
-    [InlineData(SessionStatus.Abandoned, 0, "missed")]
-    [InlineData(SessionStatus.Expired, 0, "missed")]
-    public void UnJourPasse_SonEtatSuitSaPartie(SessionStatus status, int answers, string expected) =>
+    [InlineData(SessionStatus.Completed, 5, HistoryDayKind.Played)]
+    [InlineData(SessionStatus.Abandoned, 2, HistoryDayKind.Unfinished)]
+    [InlineData(SessionStatus.Expired, 1, HistoryDayKind.Unfinished)]
+    [InlineData(SessionStatus.Abandoned, 0, HistoryDayKind.Missed)]
+    [InlineData(SessionStatus.Expired, 0, HistoryDayKind.Missed)]
+    public void UnJourPasse_SonEtatSuitSaPartie(SessionStatus status, int answers, HistoryDayKind expected) =>
         Assert.Equal(expected, HistoryCalendar.StateOf(Day(18, status, answers: answers), Today));
 
     [Fact]
     public void UnJourPasseSansPartie_EstManque() =>
-        Assert.Equal(HistoryDayState.Missed, HistoryCalendar.StateOf(Day(18), Today));
+        Assert.Equal(HistoryDayKind.Missed, HistoryCalendar.StateOf(Day(18), Today));
 
     [Fact]
-    public void Piege18_LaVeilleEncoreEnCours_EstPasFinie_PasManquee() =>
-        Assert.Equal(HistoryDayState.Unfinished, HistoryCalendar.StateOf(Day(19, SessionStatus.Pending, answers: 2), Today));
+    public void Piege18_LaVeilleEncoreEnCours_SeReprend() =>
+        Assert.Equal(HistoryDayKind.Resumable, HistoryCalendar.StateOf(Day(19, SessionStatus.Pending, answers: 2), Today));
 
     [Fact]
     public void Aujourdhui_ResteAJouerTantQuIlNEstPasTermine()
     {
-        Assert.Equal(HistoryDayState.Today, HistoryCalendar.StateOf(Day(20), Today));
-        Assert.Equal(HistoryDayState.Today, HistoryCalendar.StateOf(Day(20, SessionStatus.Pending, answers: 3), Today));
-        Assert.Equal(HistoryDayState.Played, HistoryCalendar.StateOf(Day(20, SessionStatus.Completed, 2400, 5), Today));
-        Assert.Equal(HistoryDayState.Unfinished, HistoryCalendar.StateOf(Day(20, SessionStatus.Abandoned, answers: 1), Today));
+        Assert.Equal(HistoryDayKind.Today, HistoryCalendar.StateOf(Day(20), Today));
+        Assert.Equal(HistoryDayKind.Today, HistoryCalendar.StateOf(Day(20, SessionStatus.Pending, answers: 3), Today));
+        Assert.Equal(HistoryDayKind.Played, HistoryCalendar.StateOf(Day(20, SessionStatus.Completed, 2400, 5), Today));
+        Assert.Equal(HistoryDayKind.Unfinished, HistoryCalendar.StateOf(Day(20, SessionStatus.Abandoned, answers: 1), Today));
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public class HistoryCalendarTests
     {
         var days = HistoryCalendar.Days([Day(21), Day(19, SessionStatus.Completed, 2000, 5), Day(18)], Today, 1000);
 
-        Assert.Equal([(18, "missed", (int?)null), (19, "played", 2000)], days.Select(d => (d.Date.Day, d.State, d.Score)));
+        Assert.Equal([(18, HistoryDayKind.Missed, (int?)null), (19, HistoryDayKind.Played, 2000)], days.Select(d => (d.Date.Day, d.State, d.Score)));
         Assert.All(days, d => Assert.Equal(5000, d.MaxPossibleScore));
     }
 

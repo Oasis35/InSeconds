@@ -40,7 +40,8 @@ public sealed record TrackStatResponse(
 /// <param name="BestSinceDays">
 /// Le nombre de jours depuis sa dernière partie au moins aussi bonne que celle du jour ; vide s'il n'en a aucune (record, ou première partie).
 /// </param>
-/// <param name="FirstStepFoundTotal">Ses réponses trouvées au premier palier d'écoute (0,5 s), tous jours confondus, celles du jour comprises.</param>
+/// <param name="FirstStepSeconds">Le premier palier d'écoute (0,5 s par défaut, un réglage).</param>
+/// <param name="FirstStepFoundTotal">Ses réponses trouvées au premier palier d'écoute, tous jours confondus, celles du jour comprises.</param>
 /// <param name="FirstStepFoundToday">Celles du jour.</param>
 public sealed record TodayHistoryResponse(
     decimal? FastestSeconds,
@@ -50,6 +51,7 @@ public sealed record TodayHistoryResponse(
     int? PreviousAverageScore,
     int AverageScoreAfter,
     int? BestSinceDays,
+    decimal FirstStepSeconds,
     int FirstStepFoundTotal,
     int FirstStepFoundToday);
 
@@ -162,8 +164,7 @@ public static class GetTodayStatsEndpoint
         // Ses parties d'avant (date du défi, piège 18) : la moyenne après celle du jour, et depuis quand il n'a pas fait aussi bien.
         var before = (await profile.ListScoresAsync(playerId, DateOnly.MinValue, ct)).Where(s => s.Date < today).ToList();
         var previous = PersonalHistory.Of([.. before.Select(s => s.Score)]);
-        var averageAfter = (int)Math.Round(before.Select(s => s.Score).Append(own.TotalScore).Average(), MidpointRounding.AwayFromZero);
-        var lastAsGood = before.Where(s => s.Score >= own.TotalScore).Select(s => (DateOnly?)s.Date).Max();
+        var delta = GameDelta.Of(before, own.TotalScore, today);
 
         var firstStep = rules.Options.EffectiveAllowedDurationsSeconds.Min();
         var firstStepTotal = (await profile.GetAnswerTallyAsync(playerId, DateOnly.MinValue, ct)).FoundBySeconds.GetValueOrDefault(firstStep);
@@ -171,7 +172,7 @@ public static class GetTodayStatsEndpoint
 
         return new TodayHistoryResponse(
             found, found is { } seconds ? speed?.PercentFoundWithin(seconds) : null, previous.Games, previous.BestScore, previous.AverageScore,
-            averageAfter, lastAsGood is { } day ? today.DayNumber - day.DayNumber : null, firstStepTotal, firstStepToday);
+            delta.AverageAfter, delta.BestSinceDays, firstStep, firstStepTotal, firstStepToday);
     }
 
     // Compte : le gel que la partie du jour a réellement gagné. Invité : il n'a jamais de stock, on lui dit seulement qu'il aurait atteint le palier.

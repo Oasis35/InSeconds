@@ -145,7 +145,7 @@ public class TodayStatsTests(PostgresFixture postgres) : IAsyncLifetime
         // Aujourd'hui 1000 + 4 × 850 = 4400 ; moyenne (4500 + 1000 + 4400) / 3 ; la dernière partie au moins aussi bonne date d'il y a 5 jours.
         Assert.Equal((2, 4500, 2750), (history.PreviousGames, history.PreviousBestScore, history.PreviousAverageScore));
         Assert.Equal((3300, (int?)5), (history.AverageScoreAfter, history.BestSinceDays));
-        Assert.Equal((2, 1), (history.FirstStepFoundTotal, history.FirstStepFoundToday));
+        Assert.Equal((0.5m, 2, 1), (history.FirstStepSeconds, history.FirstStepFoundTotal, history.FirstStepFoundToday));
     }
 
     [Fact]

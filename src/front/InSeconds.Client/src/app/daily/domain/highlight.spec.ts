@@ -40,7 +40,7 @@ describe('highlightOf', () => {
 
 describe('historyHighlightOf', () => {
   const history = (over: Partial<DayHistory> = {}): DayHistory => ({
-    fastestSeconds: 1, fastestFoundPercent: 9, previousGames: 5, previousBestScore: 3000, previousAverageScore: 2000, averageScoreAfter: 2000, bestSinceDays: null, firstStepFoundTotal: 0, firstStepFoundToday: 0, ...over,
+    fastestSeconds: 1, fastestFoundPercent: 9, previousGames: 5, previousBestScore: 3000, previousAverageScore: 2000, averageScoreAfter: 2000, bestSinceDays: null, firstStepSeconds: 0.5, firstStepFoundTotal: 0, firstStepFoundToday: 0, ...over,
   });
 
   it('un record personnel passe avant tout', () => {

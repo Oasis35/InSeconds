@@ -31,14 +31,15 @@
             <span class="text-[15px] font-semibold" style="color:var(--text-hi)">{{ 'ui.history.today' | translate }} · {{ today.label }}</span>
             <span class="text-xs" style="color:var(--text-muted)">{{ 'daily.history.todayToPlay' | translate }}</span>
           </span>
-          <span class="inline-flex items-center min-h-10 px-4 rounded-(--radius-button) text-sm font-bold tracking-wide"
+          <!-- Le rendu du bouton plein (appButton primary) : un <button> ne peut pas vivre dans le lien de la tuile. -->
+          <span class="inline-flex items-center min-h-10 px-4 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase"
                 style="background:var(--fill-primary);color:var(--text-on-orange);border:1px solid var(--core-orange);box-shadow:var(--glow-primary);font-family:var(--font-display)">{{ 'daily.history.play' | translate }}</span>
         </a>
       }
     }
 
     @if (earProfile(); as profile) {
-      <app-ear-profile-card [profile]="profile" />
+      <app-ear-profile-card [profile]="profile" [lang]="language.current()" />
     }
 
     @switch (store.status()) {

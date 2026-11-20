@@ -1,5 +1,8 @@
-/** L'état d'un jour de défi pour le joueur (lu tel quel du serveur). */
-export type HistoryDayState = 'played' | 'unfinished' | 'missed' | 'today';
+/**
+ * L'état d'un jour de défi pour le joueur (lu tel quel du serveur) : `resumable` est la veille encore en cours, qui se finit sur le défi
+ * (piège 18), jamais par ses réponses.
+ */
+export type HistoryDayState = 'played' | 'unfinished' | 'resumable' | 'missed' | 'today';
 
 /** Un jour de défi du mois : son état, le score d'une partie terminée, et la borne haute de la teinte de sa case. */
 export interface HistoryDay {
@@ -72,8 +75,11 @@ export function calendarWeeks(month: string, days: readonly HistoryDay[]): reado
   return weeks;
 }
 
-/** Où mène une case : les réponses du jour, publiées dès le lendemain ; aujourd'hui, le défi du jour (jouer, ou son résultat). */
-export function dayLink(cell: CalendarCell): readonly string[] | null {
+/**
+ * Où mène une case : les réponses du jour, publiées dès le lendemain ; aujourd'hui (joué ou non) et la veille encore en cours, le défi du jour
+ * (jouer, finir, ou son résultat : leurs réponses ne sont pas encore à lire). Un jour sans défi ne mène nulle part.
+ */
+export function dayLink(cell: CalendarCell, today: string): readonly string[] | null {
   if (cell.state === 'none') return null;
-  return cell.state === 'today' ? ['/daily'] : ['/history/daily', cell.date];
+  return cell.date === today || cell.state === 'today' || cell.state === 'resumable' ? ['/daily'] : ['/history/daily', cell.date];
 }

@@ -15,8 +15,7 @@ describe('EarProfileChartComponent', () => {
   it('trace sa courbe et celle des joueurs, avec un point sur la dernière semaine', () => {
     const el = render();
 
-    expect(el.querySelectorAll('polyline')).toHaveLength(2);
-    expect(el.querySelector('circle')).not.toBeNull();
+    expect(el.querySelectorAll('polyline')).toHaveLength(3);
   });
 
   it('sans aucune valeur, rien', () => {

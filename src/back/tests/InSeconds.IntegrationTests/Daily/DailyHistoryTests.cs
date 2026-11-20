@@ -6,8 +6,8 @@ using static InSeconds.IntegrationTests.Daily.DailyApi;
 namespace InSeconds.IntegrationTests.Daily;
 
 /// <summary>
-/// L'historique du joueur sur le défi du jour (<c>GET /api/daily/history</c>, proto 4) : ses parties terminées, un mois à la fois, avec un résumé de
-/// tout. Il ne lit que ses propres parties ; une partie abandonnée n'y est pas.
+/// L'historique du joueur sur le défi du jour (<c>GET /api/daily/history</c>) : le calendrier du mois (l'état de chaque jour de défi jusqu'à
+/// aujourd'hui) et ses chiffres. Il ne lit que ses propres parties ; sans identité, les jours de défi, tous « pas joués ».
 /// </summary>
 public class DailyHistoryTests(PostgresFixture postgres) : IAsyncLifetime
 {
@@ -35,55 +35,8 @@ public class DailyHistoryTests(PostgresFixture postgres) : IAsyncLifetime
         await _game.App.AddChallengeAsync(Today.AddDays(-1), 11, 12, 13, 14, 15);
         await _game.AddSessionAsync(gamer.Id, Sept, 1, Perfect);
         await _game.AddSessionAsync(gamer.Id, Oct, 1, Partial);
-        // Abandonnée : sans score, elle n'est pas dans l'historique.
+        // Abandonnée après une réponse : pas de score, « pas fini ».
         await _game.AddSessionAsync(gamer.Id, Today.AddDays(-1), 2, Perfect[0]);
-    }
-
-    [Fact]
-    public async Task LeMoisEnCours_ParDefaut_LeResumeCompteTout()
-    {
-        var gamer = await _game.NewPlayerAsync();
-        await SeedAsync(gamer);
-
-        var history = await HistoryAsync(gamer);
-
-        Assert.Equal(("2026-10", "2026-09", (string?)null), (history.Month, history.PreviousMonth, history.NextMonth));
-        Assert.Equal(2, history.PlayedCount);
-        Assert.Equal(4250, history.BestScore);
-        // (4250 + 2250) / 2
-        Assert.Equal(3250, history.AverageScore);
-        var game = Assert.Single(history.Games);
-        Assert.Equal((Oct, 2250), (game.Date, game.Score));
-        Assert.Equal([1, 2, 3, 4, 5], game.Tracks.Select(t => t.Position));
-        Assert.Equal([(true, true), (true, false), (false, false), (true, true), (true, true)], game.Tracks.Select(t => (t.ArtistCorrect, t.TitleCorrect)));
-    }
-
-    [Fact]
-    public async Task UnMoisPasse_ADesFlechesVersLesMoisJoues()
-    {
-        var gamer = await _game.NewPlayerAsync();
-        await SeedAsync(gamer);
-
-        var history = await HistoryAsync(gamer, "2026-09");
-
-        Assert.Equal(("2026-09", (string?)null, "2026-10"), (history.Month, history.PreviousMonth, history.NextMonth));
-        Assert.Equal(Sept, Assert.Single(history.Games).Date);
-        // Le résumé ne suit pas le mois affiché.
-        Assert.Equal(2, history.PlayedCount);
-    }
-
-    [Fact]
-    public async Task UnMoisVide_RienDansLeCalendrier_LesFlechesVontAuxMoisVoisins()
-    {
-        var gamer = await _game.NewPlayerAsync();
-        await SeedAsync(gamer);
-
-        var history = await HistoryAsync(gamer, "2026-07");
-
-        Assert.Empty(history.Games);
-        Assert.Empty(history.Days);
-        // Rien avant le premier défi (septembre) ; le mois d'après existe tant qu'il n'est pas dans le futur.
-        Assert.Equal((null, "2026-08"), (history.PreviousMonth, history.NextMonth));
     }
 
     [Fact]
@@ -96,11 +49,24 @@ public class DailyHistoryTests(PostgresFixture postgres) : IAsyncLifetime
 
         var history = await HistoryAsync(gamer);
 
+        Assert.Equal(("2026-10", "2026-09", (string?)null), (history.Month, history.PreviousMonth, history.NextMonth));
         Assert.Equal(
             [(new DateOnly(2026, 10, 1), "missed", (int?)null), (Oct, "played", 2250), (Today.AddDays(-1), "unfinished", null), (Today, "today", null)],
             history.Days.Select(d => (d.Date, d.State, d.Score)));
         Assert.All(history.Days, d => Assert.Equal(history.Days[0].MaxPossibleScore, d.MaxPossibleScore));
         Assert.True(history.Days[0].MaxPossibleScore >= 4250);
+    }
+
+    [Fact]
+    public async Task Piege18_LaVeilleEncoreEnCours_SeReprend_PasDeReponses()
+    {
+        var gamer = await _game.NewPlayerAsync();
+        await _game.App.AddChallengeAsync(Today.AddDays(-1), 11, 12, 13, 14, 15);
+        await _game.AddSessionAsync(gamer.Id, Today.AddDays(-1), 0, Perfect[0]);
+
+        var history = await HistoryAsync(gamer);
+
+        Assert.Equal("resumable", Assert.Single(history.Days).State);
     }
 
     [Fact]
@@ -121,6 +87,20 @@ public class DailyHistoryTests(PostgresFixture postgres) : IAsyncLifetime
 
         var september = await HistoryAsync(gamer, "2026-09");
         Assert.Equal((1, 1, (int?)4250, (int?)4250), (september.MonthPlayedCount, september.MonthPublishedCount, september.MonthAverageScore, september.MonthBestScore));
+        Assert.Equal(((string?)null, "2026-10"), (september.PreviousMonth, september.NextMonth));
+    }
+
+    [Fact]
+    public async Task UnMoisVide_RienDansLeCalendrier_LesFlechesVontAuxMoisVoisins()
+    {
+        var gamer = await _game.NewPlayerAsync();
+        await SeedAsync(gamer);
+
+        var history = await HistoryAsync(gamer, "2026-07");
+
+        Assert.Empty(history.Days);
+        // Rien avant le premier défi (septembre) ; le mois d'après existe tant qu'il n'est pas dans le futur.
+        Assert.Equal(((string?)null, "2026-08"), (history.PreviousMonth, history.NextMonth));
     }
 
     [Fact]
@@ -137,19 +117,6 @@ public class DailyHistoryTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task JoueurSansPartie_ListeVide_ResumeVide()
-    {
-        var gamer = await _game.NewPlayerAsync();
-
-        var history = await HistoryAsync(gamer);
-
-        Assert.Equal((0, null, null), (history.PlayedCount, history.AverageScore, history.BestScore));
-        Assert.Empty(history.Games);
-        Assert.Equal((null, null), (history.PreviousMonth, history.NextMonth));
-        Assert.Equal((0, 0, (int?)null, (int?)null), (history.MonthPlayedCount, history.MonthPublishedCount, history.MonthAverageScore, history.MonthBestScore));
-    }
-
-    [Fact]
     public async Task UnJoueur_NeLitQueSesParties()
     {
         var gamer = await _game.NewPlayerAsync();
@@ -160,9 +127,9 @@ public class DailyHistoryTests(PostgresFixture postgres) : IAsyncLifetime
         var mine = await HistoryAsync(gamer);
         var theirs = await HistoryAsync(other);
 
-        Assert.Equal(2250, Assert.Single(mine.Games).Score);
-        Assert.Equal(4250, Assert.Single(theirs.Games).Score);
-        Assert.Equal(1, theirs.PlayedCount);
+        Assert.Equal(2250, mine.Days.Single(d => d.Date == Oct).Score);
+        Assert.Equal(4250, theirs.Days.Single(d => d.Date == Oct).Score);
+        Assert.Equal("missed", theirs.Days.Single(d => d.Date == Today.AddDays(-1)).State);
         var body = await gamer.Client.GetStringAsync("/api/daily/history", Ct);
         Assert.DoesNotContain(other.Id.ToString(), body, StringComparison.OrdinalIgnoreCase);
     }
@@ -180,7 +147,7 @@ public class DailyHistoryTests(PostgresFixture postgres) : IAsyncLifetime
         var players = await _game.Api.ScalarAsync<long>("SELECT count(*) FROM players.players");
         var anonymous = (await _game.Api.CreateClient().GetFromJsonAsync<DailyHistoryResponse>("/api/daily/history", Ct))!;
         Assert.Equal([(Oct, "missed"), (Today.AddDays(-1), "missed")], anonymous.Days.Select(d => (d.Date, d.State)));
-        Assert.Equal((0, 2, 0), (anonymous.MonthPlayedCount, anonymous.MonthPublishedCount, anonymous.PlayedCount));
+        Assert.Equal((0, 2), (anonymous.MonthPlayedCount, anonymous.MonthPublishedCount));
         Assert.Equal(players, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM players.players"));
     }
 }

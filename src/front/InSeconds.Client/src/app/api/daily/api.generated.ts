@@ -1959,6 +1959,7 @@ export interface TodayHistoryResponse {
     bestSinceDays: number | undefined;
     firstStepFoundTotal: number;
     firstStepFoundToday: number;
+    firstStepSeconds: number;
 
     [key: string]: any;
 }
@@ -2036,35 +2037,15 @@ export interface NextChallengeResponse {
     [key: string]: any;
 }
 
-export interface DailyHistoryGameResponse {
-    date: Date;
-    score: number;
-    tracks: DailyHistoryTrackResponse[];
-
-    [key: string]: any;
-}
-
 export interface DailyHistoryResponse {
     month: string;
     previousMonth: string | undefined;
     nextMonth: string | undefined;
-    playedCount: number;
-    averageScore: number | undefined;
-    bestScore: number | undefined;
-    games: DailyHistoryGameResponse[];
     days: DailyHistoryDayResponse[];
     monthPlayedCount: number;
     monthPublishedCount: number;
     monthAverageScore: number | undefined;
     monthBestScore: number | undefined;
-
-    [key: string]: any;
-}
-
-export interface DailyHistoryTrackResponse {
-    position: number;
-    artistCorrect: boolean;
-    titleCorrect: boolean;
 
     [key: string]: any;
 }

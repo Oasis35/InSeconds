@@ -28,7 +28,7 @@ import { GroupDayScores } from '../../domain/group-scores';
           <div class="flex flex-wrap gap-2 pt-1" role="group" [attr.aria-label]="'social.dayFriends.groups' | translate">
             @for (group of groups(); track group.id) {
               <button type="button" (click)="select(group.id)" [attr.aria-pressed]="group.id === day.groupId" [attr.data-testid]="'day-friends-group-' + group.id"
-                      class="min-h-9 px-3 text-[13px] rounded-(--radius-button) touch-manipulation"
+                      class="min-h-11 px-3 text-[13px] rounded-(--radius-button) touch-manipulation"
                       [style.border]="group.id === day.groupId ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
                       [style.color]="group.id === day.groupId ? 'var(--text-hi)' : 'var(--text-muted)'">{{ group.name }}</button>
             }

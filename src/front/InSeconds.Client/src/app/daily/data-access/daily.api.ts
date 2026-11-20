@@ -296,6 +296,7 @@ function toStats(s: TodayStatsResponse): DayStats {
           previousAverageScore: s.history.previousAverageScore ?? null,
           averageScoreAfter: s.history.averageScoreAfter,
           bestSinceDays: s.history.bestSinceDays ?? null,
+          firstStepSeconds: s.history.firstStepSeconds,
           firstStepFoundTotal: s.history.firstStepFoundTotal,
           firstStepFoundToday: s.history.firstStepFoundToday,
         }

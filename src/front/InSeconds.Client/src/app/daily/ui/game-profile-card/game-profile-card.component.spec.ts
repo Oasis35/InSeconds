@@ -6,7 +6,7 @@ import { GameProfileCardComponent, gameProfileLine } from './game-profile-card.c
 
 const HISTORY = (over: Partial<DayHistory> = {}): DayHistory => ({
   fastestSeconds: 1, fastestFoundPercent: null, previousGames: 8, previousBestScore: 3500, previousAverageScore: 2180,
-  averageScoreAfter: 2205, bestSinceDays: 9, firstStepFoundTotal: 12, firstStepFoundToday: 1, ...over,
+  averageScoreAfter: 2205, bestSinceDays: 9, firstStepSeconds: 0.5, firstStepFoundTotal: 12, firstStepFoundToday: 1, ...over,
 });
 
 describe('GameProfileCardComponent', () => {

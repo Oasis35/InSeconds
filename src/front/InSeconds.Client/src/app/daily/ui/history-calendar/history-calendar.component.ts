@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
-import { formatScore } from '../../../ui/format/day-label';
+import { formatScore, utcDayOf } from '../../../ui/format/day-label';
 import { MonthNavComponent } from '../../../ui/history/month-nav.component';
 import { CalendarCell, DailyHistory, calendarWeeks, dayLink } from '../../domain/history';
 
@@ -20,14 +20,14 @@ const WEEKDAYS: Record<'fr' | 'en', readonly string[]> = {
   imports: [RouterLink, TranslatePipe, MonthNavComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="flex flex-col gap-3 px-3.5 pt-2 pb-4" style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)"
+    <section class="flex flex-col gap-3 px-2.5 pt-2 pb-4" style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)"
              data-testid="history-calendar">
       <app-month-nav [month]="history().month" [previous]="history().previousMonth" [next]="history().nextMonth" [lang]="lang()" />
 
-      <div class="grid grid-cols-7 gap-1.5 text-center text-[11px]" style="color:var(--text-faint)" aria-hidden="true">
+      <div class="grid grid-cols-7 gap-1 text-center text-[11px]" style="color:var(--text-faint)" aria-hidden="true">
         @for (d of weekdays(); track $index) { <span>{{ d }}</span> }
       </div>
-      <div class="grid grid-cols-7 gap-1.5">
+      <div class="grid grid-cols-7 gap-1">
         @for (cell of cells(); track $index) {
           @if (cell === null) {
             <span></span>
@@ -78,6 +78,7 @@ const WEEKDAYS: Record<'fr' | 'en', readonly string[]> = {
     }
     .day[data-state='missed'] { border: 1px dashed var(--border-neutral); }
     .day[data-state='unfinished'] { border: 1px dashed rgb(var(--rgb-accent-3) / 0.7); }
+    .day[data-state='resumable'] { border: 1px solid rgb(var(--rgb-accent-3) / 0.7); }
     .day[data-state='today'] { border: 2px solid var(--color-accent-3); }
     .day--off { font-family: var(--font-body); font-size: 13px; font-weight: 400; color: var(--text-faint); opacity: 0.5; }
     .swatch { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
@@ -88,6 +89,9 @@ export class HistoryCalendarComponent {
   readonly lang = input<'fr' | 'en'>('fr');
 
   protected readonly weekdays = computed(() => WEEKDAYS[this.lang()]);
+
+  /** Le jour de jeu (UTC) : sa case mène au défi, même joué (ses réponses ne sont publiées que demain). */
+  private readonly today = utcDayOf(new Date());
 
   protected readonly cells = computed(() =>
     calendarWeeks(this.history().month, this.history().days).flat().map(cell => (cell === null ? null : this.view(cell))));
@@ -100,10 +104,10 @@ export class HistoryCalendarComponent {
     const played = cell.state === 'played';
     return {
       ...cell,
-      link: dayLink(cell),
+      link: dayLink(cell, this.today),
       scoreText: this.format(cell.score),
       background: played ? `rgb(var(--rgb-accent-3) / ${cell.tint})` : null,
-      color: played && cell.tint > 0.6 ? 'var(--text-on-orange)' : cell.state === 'missed' || cell.state === 'unfinished' ? 'var(--text-muted)' : 'var(--text-hi)',
+      color: played && cell.tint > 0.6 ? 'var(--text-on-orange)' : cell.state === 'missed' || cell.state === 'unfinished' || cell.state === 'resumable' ? 'var(--text-muted)' : 'var(--text-hi)',
     };
   }
 }

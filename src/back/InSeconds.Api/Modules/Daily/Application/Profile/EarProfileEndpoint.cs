@@ -99,7 +99,8 @@ public static class GetEarProfileEndpoint
         var chosen = period ?? ProfilePeriods.EightWeeks;
         var start = EarProfile.PeriodStart(chosen, today, await queries.GetFirstGameDateAsync(playerId, ct));
         // La tendance compare 28 jours aux 28 d'avant : on lit assez loin pour elle, quelle que soit la période.
-        var readFrom = start < today.AddDays(-55) ? start : today.AddDays(-55);
+        var trendStart = EarProfile.TrendReadStart(today);
+        var readFrom = start < trendStart ? start : trendStart;
 
         var scores = await queries.ListScoresAsync(playerId, readFrom, ct);
         var inPeriod = scores.Where(s => s.Date >= start).ToList();

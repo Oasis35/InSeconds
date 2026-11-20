@@ -29,7 +29,7 @@ import { EarProfileChartComponent } from '../ear-profile-chart/ear-profile-chart
             <span class="text-xs font-semibold" style="color:var(--color-accent-3)" data-testid="ear-profile-card-trend">{{ 'daily.profile.trend' | translate: { value: trend() } }}</span>
           }
         </span>
-        <app-ear-profile-chart class="flex-1 min-w-0" [points]="profile().points" [height]="64" />
+        <app-ear-profile-chart class="flex-1 min-w-0" [points]="profile().points" [height]="64" [lang]="lang()" />
       </span>
       <span class="grid grid-cols-3 gap-2 pt-3" style="border-top:1px solid var(--border-medium)">
         <span class="flex flex-col gap-0.5">
@@ -50,6 +50,7 @@ import { EarProfileChartComponent } from '../ear-profile-chart/ear-profile-chart
 })
 export class EarProfileCardComponent {
   readonly profile = input.required<EarProfile>();
+  readonly lang = input<'fr' | 'en'>('fr');
 
   protected readonly favourite = computed(() => favouriteStep(this.profile().steps));
 

@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { PointsPipe } from '../../../ui/format/points.pipe';
 import { SecondsPipe } from '../../../ui/format/seconds.pipe';
+import { formatPoints } from '../../../ui/format/format-points';
 import { DayHistory } from '../../domain/daily';
 
 /** Ce que la partie du jour dit du joueur : sa première partie, un record, son meilleur depuis N jours, ou rien de marquant. */
@@ -45,12 +46,12 @@ export function gameProfileLine(history: DayHistory, score: number): GameProfile
             <span class="text-lg font-bold tabular-nums" style="font-family:var(--font-score);color:var(--text-hi)" data-testid="game-profile-average">
               {{ history().averageScoreAfter | appPoints }}
               @if (averageDelta() !== 0) {
-                <span class="text-xs" style="color:var(--color-accent-3)">{{ averageDelta() > 0 ? '+' : '' }}{{ averageDelta() }}</span>
+                <span class="text-xs" style="color:var(--color-accent-3)">{{ averageDelta() > 0 ? '+' : '' }}{{ averageDelta() | appPoints }}</span>
               }
             </span>
           </span>
           <span class="flex flex-col gap-0.5">
-            <span class="text-[11px]" style="color:var(--text-muted)">{{ 'daily.profile.foundAt' | translate: { seconds: (0.5 | appSeconds) } }}</span>
+            <span class="text-[11px]" style="color:var(--text-muted)">{{ 'daily.profile.foundAt' | translate: { seconds: (history().firstStepSeconds | appSeconds) } }}</span>
             <span class="text-lg font-bold tabular-nums" style="font-family:var(--font-score);color:var(--text-hi)" data-testid="game-profile-first-step">
               {{ history().firstStepFoundTotal }}
               @if (history().firstStepFoundToday > 0) {
@@ -66,6 +67,7 @@ export function gameProfileLine(history: DayHistory, score: number): GameProfile
 export class GameProfileCardComponent {
   readonly history = input.required<DayHistory>();
   readonly score = input.required<number>();
+  readonly lang = input<'fr' | 'en'>('fr');
 
   private readonly line = computed(() => gameProfileLine(this.history(), this.score()));
 
@@ -78,9 +80,9 @@ export class GameProfileCardComponent {
   protected readonly lineParams = computed(() => {
     const line = this.line();
     switch (line.kind) {
-      case 'record': return { points: line.above };
+      case 'record': return { points: formatPoints(line.above, this.lang()) };
       case 'bestSince': return { days: line.days };
-      case 'average': return { points: Math.abs(line.diff) };
+      case 'average': return { points: formatPoints(Math.abs(line.diff), this.lang()) };
       default: return {};
     }
   });

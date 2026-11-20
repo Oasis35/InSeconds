@@ -13,18 +13,32 @@ namespace InSeconds.Api.Modules.Daily.Application;
 public sealed record MissedAnswer(DateOnly Date, int Position, int TrackId, bool ArtistCorrect, bool TitleCorrect);
 
 /// <summary>Les filtres de « À réécouter ».</summary>
-public static class ReplayFilters
+public enum ReplayFilter
 {
     /// <summary>Tout ce qui n'a pas été entièrement trouvé.</summary>
-    public const string All = "all";
+    All,
 
     /// <summary>Ni l'artiste ni le titre.</summary>
-    public const string None = "none";
+    None,
 
     /// <summary>L'un des deux seulement.</summary>
-    public const string Half = "half";
+    Half,
+}
 
-    public static bool IsKnown(string? filter) => filter is null or All or None or Half;
+/// <summary>Le filtre écrit dans l'adresse (`all`, `none`, `half` ; absent : `all`), lu une seule fois, à l'entrée de la route.</summary>
+public static class ReplayFilters
+{
+    public static bool TryParse(string? text, out ReplayFilter filter)
+    {
+        (var known, filter) = text switch
+        {
+            null or "all" => (true, ReplayFilter.All),
+            "none" => (true, ReplayFilter.None),
+            "half" => (true, ReplayFilter.Half),
+            _ => (false, ReplayFilter.All),
+        };
+        return known;
+    }
 }
 
 /// <summary>Un morceau raté à réécouter.</summary>
@@ -47,7 +61,7 @@ public static class GetReplayTracksEndpoint
     public const int DaysPerPage = 10;
 
     public static ProblemDetails Validate([FromQuery] string? filter, [FromQuery] string? before) =>
-        ReplayFilters.IsKnown(filter) && (string.IsNullOrWhiteSpace(before) || TryParseDay(before, out _))
+        ReplayFilters.TryParse(filter, out _) && (string.IsNullOrWhiteSpace(before) || TryParseDay(before, out _))
             ? WolverineContinue.NoProblems
             : ApiProblem.Of(StatusCodes.Status400BadRequest, DailyErrorCodes.InvalidReplayQuery, "Le filtre ou le jour de départ est mal écrit.");
 
@@ -70,7 +84,8 @@ public static class GetReplayTracksEndpoint
         DateOnly? from = TryParseDay(before, out var day) ? day : null;
 
         var (none, half) = await queries.CountMissedAnswersAsync(playerId, lastDay, ct);
-        var missed = await queries.ListMissedAnswersAsync(playerId, lastDay, from, filter ?? ReplayFilters.All, DaysPerPage + 1, ct);
+        ReplayFilters.TryParse(filter, out var chosen);
+        var missed = await queries.ListMissedAnswersAsync(playerId, lastDay, from, chosen, DaysPerPage + 1, ct);
         var dates = missed.Select(m => m.Date).Distinct().OrderByDescending(d => d).ToList();
         var page = dates.Take(DaysPerPage).ToHashSet();
         var infos = await directory.GetAsync([.. missed.Where(m => page.Contains(m.Date)).Select(m => m.TrackId).Distinct()], ct);
