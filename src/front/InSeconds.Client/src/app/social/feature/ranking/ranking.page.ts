@@ -30,7 +30,7 @@ const VIEWS: readonly { readonly id: GroupView; readonly labelKey: string }[] = 
 ];
 
 /**
- * Le classement (`/ranking`, `?group=<id>`, `?period=today`, `?view=general`) : une pastille par groupe et « + Groupe » (plus « Général », le
+ * Le classement (`/ranking`, `?group=<id>`, `?period=today`, `?view=general`) : une pastille par groupe et, sous le groupe, « Créer un nouveau groupe » (plus « Général », le
  * classement général par niveau, pour qui a l'accès Survie), puis le classement du Défi du jour du groupe choisi, « Cette semaine » (points des
  * sept derniers jours et un point par jour joué) ou « Aujourd'hui » (fermé tant que le joueur n'a pas fini son défi : seulement qui a joué). La
  * ligne du joueur est en orange. Puis « Inviter un ami » et « Quitter le groupe ». Seul dans son groupe : l'invitation à y faire venir ses amis. Sans groupe : « Joue contre tes amis ». Sans compte : l'invitation à en

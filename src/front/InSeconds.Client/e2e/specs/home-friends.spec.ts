@@ -92,4 +92,33 @@ test.describe("Accueil : la carte amis", () => {
     await card.getByTestId('friends-card-ranking').click();
     await expect(page).toHaveURL(new RegExp(`/ranking\\?group=${group.id}&period=today$`));
   });
+
+  test("dans plusieurs groupes : une pastille change le groupe de la carte, que « Classement du groupe » ouvre", async ({ page }) => {
+    await new RunPage(page).loginAsPlayer('zoe-accueil@e2e.test', 'ZoeAccueil');
+    const first = await page.request.post('/api/social/groups', { data: { name: 'Les potes' } });
+    const second = await page.request.post('/api/social/groups', { data: { name: 'Le bureau' } });
+    expect(first.ok() && second.ok()).toBe(true);
+    const other = (await second.json()) as { id: number };
+
+    const game = new GamePage(page);
+    await game.goto();
+    await game.waitForWelcome();
+    const card = page.getByTestId('friends-card');
+    await expect(card.getByTestId('friends-card-title')).toHaveText('Les potes');
+
+    // Un toucher sur l'autre pastille : la carte passe au groupe, et le lien du classement le suit.
+    await card.getByTestId(`friends-card-group-${other.id}`).click();
+    await expect(card.getByTestId('friends-card-title')).toHaveText('Le bureau');
+    await expect(card.getByTestId('friends-card-ranking')).toHaveAttribute('href', new RegExp(`group=${other.id}$`));
+    await expect(card.getByTestId('friends-card-invite')).toBeVisible();
+    await expect(card.getByTestId('friends-card-new-group')).toHaveAttribute('href', '/ranking/new');
+
+    // Le choix est gardé : au rechargement la carte montre encore ce groupe.
+    await page.reload();
+    await game.waitForWelcome();
+    await expect(page.getByTestId('friends-card').getByTestId('friends-card-title')).toHaveText('Le bureau');
+
+    await page.getByTestId('friends-card').getByTestId('friends-card-ranking').click();
+    await expect(page).toHaveURL(new RegExp(`/ranking\\?group=${other.id}$`));
+  });
 });

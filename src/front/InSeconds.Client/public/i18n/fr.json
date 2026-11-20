@@ -1511,9 +1511,8 @@
       "close": "Fermer",
       "title": "Les groupes sont là",
       "noGroup": "Un classement rien qu'à toi et tes amis : qui devine le plus vite ?",
-      "guest": "Un classement entre amis. Il faut un compte pour en monter un.",
-      "member": "Envoie le lien de « {{ name }} » : chacun apparaît dans votre classement.",
-      "invite": "Inviter des amis"
+      "member": "Une autre bande d'amis ? Elle aura son propre classement.",
+      "guest": "Un classement entre amis. Il faut un compte pour en monter un."
     },
     "general": {
       "tab": "Général",
@@ -1540,7 +1539,6 @@
       "loading": "Chargement…",
       "error": "Le classement ne répond pas.",
       "groupsLabel": "Mes groupes",
-      "newGroup": "+ Groupe",
       "me": "Toi",
       "unplayed": "Pas encore joué",
       "privacy": "Seuls les membres du groupe voient ton pseudo."
@@ -1554,8 +1552,11 @@
     },
     "home": {
       "guestBody": "Gratuit, sans mot de passe. Tes parties te suivent sur tous tes appareils.",
+      "groups": "Tes groupes",
+      "openRanking": "Classement du groupe",
+      "newGroup": "Créer un nouveau groupe",
       "todayTitle": "{{ name }}, aujourd'hui",
-      "alone": "Tu es seul dans ce groupe. Invite tes amis depuis le classement.",
+      "alone": "Tu es seul dans ce groupe. Invite tes amis ci-dessous.",
       "nobodyFinished": "Personne n'a encore fini le défi aujourd'hui.",
       "memberPlayed": "{{ name }} a joué",
       "memberWaiting": "{{ name }} n'a pas encore joué",

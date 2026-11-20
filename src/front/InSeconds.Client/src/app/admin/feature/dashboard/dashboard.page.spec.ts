@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { WritableSignal, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
@@ -42,6 +42,7 @@ describe('DashboardPage', () => {
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(options.query ?? {}) } } },
       ],
     });
+    const wide = TestBed.inject(WIDE_SCREEN) as WritableSignal<boolean>;
     const fixture = TestBed.createComponent(DashboardPage);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -53,7 +54,7 @@ describe('DashboardPage', () => {
       await new Promise<void>(resolve => setTimeout(resolve, 0));
       fixture.detectChanges();
     };
-    return { fixture, element, detect, store: fixture.debugElement.injector.get(DashboardStore) };
+    return { fixture, element, detect, wide, store: fixture.debugElement.injector.get(DashboardStore) };
   }
 
   const buttons = (element: HTMLElement) => Array.from(element.querySelectorAll('button'));
@@ -67,26 +68,35 @@ describe('DashboardPage', () => {
     expect(challenges.loadStats).toHaveBeenCalledTimes(1);
   });
 
-  it('la carte du jour : le jour, les trois tuiles, et leur détail replié qui se déplie au clic', async () => {
-    const { element, detect } = await render();
+  it('la carte du jour : le jour, les trois tuiles, et leur détail déplié d\'office sur PC, qui se replie au clic', async () => {
+    const { element, detect } = await render({ wide: true });
 
     expect(byTestId(element, 'dashboard-selected-day')?.textContent).toContain('lundi 5 octobre');
     expect(byTestId(element, 'kpi-completed')?.textContent).toContain('4');
     expect(byTestId(element, 'kpi-new')?.textContent).toContain('2');
     expect(byTestId(element, 'kpi-median')?.textContent).toContain('4,200');
-    expect(byTestId(element, 'kpi-details')).toBeNull();
-    byTestId(element, 'kpi-toggle')!.click();
-    await detect();
     const details = byTestId(element, 'kpi-details')?.textContent ?? '';
     expect(details).toContain('admin.dashboard.expired');
     expect(details).toContain('admin.dashboard.completionRate');
     expect(details).toContain('admin.dashboard.accountCreated');
+    byTestId(element, 'kpi-toggle')!.click();
+    await detect();
+    expect(byTestId(element, 'kpi-details')).toBeNull();
+  });
+
+  it('téléphone : le détail des chiffres est replié, et se déplie au clic', async () => {
+    const { element, detect } = await render();
+    expect(byTestId(element, 'kpi-completed')).not.toBeNull();
+    expect(byTestId(element, 'kpi-details')).toBeNull();
+
+    byTestId(element, 'kpi-toggle')!.click();
+    await detect();
+
+    expect(byTestId(element, 'kpi-details')).not.toBeNull();
   });
 
   it('le détail du jour : les arrivés par source, les habitués et les nouveaux parmi ceux qui ont fini', async () => {
-    const { element, detect } = await render();
-    byTestId(element, 'kpi-toggle')!.click();
-    await detect();
+    const { element } = await render({ wide: true });
 
     const arrivals = byTestId(element, 'kpi-arrivals')?.textContent?.replace(/\s+/g, ' ') ?? '';
     expect(arrivals).toContain('admin.dashboard.arrived');
@@ -131,15 +141,33 @@ describe('DashboardPage', () => {
     expect(byTestId(element, 'day-card')?.querySelector('[data-testid="day-tracks"]')?.textContent).toContain('Eminem');
   });
 
-  it('PC : les morceaux du jour repliés dans la colonne de droite, et se déplient', async () => {
+  it('PC : les morceaux du jour dépliés d\'office dans la colonne de droite, et se replient', async () => {
     const { element, detect } = await render({ wide: true });
-    expect(byTestId(element, 'day-tracks')).toBeNull();
+
+    expect(byTestId(element, 'day-card')?.querySelector('[data-testid="day-tracks"]')).toBeNull();
+    expect(byTestId(element, 'day-detail')?.querySelector('[data-testid="day-tracks"]')?.textContent).toContain('Eminem');
 
     byTestId(element, 'day-tracks-toggle')!.click();
     await detect();
 
-    expect(byTestId(element, 'day-card')?.querySelector('[data-testid="day-tracks"]')).toBeNull();
-    expect(byTestId(element, 'day-detail')?.querySelector('[data-testid="day-tracks"]')?.textContent).toContain('Eminem');
+    expect(byTestId(element, 'day-tracks')).toBeNull();
+  });
+
+  it('les morceaux du jour reprennent le réglage d\'office de la mise en page quand elle change, et un clic tient entre deux changements', async () => {
+    const { element, detect, wide } = await render();
+    expect(byTestId(element, 'day-tracks')).toBeNull();
+
+    wide.set(true);
+    await detect();
+    expect(byTestId(element, 'day-tracks')).not.toBeNull();
+
+    byTestId(element, 'day-tracks-toggle')!.click();
+    await detect();
+    expect(byTestId(element, 'day-tracks')).toBeNull();
+
+    wide.set(false);
+    await detect();
+    expect(byTestId(element, 'day-tracks')).toBeNull();
   });
 
   it('un jour sans défi affiche le message à la place des chiffres', async () => {

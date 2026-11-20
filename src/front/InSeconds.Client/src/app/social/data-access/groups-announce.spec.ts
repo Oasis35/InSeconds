@@ -63,6 +63,20 @@ describe('GroupsAnnounce', () => {
     expect(announce.chip()).toBe(false);
   });
 
+  it('un compte peut créer un groupe sous le maximum du serveur, plus au maximum ni sans lecture', () => {
+    const { announce } = setup();
+    expect(announce.canCreate()).toBe(false);
+
+    announce.setGroups([group], 5);
+    expect(announce.canCreate()).toBe(true);
+
+    announce.setGroups([group], 1);
+    expect(announce.canCreate()).toBe(false);
+
+    announce.setGroups('failed');
+    expect(announce.canCreate()).toBe(false);
+  });
+
   it("la déconnexion efface les groupes lus : l'ancien compte ne s'affiche plus", () => {
     const { announce } = setup();
     const session = TestBed.inject(SessionStore);

@@ -1,11 +1,11 @@
 import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, linkedSignal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { DayKpis, sourceLabelKey } from '../../../domain/dashboard';
 
 /**
  * Les chiffres du jour, dans la carte du jour de l'accueil : trois tuiles (ont fini, nouveaux joueurs, score médian, en violet : les
- * autres joueurs), puis un volet « Détail », replié par défaut : en cours ou inachevées, abandons, part qui finit, comptes créés ; les
+ * autres joueurs), puis un volet « Détail », déplié d'office sur PC, replié sur téléphone (`openByDefault`) : en cours ou inachevées, abandons, part qui finit, comptes créés ; les
  * joueurs arrivés ce jour-là par source ; parmi ceux qui ont fini, les habitués et les nouveaux (côte à côte sur PC). Sans défi ce
  * jour-là : le message à la place.
  */
@@ -31,7 +31,7 @@ import { DayKpis, sourceLabelKey } from '../../../domain/dashboard';
           <p class="text-[11px]" style="color:var(--text-muted)">{{ 'admin.dashboard.kpiMedian' | translate }}</p>
         </div>
       </div>
-      <!-- Le détail, replié par défaut : en cours, abandons, part qui finit, comptes ; les arrivés ; habitués et nouveaux. -->
+      <!-- Le détail, déplié d'office sur PC : en cours, abandons, part qui finit, comptes ; les arrivés ; habitués et nouveaux. -->
       <button type="button" (click)="detailsOpen.set(!detailsOpen())" [attr.aria-expanded]="detailsOpen()" aria-controls="kpi-more"
         class="self-center py-2 -my-2 text-xs hover:text-(--text-hi)" style="color:var(--text-muted)" data-testid="kpi-toggle">
         {{ 'admin.dashboard.details' | translate }} <span aria-hidden="true">{{ detailsOpen() ? '▴' : '▾' }}</span>
@@ -76,8 +76,9 @@ import { DayKpis, sourceLabelKey } from '../../../domain/dashboard';
 })
 export class DashboardKpisComponent {
   readonly kpis = input.required<DayKpis | null>();
-  /** Le détail sous les tuiles est déplié (replié par défaut). */
-  protected readonly detailsOpen = signal(false);
+  /** Le détail est déplié d'office (PC) ou replié (téléphone) ; un clic garde le choix jusqu'au prochain changement de cette valeur. */
+  readonly openByDefault = input(false);
+  protected readonly detailsOpen = linkedSignal(() => this.openByDefault());
 
   protected readonly sourceKey = sourceLabelKey;
 }
