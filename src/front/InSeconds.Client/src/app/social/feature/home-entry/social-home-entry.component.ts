@@ -3,6 +3,7 @@ import { LanguageService } from '../../../core/i18n/language.service';
 import { SessionStore } from '../../../core/session/session.store';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { GroupShare } from '../../data-access/group-share';
+import { GroupsAnnounce } from '../../data-access/groups-announce';
 import { LastGroup } from '../../data-access/last-group';
 import { SocialApi } from '../../data-access/social.api';
 import { provideSocialApi } from '../../data-access/social.providers';
@@ -26,8 +27,8 @@ import { FriendsHomeCardComponent } from '../../ui/friends-home-card/friends-hom
   template: `
     @if (view(); as view) {
       <div class="pt-3">
-        <app-friends-home-card [view]="view" [lang]="lang()" [showLogin]="!chrome.accountCtaShown()" [groups]="groups()" [canCreate]="canCreate()" [inviteState]="inviteState()"
-          (groupSelected)="select($event)" (invite)="invite($event)" />
+        <app-friends-home-card [view]="view" [lang]="lang()" [showLogin]="!chrome.accountCtaShown()" [showNew]="announce.chip()" [groups]="groups()" [canCreate]="canCreate()"
+          [inviteState]="inviteState()" (groupSelected)="select($event)" (invite)="invite($event)" />
       </div>
     } @else if (reserving()) {
       <!-- La place de la carte pendant sa lecture : la carte Survie, souvent prête avant, ne saute pas quand celle-ci arrive au-dessus. -->
@@ -42,6 +43,7 @@ export class SocialHomeEntryComponent {
   protected readonly chrome = inject(ShellChromeStore);
   private readonly api = inject(SocialApi);
   private readonly lastGroup = inject(LastGroup);
+  protected readonly announce = inject(GroupsAnnounce);
   private readonly language = inject(LanguageService);
   private readonly share = inject(GroupShare);
   protected readonly inviteState = computed<'idle' | 'copied' | 'failed'>(() => (this.share.copied() ? 'copied' : this.share.failed() ? 'failed' : 'idle'));
@@ -71,6 +73,7 @@ export class SocialHomeEntryComponent {
   private async load(linked: boolean): Promise<void> {
     const request = ++this.latest;
     if (!linked) {
+      this.announce.setGroups([]);
       this.view.set({ kind: 'guest' });
       return;
     }
@@ -82,9 +85,11 @@ export class SocialHomeEntryComponent {
       const mygroups = await this.api.myGroups();
       mine = mygroups.groups;
       max = mygroups.maxGroups;
+      this.announce.setGroups(mine);
       const groupId = preferredGroupId(mine.map(group => group.id), this.lastGroup.get());
       view = groupId === null ? { kind: 'no_group' } : groupCardView(await this.api.scores(groupId));
     } catch {
+      this.announce.setGroups('failed');
       view = null;
     }
     if (request !== this.latest) return;

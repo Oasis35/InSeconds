@@ -15,6 +15,8 @@ async function otherPlayer(browser: Browser): Promise<Page> {
     (window as { __disableHealthPolling?: boolean }).__disableHealthPolling = true;
     try {
       localStorage.setItem('lang', 'fr');
+      localStorage.setItem('inseconds.announce.groups.closed', '1');
+      localStorage.setItem('inseconds.announce.groups.rankingSeen', '1');
     } catch {
       // localStorage indisponible - ignore
     }

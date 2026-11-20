@@ -10,7 +10,7 @@ import { ShellChromeStore } from '../shell-chrome.store';
 /**
  * La barre du bas : Jouer (l’accueil : le jeu du jour et la carte Survie), Classements, Historique et Profil (« Connexion » pour un invité).
  * Pour tous les joueurs, sur l'accueil, sur Survie, sur le classement, l'historique et le profil, et jamais pendant une manche.
- * « Jouer » respire en cyan tant que le défi du jour n'est pas joué. Les liens légaux ne sont plus dans la barre : ils vivent sous la carte Survie.
+ * « Jouer » respire en cyan tant que le défi du jour n'est pas joué. « Classements » porte un point violet tant que l'annonce des groupes n'est pas passée par là (`ShellChromeStore.groupsNew`). Les liens légaux ne sont plus dans la barre : ils vivent sous la carte Survie.
  */
 @Component({
   selector: 'app-bottom-bar',
@@ -34,11 +34,15 @@ import { ShellChromeStore } from '../shell-chrome.store';
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-5.5 7-5.5s6 1.5 7 5.5"/></svg>
                 } @else if (tab.id === 'ranking') {
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 20v-6M12 20V5M18 20v-9"/></svg>
+                  @if (chrome.groupsNew()) {
+                    <span class="absolute -top-0.5 -right-1 h-2 w-2 rounded-full" data-testid="ranking-new" style="background:var(--color-violet)"></span>
+                  }
                 } @else {
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
                 }
               </span>
               <span>{{ tab.labelKey | translate }}</span>
+              @if (tab.id === 'ranking' && chrome.groupsNew()) { <span class="sr-only">{{ 'shell.newBadge' | translate }}</span> }
             </a>
           }
         </nav>

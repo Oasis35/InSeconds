@@ -35,6 +35,19 @@ describe('FriendsHomeCardComponent', () => {
     expect(one(fixture.nativeElement as HTMLElement, 'friends-card-login')).toBeNull();
   });
 
+  it('la pastille « Nouveau » seulement si on la demande, pour un invité ou un compte sans groupe', () => {
+    TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
+    const fixture = TestBed.createComponent(FriendsHomeCardComponent);
+    fixture.componentRef.setInput('view', { kind: 'no_group' });
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    expect(one(element, 'friends-card-new')).toBeNull();
+
+    fixture.componentRef.setInput('showNew', true);
+    fixture.detectChanges();
+    expect(one(element, 'friends-card-new')).not.toBeNull();
+  });
+
   it('un compte sans groupe : « Créer un groupe »', () => {
     const element = render({ kind: 'no_group' });
 

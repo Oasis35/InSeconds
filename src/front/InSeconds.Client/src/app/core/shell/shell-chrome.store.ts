@@ -14,6 +14,8 @@ interface ShellChromeState {
    * répètent pas. Posé par le jeu du jour, lu par la carte amis.
    */
   accountCtaShown: boolean;
+  /** Le point « Nouveau » de l'onglet Classements (l'annonce des groupes, une fois sa carte fermée). Posé par le domaine des groupes, lu par la barre. */
+  groupsNew: boolean;
 }
 
 /**
@@ -22,7 +24,7 @@ interface ShellChromeState {
  */
 export const ShellChromeStore = signalStore(
   { providedIn: 'root' },
-  withState<ShellChromeState>({ survie: false, survieKnown: false, immersive: false, dailyDone: null, accountCtaShown: false }),
+  withState<ShellChromeState>({ survie: false, survieKnown: false, immersive: false, dailyDone: null, accountCtaShown: false, groupsNew: false }),
   withMethods(store => ({
     /** `known` : faux tant que l'accès n'est pas lu (les tests qui posent seulement `survie` le sont d'office). */
     setSurvie(survie: boolean, known = true): void {
@@ -36,6 +38,9 @@ export const ShellChromeStore = signalStore(
     },
     setAccountCtaShown(accountCtaShown: boolean): void {
       patchState(store, { accountCtaShown });
+    },
+    setGroupsNew(groupsNew: boolean): void {
+      patchState(store, { groupsNew });
     },
   })),
 );

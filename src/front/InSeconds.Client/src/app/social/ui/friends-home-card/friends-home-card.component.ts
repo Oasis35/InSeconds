@@ -23,14 +23,26 @@ import { FriendPresence, FriendsCardView } from '../../domain/friends-card';
       style="background:var(--bg-surface);border:1px solid var(--border-medium)">
       @switch (view().kind) {
         @case ('guest') {
-          <h2 class="text-xl font-bold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.empty.title' | translate }}</h2>
+          <div class="flex items-start justify-between gap-3">
+            <h2 class="text-xl font-bold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.empty.title' | translate }}</h2>
+            @if (showNew()) {
+              <span class="shrink-0 inline-flex items-center h-[22px] px-2 rounded-md text-xs font-bold" data-testid="friends-card-new"
+                style="color:var(--color-violet);border:1px solid rgb(var(--rgb-violet) / 0.6);background:rgb(var(--rgb-violet) / 0.12)">{{ 'social.announce.chip' | translate }}</span>
+            }
+          </div>
           <p class="text-sm leading-snug" style="color:var(--text-light)">{{ 'social.home.guestBody' | translate }}</p>
           @if (showLogin()) {
             <a appButton variant="neutral" [block]="true" routerLink="/account/login" data-testid="friends-card-login">{{ 'social.empty.createAccount' | translate }}</a>
           }
         }
         @case ('no_group') {
-          <h2 class="text-xl font-bold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.empty.title' | translate }}</h2>
+          <div class="flex items-start justify-between gap-3">
+            <h2 class="text-xl font-bold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.empty.title' | translate }}</h2>
+            @if (showNew()) {
+              <span class="shrink-0 inline-flex items-center h-[22px] px-2 rounded-md text-xs font-bold" data-testid="friends-card-new"
+                style="color:var(--color-violet);border:1px solid rgb(var(--rgb-violet) / 0.6);background:rgb(var(--rgb-violet) / 0.12)">{{ 'social.announce.chip' | translate }}</span>
+            }
+          </div>
           <p class="text-sm leading-snug" style="color:var(--text-light)">{{ 'social.empty.body' | translate }}</p>
           <a appButton variant="accent" [block]="true" routerLink="/ranking/new" data-testid="friends-card-create">{{ 'social.empty.create' | translate }}</a>
         }
@@ -134,6 +146,8 @@ export class FriendsHomeCardComponent {
   readonly lang = input<'fr' | 'en'>('fr');
   /** Invité : « Créer un compte » ; masqué quand le jeu du jour montre déjà son propre appel (toast de série, partie en pause). */
   readonly showLogin = input(true);
+  /** La pastille « Nouveau » (l'annonce des groupes, carte fermée) : seulement pour un invité ou un compte sans groupe. */
+  readonly showNew = input(false);
   /** Les groupes du joueur : dès qu'il y en a plusieurs, une pastille chacun pour changer celui que la carte montre. */
   readonly groups = input<readonly Group[]>([]);
   /** Un membre qui n'a pas atteint le nombre maximal de groupes : « Créer un nouveau groupe » sous la carte. */
