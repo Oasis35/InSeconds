@@ -157,7 +157,7 @@ describe('FriendsHomeCardComponent', () => {
       const invite = one(element, 'friends-card-invite');
       expect(invite?.tagName).toBe('BUTTON');
       expect(invite?.classList).toContain('app-button--neutral');
-      expect(invite?.textContent).toContain('social.invite.button');
+      expect(invite?.textContent).toContain('social.alone.invite');
       invite?.click();
       expect(invited).toEqual([4]);
 

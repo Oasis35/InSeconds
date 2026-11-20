@@ -59,7 +59,7 @@
           @if (general()) {
             <app-general-ranking [lang]="language.current()" [openNameOnLoad]="editName()" />
             @if (store.canCreate()) {
-              <a appButton variant="neutral" routerLink="/ranking/new" [block]="true" data-testid="ranking-new-group">{{ 'social.home.newGroup' | translate }}</a>
+              <a appButton variant="neutral" routerLink="/ranking/new" [block]="true" data-testid="ranking-new-group">{{ (store.groups().length > 0 ? 'social.home.newGroup' : 'social.empty.create') | translate }}</a>
             }
           } @else if (store.selected(); as group) {
             @if (alone()) {

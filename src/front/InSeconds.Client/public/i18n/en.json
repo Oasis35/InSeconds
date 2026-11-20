@@ -1511,7 +1511,7 @@
       "close": "Close",
       "title": "Groups are here",
       "noGroup": "A leaderboard just for you and your friends: who guesses fastest?",
-      "member": "Another group of friends? Start another group, with its own leaderboard.",
+      "member": "Another group of friends? It will have its own leaderboard.",
       "guest": "A leaderboard with friends. You need an account to start one."
     },
     "general": {
@@ -1539,7 +1539,6 @@
       "loading": "Loading…",
       "error": "The ranking is not responding.",
       "groupsLabel": "My groups",
-      "newGroup": "Create a new group",
       "me": "You",
       "unplayed": "Not played yet",
       "privacy": "Only the group's members see your username."

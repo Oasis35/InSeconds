@@ -127,7 +127,7 @@ import { FriendPresence, FriendsCardView } from '../../domain/friends-card';
             <button appButton type="button" variant="neutral" [block]="true" class="[overflow-wrap:anywhere]" (click)="invite.emit(id)" data-testid="friends-card-invite">
               @if (inviteState() === 'copied') { {{ 'social.invite.copied' | translate }} }
               @else if (inviteState() === 'failed') { {{ 'social.invite.failed' | translate }} }
-              @else { {{ 'social.invite.button' | translate: { name: title() } }} }
+              @else { {{ 'social.alone.invite' | translate }} }
             </button>
           }
 

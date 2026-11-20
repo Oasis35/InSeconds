@@ -1511,7 +1511,7 @@
       "close": "Fermer",
       "title": "Les groupes sont là",
       "noGroup": "Un classement rien qu'à toi et tes amis : qui devine le plus vite ?",
-      "member": "Une autre bande d'amis ? Crée un autre groupe, avec son propre classement.",
+      "member": "Une autre bande d'amis ? Elle aura son propre classement.",
       "guest": "Un classement entre amis. Il faut un compte pour en monter un."
     },
     "general": {
@@ -1539,7 +1539,6 @@
       "loading": "Chargement…",
       "error": "Le classement ne répond pas.",
       "groupsLabel": "Mes groupes",
-      "newGroup": "Créer un nouveau groupe",
       "me": "Toi",
       "unplayed": "Pas encore joué",
       "privacy": "Seuls les membres du groupe voient ton pseudo."

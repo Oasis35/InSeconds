@@ -61,6 +61,7 @@ describe('RankingPage', () => {
     expect(find(el, 'ranking-general')?.getAttribute('href')).toBe('/ranking?view=general');
     expect(find(el, 'general-ranking')).not.toBeNull();
     expect(find(el, 'ranking-new-group')?.getAttribute('href')).toBe('/ranking/new');
+    expect(find(el, 'ranking-new-group')?.textContent).toContain('social.empty.create');
     expect(find(el, 'ranking-empty')).toBeNull();
   });
 
