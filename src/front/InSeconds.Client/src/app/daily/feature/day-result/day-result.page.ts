@@ -11,6 +11,7 @@ import { DailyGameStore } from '../../data-access/daily-game.store';
 import { isRecapScreen } from '../../domain/daily-screen';
 import { AbandonedScreenComponent } from '../../ui/abandoned-screen/abandoned-screen.component';
 import { DayResultScreenComponent } from '../../ui/day-result-screen/day-result-screen.component';
+import { TrackResultsListComponent } from '../../../gameplay/ui/track-results-list/track-results-list.component';
 import { DailyResultView, StreakSheetOpener } from '../daily-shell/daily-view';
 
 /**
@@ -21,7 +22,7 @@ import { DailyResultView, StreakSheetOpener } from '../daily-shell/daily-view';
 @Component({
   selector: 'app-day-result-page',
   imports: [TranslatePipe, RouterLink, DecorBackgroundComponent, BrandComponent, InstagramLinkComponent, AccountLinkComponent, HomeLegalLineComponent,
-    DayResultScreenComponent, AbandonedScreenComponent],
+    DayResultScreenComponent, AbandonedScreenComponent, TrackResultsListComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="da-bg min-h-dvh flex flex-col relative" style="color:var(--text-body)">
@@ -41,6 +42,12 @@ import { DailyResultView, StreakSheetOpener } from '../daily-shell/daily-view';
         @if (isRecap()) {
           @if (store.abandoned()) {
             <app-abandoned-screen [countdown]="store.countdown()" />
+            @if (store.stats()?.abandonedScore != null && result.rows().length) {
+              <!-- Abandonné après au moins une réponse : les morceaux joués, comme sur le résultat d'une partie finie. -->
+              <div class="-mx-5 mt-6" style="border-top:1px solid var(--border-medium);border-bottom:1px solid var(--border-medium)" data-testid="day-result-abandoned-tracks">
+                <app-track-results-list [rows]="result.rows()" [lang]="language.current()" />
+              </div>
+            }
           } @else {
             <app-day-result-screen
               [fresh]="store.screen() === 'done'"

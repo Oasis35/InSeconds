@@ -91,7 +91,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
             <app-home-mode-entries #lead placement="lead" class="block" [class.-mt-3]="lead.hasLeadingEntry()" [class.mb-3]="lead.hasLeadingEntry()" />
             <div class="screen-enter flex flex-col gap-3" data-testid="home-v4" data-fresh="false">
               @if (store.abandoned()) {
-                <app-home-abandoned-card [countdown]="store.countdown()" [score]="store.stats()?.abandonedScore ?? null" [pending]="store.stats() === null" [rows]="result.rows()" [lang]="language.current()" />
+                <app-home-abandoned-card [countdown]="store.countdown()" [score]="store.stats()?.abandonedScore ?? null" [pending]="store.stats() === null" [rows]="result.rows()" />
               } @else {
                 <app-home-done-card
                   [score]="store.stats()?.yourScore ?? null"
