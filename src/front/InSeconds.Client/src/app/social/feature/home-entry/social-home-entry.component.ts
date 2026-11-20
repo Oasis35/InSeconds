@@ -46,7 +46,10 @@ export class SocialHomeEntryComponent {
   protected readonly announce = inject(GroupsAnnounce);
   private readonly language = inject(LanguageService);
   private readonly share = inject(GroupShare);
-  protected readonly inviteState = computed<'idle' | 'copied' | 'failed'>(() => (this.share.copied() ? 'copied' : this.share.failed() ? 'failed' : 'idle'));
+  protected readonly inviteState = computed<'idle' | 'copied' | 'failed'>(() => {
+    if (this.share.copied()) return 'copied';
+    return this.share.failed() ? 'failed' : 'idle';
+  });
 
   protected readonly view = signal<FriendsCardView | null>(null);
   /** Les groupes du joueur : dès qu'il y en a plusieurs, la carte offre une pastille chacun. */
