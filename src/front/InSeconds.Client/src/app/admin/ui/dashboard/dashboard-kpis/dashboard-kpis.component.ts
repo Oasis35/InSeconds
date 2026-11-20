@@ -76,7 +76,7 @@ import { DayKpis, sourceLabelKey } from '../../../domain/dashboard';
 })
 export class DashboardKpisComponent {
   readonly kpis = input.required<DayKpis | null>();
-  /** Le détail sous les tuiles est déplié (déplié par défaut, il se replie d'un clic). */
+  /** Le détail sous les tuiles est déplié d'office ; un clic le replie. */
   protected readonly detailsOpen = signal(true);
 
   protected readonly sourceKey = sourceLabelKey;

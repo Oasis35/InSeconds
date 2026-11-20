@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { WritableSignal, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
@@ -42,6 +42,7 @@ describe('DashboardPage', () => {
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(options.query ?? {}) } } },
       ],
     });
+    const wide = TestBed.inject(WIDE_SCREEN) as WritableSignal<boolean>;
     const fixture = TestBed.createComponent(DashboardPage);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -53,7 +54,7 @@ describe('DashboardPage', () => {
       await new Promise<void>(resolve => setTimeout(resolve, 0));
       fixture.detectChanges();
     };
-    return { fixture, element, detect, store: fixture.debugElement.injector.get(DashboardStore) };
+    return { fixture, element, detect, wide, store: fixture.debugElement.injector.get(DashboardStore) };
   }
 
   const buttons = (element: HTMLElement) => Array.from(element.querySelectorAll('button'));
@@ -138,6 +139,23 @@ describe('DashboardPage', () => {
     byTestId(element, 'day-tracks-toggle')!.click();
     await detect();
 
+    expect(byTestId(element, 'day-tracks')).toBeNull();
+  });
+
+  it('les morceaux du jour reprennent le réglage d\'office de la mise en page quand elle change, et un clic tient entre deux changements', async () => {
+    const { element, detect, wide } = await render();
+    expect(byTestId(element, 'day-tracks')).toBeNull();
+
+    wide.set(true);
+    await detect();
+    expect(byTestId(element, 'day-tracks')).not.toBeNull();
+
+    byTestId(element, 'day-tracks-toggle')!.click();
+    await detect();
+    expect(byTestId(element, 'day-tracks')).toBeNull();
+
+    wide.set(false);
+    await detect();
     expect(byTestId(element, 'day-tracks')).toBeNull();
   });
 
