@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 import { inSequence } from './sequence';
 
 // CI utilise 5175 (port de l'API), local utilise 5177 (évite le conflit avec le dev normal)
-const BASE = process.env['CI'] ? 'http://localhost:5175' : 'http://localhost:5177';
+export const BASE = process.env['CI'] ? 'http://localhost:5175' : 'http://localhost:5177';
 // L'admin est un rôle sur le compte (piège 5) : les routes /api/e2e n'exigent ni Origin ni
 // authentification, et l'hôte de test ignore ce Bearer.
 const ADMIN_HEADERS = {

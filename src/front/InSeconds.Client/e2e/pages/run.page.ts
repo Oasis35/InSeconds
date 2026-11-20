@@ -1,4 +1,5 @@
 import { Page, Locator, expect } from '@playwright/test';
+import { loginAsPlayer } from '../fixtures/player-login';
 import { inSequence } from '../fixtures/sequence';
 import type { RunTrack } from '../fixtures/api-client';
 
@@ -103,11 +104,8 @@ export class RunPage {
   }
 
   /** Connecte la page comme un compte joueur ordinaire (créé au besoin, `POST /api/auth/dev-login`) et rend son identifiant. */
-  async loginAsPlayer(email: string, pseudo: string): Promise<string> {
-    const res = await this.page.request.post(`${BASE}/api/auth/dev-login`, { data: { email, pseudo } });
-    if (!res.ok()) throw new Error(`dev-login failed: ${res.status()}`);
-    const me = await this.page.request.get(`${BASE}/api/players/me`);
-    return ((await me.json()) as { playerId: string }).playerId;
+  loginAsPlayer(email: string, pseudo: string): Promise<string> {
+    return loginAsPlayer(this.page, email, pseudo);
   }
 
   /** Ouvre `/survie` et attend l'accueil du mode (horloge simulée, comme au jeu du jour : la saisie a des minuteries). */

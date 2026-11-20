@@ -1,7 +1,7 @@
 import { Page, Locator } from '@playwright/test';
+import { loginAsPlayer } from '../fixtures/player-login';
 import { times } from '../fixtures/sequence';
 import { BlindRoundPage } from './blind-round.page';
-import { RunPage } from './run.page';
 
 export class GamePage {
   readonly startButton: Locator;
@@ -114,7 +114,7 @@ export class GamePage {
 
   /** Se connecte en compte neuf (sans groupe ni partie), puis ouvre l'accueil et attend le bouton « Commencer ». */
   async gotoAsNewPlayer(email: string, pseudo: string): Promise<void> {
-    await new RunPage(this.page).loginAsPlayer(email, pseudo);
+    await loginAsPlayer(this.page, email, pseudo);
     await this.goto();
     await this.waitForWelcome();
   }
