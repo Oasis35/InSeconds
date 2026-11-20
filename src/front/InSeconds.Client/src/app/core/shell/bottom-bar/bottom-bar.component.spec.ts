@@ -29,7 +29,7 @@ describe('BottomBarComponent', () => {
     expect(document.documentElement.classList.contains('has-bottom-bar')).toBe(true);
   });
 
-  it("l'onglet Accueil mène à la racine et s'allume sur la racine comme sur /daily", async () => {
+  it("l'onglet Jouer mène à la racine et s'allume sur la racine comme sur /daily", async () => {
     const { el } = await render('/', {});
     expect(el.querySelector('[data-testid="tab-daily"]')?.getAttribute('href')).toBe('/');
     expect(el.querySelector('[data-testid="tab-daily"]')?.getAttribute('aria-current')).toBe('page');
@@ -72,7 +72,7 @@ describe('BottomBarComponent', () => {
     expect(el.querySelector('a[href="/legal"]')).toBeNull();
   });
 
-  it('« Mon compte » ouvre le profil d\'un compte, « Connexion » est l\'entrée d\'un invité', async () => {
+  it('« Profil » ouvre le profil d\'un compte, « Connexion » est l\'entrée d\'un invité', async () => {
     const { el } = await render('/daily', {});
     expect(el.querySelector('[data-testid="tab-account"]')?.getAttribute('href')).toBe('/account/login');
     TestBed.resetTestingModule();

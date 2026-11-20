@@ -21,9 +21,10 @@ import { StatusScreenComponent } from '../../ui/status-screen/status-screen.comp
 import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell/daily-view';
 
 /**
- * L'accueil (`/`), neutre : ni le défi ni la Survie, mais leurs cartes. La carte du défi porte tous ses états (à jouer, en pause,
- * abandonné, fait avec le score qui monte juste après la partie) ; dessous, la carte amis puis la carte Survie (projetées par `<app-home-mode-entries>`,
- * le Daily n'importe ni `social` ni `runs`). Les stores
+ * L'accueil (`/`), neutre : ni le défi ni la Survie, mais leurs cartes, avec **une seule tuile du moment** (la prochaine action). Défi à jouer :
+ * la carte du défi en tête, puis la carte amis et la carte Survie. Défi fait : la carte Survie passe devant si le joueur y a accès
+ * (`placement="lead"`), puis le résultat court (« Voir le résultat » ouvre `/daily/resultat`), puis la carte amis. Les cartes des autres domaines
+ * arrivent par `<app-home-mode-entries>` : le Daily n'importe ni `social` ni `runs`. Les stores
  * sont ceux de la coquille du jeu du jour : « Commencer » lance la partie dans ce toucher, et la coquille passe sur `/daily` pour la manche.
  */
 @Component({
@@ -59,6 +60,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                 [bestScore]="store.bestScore()"
                 [yesterdayMedian]="store.yesterdayMedian()"
                 [remaining]="remaining()"
+                [firstGame]="store.firstGame()"
                 [linked]="store.linked()"
                 (startGame)="store.begin()"
                 (openStreak)="streakSheet.open()" />
@@ -85,6 +87,8 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
             <app-home-mode-entries />
           }
           @case ('already_played') {
+            <!-- Défi fait : la carte Survie (si le joueur y a accès) passe devant, c'est la prochaine action. -->
+            <app-home-mode-entries #lead placement="lead" class="block" [class.-mt-3]="lead.hasLeadingEntry()" [class.mb-3]="lead.hasLeadingEntry()" />
             <div class="screen-enter flex flex-col gap-3" data-testid="home-v4" data-fresh="false">
               @if (store.abandoned()) {
                 <app-home-abandoned-card [countdown]="store.countdown()" [score]="store.stats()?.abandonedScore ?? null" [pending]="store.stats() === null" [rows]="result.rows()" [lang]="language.current()" />
@@ -95,6 +99,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                   [countdown]="store.countdown()"
                   [betterThanPercent]="store.stats()?.betterThanPercent ?? null"
                   [history]="store.stats()?.history ?? null"
+                  [focus]="!lead.hasLeadingEntry()"
                   [lang]="language.current()"
                   [streak]="store.pillStreak()"
                   [linked]="store.linked()"
@@ -105,9 +110,11 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                   (share)="result.share()" />
               }
             </div>
-            <app-home-mode-entries />
+            <app-home-mode-entries placement="rest" />
           }
           @case ('done') {
+            <!-- Défi fait : la carte Survie (si le joueur y a accès) passe devant, c'est la prochaine action. -->
+            <app-home-mode-entries #lead placement="lead" class="block" [class.-mt-3]="lead.hasLeadingEntry()" [class.mb-3]="lead.hasLeadingEntry()" />
             <div class="screen-enter flex flex-col gap-3" data-testid="home-v4" data-fresh="true">
               <app-home-done-card
                 [score]="result.displayedTotal()"
@@ -115,6 +122,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                 [countdown]="store.countdown()"
                 [betterThanPercent]="store.stats()?.betterThanPercent ?? null"
                 [history]="store.stats()?.history ?? null"
+                [focus]="!lead.hasLeadingEntry()"
                 [lang]="language.current()"
                 [streak]="store.pillStreak()"
                 [linked]="store.linked()"
@@ -124,7 +132,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                 [canShare]="store.canShare()"
                 (share)="result.share()" />
             </div>
-            <app-home-mode-entries />
+            <app-home-mode-entries placement="rest" />
           }
           @case ('no_challenge') {
             <app-status-screen titleKey="daily.noChallenge.title" bodyKey="daily.noChallenge.body" (retry)="store.retryNoChallenge()" />

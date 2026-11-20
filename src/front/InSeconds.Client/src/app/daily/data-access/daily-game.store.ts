@@ -101,6 +101,8 @@ export const DailyGameStore = signalStore(
       sheetStreak: computed(() => store.streak() ?? EMPTY_STREAK),
       /** Parties terminées du joueur, pour le panneau de série d'un compte : relues avec la série (`GET /api/daily/today`), vides avant. */
       sheetGamesPlayed: computed(() => store.today()?.completedGames ?? null),
+      /** Le joueur n'a fini aucune partie : l'accueil lui donne la règle en une phrase. Faux tant que l'état du jour n'est pas lu. */
+      firstGame: computed(() => store.today()?.completedGames === 0),
       /** Ce que la carte de révélation montre du morceau en cours, une fois la réponse du serveur reçue. */
       roundResult: computed(() => {
         const answered = store.results().find(r => r.position === store.position());

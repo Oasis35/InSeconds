@@ -10,7 +10,7 @@ export function pathOf(url: string): string {
 }
 
 /**
- * Attend qu'un compte soit connecté dans ce navigateur : sur l'accueil, l'onglet « Mon compte » de la barre du bas mène au profil (un invité y a « Connexion »).
+ * Attend qu'un compte soit connecté dans ce navigateur : sur l'accueil, l'onglet « Profil » de la barre du bas mène au profil (un invité y a « Connexion »).
  * Le profil affiche le pseudo, c'est lui qu'on lit.
  */
 export async function expectSignedIn(page: Page, pseudo: string): Promise<void> {

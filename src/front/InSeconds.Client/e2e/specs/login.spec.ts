@@ -137,7 +137,7 @@ test.describe('Connexion par lien magique', () => {
     await page.getByPlaceholder('Ton pseudo').fill('CarlE2E');
     await page.getByRole('button', { name: 'Valider' }).click();
 
-    // L'onglet « Mon compte » de la barre du bas ouvre l'écran Profil (plus de déconnexion
+    // L’onglet « Profil » de la barre du bas ouvre l'écran Profil (plus de déconnexion
     // directe) - il faut confirmer explicitement via son bouton "Se déconnecter".
     await expectSignedIn(page, 'CarlE2E');
     await expect(page).toHaveURL(/\/profile$/);

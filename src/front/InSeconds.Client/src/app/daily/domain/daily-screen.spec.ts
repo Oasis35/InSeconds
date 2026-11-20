@@ -1,5 +1,5 @@
 import { TodayState } from './daily';
-import { DailyScreen, PeekContext, isHomeScreen, isRecapScreen, refocusContext, screenAfterToday } from './daily-screen';
+import { DAILY_RESULT_PATH, DailyScreen, PeekContext, isHomeScreen, isRecapScreen, redirectFor, refocusContext, screenAfterToday } from './daily-screen';
 
 describe('screenAfterToday', () => {
   it('première lecture : accueil, reprise, pas de défi', () => {
@@ -49,5 +49,29 @@ describe('isHomeScreen', () => {
   it('la carte du défi (à jouer, en pause, fait) est sur l\'accueil, la manche et les états d\'attente non', () => {
     expect((['welcome', 'resume_prompt', 'already_played', 'done'] as const).every(isHomeScreen)).toBe(true);
     expect((['loading', 'playing', 'no_challenge', 'error'] as const).some(isHomeScreen)).toBe(false);
+  });
+});
+
+describe('redirectFor', () => {
+  it('une manche est toujours sur /daily, même partie depuis l’accueil ou le résultat', () => {
+    expect(redirectFor('/', 'playing')).toBe('/daily');
+    expect(redirectFor(DAILY_RESULT_PATH, 'playing')).toBe('/daily');
+    expect(redirectFor('/daily', 'playing')).toBeNull();
+  });
+
+  it('la carte du défi et le résultat court sont sur l’accueil', () => {
+    for (const screen of ['welcome', 'resume_prompt', 'done', 'already_played'] as DailyScreen[]) {
+      expect(redirectFor('/daily', screen)).toBe('/');
+      expect(redirectFor('/', screen)).toBeNull();
+    }
+  });
+
+  it('le résultat complet n’existe qu’une fois le défi fini, et attend la fin du chargement', () => {
+    expect(redirectFor(DAILY_RESULT_PATH, 'done')).toBeNull();
+    expect(redirectFor(DAILY_RESULT_PATH, 'already_played')).toBeNull();
+    expect(redirectFor(DAILY_RESULT_PATH, 'loading')).toBeNull();
+    for (const screen of ['welcome', 'resume_prompt', 'no_challenge', 'error'] as DailyScreen[]) {
+      expect(redirectFor(DAILY_RESULT_PATH, screen)).toBe('/');
+    }
   });
 });

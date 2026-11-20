@@ -10,7 +10,7 @@ test.describe('Profil', () => {
     await api.reset();
   });
 
-  test("l'onglet « Mon compte » de la barre du bas (compte connecté) mène au profil", async ({ page, api }) => {
+  test("l'onglet « Profil » de la barre du bas (compte connecté) mène au profil", async ({ page, api }) => {
     await linkAccount(page, api, EMAIL_A, 'AvatarUserE2E');
 
     await page.goto('/');

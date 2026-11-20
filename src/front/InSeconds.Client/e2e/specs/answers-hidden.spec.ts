@@ -51,7 +51,7 @@ test.describe('Réponses du jour cachées avant de jouer', () => {
     await game.completeGameThenReload(new BlindRoundPage(page));
     await expect(game.alreadyPlayedScreen).toBeVisible();
 
-    await game.showTracksButton.click();
+    await game.openTrackDetails();
 
     await expect(page.locator('app-track-results-list a[href*="deezer.com/track/"]')).toHaveCount(5);
   });

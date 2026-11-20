@@ -9,7 +9,7 @@ import { DailyGameStore } from '../../data-access/daily-game.store';
 import { DailyShare } from '../../data-access/daily-share';
 import { GuestStreakNotice } from '../../data-access/guest-streak-notice';
 import { LostStreakNotice } from '../../data-access/lost-streak-notice';
-import { isHomeScreen } from '../../domain/daily-screen';
+import { redirectFor } from '../../domain/daily-screen';
 import { GelEarnedToastComponent } from '../../ui/gel-earned-toast/gel-earned-toast.component';
 import { GelUsedToastComponent } from '../../ui/gel-used-toast/gel-used-toast.component';
 import { GuestStreakToastComponent } from '../../ui/guest-streak-toast/guest-streak-toast.component';
@@ -91,12 +91,11 @@ export class DailyShellComponent implements OnInit {
       this.chrome.setAccountCtaShown(false);
     });
 
-    // Quelle page montre quoi : une manche est sur `/daily`, le reste (carte du défi, pause, abandon, résultat) sur `/`.
+    // Quelle page montre quoi : une manche est sur `/daily`, le reste (carte du défi, pause, abandon, résultat court) sur `/` ; le résultat complet
+    // (`/daily/resultat`) n'existe qu'une fois le défi fini.
     effect(() => {
-      const screen = this.store.screen();
-      const path = this.path();
-      if (path === '/' && screen === 'playing') this.goTo('/daily');
-      else if (path === '/daily' && isHomeScreen(screen)) this.goTo('/');
+      const target = redirectFor(this.path(), this.store.screen());
+      if (target) this.goTo(target);
     });
 
     // Une nouvelle version du site ne recharge jamais la page en pleine manche (cf. `reloadMomentFor`).

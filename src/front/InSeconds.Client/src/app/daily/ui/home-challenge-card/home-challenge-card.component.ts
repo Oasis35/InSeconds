@@ -8,8 +8,9 @@ import { StreakIconComponent } from '../streak-icon/streak-icon.component';
 import { StreakPillComponent } from '../streak-pill/streak-pill.component';
 
 /**
- * La carte du défi du jour sur l'accueil de la V4, tant qu'il reste à jouer : « Défi du jour » et la date, le nombre de morceaux, le chiffre à battre
- * (le record du joueur en orange, sinon la médiane d'hier en violet) suivi de « plus que 6 h », « Commencer », puis le relevé de série dans la carte.
+ * La carte du défi du jour sur l'accueil de la V4, tant qu'il reste à jouer : le bloc de l'accueil d'avant, centré (la date, « Blind test du jour »,
+ * le nombre de morceaux, le chiffre à battre : le record du joueur en orange, sinon la médiane d'hier en violet), « plus que 6 h », « Commencer »,
+ * puis le relevé de série dans la carte.
  * Une partie en pause (`completedCount`) remplace « Commencer » par « Reprendre » et propose « Abandonner » en lien discret. Le défi à jouer est la prochaine action : contour orange comme le bouton.
  */
 @Component({
@@ -18,36 +19,47 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
-    <section class="tube-amber rounded-(--radius-card) px-5 pt-5 pb-3 flex flex-col" data-testid="home-challenge"
+    <!-- Le bloc de l'accueil d'avant la V4 (date, titre, nombre de morceaux, chiffre à battre), centré, dans la tuile de focus. -->
+    <section class="tube-amber rounded-(--radius-card) px-5 pt-7 pb-3 flex flex-col text-center" data-testid="home-challenge"
       style="background:var(--bg-surface)">
-      <div class="flex items-baseline justify-between gap-3">
-        <p class="text-sm" style="color:var(--text-light)">{{ 'daily.home.label' | translate }}</p>
+      <div class="flex flex-col items-center">
         @if (dateLabel()) {
-          <p class="text-sm first-letter:uppercase text-right" style="color:var(--text-light)" data-testid="welcome-date">{{ dateLabel() }}</p>
+          <p class="text-sm first-letter:uppercase" style="color:var(--text-muted)" data-testid="welcome-date">{{ dateLabel() }}</p>
         }
-      </div>
-      <h2 class="text-2xl font-extrabold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)">
-        {{ (paused() ? 'daily.resume.title' : 'daily.welcome.subtitle') | translate: { count: trackCount() } }}
-      </h2>
-      @if (paused()) {
-        <p class="mt-3 text-[15px]" style="color:var(--text-light)" data-testid="home-paused-progress">
-          {{ progressKey() | translate: { done: completedCount(), total: trackCount() } }}
-        </p>
-      } @else if (bestScore() !== null || yesterdayMedian() !== null || remaining()) {
-        <p class="mt-3 flex flex-wrap items-baseline gap-x-2 text-[15px]" style="color:var(--text-light)">
+        <h2 class="mt-1.5 text-3xl font-extrabold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)">
+          {{ (paused() ? 'daily.resume.title' : 'daily.welcome.title') | translate: { count: trackCount() } }}
+        </h2>
+        @if (paused()) {
+          <p class="mt-2.5 text-[15px]" style="color:var(--text-light)" data-testid="home-paused-progress">
+            {{ progressKey() | translate: { done: completedCount(), total: trackCount() } }}
+          </p>
+        } @else {
+          <p class="mt-2.5 text-[15px]" style="color:var(--text-light)">{{ 'daily.welcome.subtitle' | translate: { count: trackCount() } }}</p>
+          @if (firstGame()) {
+            <!-- Qui n'a jamais joué lit la règle en une phrase, rien de plus. -->
+            <p class="mt-1.5 max-w-72 text-sm leading-snug" style="color:var(--text-muted)" data-testid="welcome-how-to">{{ 'daily.welcome.howTo' | translate }}</p>
+          }
           @if (bestScore() !== null) {
-            <span data-testid="welcome-record">{{ 'daily.welcome.record' | translate }}
-              <b class="text-lg font-extrabold tabular-nums" style="font-family:var(--font-score);color:var(--color-accent-3)">{{ bestScore() ?? 0 | appPoints }}</b></span>
+            <!-- Le record du joueur (orange : c'est lui) ; jamais le meilleur score des autres, qui découragerait. -->
+            <p class="mt-4.5 flex items-baseline gap-2 text-sm" style="color:var(--text-muted)" data-testid="welcome-record">
+              {{ 'daily.welcome.record' | translate }}
+              <b class="text-[17px] font-extrabold tabular-nums" style="font-family:var(--font-score);color:var(--color-accent-3)">{{ bestScore() ?? 0 | appPoints }}</b>
+            </p>
           } @else if (yesterdayMedian() !== null) {
-            <span data-testid="welcome-target">{{ 'daily.welcome.target' | translate }}
-              <b class="text-lg font-extrabold tabular-nums" style="font-family:var(--font-score);color:var(--text-indigo)">{{ yesterdayMedian() ?? 0 | appPoints }}</b></span>
+            <!-- La médiane d'hier (violet : les autres joueurs), pour qui n'a pas encore de record. -->
+            <p class="mt-4.5 flex items-baseline gap-2 text-sm" style="color:var(--text-muted)" data-testid="welcome-target">
+              {{ 'daily.welcome.target' | translate }}
+              <b class="text-[17px] font-extrabold tabular-nums" style="font-family:var(--font-score);color:var(--text-indigo)">{{ yesterdayMedian() ?? 0 | appPoints }}</b>
+            </p>
           }
           @if (remaining(); as left) {
-            <span data-testid="home-remaining">@if (bestScore() !== null || yesterdayMedian() !== null) { · }{{ (left.unit === 'hours' ? 'daily.home.remainingHours' : 'daily.home.remainingMinutes') | translate: { n: left.value } }}</span>
+            <p class="mt-1.5 text-[13px]" style="color:var(--text-muted)" data-testid="home-remaining">
+              {{ (left.unit === 'hours' ? 'daily.home.remainingHours' : 'daily.home.remainingMinutes') | translate: { n: left.value } }}
+            </p>
           }
-        </p>
-      }
-      <button appButton type="button" size="lg" [block]="true" class="mt-4" (click)="startGame.emit()" data-testid="home-start">
+        }
+      </div>
+      <button appButton type="button" size="lg" [block]="true" class="mt-7" (click)="startGame.emit()" data-testid="home-start">
         {{ (paused() ? 'daily.resume.resume' : 'daily.welcome.start') | translate }}
       </button>
       @if (paused()) {
@@ -57,6 +69,7 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
           {{ 'daily.resume.confirmAbandon' | translate }}
         </button>
       }
+      <!-- La série sous le bouton qui la fait monter ; un toucher ouvre le panneau de série. -->
       <div class="flex flex-col items-center pt-1">
         <app-streak-pill [streak]="streak()" [linked]="linked()" (open)="openStreak.emit()" />
         @if (isProtected()) {
@@ -89,6 +102,8 @@ export class HomeChallengeCardComponent {
   readonly dateLabel = input('');
   /** Les morceaux déjà joués d'une partie en pause ; `null` : pas de partie en cours (la carte propose « Commencer »). */
   readonly completedCount = input<number | null>(null);
+  /** Aucune partie finie : la règle en une phrase sous le nombre de morceaux. */
+  readonly firstGame = input(false);
   readonly abandonLoading = input(false);
   readonly startGame = output<void>();
   readonly abandon = output<void>();
