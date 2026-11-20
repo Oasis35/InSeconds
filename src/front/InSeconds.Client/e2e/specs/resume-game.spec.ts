@@ -1,6 +1,27 @@
+import type { Page } from '@playwright/test';
 import { test, expect } from '../fixtures/test';
+import type { ApiTestClient } from '../fixtures/api-client';
 import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
+
+/** Démarre le défi, répond au 1er morceau seulement, puis recharge : la partie en cours propose la reprise. */
+async function answerFirstTrackThenReload(page: Page, api: ApiTestClient): Promise<GamePage> {
+  await api.reset();
+  await page.clock.install({ time: Date.now() });
+
+  const game = new GamePage(page);
+  const round = new BlindRoundPage(page);
+
+  await game.goto();
+  await game.waitForWelcome();
+  await game.clickStart();
+  await round.playRound(1);
+
+  // Recharger → écran reprise (session en cours)
+  await game.goto();
+  await game.waitForResumePrompt();
+  return game;
+}
 
 test.describe('Reprise de partie', () => {
   test('anti-cheat : paliers inférieurs à la durée écoutée masqués à la reprise', async ({ page, api }) => {
@@ -37,21 +58,7 @@ test.describe('Reprise de partie', () => {
   });
 
   test('affiche l\'écran reprise si la session est en cours', async ({ page, api }) => {
-    await api.reset();
-    await page.clock.install({ time: Date.now() });
-
-    const game = new GamePage(page);
-    const round = new BlindRoundPage(page);
-
-    // Démarrer et répondre au 1er morceau seulement
-    await game.goto();
-    await game.waitForWelcome();
-    await game.clickStart();
-    await round.playRound(1);
-
-    // Recharger → écran reprise (session Pending)
-    await game.goto();
-    await game.waitForResumePrompt();
+    const game = await answerFirstTrackThenReload(page, api);
 
     // Cliquer Reprendre → morceau 2
     await game.resumeButton.click();
@@ -59,21 +66,7 @@ test.describe('Reprise de partie', () => {
   });
 
   test('abandonner depuis l\'écran de reprise marque la session comme jouée', async ({ page, api }) => {
-    await api.reset();
-    await page.clock.install({ time: Date.now() });
-
-    const game = new GamePage(page);
-    const round = new BlindRoundPage(page);
-
-    // Démarrer et répondre au 1er morceau
-    await game.goto();
-    await game.waitForWelcome();
-    await game.clickStart();
-    await round.playRound(1);
-
-    // Recharger → écran reprise
-    await game.goto();
-    await game.waitForResumePrompt();
+    const game = await answerFirstTrackThenReload(page, api);
 
     // Cliquer Abandonner puis confirmer
     await game.abandonButton.click();

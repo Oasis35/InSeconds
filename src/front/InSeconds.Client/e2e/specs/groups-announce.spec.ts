@@ -1,6 +1,5 @@
 import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
-import { RunPage } from '../pages/run.page';
 
 // L'annonce des groupes : une carte au-dessus du défi ; la croix la remplace par la pastille de la carte amis et un point sur l'onglet Groupes, que
 // l'ouverture de l'onglet Groupes éteint. Tout reste dans le navigateur.
@@ -44,10 +43,7 @@ test.describe("Accueil : l'annonce des groupes", () => {
   });
 
   test("un compte sans groupe : « Créer un groupe » de la carte ouvre la création", async ({ page }) => {
-    await new RunPage(page).loginAsPlayer('nina-annonce@e2e.test', 'NinaAnnonce');
-    const game = new GamePage(page);
-    await game.goto();
-    await game.waitForWelcome();
+    await new GamePage(page).gotoAsNewPlayer('nina-annonce@e2e.test', 'NinaAnnonce');
 
     const card = page.getByTestId('groups-announce');
     await expect(card).toHaveAttribute('data-variant', 'no_group');
