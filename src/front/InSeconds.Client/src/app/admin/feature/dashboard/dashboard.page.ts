@@ -27,7 +27,7 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
 /**
  * `/admin/dashboard` (onglet « Accueil ») : tout ce qu'on regarde dans la journée, sans changer d'onglet.
  * - La carte du jour : ‹ jour › (« Aujourd'hui · en direct »), trois tuiles (ont fini, nouveaux joueurs, score médian) et leur
- *   détail déplié (en cours, abandons, part qui finit, comptes créés, arrivés, habitués et nouveaux).
+ *   détail déplié d'office sur PC, replié sur téléphone (en cours, abandons, part qui finit, comptes créés, arrivés, habitués et nouveaux).
  * - Le détail du défi du jour, rangé comme dans l'onglet Défis : sur PC, une colonne à droite (la répartition des scores, les joueurs
  *   du jour, puis les morceaux du jour, dépliés) ; sur téléphone, dans la carte (les joueurs, puis les morceaux, repliés ; pas de
  *   répartition).
@@ -81,7 +81,7 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
               [day]="store.selectedDay()" [locale]="locale()" [isToday]="store.isSelectedDayToday()"
               [canGoToPrevious]="store.canGoToPreviousDay()" [canGoToNext]="store.canGoToNextDay()"
               (previous)="store.shiftDay(-1)" (next)="store.shiftDay(1)" />
-            <app-dashboard-kpis class="flex flex-col gap-3" [kpis]="dashboard.kpis" />
+            <app-dashboard-kpis class="flex flex-col gap-3" [kpis]="dashboard.kpis" [openByDefault]="wide()" />
 
             <!-- Téléphone : les joueurs puis les morceaux du jour dans la carte (sur PC, dans la colonne de droite). -->
             @if (!wide()) {

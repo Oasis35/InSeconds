@@ -68,8 +68,8 @@ describe('DashboardPage', () => {
     expect(challenges.loadStats).toHaveBeenCalledTimes(1);
   });
 
-  it('la carte du jour : le jour, les trois tuiles, et leur détail déplié d\'office qui se replie au clic', async () => {
-    const { element, detect } = await render();
+  it('la carte du jour : le jour, les trois tuiles, et leur détail déplié d\'office sur PC, qui se replie au clic', async () => {
+    const { element, detect } = await render({ wide: true });
 
     expect(byTestId(element, 'dashboard-selected-day')?.textContent).toContain('lundi 5 octobre');
     expect(byTestId(element, 'kpi-completed')?.textContent).toContain('4');
@@ -84,8 +84,19 @@ describe('DashboardPage', () => {
     expect(byTestId(element, 'kpi-details')).toBeNull();
   });
 
+  it('téléphone : le détail des chiffres est replié, et se déplie au clic', async () => {
+    const { element, detect } = await render();
+    expect(byTestId(element, 'kpi-completed')).not.toBeNull();
+    expect(byTestId(element, 'kpi-details')).toBeNull();
+
+    byTestId(element, 'kpi-toggle')!.click();
+    await detect();
+
+    expect(byTestId(element, 'kpi-details')).not.toBeNull();
+  });
+
   it('le détail du jour : les arrivés par source, les habitués et les nouveaux parmi ceux qui ont fini', async () => {
-    const { element } = await render();
+    const { element } = await render({ wide: true });
 
     const arrivals = byTestId(element, 'kpi-arrivals')?.textContent?.replace(/\s+/g, ' ') ?? '';
     expect(arrivals).toContain('admin.dashboard.arrived');
