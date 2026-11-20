@@ -6,21 +6,35 @@ import { ArchiveTrack, ArchiveMyAnswer } from '../../domain/archive';
 import { ArchiveTrackRowComponent } from './archive-track-row.component';
 
 describe('ArchiveTrackRowComponent', () => {
-  function render(track: ArchiveTrack, mine: ArchiveMyAnswer | null = null, mostMissed = false) {
+  function render(track: ArchiveTrack, mine: ArchiveMyAnswer | null = null, mostMissed = false, open = true) {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     const fixture = TestBed.createComponent(ArchiveTrackRowComponent);
     fixture.componentRef.setInput('track', track);
     fixture.componentRef.setInput('mine', mine);
     fixture.componentRef.setInput('mostMissed', mostMissed);
     fixture.detectChanges();
-    return fixture.nativeElement as HTMLElement;
+    const element = fixture.nativeElement as HTMLElement;
+    if (open) {
+      element.querySelector<HTMLButtonElement>('[data-testid=archive-track-toggle]')!.click();
+      TestBed.inject(ApplicationRef).tick();
+    }
+    return element;
   }
 
-  it('montre le morceau et ce qu en ont fait les joueurs, en pourcentages seulement', () => {
+  it('replié : le morceau en une ligne, la part des joueurs qui l’ont trouvé, aucun détail', () => {
+    const element = render(ARCHIVE_TRACK(2, { notFoundPercent: 21 }), null, false, false);
+
+    expect(element.querySelector('[data-testid=archive-artist]')!.textContent).toContain('Artiste 2');
+    expect(element.querySelector('[data-testid=archive-title]')!.textContent).toContain('Titre 2');
+    expect(element.textContent).toContain('79 %');
+    expect(element.querySelector('[data-testid=archive-track-detail]')).toBeNull();
+    expect(element.querySelector('[data-testid=archive-track-toggle]')!.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('déplié : ce qu’en ont fait les joueurs, en pourcentages seulement', () => {
     const element = render(ARCHIVE_TRACK(2, { artistFoundPercent: 74, titleFoundPercent: 69, notFoundPercent: 21 }), null, true);
     const players = element.querySelector('[data-testid=archive-players]')!.textContent!.replace(/\s+/g, ' ');
 
-    expect(element.textContent).toContain('Artiste 2');
     expect(element.textContent).toContain('2002');
     expect(players).toContain('74 %');
     expect(players).toContain('69 %');
@@ -29,13 +43,13 @@ describe('ArchiveTrackRowComponent', () => {
     expect(values.at(-1)).toBe('21 %');
     expect(element.querySelector('[data-testid=most-missed]')).not.toBeNull();
     // Un visiteur : pas de « Toi », aucune barre en orange.
-    expect(element.querySelector('[data-testid=archive-mine]')).toBeNull();
+    expect(element.querySelector('[data-testid=archive-mine-summary]')).toBeNull();
     expect(element.querySelector('[data-highlight]')).toBeNull();
   });
 
-  it('un joueur reconnu voit ses ✓ / ✗, ses points, et sa barre en orange', () => {
+  it('un joueur reconnu voit ses ✓ / ✗ et ses points dès la ligne, et sa barre en orange', () => {
     const element = render(ARCHIVE_TRACK(2), ARCHIVE_ME().answers[1]);
-    const mine = element.querySelector('[data-testid=archive-mine]')!.textContent!;
+    const mine = element.querySelector('[data-testid=archive-mine-summary]')!.textContent!;
 
     expect(mine).toContain('✓');
     expect(mine).toContain('✗');
@@ -54,40 +68,25 @@ describe('ArchiveTrackRowComponent', () => {
     TestBed.resetTestingModule();
     const element = render(bare, ARCHIVE_ME().answers[0]);
     expect(element.querySelector('[data-testid=guess-time-chart]')).toBeNull();
-    expect(element.querySelector('[data-testid=archive-mine]')).not.toBeNull();
+    expect(element.querySelector('[data-testid=archive-mine-summary]')).not.toBeNull();
   });
 
-  it('artiste et titre sur une ligne, en entier au toucher, de nouveau sur une ligne au suivant', () => {
-    const element = render(ARCHIVE_TRACK(2));
-    const text = element.querySelector<HTMLButtonElement>('[data-testid=archive-track-text]')!;
-    const truncated = () => ['archive-artist', 'archive-title'].map(id => element.querySelector(`[data-testid=${id}]`)!.classList.contains('truncate'));
-
-    // Le texte entier est toujours dans la page (moteurs de recherche), et dans l'info-bulle.
-    expect(element.querySelector('[data-testid=archive-artist]')!.textContent!.trim()).toBe('Artiste 2');
-    expect(text.title).toBe('Artiste 2 · Titre 2');
-    expect(truncated()).toEqual([true, true]);
-    expect(text.getAttribute('aria-expanded')).toBe('false');
-
-    text.click();
-    TestBed.inject(ApplicationRef).tick();
-    expect(truncated()).toEqual([false, false]);
-    expect(text.getAttribute('aria-expanded')).toBe('true');
-
-    text.click();
-    TestBed.inject(ApplicationRef).tick();
-    expect(truncated()).toEqual([true, true]);
-  });
-
-  it("« Écouter l'extrait » demande la fenêtre d'écoute à la page", () => {
+  it("le bouton d'écoute demande l'extrait à la page, et dit quand il joue", () => {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     const fixture = TestBed.createComponent(ArchiveTrackRowComponent);
     fixture.componentRef.setInput('track', ARCHIVE_TRACK(2));
     const listen = vi.fn();
     fixture.componentInstance.listen.subscribe(listen);
     fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    element.querySelector<HTMLButtonElement>('[data-testid=archive-track-toggle]')!.click();
+    fixture.detectChanges();
 
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid=archive-listen]')!.click();
-
+    element.querySelector<HTMLButtonElement>('[data-testid=archive-listen]')!.click();
     expect(listen).toHaveBeenCalledOnce();
+
+    fixture.componentRef.setInput('playing', true);
+    fixture.detectChanges();
+    expect(element.querySelector('[data-testid=archive-listen]')!.getAttribute('aria-label')).toBe('daily.archive.pause');
   });
 });

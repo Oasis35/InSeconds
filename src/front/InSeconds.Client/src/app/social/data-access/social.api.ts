@@ -6,7 +6,7 @@ import {
 } from '../../api/social/api.generated';
 import { toAppError } from '../../core/errors/app-error';
 import { GeneralRanking, Group, GroupRanking, Invitation, MyGroups, RankingEntry, RankingIdentity } from '../domain/group';
-import { DailyScores, GroupScores } from '../domain/group-scores';
+import { DailyScores, GroupDayScores, GroupScores } from '../domain/group-scores';
 
 /** Les refus que les écrans connaissent : ils deviennent des issues, pas des erreurs. */
 const REFUSALS = ['account_required', 'invalid_name', 'too_many_groups', 'group_full', 'invitation_not_found', 'group_not_found'] as const;
@@ -46,6 +46,18 @@ export class SocialApi {
   /** Le classement du groupe au Défi du jour : le jour et la semaine glissante. */
   async scores(groupId: number): Promise<GroupScores> {
     return toScores(await firstValueFrom(this.client.getGroupScores(groupId)));
+  }
+
+  /** Le classement du groupe sur le défi d'un jour passé (ou du jour) ; `null` si le serveur ne rend pas le Défi du jour. */
+  async dayScores(groupId: number, day: string): Promise<GroupDayScores | null> {
+    const response = await firstValueFrom(this.client.getGroupDayScores(groupId, day));
+    const daily = response.modes.find(mode => mode.mode === 'daily');
+    return daily
+      ? {
+          groupId: response.groupId, name: response.name, day: toDay(daily.day), revealed: daily.revealed,
+          entries: daily.entries.map(entry => ({ rank: entry.rank ?? null, pseudo: entry.pseudo, isMe: entry.isMe, played: entry.played, score: entry.score ?? null })),
+        }
+      : null;
   }
 
   /** Le classement général : la tête, ma place et le nom sous lequel j'y apparais. */

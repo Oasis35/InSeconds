@@ -65,7 +65,9 @@
       "no_challenge": "There's no challenge today.",
       "session_not_found": "This game no longer exists.",
       "track_lock_not_released": "Answer the current track first.",
-      "track_not_found": "This track isn't in today's challenge."
+      "track_not_found": "This track isn't in today's challenge.",
+      "invalid_replay_query": "This filter doesn't exist.",
+      "invalid_period": "This period doesn't exist."
     },
     "runs": {
       "abandoned": "You abandoned this playlist.",
@@ -90,7 +92,8 @@
       "not_owner": "Only the group's creator can do that.",
       "too_many_groups": "You've reached the maximum number of groups.",
       "invalid_name": "That group name isn't valid.",
-      "group_not_found": "This group no longer exists."
+      "group_not_found": "This group no longer exists.",
+      "invalid_date": "This day doesn't exist, or it hasn't happened yet."
     }
   },
   "shell": {
@@ -133,11 +136,6 @@
       "yesterday": "Yesterday",
       "previousMonth": "Previous month",
       "nextMonth": "Next month",
-      "daily": {
-        "count": "Challenges played",
-        "best": "Best",
-        "empty": "No challenge played this month."
-      },
       "setlist": {
         "count": "Survival",
         "best": "Record",
@@ -1043,20 +1041,14 @@
       "titlePrefix": "Blind test of",
       "previousDay": "Previous day",
       "nextDay": "Next day",
-      "pickDate": "Pick another day (showing: {{ date }})",
       "mostMissed": "most missed",
       "players": "Players",
-      "you": "You",
       "artistFound": "Artist found",
       "titleFound": "Title found",
       "artistRight": "Artist found",
       "artistWrong": "Artist missed",
       "titleRight": "Title found",
       "titleWrong": "Title missed",
-      "calendarTitle": "Pick a challenge",
-      "previousMonth": "Previous month",
-      "nextMonth": "Next month",
-      "calendarNote": "A day's challenge shows up here the next day.",
       "yesterdayAnswers": "Yesterday's answers",
       "median": "Median",
       "notFoundTitle": "No answers for this day",
@@ -1067,7 +1059,94 @@
       "playToday": "Play today's challenge",
       "pageTitle": "Blind test of {{ date }}: {{ artists }}",
       "pageDescription": "The answers to the InSeconds blind test of {{ date }}: {{ artists }}. What players found, and how fast.",
-      "listen": "Play the preview"
+      "back": "History",
+      "notPlayed": "You didn't play that day",
+      "tracks": "The {{ count }} tracks",
+      "found": "found it",
+      "artistShort": "Artist",
+      "titleShort": "Title",
+      "pause": "Pause",
+      "listenTo": "Listen to {{ title }}",
+      "preview30s": "30 s preview"
+    },
+    "history": {
+      "todayToPlay": "Not played yet",
+      "todayDone": "Played · your result",
+      "play": "PLAY",
+      "calendar": {
+        "played": "{{ day }}: {{ score }} points",
+        "missed": "{{ day }}: not played, see the answers",
+        "unfinished": "{{ day }}: unfinished, see the answers",
+        "today": "{{ day }}: today's challenge",
+        "legendLess": "Fewer points",
+        "legendMore": "More",
+        "legendUnfinished": "Unfinished",
+        "legendMissed": "Not played"
+      },
+      "month": {
+        "played": "Played",
+        "average": "Average",
+        "best": "Best"
+      }
+    },
+    "replay": {
+      "title": "Listen again",
+      "entry": "The tracks you missed",
+      "intro": "The tracks you missed, newest first.",
+      "filters": "Filter the tracks",
+      "filter": {
+        "all": "All · {{ count }}",
+        "none": "Nothing · {{ count }}",
+        "half": "Half · {{ count }}"
+      },
+      "miss": {
+        "nothing": "Nothing found",
+        "title": "Title missed",
+        "artist": "Artist missed"
+      },
+      "empty": "Nothing to listen to again: you found everything, or you haven't finished a past challenge yet.",
+      "more": "Show more"
+    },
+    "profile": {
+      "title": "Your ear profile",
+      "seeAll": "See all",
+      "averageEightWeeks": "Your average, 8 weeks",
+      "average": "Your average per challenge",
+      "trend": "{{ value }}% over 4 weeks",
+      "days": "{{ count }} d",
+      "bestStreak": "Best streak",
+      "foundAt": "Found in {{ seconds }}",
+      "favouriteStep": "Your most frequent step",
+      "chartLabel": "Your average, from {{ from }} to {{ to }} points",
+      "periods": "Period",
+      "period": {
+        "8w": "8 weeks",
+        "6m": "6 months",
+        "all": "All time"
+      },
+      "empty": "Play a few challenges to see your profile for this period.",
+      "you": "You",
+      "players": "Players",
+      "games": "Challenges played",
+      "bestScore": "Best score",
+      "whenTitle": "When you find it",
+      "whenYou": "You most often find it at {{ seconds }}.",
+      "whenPlayers": "Other players, at {{ seconds }}.",
+      "splitTitle": "Artist or title?",
+      "split": {
+        "artist": "Artist found",
+        "title": "Title found"
+      },
+      "splitNote": "The purple mark: the players' share.",
+      "yourAverage": "Your average",
+      "today": "+{{ count }} today",
+      "line": {
+        "first": "Your first game: your profile starts here.",
+        "record": "Your record, {{ points }} points above the previous one.",
+        "bestSince": "Your best score in {{ days }} days.",
+        "above": "{{ points }} points above your average.",
+        "below": "{{ points }} points below your average."
+      }
     }
   },
   "legal": {
@@ -1540,6 +1619,13 @@
       "title": "You're alone in {{ name }}",
       "invite": "Invite a friend",
       "body": "Send the link to your friends: everyone shows up here with their daily challenge points."
+    },
+    "dayFriends": {
+      "title": "Your friends that day",
+      "groups": "Your groups",
+      "me": "You",
+      "notPlayed": "not played",
+      "hidden": "Finish this challenge to see their scores."
     }
   }
 }

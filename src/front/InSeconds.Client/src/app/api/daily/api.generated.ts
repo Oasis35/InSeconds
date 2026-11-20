@@ -1384,6 +1384,139 @@ export class DailyClient {
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("Bad Request", status, _responseText, _headers, result400);
             }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param filter (optional) 
+     * @param before (optional) 
+     * @return OK
+     */
+    getReplayTracks(filter: string | undefined, before: string | undefined): Observable<ReplayResponse> {
+        let url_ = this.baseUrl + "/api/daily/replay?";
+        if (filter === null)
+            throw new globalThis.Error("The parameter 'filter' cannot be null.");
+        else if (filter !== undefined)
+            url_ += "filter=" + encodeURIComponent("" + filter) + "&";
+        if (before === null)
+            throw new globalThis.Error("The parameter 'before' cannot be null.");
+        else if (before !== undefined)
+            url_ += "before=" + encodeURIComponent("" + before) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetReplayTracks(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetReplayTracks(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ReplayResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ReplayResponse>;
+        }));
+    }
+
+    protected processGetReplayTracks(response: HttpResponseBase): Observable<ReplayResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ReplayResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param period (optional) 
+     * @return OK
+     */
+    getEarProfile(period: string | undefined): Observable<EarProfileResponse> {
+        let url_ = this.baseUrl + "/api/daily/profile?";
+        if (period === null)
+            throw new globalThis.Error("The parameter 'period' cannot be null.");
+        else if (period !== undefined)
+            url_ += "period=" + encodeURIComponent("" + period) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetEarProfile(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetEarProfile(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<EarProfileResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<EarProfileResponse>;
+        }));
+    }
+
+    protected processGetEarProfile(response: HttpResponseBase): Observable<EarProfileResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as EarProfileResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            }));
         } else if (status === 401) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result401: any = null;
@@ -1822,6 +1955,10 @@ export interface TodayHistoryResponse {
     previousGames: number;
     previousBestScore: number | undefined;
     previousAverageScore: number | undefined;
+    averageScoreAfter: number;
+    bestSinceDays: number | undefined;
+    firstStepFoundTotal: number;
+    firstStepFoundToday: number;
 
     [key: string]: any;
 }
@@ -1915,12 +2052,93 @@ export interface DailyHistoryResponse {
     averageScore: number | undefined;
     bestScore: number | undefined;
     games: DailyHistoryGameResponse[];
+    days: DailyHistoryDayResponse[];
+    monthPlayedCount: number;
+    monthPublishedCount: number;
+    monthAverageScore: number | undefined;
+    monthBestScore: number | undefined;
 
     [key: string]: any;
 }
 
 export interface DailyHistoryTrackResponse {
     position: number;
+    artistCorrect: boolean;
+    titleCorrect: boolean;
+
+    [key: string]: any;
+}
+
+export interface DailyHistoryDayResponse {
+    date: Date;
+    state: string;
+    score: number | undefined;
+    maxPossibleScore: number;
+
+    [key: string]: any;
+}
+
+export interface EarProfilePointResponse {
+    start: Date;
+    average: number | undefined;
+    playersAverage: number | undefined;
+    games: number;
+
+    [key: string]: any;
+}
+
+export interface EarProfileResponse {
+    period: string;
+    points: EarProfilePointResponse[];
+    averageScore: number | undefined;
+    trendPercent: number | undefined;
+    gamesPlayed: number;
+    bestScore: number | undefined;
+    bestStreak: number;
+    firstStepSeconds: number;
+    firstStepFound: number;
+    steps: EarProfileStepResponse[];
+    notFoundPercent: number | undefined;
+    playersNotFoundPercent: number | undefined;
+    artistFoundPercent: number | undefined;
+    titleFoundPercent: number | undefined;
+    playersArtistFoundPercent: number | undefined;
+    playersTitleFoundPercent: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface EarProfileStepResponse {
+    seconds: number;
+    percent: number;
+    playersPercent: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface ReplayDayResponse {
+    date: Date;
+    tracks: ReplayTrackResponse[];
+
+    [key: string]: any;
+}
+
+export interface ReplayResponse {
+    days: ReplayDayResponse[];
+    nextBefore: Date | undefined;
+    allCount: number;
+    noneCount: number;
+    halfCount: number;
+
+    [key: string]: any;
+}
+
+export interface ReplayTrackResponse {
+    position: number;
+    artist: string;
+    title: string;
+    deezerTrackId: number;
+    coverUrl: string | undefined;
     artistCorrect: boolean;
     titleCorrect: boolean;
 

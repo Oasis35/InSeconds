@@ -158,11 +158,17 @@ describe('DailyApi', () => {
       minScore: 3200, maxScore: 3200, maxPossibleScore: 5000, scoreDistribution: [], betterThanPercent: undefined,
     };
     client['getTodayStats'].mockReturnValueOnce(of({
-      ...base, history: { fastestSeconds: 1, fastestFoundPercent: undefined, previousGames: 0, previousBestScore: undefined, previousAverageScore: undefined },
+      ...base, history: {
+        fastestSeconds: 1, fastestFoundPercent: undefined, previousGames: 0, previousBestScore: undefined, previousAverageScore: undefined,
+        averageScoreAfter: 2400, bestSinceDays: undefined, firstStepFoundTotal: 1, firstStepFoundToday: 1,
+      },
     }));
     client['getTodayStats'].mockReturnValueOnce(of(base));
 
-    expect((await api.stats()).history).toEqual({ fastestSeconds: 1, fastestFoundPercent: null, previousGames: 0, previousBestScore: null, previousAverageScore: null });
+    expect((await api.stats()).history).toEqual({
+      fastestSeconds: 1, fastestFoundPercent: null, previousGames: 0, previousBestScore: null, previousAverageScore: null,
+      averageScoreAfter: 2400, bestSinceDays: null, firstStepFoundTotal: 1, firstStepFoundToday: 1,
+    });
     expect((await api.stats()).history).toBeNull();
   });
 
@@ -174,18 +180,20 @@ describe('DailyApi', () => {
     expect(await api.archivePreviewUrl('2026-10-21', 3)).toBeNull();
   });
 
-  it("l'historique : un mois en types du domaine, le mois en cours sans mois demandé", async () => {
+  it("l'historique : le calendrier d'un mois en types du domaine, le mois en cours sans mois demandé", async () => {
     client['getDailyHistory'].mockReturnValue(of({
-      month: '2026-11', previousMonth: '2026-10', nextMonth: undefined, playedCount: 58, averageScore: 2050, bestScore: 3100,
-      games: [{ date: '2026-11-10', score: 2140, tracks: [{ position: 1, artistCorrect: true, titleCorrect: false }] }],
+      month: '2026-11', previousMonth: '2026-10', nextMonth: undefined, playedCount: 58, averageScore: 2050, bestScore: 3100, games: [],
+      days: [{ date: '2026-11-10', state: 'played', score: 2140, maxPossibleScore: 5000 }, { date: '2026-11-11', state: 'missed', score: undefined, maxPossibleScore: 5000 }],
+      monthPlayedCount: 1, monthPublishedCount: 2, monthAverageScore: 2140, monthBestScore: 2140,
     }));
 
     const history = await api.history(null);
 
     expect(client['getDailyHistory']).toHaveBeenCalledWith(undefined);
     expect(history).toEqual({
-      month: '2026-11', previousMonth: '2026-10', nextMonth: null, playedCount: 58, averageScore: 2050, bestScore: 3100,
-      games: [{ date: '2026-11-10', score: 2140, tracks: [{ position: 1, artistCorrect: true, titleCorrect: false }] }],
+      month: '2026-11', previousMonth: '2026-10', nextMonth: null,
+      days: [{ date: '2026-11-10', state: 'played', score: 2140, maxPossibleScore: 5000 }, { date: '2026-11-11', state: 'missed', score: null, maxPossibleScore: 5000 }],
+      monthPlayedCount: 1, monthPublishedCount: 2, monthAverageScore: 2140, monthBestScore: 2140,
     });
   });
 
@@ -194,8 +202,8 @@ describe('DailyApi', () => {
 
     const history = await api.history('2026-11');
 
-    expect(history.playedCount).toBe(0);
-    expect(history.games).toEqual([]);
+    expect(history.monthPlayedCount).toBe(0);
+    expect(history.days).toEqual([]);
     expect(history.month).toBe('2026-11');
   });
 

@@ -59,6 +59,10 @@
     </div>
   }
 
+  @if (score() !== null && stats()?.history; as history) {
+    <app-game-profile-card [history]="history" [score]="score()!" />
+  }
+
   @if (yesterday(); as y) {
     <app-yesterday-answers-card [day]="y" [lang]="lang()" />
   }

@@ -65,7 +65,9 @@
       "no_challenge": "Il n'y a pas de défi aujourd'hui.",
       "session_not_found": "Cette partie n'existe plus.",
       "track_lock_not_released": "Réponds d'abord au morceau en cours.",
-      "track_not_found": "Ce morceau n'existe pas dans le défi du jour."
+      "track_not_found": "Ce morceau n'existe pas dans le défi du jour.",
+      "invalid_replay_query": "Ce filtre n'existe pas.",
+      "invalid_period": "Cette période n'existe pas."
     },
     "runs": {
       "abandoned": "Tu as abandonné cette playlist.",
@@ -90,7 +92,8 @@
       "not_owner": "Seul le créateur du groupe peut faire ça.",
       "too_many_groups": "Tu as atteint le nombre de groupes possible.",
       "invalid_name": "Ce nom de groupe n'est pas valide.",
-      "group_not_found": "Ce groupe n'existe plus."
+      "group_not_found": "Ce groupe n'existe plus.",
+      "invalid_date": "Ce jour n'existe pas, ou il n'est pas encore passé."
     }
   },
   "shell": {
@@ -126,18 +129,13 @@
       "title": "Historique",
       "tabs": {
         "daily": "Défis du jour",
-        "setlist": "Survies"
+        "setlist": "Survie"
       },
       "average": "Moyenne",
       "today": "Aujourd'hui",
       "yesterday": "Hier",
       "previousMonth": "Mois précédent",
       "nextMonth": "Mois suivant",
-      "daily": {
-        "count": "Défis joués",
-        "best": "Meilleur",
-        "empty": "Aucun défi joué ce mois-ci."
-      },
       "setlist": {
         "count": "Survies",
         "best": "Record",
@@ -1043,20 +1041,14 @@
       "titlePrefix": "Blind test du",
       "previousDay": "Jour précédent",
       "nextDay": "Jour suivant",
-      "pickDate": "Choisir un autre jour (affiché : {{ date }})",
       "mostMissed": "le plus raté",
       "players": "Joueurs",
-      "you": "Toi",
       "artistFound": "Artiste trouvé",
       "titleFound": "Titre trouvé",
       "artistRight": "Artiste trouvé",
       "artistWrong": "Artiste raté",
       "titleRight": "Titre trouvé",
       "titleWrong": "Titre raté",
-      "calendarTitle": "Choisir un défi",
-      "previousMonth": "Mois précédent",
-      "nextMonth": "Mois suivant",
-      "calendarNote": "Le défi d'un jour arrive ici dès le lendemain.",
       "yesterdayAnswers": "Les réponses d'hier",
       "median": "Médiane",
       "notFoundTitle": "Pas de réponses pour ce jour",
@@ -1067,7 +1059,94 @@
       "playToday": "Joue le défi d'aujourd'hui",
       "pageTitle": "Blind test du {{ date }} : {{ artists }}",
       "pageDescription": "Les réponses du blind test InSeconds du {{ date }} : {{ artists }}. Ce que les joueurs ont trouvé, et en combien de temps.",
-      "listen": "Écouter l'extrait"
+      "back": "Historique",
+      "notPlayed": "Tu n'as pas joué ce jour-là",
+      "tracks": "Les {{ count }} morceaux",
+      "found": "ont trouvé",
+      "artistShort": "Artiste",
+      "titleShort": "Titre",
+      "pause": "Mettre en pause",
+      "listenTo": "Écouter {{ title }}",
+      "preview30s": "Extrait de 30 s"
+    },
+    "history": {
+      "todayToPlay": "Pas encore joué",
+      "todayDone": "Joué · ton résultat",
+      "play": "JOUER",
+      "calendar": {
+        "played": "{{ day }} : {{ score }} points",
+        "missed": "{{ day }} : pas joué, voir les réponses",
+        "unfinished": "{{ day }} : pas fini, voir les réponses",
+        "today": "{{ day }} : le défi du jour",
+        "legendLess": "Moins de points",
+        "legendMore": "Plus",
+        "legendUnfinished": "Pas fini",
+        "legendMissed": "Pas joué"
+      },
+      "month": {
+        "played": "Joués",
+        "average": "Moyenne",
+        "best": "Meilleur"
+      }
+    },
+    "replay": {
+      "title": "À réécouter",
+      "entry": "Les morceaux qui t'ont échappé",
+      "intro": "Les morceaux qui t'ont échappé, du plus récent au plus ancien.",
+      "filters": "Filtrer les morceaux",
+      "filter": {
+        "all": "Tous · {{ count }}",
+        "none": "Rien trouvé · {{ count }}",
+        "half": "À moitié · {{ count }}"
+      },
+      "miss": {
+        "nothing": "Rien trouvé",
+        "title": "Titre raté",
+        "artist": "Artiste raté"
+      },
+      "empty": "Rien à réécouter : tu as tout trouvé, ou tu n'as pas encore fini de défi passé.",
+      "more": "Voir plus"
+    },
+    "profile": {
+      "title": "Ton profil d'oreille",
+      "seeAll": "Tout voir",
+      "averageEightWeeks": "Ta moyenne, 8 semaines",
+      "average": "Ta moyenne par défi",
+      "trend": "{{ value }} % en 4 semaines",
+      "days": "{{ count }} j",
+      "bestStreak": "Meilleure série",
+      "foundAt": "Trouvés en {{ seconds }}",
+      "favouriteStep": "Ton palier le plus fréquent",
+      "chartLabel": "Ta moyenne, de {{ from }} à {{ to }} points",
+      "periods": "Période",
+      "period": {
+        "8w": "8 semaines",
+        "6m": "6 mois",
+        "all": "Depuis le début"
+      },
+      "empty": "Joue quelques défis pour voir ton profil sur cette période.",
+      "you": "Toi",
+      "players": "Les joueurs",
+      "games": "Défis joués",
+      "bestScore": "Meilleur score",
+      "whenTitle": "Quand tu trouves",
+      "whenYou": "Tu trouves le plus souvent à {{ seconds }}.",
+      "whenPlayers": "Les autres joueurs, à {{ seconds }}.",
+      "splitTitle": "Artiste ou titre ?",
+      "split": {
+        "artist": "Artiste trouvé",
+        "title": "Titre trouvé"
+      },
+      "splitNote": "Le trait violet : la part des joueurs.",
+      "yourAverage": "Ta moyenne",
+      "today": "+{{ count }} aujourd'hui",
+      "line": {
+        "first": "Ta première partie : ton profil commence ici.",
+        "record": "Ton record, {{ points }} points au-dessus de l'ancien.",
+        "bestSince": "Ton meilleur score depuis {{ days }} jours.",
+        "above": "{{ points }} points au-dessus de ta moyenne.",
+        "below": "{{ points }} points sous ta moyenne."
+      }
     }
   },
   "legal": {
@@ -1540,6 +1619,13 @@
       "title": "Tu es seul dans {{ name }}",
       "invite": "Inviter un ami",
       "body": "Envoie le lien à tes amis : chacun apparaît ici avec ses points du défi du jour."
+    },
+    "dayFriends": {
+      "title": "Tes amis ce jour-là",
+      "groups": "Tes groupes",
+      "me": "Toi",
+      "notPlayed": "pas joué",
+      "hidden": "Finis ce défi pour voir leurs scores."
     }
   }
 }

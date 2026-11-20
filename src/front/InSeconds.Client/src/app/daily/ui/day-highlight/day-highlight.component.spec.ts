@@ -35,7 +35,7 @@ describe('DayHighlightComponent', () => {
   });
 
   it('seul à avoir joué : la phrase vient de l\'historique du joueur', () => {
-    const history: DayHistory = { fastestSeconds: 1, fastestFoundPercent: 9, previousGames: 5, previousBestScore: 3000, previousAverageScore: 2000 };
+    const history: DayHistory = { fastestSeconds: 1, fastestFoundPercent: 9, previousGames: 5, previousBestScore: 3000, previousAverageScore: 2000, averageScoreAfter: 2000, bestSinceDays: null, firstStepFoundTotal: 0, firstStepFoundToday: 0 };
     const q = render([row(1, true)], null, history, 3200);
     expect(q('day-highlight')).toBeNull();
     expect(q('day-history')?.textContent).toContain('daily.result.historyRecord');
@@ -49,7 +49,7 @@ describe('DayHighlightComponent', () => {
   });
 
   it('« mieux que X % » passe avant l\'historique', () => {
-    const history: DayHistory = { fastestSeconds: 1, fastestFoundPercent: 9, previousGames: 5, previousBestScore: 3000, previousAverageScore: 2000 };
+    const history: DayHistory = { fastestSeconds: 1, fastestFoundPercent: 9, previousGames: 5, previousBestScore: 3000, previousAverageScore: 2000, averageScoreAfter: 2000, bestSinceDays: null, firstStepFoundTotal: 0, firstStepFoundToday: 0 };
     const q = render([row(1, true)], 72, history, 3200);
     expect(q('score-better-than')).not.toBeNull();
     expect(q('day-history')).toBeNull();

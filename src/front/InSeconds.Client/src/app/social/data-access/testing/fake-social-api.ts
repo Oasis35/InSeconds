@@ -1,5 +1,5 @@
 import { GeneralRanking, Group, GroupRanking, Invitation, MyGroups, RankingIdentity } from '../../domain/group';
-import { DailyScores, GroupScores } from '../../domain/group-scores';
+import { DailyScores, GroupDayScores, GroupScores } from '../../domain/group-scores';
 import { GroupOutcome, InvitationOutcome, SocialApi } from '../social.api';
 
 export const GROUP: Group = { id: 4, name: 'Potes', inviteCode: 'ABCD2345', memberCount: 3, maxMembers: 15, isOwner: true };
@@ -92,6 +92,22 @@ export class FakeSocialApi {
     const scores = this.scoresByGroup.get(groupId);
     if (!scores) return Promise.reject(new Error('not found'));
     return Promise.resolve(scores);
+  }
+
+  /** Les scores d'un jour, par groupe ; un groupe absent : erreur. */
+  dayScoresByGroup = new Map<number, GroupDayScores>([
+    [4, { groupId: 4, name: 'Potes', day: '2026-11-19', revealed: true, entries: [
+      { rank: 1, pseudo: 'Léa', isMe: false, played: true, score: 2760 },
+      { rank: 2, pseudo: 'Moi', isMe: true, played: true, score: 2140 },
+      { rank: null, pseudo: 'Inès', isMe: false, played: false, score: null },
+    ] }],
+    [7, { groupId: 7, name: 'Famille', day: '2026-11-19', revealed: true, entries: [{ rank: 1, pseudo: 'Moi', isMe: true, played: true, score: 2140 }] }],
+  ]);
+
+  dayScores(groupId: number, day: string): Promise<GroupDayScores | null> {
+    this.calls.push(`dayScores:${groupId}:${day}`);
+    const scores = this.dayScoresByGroup.get(groupId);
+    return scores ? Promise.resolve(scores) : Promise.reject(new Error('not found'));
   }
 
   generalRanking(): Promise<GeneralRanking> {

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, comput
 import { TranslatePipe } from '@ngx-translate/core';
 import { ArchiveDay } from '../../domain/archive';
 import { DayStats } from '../../domain/daily';
+import { GameProfileCardComponent } from '../game-profile-card/game-profile-card.component';
 import { DayHighlightComponent } from '../day-highlight/day-highlight.component';
 import { trackBar } from './result-rows';
 import { TrackResultRow, TrackResultsListComponent } from '../../../gameplay/ui/track-results-list/track-results-list.component';
@@ -21,7 +22,7 @@ import { fillBarsInTurn } from '../../../ui/motion/motion';
  */
 @Component({
   selector: 'app-day-result-screen',
-  imports: [PointsPipe, TranslatePipe, DayHighlightComponent, ShareButtonComponent, TrackResultsListComponent, ScoreDistributionChartComponent, YesterdayAnswersCardComponent, StreakPillComponent],
+  imports: [PointsPipe, TranslatePipe, DayHighlightComponent, ShareButtonComponent, TrackResultsListComponent, ScoreDistributionChartComponent, YesterdayAnswersCardComponent, StreakPillComponent, GameProfileCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './day-result-screen.component.html',
 })

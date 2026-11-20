@@ -141,6 +141,13 @@ export interface DayHistory {
   readonly previousGames: number;
   readonly previousBestScore: number | null;
   readonly previousAverageScore: number | null;
+  /** Sa moyenne, la partie du jour comprise (la carte « Ton profil d'oreille » du résultat). */
+  readonly averageScoreAfter: number;
+  /** Les jours depuis sa dernière partie au moins aussi bonne ; `null` s'il n'en a aucune (record, ou première partie). */
+  readonly bestSinceDays: number | null;
+  /** Ses réponses trouvées au premier palier (0,5 s), celles du jour comprises, et celles du jour. */
+  readonly firstStepFoundTotal: number;
+  readonly firstStepFoundToday: number;
 }
 
 /** Les statistiques du jour (`GET /api/daily/stats/today`). `tracks` est vide tant que la partie du joueur n'est pas finie (piège 31). */
