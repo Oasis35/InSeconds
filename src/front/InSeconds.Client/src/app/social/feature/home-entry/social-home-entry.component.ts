@@ -85,7 +85,7 @@ export class SocialHomeEntryComponent {
       const mygroups = await this.api.myGroups();
       mine = mygroups.groups;
       max = mygroups.maxGroups;
-      this.announce.setGroups(mine);
+      this.announce.setGroups(mine, max);
       const groupId = preferredGroupId(mine.map(group => group.id), this.lastGroup.get());
       view = groupId === null ? { kind: 'no_group' } : groupCardView(await this.api.scores(groupId));
     } catch {

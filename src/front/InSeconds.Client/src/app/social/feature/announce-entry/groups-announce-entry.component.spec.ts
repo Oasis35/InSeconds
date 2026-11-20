@@ -51,6 +51,17 @@ describe('GroupsAnnounceEntryComponent', () => {
     expect(card(fixture)?.getAttribute('data-variant')).toBe('member');
   });
 
+  it('un membre au maximum de groupes : la carte reste, sans « Créer un groupe »', () => {
+    const fixture = render(player(false), [group]);
+    expect(el(fixture).querySelector('[data-testid="groups-announce-action"]')).not.toBeNull();
+
+    TestBed.inject(GroupsAnnounce).setGroups([group], 1);
+    fixture.detectChanges();
+
+    expect(card(fixture)?.getAttribute('data-variant')).toBe('member');
+    expect(el(fixture).querySelector('[data-testid="groups-announce-action"]')).toBeNull();
+  });
+
   it('groupes illisibles : rien, pas même la place', () => {
     const fixture = render(player(false), 'failed');
 

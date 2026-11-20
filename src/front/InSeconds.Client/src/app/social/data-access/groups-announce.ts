@@ -25,9 +25,16 @@ export class GroupsAnnounce {
   private readonly _closed = signal(this.storage.get(CLOSED_KEY) === '1');
   private readonly _rankingSeen = signal(this.storage.get(RANKING_SEEN_KEY) === '1');
   private readonly _groups = signal<readonly Group[] | 'failed' | null>(null);
+  private readonly _maxGroups = signal<number | null>(null);
 
   /** Les groupes du joueur : `null` tant qu'ils ne sont pas lus, `'failed'` si la lecture a échoué (la carte ne s'affiche pas). */
   readonly groups = this._groups.asReadonly();
+  /** Le joueur peut encore créer un groupe (il n'a pas atteint le maximum rendu par le serveur) : sans lui, la carte n'offre pas « Créer un groupe ». */
+  readonly canCreate = computed(() => {
+    const groups = this._groups();
+    const max = this._maxGroups();
+    return Array.isArray(groups) && (max === null || groups.length < max);
+  });
   /** La carte d'annonce est à montrer (pas encore fermée). */
   readonly card = computed(() => this.active && !this._closed());
   private readonly member = computed(() => { const groups = this._groups(); return Array.isArray(groups) ? groups.length > 0 : null; });
@@ -42,13 +49,14 @@ export class GroupsAnnounce {
     let wasLinked: boolean | null = null;
     effect(() => {
       const linked = this.session.isLinked();
-      if (wasLinked !== null && wasLinked !== linked) untracked(() => this._groups.set(null));
+      if (wasLinked !== null && wasLinked !== linked) untracked(() => { this._groups.set(null); this._maxGroups.set(null); });
       wasLinked = linked;
     });
   }
 
-  setGroups(groups: readonly Group[] | 'failed'): void {
+  setGroups(groups: readonly Group[] | 'failed', maxGroups: number | null = null): void {
     this._groups.set(groups);
+    this._maxGroups.set(maxGroups);
   }
 
   close(): void {

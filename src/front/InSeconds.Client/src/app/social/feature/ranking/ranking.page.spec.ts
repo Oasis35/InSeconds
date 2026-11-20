@@ -84,7 +84,7 @@ describe('RankingPage', () => {
     expect(chips.map(chip => chip.textContent?.trim())).toEqual(['Potes', 'Famille']);
     expect(chips[0].getAttribute('aria-current')).toBe('page');
     expect(chips[1].getAttribute('href')).toBe('/ranking?group=7');
-    expect(find(el, 'ranking-new')?.getAttribute('href')).toBe('/ranking/new');
+    expect(find(el, 'ranking-new-group')?.getAttribute('href')).toBe('/ranking/new');
     expect(find(el, 'ranking-period-week')?.getAttribute('aria-current')).toBe('page');
     expect(el.querySelectorAll('[data-testid="score-row"]')).toHaveLength(3);
     expect(el.querySelectorAll('[data-testid="score-day"]')).toHaveLength(21);
@@ -169,7 +169,7 @@ describe('RankingPage', () => {
 
     const { el } = await render();
 
-    expect(find(el, 'ranking-new')).toBeNull();
+    expect(find(el, 'ranking-new-group')).toBeNull();
   });
 
   it('« Inviter un ami » partage le lien du groupe et le dit', async () => {

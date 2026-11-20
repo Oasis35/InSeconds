@@ -1511,9 +1511,7 @@
       "close": "Fermer",
       "title": "Les groupes sont là",
       "noGroup": "Un classement rien qu'à toi et tes amis : qui devine le plus vite ?",
-      "guest": "Un classement entre amis. Il faut un compte pour en monter un.",
-      "member": "Envoie le lien de « {{ name }} » : chacun apparaît dans votre classement.",
-      "invite": "Inviter des amis"
+      "guest": "Un classement entre amis. Il faut un compte pour en monter un."
     },
     "general": {
       "tab": "Général",

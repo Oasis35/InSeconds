@@ -6,8 +6,9 @@ import { AnnounceVariant } from '../../domain/groups-announce';
 
 /**
  * La carte d'annonce des groupes, au-dessus du défi : pastille « Nouveau » en violet (la couleur des autres joueurs), un titre, une phrase et une
- * action selon le joueur : « Créer un compte » (invité, contour neutre), « Créer un groupe » (compte sans groupe, contour ambre) ou « Inviter des
- * amis » (membre, le partage du lien). Contour plat, jamais la tuile de focus : le bouton plein reste celui du défi. La croix la ferme.
+ * action selon le joueur : « Créer un compte » (invité, contour neutre) ou « Créer un groupe » (compte, avec ou sans groupe, contour ambre ; la même
+ * phrase pour tous les comptes, qui n'invite dans aucun groupe précis). Contour plat, jamais la tuile de focus : le bouton plein reste celui du
+ * défi. La croix la ferme.
  */
 @Component({
   selector: 'app-groups-announce-card',
@@ -31,17 +32,12 @@ import { AnnounceVariant } from '../../domain/groups-announce';
           <p class="text-sm leading-snug" style="color:var(--text-light)">{{ 'social.announce.guest' | translate }}</p>
           <a appButton variant="neutral" [block]="true" routerLink="/account/login" data-testid="groups-announce-action">{{ 'social.empty.createAccount' | translate }}</a>
         }
-        @case ('no_group') {
-          <p class="text-sm leading-snug" style="color:var(--text-light)">{{ 'social.announce.noGroup' | translate }}</p>
-          <a appButton variant="accent" [block]="true" routerLink="/ranking/new" data-testid="groups-announce-action">{{ 'social.empty.create' | translate }}</a>
-        }
         @default {
-          <p class="text-sm leading-snug break-words" style="color:var(--text-light)">{{ 'social.announce.member' | translate: { name: groupName() } }}</p>
-          <button appButton type="button" variant="accent" [block]="true" (click)="invite.emit()" data-testid="groups-announce-action">
-            @if (copied()) { {{ 'social.invite.copied' | translate }} }
-            @else if (failed()) { {{ 'social.invite.failed' | translate }} }
-            @else { {{ 'social.announce.invite' | translate }} }
-          </button>
+          <!-- Sans groupe comme dans des groupes : la même phrase et « Créer un groupe », jamais l'invitation d'un groupe précis. -->
+          <p class="text-sm leading-snug" style="color:var(--text-light)">{{ 'social.announce.noGroup' | translate }}</p>
+          @if (canCreate()) {
+            <a appButton variant="accent" [block]="true" routerLink="/ranking/new" data-testid="groups-announce-action">{{ 'social.empty.create' | translate }}</a>
+          }
         }
       }
     </section>
@@ -49,10 +45,7 @@ import { AnnounceVariant } from '../../domain/groups-announce';
 })
 export class GroupsAnnounceCardComponent {
   readonly variant = input.required<AnnounceVariant>();
-  /** Le groupe dont le lien est partagé (membre). */
-  readonly groupName = input('');
-  readonly copied = input(false);
-  readonly failed = input(false);
+  /** Un membre qui a déjà le maximum de groupes n'a plus de « Créer un groupe » : la phrase seule. */
+  readonly canCreate = input(true);
   readonly dismiss = output();
-  readonly invite = output();
 }

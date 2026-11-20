@@ -1511,9 +1511,7 @@
       "close": "Close",
       "title": "Groups are here",
       "noGroup": "A leaderboard just for you and your friends: who guesses fastest?",
-      "guest": "A leaderboard with friends. You need an account to start one.",
-      "member": "Send the link to \"{{ name }}\": everyone shows up in your leaderboard.",
-      "invite": "Invite friends"
+      "guest": "A leaderboard with friends. You need an account to start one."
     },
     "general": {
       "tab": "Overall",
