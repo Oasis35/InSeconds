@@ -829,6 +829,7 @@
       "track": "Piste {{ current }} / {{ total }}"
     },
     "home": {
+      "seeResult": "Voir le résultat",
       "label": "Défi du jour",
       "done": "Défi du jour",
       "abandonedScore": "partie abandonnée",
@@ -840,6 +841,7 @@
     "welcome": {
       "title": "Blind test du jour",
       "subtitle": "{{ count }} morceaux à deviner",
+      "howTo": "Trouve l’artiste et le titre. Moins tu écoutes, plus tu marques.",
       "start": "Commencer",
       "loginCta": "Créer un compte",
       "loginHint": "Pour garder ta série sur tous tes appareils.",
@@ -908,6 +910,7 @@
       "title": "Titre"
     },
     "result": {
+      "back": "Retour",
       "yourScore": "Ton score du jour",
       "nextChallenge": "Prochain défi dans",
       "fastIn": "en",
@@ -1441,8 +1444,8 @@
     "v4": {
       "bar": {
         "label": "Navigation",
-        "daily": "Accueil",
-        "account": "Mon compte",
+        "daily": "Jouer",
+        "account": "Profil",
         "login": "Connexion",
         "history": "Historique",
         "ranking": "Classements"
@@ -1540,7 +1543,7 @@
       "createAccount": "Créer un compte"
     },
     "home": {
-      "guestBody": "Il faut un compte pour entrer dans un groupe. Il garde aussi ta série sur tous tes appareils.",
+      "guestBody": "Gratuit, sans mot de passe. Tes parties te suivent sur tous tes appareils.",
       "todayTitle": "{{ name }}, aujourd'hui",
       "alone": "Tu es seul dans ce groupe. Invite tes amis depuis le classement.",
       "nobodyFinished": "Personne n'a encore fini le défi aujourd'hui.",

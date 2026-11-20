@@ -23,6 +23,7 @@ export class GamePage {
   // Overlay « Service indisponible » (backend KO)
   readonly serviceDownHeading: Locator;
   // La partie en barres, qui déplie la liste des morceaux, + pop-up histogramme
+  readonly seeResultLink: Locator;
   readonly showTracksButton: Locator;
   readonly trackScoreButtons: Locator;
   readonly trackChip: Locator;
@@ -49,12 +50,20 @@ export class GamePage {
     this.leaveConfirmButton    = page.getByRole('button', { name: 'Quitter quand même' });
     this.leaveCancelButton     = page.getByRole('button', { name: 'Continuer à jouer' });
     this.serviceDownHeading    = page.getByRole('heading', { name: 'Service indisponible' });
-    this.showTracksButton      = page.getByTestId('home-tracks-toggle');
+    // Le détail des morceaux est sur le résultat complet (`/daily/resultat`), ouvert par « Voir le résultat » de la carte de l'accueil.
+    this.seeResultLink         = page.getByTestId('home-see-result');
+    this.showTracksButton      = page.getByTestId('tracks-toggle');
     // Le bouton du score porte un aria-label (« Voir la répartition des temps ») qui prime sur le texte « +N ».
     this.trackScoreButtons     = page.locator('app-track-results-list')
       .getByRole('button', { name: /répartition des temps/i });
     this.trackChip             = page.locator('app-track-results-list').getByText(/✓ Artiste|✗ Artiste/).first();
     this.guessTimeChart        = page.getByTestId('guess-time-chart');
+  }
+
+  /** Ouvre le résultat complet depuis l'accueil et déplie les morceaux. */
+  async openTrackDetails(): Promise<void> {
+    await this.seeResultLink.click();
+    await this.showTracksButton.click();
   }
 
   /** Démarre et joue les 5 morceaux (réponses vides) jusqu'à l'écran de récap. */

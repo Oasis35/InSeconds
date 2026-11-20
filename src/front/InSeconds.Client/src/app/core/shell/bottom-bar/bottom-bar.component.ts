@@ -8,9 +8,9 @@ import { DAILY_DONE_LOADER } from '../daily-done-loader';
 import { ShellChromeStore } from '../shell-chrome.store';
 
 /**
- * La barre du bas : Accueil (le jeu du jour et la carte Survie), Classements, Historique et Mon compte (« Connexion » pour un invité).
+ * La barre du bas : Jouer (l’accueil : le jeu du jour et la carte Survie), Classements, Historique et Profil (« Connexion » pour un invité).
  * Pour tous les joueurs, sur l'accueil, sur Survie, sur le classement, l'historique et le profil, et jamais pendant une manche.
- * « Accueil » respire en cyan tant que le défi du jour n'est pas joué. Les liens légaux ne sont plus dans la barre : ils vivent sous la carte Survie.
+ * « Jouer » respire en cyan tant que le défi du jour n'est pas joué. Les liens légaux ne sont plus dans la barre : ils vivent sous la carte Survie.
  */
 @Component({
   selector: 'app-bottom-bar',
@@ -76,7 +76,7 @@ export class BottomBarComponent {
     if (/^\/history(\/|$)/.test(path)) return 'history';
     // Le classement entre amis ; la création d'un groupe et le lien d'invitation sont des écrans pleins, sans barre.
     if (path === '/ranking') return 'ranking';
-    // Mon compte : l'écran du profil existant ; la connexion et le reste du compte sont des écrans pleins, sans barre.
+    // Profil : l’écran du profil existant ; la connexion et le reste du compte sont des écrans pleins, sans barre.
     if (path === '/account/profile') return 'account';
     // L'accueil est la racine ; le défi (`/daily`) et la Setlist (`/survie`) lui appartiennent.
     if (path === '/' || path === '/daily' || path.startsWith('/daily/')) return 'daily';

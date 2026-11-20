@@ -12,9 +12,7 @@ import { ModalService } from '../../../ui/modal/modal.service';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { DailyGameStore } from '../../data-access/daily-game.store';
-import { DailyStartup, DailyResultView, StreakSheetOpener } from '../daily-shell/daily-view';
-import { AbandonedScreenComponent } from '../../ui/abandoned-screen/abandoned-screen.component';
-import { DayResultScreenComponent } from '../../ui/day-result-screen/day-result-screen.component';
+import { DailyStartup, StreakSheetOpener } from '../daily-shell/daily-view';
 import { BrandComponent } from '../../../ui/brand/brand.component';
 import { HomeLegalLineComponent } from '../../../ui/legal-line/home-legal-line.component';
 import { DailyProgressComponent } from '../../ui/daily-progress/daily-progress.component';
@@ -29,7 +27,7 @@ import { isHomeScreen } from '../../domain/daily-screen';
 import { todayUtc } from '../../../core/game-day/game-day';
 
 /**
- * La page du défi (`/daily`) : la manche, et sans la V4 tous les écrans du jeu du jour (accueil, reprise, résultat). Elle affiche l'écran que le
+ * La page du défi (`/daily`) : la manche (les autres écrans du jeu du jour sont sur l'accueil, le résultat complet sur `/daily/resultat`). Elle affiche l'écran que le
  * `DailyGameStore` indique et branche ce qui est propre au navigateur : les fenêtres (abandon, sortie de partie), le compte dans le bandeau.
  * Les stores sont ceux de la coquille (`DailyShellComponent`), partagés avec l'accueil (`/`).
  */
@@ -37,7 +35,7 @@ import { todayUtc } from '../../../core/game-day/game-day';
   selector: 'app-daily-page',
   imports: [
     TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, BrandComponent, DailyProgressComponent, HomeLegalLineComponent,
-    WelcomeScreenComponent, ResumeScreenComponent, StatusScreenComponent, AbandonedScreenComponent, DayResultScreenComponent,
+    WelcomeScreenComponent, ResumeScreenComponent, StatusScreenComponent,
     DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent, StreakPillComponent, ButtonComponent, InstagramLinkComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,7 +46,6 @@ export class DailyPage {
   protected readonly language = inject(LanguageService);
   protected readonly errorReporting = inject(ErrorReportingService);
   protected readonly streakSheet = inject(StreakSheetOpener);
-  protected readonly result = inject(DailyResultView);
   private readonly startup = inject(DailyStartup);
   private readonly modal = inject(ModalService);
   private readonly translate = inject(TranslateService);

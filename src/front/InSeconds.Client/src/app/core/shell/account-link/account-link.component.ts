@@ -5,7 +5,7 @@ import { SessionStore } from '../../session/session.store';
 
 /**
  * Le cadenas de l'admin, à droite du titre IN//SECONDS (compte admin seulement) : un rond gris à contour neutre, sans fond ni lueur. Le compte
- * (« Mon compte », « Connexion » pour un invité) est dans la barre du bas. Rien tant que l'identité n'est pas lue.
+ * (« Profil », « Connexion » pour un invité) est dans la barre du bas. Rien tant que l'identité n'est pas lue.
  */
 @Component({
   selector: 'app-account-link',

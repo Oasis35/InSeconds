@@ -33,6 +33,12 @@ describe('HomeChallengeCardComponent', () => {
     expect(render().q('home-challenge')?.classList).toContain('tube-amber');
   });
 
+  it('le bloc de l\'accueil d\'avant : « Blind test du jour » puis le nombre de morceaux', () => {
+    const { element } = render();
+    expect(element.querySelector('h2')?.textContent?.trim()).toBe('daily.welcome.title');
+    expect(element.textContent).toContain('daily.welcome.subtitle');
+  });
+
   it('le record du joueur passe avant la médiane des autres', () => {
     const { q } = render({ bestScore: 3120, yesterdayMedian: 1840 });
     expect(q('welcome-record')?.textContent).toMatch(/3\s120/);
@@ -54,6 +60,12 @@ describe('HomeChallengeCardComponent', () => {
   it('le temps qui reste : en heures, en minutes sous une heure', () => {
     expect(render({ remaining: { unit: 'hours', value: 6 } }).q('home-remaining')?.textContent).toContain('daily.home.remainingHours');
     expect(render({ remaining: { unit: 'minutes', value: 40 } }).q('home-remaining')?.textContent).toContain('daily.home.remainingMinutes');
+  });
+
+  it('la règle en une phrase, seulement pour qui n’a jamais joué', () => {
+    expect(render({ firstGame: true }).q('welcome-how-to')?.textContent).toContain('daily.welcome.howTo');
+    expect(render().q('welcome-how-to')).toBeNull();
+    expect(render({ firstGame: true, completedCount: 2 }).q('welcome-how-to')).toBeNull();
   });
 
   it('une série protégée par un gel le dit', () => {

@@ -829,6 +829,7 @@
       "track": "Track {{ current }} / {{ total }}"
     },
     "home": {
+      "seeResult": "See the result",
       "label": "Daily challenge",
       "done": "Daily challenge",
       "abandonedScore": "abandoned game",
@@ -840,6 +841,7 @@
     "welcome": {
       "title": "Today's blind test",
       "subtitle": "{{ count }} tracks to guess",
+      "howTo": "Name the artist and the title. The less you listen, the more you score.",
       "start": "Start",
       "loginCta": "Create an account",
       "loginHint": "To keep your streak across all your devices.",
@@ -908,6 +910,7 @@
       "title": "Title"
     },
     "result": {
+      "back": "Back",
       "yourScore": "Your score today",
       "nextChallenge": "Next challenge in",
       "fastIn": "in",
@@ -1441,8 +1444,8 @@
     "v4": {
       "bar": {
         "label": "Navigation",
-        "daily": "Home",
-        "account": "My account",
+        "daily": "Play",
+        "account": "Profile",
         "login": "Log in",
         "history": "History",
         "ranking": "Rankings"
@@ -1540,7 +1543,7 @@
       "createAccount": "Create an account"
     },
     "home": {
-      "guestBody": "You need an account to join a group. It also keeps your streak across all your devices.",
+      "guestBody": "Free, no password. Your games follow you on all your devices.",
       "todayTitle": "{{ name }}, today",
       "alone": "You're alone in this group. Invite your friends from the ranking.",
       "nobodyFinished": "Nobody has finished today's challenge yet.",

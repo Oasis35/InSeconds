@@ -9,7 +9,14 @@ import { SetlistAccessStore } from '../data-access/setlist-access.store';
  */
 export function provideRuns(): EnvironmentProviders {
   return makeEnvironmentProviders([
-    { provide: HOME_MODE_ENTRIES, multi: true, useValue: { order: HOME_ENTRY_ORDER.survie, load: () => import('./home-entry/runs-home-entry.component').then(m => m.RunsHomeEntryComponent) } },
+    {
+      provide: HOME_MODE_ENTRIES, multi: true,
+      // Défi fait, la carte Survie passe devant et porte la prochaine action, si le joueur y a accès (sinon elle ne s'affiche pas).
+      useFactory: () => {
+        const access = inject(SetlistAccessStore);
+        return { order: HOME_ENTRY_ORDER.survie, leadsWhenDailyDone: () => access.hasAccess(), load: () => import('./home-entry/runs-home-entry.component').then(m => m.RunsHomeEntryComponent) };
+      },
+    },
     provideAppInitializer(() => void inject(SetlistAccessStore)),
   ]);
 }
