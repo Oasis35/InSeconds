@@ -14,6 +14,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
 import { ModalService } from '../../../ui/modal/modal.service';
 import { GroupShare } from '../../data-access/group-share';
+import { GroupsAnnounce } from '../../data-access/groups-announce';
 import { GroupsStore } from '../../data-access/groups.store';
 import { PendingInvite } from '../../data-access/pending-invite';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
@@ -54,6 +55,7 @@ export class RankingPage {
   private readonly modal = inject(ModalService);
   private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
+  private readonly announce = inject(GroupsAnnounce);
   private readonly params = inject(ActivatedRoute).queryParamMap;
 
   /** Une invitation reçue avant d'avoir un compte : proposée ici une fois connecté. */
@@ -91,6 +93,8 @@ export class RankingPage {
   protected readonly alone = computed(() => (this.store.selected()?.memberCount ?? 0) <= 1);
 
   constructor() {
+    // Classements ouvert : le point « Nouveau » de l'onglet a fait son travail.
+    this.announce.markRankingSeen();
     effect(() => {
       // L'identité se lit au démarrage de l'app : un invité n'a pas de groupe, on ne demande rien.
       if (!this.session.loaded() || !this.session.isLinked()) return;
