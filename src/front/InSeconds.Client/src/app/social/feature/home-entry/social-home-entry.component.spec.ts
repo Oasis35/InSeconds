@@ -4,6 +4,7 @@ import { provideTranslateService } from '@ngx-translate/core';
 import { SessionPlayer, SessionStore } from '../../../core/session/session.store';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { MemoryStoragePort, StoragePort } from '../../../core/storage/storage.port';
+import { GroupsAnnounce } from '../../data-access/groups-announce';
 import { LastGroup } from '../../data-access/last-group';
 import { DAILY, DAILY_LOCKED, FakeSocialApi, provideFakeSocialApi } from '../../data-access/testing/fake-social-api';
 import { SocialHomeEntryComponent } from './social-home-entry.component';
@@ -52,6 +53,25 @@ describe('SocialHomeEntryComponent', () => {
 
     expect(card(fixture)?.dataset['kind']).toBe('guest');
     expect(api.calls).toEqual([]);
+  });
+
+  it("elle donne les groupes à l'annonce ; carte d'annonce fermée, un compte sans groupe voit la pastille « Nouveau »", async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-21T10:00:00Z'));
+    try {
+      api.groups = { groups: [], maxGroups: 5 };
+      const fixture = await render(player(false));
+      const announce = TestBed.inject(GroupsAnnounce);
+      const pill = () => (fixture.nativeElement as HTMLElement).querySelector('[data-testid="friends-card-new"]');
+      expect(announce.groups()).toEqual([]);
+      expect(pill()).toBeNull();
+
+      announce.close();
+      fixture.detectChanges();
+      expect(pill()).not.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('un visiteur encore inconnu est traité en invité', async () => {

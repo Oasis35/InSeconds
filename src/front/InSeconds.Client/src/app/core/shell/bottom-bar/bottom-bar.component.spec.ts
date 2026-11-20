@@ -49,6 +49,14 @@ describe('BottomBarComponent', () => {
     expect(el.querySelector('[data-testid="daily-pending"]')).toBeNull();
   });
 
+  it("un point violet sur Classements tant que l'annonce des groupes le demande", async () => {
+    const { el, fixture, chrome } = await render('/', {});
+    expect(el.querySelector('[data-testid="ranking-new"]')).toBeNull();
+    chrome.setGroupsNew(true);
+    fixture.detectChanges();
+    expect(el.querySelector('[data-testid="ranking-new"]')).not.toBeNull();
+  });
+
   it("l'historique a un seul onglet pour ses deux pages, et n'allume pas celui du mode", async () => {
     const { el } = await render('/history/survie/12', {});
     expect(el.querySelector('[data-testid="tab-history"]')?.getAttribute('aria-current')).toBe('page');
