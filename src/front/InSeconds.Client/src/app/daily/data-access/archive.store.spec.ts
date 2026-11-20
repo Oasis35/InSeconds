@@ -49,12 +49,6 @@ describe('ArchiveStore', () => {
     expect(store.day()).toBeNull();
   });
 
-  it('lit les jours publiés une seule fois (calendrier)', async () => {
-    expect(await store.loadDates()).toEqual(['2026-10-21', '2026-10-20']);
-    await store.loadDates();
-    expect(api.calls.filter(c => c === 'archiveDates')).toHaveLength(1);
-  });
-
   it("demande l'extrait d'un morceau du jour affiché", async () => {
     expect(await store.previewUrl(2)).toBeNull();
     await store.load('2026-10-21');

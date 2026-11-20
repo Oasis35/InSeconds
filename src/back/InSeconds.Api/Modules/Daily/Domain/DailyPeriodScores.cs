@@ -44,6 +44,13 @@ public static class DailyPeriodScores
         return hidden;
     }
 
+    /// <summary>Le joueur qui regarde peut-il voir les scores du défi de ce jour : un jour passé ou le jour même, s'il ne fait pas partie des jours cachés.</summary>
+    public static bool DayRevealed(DateOnly day, DateOnly today, IReadOnlySet<DateOnly> hiddenDays)
+    {
+        ArgumentNullException.ThrowIfNull(hiddenDays);
+        return day <= today && !hiddenDays.Contains(day);
+    }
+
     /// <summary>
     /// Les scores de chaque joueur qui a fini au moins une partie de la semaine (les autres n'y sont pas). Les parties hors de la semaine, ou d'un
     /// défi à venir, sont ignorées ; celles d'un jour caché ne comptent ni dans les points ni dans les jours joués (seul « a joué aujourd'hui » reste).

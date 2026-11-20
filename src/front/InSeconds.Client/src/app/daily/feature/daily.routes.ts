@@ -8,6 +8,8 @@ import { DailyShellComponent } from './daily-shell/daily-shell.component';
 import { DailyPage } from './daily/daily.page';
 import { HomePage } from './home/home.page';
 import { DailyHistoryPage } from './history/daily-history.page';
+import { EarProfilePage } from './ear-profile/ear-profile.page';
+import { ReplayPage } from './replay/replay.page';
 import { leaveGameGuard } from './leave-game.guard';
 
 /** `/history/daily/latest` : les réponses du jour publié le plus récent, la veille d'ordinaire ; sans jour publié, le jeu du jour. */
@@ -39,7 +41,8 @@ export const DAILY_ROUTES: Routes = [
 ];
 
 /**
- * L'historique du joueur sur le défi du jour (`/history/daily`) et les réponses d'un jour passé (`/history/daily/aaaa-mm-jj`, sans lecteur ;
+ * L'historique du joueur sur le défi du jour (`/history/daily`), « À réécouter » (`a-reecouter`), son profil d'oreille (`profil`) et les
+ * réponses d'un jour passé (`/history/daily/aaaa-mm-jj`, sans lecteur de manche ;
  * `/history/daily/latest` ouvre le dernier jour publié). L'historique des setlists est la page du mode (`/history/survie`).
  */
 export const DAILY_HISTORY_ROUTES: Routes = [
@@ -49,6 +52,9 @@ export const DAILY_HISTORY_ROUTES: Routes = [
     children: [
       { path: '', pathMatch: 'full', component: DailyHistoryPage },
       { path: 'latest', pathMatch: 'full', canActivate: [latestArchiveGuard], children: [] },
+      // Avant `:date`, qui les prendrait pour un jour.
+      { path: 'a-reecouter', pathMatch: 'full', component: ReplayPage },
+      { path: 'profil', pathMatch: 'full', component: EarProfilePage },
       { path: ':date', component: ArchivePage },
     ],
   },

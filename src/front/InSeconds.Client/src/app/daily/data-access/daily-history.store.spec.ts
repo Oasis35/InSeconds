@@ -1,9 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { DailyHistory } from '../domain/history';
+import { DailyHistory, emptyHistory } from '../domain/history';
 import { DailyApi } from './daily.api';
 import { DailyHistoryStore } from './daily-history.store';
 
-const HISTORY = (month: string): DailyHistory => ({ month, previousMonth: null, nextMonth: null, playedCount: 1, averageScore: 2000, bestScore: 2000, games: [] });
+const HISTORY = (month: string): DailyHistory => ({ ...emptyHistory(month), monthPlayedCount: 1, monthAverageScore: 2000 });
 
 describe('DailyHistoryStore', () => {
   function create(history: (month: string | null) => Promise<DailyHistory>) {

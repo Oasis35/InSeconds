@@ -370,3 +370,7 @@ html.has-bottom-bar .da-bg {
 html.has-bottom-bar app-toast-frame {
   bottom: calc(4.25rem + 18px + env(safe-area-inset-bottom));
 }
+/* Le lecteur collant de « À réécouter » se cale au-dessus de la barre du bas, jamais dessous. */
+html.has-bottom-bar .above-bottom-bar {
+  bottom: calc(4.25rem + 12px + env(safe-area-inset-bottom));
+}

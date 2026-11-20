@@ -12,12 +12,9 @@ interface ArchiveState {
   day: ArchiveDay | null;
   /** Ce que le joueur reconnu y a fait ; personne tant que ce n'est pas lu (ou si la lecture échoue). */
   me: ArchiveMe;
-  /** Les jours publiés, pour le calendrier ; lus une fois, à la première ouverture. */
-  dates: readonly string[] | null;
-  /** L'état du jour, pour la gélule de série de l'en-tête ; vide tant que ce n'est pas lu. */
 }
 
-const initialState: ArchiveState = { status: 'loading', date: '', day: null, me: NOBODY, dates: null };
+const initialState: ArchiveState = { status: 'loading', date: '', day: null, me: NOBODY };
 
 /**
  * La page d'un jour passé (#407) : les réponses de tous (route publique, mise en cache), puis ce qu'en a fait le joueur reconnu (route à part,
@@ -55,18 +52,6 @@ export const ArchiveStore = signalStore(
       previewUrl(position: number): Promise<string | null> {
         const day = store.day();
         return day ? api.archivePreviewUrl(day.date, position) : Promise.resolve(null);
-      },
-
-      /** Les jours publiés (le calendrier) ; vide si la lecture échoue. */
-      async loadDates(): Promise<readonly string[]> {
-        if (store.dates() === null) {
-          try {
-            patchState(store, { dates: await api.archiveDates() });
-          } catch {
-            return [];
-          }
-        }
-        return store.dates() ?? [];
       },
     };
   }),

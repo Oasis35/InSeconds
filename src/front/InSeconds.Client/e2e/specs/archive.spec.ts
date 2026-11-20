@@ -6,7 +6,7 @@ const gameDay = (days = 0) => {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + days)).toISOString().slice(0, 10);
 };
 
-test.describe('Réponses des jours passés', () => {
+test.describe('Historique et réponses des jours passés', () => {
   test.beforeEach(async ({ api }) => {
     await api.reset();
   });
@@ -22,7 +22,9 @@ test.describe('Réponses des jours passés', () => {
     // Le pool de test n'a aucune partie : moins de 5 joueurs, pas de statistiques, aucun « Toi ».
     await expect(page.getByTestId('archive-too-few')).toBeVisible();
     await expect(page.getByTestId('archive-players')).toHaveCount(0);
-    await expect(page.getByTestId('archive-mine')).toHaveCount(0);
+    await expect(page.getByTestId('archive-mine-summary')).toHaveCount(0);
+    // Un jour qu'il n'a pas joué : les réponses s'affichent d'office.
+    await expect(page.getByTestId('archive-not-played')).toBeVisible();
     await expect(page).toHaveTitle(/^Blind test du .+ : /);
 
     // Le jour même n'est pas publié.
@@ -30,15 +32,31 @@ test.describe('Réponses des jours passés', () => {
     await expect(page.getByTestId('archive-not-found')).toBeVisible();
   });
 
-  test("l'historique y mène par « Réponses des jours passés » (plus de calendrier dans l'en-tête)", async ({ page }) => {
+  test("l'historique s'ouvre sur le calendrier du mois ; la page d'un jour y ramène, au bon mois", async ({ page }) => {
     await page.goto('/history/daily');
-    await expect(page.locator('app-account-link a[href="/history/daily/latest"]')).toHaveCount(0);
+    await expect(page.getByTestId('history-calendar')).toBeVisible();
+    await expect(page.getByTestId('history-month-stats')).toBeVisible();
+    await expect(page.getByTestId('history-replay')).toHaveAttribute('href', '/history/daily/a-reecouter');
 
-    await page.getByTestId('history-archive').click();
+    await page.goto('/history/daily/latest');
     await expect(page).toHaveURL(/\/history\/daily\/\d{4}-\d{2}-\d{2}$/);
+    const shown = page.url().slice(-10);
+    await page.getByTestId('archive-back').click();
+    await expect(page).toHaveURL(new RegExp(`/history/daily\\?mois=${shown.slice(0, 7)}$`));
+    await expect(page.getByTestId(`history-day-${shown}`)).toHaveAttribute('href', `/history/daily/${shown}`);
   });
 
-  test('les flèches sont de vrais liens et le calendrier ouvre un autre jour', async ({ page }) => {
+  test("« À réécouter » et le profil d'oreille, sans partie jouée", async ({ page }) => {
+    await page.goto('/history/daily/a-reecouter');
+    await expect(page.getByTestId('replay-empty')).toBeVisible();
+
+    await page.goto('/history/daily/profil');
+    await expect(page.getByTestId('profile-empty')).toBeVisible();
+    await page.getByTestId('profile-period-all').click();
+    await expect(page.getByTestId('profile-period-all')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test("les flèches sont de vrais liens, et « Jouer le défi du jour » tant qu'il reste à jouer", async ({ page }) => {
     await page.goto('/history/daily/latest');
     await expect(page).toHaveURL(/\/history\/daily\/\d{4}-\d{2}-\d{2}$/);
     const latest = page.url().slice(-10);
@@ -48,38 +66,31 @@ test.describe('Réponses des jours passés', () => {
     await previous.click();
     await expect(page).not.toHaveURL(new RegExp(`${latest}$`));
     await expect(page.getByTestId('archive-next')).toHaveAttribute('href', `/history/daily/${latest}`);
-
-    await page.getByTestId('archive-date').click();
-    // Le calendrier s'ouvre sur le mois du jour affiché : le 1er du mois, la veille est dans le mois d'avant.
-    const shown = page.url().slice(-10);
-    if (shown.slice(0, 7) !== latest.slice(0, 7)) {
-      await page.getByTestId('archive-calendar').getByRole('button', { name: 'Mois suivant' }).click();
-    }
-    await page.getByTestId('archive-calendar').locator(`[data-date="${latest}"]`).click();
+    await page.getByTestId('archive-next').click();
     await expect(page).toHaveURL(new RegExp(`/history/daily/${latest}$`));
 
     await page.getByTestId('archive-play-today').click();
     await expect(page).toHaveURL(/\/$/);
   });
 
-  test("un morceau s'écoute dans la fenêtre de l'admin, et son nom se déplie au toucher", async ({ page }) => {
+  test("un morceau se déplie au toucher et s'écoute sur place, avec une adresse neuve", async ({ page }) => {
     await page.goto('/history/daily/latest');
     const track = page.getByTestId('archive-track').first();
-    const text = track.getByTestId('archive-track-text');
+    const toggle = track.getByTestId('archive-track-toggle');
 
-    await expect(text).toHaveAttribute('aria-expanded', 'false');
-    await text.click();
-    await expect(text).toHaveAttribute('aria-expanded', 'true');
-    await text.click();
-    await expect(text).toHaveAttribute('aria-expanded', 'false');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(track.getByTestId('archive-track-detail')).toHaveCount(0);
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 
-    // Une adresse d'extrait neuve, demandée à l'ouverture de la fenêtre.
     const preview = page.waitForResponse(r => /\/api\/daily\/archive\/[\d-]+\/tracks\/1\/preview$/.test(r.url()) && r.ok());
     await track.getByTestId('archive-listen').click();
     await preview;
-    await expect(page.getByTestId('preview-toggle')).toBeVisible();
+    await expect(track.getByTestId('archive-listen')).toHaveAttribute('aria-label', 'Mettre en pause');
+    await track.getByTestId('archive-listen').click();
+    await expect(track.getByTestId('archive-listen')).toHaveAttribute('aria-label', /^Écouter /);
 
-    await page.keyboard.press('Escape');
-    await expect(page.getByTestId('preview-toggle')).toHaveCount(0);
+    await toggle.click();
+    await expect(track.getByTestId('archive-track-detail')).toHaveCount(0);
   });
 });

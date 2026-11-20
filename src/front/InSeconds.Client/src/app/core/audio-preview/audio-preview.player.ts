@@ -1,4 +1,4 @@
-import { DestroyRef, Injectable, InjectionToken, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, InjectionToken, computed, inject, signal } from '@angular/core';
 
 /** Ce que le lecteur utilise d'un élément audio (remplaçable en test). */
 export interface PreviewAudio {
@@ -32,6 +32,11 @@ export class AudioPreviewPlayer {
   readonly url = this._url.asReadonly();
   private readonly _playing = signal(false);
   readonly playing = this._playing.asReadonly();
+  /** La clé de l'extrait chargé par `listen` (un morceau d'une page), `null` si aucun. */
+  private readonly _key = signal<string | null>(null);
+  readonly key = this._key.asReadonly();
+  /** La clé de l'extrait en lecture, `null` à l'arrêt ou en pause. */
+  readonly playingKey = computed(() => (this._playing() ? this._key() : null));
   /** Avancement de la lecture, de 0 à 100. */
   private readonly _progress = signal(0);
   readonly progress = this._progress.asReadonly();
@@ -49,7 +54,7 @@ export class AudioPreviewPlayer {
       return;
     }
 
-    this.stop();
+    this.release();
     const audio = this.createAudio(url);
     audio.onended = () => {
       this.cancelFrame();
@@ -61,8 +66,31 @@ export class AudioPreviewPlayer {
     this.play(audio);
   }
 
-  /** Coupe la lecture et libère l'extrait. */
+  /**
+   * Écoute le morceau de cette clé, ou le met en pause (puis le reprend) si c'est déjà lui. Un nouveau morceau coupe le précédent et demande son
+   * adresse à `loadUrl` à chaque fois (adresse signée qui expire, piège 14) ; une adresse qui arrive après qu'un autre morceau a été demandé est
+   * ignorée. Sans adresse (échec ou pas d'extrait), rien ne joue.
+   */
+  async listen(key: string, loadUrl: () => Promise<string | null>): Promise<void> {
+    const loaded = this._url();
+    if (this._key() === key && loaded) {
+      this.toggle(loaded);
+      return;
+    }
+    this.stop();
+    this._key.set(key);
+    const url = await loadUrl().catch(() => null);
+    if (this._key() === key) this.toggle(url);
+  }
+
+  /** Coupe la lecture et libère l'extrait (et sa clé). */
   stop(): void {
+    this.release();
+    this._key.set(null);
+  }
+
+  // Libère l'extrait chargé ; la clé reste (un nouvel extrait du même morceau se charge par-dessus).
+  private release(): void {
     this.generation++;
     this.cancelFrame();
     if (this.audio) {

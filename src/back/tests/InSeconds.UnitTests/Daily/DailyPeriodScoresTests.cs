@@ -109,4 +109,15 @@ public class DailyPeriodScoresTests
 
     [Fact]
     public void WeekStart_SixJoursAvant() => Assert.Equal(new DateOnly(2026, 11, 13), DailyPeriodScores.WeekStart(Today, Week));
+
+    [Fact]
+    public void UnJourPasse_SeVoit_SaufCacheOuFutur()
+    {
+        var today = new DateOnly(2026, 11, 20);
+        var hidden = new HashSet<DateOnly> { today.AddDays(-1) };
+        Assert.True(DailyPeriodScores.DayRevealed(today.AddDays(-3), today, hidden));
+        Assert.False(DailyPeriodScores.DayRevealed(today.AddDays(-1), today, hidden));
+        Assert.False(DailyPeriodScores.DayRevealed(today.AddDays(1), today, hidden));
+        Assert.True(DailyPeriodScores.DayRevealed(today, today, new HashSet<DateOnly>()));
+    }
 }

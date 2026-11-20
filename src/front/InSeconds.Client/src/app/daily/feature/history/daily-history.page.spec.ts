@@ -3,98 +3,85 @@ import { Router, provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { providePlayersApiFake, fakePlayersApi } from '../../../account/data-access/testing/fake-players-api';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
+import { settle } from '../../../account/feature/testing/dom';
 import { utcDayOf } from '../../../ui/format/day-label';
-import { DailyApi } from '../../data-access/daily.api';
-import { DailyHistory } from '../../domain/history';
+import { EAR_PROFILE, FakeDailyApi, HISTORY, provideFakeDailyApi } from '../../data-access/testing/fake-daily-api';
 import { DailyHistoryPage } from './daily-history.page';
 
 const TODAY = utcDayOf(new Date());
 
-const HISTORY = (over: Partial<DailyHistory> = {}): DailyHistory => ({
-  month: '2026-10', previousMonth: '2026-09', nextMonth: null, playedCount: 58, averageScore: 2050, bestScore: 3100,
-  games: [
-    { date: TODAY, score: 2140, tracks: [{ position: 1, artistCorrect: true, titleCorrect: true }, { position: 2, artistCorrect: true, titleCorrect: false }, { position: 3, artistCorrect: false, titleCorrect: false }] },
-    { date: '2026-10-09', score: 1980, tracks: [] },
-  ],
-  ...over,
-});
-
 describe('DailyHistoryPage', () => {
-  let history: ReturnType<typeof vi.fn>;
-
-  async function render(url = '/history/daily', result: () => Promise<DailyHistory> = async () => HISTORY(), survie = true) {
-    history = vi.fn(result);
+  async function render(url = '/history/daily', fake = new FakeDailyApi(), { survie = true, dailyDone = false as boolean | null } = {}) {
     TestBed.configureTestingModule({
       providers: [
         provideTranslateService(), provideRouter([{ path: 'history/daily', component: DailyHistoryPage }, { path: '**', children: [] }]),
-        providePlayersApiFake(fakePlayersApi()), { provide: DailyApi, useValue: { history } },
+        providePlayersApiFake(fakePlayersApi()), provideFakeDailyApi(fake),
       ],
     });
     TestBed.inject(ShellChromeStore).setSurvie(survie);
+    TestBed.inject(ShellChromeStore).setDailyDone(dailyDone);
     await TestBed.inject(Router).navigateByUrl(url);
     const fixture = TestBed.createComponent(DailyHistoryPage);
-    fixture.detectChanges();
-    await fixture.whenStable();
-    fixture.detectChanges();
-    return { fixture, el: fixture.nativeElement as HTMLElement };
+    await settle(fixture);
+    return { fixture, fake, el: fixture.nativeElement as HTMLElement };
   }
 
-  it('lit le mois en cours sans mois dans l’adresse, et montre le résumé et les parties', async () => {
-    const { el } = await render();
+  const withToday = (state: 'today' | 'played', score: number | null = null) =>
+    HISTORY({ days: [{ date: TODAY, state, score, maxPossibleScore: 5000 }] });
 
-    expect(history).toHaveBeenCalledWith(null);
-    expect(el.querySelector('[data-testid="history-count"]')?.textContent).toBe('58');
-    expect(el.querySelectorAll('[data-testid="history-game"]')).toHaveLength(2);
+  it("lit le mois en cours sans mois dans l'adresse, montre le calendrier, le profil et « À réécouter »", async () => {
+    const { el, fake } = await render();
+
+    expect(fake.calls).toContain('history ');
+    expect(fake.calls).toContain('earProfile 8w');
+    expect(el.querySelector('[data-testid="history-calendar"]')).not.toBeNull();
+    expect(el.querySelector('[data-testid="ear-profile-card"]')).not.toBeNull();
+    expect(el.querySelector('[data-testid="history-replay"]')?.getAttribute('href')).toBe('/history/daily/a-reecouter');
     expect(el.querySelector('[data-testid="history-tab-daily"]')?.getAttribute('aria-current')).toBe('page');
   });
 
-  it("sans l'accès Survie, pas d'onglets : la page du défi est la seule", async () => {
-    const { el } = await render('/history/daily', async () => HISTORY(), false);
+  it('lit le mois de l’adresse', async () => {
+    const { fake } = await render('/history/daily?mois=2026-09');
+
+    expect(fake.calls).toContain('history 2026-09');
+  });
+
+  it("sans l'accès Survie, pas d'onglets", async () => {
+    const { el } = await render('/history/daily', new FakeDailyApi(), { survie: false });
 
     expect(el.querySelector('[data-testid="history-tab-daily"]')).toBeNull();
-    expect(el.querySelector('[data-testid="history-count"]')).not.toBeNull();
+    expect(el.querySelector('[data-testid="history-calendar"]')).not.toBeNull();
   });
 
-  it("la partie d'aujourd'hui mène au résultat du jour, les autres aux réponses du jour", async () => {
-    const { el } = await render();
-    const links = [...el.querySelectorAll('[data-testid="history-game"]')].map(a => a.getAttribute('href'));
-
-    expect(links).toEqual(['/daily', '/history/daily/2026-10-09']);
-    expect(el.querySelector('[data-testid="history-game"]')?.textContent).toContain('ui.history.today');
-  });
-
-  it('une barre par morceau : trouvé, à moitié, raté', async () => {
-    const { el } = await render();
-    const verdicts = [...el.querySelector('[data-testid="history-game"]')!.querySelectorAll('.bar')].map(b => b.getAttribute('data-verdict'));
-
-    expect(verdicts).toEqual(['found', 'half', 'missed']);
-  });
-
-  it("lit le mois de l'adresse ; un mois mal écrit redevient le mois en cours", async () => {
-    await render('/history/daily?mois=2026-09');
-    expect(history).toHaveBeenCalledWith('2026-09');
-
+  it("le défi d'aujourd'hui à jouer est la tuile de focus ; joué, il montre son score", async () => {
+    const toPlay = new FakeDailyApi();
+    toPlay.history = withToday('today');
+    const first = await render('/history/daily', toPlay);
+    expect(first.el.querySelector('[data-testid="history-today"]')?.classList).toContain('tube-amber');
     TestBed.resetTestingModule();
-    await render('/history/daily?mois=septembre');
-    expect(history).toHaveBeenCalledWith(null);
+
+    const played = new FakeDailyApi();
+    played.history = withToday('played', 2400);
+    const second = await render('/history/daily', played, { dailyDone: true });
+    const tile = second.el.querySelector('[data-testid="history-today"]');
+    expect(tile?.classList).not.toContain('tube-amber');
+    expect(tile?.textContent?.replace(/\s/g, '')).toContain('2400');
   });
 
-  it('un mois sans partie le dit, et garde le lien des réponses des jours passés', async () => {
-    const { el } = await render('/history/daily', async () => HISTORY({ games: [] }));
+  it("sans partie sur 8 semaines, pas de carte du profil", async () => {
+    const fake = new FakeDailyApi();
+    fake.earProfile = EAR_PROFILE({ gamesPlayed: 0 });
+    const { el } = await render('/history/daily', fake);
 
-    expect(el.querySelector('[data-testid="history-empty"]')).not.toBeNull();
-    expect(el.querySelector('[data-testid="history-archive"]')?.getAttribute('href')).toBe('/history/daily/latest');
+    expect(el.querySelector('[data-testid="ear-profile-card"]')).toBeNull();
   });
 
-  it('une lecture en échec propose de réessayer', async () => {
-    const { el, fixture } = await render('/history/daily', () => Promise.reject(new Error('panne')));
-    expect(el.querySelector('[data-testid="history-games"]')).toBeNull();
+  it("un échec de lecture montre l'écran d'erreur", async () => {
+    const fake = new FakeDailyApi();
+    fake.history = new Error('panne');
+    const { el } = await render('/history/daily', fake);
 
-    history.mockResolvedValue(HISTORY());
-    (el.querySelector('app-status-screen button') as HTMLButtonElement).click();
-    await fixture.whenStable();
-    fixture.detectChanges();
-
-    expect(el.querySelectorAll('[data-testid="history-game"]')).toHaveLength(2);
+    expect(el.querySelector('[data-testid="history-calendar"]')).toBeNull();
+    expect(el.querySelector('app-status-screen')).not.toBeNull();
   });
 });

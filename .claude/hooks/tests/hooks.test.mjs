@@ -312,6 +312,20 @@ describe('lint-before-commit', { concurrency: true }, () => {
     assert.equal(bash('lint-before-commit.mjs', `git add -u && ${CLEMENT} git commit -m "x"`, cwd).code, 0);
   });
 
+  test('laisse au client NSwag généré ses espaces en fin de ligne, pas à un autre .ts du front', () => {
+    const cwd = repo();
+    const client = 'src/front/InSeconds.Client/src/app/api/daily/api.generated.ts';
+    mkdirSync(path.join(cwd, path.dirname(client)), { recursive: true });
+    writeFileSync(path.join(cwd, client), '/**\n * @param month (optional) \n */\n');
+    assert.equal(bash('lint-before-commit.mjs', `git add . && ${CLEMENT} git commit -m "x"`, cwd).code, 0);
+
+    writeFileSync(path.join(cwd, 'src/front/InSeconds.Client/src/app/api/daily/daily.api.ts'), 'const a = 1;   \n');
+    const r = bash('lint-before-commit.mjs', `git add . && ${CLEMENT} git commit -m "x"`, cwd);
+    assert.equal(r.code, 2);
+    assert.match(r.stderr, /daily\.api\.ts:1: trailing whitespace/);
+    assert.doesNotMatch(r.stderr, /api\.generated/);
+  });
+
   test('l\'exception ne vaut que pour le back : un dossier Migrations ailleurs reste contrôlé', () => {
     const cwd = repo();
     mkdirSync(path.join(cwd, 'src/front/app/Migrations'), { recursive: true });

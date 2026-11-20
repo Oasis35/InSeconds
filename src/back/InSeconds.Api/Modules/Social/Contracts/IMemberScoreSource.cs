@@ -44,4 +44,18 @@ public interface IMemberScoreSource
     /// contrat de Players.
     /// </summary>
     Task<ModeScores> GetAsync(Guid viewerId, IReadOnlyCollection<Guid> playerIds, CancellationToken ct);
+
+    /// <summary>
+    /// Les scores de ces joueurs sur le défi d'un jour donné (passé ou en cours), vus par <paramref name="viewerId"/> : parties terminées seulement.
+    /// Le mode décide si ce joueur a le droit de les voir (<see cref="DayModeScores.Revealed"/>) ; tant que non, aucun score n'est rendu.
+    /// </summary>
+    Task<DayModeScores> GetDayAsync(Guid viewerId, DateOnly day, IReadOnlyCollection<Guid> playerIds, CancellationToken ct);
 }
+
+/// <summary>Les scores d'un mode sur le défi d'un jour, tels que le joueur qui regarde a le droit de les voir.</summary>
+/// <param name="Revealed">
+/// Faux tant que ce joueur peut encore jouer ce défi (pour Daily : le jour en cours qu'il n'a pas fini, la veille tant que sa partie de la veille est
+/// en cours) : <paramref name="Scores"/> est alors vide.
+/// </param>
+/// <param name="Scores">Le score de chaque joueur qui a fini sa partie ce jour-là ; un joueur absent ne l'a pas finie.</param>
+public sealed record DayModeScores(DateOnly Day, bool Revealed, IReadOnlyDictionary<Guid, int> Scores);

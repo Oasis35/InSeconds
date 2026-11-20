@@ -15,17 +15,39 @@ public sealed class DailyMemberScores(InSecondsDbContext db, IGameCalendar calen
 {
     public string Source => "daily";
 
-    public async Task<ModeScores> GetAsync(Guid viewerId, IReadOnlyCollection<Guid> playerIds, CancellationToken ct)
+    public async Task<DayModeScores> GetDayAsync(Guid viewerId, DateOnly day, IReadOnlyCollection<Guid> playerIds, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(playerIds);
         var today = calendar.Today;
-        // Ses parties sur les défis qu'il peut encore jouer (le jour, la veille) : elles décident des jours qu'il ne voit pas encore.
+        var hidden = await HiddenDaysAsync(viewerId, today, ct);
+        var ids = playerIds.Distinct().ToList();
+        var revealed = DailyPeriodScores.DayRevealed(day, today, hidden);
+        if (!revealed || ids.Count == 0)
+            return new DayModeScores(day, revealed, new Dictionary<Guid, int>());
+
+        var scores = await (from session in db.Set<DailySession>().AsNoTracking()
+                            join challenge in db.Set<DailyChallenge>().AsNoTracking() on session.ChallengeId equals challenge.Id
+                            where ids.Contains(session.PlayerId) && session.Status == SessionStatus.Completed && challenge.Date == day
+                            select new { session.PlayerId, session.TotalScore }).ToListAsync(ct);
+        return new DayModeScores(day, true, scores.ToDictionary(s => s.PlayerId, s => s.TotalScore));
+    }
+
+    // Ses parties sur les défis qu'il peut encore jouer (le jour, la veille) : elles décident des jours qu'il ne voit pas encore.
+    private async Task<IReadOnlySet<DateOnly>> HiddenDaysAsync(Guid viewerId, DateOnly today, CancellationToken ct)
+    {
         var yesterday = today.AddDays(-1);
         var viewerGames = await (from session in db.Set<DailySession>().AsNoTracking()
                                  join challenge in db.Set<DailyChallenge>().AsNoTracking() on session.ChallengeId equals challenge.Id
                                  where session.PlayerId == viewerId && challenge.Date >= yesterday && challenge.Date <= today
                                  select new ViewerGame(challenge.Date, session.Status, session.Answers.Count())).ToListAsync(ct);
-        var hidden = DailyPeriodScores.HiddenDays(today, viewerGames);
+        return DailyPeriodScores.HiddenDays(today, viewerGames);
+    }
+
+    public async Task<ModeScores> GetAsync(Guid viewerId, IReadOnlyCollection<Guid> playerIds, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(playerIds);
+        var today = calendar.Today;
+        var hidden = await HiddenDaysAsync(viewerId, today, ct);
         var revealed = !hidden.Contains(today);
 
         var ids = playerIds.Distinct().ToList();

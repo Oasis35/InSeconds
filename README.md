@@ -22,6 +22,7 @@
 - Scoring is entirely server-side - no client-side manipulation possible
 - On each reveal, see a histogram of how long other players needed to guess that track
 - Guest mode: play without signing up (only the anonymous global stats of the day; friend groups and the Survie general ranking need an account)
+- History of the daily challenge: a calendar of the month (one square per day, tinted by your score), the answers of every past day with your friends' scores that day, "Listen again" (the tracks you missed) and your "ear profile" (your average over time against the players, your best streak, when you find)
 - Optional linked accounts (open signup, passwordless magic-link login) - keeps history/streak across devices; guest play stays fully open regardless
 - Daily streak shown under the Start button (details panel on tap), with streak freezes for linked accounts (1 free on signup, +1 every 7 days, 2 max, used automatically on a missed day)
 - After playing, a single "today's result" screen: your score with your game as five small bars, the countdown, one line under the score (your standout moment when there is one, otherwise the share of players you beat, from 5 players), an equalizer of today's scores (lowest, median, highest), your tracks folded away

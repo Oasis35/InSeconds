@@ -21,7 +21,7 @@ public sealed class DailyPlayerData(InSecondsDbContext db, ITrackDirectory track
     {
         var streak = await db.Set<DailyStreak>().AsNoTracking()
             .Where(s => s.PlayerId == playerId)
-            .Select(s => new StreakExport(s.CurrentStreak, s.LastPlayedDate, s.Freezes))
+            .Select(s => new StreakExport(s.CurrentStreak, s.LastPlayedDate, s.Freezes, s.BestStreak))
             .FirstOrDefaultAsync(ct);
 
         var sessions = await (

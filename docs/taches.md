@@ -13,16 +13,6 @@
 
 Le reste à faire du mode (réglage des barèmes, catalogue épuisé, ouverture à tous) est dans [`runs/plan.md`](runs/plan.md).
 
-## Mode entraînement (anciens défis)
-
-> Rejouer un défi passé sans impacter les stats ni la série. Score calculé côté serveur mais non persisté.
-
-- [ ] **Backend** - démarrer une partie d'entraînement sur un défi passé (route dédiée de Daily) : jamais le défi du jour, hors de la contrainte « une partie par joueur et par défi », rien d'écrit dans `daily.sessions` (ou une partie marquée « entraînement »)
-- [ ] **Backend** - réponses d'entraînement : score calculé et renvoyé normalement, mais ni série, ni statistiques, ni réponse enregistrée
-- [ ] **Frontend** - page ou modale « Rejouer un ancien défi » accessible depuis l'écran « déjà joué » ou l'accueil ; liste les derniers défis disponibles
-- [ ] **Frontend** - indicateur visuel « Mode entraînement » pendant la partie, récap final sans partage ni mise à jour de la série
-- [ ] **UX** - décider si les anciens défis sont accessibles sans limite (tout l'historique) ou en fenêtre glissante (ex : 7 derniers jours)
-
 ## Rétention & engagement
 
 > Inspiré des mécaniques Wordle / Heardle / NYT Connections. Priorité décroissante.

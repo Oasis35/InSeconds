@@ -90,3 +90,16 @@ export function weekRows(scores: DailyScores): ScoreRow[] {
 export function todayRows(scores: DailyScores): ScoreRow[] {
   return scores.today.map(entry => ({ rank: entry.rank, pseudo: entry.pseudo, isMe: entry.isMe, value: entry.score, days: null }));
 }
+
+/**
+ * Le classement d'un groupe sur le défi d'un jour (la page d'un jour de l'historique) : le score de chaque membre qui a fini sa partie ce jour-là.
+ * `revealed` est faux tant que le joueur peut encore jouer ce défi : aucune ligne n'a alors de rang ni de score.
+ */
+export interface GroupDayScores {
+  readonly groupId: number;
+  readonly name: string;
+  /** `aaaa-mm-jj`. */
+  readonly day: string;
+  readonly revealed: boolean;
+  readonly entries: readonly TodayScoreEntry[];
+}

@@ -121,15 +121,15 @@ test.describe('Mode Setlist', () => {
     await expect(page).toHaveURL(/\/$/);
     await game.waitForWelcome();
 
-    // L'historique : un onglet, une page par mode. Rien de joué : chacune le dit, et celle du jeu du jour garde le lien des jours passés,
-    // qui a quitté l'accueil.
+    // L'historique : un onglet, une page par mode. Celle du jeu du jour s'ouvre sur le calendrier du mois, avec « À réécouter » ; celle de la
+    // Survie dit qu'il n'a rien joué.
     await expect(page.getByTestId('welcome-archive')).toHaveCount(0);
     await page.getByTestId('tab-history').click();
     await expect(page).toHaveURL(/\/history\/daily$/);
     await expect(page.getByTestId('tab-history')).toHaveAttribute('aria-current', 'page');
-    await expect(page.getByTestId('history-count')).toHaveText('0');
-    await expect(page.getByTestId('history-empty')).toBeVisible();
-    await expect(page.getByTestId('history-archive')).toBeVisible();
+    await expect(page.getByTestId('history-calendar')).toBeVisible();
+    await expect(page.getByTestId('history-month-played')).toContainText('0');
+    await expect(page.getByTestId('history-replay')).toBeVisible();
     await page.getByTestId('history-tab-setlist').click();
     await expect(page).toHaveURL(/\/history\/survie$/);
     await expect(page.getByTestId('history-empty')).toBeVisible();

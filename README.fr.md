@@ -22,6 +22,7 @@
 - Le scoring est entièrement côté serveur - impossible de tricher côté client
 - À chaque révélation, un histogramme montre en combien de temps les autres joueurs ont trouvé ce morceau
 - Mode invité : joue sans créer de compte (seulement les stats globales et anonymes du jour ; les groupes entre amis et le classement général de la Survie demandent un compte)
+- Historique du défi du jour : le calendrier du mois (une case par jour, teintée selon ton score), les réponses de chaque jour passé avec les scores de tes amis ce jour-là, « À réécouter » (les morceaux qui t'ont échappé) et ton « profil d'oreille » (ta moyenne dans la durée face aux joueurs, ta meilleure série, quand tu trouves)
 - Comptes utilisateurs optionnels (inscription ouverte à tous, connexion sans mot de passe par lien magique) - conserve historique/streak entre appareils ; le jeu en invité reste ouvert à tous
 - Série quotidienne affichée sous « Commencer » (panneau de détail au toucher), avec des gels de série pour les comptes connectés (1 offert à l'inscription, +1 tous les 7 jours, 2 max, utilisés automatiquement sur un jour manqué)
 - Après la partie, un seul écran « résultat du jour » : ton score avec ta partie en cinq petites barres, le compte à rebours, une phrase sous le score (ton moment fort s'il y en a un, sinon la part des joueurs que tu bats, à partir de 5 joueurs), un égaliseur des scores du jour (plus bas, médiane, plus haut), tes morceaux repliés

@@ -1,4 +1,4 @@
-import { ArchiveDay, ArchiveTrack, artistsSummary, formatGameDate, isDateText, monthGrid, mostMissedPosition } from './archive';
+import { ArchiveDay, ArchiveTrack, artistsSummary, formatGameDate, isDateText, mostMissedPosition } from './archive';
 
 const ARCHIVE_TRACK = (position: number, over: Partial<ArchiveTrack> = {}): ArchiveTrack => ({
   position, artist: `Artiste ${position}`, title: `Titre ${position}`, releaseYear: null, deezerTrackId: position, coverUrl: null,
@@ -40,14 +40,5 @@ describe('archive (domaine)', () => {
     expect(formatGameDate('2026-10-21', 'fr')).toBe('21 octobre 2026');
     expect(formatGameDate('2026-10-21', 'fr', 'weekday')).toBe('mercredi 21 octobre');
     expect(formatGameDate('2026-10-21', 'en')).toBe('21 October 2026');
-  });
-
-  it('découpe un mois en semaines du lundi au dimanche', () => {
-    const weeks = monthGrid(2026, 10, new Set(['2026-10-21']));
-    // Le 1er octobre 2026 est un jeudi : trois cases vides avant.
-    expect(weeks[0].slice(0, 4).map(c => c?.day ?? null)).toEqual([null, null, null, 1]);
-    expect(weeks.flat().filter(c => c !== null)).toHaveLength(31);
-    expect(weeks.flat().filter(c => c?.published).map(c => c!.date)).toEqual(['2026-10-21']);
-    expect(weeks.every(w => w.length === 7)).toBe(true);
   });
 });
