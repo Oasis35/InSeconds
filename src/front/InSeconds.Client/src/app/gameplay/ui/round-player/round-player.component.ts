@@ -175,7 +175,7 @@ interface StepMark {
       </div>
     </ng-template>
     <ng-template #barRow let-color="color" let-shadow="shadow" let-heights="heights">
-      <div class="absolute inset-0 flex items-end" style="gap:3px" aria-hidden="true">
+      <div class="absolute inset-0 flex items-end" style="gap:2px" aria-hidden="true">
         @for (height of heights; track $index) {
           <span class="flex-1" style="min-width:1px;border-radius:2px 2px 1px 1px" [style.height.%]="height * 100" [style.background]="color" [style.box-shadow]="shadow"></span>
         }
