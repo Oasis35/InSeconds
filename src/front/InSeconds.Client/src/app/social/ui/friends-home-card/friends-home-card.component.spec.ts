@@ -142,10 +142,13 @@ describe('FriendsHomeCardComponent', () => {
       expect(chosen).toEqual([7]);
     });
 
-    it('le lien du classement nomme le groupe en cours', () => {
+    it('le lien du classement : « Voir le groupe » avant le défi, « Voir tout le classement » après', () => {
       const element = renderWith(pending, groups).nativeElement as HTMLElement;
+      expect(one(element, 'friends-card-ranking')?.textContent).toContain('social.home.seeGroup');
 
-      expect(one(element, 'friends-card-ranking')?.textContent?.trim()).toBe('social.home.openRanking');
+      TestBed.resetTestingModule();
+      const revealed = renderWith({ kind: 'revealed', groupId: 4, name: 'Potes', top: [] }, groups).nativeElement as HTMLElement;
+      expect(one(revealed, 'friends-card-ranking')?.textContent).toContain('social.home.seeRanking');
     });
 
     it("« Inviter un ami » : un vrai bouton neutre qui signale le groupe en cours, et dit l'état du partage", () => {
@@ -172,25 +175,27 @@ describe('FriendsHomeCardComponent', () => {
       expect(one(render({ kind: 'no_group' }), 'friends-card-invite')).toBeNull();
     });
 
-    it('« Créer un nouveau groupe » : un lien souligné discret vers la création, seulement sous le maximum', () => {
+    it('la pastille « + » : un lien en pointillé à la fin de la rangée des groupes, seulement sous le maximum', () => {
       TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
       const fixture = TestBed.createComponent(FriendsHomeCardComponent);
       fixture.componentRef.setInput('view', pending);
+      fixture.componentRef.setInput('groups', groups.slice(0, 1));
       fixture.componentRef.setInput('canCreate', true);
       fixture.detectChanges();
       const element = fixture.nativeElement as HTMLElement;
 
+      // Même avec un seul groupe, la rangée est là pour porter le « + ».
       const create = one(element, 'friends-card-new-group');
       expect(create?.getAttribute('href')).toBe('/ranking/new');
+      expect(create?.closest('[data-testid="friends-card-groups"]')).not.toBeNull();
       expect(create?.classList).not.toContain('app-button');
-      expect(create?.classList).toContain('underline');
 
       fixture.componentRef.setInput('canCreate', false);
       fixture.detectChanges();
       expect(one(element, 'friends-card-new-group')).toBeNull();
     });
 
-    it("un seul groupe, un invité ou un compte sans groupe : aucune pastille", () => {
+    it("un seul groupe sans pouvoir en créer, un invité ou un compte sans groupe : aucune pastille", () => {
       expect(one(renderWith(pending, groups.slice(0, 1)).nativeElement as HTMLElement, 'friends-card-groups')).toBeNull();
       TestBed.resetTestingModule();
       expect(one(renderWith({ kind: 'no_group' }, groups).nativeElement as HTMLElement, 'friends-card-groups')).toBeNull();

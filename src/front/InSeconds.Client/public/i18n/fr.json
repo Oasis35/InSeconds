@@ -1553,7 +1553,8 @@
     "home": {
       "guestBody": "Gratuit, sans mot de passe. Tes parties te suivent sur tous tes appareils.",
       "groups": "Tes groupes",
-      "openRanking": "Classement du groupe",
+      "seeRanking": "Voir tout le classement",
+      "seeGroup": "Voir le groupe",
       "newGroup": "Créer un nouveau groupe",
       "todayTitle": "{{ name }}, aujourd'hui",
       "alone": "Tu es seul dans ce groupe. Invite tes amis ci-dessous.",
