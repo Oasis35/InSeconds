@@ -85,12 +85,12 @@ test.describe("Accueil : la carte amis", () => {
     await expect(card.getByTestId('friends-card-row')).toHaveCount(2);
     await expect(card.locator('[data-testid="friends-card-row"][data-me="true"]')).toHaveCount(1);
 
-    // « Classement » ouvre le classement du jour de ce groupe.
+    // « Voir tout le classement » ouvre le classement du jour de ce groupe.
     await card.getByTestId('friends-card-ranking').click();
     await expect(page).toHaveURL(new RegExp(`/ranking\\?group=${group.id}&period=today$`));
   });
 
-  test("dans plusieurs groupes : une pastille change le groupe de la carte, que « Classement du groupe » ouvre", async ({ page }) => {
+  test("dans plusieurs groupes : une pastille change le groupe de la carte, que « Voir tout le classement » ouvre", async ({ page }) => {
     await new RunPage(page).loginAsPlayer('zoe-accueil@e2e.test', 'ZoeAccueil');
     const first = await page.request.post('/api/social/groups', { data: { name: 'Les potes' } });
     const second = await page.request.post('/api/social/groups', { data: { name: 'Le bureau' } });

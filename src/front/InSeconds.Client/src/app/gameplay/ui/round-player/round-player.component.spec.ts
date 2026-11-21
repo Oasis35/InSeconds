@@ -165,6 +165,13 @@ describe('RoundPlayerComponent', () => {
     expect(element.textContent).toContain('gameplay.round.stake');
   });
 
+  it('pendant la lecture, le bouton garde ↺ (il relance à 0), jamais le symbole pause', () => {
+    const { element } = render({ phase: 'playing' });
+    const button = element.querySelectorAll('button')[0];
+    expect(button.querySelector('svg')).not.toBeNull();
+    expect(button.querySelector('span.flex.gap-1')).toBeNull();
+  });
+
   it('« ↺ » rejoue et « ▶ Xs » prolonge', () => {
     const { component, element } = render({ phase: 'listened' });
     const replay = vi.fn(), more = vi.fn();
