@@ -159,6 +159,29 @@ describe('AnswerInputComponent', () => {
     });
   });
 
+  describe('touche « retour » sur écran tactile', () => {
+    const withPointer = (fine: boolean) =>
+      vi.spyOn(window, 'matchMedia').mockImplementation(query => ({ matches: fine && query === '(pointer: fine)' }) as MediaQueryList);
+    afterEach(() => vi.restoreAllMocks());
+
+    it('ferme le clavier sans valider le formulaire, avec ou sans proposition', () => {
+      withPointer(false);
+      for (const suggestions of [[], [DAFT, MUSE]]) {
+        TestBed.resetTestingModule();
+        const { input, press } = render({ query: 'daft', suggestions, highlighted: -1 });
+        input.focus();
+        expect(press('Enter').defaultPrevented).toBe(true);
+        expect(document.activeElement).not.toBe(input);
+      }
+    });
+
+    it('avec une souris, Entrée valide toujours le formulaire', () => {
+      withPointer(true);
+      const { press } = render({ query: 'daft' });
+      expect(press('Enter').defaultPrevented).toBe(false);
+    });
+  });
+
   it('annonce le focus et la sortie du champ', () => {
     const { component, input } = render();
     const focused = vi.fn(), blurred = vi.fn();
