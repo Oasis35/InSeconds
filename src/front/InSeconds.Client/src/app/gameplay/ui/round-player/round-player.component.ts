@@ -185,17 +185,13 @@ interface StepMark {
     </ng-template>
     <ng-template #replayButton let-size="size" let-icon="icon">
       <app-membrane [level]="bass()">
+        <!-- Toujours ↺ : le bouton relance le palier depuis 0, même en lecture (jamais le symbole pause, qui promettrait une reprise). -->
         <button type="button" (click)="replay.emit()" [disabled]="locked()" [title]="'gameplay.round.replay' | translate: { seconds: (chosenSeconds() | appSeconds) }"
           class="relative rounded-full transition active:scale-95 touch-manipulation flex items-center justify-center overflow-hidden disabled:opacity-40 disabled:grayscale disabled:active:scale-100"
           [style.width.px]="size" [style.height.px]="size" style="background:var(--fill-primary);border:1.5px solid var(--core-orange);color:var(--text-on-orange)">
           @if (submitting()) {
             <span data-testid="round-loader" class="relative animate-spin rounded-full"
               style="width:26px;height:26px;border:3px solid var(--text-on-orange-soft);border-top-color:var(--text-on-orange)"></span>
-          } @else if (playing()) {
-            <span class="relative flex gap-1" aria-hidden="true">
-              <span style="width:6px;height:19px;background:var(--text-on-orange);border-radius:2px"></span>
-              <span style="width:6px;height:19px;background:var(--text-on-orange);border-radius:2px"></span>
-            </span>
           } @else {
             <svg class="relative" [attr.width]="icon" [attr.height]="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M21 12a9 9 0 1 1-2.6-6.36"></path><path d="M21 3v6h-6"></path>
