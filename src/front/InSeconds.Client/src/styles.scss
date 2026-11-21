@@ -62,8 +62,9 @@
   --avatar-4: rgb(150 115 235);
 
   /* Waveform du lecteur : couleurs pleines (des couches se superposent, une couleur translucide donnerait deux teintes au pied) */
-  --wave-locked:   transparent;                                                         /* pas encore débloqué : un tube éteint, voir --tube-wave-off */
-  --wave-unlocked: color-mix(in srgb, rgb(var(--rgb-accent-2)) 18%, rgb(var(--rgb-bg))); /* débloqué, ou déjà écouté */
+  --wave-locked:   rgb(var(--rgb-text) / 0.16);                                          /* pas encore débloqué */
+  --wave-listened: color-mix(in srgb, rgb(var(--rgb-accent-2)) 34%, rgb(var(--rgb-bg))); /* débloqué, ou déjà écouté (lecteur de manche) */
+  --wave-unlocked: color-mix(in srgb, rgb(var(--rgb-accent-2)) 18%, rgb(var(--rgb-bg))); /* débloqué : la forme de la révélation de Survie */
   --wave-trail:    color-mix(in srgb, rgb(var(--rgb-accent-2)) 30%, white);              /* traîne derrière la tête de lecture */
   --wave-old:      color-mix(in srgb, rgb(var(--rgb-text)) 30%, rgb(var(--rgb-bg)));     /* un morceau déjà joué (la pile de Setlist) */
 
@@ -84,13 +85,13 @@
   --core-orange: #FFC46B;
   --core-cyan:   #D6FBFF;
   --tube-frame: 0 0 10px rgb(var(--rgb-accent-2) / 0.45);
+  --tube-frame-soft: 0 0 6px rgb(var(--rgb-accent-2) / 0.35); /* le cadre du lecteur de manche */
   /* Un tube par focus d'écran : le cœur clair en filet, un halo serré. Ambre : ce que le joueur fait ; cyan : le son. */
   --tube-amber:  0 0 10px rgb(var(--rgb-accent-3) / 0.45);
   /* Le seul halo d'un bouton plein : un par écran. */
   --glow-primary: 0 0 8px rgb(var(--rgb-accent-3) / 0.6);
-  --tube-wave-off: inset 0 0 0 1.5px rgb(var(--rgb-text) / 0.3);
   --tube-wave-lit: inset 0 0 0 1.5px var(--core-cyan), 0 0 4px rgb(var(--rgb-accent-2) / 0.65);
-  --tube-wave-hot: inset 0 0 0 1.5px var(--core-cyan), 0 0 5px rgb(var(--rgb-accent-2) / 0.8);
+  --tube-wave-played: 0 0 6px rgb(var(--rgb-accent-2) / 0.55); /* le halo de la seule partie jouée du lecteur */
   --glow-accent-2: 0 0 12px rgb(var(--rgb-accent-2) / 0.5);
   --glow-success: 0 0 12px rgb(var(--rgb-success) / 0.4);
 

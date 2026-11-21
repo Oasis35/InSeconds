@@ -42,7 +42,7 @@ interface StepMark {
   template: `
     <!-- En ligne, le lecteur n'a pas de cadre : il est dans la carte du mode. -->
     <div [class.px-4]="!inline()" [class.py-5]="!inline()" [style.background]="inline() ? null : 'var(--bg-surface)'"
-      [style.border]="inline() ? null : '1.5px solid rgb(var(--rgb-accent-2) / 0.8)'" [style.box-shadow]="inline() ? null : '0 0 6px rgb(var(--rgb-accent-2) / 0.35)'" [style.border-radius]="inline() ? null : 'var(--radius-card)'">
+      [style.border]="inline() ? null : '1.5px solid rgb(var(--rgb-accent-2) / 0.8)'" [style.box-shadow]="inline() ? null : 'var(--tube-frame-soft)'" [style.border-radius]="inline() ? null : 'var(--radius-card)'">
       @switch (phase()) {
         @case ('no-preview') {
           <div class="space-y-5">
@@ -146,21 +146,21 @@ interface StepMark {
       <div #wave data-testid="waveform" class="relative w-full overflow-hidden" style="height:46px"
         role="progressbar" [attr.aria-valuenow]="heardTenths()" aria-valuemin="0" [attr.aria-valuemax]="maxStep()"
         [attr.aria-label]="'gameplay.round.waveform' | translate">
-        <ng-container *ngTemplateOutlet="barRow; context: { color: 'rgb(var(--rgb-text) / 0.16)', shadow: 'none', heights: flatHeights }" />
+        <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-locked)', shadow: 'none', heights: flatHeights }" />
         <div data-testid="waveform-unlocked" class="absolute inset-0 overflow-hidden" [class.wave-sweep]="!reduced"
           [style.transform]="layerShift(unlockedRatio(), waveWidth())">
           <div class="absolute inset-0" [class.wave-sweep]="!reduced" [style.transform]="innerShift(unlockedRatio(), waveWidth())">
-            <ng-container *ngTemplateOutlet="barRow; context: { color: 'color-mix(in srgb, rgb(var(--rgb-accent-2)) 34%, rgb(var(--rgb-bg)))', shadow: 'none', heights: flatHeights }" />
+            <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-listened)', shadow: 'none', heights: flatHeights }" />
           </div>
         </div>
         <div #seenLayer data-testid="waveform-seen" class="absolute inset-0 overflow-hidden" style="will-change:transform">
           <div #seenInner class="absolute inset-0" style="will-change:transform">
-            <ng-container *ngTemplateOutlet="barRow; context: { color: 'color-mix(in srgb, rgb(var(--rgb-accent-2)) 34%, rgb(var(--rgb-bg)))', shadow: 'none', heights: heights() }" />
+            <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-listened)', shadow: 'none', heights: heights() }" />
           </div>
         </div>
         <div #playedLayer data-testid="waveform-played" class="absolute inset-0 overflow-hidden" style="will-change:transform">
           <div #playedInner class="absolute inset-0" style="will-change:transform">
-            <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--color-accent-2)', shadow: '0 0 6px rgb(var(--rgb-accent-2) / 0.55)', heights: heights() }" />
+            <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--color-accent-2)', shadow: 'var(--tube-wave-played)', heights: heights() }" />
           </div>
         </div>
         <!-- La traîne : une fenêtre de 15 % calée à droite sur la tête de lecture, fondue de transparent à opaque. -->

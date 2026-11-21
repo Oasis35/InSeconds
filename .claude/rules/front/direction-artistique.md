@@ -18,8 +18,8 @@ Tokens dans `:root` de `src/front/InSeconds.Client/src/styles.scss`. Jamais de h
 
 ## Néon : une tuile de focus par écran
 
-- Un tube = un cœur clair (`--core-orange`, `--core-cyan`) en filet et un halo serré de 4 à 12 px. Permis seulement sur : les ondes de la réponse (`--tube-wave-lit`) et du lecteur de manche (barres pleines sans filet clair, halo de 6 px sur la seule partie jouée), l'onglet actif de la barre du bas, les barres « // » du logo (`.brand-slash`), le compte à rebours, et **une seule tuile de focus par écran**.
-- La tuile de focus prend la classe `tube-amber` (ou le cadre cyan du lecteur, `--tube-frame`) : le cadre du lecteur, la carte du défi, la carte Survie quand c'est la prochaine action, la carte du niveau de fin. Jamais de lueur ailleurs. Le tube de la tuile et le halo du bouton plein s'ajoutent.
+- Un tube = un cœur clair (`--core-orange`, `--core-cyan`) en filet et un halo serré de 4 à 12 px. Permis seulement sur : les ondes de la réponse (`--tube-wave-lit`) et du lecteur de manche (barres pleines sans filet clair, halo `--tube-wave-played` sur la seule partie jouée), l'onglet actif de la barre du bas, les barres « // » du logo (`.brand-slash`), le compte à rebours, et **une seule tuile de focus par écran**.
+- La tuile de focus prend la classe `tube-amber` (ou le cadre cyan du lecteur, `--tube-frame`, plus discret dans le lecteur de manche : `--tube-frame-soft`) : le cadre du lecteur, la carte du défi, la carte Survie quand c'est la prochaine action, la carte du niveau de fin. Jamais de lueur ailleurs. Le tube de la tuile et le halo du bouton plein s'ajoutent.
 - Un écran de fin n'a qu'une tuile pleine. Quand la bande du défi du jour monte en tête de la fin de Survie (`dailyFirst`), elle devient la tuile de focus et plus aucun bouton n'est plein.
 
 ## Une couleur = un sens

@@ -48,7 +48,7 @@ Remontées du lecteur, jamais l'adresse de l'extrait : `AudioError: <chargement|
 
 - `SmoothPlayhead` (`domain/playhead.ts`) lisse la position pour l'affichage seulement ; l'arrêt reste au lecteur.
 - `TrackRoundStore.bass` lit l'enveloppe des basses à `position` (0 à l'arrêt) : `MembraneComponent` fait battre le bouton ↺ et la pochette de la révélation.
-- `RoundPlayerComponent` : forme révélée au balayage, couches de barres menées par `transform` seul pendant la lecture (`--wave-locked`, `--wave-unlocked`, `--wave-trail`) ; disposition `inline` pour la Survie (sans repères, points en jeu ni « écouter plus »).
+- `RoundPlayerComponent` : forme révélée au balayage, couches de barres menées par `transform` seul pendant la lecture (`--wave-locked`, `--wave-listened`, `--wave-trail`) ; disposition `inline` pour la Survie (sans repères, points en jeu ni « écouter plus »).
 
 ## Fenêtre d'écoute et tests
 
