@@ -24,7 +24,7 @@ Tokens dans `:root` de `src/front/InSeconds.Client/src/styles.scss`. Jamais de h
 
 ## Une couleur = un sens
 
-- **Ambre** (`--rgb-accent-3`, `--color-accent-3`, une seule famille : plein, contour ou texte) : le joueur et ce qu'il fait (son score, sa ligne dans un classement, le bouton principal, la série).
+- **Ambre** (`--rgb-accent-3`, `--color-accent-3`, une seule famille : plein, contour ou texte) : le joueur et ce qu'il fait (son score, sa ligne dans un classement, le bouton principal, la série, le filet de focus d'un champ de saisie `.app-input`).
 - **Cyan** (`--rgb-accent-2`) : le son et le temps (lecteur, extrait, chrono, compte à rebours), plus le gel (`--fill-ice`) et la grille.
 - **Violet** (`--rgb-violet`, `--avatar-1` à `--avatar-4`) : les autres joueurs (histogrammes, égaliseur, médiane, classement).
 - **Vert / rouge** (`--color-success`, `--color-fail`) : juste ou faux.

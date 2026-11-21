@@ -326,9 +326,10 @@ h1, h2, h3, .font-display {
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
+/* Le focus d'un champ est ambre : c'est le joueur qui écrit (le cyan est le son et le temps). */
 .app-input:focus-visible {
-  border-color: var(--color-accent-2);
-  box-shadow: 0 0 0 1px var(--color-accent-2);
+  border-color: var(--color-accent-3);
+  box-shadow: 0 0 0 1px var(--color-accent-3);
 }
 
 input::placeholder,
