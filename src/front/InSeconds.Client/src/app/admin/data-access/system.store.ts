@@ -2,7 +2,7 @@ import { InjectionToken, computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withProps, withState } from '@ngrx/signals';
 import { environment } from '../../../environments/environment';
 import { HealthService } from '../../core/health/health.service';
-import { DEPLOYED_AT, FRONT_COMMIT } from '../../core/shell/deployed-at';
+import { DEPLOYED_AT, FRONT_COMMIT } from '../../core/build/deployed-at';
 import { JobLastRun } from '../domain/job';
 import {
   CI_BRANCHES, CatalogueHealth, CiRun, DeployedBranch, NextChallenge, SystemInfo, alertCount, backupTone, deployedBranch, deploymentVerdict,

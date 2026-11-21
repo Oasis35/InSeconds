@@ -387,6 +387,36 @@ describe('TrackRoundComponent', () => {
       submitForm();
     });
 
+    it('sur écran tactile, le focus ne bouge pas à la révélation', () => {
+      const pointer = (fine: boolean) =>
+        vi.spyOn(window, 'matchMedia').mockImplementation(query => ({ matches: fine && query === '(pointer: fine)' }) as MediaQueryList);
+      document.body.append(element);
+      try {
+        pointer(false);
+        store.reveal();
+        fixture.componentInstance.result.set(RESULT);
+        refresh();
+        expect(document.activeElement).not.toBe(button('Piste suivante'));
+      } finally {
+        vi.restoreAllMocks();
+        element.remove();
+      }
+    });
+
+    it('au PC, le focus passe au bouton de suite à la révélation', () => {
+      vi.spyOn(window, 'matchMedia').mockImplementation(query => ({ matches: query === '(pointer: fine)' }) as MediaQueryList);
+      document.body.append(element);
+      try {
+        store.reveal();
+        fixture.componentInstance.result.set(RESULT);
+        refresh();
+        expect(document.activeElement).toBe(button('Piste suivante'));
+      } finally {
+        vi.restoreAllMocks();
+        element.remove();
+      }
+    });
+
     it('remplace le lecteur et la saisie par la carte, avec les éléments du mode', () => {
       store.reveal();
       fixture.componentInstance.result.set(RESULT);

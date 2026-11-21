@@ -10,8 +10,8 @@ import { FriendPresence, FriendsCardView } from '../../domain/friends-card';
  * La carte amis de l'accueil, sous la carte du défi. Tant que le défi du jour reste à faire : le groupe, « 3 sur 5 ont joué » et une pastille par
  * membre (pleine s'il a joué, éteinte sinon), **jamais un score**. Défi fait : « Potes, aujourd'hui », le haut du classement du jour, la ligne du
  * joueur en ambre. Dans plusieurs groupes : une rangée de pastilles en tête pour choisir celui qu'elle montre. Sans groupe : « Créer un groupe » ;
- * invité : « Créer un compte » en contour neutre (un groupe exige un compte). Un membre a en bas « Inviter un ami » (le groupe en cours, dont le nom est le titre de la carte) et,
- * sous le maximum de groupes, « Créer un nouveau groupe » en lien souligné discret. Jamais la tuile de focus : contour plat, aucune lueur.
+ * invité : « Créer un compte » en contour neutre (un groupe exige un compte). Un membre a, sous la liste, « Voir tout le classement » (ou « Voir le groupe » avant le défi) en lien à droite, puis « Inviter un ami » (le groupe en cours, dont le nom est le titre de la carte) ;
+ * sous le maximum de groupes, un « + » en pointillé à la fin de la rangée des groupes en crée un. Jamais la tuile de focus : contour plat, aucune lueur.
  */
 @Component({
   selector: 'app-friends-home-card',
@@ -47,8 +47,8 @@ import { FriendPresence, FriendsCardView } from '../../domain/friends-card';
           <a appButton variant="accent" [block]="true" routerLink="/ranking/new" data-testid="friends-card-create">{{ 'social.empty.create' | translate }}</a>
         }
         @default {
-          @if (groups().length > 1) {
-            <!-- Plusieurs groupes : une pastille par groupe, celui qu'on regarde cerclé d'ambre (le même geste que « Tes amis ce jour-là »). -->
+          @if (groups().length > 1 || (groups().length > 0 && canCreate())) {
+            <!-- Une pastille par groupe, celui qu'on regarde cerclé d'ambre (le même geste que « Tes amis ce jour-là ») ; sous le maximum de groupes, un « + » en pointillé à la fin crée un groupe. -->
             <div class="flex flex-wrap gap-2" role="group" [attr.aria-label]="'social.home.groups' | translate" data-testid="friends-card-groups">
               @for (group of groups(); track group.id) {
                 <button type="button" (click)="groupSelected.emit(group.id)" [attr.aria-pressed]="group.id === groupId()" [attr.data-testid]="'friends-card-group-' + group.id"
@@ -56,20 +56,16 @@ import { FriendPresence, FriendsCardView } from '../../domain/friends-card';
                   [style.border]="group.id === groupId() ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
                   [style.color]="group.id === groupId() ? 'var(--text-hi)' : 'var(--text-muted)'">{{ group.name }}</button>
               }
+              @if (canCreate()) {
+                <a routerLink="/ranking/new" data-testid="friends-card-new-group" [attr.aria-label]="'social.home.newGroup' | translate" [attr.title]="'social.home.newGroup' | translate"
+                  class="inline-flex items-center justify-center min-h-11 min-w-11 px-3 text-xl leading-none rounded-(--radius-button) touch-manipulation"
+                  style="border:1px dashed var(--border-medium);color:var(--text-light)"><span aria-hidden="true">+</span></a>
+              }
             </div>
           }
-          <!-- Un nom long pousse « Classement du groupe » sous le titre au lieu de l'écraser en trois lignes. -->
-          <div class="flex flex-wrap items-start gap-x-3 gap-y-1">
-            <h2 class="min-w-40 flex-1 break-words text-xl font-bold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="friends-card-title">
-              @if (view().kind === 'revealed') { {{ 'social.home.todayTitle' | translate: { name: title() } }} } @else { {{ title() }} }
-            </h2>
-            @if (groupId(); as id) {
-              <a routerLink="/ranking" [queryParams]="rankingParams(id)" data-testid="friends-card-ranking"
-                class="shrink-0 inline-flex items-center min-h-11 -my-2 text-sm underline underline-offset-4" style="color:var(--text-light)">
-                {{ 'social.home.openRanking' | translate }}
-              </a>
-            }
-          </div>
+          <h2 class="break-words text-xl font-bold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="friends-card-title">
+            @if (view().kind === 'revealed') { {{ 'social.home.todayTitle' | translate: { name: title() } }} } @else { {{ title() }} }
+          </h2>
 
           @if (pending(); as pending) {
             <p class="text-sm leading-snug" style="color:var(--text-light)" data-testid="friends-card-played">
@@ -123,20 +119,20 @@ import { FriendPresence, FriendsCardView } from '../../domain/friends-card';
           }
 
           @if (groupId(); as id) {
+            <!-- Le classement du groupe : sous la liste, à droite (défi fait : « Voir tout le classement » sur « Aujourd'hui » ; sinon « Voir le groupe »). -->
+            <a routerLink="/ranking" [queryParams]="rankingParams(id)" data-testid="friends-card-ranking"
+              class="self-end inline-flex items-center min-h-11 -my-2 text-sm underline underline-offset-4 touch-manipulation" style="color:var(--text-light)">
+              {{ (view().kind === 'revealed' ? 'social.home.seeRanking' : 'social.home.seeGroup') | translate }} <span aria-hidden="true" class="ml-1">›</span>
+            </a>
+          }
+
+          @if (groupId(); as id) {
             <!-- Inviter dans le groupe en cours, sans passer par le classement : le même partage que la page des classements. -->
             <button appButton type="button" variant="neutral" [block]="true" class="[overflow-wrap:anywhere]" (click)="invite.emit(id)" data-testid="friends-card-invite">
               @if (inviteState() === 'copied') { {{ 'social.invite.copied' | translate }} }
               @else if (inviteState() === 'failed') { {{ 'social.invite.failed' | translate }} }
               @else { {{ 'social.alone.invite' | translate }} }
             </button>
-          }
-
-          @if (canCreate()) {
-            <!-- Déjà dans un groupe, on peut en ouvrir un autre tant qu'on n'a pas atteint le maximum : un lien discret, « Inviter un ami » reste le seul bouton. -->
-            <a routerLink="/ranking/new" data-testid="friends-card-new-group"
-              class="self-start inline-flex items-center min-h-11 -my-2 text-sm underline underline-offset-4 touch-manipulation" style="color:var(--text-light)">
-              {{ 'social.home.newGroup' | translate }}
-            </a>
           }
         }
       }
@@ -153,7 +149,7 @@ export class FriendsHomeCardComponent {
   readonly showNew = input(false);
   /** Les groupes du joueur : dès qu'il y en a plusieurs, une pastille chacun pour changer celui que la carte montre. */
   readonly groups = input<readonly Group[]>([]);
-  /** Un membre qui n'a pas atteint le nombre maximal de groupes : « Créer un nouveau groupe » sous la carte. */
+  /** Un membre qui n'a pas atteint le nombre maximal de groupes : la pastille « + » (créer un groupe) à la fin de la rangée. */
   readonly canCreate = input(false);
   /** Où en est le partage du lien du groupe (« Lien copié », « Copie impossible » quelques secondes), rendu par l'entrée qui le fait. */
   readonly inviteState = input<'idle' | 'copied' | 'failed'>('idle');
@@ -194,7 +190,7 @@ export class FriendsHomeCardComponent {
     afterNextRender(() => enterHomeCard(this.host.nativeElement, 0.06));
   }
 
-  /** « Classement » ouvre le groupe ; une fois le défi fait, directement sur « Aujourd'hui », le classement que la carte résume. */
+  /** Le lien du classement ouvre le groupe ; une fois le défi fait, directement sur « Aujourd'hui », le classement que la carte résume. */
   protected rankingParams(groupId: number): Record<string, string | number> {
     return this.view().kind === 'revealed' ? { group: groupId, period: 'today' } : { group: groupId };
   }

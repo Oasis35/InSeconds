@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AnswerSearchStore } from '../../data-access/answer-search.store';
 import { TrackRoundStore } from '../../data-access/track-round.store';
@@ -183,7 +183,18 @@ export class TrackRoundComponent {
   /** La réponse proposée touchée, le temps de l'envoi. */
   protected readonly picked = signal<number | null>(null);
 
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
+
   constructor() {
+    // La réponse arrive : « Valider » et le champ disparaissent avec le focus. Au PC (clavier physique), il passe au bouton de suite du mode, pour
+    // enchaîner sans retabuler depuis le haut de la page ; sur écran tactile, rien (pas de focus qui s'affiche, le clavier ne s'ouvre pas).
+    effect(() => {
+      if (this.round.phase() !== 'revealed') return;
+      untracked(() => afterNextRender(() => {
+        if (window.matchMedia('(pointer: fine)').matches) this.host.nativeElement.querySelector<HTMLElement>('[roundNext]')?.focus({ preventScroll: true });
+      }, { injector: this.injector }));
+    });
     // Un nouveau morceau (ou un morceau remplacé à la même place) repart d'une saisie vide.
     effect(() => {
       this.round.trackKey();

@@ -28,7 +28,7 @@ import { SessionStore } from '../../session/session.store';
       display: flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; flex-shrink: 0;
       border-radius: 9999px; border: 1px solid var(--border-neutral); color: var(--text-light); text-decoration: none;
     }
-    .header-round:focus-visible { outline: 2px solid var(--color-accent-2); outline-offset: 2px; }
+    .header-round:focus-visible { outline: 2px solid var(--color-accent-3); outline-offset: 2px; }
   `,
 })
 export class AccountLinkComponent {

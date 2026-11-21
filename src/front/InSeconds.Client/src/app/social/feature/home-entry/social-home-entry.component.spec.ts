@@ -151,18 +151,21 @@ describe('SocialHomeEntryComponent', () => {
     expect(chip(fixture, 7)?.getAttribute('aria-pressed')).toBe('false');
   });
 
-  it("dans un seul groupe : aucune pastille", async () => {
+  it("dans un seul groupe : la rangée ne porte que son nom et le « + » ; au maximum de groupes, plus de rangée", async () => {
     api.groups = { groups: [api.groups.groups[0]], maxGroups: 5 };
-
     const fixture = await render(player(false));
+    const row = (f: ComponentFixture<unknown>) => (f.nativeElement as HTMLElement).querySelector('[data-testid="friends-card-groups"]');
+    expect(row(fixture)).not.toBeNull();
 
-    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="friends-card-groups"]')).toBeNull();
+    TestBed.resetTestingModule();
+    api.groups = { groups: [api.groups.groups[0]], maxGroups: 1 };
+    expect(row(await render(player(false)))).toBeNull();
   });
 
   const newGroup = (fixture: ComponentFixture<unknown>) =>
     (fixture.nativeElement as HTMLElement).querySelector('[data-testid="friends-card-new-group"]');
 
-  it('un membre sous le maximum de groupes : « Créer un nouveau groupe » ; au maximum, plus rien', async () => {
+  it('un membre sous le maximum de groupes : la pastille « + » ; au maximum, plus rien', async () => {
     expect(newGroup(await render(player(false)))).not.toBeNull();
 
     TestBed.resetTestingModule();

@@ -46,7 +46,7 @@ Rôle `is_admin` uniquement (piège 5). L'API revérifie l'accès à chaque requ
 
 - `SystemStore` (fourni par la coquille, chargé une fois l'admin reconnu) lit en parallèle `SystemApi`, `JobsApi` et `GithubCiApi` ; une lecture en échec n'empêche pas les autres. `alertCount` compte les alertes du bouton d'état.
 - `GithubCiApi` lit l'API publique de GitHub sans jeton ni cookie (`credentials: 'omit'`), gardée 2 min (60 lectures par heure et par IP) ; `https://api.github.com` est dans la `connect-src` de la CSP.
-- Commit et heure du déploiement du front : `core/shell/deployed-at.ts` (`ng build --define`, arguments de build exportés par `deploy.sh`, piège 25) ; sans définition (`ng serve`, tests, E2E) : « Build local ». Jeton `FRONT_BUILD` pour les tests. Seuils dans `domain/` (`BACKUP_MAX_AGE_HOURS`, `NIGHTLY_JOBS`, `cooldownTone`).
+- Commit et heure du déploiement du front : `core/build/deployed-at.ts` (`ng build --define`, arguments de build exportés par `deploy.sh`, piège 25) ; sans définition (`ng serve`, tests, E2E) : « Build local ». Jeton `FRONT_BUILD` pour les tests. Seuils dans `domain/` (`BACKUP_MAX_AGE_HOURS`, `NIGHTLY_JOBS`, `cooldownTone`).
 - Rien ne se lance depuis le panneau : une tâche se lance depuis `/jobs` (Hangfire).
 - Joueurs : l'interrupteur d'accès Survie (`role="switch"`, `data-testid="run-access"`) vaut aussi pour un admin, qui n'a pas l'accès d'office (`canPlayRuns` ne lit que la liste des comptes autorisés) ; un échec le remet à son état. Un admin qui change son propre accès le voit sur l'accueil après un rechargement (`SetlistAccessStore` ne lit l'accès qu'une fois par compte).
 

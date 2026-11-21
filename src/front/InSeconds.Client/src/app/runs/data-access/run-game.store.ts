@@ -271,16 +271,6 @@ export const RunGameStore = signalStore(
       if (deadline < clockDeadline) clockDeadline = deadline;
     };
 
-    /**
-     * Remet le chrono qui tourne sur ce que le serveur retient après un coup de pouce (le Délai en ajoute) ; il repart s'il venait de s'arrêter.
-     * Rien si le temps écoulé a déjà envoyé la réponse, ni avant le premier son (le chrono partira plein, Délai compris).
-     */
-    const setClock = (position: number, seconds: number): void => {
-      if (clockPosition !== position || store.timeUp()) return;
-      stopClock();
-      runClock(position, seconds);
-    };
-
     /** Redemande l'extrait d'un morceau à une adresse fraîche (la signature Deezer expire, piège 14). */
     const refreshPreview = async (position: number): Promise<string | null> => {
       const sessionId = store.session()?.sessionId;

@@ -29,7 +29,7 @@ paths:
 - **Le rechargement active d'abord la version prête** (`SwUpdate.activateUpdate()`, un échec n'empêche pas de recharger) : sinon le worker garde la page sur l'ancienne version et le garde-fou se déclenche.
 - **Remplacement du worker lui-même** (`controllerchange`) traité comme une nouvelle version, au même moment sûr. Si un nouveau worker s'installe au moment de recharger, on attend son `controllerchange` (`WORKER_SWAP_WAIT_MS`) pour ne recharger qu'une fois.
 - Module introuvable après un déploiement (`Failed to fetch dynamically imported module`, `isStaleChunkError`) : `GlobalErrorHandler` recharge une fois (`reloadAfterStaleChunk()`, garde-fou d'une minute) au lieu de remonter l'erreur.
-- Tests : `version.service.spec.ts`, `global-error-handler.spec.ts`.
+- Tests : `version.service.spec.ts`, `error-handler/global-error-handler.spec.ts`.
 
 ## Service worker et CSP
 

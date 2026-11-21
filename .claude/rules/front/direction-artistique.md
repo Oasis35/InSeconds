@@ -18,13 +18,13 @@ Tokens dans `:root` de `src/front/InSeconds.Client/src/styles.scss`. Jamais de h
 
 ## Néon : une tuile de focus par écran
 
-- Un tube = un cœur clair (`--core-orange`, `--core-cyan`) en filet et un halo serré de 4 à 12 px. Permis seulement sur : les ondes du lecteur et de la réponse (`--tube-wave-off`, `--tube-wave-lit`), l'onglet actif de la barre du bas, les barres « // » du logo (`.brand-slash`), le compte à rebours, et **une seule tuile de focus par écran**.
-- La tuile de focus prend la classe `tube-amber` (ou le cadre cyan du lecteur, `--tube-frame`) : le cadre du lecteur, la carte du défi, la carte Survie quand c'est la prochaine action, la carte du niveau de fin. Jamais de lueur ailleurs. Le tube de la tuile et le halo du bouton plein s'ajoutent.
+- Un tube = un cœur clair (`--core-orange`, `--core-cyan`) en filet et un halo serré de 4 à 12 px. Permis seulement sur : les ondes de la réponse (`--tube-wave-lit`) et du lecteur de manche (barres pleines sans filet clair, halo `--tube-wave-played` sur la seule partie jouée), l'onglet actif de la barre du bas, les barres « // » du logo (`.brand-slash`), le compte à rebours, et **une seule tuile de focus par écran**.
+- La tuile de focus prend la classe `tube-amber` (ou le cadre cyan du lecteur, `--tube-frame`, plus discret dans le lecteur de manche : `--tube-frame-soft`) : le cadre du lecteur, la carte du défi, la carte Survie quand c'est la prochaine action, la carte du niveau de fin. Jamais de lueur ailleurs. Le tube de la tuile et le halo du bouton plein s'ajoutent.
 - Un écran de fin n'a qu'une tuile pleine. Quand la bande du défi du jour monte en tête de la fin de Survie (`dailyFirst`), elle devient la tuile de focus et plus aucun bouton n'est plein.
 
 ## Une couleur = un sens
 
-- **Ambre** (`--rgb-accent-3`, `--color-accent-3`, une seule famille : plein, contour ou texte) : le joueur et ce qu'il fait (son score, sa ligne dans un classement, le bouton principal, la série).
+- **Ambre** (`--rgb-accent-3`, `--color-accent-3`, une seule famille : plein, contour ou texte) : le joueur et ce qu'il fait (son score, sa ligne dans un classement, le bouton principal, la série, le focus au clavier : filet d'un champ `.app-input`, anneau de 2 px de tout bouton ou lien, posé une fois pour toutes dans `styles.scss`).
 - **Cyan** (`--rgb-accent-2`) : le son et le temps (lecteur, extrait, chrono, compte à rebours), plus le gel (`--fill-ice`) et la grille.
 - **Violet** (`--rgb-violet`, `--avatar-1` à `--avatar-4`) : les autres joueurs (histogrammes, égaliseur, médiane, classement).
 - **Vert / rouge** (`--color-success`, `--color-fail`) : juste ou faux.

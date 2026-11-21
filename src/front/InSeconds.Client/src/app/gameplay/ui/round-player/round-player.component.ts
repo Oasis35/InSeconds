@@ -42,7 +42,7 @@ interface StepMark {
   template: `
     <!-- En ligne, le lecteur n'a pas de cadre : il est dans la carte du mode. -->
     <div [class.px-4]="!inline()" [class.py-5]="!inline()" [style.background]="inline() ? null : 'var(--bg-surface)'"
-      [style.border]="inline() ? null : '1.5px solid rgb(var(--rgb-accent-2) / 0.8)'" [style.box-shadow]="inline() ? null : 'var(--tube-frame)'" [style.border-radius]="inline() ? null : 'var(--radius-card)'">
+      [style.border]="inline() ? null : '1.5px solid rgb(var(--rgb-accent-2) / 0.8)'" [style.box-shadow]="inline() ? null : 'var(--tube-frame-soft)'" [style.border-radius]="inline() ? null : 'var(--radius-card)'">
       @switch (phase()) {
         @case ('no-preview') {
           <div class="space-y-5">
@@ -85,7 +85,6 @@ interface StepMark {
                 chrono au-dessus, dans la place laissée libre). Ni repères de paliers, ni points en jeu, ni « écouter plus ». -->
               <div class="flex items-center gap-3">
                 <div class="relative grid place-items-center shrink-0" style="width:64px;height:64px">
-                  <span class="absolute inset-0 rounded-full pointer-events-none" style="border:2px solid rgb(var(--rgb-text) / 0.16)" aria-hidden="true"></span>
                   <ng-container *ngTemplateOutlet="replayButton; context: { size: 52, icon: 22 }" />
                 </div>
                 <div class="flex-1 min-w-0 flex flex-col justify-end" style="height:64px">
@@ -119,7 +118,6 @@ interface StepMark {
                 </div>
 
                 <div class="relative grid place-items-center" style="width:96px;height:96px">
-                  <span class="absolute rounded-full pointer-events-none" style="inset:4px;border:2px solid rgb(var(--rgb-text) / 0.18)" aria-hidden="true"></span>
                   <ng-container *ngTemplateOutlet="replayButton; context: { size: 72, icon: 26 }" />
                 </div>
 
@@ -148,21 +146,21 @@ interface StepMark {
       <div #wave data-testid="waveform" class="relative w-full overflow-hidden" style="height:46px"
         role="progressbar" [attr.aria-valuenow]="heardTenths()" aria-valuemin="0" [attr.aria-valuemax]="maxStep()"
         [attr.aria-label]="'gameplay.round.waveform' | translate">
-        <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-locked)', shadow: 'var(--tube-wave-off)', heights: flatHeights }" />
+        <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-locked)', shadow: 'none', heights: flatHeights }" />
         <div data-testid="waveform-unlocked" class="absolute inset-0 overflow-hidden" [class.wave-sweep]="!reduced"
           [style.transform]="layerShift(unlockedRatio(), waveWidth())">
           <div class="absolute inset-0" [class.wave-sweep]="!reduced" [style.transform]="innerShift(unlockedRatio(), waveWidth())">
-            <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-unlocked)', shadow: 'var(--tube-wave-lit)', heights: flatHeights }" />
+            <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-listened)', shadow: 'none', heights: flatHeights }" />
           </div>
         </div>
         <div #seenLayer data-testid="waveform-seen" class="absolute inset-0 overflow-hidden" style="will-change:transform">
           <div #seenInner class="absolute inset-0" style="will-change:transform">
-            <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-unlocked)', shadow: 'var(--tube-wave-lit)', heights: heights() }" />
+            <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-listened)', shadow: 'none', heights: heights() }" />
           </div>
         </div>
         <div #playedLayer data-testid="waveform-played" class="absolute inset-0 overflow-hidden" style="will-change:transform">
           <div #playedInner class="absolute inset-0" style="will-change:transform">
-            <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--color-accent-2)', shadow: 'var(--tube-wave-hot)', heights: heights() }" />
+            <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--color-accent-2)', shadow: 'var(--tube-wave-played)', heights: heights() }" />
           </div>
         </div>
         <!-- La traîne : une fenêtre de 15 % calée à droite sur la tête de lecture, fondue de transparent à opaque. -->
@@ -170,7 +168,7 @@ interface StepMark {
           <div class="wave-trail absolute right-0 top-0 bottom-0 overflow-hidden" style="width:15%">
             <!-- 100 % / 0,15 : exactement la largeur de la waveform, sans arrondi (les barres restent sur celles des autres couches). -->
             <div #trailInner class="absolute right-0 top-0 bottom-0" style="width:calc(100% / 0.15);will-change:transform">
-              <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-trail)', shadow: 'var(--tube-wave-hot)', heights: heights() }" />
+              <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-trail)', shadow: 'none', heights: heights() }" />
             </div>
           </div>
         </div>
@@ -185,17 +183,13 @@ interface StepMark {
     </ng-template>
     <ng-template #replayButton let-size="size" let-icon="icon">
       <app-membrane [level]="bass()">
+        <!-- Toujours ↺ : le bouton relance le palier depuis 0, même en lecture (jamais le symbole pause, qui promettrait une reprise). -->
         <button type="button" (click)="replay.emit()" [disabled]="locked()" [title]="'gameplay.round.replay' | translate: { seconds: (chosenSeconds() | appSeconds) }"
           class="relative rounded-full transition active:scale-95 touch-manipulation flex items-center justify-center overflow-hidden disabled:opacity-40 disabled:grayscale disabled:active:scale-100"
           [style.width.px]="size" [style.height.px]="size" style="background:var(--fill-primary);border:1.5px solid var(--core-orange);color:var(--text-on-orange)">
           @if (submitting()) {
             <span data-testid="round-loader" class="relative animate-spin rounded-full"
               style="width:26px;height:26px;border:3px solid var(--text-on-orange-soft);border-top-color:var(--text-on-orange)"></span>
-          } @else if (playing()) {
-            <span class="relative flex gap-1" aria-hidden="true">
-              <span style="width:6px;height:19px;background:var(--text-on-orange);border-radius:2px"></span>
-              <span style="width:6px;height:19px;background:var(--text-on-orange);border-radius:2px"></span>
-            </span>
           } @else {
             <svg class="relative" [attr.width]="icon" [attr.height]="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M21 12a9 9 0 1 1-2.6-6.36"></path><path d="M21 3v6h-6"></path>

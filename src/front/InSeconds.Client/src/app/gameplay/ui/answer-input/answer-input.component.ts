@@ -83,6 +83,10 @@ export class AnswerInputComponent {
   }
 
   protected onKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && this.suggestions().length === 0) {
+      this.closeKeyboardOnTouch(event);
+      return;
+    }
     if (this.suggestions().length === 0) return;
     switch (event.key) {
       case 'ArrowDown':
@@ -97,11 +101,23 @@ export class AnswerInputComponent {
         // Le parent décide : il lit la surbrillance du store au moment de l'appui. L'entrée `highlighted` n'est mise à jour qu'au prochain
         // cycle d'affichage : `↓` puis `Entrée` enchaînés vite la verraient encore à -1 et valideraient le formulaire.
         this.enter.emit(event);
+        this.closeKeyboardOnTouch(event);
         break;
       case 'Escape':
         this.dismiss.emit();
         break;
     }
+  }
+
+  /**
+   * Sur écran tactile, « retour » ne valide pas : il ferme seulement le clavier (sinon un faux pas envoie du texte libre, sans confirmation
+   * comme pour un champ vide). On valide avec « Valider ». Au clavier physique (souris), Entrée garde son rôle de validation. Sans effet quand
+   * une proposition vient d'être choisie (déjà gérée).
+   */
+  private closeKeyboardOnTouch(event: KeyboardEvent): void {
+    if (event.defaultPrevented || window.matchMedia('(pointer: fine)').matches) return;
+    event.preventDefault();
+    (event.target as HTMLElement | null)?.blur();
   }
 
   /** `mousedown` et pas `click` : il passe avant le `blur` du champ, qui ferme la liste. */
