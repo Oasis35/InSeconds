@@ -357,6 +357,13 @@ input::placeholder,
   }
 }
 
+/* Un seul anneau de focus au clavier : ambre (le joueur), pour tout ce qui se touche et n'a pas le sien (le champ `.app-input` a son filet, `appButton` son anneau).
+   Sans lui, ↺, ▶, les pastilles et les réponses à choix gardaient l'anneau par défaut du navigateur. `:where` : aucune spécificité, un composant garde la main. */
+:where(button, a[href], [role='button'], summary, select):focus-visible {
+  outline: 2px solid var(--color-accent-3);
+  outline-offset: 2px;
+}
+
 /* Tailwind v4 laisse le curseur par défaut sur les boutons : tout ce qui se touche montre la main (cartes, Joker, indices…). Hors couche :
    passe devant le reset de Tailwind. */
 button:not(:disabled),
