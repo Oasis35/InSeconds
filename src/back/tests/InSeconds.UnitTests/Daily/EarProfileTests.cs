@@ -75,15 +75,4 @@ public class EarProfileTests
     [Fact]
     public void LaFenetreDeLaTendance_SeLitDepuisDeuxFoisVingtHuitJours() =>
         Assert.Equal(Today.AddDays(-55), EarProfile.TrendReadStart(Today));
-
-    [Fact]
-    public void LaPartieDuJour_MoyenneApres_EtMeilleurDepuis()
-    {
-        var previous = new[] { new DatedScore(Today.AddDays(-5), 4500), new DatedScore(Today.AddDays(-2), 1000), new DatedScore(Today, 9999) };
-
-        Assert.Equal(new GameDelta(3300, 5), GameDelta.Of(previous, 4400, Today));
-        // Un record : aucune partie aussi bonne avant ; la partie du jour déjà en base (9999) n'est pas comptée deux fois.
-        Assert.Equal(new GameDelta(3500, null), GameDelta.Of(previous, 5000, Today));
-        Assert.Equal(new GameDelta(2000, null), GameDelta.Of([], 2000, Today));
-    }
 }

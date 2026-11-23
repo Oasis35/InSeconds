@@ -6,8 +6,7 @@ import { RoundConfig, RoundSubmission } from '../../gameplay/domain/track-round'
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { AnsweredTrack, DailySettings, DailyToday, DayStats, ResumedTrack, StartedSession, TrackSlot } from '../domain/daily';
 import { DailyScreen, PeekContext, isRecapScreen, refocusContext, screenAfterToday } from '../domain/daily-screen';
-import { formatCountdown, secondsUntilMidnightUtc, yesterdayUtc } from '../../core/game-day/game-day';
-import { ArchiveDay } from '../domain/archive';
+import { formatCountdown, secondsUntilMidnightUtc } from '../../core/game-day/game-day';
 import { toRoundResult } from '../domain/round-result';
 import { dailyStake } from '../domain/stake';
 import { EMPTY_STREAK, Streak, pluralKey } from '../domain/streak';
@@ -34,8 +33,6 @@ interface DailyState {
   streakToastDismissedAt: number | null;
   gelToastDismissed: boolean;
   stats: DayStats | null;
-  /** Les réponses d'hier, au bas du résultat du jour ; vide sans défi hier (ou si la lecture échoue). */
-  yesterday: ArchiveDay | null;
   secondsLeft: number;
 }
 
@@ -55,7 +52,6 @@ const initialState: DailyState = {
   streakToastDismissedAt: null,
   gelToastDismissed: false,
   stats: null,
-  yesterday: null,
   secondsLeft: 0,
 };
 
@@ -158,15 +154,6 @@ export const DailyGameStore = signalStore(
       }
     };
 
-    // L'encart « Les réponses d'hier » : un plus, comme les statistiques ; rien ne s'affiche s'il manque.
-    const loadYesterday = async () => {
-      try {
-        patchState(store, { yesterday: await api.archiveDay(yesterdayUtc(new Date())) });
-      } catch {
-        patchState(store, { yesterday: null });
-      }
-    };
-
     const refreshStreak = async () => {
       try {
         const today = await api.today();
@@ -179,9 +166,8 @@ export const DailyGameStore = signalStore(
     const enterAlreadyPlayed = (abandoned: boolean) => {
       patchState(store, { screen: 'already_played', abandoned, gelToastDismissed: false });
       startCountdown();
-      // Une partie abandonnée relit les stats pour son score partiel et ses réponses (rien sans réponse) ; l'encart d'hier ne sert qu'à une partie finie.
+      // Une partie abandonnée relit aussi les stats, pour son score partiel et ses réponses (rien sans réponse).
       void loadStats();
-      if (!abandoned) void loadYesterday();
     };
 
     /**
@@ -420,7 +406,6 @@ export const DailyGameStore = signalStore(
         patchState(store, { screen: 'done', gelToastDismissed: false });
         startCountdown();
         void loadStats();
-        void loadYesterday();
         void refreshStreak();
       },
 
