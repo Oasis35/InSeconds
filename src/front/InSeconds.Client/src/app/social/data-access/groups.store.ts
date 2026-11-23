@@ -77,14 +77,25 @@ export const GroupsStore = signalStore(
         if (store.groups().some(group => group.id === groupId)) await show(groupId);
       },
 
-      /** Quitte un groupe puis relit la liste ; `false` si le serveur a refusé. */
-      async leave(groupId: number): Promise<boolean> {
+      /** Quitte un groupe (le créateur désigne son successeur) puis relit la liste ; `false` si le serveur a refusé. */
+      async leave(groupId: number, successor: string | null = null): Promise<boolean> {
         try {
-          await api.leave(groupId);
+          await api.leave(groupId, successor);
         } catch {
           return false;
         }
         await this.load();
+        return true;
+      },
+
+      /** Le créateur confie le groupe à ce membre (par son pseudo) puis relit la liste : il n'est plus que membre ; `false` si le serveur a refusé. */
+      async transferOwner(groupId: number, pseudo: string): Promise<boolean> {
+        try {
+          await api.transferOwner(groupId, pseudo);
+        } catch {
+          return false;
+        }
+        await this.load(groupId);
         return true;
       },
 

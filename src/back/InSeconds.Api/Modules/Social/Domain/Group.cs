@@ -5,8 +5,9 @@ namespace InSeconds.Api.Modules.Social.Domain;
 
 /// <summary>
 /// Un groupe d'amis : un nom, un code d'invitation (le lien qui fait rejoindre), un créateur et des membres. Un groupe n'a que des comptes (pseudo
-/// montré aux autres membres, jamais à un non-membre). Il disparaît avec son dernier membre ; le créateur qui s'en va (ou dont le compte est effacé)
-/// passe la main au plus ancien des autres membres.
+/// montré aux autres membres, jamais à un non-membre). Il disparaît avec son dernier membre. Le créateur ne s'en va jamais sans avoir désigné son successeur
+/// (<see cref="TransferOwnership"/>) tant qu'il reste d'autres membres ; seul l'effacement de son compte, où personne ne peut choisir, passe la main
+/// au plus ancien des autres membres (<c>SocialPlayerData</c>).
 /// </summary>
 public sealed class Group
 {
@@ -56,19 +57,33 @@ public sealed class Group
     }
 
     /// <summary>
-    /// Retire un membre. Le dernier membre qui part vide le groupe (<see cref="GroupDeparture.Emptied"/> : l'appelant le supprime) ; le créateur
-    /// qui part passe la main au plus ancien des autres membres (<see cref="GroupDeparture.OwnerChanged"/>).
+    /// Le créateur doit désigner un successeur avant de partir (ou d'être retiré) : il est le créateur et d'autres membres restent. L'appelant le
+    /// vérifie avant <see cref="Leave"/>.
+    /// </summary>
+    public bool MustHandOverBeforeLeaving(Guid playerId) => OwnerId == playerId && _members.Count > 1;
+
+    /// <summary>Peut-on confier le groupe à ce joueur ? Un membre, qui n'est pas déjà le créateur.</summary>
+    public bool CanTransferTo(Guid playerId) => OwnerId != playerId && IsMember(playerId);
+
+    /// <summary>Confie le groupe à un autre membre ; l'ancien créateur devient un simple membre (l'appelant a vérifié <see cref="CanTransferTo"/>).</summary>
+    public void TransferOwnership(Guid newOwnerId)
+    {
+        if (!CanTransferTo(newOwnerId))
+            throw new InvalidOperationException("Le groupe ne peut être confié qu'à un autre de ses membres.");
+        OwnerId = newOwnerId;
+    }
+
+    /// <summary>
+    /// Retire un membre. Le dernier membre qui part vide le groupe (<see cref="GroupDeparture.Emptied"/> : l'appelant le supprime). Le créateur
+    /// ne part pas tant qu'il reste d'autres membres : il a d'abord désigné son successeur (<see cref="MustHandOverBeforeLeaving"/>).
     /// </summary>
     public GroupDeparture Leave(Guid playerId)
     {
         var member = _members.Find(m => m.PlayerId == playerId) ?? throw new InvalidOperationException("Pas membre de ce groupe.");
+        if (MustHandOverBeforeLeaving(playerId))
+            throw new InvalidOperationException("Le créateur doit d'abord désigner un successeur.");
         _members.Remove(member);
-        if (_members.Count == 0)
-            return GroupDeparture.Emptied;
-        if (OwnerId != playerId)
-            return GroupDeparture.Left;
-        OwnerId = _members.OrderBy(m => m.JoinedAt).ThenBy(m => m.PlayerId).First().PlayerId;
-        return GroupDeparture.OwnerChanged;
+        return _members.Count == 0 ? GroupDeparture.Emptied : GroupDeparture.Left;
     }
 
     /// <summary>Un autre nom, déjà contrôlé (<see cref="GroupName"/>) : la modération de l'admin renomme un nom inapproprié.</summary>
@@ -87,7 +102,6 @@ public sealed class Group
 public enum GroupDeparture
 {
     Left,
-    OwnerChanged,
     Emptied,
 }
 

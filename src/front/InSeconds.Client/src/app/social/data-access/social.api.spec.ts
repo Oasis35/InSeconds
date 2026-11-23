@@ -13,7 +13,7 @@ describe('SocialApi', () => {
   let api: SocialApi;
 
   beforeEach(() => {
-    client = { listMyGroups: vi.fn(), getGroupRanking: vi.fn(), getGroupScores: vi.fn(), createGroup: vi.fn(), joinGroup: vi.fn(), leaveGroup: vi.fn(), getInvitation: vi.fn(), getGeneralRanking: vi.fn(), setRankingIdentity: vi.fn(), drawRankingAlias: vi.fn() };
+    client = { listMyGroups: vi.fn(), getGroupRanking: vi.fn(), getGroupScores: vi.fn(), createGroup: vi.fn(), joinGroup: vi.fn(), leaveGroup: vi.fn(), transferGroupOwner: vi.fn(), getInvitation: vi.fn(), getGeneralRanking: vi.fn(), setRankingIdentity: vi.fn(), drawRankingAlias: vi.fn() };
     TestBed.configureTestingModule({ providers: [{ provide: SocialClient, useValue: client }, SocialApi] });
     api = TestBed.inject(SocialApi);
   });
@@ -137,6 +137,22 @@ describe('SocialApi', () => {
 
     await api.leave(4);
 
-    expect(client['leaveGroup']).toHaveBeenCalledWith(4);
+    expect(client['leaveGroup']).toHaveBeenCalledWith(4, undefined);
+  });
+
+  it('le créateur confie le groupe à un pseudo sans partir', async () => {
+    client['transferGroupOwner'].mockReturnValue(of(undefined));
+
+    await api.transferOwner(4, 'Théo');
+
+    expect(client['transferGroupOwner']).toHaveBeenCalledWith(4, { pseudo: 'Théo' });
+  });
+
+  it('un créateur qui part désigne son successeur par son pseudo', async () => {
+    client['leaveGroup'].mockReturnValue(of(undefined));
+
+    await api.leave(4, 'Théo');
+
+    expect(client['leaveGroup']).toHaveBeenCalledWith(4, 'Théo');
   });
 });

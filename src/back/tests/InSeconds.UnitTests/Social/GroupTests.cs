@@ -55,14 +55,52 @@ public class GroupTests
     }
 
     [Fact]
-    public void Leave_LeCreateur_LePlusAncienMembreLeDevient()
+    public void Leave_LeCreateurAvecDAutresMembres_Refuse_IlDesigneDAbordSonSuccesseur()
     {
         var group = NewGroup();
-        group.Join(Carol, T0.AddMinutes(2));
         group.Join(Bob, T0.AddMinutes(1));
 
-        Assert.Equal(GroupDeparture.OwnerChanged, group.Leave(Alice));
+        Assert.True(group.MustHandOverBeforeLeaving(Alice));
+        Assert.False(group.MustHandOverBeforeLeaving(Bob));
+        Assert.Throws<InvalidOperationException>(() => group.Leave(Alice));
+        Assert.True(group.IsOwner(Alice));
+        Assert.Equal(2, group.Members.Count);
+    }
+
+    [Fact]
+    public void Leave_LeCreateurApresAvoirDesigneSonSuccesseur_PartCommeUnMembre()
+    {
+        var group = NewGroup();
+        group.Join(Bob, T0.AddMinutes(1));
+        group.TransferOwnership(Bob);
+
         Assert.True(group.IsOwner(Bob));
+        Assert.False(group.MustHandOverBeforeLeaving(Alice));
+        Assert.Equal(GroupDeparture.Left, group.Leave(Alice));
+        Assert.True(group.IsOwner(Bob));
+    }
+
+    [Fact]
+    public void Leave_LeCreateurSeul_LeGroupeEstVide_SansSuccesseur()
+    {
+        var group = NewGroup();
+
+        Assert.False(group.MustHandOverBeforeLeaving(Alice));
+        Assert.Equal(GroupDeparture.Emptied, group.Leave(Alice));
+    }
+
+    [Fact]
+    public void TransferOwnership_SeulementVersUnAutreMembre()
+    {
+        var group = NewGroup();
+        group.Join(Bob, T0.AddMinutes(1));
+
+        Assert.True(group.CanTransferTo(Bob));
+        Assert.False(group.CanTransferTo(Alice));
+        Assert.False(group.CanTransferTo(Carol));
+        Assert.Throws<InvalidOperationException>(() => group.TransferOwnership(Alice));
+        Assert.Throws<InvalidOperationException>(() => group.TransferOwnership(Carol));
+        Assert.True(group.IsOwner(Alice));
     }
 
     [Fact]

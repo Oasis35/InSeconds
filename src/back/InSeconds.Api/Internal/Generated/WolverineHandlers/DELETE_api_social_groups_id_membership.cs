@@ -43,6 +43,7 @@ namespace Internal.Generated.WolverineHandlers
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Wolverine.Runtime.ScopedMessageContextHolder>(serviceScope.ServiceProvider).Context = messageContext;
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
+            var efPlayerDirectory = new InSeconds.Api.Modules.Players.Persistence.EfPlayerDirectory(inSecondsDbContext);
             var efGroupStore = new InSeconds.Api.Modules.Social.Persistence.EfGroupStore(inSecondsDbContext);
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
             Wolverine.Http.HttpHandler.RequestActivity(httpContext)?.SetTag("handler.type", "InSeconds.Api.Modules.Social.Application.LeaveGroupEndpoint").SetTag("http.route", "/api/social/groups/{id}/membership").SetTag("http.request.method", "DELETE");
@@ -70,8 +71,9 @@ namespace Internal.Generated.WolverineHandlers
                     return;
                 }
 
-                var groupAction = await InSeconds.Api.Modules.Social.Application.LeaveGroupEndpoint.LoadAsync(id, claimsCurrentPlayer, efGroupStore, httpContext.RequestAborted).ConfigureAwait(false);
-                var problemDetails1 = InSeconds.Api.Modules.Social.Application.LeaveGroupEndpoint.Validate(groupAction);
+                var successor = httpContext.Request.Query["successor"];
+                var groupLeave = await InSeconds.Api.Modules.Social.Application.LeaveGroupEndpoint.LoadAsync(id, successor, claimsCurrentPlayer, efGroupStore, efPlayerDirectory, httpContext.RequestAborted).ConfigureAwait(false);
+                var problemDetails1 = InSeconds.Api.Modules.Social.Application.LeaveGroupEndpoint.Validate(groupLeave, successor);
                 // Evaluate whether the processing should stop if there are any problems
                 if (!(ReferenceEquals(problemDetails1, Wolverine.Http.WolverineContinue.NoProblems)))
                 {
@@ -81,7 +83,7 @@ namespace Internal.Generated.WolverineHandlers
 
                 
                 // The actual HTTP request handler execution
-                InSeconds.Api.Modules.Social.Application.LeaveGroupEndpoint.Delete(groupAction, efGroupStore, _socialMetrics, _loggerOfGroup);
+                InSeconds.Api.Modules.Social.Application.LeaveGroupEndpoint.Delete(groupLeave, efGroupStore, _socialMetrics, _loggerOfGroup);
 
                 
                 // Added by EF Core Transaction Middleware

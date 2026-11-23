@@ -219,21 +219,136 @@ public class SocialGroupTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Empty(none.Groups);
     }
 
+    private string LeaveRoute(int groupId, string? successor = null) =>
+        $"/api/social/groups/{groupId}/membership" + (successor is null ? "" : $"?successor={Uri.EscapeDataString(successor)}");
+
     [Fact]
-    public async Task Quitter_LeCreateurPasseLaMain_EtLeDernierSupprimeLeGroupe()
+    public async Task Quitter_LeCreateurDesigneSonSuccesseurEnPartant_EtLeDernierSupprimeLeGroupe()
     {
         var (alice, bob) = (await _game.NewPlayerAsync("Alice"), await _game.NewPlayerAsync("Bob"));
         var group = await CreateAsync(alice, "Les copains");
         await bob.Client.PostAsync($"/api/social/invitations/{group.InviteCode}/join", null, Ct);
 
-        Assert.Equal(HttpStatusCode.NoContent, (await alice.Client.DeleteAsync($"/api/social/groups/{group.Id}/membership", Ct)).StatusCode);
+        // Rien d'automatique : le créateur qui part sans désigner personne est refusé, et reste créateur et membre.
+        var refused = await alice.Client.DeleteAsync(LeaveRoute(group.Id), Ct);
+        Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
+        Assert.Equal(SocialErrorCodes.OwnerMustHandOver, await CodeOfAsync(refused));
+        Assert.True((await alice.Client.GetFromJsonAsync<GroupDetailResponse>($"/api/social/groups/{group.Id}", Ct))!.IsOwner);
+
+        // Il désigne Bob par son pseudo (sans tenir compte de la casse) : le changement et le départ se font ensemble.
+        Assert.Equal(HttpStatusCode.NoContent, (await alice.Client.DeleteAsync(LeaveRoute(group.Id, " bob "), Ct)).StatusCode);
 
         var detail = (await bob.Client.GetFromJsonAsync<GroupDetailResponse>($"/api/social/groups/{group.Id}", Ct))!;
         Assert.True(detail.IsOwner);
+        Assert.Single(detail.Members);
         Assert.Equal(HttpStatusCode.NotFound, (await alice.Client.GetAsync($"/api/social/groups/{group.Id}", Ct)).StatusCode);
 
-        Assert.Equal(HttpStatusCode.NoContent, (await bob.Client.DeleteAsync($"/api/social/groups/{group.Id}/membership", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await bob.Client.DeleteAsync(LeaveRoute(group.Id), Ct)).StatusCode);
         Assert.Equal(0L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM social.groups"));
+    }
+
+    [Theory]
+    [InlineData("Alice")]
+    [InlineData("Inconnu")]
+    [InlineData("Carol")]
+    [InlineData("   ")]
+    public async Task Quitter_LeCreateurDesigneUnSuccesseurInvalide_400_EtRienNeChange(string successor)
+    {
+        var (alice, bob) = (await _game.NewPlayerAsync("Alice"), await _game.NewPlayerAsync("Bob"));
+        await _game.NewPlayerAsync("Carol");
+        var group = await CreateAsync(alice, "Les copains");
+        await bob.Client.PostAsync($"/api/social/invitations/{group.InviteCode}/join", null, Ct);
+
+        var response = await alice.Client.DeleteAsync(LeaveRoute(group.Id, successor), Ct);
+
+        // Un pseudo vide revient à n'en désigner aucun (409) ; un autre qui n'est pas un autre membre est refusé (400). Rien ne change dans les deux cas.
+        var (status, code) = string.IsNullOrWhiteSpace(successor)
+            ? (HttpStatusCode.Conflict, SocialErrorCodes.OwnerMustHandOver)
+            : (HttpStatusCode.BadRequest, SocialErrorCodes.InvalidSuccessor);
+        Assert.Equal(status, response.StatusCode);
+        Assert.Equal(code, await CodeOfAsync(response));
+        var detail = (await alice.Client.GetFromJsonAsync<GroupDetailResponse>($"/api/social/groups/{group.Id}", Ct))!;
+        Assert.True(detail.IsOwner);
+        Assert.Equal(2, detail.Members.Count);
+    }
+
+    [Fact]
+    public async Task Quitter_LeCreateurSeul_SansSuccesseur_SupprimeLeGroupe()
+    {
+        var alice = await _game.NewPlayerAsync("Alice");
+        var group = await CreateAsync(alice, "Les copains");
+
+        Assert.Equal(HttpStatusCode.NoContent, (await alice.Client.DeleteAsync(LeaveRoute(group.Id), Ct)).StatusCode);
+
+        Assert.Equal(0L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM social.groups"));
+        Assert.Equal(0L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM social.group_members"));
+    }
+
+    [Fact]
+    public async Task Quitter_UnSimpleMembre_IgnoreLeSuccesseurEtLeCreateurResteLeMeme()
+    {
+        var (alice, bob) = (await _game.NewPlayerAsync("Alice"), await _game.NewPlayerAsync("Bob"));
+        var group = await CreateAsync(alice, "Les copains");
+        await bob.Client.PostAsync($"/api/social/invitations/{group.InviteCode}/join", null, Ct);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await bob.Client.DeleteAsync(LeaveRoute(group.Id, "Alice"), Ct)).StatusCode);
+
+        Assert.True((await alice.Client.GetFromJsonAsync<GroupDetailResponse>($"/api/social/groups/{group.Id}", Ct))!.IsOwner);
+    }
+
+    [Fact]
+    public async Task Confier_LAncienCreateurDevientMembre_EtNeRedevientCreateurQueSiLeNouveauLeDesigne()
+    {
+        var (alice, bob) = (await _game.NewPlayerAsync("Alice"), await _game.NewPlayerAsync("Bob"));
+        var group = await CreateAsync(alice, "Les copains");
+        await bob.Client.PostAsync($"/api/social/invitations/{group.InviteCode}/join", null, Ct);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await alice.Client.PutAsJsonAsync($"/api/social/groups/{group.Id}/owner", new TransferGroupOwner(" bob "), Ct)).StatusCode);
+
+        // Alice est encore membre mais n'est plus créateur : elle ne peut ni reprendre la main, ni supprimer le groupe.
+        Assert.False((await alice.Client.GetFromJsonAsync<GroupDetailResponse>($"/api/social/groups/{group.Id}", Ct))!.IsOwner);
+        var retake = await alice.Client.PutAsJsonAsync($"/api/social/groups/{group.Id}/owner", new TransferGroupOwner("Alice"), Ct);
+        Assert.Equal(HttpStatusCode.Forbidden, retake.StatusCode);
+        Assert.Equal(SocialErrorCodes.NotOwner, await CodeOfAsync(retake));
+        Assert.Equal(HttpStatusCode.Forbidden, (await alice.Client.DeleteAsync($"/api/social/groups/{group.Id}", Ct)).StatusCode);
+
+        // Seul Bob peut la désigner de nouveau.
+        (await bob.Client.PutAsJsonAsync($"/api/social/groups/{group.Id}/owner", new TransferGroupOwner("Alice"), Ct)).EnsureSuccessStatusCode();
+        Assert.True((await alice.Client.GetFromJsonAsync<GroupDetailResponse>($"/api/social/groups/{group.Id}", Ct))!.IsOwner);
+    }
+
+    [Theory]
+    [InlineData("Alice")]
+    [InlineData("Inconnu")]
+    [InlineData("Carol")]
+    [InlineData("   ")]
+    public async Task Confier_ASoiMemeAUnInconnuOuAUnNonMembre_400_EtRienNeChange(string pseudo)
+    {
+        var (alice, bob) = (await _game.NewPlayerAsync("Alice"), await _game.NewPlayerAsync("Bob"));
+        await _game.NewPlayerAsync("Carol");
+        var group = await CreateAsync(alice, "Les copains");
+        await bob.Client.PostAsync($"/api/social/invitations/{group.InviteCode}/join", null, Ct);
+
+        var response = await alice.Client.PutAsJsonAsync($"/api/social/groups/{group.Id}/owner", new TransferGroupOwner(pseudo), Ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(SocialErrorCodes.InvalidSuccessor, await CodeOfAsync(response));
+        Assert.True((await alice.Client.GetFromJsonAsync<GroupDetailResponse>($"/api/social/groups/{group.Id}", Ct))!.IsOwner);
+    }
+
+    [Fact]
+    public async Task Confier_UnSimpleMembre_403_UnNonMembre_404()
+    {
+        var (alice, bob, carol) = (await _game.NewPlayerAsync("Alice"), await _game.NewPlayerAsync("Bob"), await _game.NewPlayerAsync("Carol"));
+        var group = await CreateAsync(alice, "Les copains");
+        await bob.Client.PostAsync($"/api/social/invitations/{group.InviteCode}/join", null, Ct);
+
+        var member = await bob.Client.PutAsJsonAsync($"/api/social/groups/{group.Id}/owner", new TransferGroupOwner("Alice"), Ct);
+        var outsider = await carol.Client.PutAsJsonAsync($"/api/social/groups/{group.Id}/owner", new TransferGroupOwner("Alice"), Ct);
+
+        Assert.Equal(HttpStatusCode.Forbidden, member.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, outsider.StatusCode);
+        Assert.True((await alice.Client.GetFromJsonAsync<GroupDetailResponse>($"/api/social/groups/{group.Id}", Ct))!.IsOwner);
     }
 
     [Fact]

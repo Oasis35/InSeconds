@@ -50,4 +50,6 @@ Rôle `is_admin` uniquement (piège 5). L'API revérifie l'accès à chaque requ
 - Rien ne se lance depuis le panneau : une tâche se lance depuis `/jobs` (Hangfire).
 - Joueurs : l'interrupteur d'accès Survie (`role="switch"`, `data-testid="run-access"`) vaut aussi pour un admin, qui n'a pas l'accès d'office (`canPlayRuns` ne lit que la liste des comptes autorisés) ; un échec le remet à son état. Un admin qui change son propre accès le voit sur l'accueil après un rechargement (`SetlistAccessStore` ne lit l'accès qu'une fois par compte).
 
+- Groupes : comme un compte de l'onglet Joueurs, un clic sur le nom ou le nombre de membres déplie le groupe (un seul à la fois, `AdminGroupsStore.toggle`) : ses membres, relus à chaque dépliage, puis la **modération** (renommer, remettre à zéro, supprimer), qui n'existe donc que dépliée. Remettre à zéro et supprimer gardent leur confirmation sur place, et replier le groupe l'annule (`GroupRowComponent`).
+
 Tests : un `.spec.ts` par store et par page ; `renderHost` (`ui/testing/host.ts`) pour les composants de présentation, `content-tabs.stub.ts` pour les pages dont le test moque le `Router`. E2E : `admin.spec.ts`, `admin-themes.spec.ts`, `admin-candidates.spec.ts`, `admin-groups.spec.ts`.

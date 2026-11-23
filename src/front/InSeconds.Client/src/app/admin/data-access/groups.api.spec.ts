@@ -4,7 +4,7 @@ import { SocialClient } from '../../api/social/api.generated';
 import { AdminGroupsApi } from './groups.api';
 
 describe('AdminGroupsApi', () => {
-  const client = { listAdminGroups: vi.fn(), renameAdminGroup: vi.fn(), resetAdminGroupName: vi.fn(), deleteAdminGroup: vi.fn() };
+  const client = { transferAdminGroupOwner: vi.fn(), removeAdminGroupMember: vi.fn(), listAdminGroups: vi.fn(), listAdminGroupMembers: vi.fn(), renameAdminGroup: vi.fn(), resetAdminGroupName: vi.fn(), deleteAdminGroup: vi.fn() };
 
   function create(): AdminGroupsApi {
     TestBed.configureTestingModule({ providers: [AdminGroupsApi, { provide: SocialClient, useValue: client }] });
@@ -23,6 +23,38 @@ describe('AdminGroupsApi', () => {
       { id: 2, name: 'Les voisins', memberCount: 1, ownerId: 'b', ownerPseudo: 'Bob', createdAt: '2026-11-02T10:00:00.000Z' },
       { id: 1, name: 'Les copains', memberCount: 3, ownerId: 'a', ownerPseudo: null, createdAt: '2026-11-01T10:00:00+00:00' },
     ]);
+  });
+
+  it('convertit les membres : date en texte, pseudo absent en null', async () => {
+    client.listAdminGroupMembers.mockReturnValue(of({
+      members: [
+        { pseudo: 'Alice', isOwner: true, joinedAt: new Date('2026-11-01T10:00:00Z') },
+        { pseudo: undefined, isOwner: false, joinedAt: '2026-11-02T10:00:00+00:00' },
+      ],
+    }));
+
+    expect(await create().members(4)).toEqual([
+      { pseudo: 'Alice', isOwner: true, joinedAt: '2026-11-01T10:00:00.000Z' },
+      { pseudo: null, isOwner: false, joinedAt: '2026-11-02T10:00:00+00:00' },
+    ]);
+    expect(client.listAdminGroupMembers).toHaveBeenCalledWith(4);
+  });
+
+  it('confie le groupe à un pseudo', async () => {
+    client.transferAdminGroupOwner.mockReturnValue(of(undefined));
+    await create().transferOwner(4, 'Bob');
+    expect(client.transferAdminGroupOwner).toHaveBeenCalledWith(4, { pseudo: 'Bob' });
+  });
+
+  it('retire un membre, avec ou sans successeur', async () => {
+    client.removeAdminGroupMember.mockReturnValue(of(undefined));
+    const api = create();
+
+    await api.removeMember(4, 'Alice', 'Bob');
+    await api.removeMember(4, 'Carol', null);
+
+    expect(client.removeAdminGroupMember).toHaveBeenNthCalledWith(1, 4, 'Alice', 'Bob');
+    expect(client.removeAdminGroupMember).toHaveBeenNthCalledWith(2, 4, 'Carol', undefined);
   });
 
   it('renomme et rend le nom enregistré', async () => {
