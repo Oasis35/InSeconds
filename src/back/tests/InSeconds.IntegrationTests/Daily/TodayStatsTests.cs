@@ -127,7 +127,7 @@ public class TodayStatsTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Historique_LaCarteDuProfil_MoyenneApres_MeilleurDepuis_TrouvesAuPremierPalier()
+    public async Task Historique_LesPartiesDAvant_Nombre_MeilleurScore_Moyenne()
     {
         await _game.GenerateAsync();
         await _game.App.AddChallengeAsync(Today.AddDays(-5), 1, 2, 3, 4, 5);
@@ -142,25 +142,8 @@ public class TodayStatsTests(PostgresFixture postgres) : IAsyncLifetime
 
         var history = (await StatsAsync(alice.Client)).History!;
 
-        // Aujourd'hui 1000 + 4 × 850 = 4400 ; moyenne (4500 + 1000 + 4400) / 3 ; la dernière partie au moins aussi bonne date d'il y a 5 jours.
+        // Ses parties d'avant aujourd'hui : 4500 et 1000, donc deux parties, meilleur 4500, moyenne 2750 (la partie du jour n'y est pas).
         Assert.Equal((2, 4500, 2750), (history.PreviousGames, history.PreviousBestScore, history.PreviousAverageScore));
-        Assert.Equal((3300, (int?)5), (history.AverageScoreAfter, history.BestSinceDays));
-        Assert.Equal((0.5m, 2, 1), (history.FirstStepSeconds, history.FirstStepFoundTotal, history.FirstStepFoundToday));
-    }
-
-    [Fact]
-    public async Task Historique_UnRecord_NAPasDeMeilleurDepuis()
-    {
-        await _game.GenerateAsync();
-        await _game.App.AddChallengeAsync(Today.AddDays(-2), 6, 7, 8, 9, 10);
-        var alice = await _game.NewPlayerAsync();
-        await _game.AddSessionAsync(alice.Id, Today.AddDays(-2), 1, (2m, true, true, false, 1000));
-        await alice.FinishAsync((await alice.StartAsync()).SessionId, seconds: 1);
-
-        var history = (await StatsAsync(alice.Client)).History!;
-
-        Assert.Null(history.BestSinceDays);
-        Assert.Equal((2625, 0, 0), (history.AverageScoreAfter, history.FirstStepFoundTotal, history.FirstStepFoundToday));
     }
 
     [Fact]

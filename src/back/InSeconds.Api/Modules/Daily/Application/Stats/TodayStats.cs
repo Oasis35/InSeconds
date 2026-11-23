@@ -36,24 +36,12 @@ public sealed record TrackStatResponse(
 /// <param name="PreviousGames">Ses parties terminées avant aujourd'hui.</param>
 /// <param name="PreviousBestScore">Son meilleur score avant aujourd'hui (vide sans partie).</param>
 /// <param name="PreviousAverageScore">Son score moyen avant aujourd'hui (vide sans partie).</param>
-/// <param name="AverageScoreAfter">Son score moyen, la partie du jour comprise (la carte « Ton profil d'oreille » de la fin du défi).</param>
-/// <param name="BestSinceDays">
-/// Le nombre de jours depuis sa dernière partie au moins aussi bonne que celle du jour ; vide s'il n'en a aucune (record, ou première partie).
-/// </param>
-/// <param name="FirstStepSeconds">Le premier palier d'écoute (0,5 s par défaut, un réglage).</param>
-/// <param name="FirstStepFoundTotal">Ses réponses trouvées au premier palier d'écoute, tous jours confondus, celles du jour comprises.</param>
-/// <param name="FirstStepFoundToday">Celles du jour.</param>
 public sealed record TodayHistoryResponse(
     decimal? FastestSeconds,
     int? FastestFoundPercent,
     int PreviousGames,
     int? PreviousBestScore,
-    int? PreviousAverageScore,
-    int AverageScoreAfter,
-    int? BestSinceDays,
-    decimal FirstStepSeconds,
-    int FirstStepFoundTotal,
-    int FirstStepFoundToday);
+    int? PreviousAverageScore);
 
 /// <summary>Les statistiques du jour.</summary>
 /// <param name="YourScore">Le score du joueur, vide s'il n'a pas de partie terminée aujourd'hui.</param>
@@ -136,7 +124,7 @@ public static class GetTodayStatsEndpoint
         var best = rules.Options.EffectiveDurationScores.Max(d => d.Score);
         var maxPossible = tracks.Count * best;
         var yourScore = own?.TotalScore;
-        var history = own is null || playerId is not { } historyPlayer ? null : await HistoryAsync(own, historyPlayer, today, stats, profile, rules, ct);
+        var history = own is null || playerId is not { } historyPlayer ? null : await HistoryAsync(own, historyPlayer, today, stats, profile, ct);
 
         return new TodayStatsResponse(
             yourScore,
@@ -156,23 +144,17 @@ public static class GetTodayStatsEndpoint
     }
 
     private static async Task<TodayHistoryResponse> HistoryAsync(
-        PlayerSessionRow own, Guid playerId, DateOnly today, IDailyStatsQueries stats, IDailyProfileQueries profile, DailyRules rules, CancellationToken ct)
+        PlayerSessionRow own, Guid playerId, DateOnly today, IDailyStatsQueries stats, IDailyProfileQueries profile, CancellationToken ct)
     {
         var found = own.Answers.Where(a => a.ArtistCorrect || a.TitleCorrect).Select(a => (decimal?)a.ListenedSeconds).Min();
         var speed = found is null ? null : await stats.GetAnswerSpeedHistoryAsync(today.AddDays(-AnswerSpeedHistory.WindowDays), today, ct);
 
-        // Ses parties d'avant (date du défi, piège 18) : la moyenne après celle du jour, et depuis quand il n'a pas fait aussi bien.
+        // Ses parties d'avant (date du défi, piège 18).
         var before = (await profile.ListScoresAsync(playerId, DateOnly.MinValue, ct)).Where(s => s.Date < today).ToList();
         var previous = PersonalHistory.Of([.. before.Select(s => s.Score)]);
-        var delta = GameDelta.Of(before, own.TotalScore, today);
-
-        var firstStep = rules.Options.EffectiveAllowedDurationsSeconds.Min();
-        var firstStepTotal = (await profile.GetAnswerTallyAsync(playerId, DateOnly.MinValue, ct)).FoundBySeconds.GetValueOrDefault(firstStep);
-        var firstStepToday = own.Answers.Count(a => (a.ArtistCorrect || a.TitleCorrect) && a.ListenedSeconds == firstStep);
 
         return new TodayHistoryResponse(
-            found, found is { } seconds ? speed?.PercentFoundWithin(seconds) : null, previous.Games, previous.BestScore, previous.AverageScore,
-            delta.AverageAfter, delta.BestSinceDays, firstStep, firstStepTotal, firstStepToday);
+            found, found is { } seconds ? speed?.PercentFoundWithin(seconds) : null, previous.Games, previous.BestScore, previous.AverageScore);
     }
 
     // Compte : le gel que la partie du jour a réellement gagné. Invité : il n'a jamais de stock, on lui dit seulement qu'il aurait atteint le palier.
