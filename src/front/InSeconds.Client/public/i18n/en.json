@@ -852,7 +852,6 @@
       "track": "Track {{ current }} / {{ total }}"
     },
     "home": {
-      "seeResult": "See the result",
       "label": "Daily challenge",
       "done": "Daily challenge",
       "abandonedScore": "abandoned game",
@@ -915,8 +914,6 @@
       "body": "Couldn't load today's challenge."
     },
     "alreadyPlayed": {
-      "abandonedTitle": "Game abandoned",
-      "abandonedBody": "Come back tomorrow for a new challenge.",
       "nextChallengeIn": "Next challenge in",
       "yourScore": "Your score",
       "coverAlt": "Cover",
@@ -933,7 +930,6 @@
       "title": "Title"
     },
     "result": {
-      "back": "Back",
       "yourScore": "Your score today",
       "nextChallenge": "Next challenge in",
       "fastIn": "in",
@@ -1074,8 +1070,6 @@
       "artistWrong": "Artist missed",
       "titleRight": "Title found",
       "titleWrong": "Title missed",
-      "yesterdayAnswers": "Yesterday's answers",
-      "median": "Median",
       "notFoundTitle": "No answers for this day",
       "notFoundBody": "A challenge's answers are published the next day.",
       "latest": "See yesterday's answers",
@@ -1164,16 +1158,7 @@
         "artist": "Artist found",
         "title": "Title found"
       },
-      "splitNote": "The purple mark: the players' share.",
-      "yourAverage": "Your average",
-      "today": "+{{ count }} today",
-      "line": {
-        "first": "Your first game: your profile starts here.",
-        "record": "Your record, {{ points }} points above the previous one.",
-        "bestSince": "Your best score in {{ days }} days.",
-        "above": "{{ points }} points above your average.",
-        "below": "{{ points }} points below your average."
-      }
+      "splitNote": "The purple mark: the players' share."
     }
   },
   "legal": {

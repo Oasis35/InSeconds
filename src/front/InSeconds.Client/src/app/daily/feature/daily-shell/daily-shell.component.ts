@@ -91,8 +91,7 @@ export class DailyShellComponent implements OnInit {
       this.chrome.setAccountCtaShown(false);
     });
 
-    // Quelle page montre quoi : une manche est sur `/daily`, le reste (carte du défi, pause, abandon, résultat court) sur `/` ; le résultat complet
-    // (`/daily/resultat`) n'existe qu'une fois le défi fini.
+    // Quelle page montre quoi : une manche est sur `/daily`, le reste (carte du défi, pause, résultat, abandon) sur `/`.
     effect(() => {
       const target = redirectFor(this.path(), this.store.screen());
       if (target) this.goTo(target);

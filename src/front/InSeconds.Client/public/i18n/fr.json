@@ -852,7 +852,6 @@
       "track": "Piste {{ current }} / {{ total }}"
     },
     "home": {
-      "seeResult": "Voir le résultat",
       "label": "Défi du jour",
       "done": "Défi du jour",
       "abandonedScore": "partie abandonnée",
@@ -915,8 +914,6 @@
       "body": "Impossible de charger le défi du jour."
     },
     "alreadyPlayed": {
-      "abandonedTitle": "Partie abandonnée",
-      "abandonedBody": "Reviens demain pour un nouveau défi.",
       "nextChallengeIn": "Prochain défi dans",
       "yourScore": "Ton score",
       "coverAlt": "Pochette",
@@ -933,7 +930,6 @@
       "title": "Titre"
     },
     "result": {
-      "back": "Retour",
       "yourScore": "Ton score du jour",
       "nextChallenge": "Prochain défi dans",
       "fastIn": "en",
@@ -1074,8 +1070,6 @@
       "artistWrong": "Artiste raté",
       "titleRight": "Titre trouvé",
       "titleWrong": "Titre raté",
-      "yesterdayAnswers": "Les réponses d'hier",
-      "median": "Médiane",
       "notFoundTitle": "Pas de réponses pour ce jour",
       "notFoundBody": "Les réponses d'un défi sont publiées dès le lendemain.",
       "latest": "Voir les réponses d'hier",
@@ -1164,16 +1158,7 @@
         "artist": "Artiste trouvé",
         "title": "Titre trouvé"
       },
-      "splitNote": "Le trait violet : la part des joueurs.",
-      "yourAverage": "Ta moyenne",
-      "today": "+{{ count }} aujourd'hui",
-      "line": {
-        "first": "Ta première partie : ton profil commence ici.",
-        "record": "Ton record, {{ points }} points au-dessus de l'ancien.",
-        "bestSince": "Ton meilleur score depuis {{ days }} jours.",
-        "above": "{{ points }} points au-dessus de ta moyenne.",
-        "below": "{{ points }} points sous ta moyenne."
-      }
+      "splitNote": "Le trait violet : la part des joueurs."
     }
   },
   "legal": {

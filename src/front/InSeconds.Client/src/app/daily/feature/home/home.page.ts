@@ -24,7 +24,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
 /**
  * L'accueil (`/`), neutre : ni le défi ni la Survie, mais leurs cartes, avec **une seule tuile du moment** (la prochaine action). Défi à jouer :
  * la carte du défi en tête, puis la carte amis et la carte Survie. Défi fait : la carte Survie passe devant si le joueur y a accès
- * (`placement="lead"`), puis le résultat court (« Voir le résultat » ouvre `/daily/resultat`), puis la carte amis. Les cartes des autres domaines
+ * (`placement="lead"`), puis le résultat (« Détail » déplie les morceaux et les scores du jour dans la carte), puis la carte amis. Les cartes des autres domaines
  * arrivent par `<app-home-mode-entries>` : le Daily n'importe ni `social` ni `runs`. Les stores
  * sont ceux de la coquille du jeu du jour : « Commencer » lance la partie dans ce toucher, et la coquille passe sur `/daily` pour la manche.
  */
@@ -96,7 +96,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
             <app-home-mode-entries #lead placement="lead" class="block" [class.-mt-3]="lead.hasLeadingEntry()" [class.mb-3]="lead.hasLeadingEntry()" />
             <div class="screen-enter flex flex-col gap-3" data-testid="home-v4" data-fresh="false">
               @if (store.abandoned()) {
-                <app-home-abandoned-card [countdown]="store.countdown()" [score]="store.stats()?.abandonedScore ?? null" [pending]="store.stats() === null" [rows]="result.rows()" />
+                <app-home-abandoned-card [countdown]="store.countdown()" [score]="store.stats()?.abandonedScore ?? null" [pending]="store.stats() === null" [rows]="result.rows()" [lang]="language.current()" />
               } @else {
                 <app-home-done-card
                   [score]="store.stats()?.yourScore ?? null"
@@ -104,6 +104,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                   [countdown]="store.countdown()"
                   [betterThanPercent]="store.stats()?.betterThanPercent ?? null"
                   [history]="store.stats()?.history ?? null"
+                  [stats]="store.stats()"
                   [focus]="!lead.hasLeadingEntry()"
                   [lang]="language.current()"
                   [streak]="store.pillStreak()"
@@ -127,6 +128,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                 [countdown]="store.countdown()"
                 [betterThanPercent]="store.stats()?.betterThanPercent ?? null"
                 [history]="store.stats()?.history ?? null"
+                [stats]="store.stats()"
                 [focus]="!lead.hasLeadingEntry()"
                 [lang]="language.current()"
                 [streak]="store.pillStreak()"

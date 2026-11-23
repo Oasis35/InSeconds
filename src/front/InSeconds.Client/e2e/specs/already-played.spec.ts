@@ -46,6 +46,7 @@ test.describe('Déjà joué - état already_played', () => {
     await game.openTrackDetails();
     await expect(game.trackChip).toBeVisible();
     await expect(game.trackScoreButtons.first()).toBeVisible();
+    await expect(page.getByTestId('home-day-scores')).toBeVisible();
 
     // Clic sur un score → pop-up histogramme
     await game.trackScoreButtons.first().click();

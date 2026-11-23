@@ -9,11 +9,6 @@ export function todayUtc(now: Date): string {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString().slice(0, 10);
 }
 
-/** Le jour de jeu d'hier (`aaaa-mm-jj`) : le jour de jeu change à minuit UTC. */
-export function yesterdayUtc(now: Date): string {
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1)).toISOString().slice(0, 10);
-}
-
 /** `hh:mm:ss`. */
 export function formatCountdown(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);

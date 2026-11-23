@@ -7,8 +7,7 @@ import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RoundSubmission } from '../../gameplay/domain/track-round';
 import { EMPTY_STREAK, Streak } from '../domain/streak';
 import { DailyGameStore } from './daily-game.store';
-import { yesterdayUtc } from '../../core/game-day/game-day';
-import { ANSWERED, ARCHIVE_DAY, FakeDailyApi, SESSION, STATS, TODAY, provideFakeDailyApi } from './testing/fake-daily-api';
+import { ANSWERED, FakeDailyApi, SESSION, STATS, TODAY, provideFakeDailyApi } from './testing/fake-daily-api';
 
 const flush = () => new Promise<void>(resolve => setTimeout(resolve, 0));
 
@@ -66,21 +65,6 @@ describe('DailyGameStore', () => {
       expect(store.screen()).toBe('resume_prompt');
       expect(store.peekCompletedCount()).toBe(2);
       expect(audio.calls).toEqual([]);
-    });
-
-    it("« déjà joué » charge aussi les réponses d'hier (l'encart), rien sans défi hier", async () => {
-      const yesterday = yesterdayUtc(new Date());
-      api.archiveDays = { [yesterday]: ARCHIVE_DAY({ date: yesterday }) };
-      api.today = TODAY({ state: 'already_played' });
-      await store.init();
-      await flush();
-      expect(api.calls).toContain(`archiveDay ${yesterday}`);
-      expect(store.yesterday()?.date).toBe(yesterday);
-
-      api.archiveDays = {};
-      await store.init();
-      await flush();
-      expect(store.yesterday()).toBeNull();
     });
 
     it("« déjà joué » charge les statistiques du jour, pas une partie abandonnée", async () => {

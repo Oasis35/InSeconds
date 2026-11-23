@@ -7,7 +7,7 @@ import { DailyGameStore } from '../../data-access/daily-game.store';
 import { DailyShare } from '../../data-access/daily-share';
 import { LostStreakNotice } from '../../data-access/lost-streak-notice';
 import { GuestStreakNotice } from '../../data-access/guest-streak-notice';
-import { rowsFromResults, rowsFromStats, shareTracksOf } from '../../ui/day-result-screen/result-rows';
+import { rowsFromResults, rowsFromStats, shareTracksOf } from '../../ui/result-rows/result-rows';
 import { countUp } from '../../ui/score-count/count-up';
 import { StreakSheetComponent, StreakSheetData, StreakSheetResult } from '../../ui/streak-sheet/streak-sheet.component';
 
