@@ -255,6 +255,12 @@
     },
     "profile": {
       "title": "Ton profil",
+      "account": {
+        "title": "Compte"
+      },
+      "preferences": {
+        "title": "Préférences"
+      },
       "pseudo": {
         "label": "Pseudo",
         "placeholder": "Ton pseudo",
@@ -305,7 +311,6 @@
     },
     "devices": {
       "title": "Appareils connectés",
-      "intro": "Les appareils sur lesquels tu es connecté à ce compte.",
       "current": "Cet appareil",
       "unknownDevice": "Appareil inconnu",
       "lastSeen": "Vu {{ date }}",
