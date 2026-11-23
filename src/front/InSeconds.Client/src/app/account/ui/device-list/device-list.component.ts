@@ -13,7 +13,7 @@ import { Device } from '../../domain/device';
   imports: [TranslatePipe, ButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <ul class="m-0 flex list-none flex-col p-0" data-testid="device-list">
+    <ul class="m-0 flex list-none flex-col p-0" role="list" data-testid="device-list">
       @for (device of rows(); track device.id) {
         <li class="flex items-center gap-3 py-3 text-left"
           style="border-top:1px solid var(--border-medium)" [attr.data-testid]="'device-' + device.id">
