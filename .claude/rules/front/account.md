@@ -30,6 +30,7 @@ Connexion par lien magique, vérification du lien, profil, appareils, confirmati
 
 ## Profil et droits RGPD
 
+- Le profil est un écran technique en quatre cartes (Compte : pseudo et email avec libellés visibles ; Appareils ; Préférences : langue, puis le nom au classement général avec l'accès Survie ; Tes données), puis « Se déconnecter » en contour neutre. Ni titre visible (un `h1` masqué), ni en-tête d'identité, ni liens légaux : ils vivent sur les pages d'entrée par `home-legal-line`.
 - Appareils repliés à chaque visite (`devicesOpen`) ; « Déconnecter les autres appareils » reste visible liste repliée. Déconnexion = cet appareil seulement (piège 39).
 - « Télécharger mes données » : `PlayersApi.exportMyData` (`GET /api/players/me/export`), JSON remis en forme, enregistré directement par `FileDownload` (`core/download/`, lien `blob:` cliqué puis retiré), nom tiré de `exportedAt`.
 - « Supprimer mon compte » : un lien en dernier qui ouvre `DeleteAccountDialog` (`ModalService.open` avec l'injecteur de la page, pour `ProfileStore`) ; « Supprimer » actif seulement pour le bon pseudo (`samePseudo` : sans espaces autour ni casse, comme le back) ; `ProfileStore.deleteAccount` vide la session et la page revient à `/`. Un refus `players.pseudo_mismatch` s'affiche dans la fenêtre, sans code technique.

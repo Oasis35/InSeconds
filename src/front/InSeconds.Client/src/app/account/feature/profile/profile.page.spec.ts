@@ -68,8 +68,8 @@ describe('ProfilePage', () => {
     expect(emailInput(fixture).value).toBe('alice@example.com');
   });
 
-  describe('langue, liens légaux et classement général', () => {
-    it('la langue se choisit ici et les liens légaux restent joignables', async () => {
+  describe('langue et classement général', () => {
+    it('la langue se choisit ici et la page ne porte aucun lien légal', async () => {
       const fixture = await render();
 
       const english = query<HTMLButtonElement>(fixture, '[data-testid="language-en"]')!;
@@ -79,8 +79,9 @@ describe('ProfilePage', () => {
 
       expect(TestBed.inject(LanguageService).current()).toBe('en');
       expect(english.getAttribute('aria-pressed')).toBe('true');
-      const links = [...query(fixture, '[data-testid="profile-legal"]')!.querySelectorAll('a')].map(a => a.getAttribute('href'));
-      expect(links).toEqual(['/legal', '/privacy', 'mailto:contact@inseconds.cc']);
+      const hrefs = [...(fixture.nativeElement as HTMLElement).querySelectorAll('a')].map(a => a.getAttribute('href'));
+      expect(hrefs).not.toContain('/legal');
+      expect(hrefs).not.toContain('/privacy');
     });
 
     it("le lien du nom au classement général n'est là qu'avec l'accès Survie", async () => {
@@ -352,14 +353,14 @@ describe('ProfilePage', () => {
   });
 
   describe('tes données', () => {
-    it('viennent après la déconnexion, la suppression en dernier', async () => {
+    it('précèdent la déconnexion, la suppression en dernier de leur carte', async () => {
       const fixture = await render();
       const logout = buttonLabelled(fixture, 'account.profile.logout.action');
       const download = buttonLabelled(fixture, 'account.profile.data.export');
       const remove = query(fixture, '[data-testid="delete-account"]')!;
 
-      expect(logout.compareDocumentPosition(download) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(download.compareDocumentPosition(remove) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(remove.compareDocumentPosition(logout) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
     it('téléchargent la copie de ses données directement, sans fenêtre', async () => {

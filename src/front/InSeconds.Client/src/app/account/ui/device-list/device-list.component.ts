@@ -13,16 +13,16 @@ import { Device } from '../../domain/device';
   imports: [TranslatePipe, ButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <ul class="flex flex-col gap-2" data-testid="device-list">
+    <ul class="m-0 flex list-none flex-col p-0" data-testid="device-list">
       @for (device of rows(); track device.id) {
-        <li class="flex items-center gap-3 rounded-xl px-4 py-3 text-left"
-          style="background:var(--bg-surface);border:1px solid var(--border-medium)" [attr.data-testid]="'device-' + device.id">
+        <li class="flex items-center gap-3 py-3 text-left"
+          style="border-top:1px solid var(--border-medium)" [attr.data-testid]="'device-' + device.id">
           <div class="min-w-0 flex-1">
             <p class="truncate text-sm font-semibold" style="color:var(--text-hi)">
               {{ device.label ?? ('account.devices.unknownDevice' | translate) }}
               @if (device.isCurrent) {
-                <span class="ml-2 rounded-full px-2 py-0.5 text-xs font-semibold"
-                  style="background:rgb(var(--rgb-accent-2) / 0.15);color:var(--color-accent-2)">
+                <span class="ml-2 rounded-md px-2 py-0.5 text-xs font-semibold"
+                  style="border:1px solid var(--border-neutral);color:var(--text-hi)">
                   {{ 'account.devices.current' | translate }}
                 </span>
               }
@@ -31,7 +31,7 @@ import { Device } from '../../domain/device';
               {{ 'account.devices.lastSeen' | translate: { date: device.lastSeen } }}
             </p>
           </div>
-          <button appButton type="button" variant="secondary" size="sm" [disabled]="busyId() === device.id"
+          <button appButton type="button" variant="neutral" size="sm" class="min-h-11" [disabled]="busyId() === device.id"
             (click)="revoke.emit(device.id)">
             {{ 'account.devices.revoke' | translate }}
           </button>

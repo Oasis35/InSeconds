@@ -255,6 +255,12 @@
     },
     "profile": {
       "title": "Your profile",
+      "account": {
+        "title": "Account"
+      },
+      "preferences": {
+        "title": "Preferences"
+      },
       "pseudo": {
         "label": "Pseudo",
         "placeholder": "Your pseudo",
@@ -305,7 +311,6 @@
     },
     "devices": {
       "title": "Connected devices",
-      "intro": "The devices where you are signed in to this account.",
       "current": "This device",
       "unknownDevice": "Unknown device",
       "lastSeen": "Seen {{ date }}",
