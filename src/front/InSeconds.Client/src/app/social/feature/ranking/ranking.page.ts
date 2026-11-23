@@ -18,6 +18,7 @@ import { GroupsAnnounce } from '../../data-access/groups-announce';
 import { GroupsStore } from '../../data-access/groups.store';
 import { PendingInvite } from '../../data-access/pending-invite';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
+import { Group } from '../../domain/group';
 import { GroupView, groupViewOf, todayRows, weekRows } from '../../domain/group-scores';
 import { LeaveOwnerData, LeaveOwnerSheet } from './leave-owner.sheet';
 import { ManageGroupChoice, ManageGroupData, ManageGroupSheet } from './manage-group.sheet';
@@ -134,35 +135,42 @@ export class RankingPage {
     const group = this.store.selected();
     if (!group) return;
     this.leaveFailed.set(false);
-    let successor: string | null = null;
-    if (group.isOwner && group.memberCount > 1) {
-      const members = this.otherMembers();
-      if (members.length === 0) {
-        // Les membres ne sont pas lus (panne) : sans eux, personne à désigner.
-        this.leaveFailed.set(true);
-        return;
-      }
-      const chosen = await this.pickSuccessor({
-        title: this.translate.instant('social.leave.title', { name: group.name }),
-        body: this.translate.instant('social.leave.ownerBody'),
-        confirmLabel: this.translate.instant('social.leave.ownerConfirm'),
-        danger: true,
-        members,
-      });
-      if (chosen === null) return;
-      successor = chosen;
-    } else {
-      const confirmed = await this.modal.confirm({
-        title: this.translate.instant('social.leave.title', { name: group.name }),
-        body: this.translate.instant(group.isOwner ? 'social.leave.lastBody' : 'social.leave.body'),
-        confirmLabel: this.translate.instant(group.isOwner ? 'social.leave.lastConfirm' : 'social.leave.confirm'),
-        cancelLabel: this.translate.instant('social.leave.cancel'),
-        tone: 'danger',
-      });
-      if (!confirmed) return;
-    }
-    if (await this.store.leave(group.id, successor)) void this.router.navigate(['/ranking'], { replaceUrl: true });
+    const departure = group.isOwner && group.memberCount > 1 ? await this.askSuccessor(group) : await this.askConfirmation(group);
+    if (departure === null) return;
+    if (await this.store.leave(group.id, departure.successor)) void this.router.navigate(['/ranking'], { replaceUrl: true });
     else this.leaveFailed.set(true);
+  }
+
+  /**
+   * Le créateur qui laisse d'autres membres choisit qui le devient. `null` : il renonce, ou les membres ne sont pas lus (panne, signalée par
+   * `leaveFailed`) et personne n'est à désigner.
+   */
+  private async askSuccessor(group: Group): Promise<{ successor: string } | null> {
+    const members = this.otherMembers();
+    if (members.length === 0) {
+      this.leaveFailed.set(true);
+      return null;
+    }
+    const chosen = await this.pickSuccessor({
+      title: this.translate.instant('social.leave.title', { name: group.name }),
+      body: this.translate.instant('social.leave.ownerBody'),
+      confirmLabel: this.translate.instant('social.leave.ownerConfirm'),
+      danger: true,
+      members,
+    });
+    return chosen === null ? null : { successor: chosen };
+  }
+
+  /** Un simple membre, ou le créateur seul (qui supprime le groupe en partant), confirme : pas de successeur. `null` : il renonce. */
+  private async askConfirmation(group: Group): Promise<{ successor: null } | null> {
+    const confirmed = await this.modal.confirm({
+      title: this.translate.instant('social.leave.title', { name: group.name }),
+      body: this.translate.instant(group.isOwner ? 'social.leave.lastBody' : 'social.leave.body'),
+      confirmLabel: this.translate.instant(group.isOwner ? 'social.leave.lastConfirm' : 'social.leave.confirm'),
+      cancelLabel: this.translate.instant('social.leave.cancel'),
+      tone: 'danger',
+    });
+    return confirmed ? { successor: null } : null;
   }
 
   /** « Gérer le groupe » : ce que seul le créateur peut faire. La feuille propose renommer et, avec d'autres membres, changer de créateur. */
