@@ -26,7 +26,7 @@ import { ShellChromeStore } from '../shell-chrome.store';
                [class.bar-tab--active]="tab.active">
               <span class="relative" aria-hidden="true">
                 @if (tab.id === 'daily') {
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 5.5v13l11-6.5z"/></svg>
                   @if (chrome.dailyDone() === false) {
                     <span class="bar-pulse absolute -top-0.5 -right-1 h-2 w-2 rounded-full" data-testid="daily-pending" style="background:var(--color-accent-2)"></span>
                   }
