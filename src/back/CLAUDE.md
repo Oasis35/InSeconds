@@ -119,7 +119,7 @@ Une plage par module, jamais un identifiant réutilisé (les tableaux Grafana et
 | 1200 à 1209 | `CatalogueLog` | pool, candidats, formes d'onde |
 | 1210 à 1221 | `DeezerLog` | client Deezer |
 | 1400 à 1416 (sans 1412 à 1414) | `RunsLog` | Survie |
-| 1800 à 1811 | `SocialLog` | groupes, classement |
+| 1800 à 1812 | `SocialLog` | groupes, classement |
 
 Un nouvel identifiant prend le suivant de sa plage ; un nouveau module prend une centaine libre (15xx à 17xx).
 

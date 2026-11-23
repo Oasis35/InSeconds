@@ -20,6 +20,7 @@ import { PendingInvite } from '../../data-access/pending-invite';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { GroupView, groupViewOf, todayRows, weekRows } from '../../domain/group-scores';
 import { LeaveOwnerData, LeaveOwnerSheet } from './leave-owner.sheet';
+import { RenameGroupData, RenameGroupSheet } from './rename-group.sheet';
 import { GeneralRankingComponent } from '../general-ranking/general-ranking.component';
 import { ScoreListComponent } from '../../ui/score-list/score-list.component';
 import { TodayPlayedComponent } from '../../ui/today-played/today-played.component';
@@ -63,6 +64,7 @@ export class RankingPage {
   protected readonly pendingCode = signal(inject(PendingInvite).get());
   protected readonly leaveFailed = signal(false);
   protected readonly transferFailed = signal(false);
+  protected readonly renameFailed = signal(false);
 
   /** Le groupe de l'adresse ; absent ou mal écrit : le premier. */
   private readonly groupId = toSignal(
@@ -143,6 +145,7 @@ export class RankingPage {
         title: this.translate.instant('social.leave.title', { name: group.name }),
         body: this.translate.instant('social.leave.ownerBody'),
         confirmLabel: this.translate.instant('social.leave.ownerConfirm'),
+        danger: true,
         members,
       });
       if (chosen === null) return;
@@ -159,6 +162,16 @@ export class RankingPage {
     }
     if (await this.store.leave(group.id, successor)) void this.router.navigate(['/ranking'], { replaceUrl: true });
     else this.leaveFailed.set(true);
+  }
+
+  /** Le créateur renomme son groupe : le nom est validé par le serveur, la liste relue. */
+  protected async rename(): Promise<void> {
+    const group = this.store.selected();
+    if (!group?.isOwner) return;
+    this.renameFailed.set(false);
+    const ref = this.modal.openSheet<string | null, RenameGroupData, RenameGroupSheet>(RenameGroupSheet, { data: { name: group.name } });
+    const name = (await firstValueFrom(ref.closed)) ?? null;
+    if (name !== null && !(await this.store.rename(group.id, name))) this.renameFailed.set(true);
   }
 
   /** Les autres membres du groupe regardé, lus avec ses scores ; vide tant que la lecture n'a pas abouti. */

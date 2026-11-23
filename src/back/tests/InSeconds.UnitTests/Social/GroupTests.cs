@@ -81,6 +81,41 @@ public class GroupTests
     }
 
     [Fact]
+    public void Leave_LeCreateurAvecSonSuccesseur_ChangeLeCreateurEtPartEnUnSeulGeste()
+    {
+        var group = NewGroup();
+        group.Join(Bob, T0.AddMinutes(1));
+
+        Assert.Equal(GroupDeparture.Left, group.Leave(Alice, Bob));
+
+        Assert.True(group.IsOwner(Bob));
+        Assert.False(group.IsMember(Alice));
+    }
+
+    [Fact]
+    public void Leave_LeCreateurAvecUnSuccesseurQuiNEstPasMembre_Refuse_EtRienNeChange()
+    {
+        var group = NewGroup();
+        group.Join(Bob, T0.AddMinutes(1));
+
+        Assert.Throws<InvalidOperationException>(() => group.Leave(Alice, Carol));
+        Assert.Throws<InvalidOperationException>(() => group.Leave(Alice, Alice));
+
+        Assert.True(group.IsOwner(Alice));
+        Assert.Equal(2, group.Members.Count);
+    }
+
+    [Fact]
+    public void Leave_UnSimpleMembre_IgnoreLeSuccesseur()
+    {
+        var group = NewGroup();
+        group.Join(Bob, T0.AddMinutes(1));
+
+        Assert.Equal(GroupDeparture.Left, group.Leave(Bob, Alice));
+        Assert.True(group.IsOwner(Alice));
+    }
+
+    [Fact]
     public void Leave_LeCreateurSeul_LeGroupeEstVide_SansSuccesseur()
     {
         var group = NewGroup();

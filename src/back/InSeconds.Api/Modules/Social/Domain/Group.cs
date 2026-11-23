@@ -75,13 +75,14 @@ public sealed class Group
 
     /// <summary>
     /// Retire un membre. Le dernier membre qui part vide le groupe (<see cref="GroupDeparture.Emptied"/> : l'appelant le supprime). Le créateur
-    /// ne part pas tant qu'il reste d'autres membres : il a d'abord désigné son successeur (<see cref="MustHandOverBeforeLeaving"/>).
+    /// ne part pas tant qu'il reste d'autres membres sans désigner son successeur (<paramref name="successorId"/>, un autre membre, vérifié par
+    /// <see cref="CanTransferTo"/>) : le changement de créateur et le départ se font ensemble. Un simple membre ignore <paramref name="successorId"/>.
     /// </summary>
-    public GroupDeparture Leave(Guid playerId)
+    public GroupDeparture Leave(Guid playerId, Guid? successorId = null)
     {
         var member = _members.Find(m => m.PlayerId == playerId) ?? throw new InvalidOperationException("Pas membre de ce groupe.");
         if (MustHandOverBeforeLeaving(playerId))
-            throw new InvalidOperationException("Le créateur doit d'abord désigner un successeur.");
+            TransferOwnership(successorId ?? throw new InvalidOperationException("Le créateur doit d'abord désigner un successeur."));
         _members.Remove(member);
         return _members.Count == 0 ? GroupDeparture.Emptied : GroupDeparture.Left;
     }

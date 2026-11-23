@@ -87,6 +87,11 @@ export class SocialApi {
     return this.write(() => firstValueFrom(this.client.joinGroup(inviteCode)));
   }
 
+  /** Le créateur renomme son groupe ; 400 `social.invalid_name`, 403 `social.not_owner`. */
+  async rename(groupId: number, name: string): Promise<void> {
+    await firstValueFrom(this.client.renameGroup(groupId, { name }));
+  }
+
   /** Le créateur confie le groupe au membre de ce pseudo, sans partir ; 400 `social.invalid_successor`. */
   async transferOwner(groupId: number, pseudo: string): Promise<void> {
     await firstValueFrom(this.client.transferGroupOwner(groupId, { pseudo }));

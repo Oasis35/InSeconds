@@ -1592,6 +1592,14 @@
       "failed": "Copy failed",
       "text": "Join “{{ name }}” on InSeconds: we'll be in the same ranking."
     },
+    "rename": {
+      "link": "Rename the group",
+      "title": "Rename the group",
+      "label": "New name",
+      "confirm": "Rename",
+      "cancel": "Cancel",
+      "failed": "Could not rename the group right now."
+    },
     "transfer": {
       "link": "Change owner",
       "title": "New owner of “{{ name }}”",

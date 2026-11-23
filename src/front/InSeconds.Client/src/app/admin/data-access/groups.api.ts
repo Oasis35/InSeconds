@@ -28,10 +28,10 @@ export class AdminGroupsApi {
 
   /**
    * Retire le membre de ce pseudo. Pour le créateur d'un groupe qui a d'autres membres, `successor` est le pseudo du nouveau créateur (le changement et
-   * le retrait partent ensemble) ; le dernier membre retiré supprime le groupe. 404 `social.member_not_found`, 409 `social.owner_must_hand_over`.
+   * le retrait partent ensemble) ; le dernier membre retiré supprime le groupe. Les pseudos partent dans le corps, jamais dans l'adresse. 404 `social.member_not_found`, 409 `social.owner_must_hand_over`.
    */
   async removeMember(id: number, pseudo: string, successor: string | null): Promise<void> {
-    await firstValueFrom(this.client.removeAdminGroupMember(id, pseudo, successor ?? undefined));
+    await firstValueFrom(this.client.removeAdminGroupMember(id, { pseudo, successor: successor ?? undefined }));
   }
 
   /** Donne un autre nom au groupe et rend le nom enregistré (rogné) ; 400 `social.invalid_name`, 404 `social.group_not_found`. */

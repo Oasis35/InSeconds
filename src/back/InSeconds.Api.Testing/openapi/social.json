@@ -130,8 +130,8 @@
         }
       }
     },
-    "/api/admin/social/groups/{id}/members/{pseudo}": {
-      "delete": {
+    "/api/admin/social/groups/{id}/members/remove": {
+      "post": {
         "tags": [
           "Social"
         ],
@@ -145,23 +145,18 @@
               "type": "integer",
               "format": "int32"
             }
-          },
-          {
-            "name": "pseudo",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "successor",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveAdminGroupMember"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "204": {
             "description": "No Content"
@@ -1178,6 +1173,87 @@
         }
       }
     },
+    "/api/social/groups/{id}/name": {
+      "put": {
+        "tags": [
+          "Social"
+        ],
+        "operationId": "renameGroup",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameGroup"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupNameResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/social/groups/{id}/owner": {
       "put": {
         "tags": [
@@ -1895,6 +1971,23 @@
           }
         }
       },
+      "RemoveAdminGroupMember": {
+        "required": [
+          "pseudo"
+        ],
+        "type": "object",
+        "properties": {
+          "pseudo": {
+            "type": "string"
+          },
+          "successor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "RenameGroup": {
         "required": [
           "name"
@@ -2075,6 +2168,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Social.Application.LeaveGroupEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Social.Application.RenameGroupEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Social.Application.TransferGroupOwnerEndpoint"

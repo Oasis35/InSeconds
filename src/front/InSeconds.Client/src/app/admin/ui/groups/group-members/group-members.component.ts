@@ -29,7 +29,7 @@ export interface MemberRemoval {
   host: { 'data-testid': 'group-members' },
   template: `
     @if (members(); as list) {
-      <p class="text-[11px] uppercase tracking-wide mb-1.5" style="color:var(--text-faint)">{{ 'admin.groups.membersTitle' | translate: { count: list.length } }}</p>
+      <p class="text-xs font-medium mb-1.5" style="color:var(--text-muted)">{{ 'admin.groups.membersTitle' | translate: { count: list.length } }}</p>
       @if (list.length === 0) {
         <p class="text-xs" style="color:var(--text-muted)">{{ 'admin.groups.membersEmpty' | translate }}</p>
       } @else {
@@ -48,11 +48,11 @@ export interface MemberRemoval {
                   <span class="flex items-center gap-2">
                     @if (!member.isOwner) {
                       <button type="button" data-testid="member-make-owner" (click)="ask('owner', pseudo)"
-                        class="px-2.5 py-1 rounded-(--radius-button) text-xs hover:opacity-80"
+                        class="px-2.5 py-1 min-h-11 lg:min-h-0 rounded-(--radius-button) text-xs hover:opacity-80"
                         style="background:var(--bg-inactive);color:var(--text-hi);border:1px solid var(--border-neutral)">{{ 'admin.groups.makeOwner' | translate }}</button>
                     }
                     <button type="button" data-testid="member-remove" (click)="ask('remove', pseudo)"
-                      class="px-2.5 py-1 rounded-(--radius-button) text-xs hover:opacity-80"
+                      class="px-2.5 py-1 min-h-11 lg:min-h-0 rounded-(--radius-button) text-xs hover:opacity-80"
                       style="background:var(--bg-inactive);color:var(--text-error);border:1px solid var(--border-neutral)">{{ 'admin.groups.removeMember' | translate }}</button>
                   </span>
                 }
@@ -65,26 +65,25 @@ export interface MemberRemoval {
                         </p>
                         <div class="flex flex-wrap items-center gap-2">
                           <button type="button" data-testid="confirm-make-owner" [disabled]="pending()" (click)="ownerChanged.emit(pseudo)"
-                            class="px-3 py-1.5 rounded-(--radius-button) text-sm font-medium disabled:opacity-50"
+                            class="px-3 py-1.5 min-h-11 lg:min-h-0 rounded-(--radius-button) text-sm font-medium disabled:opacity-50"
                             style="background:var(--bg-inactive);color:var(--text-hi);border:1px solid var(--border-neutral)">{{ 'admin.groups.makeOwnerYes' | translate }}</button>
-                          <button type="button" (click)="cancel()" [disabled]="pending()" class="px-2 py-1.5 text-sm underline" style="color:var(--text-muted)">{{ 'admin.groups.cancel' | translate }}</button>
+                          <button type="button" (click)="cancel()" [disabled]="pending()" class="px-2 py-1.5 min-h-11 lg:min-h-0 text-sm underline" style="color:var(--text-muted)">{{ 'admin.groups.cancel' | translate }}</button>
                         </div>
                       } @else if (member.isOwner && others().length > 0) {
                         <p class="text-sm" style="color:var(--text-muted)">{{ 'admin.groups.removeOwnerWarning' | translate: { pseudo: pseudo } }}</p>
                         <div class="flex flex-wrap items-center gap-2">
                           <label [for]="'successor-' + $index" class="sr-only">{{ 'admin.groups.successorLabel' | translate }}</label>
                           <select [id]="'successor-' + $index" data-testid="successor-select" #pick [value]="successor()" (change)="successor.set(pick.value)"
-                            class="px-3 py-2 rounded-lg text-sm outline-none"
-                            style="background:var(--bg-inactive);color:var(--text-hi);border:1px solid var(--border-medium)">
+                            class="app-input w-auto">
                             <option value="">{{ 'admin.groups.successorPlaceholder' | translate }}</option>
                             @for (other of others(); track other) {
                               <option [value]="other">{{ other }}</option>
                             }
                           </select>
                           <button type="button" data-testid="confirm-remove-owner" [disabled]="pending() || successor() === ''" (click)="removed.emit({ pseudo: pseudo, successor: successor() })"
-                            class="px-3 py-1.5 rounded-(--radius-button) text-sm font-medium disabled:opacity-50"
-                            style="background:var(--bg-inactive);color:var(--text-error);border:1px solid var(--text-error)">{{ 'admin.groups.removeOwnerYes' | translate }}</button>
-                          <button type="button" (click)="cancel()" [disabled]="pending()" class="px-2 py-1.5 text-sm underline" style="color:var(--text-muted)">{{ 'admin.groups.cancel' | translate }}</button>
+                            class="px-3 py-1.5 min-h-11 lg:min-h-0 rounded-(--radius-button) text-sm font-medium disabled:opacity-50"
+                            style="background:var(--bg-inactive);color:var(--text-error);border:1px solid var(--color-fail)">{{ 'admin.groups.removeOwnerYes' | translate }}</button>
+                          <button type="button" (click)="cancel()" [disabled]="pending()" class="px-2 py-1.5 min-h-11 lg:min-h-0 text-sm underline" style="color:var(--text-muted)">{{ 'admin.groups.cancel' | translate }}</button>
                         </div>
                       } @else {
                         <p class="text-sm" style="color:var(--text-muted)">
@@ -92,9 +91,9 @@ export interface MemberRemoval {
                         </p>
                         <div class="flex flex-wrap items-center gap-2">
                           <button type="button" data-testid="confirm-remove-member" [disabled]="pending()" (click)="removed.emit({ pseudo: pseudo, successor: null })"
-                            class="px-3 py-1.5 rounded-(--radius-button) text-sm font-medium disabled:opacity-50"
-                            style="background:var(--bg-inactive);color:var(--text-error);border:1px solid var(--text-error)">{{ (list.length === 1 ? 'admin.groups.removeLastYes' : 'admin.groups.removeMemberYes') | translate }}</button>
-                          <button type="button" (click)="cancel()" [disabled]="pending()" class="px-2 py-1.5 text-sm underline" style="color:var(--text-muted)">{{ 'admin.groups.cancel' | translate }}</button>
+                            class="px-3 py-1.5 min-h-11 lg:min-h-0 rounded-(--radius-button) text-sm font-medium disabled:opacity-50"
+                            style="background:var(--bg-inactive);color:var(--text-error);border:1px solid var(--color-fail)">{{ (list.length === 1 ? 'admin.groups.removeLastYes' : 'admin.groups.removeMemberYes') | translate }}</button>
+                          <button type="button" (click)="cancel()" [disabled]="pending()" class="px-2 py-1.5 min-h-11 lg:min-h-0 text-sm underline" style="color:var(--text-muted)">{{ 'admin.groups.cancel' | translate }}</button>
                         </div>
                       }
                       @if (errorKey(); as key) {

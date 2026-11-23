@@ -1592,6 +1592,14 @@
       "failed": "Copie impossible",
       "text": "Rejoins « {{ name }} » sur InSeconds : on se retrouve dans le même classement."
     },
+    "rename": {
+      "link": "Renommer le groupe",
+      "title": "Renommer le groupe",
+      "label": "Nouveau nom",
+      "confirm": "Renommer",
+      "cancel": "Annuler",
+      "failed": "Impossible de renommer le groupe pour le moment."
+    },
     "transfer": {
       "link": "Changer de créateur",
       "title": "Nouveau créateur de « {{ name }} »",

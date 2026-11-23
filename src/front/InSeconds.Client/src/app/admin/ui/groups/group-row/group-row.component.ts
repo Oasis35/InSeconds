@@ -56,14 +56,13 @@ type RowMode = 'idle' | 'rename' | 'reset' | 'delete';
           (ownerChanged)="ownerChanged.emit($event)" (removed)="memberRemoved.emit($event)" />
 
         <div class="flex flex-col gap-2" data-testid="group-moderation">
-          <p class="text-[11px] uppercase tracking-wide" style="color:var(--text-faint)">{{ 'admin.groups.moderationTitle' | translate }}</p>
+          <p class="text-xs font-medium" style="color:var(--text-muted)">{{ 'admin.groups.moderationTitle' | translate }}</p>
           @switch (mode()) {
             @case ('rename') {
               <form class="flex flex-wrap items-center gap-2" (submit)="$event.preventDefault(); submitRename()">
                 <label [for]="'group-name-' + group().id" class="sr-only">{{ 'admin.groups.renameLabel' | translate }}</label>
                 <input [id]="'group-name-' + group().id" type="text" #nameField [value]="draft()" (input)="draft.set(nameField.value)" maxlength="40"
-                  class="flex-1 min-w-40 px-3 py-2 rounded-lg text-sm outline-none"
-                  style="background:var(--bg-inactive);color:var(--text-hi);border:1px solid var(--border-medium)" />
+                  class="app-input flex-1 min-w-40" />
                 <button type="submit" [disabled]="pending() || draft().trim().length === 0"
                   class="px-3 py-2 rounded-(--radius-button) text-sm font-medium disabled:opacity-50"
                   style="background:var(--bg-inactive);color:var(--text-hi);border:1px solid var(--border-neutral)">{{ 'admin.groups.save' | translate }}</button>
@@ -84,7 +83,7 @@ type RowMode = 'idle' | 'rename' | 'reset' | 'delete';
                 <span class="text-sm" style="color:var(--text-muted)">{{ 'admin.groups.deleteConfirm' | translate }}</span>
                 <button type="button" data-testid="confirm-delete" [disabled]="pending()" (click)="removeRequested.emit()"
                   class="px-3 py-1.5 rounded-(--radius-button) text-sm font-medium disabled:opacity-50"
-                  style="background:var(--bg-inactive);color:var(--text-error);border:1px solid var(--text-error)">{{ 'admin.groups.deleteYes' | translate }}</button>
+                  style="background:var(--bg-inactive);color:var(--text-error);border:1px solid var(--color-fail)">{{ 'admin.groups.deleteYes' | translate }}</button>
                 <button type="button" (click)="close()" [disabled]="pending()" class="px-2 py-1.5 text-sm underline" style="color:var(--text-muted)">{{ 'admin.groups.cancel' | translate }}</button>
               </div>
             }

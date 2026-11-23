@@ -354,16 +354,44 @@ public static class LeaveGroupEndpoint
         var (action, successorId) = (leave.Action, leave.SuccessorId);
         var group = action.Group!;
         if (group.MustHandOverBeforeLeaving(action.PlayerId))
-        {
-            group.TransferOwnership(successorId!.Value);
-            SocialLog.OwnerTransferred(logger, group.Id, successorId.Value, action.PlayerId);
-        }
-
-        var departure = group.Leave(action.PlayerId);
+            SocialLog.OwnerTransferred(logger, group.Id, successorId!.Value, action.PlayerId);
+        var departure = group.Leave(action.PlayerId, successorId);
         if (departure == GroupDeparture.Emptied)
             store.Remove(group);
         SocialLog.GroupLeft(logger, group.Id, action.PlayerId, departure.ToString());
         metrics.Group(departure == GroupDeparture.Emptied ? SocialMetrics.Emptied : SocialMetrics.Left);
+    }
+}
+
+public static class RenameGroupEndpoint
+{
+    public static Task<GroupAction> LoadAsync(int id, ICurrentPlayer current, IGroupStore store, CancellationToken ct) =>
+        GroupActionSteps.LoadAsync(id, current, store, ct);
+
+    public static ProblemDetails Validate(RenameGroup request, GroupAction action, SocialRules rules)
+    {
+        var owner = GroupActionSteps.ValidateOwner(action);
+        if (!ReferenceEquals(owner, WolverineContinue.NoProblems))
+            return owner;
+        return GroupName.IsValid(request.Name, rules.MaxNameLength) ? WolverineContinue.NoProblems : SocialProblems.InvalidName(rules.MaxNameLength);
+    }
+
+    /// <summary>
+    /// <c>PUT /api/social/groups/{id}/name</c> : le créateur renomme son groupe (mêmes caractères permis et même longueur qu'à la création) et rend le
+    /// nom enregistré. 400 <c>social.invalid_name</c>, 404 <c>social.group_not_found</c> pour un non-membre, 403 <c>social.not_owner</c> pour un simple
+    /// membre.
+    /// </summary>
+    [Authorize]
+    [WolverinePut("/api/social/groups/{id}/name", OperationId = "renameGroup")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public static GroupNameResponse Put(RenameGroup request, [NotBody] GroupAction action, ILogger<Group> logger)
+    {
+        var group = action.Group!;
+        group.Rename(request.Name);
+        SocialLog.GroupRenamed(logger, group.Id, action.PlayerId);
+        return new GroupNameResponse(group.Name);
     }
 }
 

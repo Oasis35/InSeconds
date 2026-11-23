@@ -13,7 +13,7 @@ describe('SocialApi', () => {
   let api: SocialApi;
 
   beforeEach(() => {
-    client = { listMyGroups: vi.fn(), getGroupRanking: vi.fn(), getGroupScores: vi.fn(), createGroup: vi.fn(), joinGroup: vi.fn(), leaveGroup: vi.fn(), transferGroupOwner: vi.fn(), getInvitation: vi.fn(), getGeneralRanking: vi.fn(), setRankingIdentity: vi.fn(), drawRankingAlias: vi.fn() };
+    client = { listMyGroups: vi.fn(), getGroupRanking: vi.fn(), getGroupScores: vi.fn(), createGroup: vi.fn(), joinGroup: vi.fn(), leaveGroup: vi.fn(), transferGroupOwner: vi.fn(), renameGroup: vi.fn(), getInvitation: vi.fn(), getGeneralRanking: vi.fn(), setRankingIdentity: vi.fn(), drawRankingAlias: vi.fn() };
     TestBed.configureTestingModule({ providers: [{ provide: SocialClient, useValue: client }, SocialApi] });
     api = TestBed.inject(SocialApi);
   });
@@ -138,6 +138,14 @@ describe('SocialApi', () => {
     await api.leave(4);
 
     expect(client['leaveGroup']).toHaveBeenCalledWith(4, undefined);
+  });
+
+  it('le créateur renomme son groupe', async () => {
+    client['renameGroup'].mockReturnValue(of({ name: 'Les amis' }));
+
+    await api.rename(4, 'Les amis');
+
+    expect(client['renameGroup']).toHaveBeenCalledWith(4, { name: 'Les amis' });
   });
 
   it('le créateur confie le groupe à un pseudo sans partir', async () => {

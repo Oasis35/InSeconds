@@ -152,8 +152,9 @@ public class AdminGroupsTests(PostgresFixture postgres) : IAsyncLifetime
 
     private static string Members(int groupId) => $"{Route}/{groupId}/members";
 
-    private static string Remove(int groupId, string pseudo, string? successor = null) =>
-        $"{Members(groupId)}/{Uri.EscapeDataString(pseudo)}" + (successor is null ? "" : $"?successor={Uri.EscapeDataString(successor)}");
+    /// <summary>Retire un membre : les pseudos sont dans le corps, jamais dans le chemin (il part dans les traces).</summary>
+    private Task<HttpResponseMessage> RemoveAsync(int groupId, string pseudo, string? successor = null, HttpClient? client = null) =>
+        (client ?? _admin).PostAsJsonAsync($"{Members(groupId)}/remove", new RemoveAdminGroupMember(pseudo, successor), Ct);
 
     [Fact]
     public async Task Retirer_UnMembre_LeGroupeResteAuMemeCreateur()
@@ -162,7 +163,7 @@ public class AdminGroupsTests(PostgresFixture postgres) : IAsyncLifetime
         var group = await CreateAsync(alice, "Les copains");
         (await bob.Client.PostAsync($"/api/social/invitations/{group.InviteCode}/join", null, Ct)).EnsureSuccessStatusCode();
 
-        var response = await _admin.DeleteAsync(Remove(group.Id, "Bob"), Ct);
+        var response = await RemoveAsync(group.Id, "Bob");
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         var remaining = Assert.Single((await _admin.GetFromJsonAsync<AdminGroupMembersResponse>(Members(group.Id), Ct))!.Members);
@@ -180,8 +181,8 @@ public class AdminGroupsTests(PostgresFixture postgres) : IAsyncLifetime
         var group = await CreateAsync(alice, "Les copains");
         (await bob.Client.PostAsync($"/api/social/invitations/{group.InviteCode}/join", null, Ct)).EnsureSuccessStatusCode();
 
-        var none = await _admin.DeleteAsync(Remove(group.Id, "Alice"), Ct);
-        var invalid = await _admin.DeleteAsync(Remove(group.Id, "Alice", "Inconnu"), Ct);
+        var none = await RemoveAsync(group.Id, "Alice");
+        var invalid = await RemoveAsync(group.Id, "Alice", "Inconnu");
 
         Assert.Equal(HttpStatusCode.Conflict, none.StatusCode);
         Assert.Equal(SocialErrorCodes.OwnerMustHandOver, await SocialGroupTests.CodeOfAsync(none));
@@ -190,7 +191,7 @@ public class AdminGroupsTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(2L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM social.group_members"));
         Assert.Equal(alice.Id, Assert.Single(await ListAsync()).OwnerId);
 
-        Assert.Equal(HttpStatusCode.NoContent, (await _admin.DeleteAsync(Remove(group.Id, "Alice", "bob"), Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await RemoveAsync(group.Id, "Alice", "bob")).StatusCode);
 
         var detail = (await bob.Client.GetFromJsonAsync<GroupDetailResponse>($"/api/social/groups/{group.Id}", Ct))!;
         Assert.True(detail.IsOwner);
@@ -203,7 +204,7 @@ public class AdminGroupsTests(PostgresFixture postgres) : IAsyncLifetime
         var alice = await _game.NewPlayerAsync("Alice");
         var group = await CreateAsync(alice, "Les copains");
 
-        var response = await _admin.DeleteAsync(Remove(group.Id, "Alice"), Ct);
+        var response = await RemoveAsync(group.Id, "Alice");
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         Assert.Empty(await ListAsync());
@@ -218,7 +219,7 @@ public class AdminGroupsTests(PostgresFixture postgres) : IAsyncLifetime
         await _game.NewPlayerAsync("Bob");
         var group = await CreateAsync(alice, "Les copains");
 
-        var response = await _admin.DeleteAsync(Remove(group.Id, "Bob"), Ct);
+        var response = await RemoveAsync(group.Id, "Bob");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         Assert.Equal(SocialErrorCodes.MemberNotFound, await SocialGroupTests.CodeOfAsync(response));
@@ -266,7 +267,7 @@ public class AdminGroupsTests(PostgresFixture postgres) : IAsyncLifetime
         var delete = await _admin.DeleteAsync($"{Route}/999", Ct);
         var members = await _admin.GetAsync($"{Route}/999/members", Ct);
         var owner = await _admin.PutAsJsonAsync($"{Route}/999/owner", new TransferAdminGroupOwner("Bob"), Ct);
-        var remove = await _admin.DeleteAsync($"{Route}/999/members/Bob", Ct);
+        var remove = await RemoveAsync(999, "Bob");
 
         foreach (var response in new[] { rename, reset, delete, members, owner, remove })
         {
@@ -286,7 +287,7 @@ public class AdminGroupsTests(PostgresFixture postgres) : IAsyncLifetime
             await alice.Client.GetAsync(Route, Ct),
             await alice.Client.GetAsync($"{Route}/{group.Id}/members", Ct),
             await alice.Client.PutAsJsonAsync($"{Route}/{group.Id}/owner", new TransferAdminGroupOwner("Alice"), Ct),
-            await alice.Client.DeleteAsync($"{Route}/{group.Id}/members/Alice", Ct),
+            await RemoveAsync(group.Id, "Alice", null, alice.Client),
             await alice.Client.PutAsJsonAsync($"{Route}/{group.Id}/name", new RenameGroup("Les amis"), Ct),
             await alice.Client.PostAsync($"{Route}/{group.Id}/name/reset", null, Ct),
             await alice.Client.DeleteAsync($"{Route}/{group.Id}", Ct),
@@ -310,7 +311,7 @@ public class AdminGroupsTests(PostgresFixture postgres) : IAsyncLifetime
         var other = await CreateAsync(alice, "Autre groupe");
         (await bob.Client.PostAsync($"/api/social/invitations/{other.InviteCode}/join", null, Ct)).EnsureSuccessStatusCode();
         (await _admin.PutAsJsonAsync($"{Route}/{other.Id}/owner", new TransferAdminGroupOwner("Bob"), Ct)).EnsureSuccessStatusCode();
-        (await _admin.DeleteAsync(Remove(other.Id, "Alice"), Ct)).EnsureSuccessStatusCode();
+        (await RemoveAsync(other.Id, "Alice")).EnsureSuccessStatusCode();
 
         var admin = _logs.Entries.Where(e => e.EventId is 1805 or 1806 or 1807 or 1810 or 1811).ToList();
         Assert.Equal([1805, 1806, 1807, 1810, 1811], admin.Select(e => e.EventId).Order());

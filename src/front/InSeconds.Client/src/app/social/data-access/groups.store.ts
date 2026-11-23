@@ -88,6 +88,17 @@ export const GroupsStore = signalStore(
         return true;
       },
 
+      /** Le créateur renomme son groupe puis la liste est relue ; `false` si le serveur a refusé. */
+      async rename(groupId: number, name: string): Promise<boolean> {
+        try {
+          await api.rename(groupId, name);
+        } catch {
+          return false;
+        }
+        await this.load(groupId);
+        return true;
+      },
+
       /** Le créateur confie le groupe à ce membre (par son pseudo) puis relit la liste : il n'est plus que membre ; `false` si le serveur a refusé. */
       async transferOwner(groupId: number, pseudo: string): Promise<boolean> {
         try {

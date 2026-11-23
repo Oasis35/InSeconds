@@ -352,6 +352,53 @@ public class SocialGroupTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Renommer_LeCreateur_ChangeLeNom_EtLesMembresLeVoient()
+    {
+        var (alice, bob) = (await _game.NewPlayerAsync("Alice"), await _game.NewPlayerAsync("Bob"));
+        var group = await CreateAsync(alice, "Les copains");
+        await bob.Client.PostAsync($"/api/social/invitations/{group.InviteCode}/join", null, Ct);
+
+        var response = await alice.Client.PutAsJsonAsync($"/api/social/groups/{group.Id}/name", new RenameGroup("  Les amis  "), Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Les amis", (await response.Content.ReadFromJsonAsync<GroupNameResponse>(Ct))!.Name);
+        Assert.Equal("Les amis", (await bob.Client.GetFromJsonAsync<GroupDetailResponse>($"/api/social/groups/{group.Id}", Ct))!.Name);
+    }
+
+    [Theory]
+    [InlineData("ab")]
+    [InlineData("Un nom beaucoup trop long pour un groupe")]
+    [InlineData("Les <copains>")]
+    [InlineData("   ")]
+    public async Task Renommer_NomInvalide_400_EtRienNeChange(string name)
+    {
+        var alice = await _game.NewPlayerAsync("Alice");
+        var group = await CreateAsync(alice, "Les copains");
+
+        var response = await alice.Client.PutAsJsonAsync($"/api/social/groups/{group.Id}/name", new RenameGroup(name), Ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(SocialErrorCodes.InvalidName, await CodeOfAsync(response));
+        Assert.Equal("Les copains", (await alice.Client.GetFromJsonAsync<GroupDetailResponse>($"/api/social/groups/{group.Id}", Ct))!.Name);
+    }
+
+    [Fact]
+    public async Task Renommer_UnSimpleMembre_403_UnNonMembre_404()
+    {
+        var (alice, bob, carol) = (await _game.NewPlayerAsync("Alice"), await _game.NewPlayerAsync("Bob"), await _game.NewPlayerAsync("Carol"));
+        var group = await CreateAsync(alice, "Les copains");
+        await bob.Client.PostAsync($"/api/social/invitations/{group.InviteCode}/join", null, Ct);
+
+        var member = await bob.Client.PutAsJsonAsync($"/api/social/groups/{group.Id}/name", new RenameGroup("Les amis"), Ct);
+        var outsider = await carol.Client.PutAsJsonAsync($"/api/social/groups/{group.Id}/name", new RenameGroup("Les amis"), Ct);
+
+        Assert.Equal(HttpStatusCode.Forbidden, member.StatusCode);
+        Assert.Equal(SocialErrorCodes.NotOwner, await CodeOfAsync(member));
+        Assert.Equal(HttpStatusCode.NotFound, outsider.StatusCode);
+        Assert.Equal("Les copains", (await alice.Client.GetFromJsonAsync<GroupDetailResponse>($"/api/social/groups/{group.Id}", Ct))!.Name);
+    }
+
+    [Fact]
     public async Task Quitter_UnNonMembre_404()
     {
         var (alice, bob) = (await _game.NewPlayerAsync("Alice"), await _game.NewPlayerAsync("Bob"));

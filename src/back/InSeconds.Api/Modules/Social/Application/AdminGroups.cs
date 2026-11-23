@@ -107,50 +107,46 @@ public static class TransferAdminGroupOwnerEndpoint
     }
 }
 
-/// <summary>Le groupe chargé pour le retrait d'un membre, ce membre et le successeur que l'admin désigne (vides s'ils ne sont pas dans le groupe).</summary>
-public sealed record AdminGroupRemoval(AdminGroupAction Action, Guid? MemberId, Guid? SuccessorId);
+/// <summary>Le corps du retrait d'un membre par l'admin : son pseudo et, pour le créateur d'un groupe qui a d'autres membres, celui du successeur.</summary>
+public sealed record RemoveAdminGroupMember(string Pseudo, string? Successor);
 
 public static class RemoveAdminGroupMemberEndpoint
 {
-    public static async Task<AdminGroupRemoval> LoadAsync(
-        int id, string pseudo, string? successor, ICurrentPlayer current, IGroupStore store, IPlayerDirectory players, CancellationToken ct)
-    {
-        var action = await AdminGroupSteps.LoadAsync(id, current, store, ct);
-        var memberId = await GroupHandOver.FindMemberAsync(action.Group, pseudo, players, ct);
-        return new AdminGroupRemoval(action, memberId, await GroupHandOver.FindMemberAsync(action.Group, successor, players, ct));
-    }
+    public static Task<AdminGroupAction> LoadAsync(int id, ICurrentPlayer current, IGroupStore store, CancellationToken ct) =>
+        AdminGroupSteps.LoadAsync(id, current, store, ct);
 
-    public static ProblemDetails Validate(AdminGroupRemoval removal, string? successor)
+    public static async Task<ProblemDetails> ValidateAsync(RemoveAdminGroupMember request, AdminGroupAction action, IPlayerDirectory players, CancellationToken ct)
     {
-        var found = AdminGroupSteps.Validate(removal.Action);
+        var found = AdminGroupSteps.Validate(action);
         if (!ReferenceEquals(found, WolverineContinue.NoProblems))
             return found;
-        return removal.MemberId is { } memberId
-            ? GroupHandOver.Check(removal.Action.Group!, memberId, successor, removal.SuccessorId)
-            : SocialProblems.MemberNotFound();
+        var memberId = await GroupHandOver.FindMemberAsync(action.Group, request.Pseudo, players, ct);
+        if (memberId is not { } id)
+            return SocialProblems.MemberNotFound();
+        var successorId = await GroupHandOver.FindMemberAsync(action.Group, request.Successor, players, ct);
+        return GroupHandOver.Check(action.Group!, id, request.Successor, successorId);
     }
 
     /// <summary>
-    /// <c>DELETE /api/admin/social/groups/{id}/members/{pseudo}?successor=pseudo</c> : retire un membre du groupe (204) ; le dernier membre retiré
-    /// supprime le groupe et ses adhésions. Le créateur ne se retire pas tant qu'il reste d'autres membres : l'admin désigne en même temps le nouveau
-    /// créateur (<c>successor</c>, le pseudo d'un autre membre), et le changement et le retrait se font ensemble ou pas du tout. 404
+    /// <c>POST /api/admin/social/groups/{id}/members/remove</c> : retire un membre du groupe (204) ; le dernier membre retiré supprime le groupe et
+    /// ses adhésions. Les pseudos sont dans le corps, jamais dans le chemin (qui part dans les traces). Le créateur ne se retire pas tant qu'il reste
+    /// d'autres membres : l'admin désigne en même temps le nouveau créateur (<c>successor</c>, le pseudo d'un autre membre), et le changement et le
+    /// retrait se font ensemble ou pas du tout. 404
     /// <c>social.group_not_found</c> ou <c>social.member_not_found</c>, 409 <c>social.owner_must_hand_over</c>, 400 <c>social.invalid_successor</c>.
     /// </summary>
-    [WolverineDelete("/api/admin/social/groups/{id}/members/{pseudo}", OperationId = "removeAdminGroupMember")]
+    [WolverinePost("/api/admin/social/groups/{id}/members/remove", OperationId = "removeAdminGroupMember")]
     [EmptyResponse]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public static void Delete([NotBody] AdminGroupRemoval removal, IGroupStore store, ILogger<Group> logger)
+    public static async Task Post(
+        RemoveAdminGroupMember request, [NotBody] AdminGroupAction action, IGroupStore store, IPlayerDirectory players, ILogger<Group> logger, CancellationToken ct)
     {
-        var (action, memberId) = (removal.Action, removal.MemberId!.Value);
         var group = action.Group!;
+        var memberId = (await GroupHandOver.FindMemberAsync(group, request.Pseudo, players, ct))!.Value;
+        var successorId = await GroupHandOver.FindMemberAsync(group, request.Successor, players, ct);
         if (group.MustHandOverBeforeLeaving(memberId))
-        {
-            group.TransferOwnership(removal.SuccessorId!.Value);
-            SocialLog.AdminOwnerTransferred(logger, group.Id, removal.SuccessorId.Value, action.AdminId);
-        }
-
-        var departure = group.Leave(memberId);
+            SocialLog.AdminOwnerTransferred(logger, group.Id, successorId!.Value, action.AdminId);
+        var departure = group.Leave(memberId, successorId);
         if (departure == GroupDeparture.Emptied)
             store.Remove(group);
         SocialLog.AdminMemberRemoved(logger, memberId, group.Id, action.AdminId, departure.ToString());

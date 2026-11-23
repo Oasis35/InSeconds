@@ -53,8 +53,8 @@ describe('AdminGroupsApi', () => {
     await api.removeMember(4, 'Alice', 'Bob');
     await api.removeMember(4, 'Carol', null);
 
-    expect(client.removeAdminGroupMember).toHaveBeenNthCalledWith(1, 4, 'Alice', 'Bob');
-    expect(client.removeAdminGroupMember).toHaveBeenNthCalledWith(2, 4, 'Carol', undefined);
+    expect(client.removeAdminGroupMember).toHaveBeenNthCalledWith(1, 4, { pseudo: 'Alice', successor: 'Bob' });
+    expect(client.removeAdminGroupMember).toHaveBeenNthCalledWith(2, 4, { pseudo: 'Carol', successor: undefined });
   });
 
   it('renomme et rend le nom enregistré', async () => {

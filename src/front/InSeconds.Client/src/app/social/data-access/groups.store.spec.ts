@@ -133,6 +133,24 @@ describe('GroupsStore', () => {
     expect(store.selectedId()).toBe(4);
   });
 
+  it('le créateur renomme son groupe puis la liste est relue', async () => {
+    await store.load();
+
+    expect(await store.rename(4, 'Les amis')).toBe(true);
+
+    expect(api.calls).toContain('rename:4:Les amis');
+    expect(store.groups().find(group => group.id === 4)?.name).toBe('Les amis');
+  });
+
+  it('un renommage refusé ne change rien', async () => {
+    await store.load();
+    api.failRename = true;
+
+    expect(await store.rename(4, 'Les amis')).toBe(false);
+
+    expect(store.groups().find(group => group.id === 4)?.name).toBe('Potes');
+  });
+
   it('un changement de créateur refusé ne change rien', async () => {
     await store.load();
     api.failTransfer = true;

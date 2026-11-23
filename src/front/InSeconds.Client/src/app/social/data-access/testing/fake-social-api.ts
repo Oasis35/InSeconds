@@ -150,6 +150,14 @@ export class FakeSocialApi {
   }
 
   failTransfer = false;
+  failRename = false;
+
+  rename(groupId: number, name: string): Promise<void> {
+    this.calls.push(`rename:${groupId}:${name}`);
+    if (this.failRename) return Promise.reject(new Error('down'));
+    this.groups = { ...this.groups, groups: this.groups.groups.map(group => (group.id === groupId ? { ...group, name } : group)) };
+    return Promise.resolve();
+  }
 
   transferOwner(groupId: number, pseudo: string): Promise<void> {
     this.calls.push(`transfer:${groupId}:${pseudo}`);

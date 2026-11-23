@@ -189,6 +189,9 @@ internal static partial class SocialLog
     [LoggerMessage(EventId = 1811, Level = LogLevel.Information, Message = "{PlayerId} retiré du groupe {GroupId} par l'admin {AdminId} ({Departure})")]
     public static partial void AdminMemberRemoved(ILogger logger, Guid playerId, int groupId, Guid adminId, string departure);
 
+    [LoggerMessage(EventId = 1812, Level = LogLevel.Information, Message = "Groupe {GroupId} renommé par son créateur {PlayerId}")]
+    public static partial void GroupRenamed(ILogger logger, int groupId, Guid playerId);
+
     /// <summary>Jamais l'alias ni le pseudo : l'identifiant et le mode seulement.</summary>
     [LoggerMessage(EventId = 1808, Level = LogLevel.Information, Message = "{PlayerId} a changé son nom au classement général ({RankingNameMode})")]
     public static partial void RankingIdentityChanged(ILogger logger, Guid playerId, string rankingNameMode);

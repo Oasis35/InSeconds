@@ -229,6 +229,23 @@ describe('RankingPage', () => {
     expect(api.calls.filter(call => call.startsWith('leave'))).toEqual([]);
   });
 
+  it('le créateur renomme son groupe, même seul, et la liste est relue', async () => {
+    const { el, settle } = await render();
+    successor = 'Les amis';
+
+    find(el, 'ranking-rename')!.click();
+    await settle();
+
+    expect(api.calls).toContain('rename:4:Les amis');
+    expect(el.querySelector('[data-testid="ranking-group"]')?.textContent).toContain('Les amis');
+  });
+
+  it('« Renommer le groupe » n\'existe pas pour un simple membre', async () => {
+    api.groups = { ...api.groups, groups: [{ ...GROUP, isOwner: false }, ...api.groups.groups.slice(1)] };
+
+    expect(find((await render()).el, 'ranking-rename')).toBeNull();
+  });
+
   it('« Changer de créateur » n\'existe ni pour un simple membre ni pour un créateur seul', async () => {
     api.groups = { ...api.groups, groups: [{ ...GROUP, isOwner: false }, ...api.groups.groups.slice(1)] };
     expect(find((await render()).el, 'ranking-transfer')).toBeNull();

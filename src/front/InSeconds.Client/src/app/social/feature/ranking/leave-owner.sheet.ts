@@ -9,6 +9,8 @@ export interface LeaveOwnerData {
   title: string;
   body: string;
   confirmLabel: string;
+  /** Vrai quand l'action fait partir le créateur (rouge : destructif) ; faux pour un simple changement de créateur. */
+  danger?: boolean;
   /** Les pseudos des autres membres : à qui le groupe peut passer. */
   members: readonly string[];
 }
@@ -37,7 +39,7 @@ export interface LeaveOwnerData {
         }
       </div>
       <div modalActions class="flex gap-3 pt-5">
-        <button appButton type="button" variant="danger" class="flex-1" data-testid="leave-owner-confirm" [disabled]="choice() === null" (click)="ref.close(choice())">
+        <button appButton type="button" [variant]="data.danger ? 'danger' : 'accent'" class="flex-1" data-testid="leave-owner-confirm" [disabled]="choice() === null" (click)="ref.close(choice())">
           {{ data.confirmLabel }}
         </button>
         <button appButton type="button" variant="secondary" class="flex-1" cdkFocusInitial (click)="ref.close(null)">

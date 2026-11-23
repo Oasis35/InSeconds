@@ -209,31 +209,27 @@ export class SocialClient {
     }
 
     /**
-     * @param successor (optional) 
      * @return No Content
      */
-    removeAdminGroupMember(id: number, pseudo: string, successor: string | undefined): Observable<void> {
-        let url_ = this.baseUrl + "/api/admin/social/groups/{id}/members/{pseudo}?";
+    removeAdminGroupMember(id: number, body: RemoveAdminGroupMember): Observable<void> {
+        let url_ = this.baseUrl + "/api/admin/social/groups/{id}/members/remove";
         if (id === undefined || id === null)
             throw new globalThis.Error("The parameter 'id' must be defined.");
         url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        if (pseudo === undefined || pseudo === null)
-            throw new globalThis.Error("The parameter 'pseudo' must be defined.");
-        url_ = url_.replace("{pseudo}", encodeURIComponent("" + pseudo));
-        if (successor === null)
-            throw new globalThis.Error("The parameter 'successor' cannot be null.");
-        else if (successor !== undefined)
-            url_ += "successor=" + encodeURIComponent("" + successor) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
+        const content_ = JSON.stringify(body);
+
         let options_ : any = {
+            body: content_,
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
+                "Content-Type": "application/json",
             })
         };
 
-        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
             return this.processRemoveAdminGroupMember(response_);
         })).pipe(_observableCatch((response_: any) => {
             if (response_ instanceof HttpResponseBase) {
@@ -1441,6 +1437,87 @@ export class SocialClient {
     }
 
     /**
+     * @return OK
+     */
+    renameGroup(id: number, body: RenameGroup): Observable<GroupNameResponse> {
+        let url_ = this.baseUrl + "/api/social/groups/{id}/name";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processRenameGroup(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processRenameGroup(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<GroupNameResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<GroupNameResponse>;
+        }));
+    }
+
+    protected processRenameGroup(response: HttpResponseBase): Observable<GroupNameResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as GroupNameResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            }));
+        } else if (status === 403) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Forbidden", status, _responseText, _headers, result403);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
      * @return No Content
      */
     transferGroupOwner(id: number, body: TransferGroupOwner): Observable<void> {
@@ -1781,6 +1858,13 @@ export interface RankingIdentityResponse {
     mode: string;
     name: string;
     alias: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface RemoveAdminGroupMember {
+    pseudo: string;
+    successor?: string | undefined;
 
     [key: string]: any;
 }
