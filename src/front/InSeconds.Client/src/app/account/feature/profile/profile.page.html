@@ -1,69 +1,72 @@
-<main class="da-bg relative min-h-dvh flex flex-col items-center p-6 pt-20 screen-enter">
+<main class="da-bg relative min-h-dvh flex flex-col items-center p-4 pt-12 screen-enter">
   <app-decor-background />
 
-  <div class="relative flex w-full max-w-sm flex-col gap-6 py-8">
+  <div class="relative flex w-full max-w-sm flex-col gap-4 py-6">
 
-    <h1 class="text-center text-2xl font-bold" style="font-family:var(--font-display);color:var(--text-hi)">
-      {{ 'account.profile.title' | translate }}
-    </h1>
+    <h1 class="sr-only">{{ 'account.profile.title' | translate }}</h1>
 
-    <!-- Pseudo -->
-    <form [formRoot]="pseudoForm" (submit)="savePseudo()" novalidate>
-      <div class="flex gap-2">
-        <label for="profile-pseudo" class="sr-only">{{ 'account.profile.pseudo.label' | translate }}</label>
-        <input
-          id="profile-pseudo"
-          class="app-input min-w-0 flex-1"
-          autocomplete="off"
-          [formField]="pseudoForm.pseudo"
-          aria-describedby="profile-pseudo-help"
-          [placeholder]="'account.profile.pseudo.placeholder' | translate"
-          (input)="profile.clearPseudo()"
-        />
-        <button appButton type="submit" size="sm" [disabled]="pseudoSaveDisabled()">
-          {{ (profile.pseudoStatus() === 'pending' ? 'account.profile.pseudo.saving' : profile.pseudoStatus() === 'done' ? 'account.profile.pseudo.saved' : 'account.profile.pseudo.save') | translate }}
-        </button>
-      </div>
-      <output class="mt-2 block text-xs" id="profile-pseudo-help" [style.color]="pseudoHint().isError ? 'var(--text-error)' : 'var(--text-muted)'">
-        {{ pseudoHint().key | translate }}
-      </output>
-    </form>
+    <!-- Compte : pseudo et adresse email, un formulaire chacun -->
+    <section class="flex flex-col gap-4 rounded-(--radius-card) p-4" style="background:var(--bg-surface);border:1px solid var(--border-medium)"
+      aria-labelledby="account-title">
+      <h2 id="account-title" class="m-0 text-sm font-semibold" style="font-family:var(--font-display);color:var(--text-muted)">
+        {{ 'account.profile.account.title' | translate }}
+      </h2>
 
-    <!-- Email -->
-    <form [formRoot]="emailForm" (submit)="saveEmail()" novalidate>
-      <div class="flex gap-2">
-        <label for="profile-email" class="sr-only">{{ 'account.profile.email.label' | translate }}</label>
-        <input
-          id="profile-email"
-          class="app-input min-w-0 flex-1"
-          type="email"
-          autocomplete="off"
-          [formField]="emailForm.email"
-          aria-describedby="profile-email-help"
-          [placeholder]="'account.profile.email.placeholder' | translate"
-          (input)="profile.clearEmailChange()"
-        />
-        <button appButton type="submit" size="sm" [disabled]="emailSaveDisabled()">
-          {{ (profile.emailStatus() === 'pending' ? 'account.profile.email.sending' : profile.emailStatus() === 'done' ? 'account.profile.email.sent' : 'account.profile.email.change') | translate }}
-        </button>
-      </div>
-      <output class="mt-2 block text-xs" id="profile-email-help" [style.color]="emailHint().isError ? 'var(--text-error)' : 'var(--text-muted)'">
-        {{ emailHint().key | translate: { email: emailForm.email().value().trim() } }}
-      </output>
-    </form>
+      <form [formRoot]="pseudoForm" (submit)="savePseudo()" novalidate>
+        <label for="profile-pseudo" class="mb-1.5 block text-xs" style="color:var(--text-muted)">{{ 'account.profile.pseudo.label' | translate }}</label>
+        <div class="flex gap-2">
+          <input
+            id="profile-pseudo"
+            class="app-input min-w-0 flex-1"
+            autocomplete="off"
+            [formField]="pseudoForm.pseudo"
+            aria-describedby="profile-pseudo-help"
+            [placeholder]="'account.profile.pseudo.placeholder' | translate"
+            (input)="profile.clearPseudo()"
+          />
+          <button appButton type="submit" variant="accent" size="sm" class="min-h-11" [disabled]="pseudoSaveDisabled()">
+            {{ (profile.pseudoStatus() === 'pending' ? 'account.profile.pseudo.saving' : profile.pseudoStatus() === 'done' ? 'account.profile.pseudo.saved' : 'account.profile.pseudo.save') | translate }}
+          </button>
+        </div>
+        <output class="mt-1.5 block text-xs" id="profile-pseudo-help" [style.color]="pseudoHint().isError ? 'var(--text-error)' : 'var(--text-muted)'">
+          {{ pseudoHint().key | translate }}
+        </output>
+      </form>
+
+      <form [formRoot]="emailForm" (submit)="saveEmail()" novalidate>
+        <label for="profile-email" class="mb-1.5 block text-xs" style="color:var(--text-muted)">{{ 'account.profile.email.label' | translate }}</label>
+        <div class="flex gap-2">
+          <input
+            id="profile-email"
+            class="app-input min-w-0 flex-1"
+            type="email"
+            autocomplete="off"
+            [formField]="emailForm.email"
+            aria-describedby="profile-email-help"
+            [placeholder]="'account.profile.email.placeholder' | translate"
+            (input)="profile.clearEmailChange()"
+          />
+          <button appButton type="submit" variant="accent" size="sm" class="min-h-11" [disabled]="emailSaveDisabled()">
+            {{ (profile.emailStatus() === 'pending' ? 'account.profile.email.sending' : profile.emailStatus() === 'done' ? 'account.profile.email.sent' : 'account.profile.email.change') | translate }}
+          </button>
+        </div>
+        <output class="mt-1.5 block text-xs" id="profile-email-help" [style.color]="emailHint().isError ? 'var(--text-error)' : 'var(--text-muted)'">
+          {{ emailHint().key | translate: { email: emailForm.email().value().trim() } }}
+        </output>
+      </form>
+    </section>
 
     <!-- Appareils : la liste est repliée, le bouton « déconnecter les autres » reste visible -->
-    <section class="flex flex-col gap-3">
+    <section class="flex flex-col gap-3 rounded-(--radius-card) p-4" style="background:var(--bg-surface);border:1px solid var(--border-medium)">
       <h2 class="m-0">
-        <button type="button" class="flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-left"
-          style="background:var(--bg-surface);border:1px solid var(--border-medium)" data-testid="devices-toggle"
+        <button type="button" class="flex min-h-11 w-full items-center justify-between gap-3 text-left" data-testid="devices-toggle"
           aria-controls="devices-panel" [attr.aria-expanded]="devicesOpen()" (click)="toggleDevices()">
           <span class="min-w-0">
             <span class="block text-sm font-semibold" style="font-family:var(--font-display);color:var(--text-muted)">
               {{ 'account.devices.title' | translate }}@if (devices.isFulfilled()) { · {{ devices.devices().length }}}
             </span>
             @if (devicesSummary(); as summary) {
-              <span class="mt-1 block truncate text-xs font-normal normal-case tracking-normal" style="color:var(--text-body)" data-testid="devices-summary">
+              <span class="mt-1 block truncate text-sm font-normal" style="color:var(--text-body)" data-testid="devices-summary">
                 {{ summary.key | translate: { current: summary.label ?? ('account.devices.unknownDevice' | translate), count: summary.count } }}
               </span>
             }
@@ -77,11 +80,10 @@
       </h2>
 
       @if (devices.error()) {
-        <p class="text-xs" style="color:var(--text-error)">{{ 'account.devices.loadError' | translate }}</p>
+        <p class="m-0 text-xs" style="color:var(--text-error)">{{ 'account.devices.loadError' | translate }}</p>
       }
       @if (devicesOpen()) {
-        <div id="devices-panel" class="flex flex-col gap-3">
-          <p class="text-xs" style="color:var(--text-faint)">{{ 'account.devices.intro' | translate }}</p>
+        <div id="devices-panel">
           <app-device-list [devices]="devices.devices()" [locale]="locale()" [busyId]="devices.busyId()" (revoke)="revoke($event)" />
         </div>
       }
@@ -89,66 +91,66 @@
         <app-error-message [messageKey]="devicesActionKey()" [traceId]="error.traceId" />
       }
       @if (devices.others().length > 0) {
-        <button appButton type="button" variant="secondary" size="sm" [disabled]="devices.action() === 'pending'" (click)="revokeOthers()">
+        <button appButton type="button" variant="neutral" size="sm" class="min-h-11" [block]="true" [disabled]="devices.action() === 'pending'" (click)="revokeOthers()">
           {{ 'account.devices.revokeOthers' | translate }}
         </button>
       }
     </section>
 
-    <!-- Déconnexion -->
-    <div class="flex flex-col gap-2.5">
-      @if (logoutError(); as error) {
-        <app-error-message [messageKey]="'account.profile.logout.error'" [traceId]="error.traceId" />
-      }
-      <button appButton type="button" variant="danger" [block]="true" (click)="logout()">
-        {{ 'account.profile.logout.action' | translate }}
-      </button>
-    </div>
-
-    <!-- Langue : le pied de page n'est plus là, la bascule vit ici -->
-    @if (chrome.survie()) {
-      <!-- Le nom au classement général (pseudo ou alias musical) se choisit sur la page du classement : le lien ouvre ce choix. Réservé à Survie. -->
-      <a routerLink="/ranking" [queryParams]="{ view: 'general', edit: 'name' }" class="flex items-center justify-between gap-3 min-h-11 text-sm" data-testid="profile-general-ranking"
-         style="color:var(--text-body)">
-        <span class="flex flex-col">
-          <span>{{ 'social.general.profileLink' | translate }}</span>
-          <span class="text-xs" style="color:var(--text-muted)">{{ 'social.general.profileHint' | translate }}</span>
-        </span>
-        <span class="shrink-0" style="color:var(--text-hi)">{{ 'social.general.edit' | translate }} <span aria-hidden="true">›</span></span>
-      </a>
-    }
-    <section class="flex items-center justify-between gap-3" data-testid="profile-language">
-      <span class="text-sm" style="color:var(--text-body)">{{ 'account.profile.language' | translate }}</span>
-      <div class="flex gap-2">
-        @for (code of ['fr', 'en']; track code) {
-          <button type="button" (click)="setLanguage($any(code))" [attr.aria-pressed]="locale() === code" [attr.data-testid]="'language-' + code"
-                  class="rounded-(--radius-button) px-3 py-2 text-sm cursor-pointer touch-manipulation"
-                  [style.border]="locale() === code ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
-                  [style.color]="locale() === code ? 'var(--text-hi)' : 'var(--text-muted)'">{{ code.toUpperCase() }}</button>
-        }
+    <!-- Préférences : la langue, puis le nom au classement général (Survie seulement) -->
+    <section class="flex flex-col rounded-(--radius-card) px-4" style="background:var(--bg-surface);border:1px solid var(--border-medium)"
+      data-testid="profile-preferences" aria-labelledby="preferences-title">
+      <h2 id="preferences-title" class="sr-only">{{ 'account.profile.preferences.title' | translate }}</h2>
+      <div class="flex min-h-14 items-center justify-between gap-3" data-testid="profile-language">
+        <span class="text-sm" style="color:var(--text-body)">{{ 'account.profile.language' | translate }}</span>
+        <div class="flex gap-2">
+          @for (code of ['fr', 'en']; track code) {
+            <button type="button" (click)="setLanguage($any(code))" [attr.aria-pressed]="locale() === code" [attr.data-testid]="'language-' + code"
+                    class="min-h-11 rounded-(--radius-button) px-3.5 text-sm cursor-pointer touch-manipulation"
+                    [style.border]="locale() === code ? '1px solid var(--color-accent-3)' : '1px solid var(--border-neutral)'"
+                    [style.color]="locale() === code ? 'var(--text-hi)' : 'var(--text-muted)'">{{ code.toUpperCase() }}</button>
+          }
+        </div>
       </div>
+      @if (chrome.survie()) {
+        <!-- Le nom au classement général (pseudo ou alias musical) se choisit sur la page du classement : le lien ouvre ce choix. Réservé à Survie. -->
+        <a routerLink="/ranking" [queryParams]="{ view: 'general', edit: 'name' }" class="flex min-h-14 items-center justify-between gap-3 text-sm"
+           data-testid="profile-general-ranking" style="color:var(--text-body);border-top:1px solid var(--border-medium)">
+          <span class="flex flex-col">
+            <span>{{ 'social.general.profileLink' | translate }}</span>
+            <span class="text-xs" style="color:var(--text-muted)">{{ 'social.general.profileHint' | translate }}</span>
+          </span>
+          <span class="shrink-0" style="color:var(--text-hi)">{{ 'social.general.edit' | translate }} <span aria-hidden="true">›</span></span>
+        </a>
+      }
     </section>
-    <nav class="flex flex-wrap justify-center gap-x-4 text-xs" style="color:var(--text-muted)" data-testid="profile-legal">
-      <a routerLink="/legal" class="py-3 hover:underline" style="color:inherit">{{ 'daily.footer.legal' | translate }}</a>
-      <a routerLink="/privacy" class="py-3 hover:underline" style="color:inherit">{{ 'daily.footer.privacy' | translate }}</a>
-      <a href="mailto:contact@inseconds.cc" class="py-3 hover:underline" style="color:inherit">{{ 'daily.footer.contact' | translate }}</a>
-    </nav>
 
     <!-- Tes données (RGPD) -->
-    <section class="flex flex-col gap-3" aria-labelledby="data-title">
-      <h2 id="data-title" class="text-sm font-semibold" style="font-family:var(--font-display);color:var(--text-muted)">
+    <section class="flex flex-col gap-3 rounded-(--radius-card) p-4" style="background:var(--bg-surface);border:1px solid var(--border-medium)"
+      aria-labelledby="data-title">
+      <h2 id="data-title" class="m-0 text-sm font-semibold" style="font-family:var(--font-display);color:var(--text-muted)">
         {{ 'account.profile.data.title' | translate }}
       </h2>
       @if (exportError(); as error) {
         <app-error-message [messageKey]="'account.profile.data.exportError'" [traceId]="error.traceId" />
       }
-      <button appButton type="button" variant="secondary" size="sm" [disabled]="profile.exportStatus() === 'pending'" (click)="downloadData()">
+      <button appButton type="button" variant="neutral" size="sm" class="min-h-11" [block]="true" [disabled]="profile.exportStatus() === 'pending'" (click)="downloadData()">
         {{ (profile.exportStatus() === 'pending' ? 'account.profile.data.exporting' : 'account.profile.data.export') | translate }}
       </button>
-      <button type="button" class="self-center py-2 text-sm underline" style="color:var(--text-error)" data-testid="delete-account"
+      <button type="button" class="min-h-11 self-center text-sm underline" style="color:var(--text-error)" data-testid="delete-account"
         (click)="deleteAccount()">
         {{ 'account.profile.delete.action' | translate }}
       </button>
     </section>
+
+    <!-- Déconnexion : en contour neutre, la dernière action de l'écran -->
+    <div class="flex flex-col gap-2.5">
+      @if (logoutError(); as error) {
+        <app-error-message [messageKey]="'account.profile.logout.error'" [traceId]="error.traceId" />
+      }
+      <button appButton type="button" variant="neutral" [block]="true" (click)="logout()">
+        {{ 'account.profile.logout.action' | translate }}
+      </button>
+    </div>
   </div>
 </main>

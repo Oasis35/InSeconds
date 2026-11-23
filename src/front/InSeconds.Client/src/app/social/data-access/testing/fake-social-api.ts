@@ -149,8 +149,25 @@ export class FakeSocialApi {
     return Promise.resolve(this.joinOutcome);
   }
 
-  leave(groupId: number): Promise<void> {
-    this.calls.push(`leave:${groupId}`);
+  failTransfer = false;
+  failRename = false;
+
+  rename(groupId: number, name: string): Promise<void> {
+    this.calls.push(`rename:${groupId}:${name}`);
+    if (this.failRename) return Promise.reject(new Error('down'));
+    this.groups = { ...this.groups, groups: this.groups.groups.map(group => (group.id === groupId ? { ...group, name } : group)) };
+    return Promise.resolve();
+  }
+
+  transferOwner(groupId: number, pseudo: string): Promise<void> {
+    this.calls.push(`transfer:${groupId}:${pseudo}`);
+    if (this.failTransfer) return Promise.reject(new Error('down'));
+    this.groups = { ...this.groups, groups: this.groups.groups.map(group => (group.id === groupId ? { ...group, isOwner: false } : group)) };
+    return Promise.resolve();
+  }
+
+  leave(groupId: number, successor: string | null = null): Promise<void> {
+    this.calls.push(successor === null ? `leave:${groupId}` : `leave:${groupId}:${successor}`);
     if (this.failLeave) return Promise.reject(new Error('down'));
     this.groups = { ...this.groups, groups: this.groups.groups.filter(group => group.id !== groupId) };
     return Promise.resolve();

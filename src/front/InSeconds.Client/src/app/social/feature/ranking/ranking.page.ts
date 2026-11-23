@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, u
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { map } from 'rxjs';
+import { firstValueFrom, map } from 'rxjs';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { SessionStore } from '../../../core/session/session.store';
@@ -18,7 +18,11 @@ import { GroupsAnnounce } from '../../data-access/groups-announce';
 import { GroupsStore } from '../../data-access/groups.store';
 import { PendingInvite } from '../../data-access/pending-invite';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
+import { Group } from '../../domain/group';
 import { GroupView, groupViewOf, todayRows, weekRows } from '../../domain/group-scores';
+import { LeaveOwnerData, LeaveOwnerSheet } from './leave-owner.sheet';
+import { ManageGroupChoice, ManageGroupData, ManageGroupSheet } from './manage-group.sheet';
+import { RenameGroupData, RenameGroupSheet } from './rename-group.sheet';
 import { GeneralRankingComponent } from '../general-ranking/general-ranking.component';
 import { ScoreListComponent } from '../../ui/score-list/score-list.component';
 import { TodayPlayedComponent } from '../../ui/today-played/today-played.component';
@@ -61,6 +65,8 @@ export class RankingPage {
   /** Une invitation reçue avant d'avoir un compte : proposée ici une fois connecté. */
   protected readonly pendingCode = signal(inject(PendingInvite).get());
   protected readonly leaveFailed = signal(false);
+  protected readonly transferFailed = signal(false);
+  protected readonly renameFailed = signal(false);
 
   /** Le groupe de l'adresse ; absent ou mal écrit : le premier. */
   private readonly groupId = toSignal(
@@ -121,19 +127,101 @@ export class RankingPage {
     if (id !== null) void this.store.select(id);
   }
 
+  /**
+   * Quitter le groupe. Un simple membre confirme. Le créateur seul le supprime en partant (la confirmation le dit) ; le créateur qui laisse d'autres
+   * membres choisit d'abord qui le devient parmi eux, sinon il ne part pas.
+   */
   protected async leave(): Promise<void> {
     const group = this.store.selected();
     if (!group) return;
+    this.leaveFailed.set(false);
+    const departure = group.isOwner && group.memberCount > 1 ? await this.askSuccessor(group) : await this.askConfirmation(group);
+    if (departure === null) return;
+    if (await this.store.leave(group.id, departure.successor)) void this.router.navigate(['/ranking'], { replaceUrl: true });
+    else this.leaveFailed.set(true);
+  }
+
+  /**
+   * Le créateur qui laisse d'autres membres choisit qui le devient. `null` : il renonce, ou les membres ne sont pas lus (panne, signalée par
+   * `leaveFailed`) et personne n'est à désigner.
+   */
+  private async askSuccessor(group: Group): Promise<{ successor: string } | null> {
+    const members = this.otherMembers();
+    if (members.length === 0) {
+      this.leaveFailed.set(true);
+      return null;
+    }
+    const chosen = await this.pickSuccessor({
+      title: this.translate.instant('social.leave.title', { name: group.name }),
+      body: this.translate.instant('social.leave.ownerBody'),
+      confirmLabel: this.translate.instant('social.leave.ownerConfirm'),
+      danger: true,
+      members,
+    });
+    return chosen === null ? null : { successor: chosen };
+  }
+
+  /** Un simple membre, ou le créateur seul (qui supprime le groupe en partant), confirme : pas de successeur. `null` : il renonce. */
+  private async askConfirmation(group: Group): Promise<{ successor: null } | null> {
     const confirmed = await this.modal.confirm({
       title: this.translate.instant('social.leave.title', { name: group.name }),
-      body: this.translate.instant('social.leave.body'),
-      confirmLabel: this.translate.instant('social.leave.confirm'),
+      body: this.translate.instant(group.isOwner ? 'social.leave.lastBody' : 'social.leave.body'),
+      confirmLabel: this.translate.instant(group.isOwner ? 'social.leave.lastConfirm' : 'social.leave.confirm'),
       cancelLabel: this.translate.instant('social.leave.cancel'),
       tone: 'danger',
     });
-    if (!confirmed) return;
+    return confirmed ? { successor: null } : null;
+  }
+
+  /** « Gérer le groupe » : ce que seul le créateur peut faire. La feuille propose renommer et, avec d'autres membres, changer de créateur. */
+  protected async manage(): Promise<void> {
+    const group = this.store.selected();
+    if (!group?.isOwner) return;
+    const ref = this.modal.openSheet<ManageGroupChoice | null, ManageGroupData, ManageGroupSheet>(ManageGroupSheet, {
+      data: { canTransfer: group.memberCount > 1 },
+    });
+    const choice = (await firstValueFrom(ref.closed)) ?? null;
+    if (choice === 'rename') await this.rename();
+    else if (choice === 'transfer') await this.transfer();
+  }
+
+  /** Le créateur renomme son groupe : le nom est validé par le serveur, la liste relue. */
+  private async rename(): Promise<void> {
+    const group = this.store.selected();
+    if (!group?.isOwner) return;
+    this.renameFailed.set(false);
+    const ref = this.modal.openSheet<string | null, RenameGroupData, RenameGroupSheet>(RenameGroupSheet, { data: { name: group.name } });
+    const name = (await firstValueFrom(ref.closed)) ?? null;
+    if (name !== null && !(await this.store.rename(group.id, name))) this.renameFailed.set(true);
+  }
+
+  /** Les autres membres du groupe regardé, lus avec ses scores ; vide tant que la lecture n'a pas abouti. */
+  private otherMembers(): string[] {
+    return (this.store.selectedScores()?.daily?.today ?? []).filter(entry => !entry.isMe).map(entry => entry.pseudo);
+  }
+
+  /** Le créateur passe la main à un autre membre sans partir : il devient un simple membre. */
+  private async transfer(): Promise<void> {
+    const group = this.store.selected();
+    if (!group?.isOwner) return;
     this.leaveFailed.set(false);
-    if (await this.store.leave(group.id)) void this.router.navigate(['/ranking'], { replaceUrl: true });
-    else this.leaveFailed.set(true);
+    this.transferFailed.set(false);
+    const members = this.otherMembers();
+    if (members.length === 0) {
+      this.transferFailed.set(true);
+      return;
+    }
+    const chosen = await this.pickSuccessor({
+      title: this.translate.instant('social.transfer.title', { name: group.name }),
+      body: this.translate.instant('social.transfer.body'),
+      confirmLabel: this.translate.instant('social.transfer.confirm'),
+      members,
+    });
+    if (chosen !== null && !(await this.store.transferOwner(group.id, chosen))) this.transferFailed.set(true);
+  }
+
+  private async pickSuccessor(data: LeaveOwnerData): Promise<string | null> {
+    const ref = this.modal.openSheet<string | null, LeaveOwnerData, LeaveOwnerSheet>(LeaveOwnerSheet, { data });
+    return (await firstValueFrom(ref.closed)) ?? null;
   }
 }

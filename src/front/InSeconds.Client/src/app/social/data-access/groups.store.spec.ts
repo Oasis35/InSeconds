@@ -115,6 +115,51 @@ describe('GroupsStore', () => {
     expect(store.scores()?.groupId).toBe(7);
   });
 
+  it('un créateur qui part transmet le pseudo de son successeur', async () => {
+    await store.load();
+
+    expect(await store.leave(4, 'Théo')).toBe(true);
+
+    expect(api.calls).toContain('leave:4:Théo');
+  });
+
+  it('le créateur confie le groupe puis la liste est relue : il n\'est plus créateur', async () => {
+    await store.load();
+
+    expect(await store.transferOwner(4, 'Théo')).toBe(true);
+
+    expect(api.calls).toContain('transfer:4:Théo');
+    expect(store.groups().find(group => group.id === 4)?.isOwner).toBe(false);
+    expect(store.selectedId()).toBe(4);
+  });
+
+  it('le créateur renomme son groupe puis la liste est relue', async () => {
+    await store.load();
+
+    expect(await store.rename(4, 'Les amis')).toBe(true);
+
+    expect(api.calls).toContain('rename:4:Les amis');
+    expect(store.groups().find(group => group.id === 4)?.name).toBe('Les amis');
+  });
+
+  it('un renommage refusé ne change rien', async () => {
+    await store.load();
+    api.failRename = true;
+
+    expect(await store.rename(4, 'Les amis')).toBe(false);
+
+    expect(store.groups().find(group => group.id === 4)?.name).toBe('Potes');
+  });
+
+  it('un changement de créateur refusé ne change rien', async () => {
+    await store.load();
+    api.failTransfer = true;
+
+    expect(await store.transferOwner(4, 'Théo')).toBe(false);
+
+    expect(store.groups().find(group => group.id === 4)?.isOwner).toBe(true);
+  });
+
   it('un refus de quitter ne change rien', async () => {
     await store.load();
     api.failLeave = true;

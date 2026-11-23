@@ -294,11 +294,6 @@ function toStats(s: TodayStatsResponse): DayStats {
           previousGames: s.history.previousGames,
           previousBestScore: s.history.previousBestScore ?? null,
           previousAverageScore: s.history.previousAverageScore ?? null,
-          averageScoreAfter: s.history.averageScoreAfter,
-          bestSinceDays: s.history.bestSinceDays ?? null,
-          firstStepSeconds: s.history.firstStepSeconds,
-          firstStepFoundTotal: s.history.firstStepFoundTotal,
-          firstStepFoundToday: s.history.firstStepFoundToday,
         }
       : null,
   };

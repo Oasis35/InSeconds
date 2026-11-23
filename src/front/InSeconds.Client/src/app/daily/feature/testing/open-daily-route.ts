@@ -13,7 +13,7 @@ import { DailyShellComponent } from '../daily-shell/daily-shell.component';
 import { FakeDailyApi, TODAY, provideFakeDailyApi } from '../../data-access/testing/fake-daily-api';
 
 /**
- * Ouvre une adresse du jeu du jour (`/`, `/daily`, `/daily/resultat`) sous la vraie coquille et ses vraies routes, avec le faux client d'API et un
+ * Ouvre une adresse du jeu du jour (`/` ou `/daily`) sous la vraie coquille et ses vraies routes, avec le faux client d'API et un
  * état du jour donné, puis laisse l'écran suivre : les specs des pages qui en dépendent partent de là.
  */
 export async function openDailyRoute(url: string, today = TODAY()): Promise<Router> {

@@ -52,16 +52,12 @@ export function isHomeScreen(screen: DailyScreen): boolean {
   return screen === 'welcome' || screen === 'resume_prompt' || isRecapScreen(screen);
 }
 
-/** Le résultat complet du jour, ouvert depuis la carte courte de l'accueil. */
-export const DAILY_RESULT_PATH = '/daily/resultat';
-
 /**
- * La page où l'écran doit se lire, quand ce n'est pas celle où l'on est (`null` sinon) : une manche est sur `/daily`, la carte du défi et le
- * résultat court sur `/` ; le résultat complet (`DAILY_RESULT_PATH`) n'existe qu'une fois le défi fini, il attend la fin du chargement.
+ * La page où l'écran doit se lire, quand ce n'est pas celle où l'on est (`null` sinon) : une manche est sur `/daily`, tout le reste
+ * (carte du défi, pause, résultat, abandon) sur `/`.
  */
 export function redirectFor(path: string, screen: DailyScreen): string | null {
-  if ((path === '/' || path === DAILY_RESULT_PATH) && screen === 'playing') return '/daily';
+  if (path === '/' && screen === 'playing') return '/daily';
   if (path === '/daily' && isHomeScreen(screen)) return '/';
-  if (path === DAILY_RESULT_PATH && screen !== 'loading' && !isRecapScreen(screen)) return '/';
   return null;
 }

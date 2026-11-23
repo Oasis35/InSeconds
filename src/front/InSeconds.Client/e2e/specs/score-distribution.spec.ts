@@ -3,7 +3,7 @@ import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
 
 // La carte du défi joué, sur l'accueil : « mieux que X % » quand la partie n'a pas de moment fort, à partir de 5 joueurs.
-// Réponses vides partout → tous les scores valent 0. (L'égaliseur des scores vit dans les réponses des jours passés.)
+// Réponses vides partout → tous les scores valent 0. (L'égaliseur des scores est dans le « Détail » de la carte.)
 test.describe('Mieux que X % des joueurs', () => {
   test.beforeEach(async ({ api }) => {
     await api.reset();

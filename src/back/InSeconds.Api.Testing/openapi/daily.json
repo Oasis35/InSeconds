@@ -2548,12 +2548,7 @@
           "fastestFoundPercent",
           "previousGames",
           "previousBestScore",
-          "previousAverageScore",
-          "averageScoreAfter",
-          "bestSinceDays",
-          "firstStepSeconds",
-          "firstStepFoundTotal",
-          "firstStepFoundToday"
+          "previousAverageScore"
         ],
         "type": "object",
         "properties": {
@@ -2588,29 +2583,6 @@
               "integer"
             ],
             "format": "int32"
-          },
-          "averageScoreAfter": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "bestSinceDays": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "firstStepFoundTotal": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "firstStepFoundToday": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "firstStepSeconds": {
-            "type": "number",
-            "format": "double"
           }
         }
       },

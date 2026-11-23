@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
-import { FakeAdminGroupsApi, adminGroup, fakeAdminGroupsApi, provideAdminGroupsApiFake } from '../../data-access/testing/fake-admin-groups-api';
+import { FakeAdminGroupsApi, adminGroup, adminGroupMember, fakeAdminGroupsApi, provideAdminGroupsApiFake } from '../../data-access/testing/fake-admin-groups-api';
 import { problem } from '../../data-access/testing/fake-catalogue-api';
 import { AdminGroup } from '../../domain/admin-group';
 import { GroupsPage } from './groups.page';
@@ -23,7 +23,13 @@ describe('GroupsPage', () => {
     };
     fixture.detectChanges();
     await settle();
-    return { element, settle, rows: () => element.querySelectorAll('[data-testid="admin-group"]') };
+    const rows = () => element.querySelectorAll('[data-testid="admin-group"]');
+    /** Déplie la ligne `index` : la modération ne se montre qu'ainsi. */
+    const expand = async (index: number) => {
+      (rows()[index].querySelector('[data-testid="group-toggle"]') as HTMLElement).click();
+      await settle();
+    };
+    return { element, settle, rows, expand };
   }
 
   it('charge la liste à l\'ouverture et montre une ligne par groupe', async () => {
@@ -57,8 +63,30 @@ describe('GroupsPage', () => {
     expect(element.textContent).toContain('admin.groups.noMatch');
   });
 
+  it('ne montre aucun bouton de modération tant qu\'aucun groupe n\'est déplié', async () => {
+    const { element } = await render();
+    for (const id of ['rename-group', 'reset-group-name', 'delete-group']) expect(element.querySelector(`[data-testid="${id}"]`)).toBeNull();
+    expect(api.members).not.toHaveBeenCalled();
+  });
+
+  it('déplier un groupe lit et montre ses membres, un seul groupe à la fois', async () => {
+    const { element, rows, expand } = await render({
+      api: { members: vi.fn(async (id: number) => (id === 1 ? [adminGroupMember({ pseudo: 'Alice', isOwner: true }), adminGroupMember({ pseudo: 'Bob' })] : [adminGroupMember({ pseudo: 'Carol' })])) },
+    });
+    await expand(0);
+    expect(api.members).toHaveBeenCalledWith(1);
+    expect(rows()[0].querySelectorAll('[data-testid="group-member"]')).toHaveLength(2);
+    expect(rows()[0].textContent).toContain('Bob');
+
+    await expand(1);
+    expect(rows()[0].querySelector('[data-testid="group-panel"]')).toBeNull();
+    expect(rows()[1].textContent).toContain('Carol');
+    expect(element.querySelectorAll('[data-testid="group-panel"]')).toHaveLength(1);
+  });
+
   it('supprime un groupe après confirmation', async () => {
-    const { element, settle, rows } = await render();
+    const { element, settle, rows, expand } = await render();
+    await expand(0);
     (rows()[0].querySelector('[data-testid="delete-group"]') as HTMLElement).click();
     await settle();
     (element.querySelector('[data-testid="confirm-delete"]') as HTMLElement).click();
@@ -68,7 +96,8 @@ describe('GroupsPage', () => {
   });
 
   it('renomme un groupe et montre le refus de l\'API sous la ligne', async () => {
-    const { element, settle, rows } = await render({ api: { rename: vi.fn(() => Promise.reject(problem(400, 'social.invalid_name'))) } });
+    const { element, settle, rows, expand } = await render({ api: { rename: vi.fn(() => Promise.reject(problem(400, 'social.invalid_name'))) } });
+    await expand(0);
     (rows()[0].querySelector('[data-testid="rename-group"]') as HTMLElement).click();
     await settle();
     element.querySelector('form')!.dispatchEvent(new Event('submit'));
@@ -78,7 +107,8 @@ describe('GroupsPage', () => {
   });
 
   it('remet un nom à zéro après confirmation', async () => {
-    const { element, settle, rows } = await render();
+    const { element, settle, rows, expand } = await render();
+    await expand(1);
     (rows()[1].querySelector('[data-testid="reset-group-name"]') as HTMLElement).click();
     await settle();
     (element.querySelector('[data-testid="confirm-reset"]') as HTMLElement).click();

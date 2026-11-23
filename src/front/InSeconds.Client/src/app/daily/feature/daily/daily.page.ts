@@ -27,7 +27,7 @@ import { isHomeScreen } from '../../domain/daily-screen';
 import { todayUtc } from '../../../core/game-day/game-day';
 
 /**
- * La page du défi (`/daily`) : la manche (les autres écrans du jeu du jour sont sur l'accueil, le résultat complet sur `/daily/resultat`). Elle affiche l'écran que le
+ * La page du défi (`/daily`) : la manche (les autres écrans du jeu du jour sont sur l'accueil). Elle affiche l'écran que le
  * `DailyGameStore` indique et branche ce qui est propre au navigateur : les fenêtres (abandon, sortie de partie), le compte dans le bandeau.
  * Les stores sont ceux de la coquille (`DailyShellComponent`), partagés avec l'accueil (`/`).
  */

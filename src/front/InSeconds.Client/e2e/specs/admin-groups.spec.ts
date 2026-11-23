@@ -22,6 +22,11 @@ test.describe('Admin - groupes', () => {
     await expect(row).toHaveCount(1);
     await expect(row.getByTestId('admin-group-name')).toHaveText('Les copains');
 
+    // La modération et les membres ne se montrent qu'en dépliant le groupe.
+    await expect(row.getByTestId('delete-group')).toHaveCount(0);
+    await row.getByTestId('group-members-toggle').click();
+    await expect(row.getByTestId('group-member')).toHaveCount(1);
+
     // Renommer sur place.
     await row.getByTestId('rename-group').click();
     await row.locator('input').fill('Les amis');

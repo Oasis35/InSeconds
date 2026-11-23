@@ -1955,11 +1955,6 @@ export interface TodayHistoryResponse {
     previousGames: number;
     previousBestScore: number | undefined;
     previousAverageScore: number | undefined;
-    averageScoreAfter: number;
-    bestSinceDays: number | undefined;
-    firstStepFoundTotal: number;
-    firstStepFoundToday: number;
-    firstStepSeconds: number;
 
     [key: string]: any;
 }
