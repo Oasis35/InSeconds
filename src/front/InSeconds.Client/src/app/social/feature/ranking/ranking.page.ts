@@ -20,6 +20,7 @@ import { PendingInvite } from '../../data-access/pending-invite';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { GroupView, groupViewOf, todayRows, weekRows } from '../../domain/group-scores';
 import { LeaveOwnerData, LeaveOwnerSheet } from './leave-owner.sheet';
+import { ManageGroupChoice, ManageGroupData, ManageGroupSheet } from './manage-group.sheet';
 import { RenameGroupData, RenameGroupSheet } from './rename-group.sheet';
 import { GeneralRankingComponent } from '../general-ranking/general-ranking.component';
 import { ScoreListComponent } from '../../ui/score-list/score-list.component';
@@ -164,8 +165,20 @@ export class RankingPage {
     else this.leaveFailed.set(true);
   }
 
+  /** « Gérer le groupe » : ce que seul le créateur peut faire. La feuille propose renommer et, avec d'autres membres, changer de créateur. */
+  protected async manage(): Promise<void> {
+    const group = this.store.selected();
+    if (!group?.isOwner) return;
+    const ref = this.modal.openSheet<ManageGroupChoice | null, ManageGroupData, ManageGroupSheet>(ManageGroupSheet, {
+      data: { canTransfer: group.memberCount > 1 },
+    });
+    const choice = (await firstValueFrom(ref.closed)) ?? null;
+    if (choice === 'rename') await this.rename();
+    else if (choice === 'transfer') await this.transfer();
+  }
+
   /** Le créateur renomme son groupe : le nom est validé par le serveur, la liste relue. */
-  protected async rename(): Promise<void> {
+  private async rename(): Promise<void> {
     const group = this.store.selected();
     if (!group?.isOwner) return;
     this.renameFailed.set(false);
@@ -180,7 +193,7 @@ export class RankingPage {
   }
 
   /** Le créateur passe la main à un autre membre sans partir : il devient un simple membre. */
-  protected async transfer(): Promise<void> {
+  private async transfer(): Promise<void> {
     const group = this.store.selected();
     if (!group?.isOwner) return;
     this.leaveFailed.set(false);

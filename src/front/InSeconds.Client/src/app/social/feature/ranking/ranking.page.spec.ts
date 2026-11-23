@@ -6,6 +6,7 @@ import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { ShareService } from '../../../core/share/share.service';
 import { MemoryStoragePort, StoragePort } from '../../../core/storage/storage.port';
 import { ModalService } from '../../../ui/modal/modal.service';
+import { ManageGroupSheet } from './manage-group.sheet';
 import { PendingInvite } from '../../data-access/pending-invite';
 import { DAILY, DAILY_LOCKED, FakeSocialApi, GROUP, provideFakeSocialApi } from '../../data-access/testing/fake-social-api';
 import { signIn } from '../testing/session';
@@ -18,6 +19,8 @@ describe('RankingPage', () => {
   /** Le pseudo que le créateur choisit dans la feuille « Quitter » ; `null` : il renonce. */
   let successor: string | null;
   let confirmed: { title: string; body: string }[];
+  /** Ce que le créateur choisit dans « Gérer le groupe » (renommer ou changer de créateur). */
+  let manageChoice: 'rename' | 'transfer' | null;
 
   async function render(url = '/ranking', who: 'account' | 'guest' | 'nobody' = 'account', pending: string | null = null, survie = true, dailyDone: boolean | null = null) {
     api ??= new FakeSocialApi();
@@ -30,7 +33,7 @@ describe('RankingPage', () => {
           provide: ModalService,
           useValue: {
             confirm: (data: { title: string; body: string }) => { confirmed.push(data); return Promise.resolve(confirm); },
-            openSheet: () => ({ closed: of(successor) }),
+            openSheet: (component: unknown) => ({ closed: of(component === ManageGroupSheet ? manageChoice : successor) }),
           },
         },
         // Un stockage neuf par test : le dernier groupe regardé ne passe pas d'un test à l'autre.
@@ -62,6 +65,7 @@ describe('RankingPage', () => {
     confirm = true;
     successor = null;
     confirmed = [];
+    manageChoice = null;
   });
   afterEach(() => TestBed.inject(PendingInvite).clear());
 
@@ -215,17 +219,19 @@ describe('RankingPage', () => {
   it('le créateur d\'un groupe à plusieurs peut passer la main sans partir', async () => {
     const { el, settle } = await render();
     successor = null;
-    find(el, 'ranking-transfer')!.click();
+    manageChoice = 'transfer';
+    find(el, 'ranking-manage')!.click();
     await settle();
     expect(api.calls.filter(call => call.startsWith('transfer'))).toEqual([]);
 
     successor = 'Théo';
-    find(el, 'ranking-transfer')!.click();
+    manageChoice = 'transfer';
+    find(el, 'ranking-manage')!.click();
     await settle();
 
     expect(api.calls).toContain('transfer:4:Théo');
-    // Il n'est plus créateur : le lien disparaît, il reste dans le groupe.
-    expect(find(el, 'ranking-transfer')).toBeNull();
+    // Il n'est plus créateur : « Gérer le groupe » disparaît, il reste dans le groupe.
+    expect(find(el, 'ranking-manage')).toBeNull();
     expect(api.calls.filter(call => call.startsWith('leave'))).toEqual([]);
   });
 
@@ -233,22 +239,23 @@ describe('RankingPage', () => {
     const { el, settle } = await render();
     successor = 'Les amis';
 
-    find(el, 'ranking-rename')!.click();
+    manageChoice = 'rename';
+    find(el, 'ranking-manage')!.click();
     await settle();
 
     expect(api.calls).toContain('rename:4:Les amis');
     expect(el.querySelector('[data-testid="ranking-group"]')?.textContent).toContain('Les amis');
   });
 
-  it('« Renommer le groupe » n\'existe pas pour un simple membre', async () => {
+  it('« Gérer le groupe » n\'existe pas pour un simple membre', async () => {
     api.groups = { ...api.groups, groups: [{ ...GROUP, isOwner: false }, ...api.groups.groups.slice(1)] };
 
-    expect(find((await render()).el, 'ranking-rename')).toBeNull();
+    expect(find((await render()).el, 'ranking-manage')).toBeNull();
   });
 
-  it('« Changer de créateur » n\'existe ni pour un simple membre ni pour un créateur seul', async () => {
-    api.groups = { ...api.groups, groups: [{ ...GROUP, isOwner: false }, ...api.groups.groups.slice(1)] };
-    expect(find((await render()).el, 'ranking-transfer')).toBeNull();
+  it('« Gérer le groupe » reste proposé au créateur seul, sans rien d\'autre à faire que renommer', async () => {
+    api.groups = { ...api.groups, groups: [{ ...GROUP, memberCount: 1 }, ...api.groups.groups.slice(1)] };
+    expect(find((await render()).el, 'ranking-manage')).not.toBeNull();
   });
 
   it('un simple membre confirme, sans successeur à désigner', async () => {

@@ -1592,6 +1592,15 @@
       "failed": "Copy failed",
       "text": "Join “{{ name }}” on InSeconds: we'll be in the same ranking."
     },
+    "manage": {
+      "link": "Manage the group",
+      "title": "Manage the group",
+      "rename": "Rename the group",
+      "renameHint": "Changes the name members see.",
+      "transfer": "Change owner",
+      "transferHint": "Hands the group to another member, without leaving it.",
+      "close": "Close"
+    },
     "rename": {
       "link": "Rename the group",
       "title": "Rename the group",

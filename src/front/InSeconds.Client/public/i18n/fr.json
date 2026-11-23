@@ -1592,6 +1592,15 @@
       "failed": "Copie impossible",
       "text": "Rejoins « {{ name }} » sur InSeconds : on se retrouve dans le même classement."
     },
+    "manage": {
+      "link": "Gérer le groupe",
+      "title": "Gérer le groupe",
+      "rename": "Renommer le groupe",
+      "renameHint": "Change le nom que voient les membres.",
+      "transfer": "Changer de créateur",
+      "transferHint": "Passe la main à un autre membre, sans quitter le groupe.",
+      "close": "Fermer"
+    },
     "rename": {
       "link": "Renommer le groupe",
       "title": "Renommer le groupe",
