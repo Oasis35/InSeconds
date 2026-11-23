@@ -182,6 +182,15 @@ public sealed class EfSocialQueries(InSecondsDbContext db) : ISocialQueries
             .Select(g => new AdminGroupView(g.Id, g.Name, g.Members.Count, g.OwnerId, g.CreatedAt))
             .ToListAsync(ct);
 
+    public async Task<AdminGroupMembersView?> FindGroupMembersAsync(int groupId, CancellationToken ct)
+    {
+        var group = await db.Set<Group>().AsNoTracking().Include(g => g.Members).FirstOrDefaultAsync(g => g.Id == groupId, ct);
+        if (group is null)
+            return null;
+        var members = group.Members.OrderBy(m => m.JoinedAt).ThenBy(m => m.PlayerId).Select(m => new GroupMemberEntry(m.PlayerId, m.JoinedAt));
+        return new AdminGroupMembersView(group.OwnerId, [.. members]);
+    }
+
     private static GroupView ViewOf(Group group) =>
         new(group.Id, group.Name, group.InviteCode, group.OwnerId, group.CreatedAt, [.. group.Members.Select(m => new GroupMemberEntry(m.PlayerId, m.JoinedAt))]);
 }

@@ -126,6 +126,18 @@
               <!-- Même dans des groupes, on peut en ouvrir un autre tant qu'on n'a pas atteint le maximum : un vrai bouton, en contour neutre. -->
               <a appButton variant="neutral" routerLink="/ranking/new" [block]="true" data-testid="ranking-new-group">{{ 'social.home.newGroup' | translate }}</a>
             }
+            @if (store.selected()?.isOwner) {
+              <!-- Ce que seul le créateur peut faire (renommer, changer de créateur) : un seul lien, une feuille. -->
+              <button type="button" class="self-center text-xs underline cursor-pointer min-h-11 px-3" style="color:var(--text-muted)" (click)="manage()" data-testid="ranking-manage">
+                {{ 'social.manage.link' | translate }}
+              </button>
+              @if (renameFailed()) {
+                <p class="text-xs text-center" role="alert" style="color:var(--text-error)">{{ 'social.rename.failed' | translate }}</p>
+              }
+              @if (transferFailed()) {
+                <p class="text-xs text-center" role="alert" style="color:var(--text-error)">{{ 'social.transfer.failed' | translate }}</p>
+              }
+            }
             <button type="button" class="self-center text-xs underline cursor-pointer min-h-11 px-3" style="color:var(--text-muted)" (click)="leave()" data-testid="ranking-leave">
               {{ 'social.leave.link' | translate }}
             </button>

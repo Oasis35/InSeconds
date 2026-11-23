@@ -78,7 +78,10 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'social.invalid_ranking_mode': 'errors.social.invalid_ranking_mode',
   'social.invitation_not_found': 'errors.social.invitation_not_found',
   'social.invalid_date': 'errors.social.invalid_date',
+  'social.member_not_found': 'errors.social.member_not_found',
   'social.not_owner': 'errors.social.not_owner',
+  'social.owner_must_hand_over': 'errors.social.owner_must_hand_over',
+  'social.invalid_successor': 'errors.social.invalid_successor',
   'social.too_many_groups': 'errors.social.too_many_groups',
 };
 

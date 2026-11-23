@@ -6,9 +6,10 @@ import { AdminGroupsStore } from '../../data-access/groups.store';
 import { GroupRowComponent } from '../../ui/groups/group-row/group-row.component';
 
 /**
- * `/admin/groupes` : les groupes de Setlist, le plus récent d'abord, avec un filtre texte (nom ou créateur) et la modération de chacun : renommer,
- * remettre un nom inapproprié à zéro, supprimer. L'admin ne voit ni le code d'invitation ni les membres. Sur PC, un en-tête de colonnes au-dessus
- * des lignes ; sur téléphone, chaque ligne s'empile en carte. La liste n'est lue qu'à l'ouverture de l'onglet.
+ * `/admin/groupes` : les groupes, le plus récent d'abord, avec un filtre texte (nom ou créateur). Un clic sur un groupe le déplie (un seul à la
+ * fois, comme les comptes de l'onglet Joueurs) : ses membres, lus à ce moment-là (chacun peut être retiré, ou devenir créateur), puis sa
+ * modération : renommer, remettre un nom inapproprié à zéro, supprimer. L'admin ne voit jamais le code d'invitation. Sur PC, un en-tête de colonnes au-dessus des lignes ; sur téléphone, chaque ligne s'empile
+ * en carte. La liste n'est lue qu'à l'ouverture de l'onglet.
  */
 @Component({
   selector: 'app-admin-groups-page',
@@ -43,19 +44,22 @@ import { GroupRowComponent } from '../../ui/groups/group-row/group-row.component
         } @else if (store.filteredGroups().length === 0) {
           <p class="text-sm px-4 pb-4" style="color:var(--text-muted)">{{ 'admin.groups.noMatch' | translate }}</p>
         } @else {
-          <div class="hidden lg:grid lg:grid-cols-[minmax(0,2fr)_5rem_minmax(0,1fr)_6rem_18rem] gap-3 px-4 py-2.5 text-xs uppercase tracking-wide"
+          <div class="hidden lg:grid lg:grid-cols-[minmax(0,2fr)_5rem_minmax(0,1fr)_6rem] gap-3 px-4 py-2.5 text-xs uppercase tracking-wide"
             style="border-top:1px solid var(--border-medium);color:var(--text-muted)" aria-hidden="true">
             <span>{{ 'admin.groups.colName' | translate }}</span>
             <span class="text-right">{{ 'admin.groups.colMembers' | translate }}</span>
             <span>{{ 'admin.groups.colOwner' | translate }}</span>
             <span>{{ 'admin.groups.colCreated' | translate }}</span>
-            <span></span>
           </div>
           <ul class="flex flex-col">
             @for (group of store.filteredGroups(); track group.id) {
-              <li appGroupRow [group]="group" [pending]="store.pendingIds().includes(group.id)" [errorKey]="errorKeyOf(group.id)"
+              @let expanded = store.expandedId() === group.id;
+              <li appGroupRow [group]="group" [expanded]="expanded" (toggled)="store.toggle(group.id)"
+                [members]="expanded ? store.expandedMembers()?.members ?? null : null" [membersStatus]="store.expandedMembers()?.status ?? 'idle'"
+                [pending]="store.pendingIds().includes(group.id)" [errorKey]="errorKeyOf(group.id)"
                 (renamed)="store.renameGroup(group.id, $event)" (resetNameRequested)="store.resetGroupName(group.id)"
-                (removeRequested)="store.removeGroup(group.id)"></li>
+                (removeRequested)="store.removeGroup(group.id)"
+                (ownerChanged)="store.transferOwner(group.id, $event)" (memberRemoved)="store.removeMember(group.id, $event.pseudo, $event.successor)"></li>
             }
           </ul>
         }

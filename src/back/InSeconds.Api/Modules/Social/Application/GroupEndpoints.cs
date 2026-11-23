@@ -316,30 +316,119 @@ internal static class GroupActionSteps
     }
 }
 
+/// <summary>Le groupe chargé pour un départ, et le membre que le créateur désigne pour lui succéder (vide s'il n'en désigne aucun ou s'il n'est pas dans le groupe).</summary>
+public sealed record GroupLeave(GroupAction Action, Guid? SuccessorId);
+
 public static class LeaveGroupEndpoint
 {
-    public static Task<GroupAction> LoadAsync(int id, ICurrentPlayer current, IGroupStore store, CancellationToken ct) =>
-        GroupActionSteps.LoadAsync(id, current, store, ct);
+    public static async Task<GroupLeave> LoadAsync(
+        int id, string? successor, ICurrentPlayer current, IGroupStore store, IPlayerDirectory players, CancellationToken ct)
+    {
+        var action = await GroupActionSteps.LoadAsync(id, current, store, ct);
+        return new GroupLeave(action, await GroupHandOver.FindMemberAsync(action.Group, successor, players, ct));
+    }
 
-    public static ProblemDetails Validate(GroupAction action) => GroupActionSteps.ValidateMember(action);
+    public static ProblemDetails Validate(GroupLeave leave, string? successor)
+    {
+        var member = GroupActionSteps.ValidateMember(leave.Action);
+        if (!ReferenceEquals(member, WolverineContinue.NoProblems))
+            return member;
+        return GroupHandOver.Check(leave.Action.Group!, leave.Action.PlayerId, successor, leave.SuccessorId);
+    }
 
     /// <summary>
-    /// <c>DELETE /api/social/groups/{id}/membership</c> : quitte le groupe (204). Le créateur qui part passe la main au plus ancien des autres
-    /// membres ; le dernier qui part supprime le groupe. 404 <c>social.group_not_found</c> pour un non-membre.
+    /// <c>DELETE /api/social/groups/{id}/membership?successor=pseudo</c> : quitte le groupe (204) ; le dernier qui part supprime le groupe. Le créateur
+    /// ne part pas tant qu'il reste d'autres membres : il désigne en même temps son successeur (<c>successor</c>, le pseudo d'un autre membre), et le
+    /// changement de créateur et le départ se font ensemble ou pas du tout. 404 <c>social.group_not_found</c> pour un non-membre, 409
+    /// <c>social.owner_must_hand_over</c> pour un créateur qui n'en désigne aucun, 400 <c>social.invalid_successor</c> si ce pseudo n'est pas celui
+    /// d'un autre membre.
     /// </summary>
     [Authorize]
     [WolverineDelete("/api/social/groups/{id}/membership", OperationId = "leaveGroup")]
     [EmptyResponse]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public static void Delete([NotBody] GroupAction action, IGroupStore store, [NotBody] SocialMetrics metrics, ILogger<Group> logger)
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public static void Delete([NotBody] GroupLeave leave, IGroupStore store, [NotBody] SocialMetrics metrics, ILogger<Group> logger)
     {
+        var (action, successorId) = (leave.Action, leave.SuccessorId);
         var group = action.Group!;
-        var departure = group.Leave(action.PlayerId);
+        if (group.MustHandOverBeforeLeaving(action.PlayerId))
+            SocialLog.OwnerTransferred(logger, group.Id, successorId!.Value, action.PlayerId);
+        var departure = group.Leave(action.PlayerId, successorId);
         if (departure == GroupDeparture.Emptied)
             store.Remove(group);
         SocialLog.GroupLeft(logger, group.Id, action.PlayerId, departure.ToString());
         metrics.Group(departure == GroupDeparture.Emptied ? SocialMetrics.Emptied : SocialMetrics.Left);
+    }
+}
+
+public static class RenameGroupEndpoint
+{
+    public static Task<GroupAction> LoadAsync(int id, ICurrentPlayer current, IGroupStore store, CancellationToken ct) =>
+        GroupActionSteps.LoadAsync(id, current, store, ct);
+
+    public static ProblemDetails Validate(RenameGroup request, GroupAction action, SocialRules rules)
+    {
+        var owner = GroupActionSteps.ValidateOwner(action);
+        if (!ReferenceEquals(owner, WolverineContinue.NoProblems))
+            return owner;
+        return GroupName.IsValid(request.Name, rules.MaxNameLength) ? WolverineContinue.NoProblems : SocialProblems.InvalidName(rules.MaxNameLength);
+    }
+
+    /// <summary>
+    /// <c>PUT /api/social/groups/{id}/name</c> : le créateur renomme son groupe (mêmes caractères permis et même longueur qu'à la création) et rend le
+    /// nom enregistré. 400 <c>social.invalid_name</c>, 404 <c>social.group_not_found</c> pour un non-membre, 403 <c>social.not_owner</c> pour un simple
+    /// membre.
+    /// </summary>
+    [Authorize]
+    [WolverinePut("/api/social/groups/{id}/name", OperationId = "renameGroup")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public static GroupNameResponse Put(RenameGroup request, [NotBody] GroupAction action, ILogger<Group> logger)
+    {
+        var group = action.Group!;
+        group.Rename(request.Name);
+        SocialLog.GroupRenamed(logger, group.Id, action.PlayerId);
+        return new GroupNameResponse(group.Name);
+    }
+}
+
+/// <summary>Le corps du changement de créateur : le pseudo d'un autre membre (un membre ne voit jamais l'identifiant d'un autre).</summary>
+public sealed record TransferGroupOwner(string Pseudo);
+
+public static class TransferGroupOwnerEndpoint
+{
+    public static Task<GroupAction> LoadAsync(int id, ICurrentPlayer current, IGroupStore store, CancellationToken ct) =>
+        GroupActionSteps.LoadAsync(id, current, store, ct);
+
+    public static async Task<ProblemDetails> ValidateAsync(TransferGroupOwner request, GroupAction action, IPlayerDirectory players, CancellationToken ct)
+    {
+        var owner = GroupActionSteps.ValidateOwner(action);
+        if (!ReferenceEquals(owner, WolverineContinue.NoProblems))
+            return owner;
+        var memberId = await GroupHandOver.FindMemberAsync(action.Group, request.Pseudo, players, ct);
+        return memberId is { } id && action.Group!.CanTransferTo(id) ? WolverineContinue.NoProblems : SocialProblems.InvalidSuccessor();
+    }
+
+    /// <summary>
+    /// <c>PUT /api/social/groups/{id}/owner</c> : le créateur confie le groupe à un autre membre, désigné par son pseudo (204), sans partir. Il devient
+    /// un simple membre et ne retrouve le statut que si le nouveau créateur le désigne à son tour. 400 <c>social.invalid_successor</c> si ce pseudo
+    /// n'est pas celui d'un autre membre, 404 <c>social.group_not_found</c> pour un non-membre, 403 <c>social.not_owner</c> pour un simple membre.
+    /// </summary>
+    [Authorize]
+    [WolverinePut("/api/social/groups/{id}/owner", OperationId = "transferGroupOwner")]
+    [EmptyResponse]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public static async Task Put(TransferGroupOwner request, [NotBody] GroupAction action, IPlayerDirectory players, ILogger<Group> logger, CancellationToken ct)
+    {
+        var group = action.Group!;
+        var newOwnerId = (await GroupHandOver.FindMemberAsync(group, request.Pseudo, players, ct))!.Value;
+        group.TransferOwnership(newOwnerId);
+        SocialLog.OwnerTransferred(logger, group.Id, newOwnerId, action.PlayerId);
     }
 }
 

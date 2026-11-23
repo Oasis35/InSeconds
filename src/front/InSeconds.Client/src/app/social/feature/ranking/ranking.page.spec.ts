@@ -1,10 +1,12 @@
 import { TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
 import { Router, provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { ShareService } from '../../../core/share/share.service';
 import { MemoryStoragePort, StoragePort } from '../../../core/storage/storage.port';
 import { ModalService } from '../../../ui/modal/modal.service';
+import { ManageGroupSheet } from './manage-group.sheet';
 import { PendingInvite } from '../../data-access/pending-invite';
 import { DAILY, DAILY_LOCKED, FakeSocialApi, GROUP, provideFakeSocialApi } from '../../data-access/testing/fake-social-api';
 import { signIn } from '../testing/session';
@@ -14,6 +16,11 @@ describe('RankingPage', () => {
   let api: FakeSocialApi;
   let shared: string[];
   let confirm: boolean;
+  /** Le pseudo que le créateur choisit dans la feuille « Quitter » ; `null` : il renonce. */
+  let successor: string | null;
+  let confirmed: { title: string; body: string }[];
+  /** Ce que le créateur choisit dans « Gérer le groupe » (renommer ou changer de créateur). */
+  let manageChoice: 'rename' | 'transfer' | null;
 
   async function render(url = '/ranking', who: 'account' | 'guest' | 'nobody' = 'account', pending: string | null = null, survie = true, dailyDone: boolean | null = null) {
     api ??= new FakeSocialApi();
@@ -22,7 +29,13 @@ describe('RankingPage', () => {
       providers: [
         provideTranslateService(), provideRouter([{ path: 'ranking', component: RankingPage }, { path: '**', children: [] }]), provideFakeSocialApi(api),
         { provide: ShareService, useValue: { share: (text: string) => { shared.push(text); return Promise.resolve('copied'); } } },
-        { provide: ModalService, useValue: { confirm: () => Promise.resolve(confirm) } },
+        {
+          provide: ModalService,
+          useValue: {
+            confirm: (data: { title: string; body: string }) => { confirmed.push(data); return Promise.resolve(confirm); },
+            openSheet: (component: unknown) => ({ closed: of(component === ManageGroupSheet ? manageChoice : successor) }),
+          },
+        },
         // Un stockage neuf par test : le dernier groupe regardé ne passe pas d'un test à l'autre.
         { provide: StoragePort, useValue: new MemoryStoragePort() },
       ],
@@ -50,6 +63,9 @@ describe('RankingPage', () => {
   beforeEach(() => {
     api = new FakeSocialApi();
     confirm = true;
+    successor = null;
+    confirmed = [];
+    manageChoice = null;
   });
   afterEach(() => TestBed.inject(PendingInvite).clear());
 
@@ -185,18 +201,103 @@ describe('RankingPage', () => {
     expect(find(el, 'ranking-invite')?.textContent).toContain('social.invite.copied');
   });
 
-  it('quitter un groupe demande confirmation, puis relit la liste', async () => {
+  it('un créateur qui laisse d\'autres membres désigne son successeur en partant, puis la liste est relue', async () => {
+    const { el, settle } = await render();
+    successor = null;
+    find(el, 'ranking-leave')!.click();
+    await settle();
+    expect(api.calls.filter(call => call.startsWith('leave'))).toEqual([]);
+
+    successor = 'Théo';
+    find(el, 'ranking-leave')!.click();
+    await settle();
+    expect(api.calls).toContain('leave:4:Théo');
+    expect(confirmed).toEqual([]);
+    expect([...el.querySelectorAll('[data-testid="ranking-group"]')].map(chip => chip.textContent?.trim())).toEqual(['Famille']);
+  });
+
+  it('le créateur d\'un groupe à plusieurs peut passer la main sans partir', async () => {
+    const { el, settle } = await render();
+    successor = null;
+    manageChoice = 'transfer';
+    find(el, 'ranking-manage')!.click();
+    await settle();
+    expect(api.calls.filter(call => call.startsWith('transfer'))).toEqual([]);
+
+    successor = 'Théo';
+    manageChoice = 'transfer';
+    find(el, 'ranking-manage')!.click();
+    await settle();
+
+    expect(api.calls).toContain('transfer:4:Théo');
+    // Il n'est plus créateur : « Gérer le groupe » disparaît, il reste dans le groupe.
+    expect(find(el, 'ranking-manage')).toBeNull();
+    expect(api.calls.filter(call => call.startsWith('leave'))).toEqual([]);
+  });
+
+  it('le créateur renomme son groupe, même seul, et la liste est relue', async () => {
+    const { el, settle } = await render();
+    successor = 'Les amis';
+
+    manageChoice = 'rename';
+    find(el, 'ranking-manage')!.click();
+    await settle();
+
+    expect(api.calls).toContain('rename:4:Les amis');
+    expect(el.querySelector('[data-testid="ranking-group"]')?.textContent).toContain('Les amis');
+  });
+
+  it('« Gérer le groupe » n\'existe pas pour un simple membre', async () => {
+    api.groups = { ...api.groups, groups: [{ ...GROUP, isOwner: false }, ...api.groups.groups.slice(1)] };
+
+    expect(find((await render()).el, 'ranking-manage')).toBeNull();
+  });
+
+  it('« Gérer le groupe » reste proposé au créateur seul, sans rien d\'autre à faire que renommer', async () => {
+    api.groups = { ...api.groups, groups: [{ ...GROUP, memberCount: 1 }, ...api.groups.groups.slice(1)] };
+    expect(find((await render()).el, 'ranking-manage')).not.toBeNull();
+  });
+
+  it('un simple membre confirme, sans successeur à désigner', async () => {
+    api.groups = { ...api.groups, groups: [{ ...GROUP, isOwner: false }, ...api.groups.groups.slice(1)] };
     const { el, settle } = await render();
     confirm = false;
     find(el, 'ranking-leave')!.click();
     await settle();
-    expect(api.calls).not.toContain('leave:4');
+    expect(api.calls.filter(call => call.startsWith('leave'))).toEqual([]);
 
     confirm = true;
+    successor = null;
+    confirmed = [];
     find(el, 'ranking-leave')!.click();
     await settle();
     expect(api.calls).toContain('leave:4');
-    expect([...el.querySelectorAll('[data-testid="ranking-group"]')].map(chip => chip.textContent?.trim())).toEqual(['Famille']);
+    expect(confirmed[0].body).toBe('social.leave.body');
+  });
+
+  it('le créateur seul prévient que le groupe sera supprimé en partant', async () => {
+    api.groups = { ...api.groups, groups: [{ ...GROUP, memberCount: 1 }, ...api.groups.groups.slice(1)] };
+    const { el, settle } = await render();
+    confirm = true;
+    successor = null;
+    confirmed = [];
+
+    find(el, 'ranking-leave')!.click();
+    await settle();
+
+    expect(confirmed[0].body).toBe('social.leave.lastBody');
+    expect(api.calls).toContain('leave:4');
+  });
+
+  it('un créateur dont les membres ne sont pas lus ne part pas', async () => {
+    api.scoresByGroup.delete(4);
+    const { el, settle } = await render();
+
+    find(el, 'ranking-leave')!.click();
+    await settle();
+
+    expect(api.calls.filter(call => call.startsWith('leave'))).toEqual([]);
+    expect(find(el, 'ranking-leave-failed') ?? el.querySelector('[role="alert"]')).not.toBeNull();
   });
 
   it('sans groupe : « Joue contre tes amis » et « Créer un groupe »', async () => {

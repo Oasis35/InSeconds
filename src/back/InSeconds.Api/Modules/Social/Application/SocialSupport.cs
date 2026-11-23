@@ -1,7 +1,9 @@
 using InSeconds.Api.Infrastructure.Errors;
+using InSeconds.Api.Modules.Players.Contracts;
 using InSeconds.Api.Modules.Social.Domain;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Wolverine.Http;
 
 namespace InSeconds.Api.Modules.Social.Application;
 
@@ -61,6 +63,15 @@ public static class SocialErrorCodes
     /// <summary>Supprimer le groupe ou renouveler son code est réservé à son créateur.</summary>
     public const string NotOwner = "social.not_owner";
 
+    /// <summary>Le créateur d'un groupe qui a d'autres membres ne part (ou n'est retiré) qu'après avoir désigné son successeur.</summary>
+    public const string OwnerMustHandOver = "social.owner_must_hand_over";
+
+    /// <summary>Le successeur désigné n'est pas un autre membre du groupe.</summary>
+    public const string InvalidSuccessor = "social.invalid_successor";
+
+    /// <summary>Le membre à retirer n'est pas (ou plus) dans le groupe.</summary>
+    public const string MemberNotFound = "social.member_not_found";
+
     /// <summary>Deux tirages ont donné le même alias au même instant : le second recommence (rarissime, le tirage est sous verrou).</summary>
     public const string AliasTaken = "social.alias_taken";
 
@@ -69,6 +80,33 @@ public static class SocialErrorCodes
 
     /// <summary>Le jour des scores d'un groupe s'écrit <c>aaaa-mm-jj</c> et n'est pas dans le futur.</summary>
     public const string InvalidDate = "social.invalid_date";
+}
+
+/// <summary>
+/// Le créateur qui part (ou que l'admin retire) désigne son successeur par son pseudo, un membre ne voyant jamais l'identifiant d'un autre : le
+/// pseudo d'un compte est unique, sans tenir compte de la casse.
+/// </summary>
+internal static class GroupHandOver
+{
+    /// <summary>L'identifiant du membre de ce groupe qui porte ce pseudo ; vide si le groupe est inconnu, le pseudo vide ou personne ne le porte.</summary>
+    public static async Task<Guid?> FindMemberAsync(Group? group, string? pseudo, IPlayerDirectory players, CancellationToken ct)
+    {
+        if (group is null || string.IsNullOrWhiteSpace(pseudo))
+            return null;
+        var pseudos = await players.GetPseudosAsync([.. group.Members.Select(m => m.PlayerId)], ct);
+        var wanted = pseudo.Trim();
+        return pseudos.Where(p => string.Equals(p.Value, wanted, StringComparison.OrdinalIgnoreCase)).Select(p => (Guid?)p.Key).FirstOrDefault();
+    }
+
+    /// <summary>Rien à vérifier si le départ ne laisse pas le groupe sans créateur ; sinon un successeur est exigé, déjà membre et autre que lui.</summary>
+    public static ProblemDetails Check(Group group, Guid leaverId, string? successorPseudo, Guid? successorId)
+    {
+        if (!group.MustHandOverBeforeLeaving(leaverId))
+            return WolverineContinue.NoProblems;
+        if (string.IsNullOrWhiteSpace(successorPseudo))
+            return SocialProblems.OwnerMustHandOver();
+        return successorId is { } id && group.CanTransferTo(id) ? WolverineContinue.NoProblems : SocialProblems.InvalidSuccessor();
+    }
 }
 
 internal static class SocialProblems
@@ -98,6 +136,15 @@ internal static class SocialProblems
 
     public static ProblemDetails TooManyGroups() =>
         ApiProblem.Of(StatusCodes.Status409Conflict, SocialErrorCodes.TooManyGroups, "Tu es déjà dans le nombre maximum de groupes.");
+
+    public static ProblemDetails OwnerMustHandOver() =>
+        ApiProblem.Of(StatusCodes.Status409Conflict, SocialErrorCodes.OwnerMustHandOver, "Le créateur doit d'abord désigner un nouveau créateur.");
+
+    public static ProblemDetails InvalidSuccessor() =>
+        ApiProblem.Of(StatusCodes.Status400BadRequest, SocialErrorCodes.InvalidSuccessor, "Le nouveau créateur doit être un autre membre du groupe.");
+
+    public static ProblemDetails MemberNotFound() =>
+        ApiProblem.Of(StatusCodes.Status404NotFound, SocialErrorCodes.MemberNotFound, "Ce membre n'est pas dans le groupe.");
 
     public static ProblemDetails NotOwner() =>
         ApiProblem.Of(StatusCodes.Status403Forbidden, SocialErrorCodes.NotOwner, "Seul le créateur du groupe peut le faire.");
@@ -132,6 +179,18 @@ internal static partial class SocialLog
 
     [LoggerMessage(EventId = 1807, Level = LogLevel.Information, Message = "Groupe {GroupId} supprimé par l'admin {AdminId}")]
     public static partial void AdminDeleted(ILogger logger, int groupId, Guid adminId);
+
+    [LoggerMessage(EventId = 1809, Level = LogLevel.Information, Message = "Groupe {GroupId} confié à {NewOwnerId} par {PlayerId}")]
+    public static partial void OwnerTransferred(ILogger logger, int groupId, Guid newOwnerId, Guid playerId);
+
+    [LoggerMessage(EventId = 1810, Level = LogLevel.Information, Message = "Groupe {GroupId} confié à {NewOwnerId} par l'admin {AdminId}")]
+    public static partial void AdminOwnerTransferred(ILogger logger, int groupId, Guid newOwnerId, Guid adminId);
+
+    [LoggerMessage(EventId = 1811, Level = LogLevel.Information, Message = "{PlayerId} retiré du groupe {GroupId} par l'admin {AdminId} ({Departure})")]
+    public static partial void AdminMemberRemoved(ILogger logger, Guid playerId, int groupId, Guid adminId, string departure);
+
+    [LoggerMessage(EventId = 1812, Level = LogLevel.Information, Message = "Groupe {GroupId} renommé par son créateur {PlayerId}")]
+    public static partial void GroupRenamed(ILogger logger, int groupId, Guid playerId);
 
     /// <summary>Jamais l'alias ni le pseudo : l'identifiant et le mode seulement.</summary>
     [LoggerMessage(EventId = 1808, Level = LogLevel.Information, Message = "{PlayerId} a changé son nom au classement général ({RankingNameMode})")]

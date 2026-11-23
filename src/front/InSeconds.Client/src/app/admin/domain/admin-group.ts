@@ -1,4 +1,13 @@
-/** Un groupe d'amis tel que l'onglet Groupes de l'admin l'affiche (modération). Jamais le code d'invitation ni la liste des membres. */
+/** Un membre d'un groupe, tel que l'admin le lit en dépliant le groupe. Jamais d'email ni d'identifiant. */
+export interface AdminGroupMember {
+  /** Le pseudo du compte ; `null` s'il est introuvable. */
+  pseudo: string | null;
+  isOwner: boolean;
+  /** Instant ISO avec fuseau. */
+  joinedAt: string;
+}
+
+/** Un groupe d'amis tel que l'onglet Groupes de l'admin l'affiche (modération). Jamais le code d'invitation ; les membres se lisent en dépliant le groupe. */
 export interface AdminGroup {
   id: number;
   name: string;

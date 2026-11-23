@@ -130,13 +130,146 @@ public class AdminGroupsTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Membres_PseudosCreateurEtDate_LePlusAncienDAbord_JamaisLeCode()
+    {
+        var (alice, bob, carol) = (await _game.NewPlayerAsync("Alice"), await _game.NewPlayerAsync("Bob"), await _game.NewPlayerAsync("Carol"));
+        var group = await CreateAsync(alice, "Les copains");
+        (await bob.Client.PostAsync($"/api/social/invitations/{group.InviteCode}/join", null, Ct)).EnsureSuccessStatusCode();
+        (await carol.Client.PostAsync($"/api/social/invitations/{group.InviteCode}/join", null, Ct)).EnsureSuccessStatusCode();
+        await CreateAsync(bob, "Les voisins");
+
+        var response = await _admin.GetAsync($"{Route}/{group.Id}/members", Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var members = (await response.Content.ReadFromJsonAsync<AdminGroupMembersResponse>(Ct))!.Members;
+        Assert.Equal(["Alice", "Bob", "Carol"], members.Select(m => m.Pseudo).Order());
+        Assert.Equal("Alice", Assert.Single(members, m => m.IsOwner).Pseudo);
+        Assert.Equal(members.Select(m => m.JoinedAt).Order(), members.Select(m => m.JoinedAt));
+        var body = await response.Content.ReadAsStringAsync(Ct);
+        Assert.DoesNotContain(group.InviteCode, body, StringComparison.Ordinal);
+        Assert.DoesNotContain(alice.Id.ToString(), body, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string Members(int groupId) => $"{Route}/{groupId}/members";
+
+    /// <summary>Retire un membre : les pseudos sont dans le corps, jamais dans le chemin (il part dans les traces).</summary>
+    private Task<HttpResponseMessage> RemoveAsync(int groupId, string pseudo, string? successor = null, HttpClient? client = null) =>
+        (client ?? _admin).PostAsJsonAsync($"{Members(groupId)}/remove", new RemoveAdminGroupMember(pseudo, successor), Ct);
+
+    [Fact]
+    public async Task Retirer_UnMembre_LeGroupeResteAuMemeCreateur()
+    {
+        var (alice, bob) = (await _game.NewPlayerAsync("Alice"), await _game.NewPlayerAsync("Bob"));
+        var group = await CreateAsync(alice, "Les copains");
+        (await bob.Client.PostAsync($"/api/social/invitations/{group.InviteCode}/join", null, Ct)).EnsureSuccessStatusCode();
+
+        var response = await RemoveAsync(group.Id, "Bob");
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var remaining = Assert.Single((await _admin.GetFromJsonAsync<AdminGroupMembersResponse>(Members(group.Id), Ct))!.Members);
+        Assert.Equal("Alice", remaining.Pseudo);
+        Assert.True(remaining.IsOwner);
+        Assert.Equal(HttpStatusCode.NotFound, (await bob.Client.GetAsync($"/api/social/groups/{group.Id}", Ct)).StatusCode);
+        // Son compte, lui, ne change pas.
+        Assert.Equal(2L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM players.accounts"));
+    }
+
+    [Fact]
+    public async Task Retirer_LeCreateurAvecDAutresMembres_ExigeSonSuccesseur_EtSeFaitEnUnSeulAppel()
+    {
+        var (alice, bob) = (await _game.NewPlayerAsync("Alice"), await _game.NewPlayerAsync("Bob"));
+        var group = await CreateAsync(alice, "Les copains");
+        (await bob.Client.PostAsync($"/api/social/invitations/{group.InviteCode}/join", null, Ct)).EnsureSuccessStatusCode();
+
+        var none = await RemoveAsync(group.Id, "Alice");
+        var invalid = await RemoveAsync(group.Id, "Alice", "Inconnu");
+
+        Assert.Equal(HttpStatusCode.Conflict, none.StatusCode);
+        Assert.Equal(SocialErrorCodes.OwnerMustHandOver, await SocialGroupTests.CodeOfAsync(none));
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+        Assert.Equal(SocialErrorCodes.InvalidSuccessor, await SocialGroupTests.CodeOfAsync(invalid));
+        Assert.Equal(2L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM social.group_members"));
+        Assert.Equal(alice.Id, Assert.Single(await ListAsync()).OwnerId);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await RemoveAsync(group.Id, "Alice", "bob")).StatusCode);
+
+        var detail = (await bob.Client.GetFromJsonAsync<GroupDetailResponse>($"/api/social/groups/{group.Id}", Ct))!;
+        Assert.True(detail.IsOwner);
+        Assert.Single(detail.Members);
+    }
+
+    [Fact]
+    public async Task Retirer_LeDernierMembre_SupprimeLeGroupeEtSesAdhesions()
+    {
+        var alice = await _game.NewPlayerAsync("Alice");
+        var group = await CreateAsync(alice, "Les copains");
+
+        var response = await RemoveAsync(group.Id, "Alice");
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Empty(await ListAsync());
+        Assert.Equal(0L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM social.groups"));
+        Assert.Equal(0L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM social.group_members"));
+    }
+
+    [Fact]
+    public async Task Retirer_UnJoueurQuiNEstPasMembre_404()
+    {
+        var alice = await _game.NewPlayerAsync("Alice");
+        await _game.NewPlayerAsync("Bob");
+        var group = await CreateAsync(alice, "Les copains");
+
+        var response = await RemoveAsync(group.Id, "Bob");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal(SocialErrorCodes.MemberNotFound, await SocialGroupTests.CodeOfAsync(response));
+        Assert.Equal(1L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM social.group_members"));
+    }
+
+    [Fact]
+    public async Task Confier_LeGroupeAUnAutreMembre_LAncienCreateurDevientMembre()
+    {
+        var (alice, bob) = (await _game.NewPlayerAsync("Alice"), await _game.NewPlayerAsync("Bob"));
+        var group = await CreateAsync(alice, "Les copains");
+        (await bob.Client.PostAsync($"/api/social/invitations/{group.InviteCode}/join", null, Ct)).EnsureSuccessStatusCode();
+
+        var response = await _admin.PutAsJsonAsync($"{Route}/{group.Id}/owner", new TransferAdminGroupOwner(" bob "), Ct);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var copains = Assert.Single(await ListAsync());
+        Assert.Equal((bob.Id, "Bob"), (copains.OwnerId, copains.OwnerPseudo));
+        Assert.False((await alice.Client.GetFromJsonAsync<GroupDetailResponse>($"/api/social/groups/{group.Id}", Ct))!.IsOwner);
+    }
+
+    [Theory]
+    [InlineData("Alice")]
+    [InlineData("Carol")]
+    [InlineData("Inconnu")]
+    [InlineData("   ")]
+    public async Task Confier_AuCreateurAUnNonMembreOuAUnInconnu_400_EtRienNeChange(string pseudo)
+    {
+        var alice = await _game.NewPlayerAsync("Alice");
+        await _game.NewPlayerAsync("Carol");
+        var group = await CreateAsync(alice, "Les copains");
+
+        var response = await _admin.PutAsJsonAsync($"{Route}/{group.Id}/owner", new TransferAdminGroupOwner(pseudo), Ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(SocialErrorCodes.InvalidSuccessor, await SocialGroupTests.CodeOfAsync(response));
+        Assert.Equal(alice.Id, Assert.Single(await ListAsync()).OwnerId);
+    }
+
+    [Fact]
     public async Task GroupeInconnu_404_SurChaqueAction()
     {
         var rename = await _admin.PutAsJsonAsync($"{Route}/999/name", new RenameGroup("Les amis"), Ct);
         var reset = await _admin.PostAsync($"{Route}/999/name/reset", null, Ct);
         var delete = await _admin.DeleteAsync($"{Route}/999", Ct);
+        var members = await _admin.GetAsync($"{Route}/999/members", Ct);
+        var owner = await _admin.PutAsJsonAsync($"{Route}/999/owner", new TransferAdminGroupOwner("Bob"), Ct);
+        var remove = await RemoveAsync(999, "Bob");
 
-        foreach (var response in new[] { rename, reset, delete })
+        foreach (var response in new[] { rename, reset, delete, members, owner, remove })
         {
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
             Assert.Equal(SocialErrorCodes.GroupNotFound, await SocialGroupTests.CodeOfAsync(response));
@@ -152,6 +285,9 @@ public class AdminGroupsTests(PostgresFixture postgres) : IAsyncLifetime
         var responses = new[]
         {
             await alice.Client.GetAsync(Route, Ct),
+            await alice.Client.GetAsync($"{Route}/{group.Id}/members", Ct),
+            await alice.Client.PutAsJsonAsync($"{Route}/{group.Id}/owner", new TransferAdminGroupOwner("Alice"), Ct),
+            await RemoveAsync(group.Id, "Alice", null, alice.Client),
             await alice.Client.PutAsJsonAsync($"{Route}/{group.Id}/name", new RenameGroup("Les amis"), Ct),
             await alice.Client.PostAsync($"{Route}/{group.Id}/name/reset", null, Ct),
             await alice.Client.DeleteAsync($"{Route}/{group.Id}", Ct),
@@ -171,9 +307,15 @@ public class AdminGroupsTests(PostgresFixture postgres) : IAsyncLifetime
         (await _admin.PostAsync($"{Route}/{group.Id}/name/reset", null, Ct)).EnsureSuccessStatusCode();
         (await _admin.DeleteAsync($"{Route}/{group.Id}", Ct)).EnsureSuccessStatusCode();
 
-        var admin = _logs.Entries.Where(e => e.EventId is 1805 or 1806 or 1807).ToList();
-        Assert.Equal([1805, 1806, 1807], admin.Select(e => e.EventId).Order());
-        Assert.All(admin, e => Assert.Contains($"{group.Id}", e.Message, StringComparison.Ordinal));
+        var bob = await _game.NewPlayerAsync("Bob");
+        var other = await CreateAsync(alice, "Autre groupe");
+        (await bob.Client.PostAsync($"/api/social/invitations/{other.InviteCode}/join", null, Ct)).EnsureSuccessStatusCode();
+        (await _admin.PutAsJsonAsync($"{Route}/{other.Id}/owner", new TransferAdminGroupOwner("Bob"), Ct)).EnsureSuccessStatusCode();
+        (await RemoveAsync(other.Id, "Alice")).EnsureSuccessStatusCode();
+
+        var admin = _logs.Entries.Where(e => e.EventId is 1805 or 1806 or 1807 or 1810 or 1811).ToList();
+        Assert.Equal([1805, 1806, 1807, 1810, 1811], admin.Select(e => e.EventId).Order());
+        Assert.All(admin.Where(e => e.EventId is 1805 or 1806 or 1807), e => Assert.Contains($"{group.Id}", e.Message, StringComparison.Ordinal));
         Assert.DoesNotContain(_logs.Entries, e =>
             e.Message.Contains("inapproprié", StringComparison.Ordinal) || e.Message.Contains("secret", StringComparison.Ordinal)
             || e.Message.Contains("Alice", StringComparison.Ordinal) || e.Message.Contains(group.InviteCode, StringComparison.Ordinal));
