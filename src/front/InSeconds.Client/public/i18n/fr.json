@@ -460,7 +460,7 @@
       "hint": "Deezer n'a plus d'extrait pour ce morceau. Choisis une autre version : l'identifiant, les noms, la pochette, l'année et l'extrait sont repris d'elle. Les thèmes et les autres titres acceptés sont gardés.",
       "loading": "Recherche chez Deezer…",
       "searchError": "Deezer n'a pas répondu : réessaie dans un moment.",
-      "empty": "Aucune autre version avec extrait chez Deezer pour cet artiste et ce titre.",
+      "empty": "Aucune autre version avec extrait parmi les premiers résultats de Deezer pour cet artiste et ce titre.",
       "choose": "Choisir",
       "cancel": "Annuler"
     },

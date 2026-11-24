@@ -460,7 +460,7 @@
       "hint": "Deezer no longer has a preview for this track. Pick another version: its ID, names, cover, year and preview are taken over. Themes and other accepted titles are kept.",
       "loading": "Searching Deezer…",
       "searchError": "Deezer did not answer: try again in a moment.",
-      "empty": "No other version with a preview on Deezer for this artist and title.",
+      "empty": "No other version with a preview among Deezer's first results for this artist and title.",
       "choose": "Choose",
       "cancel": "Cancel"
     },
