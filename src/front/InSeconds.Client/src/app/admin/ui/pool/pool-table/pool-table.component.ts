@@ -96,6 +96,13 @@ const MODE_COLUMNS: readonly Column[] = [
                             class="text-xs px-2 py-1 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             style="color:var(--text-muted);border:1px solid var(--border-strong)"
                             [title]="'admin.pool.recheckTitle' | translate" [attr.aria-label]="'admin.pool.recheckTitle' | translate">↻</button>
+                        <!-- Le title est porté par un span : un bouton désactivé n'affiche pas son tooltip partout. -->
+                        <span [title]="(t.isUsed ? 'admin.pool.replaceUsedTitle' : 'admin.pool.replaceTitle') | translate">
+                          <button type="button" (click)="replace.emit(t)" [disabled]="t.isUsed" data-testid="replace-track"
+                            class="text-xs px-2 py-1 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            style="color:var(--text-muted);border:1px solid var(--border-strong)"
+                            [attr.aria-label]="'admin.pool.replaceTitle' | translate">⇄</button>
+                        </span>
                         }
                         <!-- Le title est porté par un span : un bouton désactivé n'affiche pas son tooltip partout. -->
                         @if (t.isUsed || t.isDisabled) {
@@ -226,6 +233,7 @@ export class PoolTableComponent {
   readonly edit = output<PoolTrack>();
   readonly toggleDisabled = output<PoolTrack>();
   readonly recheck = output<PoolTrack>();
+  readonly replace = output<PoolTrack>();
   readonly delete = output<PoolTrack>();
   readonly openInPool = output<PoolTrack>();
   readonly previousPage = output();

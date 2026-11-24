@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Text;
+using System.Text.Json;
+using InSeconds.Api.Testing.E2E;
 using InSeconds.Deezer;
 
 namespace InSeconds.Api.Testing.Deezer;
@@ -103,7 +105,10 @@ public sealed class FakeDeezerHandler(FakeDeezerState state) : HttpMessageHandle
             return Json(AlbumJson(albumId));
 
         if (path.StartsWith("/search", StringComparison.OrdinalIgnoreCase))
-            return Json(request.RequestUri!.Query.Contains("dedup-test", StringComparison.OrdinalIgnoreCase) ? DedupSearch : DefaultSearch);
+        {
+            var query = Uri.UnescapeDataString(request.RequestUri!.Query.Replace('+', ' '));
+            return Json(query.Contains("dedup-test", StringComparison.OrdinalIgnoreCase) ? DedupSearch : DefaultSearchWith(query));
+        }
 
         return new HttpResponseMessage(HttpStatusCode.NotFound);
     }
@@ -179,6 +184,28 @@ public sealed class FakeDeezerHandler(FakeDeezerState state) : HttpMessageHandle
             "album": { "id": 1, "cover_medium": null } }
         ]}
         """;
+
+    /// <summary>
+    /// La recherche par défaut, plus les morceaux du pool de test dont l'artiste et le titre sont dans la requête (comme le vrai Deezer, qui rend le
+    /// morceau cherché avec son identifiant) : l'écoute d'un morceau du pool ne reprend que le résultat de même identifiant.
+    /// </summary>
+    private static string DefaultSearchWith(string query)
+    {
+        var known = CatalogueSeed.Tracks
+            .Where(t => t.DeezerTrackId < NoPreviewFrom
+                && query.Contains(t.Artist, StringComparison.OrdinalIgnoreCase) && query.Contains(t.Title, StringComparison.OrdinalIgnoreCase))
+            .Select(t => $$"""
+                { "id": {{t.DeezerTrackId}}, "title": {{JsonSerializer.Serialize(t.Title)}}, "preview": "{{PreviewUrl}}", "rank": 400000,
+                  "artist": { "id": 1, "name": {{JsonSerializer.Serialize(t.Artist)}} }, "album": { "id": {{AlbumIdOf(t.DeezerTrackId)}}, "cover_medium": null } }
+                """)
+            .ToList();
+        if (known.Count == 0)
+            return DefaultSearch;
+
+        var body = DefaultSearch.TrimEnd();
+        var close = body.LastIndexOf(']');
+        return body[..close].TrimEnd() + ",\n" + string.Join(",\n", known) + "\n" + body[close..];
+    }
 
     private static HttpResponseMessage Json(string json) =>
         new(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") };

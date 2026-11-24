@@ -51,6 +51,8 @@ function defaults() {
     ),
     candidatePreviewUrl: vi.fn<(id: number) => Promise<string>>(() => Promise.resolve('https://preview/candidate.mp3')),
     searchDeezer: vi.fn<(query: string) => Promise<DeezerResult[]>>(() => Promise.resolve([])),
+    findReplacements: vi.fn<(track: Pick<PoolTrack, 'artist' | 'title' | 'deezerTrackId'>) => Promise<DeezerResult[]>>(() => Promise.resolve([])),
+    replaceSource: vi.fn<(id: number, deezerTrackId: number) => Promise<void>>(() => Promise.resolve()),
     findPreviewUrl: vi.fn<(track: Pick<PoolTrack, 'artist' | 'title' | 'deezerTrackId'>) => Promise<string | null>>(
       () => Promise.resolve(null),
     ),

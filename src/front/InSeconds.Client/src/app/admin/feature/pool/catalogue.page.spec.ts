@@ -12,6 +12,7 @@ import { PoolTrack } from '../../domain/pool-track';
 import { CataloguePage } from './catalogue.page';
 import { stubContentTabs } from '../../ui/content-tabs/testing/content-tabs.stub';
 import { EditTrackDialog } from './edit-track/edit-track.dialog';
+import { ReplaceTrackDialog } from './replace-track/replace-track.dialog';
 import { DeleteTrackDialog } from './delete-track/delete-track.dialog';
 import { PreviewTrackDialog } from '../../../core/audio-preview/preview-track.dialog';
 import { fakeCooldownApi, provideCooldownApiFake } from '../../data-access/testing/fake-cooldown-api';
@@ -340,6 +341,18 @@ describe('CataloguePage', () => {
       // Les fenêtres retrouvent les stores de la page : leur injecteur est celui de la page.
       const store = fixture.debugElement.injector.get(PoolStore);
       for (const [, options] of modal.open.mock.calls) expect(options.injector.get(PoolStore)).toBe(store);
+    });
+
+    it('ouvre « Remplacer par une version avec extrait » pour un morceau manquant, avec l\'injecteur de la page', async () => {
+      const missing = poolTrack({ id: 5, deezerTrackId: 15, artist: 'Queen', title: 'Under Pressure', preview: 'missing' });
+      const { element, fixture } = await render({ tracks: [missing] });
+
+      (element.querySelector('[data-testid="replace-track"]') as HTMLButtonElement).click();
+
+      const [dialog, options] = modal.open.mock.calls[0];
+      expect(dialog).toBe(ReplaceTrackDialog);
+      expect(options.data).toEqual(expect.objectContaining({ id: 5 }));
+      expect(options.injector.get(PoolStore)).toBe(fixture.debugElement.injector.get(PoolStore));
     });
 
     it('le ▶ d\'un résultat Deezer ouvre la fenêtre d\'écoute avec ce résultat, sans rien jouer dans le panneau', async () => {
