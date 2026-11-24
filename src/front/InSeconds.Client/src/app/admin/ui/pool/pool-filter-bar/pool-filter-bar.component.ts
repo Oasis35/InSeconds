@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { PLAYED_BY_NONE, PoolFilters, PreviewFilter, StatusFilter, activeFieldFilterCount, hasActiveFilters } from '../../../domain/pool-filters';
+import { LONG_MISSING_DAYS } from '../../../domain/pool-track';
 import { MODE_VIEWS, POOL_VIEW } from '../../../domain/pool-views';
 
 const FIELD_STYLE = 'background:var(--bg-surface);color:var(--text-light)';
@@ -50,6 +51,7 @@ const FIELD_STYLE = 'background:var(--bg-surface);color:var(--text-light)';
           <option value="all">{{ 'admin.pool.allPreviews' | translate }}</option>
           <option value="ok">{{ 'admin.pool.previewOk' | translate }}</option>
           <option value="missing">{{ 'admin.pool.previewMissing' | translate }}</option>
+          <option value="missingLong">{{ 'admin.pool.previewMissingLong' | translate: { days: longMissingDays } }}</option>
         </select>
 
         <label for="pool-filter-status" class="sr-only">{{ 'admin.pool.allStatuses' | translate }}</label>
@@ -96,6 +98,7 @@ const FIELD_STYLE = 'background:var(--bg-surface);color:var(--text-light)';
   `,
 })
 export class PoolFilterBarComponent {
+  protected readonly longMissingDays = LONG_MISSING_DAYS;
   readonly filters = input.required<PoolFilters>();
   /** La vue affichée : `pool`, ou l'identifiant d'un mode. */
   readonly view = input<string>(POOL_VIEW);

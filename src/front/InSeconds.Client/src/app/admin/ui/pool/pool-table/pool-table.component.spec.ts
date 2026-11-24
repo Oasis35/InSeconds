@@ -31,6 +31,53 @@ describe('PoolTableComponent', () => {
     return { fixture, component: fixture.componentInstance, element, row, button };
   }
 
+  describe('extrait manquant', () => {
+    const now = new Date('2026-11-24T12:00:00Z');
+
+    function renderMissing(overrides: Parameters<typeof track>[0], recheckingIds: number[] = []) {
+      const view = render([track({ preview: 'missing', ...overrides })]);
+      view.fixture.componentRef.setInput('now', now);
+      view.fixture.componentRef.setInput('recheckingIds', recheckingIds);
+      view.fixture.detectChanges();
+      return view;
+    }
+
+    it('dit depuis combien de jours l\'extrait manque, rien sous un jour ni sans date', () => {
+      expect(renderMissing({ previewMissingSince: '2026-11-14T00:00:00Z' }).row().querySelector('[data-testid="missing-since"]')).not.toBeNull();
+    });
+
+    it('n\'affiche pas de durée pour le couac d\'une nuit', () => {
+      expect(renderMissing({ previewMissingSince: '2026-11-24T00:00:00Z' }).row().querySelector('[data-testid="missing-since"]')).toBeNull();
+    });
+
+    it('n\'affiche pas de durée sans date', () => {
+      expect(renderMissing({ previewMissingSince: null }).row().querySelector('[data-testid="missing-since"]')).toBeNull();
+    });
+
+    it('propose « Revérifier » sur un morceau manquant seulement, désactivé pendant le contrôle', () => {
+      const idle = renderMissing({});
+      expect(idle.row().querySelector<HTMLButtonElement>('[data-testid="recheck-track"]')?.disabled).toBe(false);
+
+      TestBed.resetTestingModule();
+      const busy = renderMissing({ id: 7 }, [7]);
+      expect(busy.row().querySelector<HTMLButtonElement>('[data-testid="recheck-track"]')?.disabled).toBe(true);
+
+      TestBed.resetTestingModule();
+      expect(render([track({ preview: 'available' })]).row().querySelector('[data-testid="recheck-track"]')).toBeNull();
+    });
+
+    it('émet le morceau au clic sur « Revérifier »', () => {
+      const missing = track({ id: 3, preview: 'missing' });
+      const { fixture, row } = render([missing]);
+      const emitted: PoolTrack[] = [];
+      fixture.componentInstance.recheck.subscribe(t => emitted.push(t));
+
+      row().querySelector<HTMLButtonElement>('[data-testid="recheck-track"]')?.click();
+
+      expect(emitted).toEqual([missing]);
+    });
+  });
+
   describe('actions d\'une ligne', () => {
     it('un morceau jamais utilisé se supprime, sans bouton de désactivation', () => {
       const { row, button } = render([track()]);

@@ -7,13 +7,18 @@ import {
   HARDEST_FIRST, NO_FILTERS, PoolFilters, PoolSort, PreviewFilter, SortColumn,
   StatusFilter, clampPage, filterTracks, nextSort, pageOf, sortTracks, statusOf, totalPages,
 } from '../domain/pool-filters';
-import { PoolTheme, PoolTrack, ThemeAssignment, isUsed, trackLabel } from '../domain/pool-track';
+import {
+  PoolTheme, PoolTrack, PreviewRecheckResult, RECHECK_MAX_PER_REQUEST, RecheckSummary, ThemeAssignment, isUsed, summarizeRecheck, trackLabel,
+} from '../domain/pool-track';
 import { POOL_VIEW } from '../domain/pool-views';
 import { CooldownApi } from './cooldown.api';
 import { CatalogueApi } from './catalogue.api';
 
 /** Le message « enregistré » ou « erreur » du cooldown disparaît au bout de ce délai. */
 export const COOLDOWN_RESULT_VISIBLE_MS = 3000;
+
+/** Le bilan d'un contrôle d'extraits disparaît au bout de ce délai. */
+export const RECHECK_RESULT_VISIBLE_MS = 8000;
 
 export type CooldownSaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -41,6 +46,12 @@ interface PoolState {
   /** Morceaux dont la désactivation est en cours d'envoi (bouton désactivé le temps de la requête). */
   togglingIds: readonly number[];
   toggleError: ToggleError | null;
+  /** Morceaux dont l'extrait est en cours de contrôle chez Deezer (bouton « Revérifier » désactivé le temps de la requête). */
+  recheckingIds: readonly number[];
+  /** Le bilan du dernier contrôle d'extraits ; `null` avant, ou une fois effacé. */
+  recheckSummary: RecheckSummary | null;
+  /** Le dernier contrôle a échoué (réseau, erreur de l'API) : rien n'a été dit par Deezer, les états sont ceux d'avant. */
+  recheckFailed: boolean;
   /**
    * Le cooldown appliqué aujourd'hui (#275) : la part du pool réglée et les jours qu'elle donne. Il suit la taille du pool, il est donc
    * relu avec la liste ; `null` tant qu'il n'est pas lu, ou si sa lecture a échoué (l'onglet ne l'affiche pas).
@@ -62,7 +73,7 @@ export const PoolStore = signalStore(
   withRequestStatus(),
   withState<PoolState>({
     tracks: [], view: POOL_VIEW, filters: NO_FILTERS, sort: null, requestedPage: 0, selectedIds: [], togglingIds: [], toggleError: null,
-    cooldown: null, cooldownSave: 'idle', themes: [],
+    recheckingIds: [], recheckSummary: null, recheckFailed: false, cooldown: null, cooldownSave: 'idle', themes: [],
   }),
   withComputed(({ tracks, view, filters, sort, requestedPage, selectedIds }) => {
     const filtered = computed(() => filterTracks(tracks(), filters(), view()));
@@ -108,6 +119,7 @@ export const PoolStore = signalStore(
     /** Numéro de la lecture la plus récente : une réponse plus ancienne, arrivée après elle, n'écrit rien. */
     let latestLoad = 0;
     let cooldownTimer: ReturnType<typeof setTimeout> | undefined;
+    let recheckTimer: ReturnType<typeof setTimeout> | undefined;
 
     /** Le cooldown suit le pool (ajout, désactivation) : relu à chaque lecture de la liste ; un échec ne bloque pas le pool. */
     async function loadCooldown(mine: number): Promise<void> {
@@ -297,6 +309,37 @@ export const PoolStore = signalStore(
       },
       dismissToggleError: () => patchState(store, { toggleError: null }),
 
+      /**
+       * Demande à Deezer l'extrait de ces morceaux, par groupes de `RECHECK_MAX_PER_REQUEST` (limite de l'API), l'un après l'autre ; le pool est
+       * relu ensuite et le bilan s'affiche quelques secondes. Un groupe en échec arrête la suite : le bilan dit alors l'échec, et les groupes
+       * déjà contrôlés restent enregistrés. Sans effet pour un morceau déjà en cours de contrôle.
+       */
+      async recheckPreviews(ids: readonly number[]): Promise<void> {
+        const wanted = ids.filter(id => !store.recheckingIds().includes(id));
+        if (wanted.length === 0) return;
+
+        clearTimeout(recheckTimer);
+        patchState(store, { recheckingIds: [...store.recheckingIds(), ...wanted], recheckSummary: null, recheckFailed: false });
+        const results: PreviewRecheckResult[] = [];
+        let failed = false;
+        try {
+          for (let offset = 0; offset < wanted.length; offset += RECHECK_MAX_PER_REQUEST)
+            results.push(...await api.recheckPreviews(wanted.slice(offset, offset + RECHECK_MAX_PER_REQUEST)));
+        } catch {
+          failed = true;
+        }
+
+        // Relu même après un échec : un groupe a pu être enregistré avant lui.
+        await load();
+        const done = new Set(wanted);
+        patchState(store, {
+          recheckingIds: store.recheckingIds().filter(id => !done.has(id)),
+          recheckSummary: results.length > 0 ? summarizeRecheck(results) : null,
+          recheckFailed: failed,
+        });
+        recheckTimer = setTimeout(() => patchState(store, { recheckSummary: null, recheckFailed: false }), RECHECK_RESULT_VISIBLE_MS);
+      },
+
       // --- cooldown ---
       /** Enregistre la part du pool en cooldown ; le cooldown affiché devient celui que l'API en a déduit. */
       async saveCooldown(poolPercent: number): Promise<void> {
@@ -314,6 +357,7 @@ export const PoolStore = signalStore(
       /** Arrête le minuteur du message du cooldown (destruction du store). */
       clearTimers(): void {
         clearTimeout(cooldownTimer);
+        clearTimeout(recheckTimer);
       },
     };
   }),
