@@ -38,7 +38,7 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
         </div>
       </div>
       <!-- La partie en un coup d'œil, comme le texte partagé ; un toucher déplie les morceaux puis les scores du jour dans la carte. À droite, la série et les gels. -->
-      <div class="flex items-center justify-between gap-x-3">
+      <div class="flex flex-wrap items-center justify-between gap-x-3" data-testid="home-done-summary">
         @if (rows().length) {
           <!-- Un déclencheur de dépliage (barres, libellé, chevron), pas un bouton d'action : hors appButton. -->
           <button type="button" (click)="detailOpen.set(!detailOpen())" [attr.aria-expanded]="detailOpen()" data-testid="tracks-toggle"
