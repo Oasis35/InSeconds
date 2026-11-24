@@ -16,6 +16,8 @@ import { StreakIconComponent } from '../streak-icon/streak-icon.component';
 export class StreakPillComponent {
   readonly streak = input.required<Streak | null>();
   readonly linked = input.required<boolean>();
+  /** Dans un conteneur `@container` : sous 22 rem de large, la flamme et le gel s'empilent (alignés à droite) au lieu d'être côte à côte. */
+  readonly stackWhenNarrow = input(false);
   readonly open = output<void>();
 
   protected readonly labelKey = computed(() => `daily.streakFreeze.pillLabel.${pluralKey(this.streak()?.streak ?? 0)}`);
