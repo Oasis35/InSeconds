@@ -45,6 +45,7 @@ public class JobLastRunsTests(JobLastRunsTests.AppFixture fixture) : IClassFixtu
                     .AddScheduledJob<SucceedingJob>("test-nightly", "0 4 * * *")
                     .AddScheduledJob<SucceedingJob>("test-heartbeat-ok", Cron.Never())
                     .AddScheduledJob<FailingJob>("test-heartbeat-fail", Cron.Never())
+                    .AddScheduledJob<SucceedingJob>("test-manual-only", Cron.Never(), signalHealthchecks: false)
                     .AddHttpClient<JobHeartbeat>().ConfigurePrimaryHttpMessageHandler(() => Heartbeats),
                 settings: new Dictionary<string, string>
                 {
@@ -175,6 +176,16 @@ public class JobLastRunsTests(JobLastRunsTests.AppFixture fixture) : IClassFixtu
 
         Assert.Contains($"http://healthchecks.test/{HeartbeatKey}/test-heartbeat-fail/fail?create=1", fixture.Heartbeats.Urls);
         Assert.DoesNotContain($"http://healthchecks.test/{HeartbeatKey}/test-heartbeat-fail?create=1", fixture.Heartbeats.Urls);
+    }
+
+    [Fact]
+    public async Task TacheLanceeALaMainSeulement_NEnvoieAucunSignalAHealthchecks()
+    {
+        Trigger("test-manual-only");
+
+        await WaitUntilAsync("test-manual-only", "succeeded");
+
+        Assert.DoesNotContain(fixture.Heartbeats.Urls, url => url.Contains("test-manual-only"));
     }
 
     private void Trigger(string id) => Api.Services.GetRequiredService<IRecurringJobManagerV2>().TriggerJob(id);

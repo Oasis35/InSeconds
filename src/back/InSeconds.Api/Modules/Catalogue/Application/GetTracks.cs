@@ -25,7 +25,7 @@ public static class GetTracksEndpoint
                 var perMode = usages.GetValueOrDefault(row.Id) ?? [];
                 return new TrackListItem(
                     row.Id, row.DeezerTrackId, row.Artist, row.Title, catalogue.CoverUrl(row.CoverHash), row.ReleaseYear, row.DeezerRank,
-                    TrackMapping.Name(row.PreviewStatus), row.PreviewCheckedAt, row.IsDisabled,
+                    TrackMapping.Name(row.PreviewStatus), row.PreviewCheckedAt, row.PreviewMissingSince, row.IsDisabled,
                     perMode.Any(m => m.Usage.IsUsed),
                     [.. perMode.Select(m => new TrackModeUsage(
                         m.Mode, m.Usage.UsageCount, m.Usage.LastUsedDate, m.Usage.UnlockDate, m.Usage.InTodayChallenge, m.Usage.AnswerCount, m.Usage.FoundCount))],

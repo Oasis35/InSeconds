@@ -25,8 +25,12 @@ public sealed class JobFailedException(string code) : Exception(code)
 }
 
 /// <summary>Tâche récurrente déclarée par un module (<see cref="ScheduledJobsServiceCollectionExtensions.AddScheduledJob{TJob}"/>).</summary>
+/// <param name="SignalHealthchecks">
+/// Envoyer un signal à healthchecks.io après chaque passage. Faux pour une tâche lancée à la main seulement : son contrôle, créé au premier
+/// signal, attendrait un passage régulier qui ne viendra pas et finirait par alerter.
+/// </param>
 public sealed record ScheduledJobDefinition(
-    string Id, string DefaultCron, Type JobType, Action<IRecurringJobManager, string> Register)
+    string Id, string DefaultCron, Type JobType, Action<IRecurringJobManager, string> Register, bool SignalHealthchecks = true)
 {
     /// <summary>Cron effectif : <c>Jobs:&lt;id&gt;:Cron</c> s'il est configuré, sinon le cron par défaut.</summary>
     public string CronFrom(IConfiguration configuration) => configuration[$"Jobs:{Id}:Cron"] ?? DefaultCron;
@@ -38,14 +42,16 @@ public static class ScheduledJobsServiceCollectionExtensions
     /// Déclare une tâche récurrente, en UTC. Son cron se change par la configuration
     /// (<c>Jobs:&lt;id&gt;:Cron</c>) ; <c>Cron.Never()</c> la met en pause.
     /// </summary>
-    public static IServiceCollection AddScheduledJob<TJob>(this IServiceCollection services, string id, string defaultCron)
+    public static IServiceCollection AddScheduledJob<TJob>(
+        this IServiceCollection services, string id, string defaultCron, bool signalHealthchecks = true)
         where TJob : class, IScheduledJob
     {
         services.AddScoped<TJob>();
         services.AddSingleton(new ScheduledJobDefinition(id, defaultCron, typeof(TJob),
             (manager, cron) => manager.AddOrUpdate<TJob>(
                 id, job => job.RunAsync(CancellationToken.None), cron,
-                new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc })));
+                new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc }),
+            signalHealthchecks));
         return services;
     }
 }

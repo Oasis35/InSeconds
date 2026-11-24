@@ -194,7 +194,7 @@ d'échec (alerte immédiate). Le contrôle est créé au premier signal (`?creat
 | `inseconds-backup` | `backup.sh` (timer systemd) | 3 h 00 |
 | `inseconds-backup-restore` | `backup-verify.sh` (timer systemd), contrôle de restauration | 4 h 00 |
 
-Un lancement depuis `/jobs` (« Déclencher maintenant ») envoie aussi son signal.
+Un lancement depuis `/jobs` (« Déclencher maintenant ») envoie aussi son signal, sauf pour `catalogue-recheck-missing-previews` (jamais planifiée, lancée à la main : aucun contrôle ici).
 
 **Staging.** Il a son propre projet healthchecks.io, « [Dev]InSeconds », avec sa propre clé de ping dans
 `~/apps/InSeconds-staging/.env.staging` (`HEALTHCHECKS_PING_KEY`, cf. `.env.staging.example`). Les contrôles y portent

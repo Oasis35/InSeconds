@@ -141,6 +141,64 @@ public class TrackTests
         Assert.True(track.RecordPreviewCheck(PreviewCheck.Missing, T1));
     }
 
+    // ---------- « Manquant depuis » ----------
+
+    private static readonly DateTimeOffset T2 = T1.AddDays(10);
+
+    [Fact]
+    public void ManquantDepuis_EstPoseAuPassageAManquant()
+    {
+        var track = NewTrack(PreviewStatus.Available);
+        Assert.Null(track.PreviewMissingSince);
+
+        track.RecordPreviewCheck(PreviewCheck.Missing, T1);
+
+        Assert.Equal(T1, track.PreviewMissingSince);
+    }
+
+    [Fact]
+    public void ManquantDepuis_EstGardeTantQueLeMorceauResteManquant_EtNeBougePasSansReponse()
+    {
+        var track = NewTrack(PreviewStatus.Available);
+        track.RecordPreviewCheck(PreviewCheck.Missing, T1);
+
+        track.RecordPreviewCheck(PreviewCheck.Missing, T2);
+        track.RecordPreviewCheck(PreviewCheck.Unavailable, T2.AddDays(1));
+
+        Assert.Equal(T1, track.PreviewMissingSince);
+    }
+
+    [Fact]
+    public void ManquantDepuis_EstEfaceQuandLExtraitRedevientDisponible_PuisRepose()
+    {
+        var track = NewTrack(PreviewStatus.Available);
+        track.RecordPreviewCheck(PreviewCheck.Missing, T1);
+
+        track.RecordPreviewCheck(PreviewCheck.Available, T2);
+        Assert.Null(track.PreviewMissingSince);
+
+        track.RecordPreviewCheck(PreviewCheck.Missing, T2.AddDays(1));
+        Assert.Equal(T2.AddDays(1), track.PreviewMissingSince);
+    }
+
+    [Fact]
+    public void ManquantDepuis_UnMorceauDejaManquantSansDate_ReçoitCelleDuPremierControle()
+    {
+        var track = NewTrack(PreviewStatus.Missing);
+        typeof(Track).GetProperty(nameof(Track.PreviewMissingSince))!.SetValue(track, null);
+
+        track.RecordPreviewCheck(PreviewCheck.Missing, T1);
+
+        Assert.Equal(T1, track.PreviewMissingSince);
+    }
+
+    [Fact]
+    public void ManquantDepuis_UnMorceauCreeSansExtrait_LaPoseDesLAjout()
+    {
+        Assert.Equal(T0, NewTrack(PreviewStatus.Missing).PreviewMissingSince);
+        Assert.Null(NewTrack(PreviewStatus.Available).PreviewMissingSince);
+    }
+
     // ---------- Rang ----------
 
     [Fact]

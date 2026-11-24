@@ -14,7 +14,7 @@ public sealed class EfCatalogueQueries(InSecondsDbContext db, TimeProvider time)
             .OrderBy(t => t.Artist).ThenBy(t => t.Title).ThenBy(t => t.Id)
             .Select(t => new TrackRow(
                 t.Id, t.DeezerTrackId, t.Artist, t.Title, t.CoverHash, t.ReleaseYear, t.DeezerRank,
-                t.PreviewStatus, t.PreviewCheckedAt, t.DisabledAt != null,
+                t.PreviewStatus, t.PreviewCheckedAt, t.PreviewMissingSince, t.DisabledAt != null,
                 t.Genres.OrderBy(g => g.Name).Select(g => g.Name).ToList(), t.Themes.OrderBy(x => x.Id).Select(x => x.Id).ToList(), t.AltTitles))
             // Deux collections (genres, thèmes) : sans AsSplitQuery, un seul SELECT multiplie genres par thèmes pour chaque morceau du pool.
             .AsSplitQuery()
