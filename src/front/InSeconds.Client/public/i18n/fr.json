@@ -372,6 +372,8 @@
       "recheck": "Revérifier ({{ count }})",
       "rechecking": "Vérification…",
       "recheckTitle": "Redemander l'extrait à Deezer",
+      "replaceTitle": "Remplacer par une version avec extrait",
+      "replaceUsedTitle": "Ce morceau a déjà servi dans un défi : il ne peut pas être remplacé (désactive-le et ajoute une autre version).",
       "recheckSelectionTitle": "Redemander l'extrait à Deezer pour la sélection",
       "recheckSummary": "Contrôle chez Deezer : {{ available }} avec extrait, {{ stillMissing }} toujours manquant(s), {{ noAnswer }} sans réponse de Deezer (état inchangé, réessaie plus tard).",
       "recheckError": "Le contrôle a échoué : rien n'a été modifié pour la suite de la sélection, réessaie.",
@@ -452,6 +454,15 @@
       "cancel": "Annuler",
       "delete": "Supprimer",
       "deleting": "Suppression..."
+    },
+    "replaceModal": {
+      "title": "Remplacer par une version avec extrait",
+      "hint": "Deezer n'a plus d'extrait pour ce morceau. Choisis une autre version : l'identifiant, les noms, la pochette, l'année et l'extrait sont repris d'elle. Les thèmes et les autres titres acceptés sont gardés.",
+      "loading": "Recherche chez Deezer…",
+      "searchError": "Deezer n'a pas répondu : réessaie dans un moment.",
+      "empty": "Aucune autre version avec extrait chez Deezer pour cet artiste et ce titre.",
+      "choose": "Choisir",
+      "cancel": "Annuler"
     },
     "editModal": {
       "themes": "Thèmes",

@@ -372,6 +372,8 @@
       "recheck": "Recheck ({{ count }})",
       "rechecking": "Checking…",
       "recheckTitle": "Ask Deezer for the preview again",
+      "replaceTitle": "Replace with a version that has a preview",
+      "replaceUsedTitle": "This track was already used in a challenge: it can't be replaced (disable it and add another version).",
       "recheckSelectionTitle": "Ask Deezer for the preview again for the selection",
       "recheckSummary": "Checked with Deezer: {{ available }} with a preview, {{ stillMissing }} still missing, {{ noAnswer }} with no answer from Deezer (state unchanged, try again later).",
       "recheckError": "The check failed: nothing was changed for the rest of the selection, try again.",
@@ -452,6 +454,15 @@
       "cancel": "Cancel",
       "delete": "Delete",
       "deleting": "Deleting..."
+    },
+    "replaceModal": {
+      "title": "Replace with a version that has a preview",
+      "hint": "Deezer no longer has a preview for this track. Pick another version: its ID, names, cover, year and preview are taken over. Themes and other accepted titles are kept.",
+      "loading": "Searching Deezer…",
+      "searchError": "Deezer did not answer: try again in a moment.",
+      "empty": "No other version with a preview on Deezer for this artist and title.",
+      "choose": "Choose",
+      "cancel": "Cancel"
     },
     "editModal": {
       "themes": "Themes",

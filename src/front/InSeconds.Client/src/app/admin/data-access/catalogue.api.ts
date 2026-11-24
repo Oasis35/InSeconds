@@ -116,13 +116,24 @@ export class CatalogueApi {
 
   /**
    * L'extrait d'un morceau du pool. Le pool ne garde pas l'adresse de l'extrait (elle est signée et
-   * expire) : on la redemande à Deezer, en cherchant « artiste titre » et en reprenant le résultat
-   * qui a le même identifiant Deezer (à défaut, le premier). `null` s'il n'y en a pas.
+   * expire) : on la redemande à Deezer, en cherchant « artiste titre » et en reprenant **le résultat qui a le même
+   * identifiant Deezer**. Jamais un autre : une autre version du titre ferait entendre un extrait que le jeu n'aura pas
+   * (Deezer a retiré celui de ce morceau). `null` s'il n'y en a pas.
    */
   async findPreviewUrl(track: Pick<PoolTrack, 'artist' | 'title' | 'deezerTrackId'>): Promise<string | null> {
     const results = await this.searchDeezer(`${track.artist} ${track.title}`);
-    const match = results.find(result => result.deezerTrackId === track.deezerTrackId) ?? results[0];
-    return match?.previewUrl ?? null;
+    return results.find(result => result.deezerTrackId === track.deezerTrackId)?.previewUrl ?? null;
+  }
+
+  /** Les autres versions du morceau chez Deezer qui ont un extrait : le même « artiste titre », sans le morceau lui-même. */
+  async findReplacements(track: Pick<PoolTrack, 'artist' | 'title' | 'deezerTrackId'>): Promise<DeezerResult[]> {
+    const results = await this.searchDeezer(`${track.artist} ${track.title}`);
+    return results.filter(result => result.deezerTrackId !== track.deezerTrackId && result.previewUrl);
+  }
+
+  /** Reprend un morceau du pool depuis une autre version de Deezer (identifiant, noms, pochette, année, rang, extrait) ; thèmes et titres alternatifs sont gardés. */
+  async replaceSource(id: number, deezerTrackId: number): Promise<void> {
+    await firstValueFrom(this.client.updateTrack(id, { deezerTrackId }));
   }
 }
 

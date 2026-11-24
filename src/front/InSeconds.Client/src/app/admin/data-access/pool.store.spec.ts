@@ -576,6 +576,29 @@ describe('PoolStore', () => {
     });
   });
 
+  describe('remplacer une version', () => {
+    it('reprend le morceau depuis l\'autre version, puis relit le pool', async () => {
+      await setup([beatles]);
+      api.listTracks.mockClear();
+
+      const error = await store.replaceSource(4, 999);
+
+      expect(error).toBeNull();
+      expect(api.replaceSource).toHaveBeenCalledWith(4, 999);
+      expect(api.listTracks).toHaveBeenCalledTimes(1);
+    });
+
+    it('rend l\'erreur de l\'API sans relire quand le remplacement est refusé', async () => {
+      await setup([beatles], { replaceSource: vi.fn(async () => { throw problem(409, 'catalogue.track_in_use'); }) });
+      api.listTracks.mockClear();
+
+      const error = await store.replaceSource(4, 999);
+
+      expect(error?.code).toBe('catalogue.track_in_use');
+      expect(api.listTracks).not.toHaveBeenCalled();
+    });
+  });
+
   describe('revérifier les extraits', () => {
     it('demande l\'extrait à Deezer, relit le pool et donne le bilan', async () => {
       await setup([eminem, beatles], {

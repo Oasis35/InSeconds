@@ -66,6 +66,28 @@ describe('PoolTableComponent', () => {
       expect(render([track({ preview: 'available' })]).row().querySelector('[data-testid="recheck-track"]')).toBeNull();
     });
 
+    it('propose « Remplacer » sur un morceau manquant, grisé s\'il a déjà servi dans un défi', () => {
+      const free = renderMissing({});
+      expect(free.row().querySelector<HTMLButtonElement>('[data-testid="replace-track"]')?.disabled).toBe(false);
+
+      TestBed.resetTestingModule();
+      expect(renderMissing({ id: 9, usageCount: 2, lastUsedDate: '2026-11-01' }).row().querySelector<HTMLButtonElement>('[data-testid="replace-track"]')?.disabled).toBe(true);
+
+      TestBed.resetTestingModule();
+      expect(render([track({ preview: 'available' })]).row().querySelector('[data-testid="replace-track"]')).toBeNull();
+    });
+
+    it('émet le morceau au clic sur « Remplacer »', () => {
+      const missing = track({ id: 3, preview: 'missing' });
+      const { fixture, row } = render([missing]);
+      const emitted: PoolTrack[] = [];
+      fixture.componentInstance.replace.subscribe(t => emitted.push(t));
+
+      row().querySelector<HTMLButtonElement>('[data-testid="replace-track"]')?.click();
+
+      expect(emitted).toEqual([missing]);
+    });
+
     it('émet le morceau au clic sur « Revérifier »', () => {
       const missing = track({ id: 3, preview: 'missing' });
       const { fixture, row } = render([missing]);

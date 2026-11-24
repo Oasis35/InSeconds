@@ -21,6 +21,7 @@ import { PoolViewSelectorComponent } from '../../ui/pool/pool-view-selector/pool
 import { SearchPanelComponent } from '../../ui/pool/search-panel/search-panel.component';
 import { DeleteTrackDialog } from './delete-track/delete-track.dialog';
 import { EditTrackDialog } from './edit-track/edit-track.dialog';
+import { ReplaceTrackDialog } from './replace-track/replace-track.dialog';
 
 const TOGGLE_ERROR_VISIBLE_MS = 4000;
 const DIALOG_MAX_WIDTH = '26rem';
@@ -141,6 +142,7 @@ const DIALOG_MAX_WIDTH = '26rem';
         (openInPool)="pool.openInPool($event)"
         (toggleDisabled)="pool.toggleDisabled($event)"
         (recheck)="pool.recheckPreviews([$event.id])"
+        (replace)="replace($event)"
         (delete)="deleteTracks([$event])"
         (previousPage)="pool.previousPage()"
         (nextPage)="pool.nextPage()" />
@@ -252,6 +254,10 @@ export class CataloguePage {
 
   protected edit(track: PoolTrack): void {
     this.modal.open(EditTrackDialog, { data: track, maxWidth: DIALOG_MAX_WIDTH, injector: this.injector });
+  }
+
+  protected replace(track: PoolTrack): void {
+    this.modal.open(ReplaceTrackDialog, { data: track, maxWidth: DIALOG_MAX_WIDTH, injector: this.injector });
   }
 
   protected deleteTracks(tracks: readonly PoolTrack[]): void {
