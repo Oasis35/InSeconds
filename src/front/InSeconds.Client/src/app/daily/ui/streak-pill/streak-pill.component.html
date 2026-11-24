@@ -5,12 +5,13 @@
           data-testid="streak-pill"
           [attr.data-mode]="mode"
           [attr.aria-label]="mode === 'protected' ? ('daily.streakFreeze.pillProtectedLabel' | translate) : (labelKey() | translate: { streak: streak()?.streak ?? 0 })"
-          class="inline-flex items-center gap-2.5 min-h-11 px-1 text-sm font-semibold tabular-nums whitespace-nowrap cursor-pointer touch-manipulation">
+          class="inline-flex min-h-11 px-1 text-sm font-semibold tabular-nums whitespace-nowrap cursor-pointer touch-manipulation"
+          [class]="stackWhenNarrow() ? 'flex-col items-end @min-[22rem]:flex-row @min-[22rem]:items-center @min-[22rem]:gap-2.5' : 'items-center gap-2.5'">
     <span class="flex items-center gap-1.5" style="color:var(--color-accent-3)">
       <app-streak-icon name="flame" />{{ daysKey() | translate: { n: streak()?.streak ?? 0 } }}
     </span>
     @if (mode === 'on' || mode === 'protected') {
-      <span aria-hidden="true" style="color:var(--text-faint)">·</span>
+      <span aria-hidden="true" [class]="stackWhenNarrow() ? 'hidden @min-[22rem]:inline' : ''" style="color:var(--text-faint)">·</span>
       <span class="flex items-center gap-1.5" style="color:var(--color-accent-2)">
         <app-streak-icon name="snowflake" />{{ freezesKey() | translate: { n: streak()?.freezes ?? 0 } }}
       </span>
