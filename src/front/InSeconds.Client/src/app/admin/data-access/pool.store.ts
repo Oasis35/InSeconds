@@ -323,8 +323,13 @@ export const PoolStore = signalStore(
         const results: PreviewRecheckResult[] = [];
         let failed = false;
         try {
-          for (let offset = 0; offset < wanted.length; offset += RECHECK_MAX_PER_REQUEST)
-            results.push(...await api.recheckPreviews(wanted.slice(offset, offset + RECHECK_MAX_PER_REQUEST)));
+          const groups: number[][] = [];
+          for (let offset = 0; offset < wanted.length; offset += RECHECK_MAX_PER_REQUEST) groups.push(wanted.slice(offset, offset + RECHECK_MAX_PER_REQUEST));
+          // L'un après l'autre (le quota de Deezer), arrêt au premier échec.
+          await groups.reduce<Promise<void>>(
+            (previous, group) => previous.then(async () => { results.push(...await api.recheckPreviews(group)); }),
+            Promise.resolve(),
+          );
         } catch {
           failed = true;
         }
