@@ -81,6 +81,7 @@ Une ligne par réglage : `key` = chemin de configuration complet, `value` en `js
 | Tâche | Cron prod (UTC) | Rôle |
 |---|---|---|
 | `catalogue-refresh` | `0 23 * * *`, jamais au staging (piège 16) | recontrôle extrait, rang et album du pool, formes d'onde manquantes, genres |
+| `catalogue-recheck-missing-previews` | jamais planifiée, lancée à la main depuis `/jobs` | revérifie chez Deezer les seuls morceaux actifs marqués sans extrait (même règle que le contrôle de la nuit) |
 | `daily-generate-challenge` | `0 0 * * *` | le défi du jour ; pool insuffisant : réessai toutes les 10 min pendant 24 h |
 | `daily-close-day` | `5 0 * * *` | expire les parties restées en cours, fige les stats de J-2 et avant |
 | `players-purge-expired-tokens` | `30 3 * * *` | durées de conservation RGPD (jetons, appareils et pseudos d'invité à 91 jours, comptes inactifs à 3 ans, jamais un admin) |

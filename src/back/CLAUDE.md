@@ -73,7 +73,7 @@ Les deux dernières (`PlayerDataCommand`) enregistrent les contributeurs par `Ap
 
 - **Nouvelle entité** : classe du domaine à constructeur privé et `private set`, configuration `IEntityTypeConfiguration` dans `Persistence/` (schéma `DbSchemas.X`, HiLo si l'identifiant sert avant l'enregistrement, CHECK, clés étrangères inter-modules par le nom du type), méthodes au store, migration générée et relue (`Up` et `Down`), contributeur RGPD si `player_id`.
 - **Nouveau réglage** : propriété dans les options du module avec sa valeur par défaut ; options enregistrées par `services.AddOptions<X>().BindConfiguration(X.Section)` et lues par `IOptionsMonitor<X>` (relu à chaud). Pas de valeur initiale sur une liste ou un dictionnaire (défaut dans une propriété `Effective…`), pas de clé de dictionnaire décimale (liste d'objets). Une valeur incohérente fait refuser le démarrage (`DailyOptionsStartupCheck`, `RunsOptionsStartupCheck`) et retombe sur le défaut à l'usage. Ajouter la ligne au tableau de la règle `reglages.md`.
-- **Nouvelle tâche Hangfire** : classe `IScheduledJob` avec `Id` et `DefaultCron`, `[DisableConcurrentExecution]` et `[AutomaticRetry]`, enregistrée par `services.AddScheduledJob<TJob>(TJob.Id, TJob.DefaultCron)` ; la tâche n'appelle que des commandes Wolverine (`bus.InvokeAsync`), **une par étape** pour une transaction par étape ; un échec métier lève `JobFailedException("module.code")` ; compte rendu en **dictionnaire** (Hangfire n'écrit pas les propriétés à zéro d'un objet). Ajouter l'identifiant à `ExpectedJobs` de `Jobs/ScheduledJobsTests` et au tableau de la racine ; décaler le cron du staging (`appsettings.Staging.json`).
+- **Nouvelle tâche Hangfire** : classe `IScheduledJob` avec `Id` et `DefaultCron`, `[DisableConcurrentExecution]` et `[AutomaticRetry]`, enregistrée par `services.AddScheduledJob<TJob>(TJob.Id, TJob.DefaultCron)` ; la tâche n'appelle que des commandes Wolverine (`bus.InvokeAsync`), **une par étape** pour une transaction par étape ; un échec métier lève `JobFailedException("module.code")` ; compte rendu en **dictionnaire** (Hangfire n'écrit pas les propriétés à zéro d'un objet). Ajouter l'identifiant à `ExpectedJobs` de `Jobs/ScheduledJobsTests` et au tableau de la racine ; décaler le cron du staging (`appsettings.Staging.json`). Une tâche **lancée à la main seulement** (`Cron.Never()`) se déclare avec `signalHealthchecks: false` : son contrôle healthchecks.io, créé au premier signal, alerterait faute de passage régulier.
 - **Nouveau message Wolverine** : record de message, handler statique `<Message>Handler.Handle`. Un nom stable par `[MessageIdentity("module.nom")]` (posé sur ceux de Players) garde lisible un message en attente dans `messaging` après un renommage de classe. Une file qui ne doit jamais traiter deux messages à la fois se déclare dans `WolverineSetup` (`opts.LocalQueueFor<…>().Sequential()`).
 
 ## Wolverine
@@ -116,7 +116,7 @@ Une plage par module, jamais un identifiant réutilisé (les tableaux Grafana et
 | 1006, 1008 à 1010 | `PlayersLog` | connexion, effacement, purge, pseudo remis à zéro |
 | 1007, 1011 | `EmailLog` | emails (`InSeconds.Infrastructure`) |
 | 11xx | `ClientErrorLog` | erreurs du front et rapports CSP |
-| 1200 à 1209 | `CatalogueLog` | pool, candidats, formes d'onde |
+| 1200 à 1209, 1230 | `CatalogueLog` | pool, candidats, formes d'onde, revérification des extraits |
 | 1210 à 1221 | `DeezerLog` | client Deezer |
 | 1400 à 1416 (sans 1412 à 1414) | `RunsLog` | Survie |
 | 1800 à 1812 | `SocialLog` | groupes, classement |

@@ -47,7 +47,7 @@ paths:
 
 - Schéma `jobs` créé par Hangfire. Serveur si `Jobs:Server:Enabled` (faux dans les tests d'intégration), `Jobs:Server:WorkerCount` (2). `RecurringJobsRegistrar` enregistre les tâches déclarées et **supprime celles qui ne le sont plus**. Cron surchargeable par `Jobs:<id>:Cron`, en UTC.
 - `GET /api/admin/jobs/last-runs` (`GetJobLastRunsEndpoint`) : dernier passage de chaque tâche ; une exception autre que `JobFailedException` y est rendue `common.unexpected`, sans message. Rétention des exécutions : 7 jours (`JobsSetup.ExecutionRetention`).
-- `JobHeartbeatFilter` est posé sur le serveur (`options.FilterProvider`), **pas** dans `GlobalJobFilters` (partagé par toutes les API de test du processus) ; il signale healthchecks.io après chaque tâche récurrente, jamais bloquant, jamais la clé dans un journal. `JobTracingFilter` : une activité par exécution (source `InSeconds.Jobs`).
+- `JobHeartbeatFilter` est posé sur le serveur (`options.FilterProvider`), **pas** dans `GlobalJobFilters` (partagé par toutes les API de test du processus) ; il signale healthchecks.io après chaque tâche récurrente (sauf celles déclarées `signalHealthchecks: false`, lancées à la main seulement), jamais bloquant, jamais la clé dans un journal. `JobTracingFilter` : une activité par exécution (source `InSeconds.Jobs`).
 - `/jobs` : policy Admin, `Authorization = []` (le filtre par défaut de Hangfire n'accepte que localhost), antiforgery (S3).
 
 ## Opérations (`Operations/`)
