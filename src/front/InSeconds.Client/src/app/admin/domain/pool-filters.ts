@@ -1,8 +1,9 @@
-import { PoolTrack, foundRate, isUsed, isUsedByMode, usageOf } from './pool-track';
+import { PoolTrack, foundRate, isLongMissing, isUsed, isUsedByMode, usageOf } from './pool-track';
 import { POOL_VIEW } from './pool-views';
 
 export type StatusFilter = 'all' | 'available' | 'used' | 'disabled';
-export type PreviewFilter = 'all' | 'ok' | 'missing';
+/** `missingLong` : manquant depuis `LONG_MISSING_DAYS` jours ou plus (le couac d'une nuit n'y figure pas). */
+export type PreviewFilter = 'all' | 'ok' | 'missing' | 'missingLong';
 
 /** Le filtre « Sans genre » : les morceaux dont aucun genre n'est connu (jamais lus chez Deezer, ou album sans genre). */
 export const GENRE_NONE = 'none';
@@ -91,9 +92,10 @@ function matchesGenre(track: PoolTrack, genre: string): boolean {
   return genre === '' || (genre === GENRE_NONE ? track.genres.length === 0 : track.genres.includes(genre));
 }
 
-function matchesPreview(track: PoolTrack, preview: PreviewFilter): boolean {
+function matchesPreview(track: PoolTrack, preview: PreviewFilter, now: Date): boolean {
   if (preview === 'ok') return track.preview === 'available';
   if (preview === 'missing') return track.preview === 'missing';
+  if (preview === 'missingLong') return isLongMissing(track, now);
   return true;
 }
 
@@ -104,19 +106,29 @@ function matchesLastUsed(track: PoolTrack, view: string, from: string, to: strin
   return true;
 }
 
-export function filterTracks(tracks: readonly PoolTrack[], filters: PoolFilters, view: string = POOL_VIEW): PoolTrack[] {
+export function filterTracks(tracks: readonly PoolTrack[], filters: PoolFilters, view: string = POOL_VIEW, now: Date = new Date()): PoolTrack[] {
   const text = filters.text.toLowerCase().trim();
   return tracks.filter(track =>
     matchesText(track, text)
     && matchesStatus(track, filters.status, view)
     && matchesPlayedBy(track, filters.playedBy)
     && matchesGenre(track, filters.genre)
-    && matchesPreview(track, filters.preview)
+    && matchesPreview(track, filters.preview, now)
     && matchesLastUsed(track, view, filters.lastUsedFrom, filters.lastUsedTo));
 }
 
-/** Ordre du tri par extrait : manquant, pas encore contrôlé, disponible. */
+/** Ordre du tri par extrait : manquant (le plus ancien d'abord), pas encore contrôlé, disponible. */
 const PREVIEW_ORDER: Readonly<Record<PoolTrack['preview'], number>> = { missing: 0, unknown: 1, available: 2 };
+
+/**
+ * La valeur du tri par extrait. Parmi les manquants, le plus ancien d'abord : l'ordre vient du jour où l'extrait a manqué, ramené sous 1
+ * (un manquant sans date vient après ceux qui en ont une, avant les morceaux sans contrôle).
+ */
+function previewOrder(track: PoolTrack): number {
+  if (track.preview !== 'missing') return PREVIEW_ORDER[track.preview];
+  const since = track.previewMissingSince === null ? Number.NaN : Date.parse(track.previewMissingSince);
+  return Number.isNaN(since) ? 0.99 : since / 1e14;
+}
 
 function sortValue(track: PoolTrack, column: SortColumn, view: string): string | number | null {
   const usage = usageOf(track, view);
@@ -124,7 +136,7 @@ function sortValue(track: PoolTrack, column: SortColumn, view: string): string |
     case 'artist': return track.artist.toLowerCase();
     case 'title': return track.title.toLowerCase();
     case 'genre': return track.genres.length === 0 ? null : track.genres.join(', ').toLowerCase();
-    case 'preview': return PREVIEW_ORDER[track.preview];
+    case 'preview': return previewOrder(track);
     case 'status': return isUsedIn(track, view) ? 0 : 1;
     case 'usage': return track.usages.length;
     case 'lastUsedDate': return usage?.lastUsedDate ?? null;

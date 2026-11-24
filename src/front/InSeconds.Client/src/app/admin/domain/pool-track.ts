@@ -27,6 +27,8 @@ export interface PoolTrack {
   /** L'année de sortie lue chez Deezer, `null` tant qu'elle n'est pas connue. */
   readonly releaseYear: number | null;
   readonly preview: PreviewState;
+  /** Depuis quand l'extrait est manquant (instant ISO) ; `null` s'il ne l'est pas, ou si la date n'est pas encore connue (morceau déjà manquant avant qu'elle existe). */
+  readonly previewMissingSince: string | null;
   readonly isDisabled: boolean;
   readonly isUsed: boolean;
   readonly usages: readonly ModeUsage[];
@@ -57,6 +59,53 @@ export interface ThemeAssignment {
 }
 
 export const THEME_MAX_LENGTH = 60;
+
+const DAY_MS = 86_400_000;
+
+/** Un extrait manquant depuis au moins ce nombre de jours n'est plus un couac d'une nuit : à remplacer ou à désactiver. */
+export const LONG_MISSING_DAYS = 3;
+
+/**
+ * Les jours entiers écoulés depuis que l'extrait est manquant ; `null` si le morceau ne l'est pas ou si la date n'est pas connue.
+ * Jamais négatif (une horloge en retard donne zéro).
+ */
+export function missingDays(track: Pick<PoolTrack, 'preview' | 'previewMissingSince'>, now: Date): number | null {
+  if (track.preview !== 'missing' || track.previewMissingSince === null) return null;
+  const since = Date.parse(track.previewMissingSince);
+  return Number.isNaN(since) ? null : Math.max(0, Math.floor((now.getTime() - since) / DAY_MS));
+}
+
+/** L'extrait manque depuis `LONG_MISSING_DAYS` jours ou plus. */
+export function isLongMissing(track: Pick<PoolTrack, 'preview' | 'previewMissingSince'>, now: Date): boolean {
+  const days = missingDays(track, now);
+  return days !== null && days >= LONG_MISSING_DAYS;
+}
+
+/** Ce que le contrôle d'un extrait a rendu pour un morceau : son état, depuis quand il manque, et si Deezer a répondu (sinon l'état est celui d'avant). */
+export interface PreviewRecheckResult {
+  readonly id: number;
+  readonly preview: PreviewState;
+  readonly previewMissingSince: string | null;
+  readonly answered: boolean;
+}
+
+/** Au plus ce nombre de morceaux par demande de contrôle (limite de l'API) : une sélection plus grande part en plusieurs demandes. */
+export const RECHECK_MAX_PER_REQUEST = 30;
+
+/** Le bilan d'un contrôle, tel que l'écran le dit : combien ont un extrait, combien manquent encore, combien n'ont pas eu de réponse de Deezer. */
+export interface RecheckSummary {
+  readonly available: number;
+  readonly stillMissing: number;
+  readonly noAnswer: number;
+}
+
+export function summarizeRecheck(results: readonly PreviewRecheckResult[]): RecheckSummary {
+  return {
+    available: results.filter(r => r.answered && r.preview === 'available').length,
+    stillMissing: results.filter(r => r.answered && r.preview === 'missing').length,
+    noAnswer: results.filter(r => !r.answered).length,
+  };
+}
 
 /** Un morceau que l'un des modes a joué ne se supprime plus : on le retire du tirage (désactivation). */
 export function isUsed(track: Pick<PoolTrack, 'isUsed'>): boolean {

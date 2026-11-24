@@ -372,6 +372,20 @@ describe('CataloguePage', () => {
       expect(modal.open.mock.calls[0][1].data.map((t: PoolTrack) => t.id)).toEqual([2, 3]);
     });
 
+    it('revérifie la sélection par la barre d\'outils, et affiche le bilan', async () => {
+      const { pool, element, click, detect } = await render();
+      pool.toggleSelection(2);
+      pool.toggleSelection(3);
+      await detect();
+
+      click(b => b.getAttribute('data-testid') === 'recheck-selection');
+      await new Promise<void>(resolve => setTimeout(resolve, 0));
+      await detect();
+
+      expect(api.recheckPreviews).toHaveBeenCalledWith([2, 3]);
+      expect(element.querySelector('[data-testid="recheck-summary"]')).not.toBeNull();
+    });
+
     it('ne supprime pas une sélection qui contient un morceau utilisé', async () => {
       const { pool, element, detect } = await render();
       pool.toggleSelection(1);

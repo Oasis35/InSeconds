@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { TranslatePipe } from '@ngx-translate/core';
 import { PoolSort, SortColumn } from '../../../domain/pool-filters';
 import { rateColor } from '../../../domain/challenge';
-import { ModeUsage, PoolTrack, answerCount, foundRate, trackLabel, usageOf } from '../../../domain/pool-track';
+import { ModeUsage, PoolTrack, answerCount, foundRate, missingDays, trackLabel, usageOf } from '../../../domain/pool-track';
 import { POOL_VIEW, modeView } from '../../../domain/pool-views';
 
 interface Column {
@@ -91,6 +91,12 @@ const MODE_COLUMNS: readonly Column[] = [
                         <button type="button" (click)="edit.emit(t)" class="text-xs px-2 py-1 rounded transition-colors"
                           style="color:var(--text-muted);border:1px solid var(--border-strong)"
                           [title]="'admin.pool.editTitle' | translate">✎</button>
+                        @if (t.preview === 'missing') {
+                          <button type="button" (click)="recheck.emit(t)" [disabled]="recheckingIds().includes(t.id)" data-testid="recheck-track"
+                            class="text-xs px-2 py-1 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            style="color:var(--text-muted);border:1px solid var(--border-strong)"
+                            [title]="'admin.pool.recheckTitle' | translate" [attr.aria-label]="'admin.pool.recheckTitle' | translate">↻</button>
+                        }
                         <!-- Le title est porté par un span : un bouton désactivé n'affiche pas son tooltip partout. -->
                         @if (t.isUsed || t.isDisabled) {
                           @let lockedToday = !t.isDisabled && t.inTodayChallenge;
@@ -128,6 +134,9 @@ const MODE_COLUMNS: readonly Column[] = [
                       } @else if (t.preview === 'missing') {
                         <span class="inline-flex items-center gap-1 text-xs font-medium" style="color:var(--color-fail)">
                           <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:var(--color-fail)"></span> {{ 'admin.pool.previewMissing' | translate }}
+                          @if (missingFor(t); as days) {
+                            <span class="font-normal" style="color:var(--text-muted)" data-testid="missing-since">{{ 'admin.pool.missingSince' | translate: { days } }}</span>
+                          }
                         </span>
                       }
                     </td>
@@ -198,6 +207,10 @@ export class PoolTableComponent {
   readonly view = input<string>(POOL_VIEW);
   readonly selectedIds = input.required<readonly number[]>();
   readonly togglingIds = input.required<readonly number[]>();
+  /** Morceaux dont l'extrait est en cours de contrôle chez Deezer. */
+  readonly recheckingIds = input<readonly number[]>([]);
+  /** L'instant d'« aujourd'hui » pour dire depuis combien de jours un extrait manque : celui de l'affichage, que les tests remplacent. */
+  readonly now = input<Date>(new Date());
   readonly sort = input.required<PoolSort | null>();
   /** Page affichée, à partir de 0. */
   readonly page = input.required<number>();
@@ -212,6 +225,7 @@ export class PoolTableComponent {
   readonly listen = output<PoolTrack>();
   readonly edit = output<PoolTrack>();
   readonly toggleDisabled = output<PoolTrack>();
+  readonly recheck = output<PoolTrack>();
   readonly delete = output<PoolTrack>();
   readonly openInPool = output<PoolTrack>();
   readonly previousPage = output();
@@ -239,6 +253,12 @@ export class PoolTableComponent {
   /** Le libellé d'un mode : celui du registre, sinon son nom tel que le back le donne. */
   protected modeLabelKey(usage: ModeUsage): string {
     return modeView(usage.mode)?.labelKey ?? usage.mode;
+  }
+
+  /** Les jours depuis lesquels l'extrait manque, à dire à côté de l'état ; rien sous un jour (le couac d'une nuit) ni sans date. */
+  protected missingFor(track: PoolTrack): number | null {
+    const days = missingDays(track, this.now());
+    return days !== null && days >= 1 ? days : null;
   }
 
   protected ariaSort(column: SortColumn): 'ascending' | 'descending' | 'none' {

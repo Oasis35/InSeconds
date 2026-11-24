@@ -344,6 +344,10 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("preview_checked_at");
 
+                    b.Property<DateTimeOffset?>("PreviewMissingSince")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("preview_missing_since");
+
                     b.Property<short>("PreviewStatus")
                         .HasColumnType("smallint")
                         .HasColumnName("preview_status");

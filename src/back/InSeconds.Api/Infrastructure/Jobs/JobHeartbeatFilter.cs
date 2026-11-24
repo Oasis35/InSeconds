@@ -27,6 +27,10 @@ public sealed class JobHeartbeatFilter(IServiceProvider services) : IServerFilte
         if (string.IsNullOrEmpty(jobId))
             return;
 
+        // Une tâche lancée à la main seulement n'a pas de contrôle chez healthchecks.io : il alerterait faute de passage régulier.
+        if (services.GetServices<ScheduledJobDefinition>().Any(definition => definition.Id == jobId && !definition.SignalHealthchecks))
+            return;
+
         // Résolu à chaque passage : un client HTTP gardé par ce filtre (singleton) ne renouvellerait jamais sa connexion.
         // Les filtres de Hangfire sont synchrones ; le signal est court et borné par le délai du client HTTP.
         services.GetRequiredService<JobHeartbeat>().SignalAsync(jobId, succeeded: context.Exception is null, CancellationToken.None)

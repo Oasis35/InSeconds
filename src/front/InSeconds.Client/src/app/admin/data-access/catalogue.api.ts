@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { CandidateItem, CatalogueClient, DeezerTrackResult, TrackListItem, TrackModeUsage } from '../../api/catalogue/api.generated';
+import { CandidateItem, CatalogueClient, DeezerTrackResult, RecheckedTrack, TrackListItem, TrackModeUsage } from '../../api/catalogue/api.generated';
 import { Candidate, CandidatePriority, CandidateStatus } from '../domain/candidates';
-import { DeezerResult, ModeUsage, PoolTheme, PoolTrack, PreviewState, ThemeAssignment } from '../domain/pool-track';
+import { DeezerResult, ModeUsage, PoolTheme, PoolTrack, PreviewRecheckResult, PreviewState, ThemeAssignment } from '../domain/pool-track';
 
 /**
  * Adaptateur de l'API du module Catalogue : seule porte d'entrée vers le client généré
@@ -29,6 +29,14 @@ export class CatalogueApi {
 
   async setTrackDisabled(id: number, isDisabled: boolean): Promise<void> {
     await firstValueFrom(this.client.setTrackDisabled(id, { isDisabled }));
+  }
+
+  /**
+   * Demande à Deezer l'extrait de ces morceaux (30 au plus par appel) et enregistre l'état tout de suite. Un morceau sur lequel Deezer n'a pas
+   * répondu garde son état (`answered` faux).
+   */
+  async recheckPreviews(ids: readonly number[]): Promise<PreviewRecheckResult[]> {
+    return (await firstValueFrom(this.client.recheckTrackPreviews({ trackIds: [...ids] }))).tracks.map(toRecheckResult);
   }
 
   async deleteTrack(id: number): Promise<void> {
@@ -150,6 +158,7 @@ function toPoolTrack(item: TrackListItem): PoolTrack {
     title: item.title,
     releaseYear: item.releaseYear ?? null,
     preview: toPreviewState(item.previewStatus),
+    previewMissingSince: toInstant(item.previewMissingSince),
     isDisabled: item.isDisabled,
     isUsed: item.isUsed,
     usages: item.usages.map(toModeUsage),
@@ -157,6 +166,15 @@ function toPoolTrack(item: TrackListItem): PoolTrack {
     themeIds: item.themeIds ?? [],
     altTitles: item.altTitles ?? [],
     inTodayChallenge: item.usages.some(usage => usage.inTodayChallenge),
+  };
+}
+
+function toRecheckResult(item: RecheckedTrack): PreviewRecheckResult {
+  return {
+    id: item.id,
+    preview: toPreviewState(item.previewStatus),
+    previewMissingSince: toInstant(item.previewMissingSince),
+    answered: item.answered,
   };
 }
 
@@ -189,4 +207,10 @@ function toPreviewState(status: string): PreviewState {
 function toDay(value: Date | string | undefined | null): string | null {
   if (value === undefined || value === null) return null;
   return (typeof value === 'string' ? value : value.toISOString()).slice(0, 10);
+}
+
+/** Le client annonce un `Date`, le JSON livre un instant en texte ISO : on garde le texte. */
+function toInstant(value: Date | string | undefined | null): string | null {
+  if (value === undefined || value === null) return null;
+  return typeof value === 'string' ? value : value.toISOString();
 }

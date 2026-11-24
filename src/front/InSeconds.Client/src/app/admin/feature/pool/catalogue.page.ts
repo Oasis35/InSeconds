@@ -64,10 +64,12 @@ const DIALOG_MAX_WIDTH = '26rem';
         [cooldownDays]="pool.cooldownDays()"
         [cooldownTone]="pool.cooldownTone()"
         [addPanelOpen]="search.open()"
+        [rechecking]="pool.recheckingIds().length > 0"
         [hardestFirst]="pool.sort()?.column === 'found' && pool.sort()?.direction === 'asc'"
         (sortHardest)="pool.sortByHardest()"
         (deselectAll)="pool.clearSelection()"
         (deleteSelection)="deleteSelection()"
+        (recheckSelection)="pool.recheckPreviews(pool.selectedIds())"
         (toggleAdd)="togglePanel()" />
 
       @if (isPool() && search.open()) {
@@ -105,6 +107,15 @@ const DIALOG_MAX_WIDTH = '26rem';
         </p>
       }
 
+      @if (pool.recheckFailed()) {
+        <p class="text-xs" role="alert" style="color:var(--color-fail)" data-testid="recheck-failed">{{ 'admin.pool.recheckError' | translate }}</p>
+      }
+      @if (pool.recheckSummary(); as summary) {
+        <p class="text-xs" role="status" style="color:var(--text-light)" data-testid="recheck-summary">
+          {{ 'admin.pool.recheckSummary' | translate: summary }}
+        </p>
+      }
+
       @if (pool.error(); as error) {
         <app-error-message [messageKey]="errorMessageKey(error.code)" [traceId]="error.traceId" />
       }
@@ -116,6 +127,7 @@ const DIALOG_MAX_WIDTH = '26rem';
         [view]="pool.view()"
         [selectedIds]="pool.selectedIds()"
         [togglingIds]="pool.togglingIds()"
+        [recheckingIds]="pool.recheckingIds()"
         [sort]="pool.sort()"
         [page]="pool.page()"
         [pages]="pool.pages()"
@@ -128,6 +140,7 @@ const DIALOG_MAX_WIDTH = '26rem';
         (edit)="edit($event)"
         (openInPool)="pool.openInPool($event)"
         (toggleDisabled)="pool.toggleDisabled($event)"
+        (recheck)="pool.recheckPreviews([$event.id])"
         (delete)="deleteTracks([$event])"
         (previousPage)="pool.previousPage()"
         (nextPage)="pool.nextPage()" />

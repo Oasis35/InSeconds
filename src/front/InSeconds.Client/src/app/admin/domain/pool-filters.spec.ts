@@ -40,6 +40,18 @@ describe('filterTracks', () => {
     expect(filterTracks(all, filters({ preview: 'ok' }))).toEqual([eminem, queen]);
   });
 
+  it('filtre les extraits manquants depuis trois jours ou plus (le couac d\'une nuit n\'y figure pas)', () => {
+    const now = new Date('2026-11-24T12:00:00Z');
+    const longMissing = track({ id: 10, preview: 'missing', previewMissingSince: '2026-11-20T08:00:00Z' });
+    const exactly3 = track({ id: 11, preview: 'missing', previewMissingSince: '2026-11-21T12:00:00Z' });
+    const lastNight = track({ id: 12, preview: 'missing', previewMissingSince: '2026-11-23T23:00:00Z' });
+    const noDate = track({ id: 13, preview: 'missing' });
+    const available = track({ id: 14, preview: 'available', previewMissingSince: '2026-11-01T00:00:00Z' });
+
+    expect(filterTracks([longMissing, exactly3, lastNight, noDate, available], filters({ preview: 'missingLong' }), 'pool', now).map(t => t.id))
+      .toEqual([10, 11]);
+  });
+
   it('filtre par plage de dernière utilisation, bornes incluses, sans date exclu', () => {
     expect(filterTracks(all, filters({ lastUsedFrom: '2026-10-02', lastUsedTo: '2026-10-02' }), 'daily')).toEqual([queen]);
     expect(filterTracks(all, filters({ lastUsedFrom: '2026-10-03' }), 'daily')).toEqual([eminem]);
@@ -110,6 +122,14 @@ describe('sortTracks', () => {
     const unknown = track({ id: 2, preview: 'unknown' });
     const ok = track({ id: 3, preview: 'available' });
     expect(sortTracks([ok, missing, unknown], { column: 'preview', direction: 'asc' }).map(t => t.id)).toEqual([1, 2, 3]);
+  });
+
+  it('trie les manquants du plus ancien au plus récent, ceux sans date après eux, avant l\'inconnu', () => {
+    const old = track({ id: 1, preview: 'missing', previewMissingSince: '2026-10-01T00:00:00Z' });
+    const recent = track({ id: 2, preview: 'missing', previewMissingSince: '2026-11-23T00:00:00Z' });
+    const noDate = track({ id: 3, preview: 'missing' });
+    const unknown = track({ id: 4, preview: 'unknown' });
+    expect(sortTracks([unknown, noDate, recent, old], { column: 'preview', direction: 'asc' }).map(t => t.id)).toEqual([1, 2, 3, 4]);
   });
 });
 

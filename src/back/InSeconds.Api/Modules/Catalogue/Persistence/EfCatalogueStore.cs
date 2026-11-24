@@ -67,6 +67,16 @@ public sealed class EfCatalogueStore(InSecondsDbContext db) : ICatalogueStore
             .AsNoTracking()
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<Track>> ListByIdsAsync(IReadOnlyCollection<int> ids, CancellationToken ct) =>
+        await db.Set<Track>().Where(t => ids.Contains(t.Id)).OrderBy(t => t.Id).AsNoTracking().ToListAsync(ct);
+
+    public async Task<IReadOnlyList<Track>> ListMissingPreviewTracksAsync(CancellationToken ct) =>
+        await db.Set<Track>()
+            .Where(t => t.DisabledAt == null && t.PreviewStatus == PreviewStatus.Missing)
+            .OrderBy(t => t.Id)
+            .AsNoTracking()
+            .ToListAsync(ct);
+
     // Un genre déjà là est repris (son nom suit Deezer), les autres sont ajoutés : enregistrés avec le morceau, par la transaction du handler.
     // Deux ajouts simultanés qui partagent un genre neuf se heurtent sur sa clé : le second est refusé à l'enregistrement
     // (TrackConflictExceptionHandler, 409) ; la transaction de Wolverine est alors annulée, une nouvelle tentative n'y serait pas possible.
@@ -138,6 +148,7 @@ public sealed class EfCatalogueStore(InSecondsDbContext db) : ICatalogueStore
         {
             var status = track.PreviewStatus;
             var checkedAt = track.PreviewCheckedAt;
+            var missingSince = track.PreviewMissingSince;
             var rank = track.DeezerRank;
             var rankAt = track.RankUpdatedAt;
             var albumId = track.AlbumId;
@@ -146,6 +157,7 @@ public sealed class EfCatalogueStore(InSecondsDbContext db) : ICatalogueStore
             var rows = await db.Set<Track>().Where(t => t.Id == track.Id).ExecuteUpdateAsync(s => s
                 .SetProperty(t => t.PreviewStatus, status)
                 .SetProperty(t => t.PreviewCheckedAt, checkedAt)
+                .SetProperty(t => t.PreviewMissingSince, missingSince)
                 .SetProperty(t => t.DeezerRank, rank)
                 .SetProperty(t => t.RankUpdatedAt, rankAt)
                 .SetProperty(t => t.AlbumId, albumId)

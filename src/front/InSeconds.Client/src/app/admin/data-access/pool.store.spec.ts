@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HARDEST_FIRST, NO_FILTERS } from '../domain/pool-filters';
 import { PoolTrack, usageOf } from '../domain/pool-track';
-import { COOLDOWN_RESULT_VISIBLE_MS, PoolStore } from './pool.store';
+import { COOLDOWN_RESULT_VISIBLE_MS, PoolStore, RECHECK_RESULT_VISIBLE_MS } from './pool.store';
 import { FakeCooldownApi, fakeCooldownApi, provideCooldownApiFake } from './testing/fake-cooldown-api';
 import { FakeCatalogueApi, fakeCatalogueApi, poolTrack, problem, provideCatalogueApiFake } from './testing/fake-catalogue-api';
 
@@ -573,6 +573,74 @@ describe('PoolStore', () => {
       await setup();
 
       expect(store.missingPreviewCount()).toBe(1);
+    });
+  });
+
+  describe('revérifier les extraits', () => {
+    it('demande l\'extrait à Deezer, relit le pool et donne le bilan', async () => {
+      await setup([eminem, beatles], {
+        recheckPreviews: vi.fn(async (ids: readonly number[]) => ids.map(id => ({ id, preview: 'missing' as const, previewMissingSince: '2026-11-20T00:00:00Z', answered: id !== 1 }))),
+      });
+      api.listTracks.mockClear();
+
+      await store.recheckPreviews([1, 4]);
+
+      expect(api.recheckPreviews).toHaveBeenCalledWith([1, 4]);
+      expect(api.listTracks).toHaveBeenCalledTimes(1);
+      expect(store.recheckSummary()).toEqual({ available: 0, stillMissing: 1, noAnswer: 1 });
+      expect(store.recheckingIds()).toEqual([]);
+      expect(store.recheckFailed()).toBe(false);
+    });
+
+    it('envoie une grande sélection par groupes de 30, l\'un après l\'autre', async () => {
+      await setup([eminem]);
+      const ids = Array.from({ length: 65 }, (_, i) => i + 1);
+
+      await store.recheckPreviews(ids);
+
+      expect(api.recheckPreviews.mock.calls.map(call => call[0].length)).toEqual([30, 30, 5]);
+      expect(store.recheckSummary()?.available).toBe(65);
+    });
+
+    it('un échec le dit, relit quand même le pool et libère les boutons', async () => {
+      await setup([eminem], { recheckPreviews: vi.fn(async () => { throw new Error('réseau'); }) });
+      api.listTracks.mockClear();
+
+      await store.recheckPreviews([1]);
+
+      expect(store.recheckFailed()).toBe(true);
+      expect(store.recheckSummary()).toBeNull();
+      expect(store.recheckingIds()).toEqual([]);
+      expect(api.listTracks).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignore un morceau déjà en cours de contrôle', async () => {
+      let release: () => void = () => undefined;
+      await setup([eminem], {
+        recheckPreviews: vi.fn((ids: readonly number[]) => new Promise(resolve => {
+          release = () => resolve(ids.map(id => ({ id, preview: 'available' as const, previewMissingSince: null, answered: true })));
+        })),
+      });
+
+      const first = store.recheckPreviews([1]);
+      expect(store.recheckingIds()).toEqual([1]);
+      await store.recheckPreviews([1]);
+      release();
+      await first;
+
+      expect(api.recheckPreviews).toHaveBeenCalledTimes(1);
+    });
+
+    it('le bilan s\'efface seul', async () => {
+      vi.useFakeTimers();
+      await setup([eminem]);
+
+      await store.recheckPreviews([1]);
+      expect(store.recheckSummary()).not.toBeNull();
+      vi.advanceTimersByTime(RECHECK_RESULT_VISIBLE_MS);
+
+      expect(store.recheckSummary()).toBeNull();
+      vi.useRealTimers();
     });
   });
 });

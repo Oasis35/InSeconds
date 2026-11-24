@@ -45,6 +45,12 @@ Conditions de l'API Deezer : piège 47 (seules des métadonnées sont gardées, 
 - Un morceau qui change d'album perd tout de suite les genres de l'ancien (lignes de `track_genres` supprimées par `SaveRefreshedAsync`, car les morceaux sont lus sans leurs genres). Un morceau désactivé n'est pas contrôlé.
 - `[DisableConcurrentExecution(600)]` : la tâche de la nuit attend un contrôle lancé depuis `/jobs` au lieu d'échouer. Compte rendu en dictionnaire.
 
+## Revérifier un extrait (`RecheckPreviews`)
+
+- **Une seule règle** applique la réponse de Deezer à un morceau (`PreviewLookups.Apply`) : le contrôle nocturne, la tâche manuelle et le bouton de l'admin passent par elle, et par `PreviewRechecker` (lots espacés comme le contrôle, enregistrement par `SaveRefreshedAsync`). Pas de réponse (`Unavailable`) : rien ne change, ni l'état ni sa date (piège 16).
+- **Bouton** : `POST /api/admin/catalogue/tracks/recheck-previews` (30 morceaux au plus, `[NonTransactional]`, 404 si aucun identifiant connu, désactivés compris) rend l'état de chaque morceau et `answered` (faux : Deezer n'a pas répondu). **Tâche** `catalogue-recheck-missing-previews` : jamais planifiée (`Cron.Never()`), lancée depuis `/jobs`, ne regarde que les actifs marqués manquants, sans nouvel essai ; compte rendu `checked`, `recovered`, `stillMissing`, `failed`. Ni l'une ni l'autre ne calcule de forme d'onde : le contrôle de la nuit rattrape celles des morceaux revenus. Tests : `RecheckPreviewsTests`, `RefreshPreviewsHandlerTests`.
+- **`tracks.preview_missing_since`** : posée au passage à « manquant » (ou au premier contrôle qui trouve un manquant sans date : ceux d'avant la colonne), **gardée** tant que le morceau l'est, effacée au retour à « disponible » (`Track.SetPreviewStatus`, seul endroit qui écrit l'état). Exposée par `listTracks` (`previewMissingSince`) ; sépare le couac d'une nuit du vrai manque. Tests : `TrackTests`.
+
 ## Candidats
 
 - Import puis lecture chez Deezer **en arrière-plan** : messages `ReadCandidates`, puis ajout au pool par `AddCandidatesToCatalogue`, par lots espacés comme le contrôle (`CandidateBatches.Schedule`), sur des files locales `Sequential` (`WolverineSetup`) : jamais deux lots à la fois (quota Deezer, et deux ajouts qui créeraient le même genre neuf). `Unavailable` laisse le candidat à lire.

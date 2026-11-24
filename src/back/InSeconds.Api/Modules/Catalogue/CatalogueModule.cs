@@ -32,6 +32,7 @@ public static class CatalogueModule
         // L'usage des morceaux est fourni par chaque mode (ITrackUsage, ajouté, jamais remplacé) ; Catalogue les réunit.
         services.AddScoped<ITrackPoolUsage, TrackPoolUsage>();
         services.AddScheduledJob<RefreshPreviewsJob>(RefreshPreviewsJob.Id, RefreshPreviewsJob.DefaultCron);
+        services.AddScheduledJob<RecheckMissingPreviewsJob>(RecheckMissingPreviewsJob.Id, RecheckMissingPreviewsJob.DefaultCron, signalHealthchecks: false);
         services.AddExceptionHandler<TrackConflictExceptionHandler>();
         return services;
     }
