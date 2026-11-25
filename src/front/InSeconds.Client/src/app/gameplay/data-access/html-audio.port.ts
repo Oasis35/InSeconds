@@ -2,16 +2,13 @@ import { DestroyRef, Injectable, Injector, inject, signal } from '@angular/core'
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
 import { AudioStatus } from '../domain/track-round';
 import { AudioPort } from './audio.port';
+import { audioElement, isAbort, isSharedAudioUnlocked, resetSharedAudioElement, setSharedAudioUnlocked, silenceWavBytes } from './shared-audio';
 
 /** Marge sous laquelle le palier est considéré atteint. */
 const STOP_TOLERANCE_SECONDS = 0.01;
 
 /** Délai minimal entre deux relectures de la position par le chrono d'arrêt (lecture bloquée). */
 const MIN_RECHECK_MS = 20;
-
-/** 10 ms de silence (WAV mono 8 kHz), joués dans le clic pour déverrouiller l'élément sur iPhone. */
-const SILENCE_WAV_BASE64 =
-  'UklGRnQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YVAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==';
 
 /** Délai entre l'ordre de lecture et le premier son au-delà duquel le palier est remonté (diagnostic iPhone). */
 const SLOW_START_REPORT_MS = 1500;
@@ -93,28 +90,6 @@ export function describeStall(untilSeconds: number, timings: PlaybackTimings, en
   return `${AUDIO_STALL_MESSAGE}: palier ${untilSeconds} s, premier son après ${round(startMs)} ms, ${cuts}`;
 }
 
-/** `play()` rejeté parce qu'interrompu par notre propre `pause()` ou un changement de source : pas une panne. */
-function isAbort(err: unknown): boolean {
-  return err instanceof DOMException && err.name === 'AbortError';
-}
-
-/**
- * L'élément audio est **un seul pour toute la page** : sur iPhone, un élément ne joue hors d'un geste qu'après avoir joué une fois dans
- * un geste, et le clic qui lance la Survie depuis l'accueil se fait dans une autre route (donc un autre lecteur) que la partie.
- */
-let sharedAudio: HTMLAudioElement | null = null;
-let sharedUnlocked = false;
-
-function audioElement(): HTMLAudioElement | null {
-  if (typeof document === 'undefined') return null;
-  if (sharedAudio === null) {
-    sharedAudio = new Audio();
-    // iPhone : lire dans la page, jamais en plein écran (absent du type `HTMLAudioElement`).
-    sharedAudio.setAttribute('playsinline', '');
-  }
-  return sharedAudio;
-}
-
 /** La touche lecture / pause : un seul bouton sur les claviers, qui envoie `play` à l'arrêt et `pause` en lecture. */
 const PLAY_PAUSE_ACTIONS = ['play', 'pause'] as const;
 
@@ -150,33 +125,9 @@ function releasePlayPauseKey(handler: () => void): void {
   setPlayPauseActions(null);
 }
 
-/**
- * Déverrouille l'élément partagé depuis un clic, avant que le lecteur de la page suivante n'existe (la carte Survie de l'accueil).
- * Rien ne joue : un silence de 10 ms. Sans effet une fois l'élément déverrouillé ou si le navigateur refuse (le prochain clic réessaie).
- */
-export function unlockSharedAudio(): void {
-  const audio = audioElement();
-  if (!audio || sharedUnlocked || !audio.paused) return;
-  sharedUnlocked = true;
-  const bytes = Uint8Array.from(atob(SILENCE_WAV_BASE64), c => c.codePointAt(0)!);
-  const url = URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' }));
-  audio.src = url;
-  audio.play().then(
-    () => {
-      audio.pause();
-      URL.revokeObjectURL(url);
-    },
-    (err: unknown) => {
-      if (!isAbort(err)) sharedUnlocked = false;
-      URL.revokeObjectURL(url);
-    },
-  );
-}
-
 /** Pour les tests : l'élément repart de zéro. */
 export function resetSharedAudio(): void {
-  sharedAudio = null;
-  sharedUnlocked = false;
+  resetSharedAudioElement();
   playPauseHandler = null;
 }
 
@@ -307,9 +258,9 @@ export class HtmlAudioPort extends AudioPort {
    */
   unlock(): void {
     const audio = this.audio;
-    if (!audio || sharedUnlocked) return;
+    if (!audio || isSharedAudioUnlocked()) return;
     const state = this._state();
-    sharedUnlocked = true;
+    setSharedAudioUnlocked(true);
     if (state === 'playing') return;
     if (this.currentUrl !== null && state !== 'error') {
       this.unlockLoaded(audio);
@@ -325,7 +276,7 @@ export class HtmlAudioPort extends AudioPort {
       },
       (err: unknown) => {
         // Refusé (pas dans un geste) : on réessaiera au prochain clic. Interrompu par le chargement d'un extrait : c'est fait.
-        if (!isAbort(err)) sharedUnlocked = false;
+        if (!isAbort(err)) setSharedAudioUnlocked(false);
       },
     );
   }
@@ -346,7 +297,7 @@ export class HtmlAudioPort extends AudioPort {
       },
       (err: unknown) => {
         audio.muted = false;
-        if (!isAbort(err)) sharedUnlocked = false;
+        if (!isAbort(err)) setSharedAudioUnlocked(false);
       },
     );
   }
@@ -538,8 +489,7 @@ export class HtmlAudioPort extends AudioPort {
   /** Le silence du déverrouillage, en adresse `blob:` (la CSP n'autorise pas `data:` pour les sons). */
   private silence(): string {
     if (this.silenceUrl === null) {
-      const bytes = Uint8Array.from(atob(SILENCE_WAV_BASE64), c => c.codePointAt(0)!);
-      this.silenceUrl = URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' }));
+      this.silenceUrl = URL.createObjectURL(new Blob([silenceWavBytes()], { type: 'audio/wav' }));
     }
     return this.silenceUrl;
   }
