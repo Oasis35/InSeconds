@@ -26,7 +26,9 @@ export function scoreBreakdown(
   // Le dernier barème du palier s'il est en double, comme le serveur.
   const base = settings.durationScores.reduce((score, d) => (d.seconds === answered.listenedSeconds ? d.score : score), 0);
   if (base <= 0) return null;
-  const missed = answered.artistCorrect && answered.titleCorrect ? null : answered.artistCorrect ? 'title' : 'artist';
+  let missed: ScoreBreakdown['missed'] = null;
+  if (!answered.titleCorrect) missed = 'title';
+  else if (!answered.artistCorrect) missed = 'artist';
   const hintPenaltyPercent = answered.hintLevel > 0 ? (settings.hints.find(h => h.level === answered.hintLevel)?.penaltyPercent ?? 0) : 0;
   return { seconds: answered.listenedSeconds, base, missed, hintPenaltyPercent, score: answered.score };
 }
