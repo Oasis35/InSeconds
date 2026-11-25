@@ -11,7 +11,7 @@ import { rowsFromResults, rowsFromStats, shareTracksOf } from '../../ui/result-r
 import { countUp } from '../../ui/score-count/count-up';
 import { StreakSheetComponent, StreakSheetData, StreakSheetResult } from '../../ui/streak-sheet/streak-sheet.component';
 
-/** Premier chargement du jour (ou « Réessayer ») : l'état du jour, puis le toast invité « série perdue » s'il est dû. Fourni par `DailyShellComponent`. */
+/** Premier chargement du jour (ou « Réessayer ») : l'état du jour, puis la tuile invité « série perdue » si elle est due. Fourni par `DailyShellComponent`. */
 @Injectable()
 export class DailyStartup {
   private readonly store = inject(DailyGameStore);
@@ -19,7 +19,7 @@ export class DailyStartup {
   private readonly guestStreakNotice = inject(GuestStreakNotice);
 
   async run(): Promise<void> {
-    this.store.restoreStreakToastDismissal(this.guestStreakNotice.dismissedAt());
+    this.store.restoreGuestTileDismissal(this.guestStreakNotice.dismissed());
     await this.store.init();
     const streak = this.store.today()?.streak;
     const lost = streak ? this.lostStreakNotice.take(streak) : null;

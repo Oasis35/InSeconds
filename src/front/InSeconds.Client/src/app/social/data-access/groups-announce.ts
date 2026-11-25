@@ -38,8 +38,8 @@ export class GroupsAnnounce {
   /** La carte d'annonce est à montrer (pas encore fermée). */
   readonly card = computed(() => this.active && !this._closed());
   private readonly member = computed(() => { const groups = this._groups(); return Array.isArray(groups) ? groups.length > 0 : null; });
-  /** La pastille « Nouveau » de la carte amis : carte fermée, pas de groupe. */
-  readonly chip = computed(() => this.active && this._closed() && this.member() === false);
+  /** La pastille « Nouveau » de la carte amis : compte, carte fermée, pas de groupe. */
+  readonly chip = computed(() => this.active && this.session.isLinked() && this._closed() && this.member() === false);
   /** Le point de l'onglet Groupes : comme la pastille, jusqu'à ce que le joueur ait ouvert l'onglet Groupes. */
   readonly dot = computed(() => this.chip() && !this._rankingSeen());
 

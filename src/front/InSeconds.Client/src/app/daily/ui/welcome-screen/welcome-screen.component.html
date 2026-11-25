@@ -35,7 +35,7 @@
         }
       </div>
 
-      @if (!linked() && !hideLoginCta()) {
+      @if (!linked()) {
         <a appButton variant="neutral" [block]="true" routerLink="/account/login">
           {{ 'daily.welcome.loginCta' | translate }}
         </a>

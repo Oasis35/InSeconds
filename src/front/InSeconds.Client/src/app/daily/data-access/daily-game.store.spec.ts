@@ -455,71 +455,81 @@ describe('DailyGameStore', () => {
     });
   });
 
-  describe('série et toasts', () => {
+  describe('série, gels et tuile invité', () => {
     const lost: Streak = { ...EMPTY_STREAK, lostStreak: 9, lastPlayedDate: '2026-10-01' };
+    const signIn = () => TestBed.inject(SessionStore).signedIn({ id: 'p', pseudo: 'Alice', email: 'a@b.fr', isGuest: false, isAdmin: false });
 
-    it("un invité voit le toast « série perdue » annoncé par la page, sur l'accueil, jusqu'à sa fermeture", async () => {
+    it("un invité voit la tuile « série perdue » annoncée par la page, sur l'accueil", async () => {
       api.today = TODAY({ streak: lost });
       await store.init();
       // Le store ne décide pas seul : la page lui annonce la série (une seule fois par série perdue, `LostStreakNotice`).
-      expect(store.showLostToast()).toBe(false);
+      expect(store.guestTile()).toBeNull();
 
       store.announceLostStreak(9);
-      expect(store.showLostToast()).toBe(true);
+      expect(store.guestTile()).toBe('lost');
       expect(store.lostStreak()).toBe(9);
-
-      store.dismissLostToast();
-      expect(store.showLostToast()).toBe(false);
     });
 
-    it("un compte ne voit jamais le toast « série perdue »", async () => {
-      TestBed.inject(SessionStore).signedIn({ id: 'p', pseudo: 'Alice', email: 'a@b.fr', isGuest: false, isAdmin: false });
-      api.today = TODAY({ streak: lost });
+    it('un compte ne voit jamais la tuile invité', async () => {
+      signIn();
+      api.today = TODAY({ streak: lost, completedGames: 3 });
 
       await store.init();
       store.announceLostStreak(9);
 
-      expect(store.showLostToast()).toBe(false);
+      expect(store.guestTile()).toBeNull();
     });
 
-    it('un compte voit « +1 gel gagné » sur le récap quand la partie du jour en a gagné un, jusqu\'à sa fermeture', async () => {
-      TestBed.inject(SessionStore).signedIn({ id: 'p', pseudo: 'Alice', email: 'a@b.fr', isGuest: false, isAdmin: false });
+    it("un invité qui a déjà joué voit « Garde tes parties » sur l'accueil, pas le nouveau venu", async () => {
+      api.today = TODAY({ completedGames: 0 });
+      await store.init();
+      expect(store.guestTile()).toBeNull();
+
+      api.today = TODAY({ completedGames: 2 });
+      await store.init();
+      expect(store.guestTile()).toBe('returning');
+    });
+
+    it('un compte voit « +1 gel gagné » sur le récap quand la partie du jour en a gagné un', async () => {
+      signIn();
       api.today = TODAY({ state: 'already_played' });
       api.stats = STATS({ freezeMilestone: true });
 
       await store.init();
       await flush();
-      expect(store.toasts().gelEarned).toBe(true);
 
-      store.dismissGelToast();
-      expect(store.toasts().gelEarned).toBe(false);
+      expect(store.toasts().gelEarned).toBe(true);
+      expect(store.guestTile()).toBeNull();
     });
 
-    it("un invité voit sa série non sauvegardée sur le récap, avec la série des statistiques du jour", async () => {
-      api.today = TODAY({ state: 'already_played' });
+    it("un invité voit « Ta partie est sur ce téléphone » sur le récap, avec la série des statistiques du jour", async () => {
+      api.today = TODAY({ state: 'already_played', completedGames: 1 });
       api.stats = STATS({ currentStreak: 5 });
 
       await store.init();
       await flush();
 
-      expect(store.toasts().guestStreak).toBe(true);
+      expect(store.guestTile()).toBe('afterGame');
       expect(store.toastStreak()).toBe(5);
       expect(store.toastStreakKey()).toBe('other');
     });
 
-    it("un invité ne revoit plus sa série non sauvegardée une fois le bandeau fermé, d'une visite à l'autre", async () => {
-      api.today = TODAY({ state: 'already_played', completedGames: 2 });
-      api.stats = STATS({ currentStreak: 2 });
+    it("un invité au palier de gel voit « Tu aurais gagné un gel », qui ne revient pas pour la même série une fois fermé", async () => {
+      api.today = TODAY({ state: 'already_played', completedGames: 7 });
+      api.stats = STATS({ currentStreak: 7, freezeMilestone: true });
       await store.init();
       await flush();
-      expect(store.dismissStreakToast()).toBe(2);
-      expect(store.toasts().guestStreak).toBe(false);
+      expect(store.guestTile()).toBe('freezeMiss');
+
+      const dismissal = store.dismissGuestTile();
+      expect(dismissal.streak).toBe(7);
+      expect(store.guestTile()).toBeNull();
 
       // Visite suivante : la page rend au store la fermeture gardée dans le navigateur.
-      store.restoreStreakToastDismissal(2);
+      store.restoreGuestTileDismissal(dismissal);
       await store.init();
       await flush();
-      expect(store.toasts().guestStreak).toBe(false);
+      expect(store.guestTile()).toBeNull();
     });
 
     it("compte la partie qui vient de finir avant que l'état du jour ne la compte", async () => {
@@ -530,11 +540,10 @@ describe('DailyGameStore', () => {
         await store.submit(submissionOf(position));
         store.nextTrack();
       }
-      // 4e partie : passé les premières parties, pas de bandeau hors d'un palier de gel, ni avant ni après la relecture de l'état du jour.
+      // Fin de la 4e partie : la tuile de fin de partie est due (série connue), avant comme après la relecture de l'état du jour.
       expect(store.screen()).toBe('done');
-      expect(store.toasts().guestStreak).toBe(false);
       await flush();
-      expect(store.toasts().guestStreak).toBe(false);
+      expect(store.screen()).toBe('done');
     });
   });
 

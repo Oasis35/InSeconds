@@ -14,13 +14,6 @@ describe('GroupsAnnounceCardComponent', () => {
   }
   const action = (element: HTMLElement) => element.querySelector<HTMLElement>('[data-testid="groups-announce-action"]');
 
-  it('un invité : « Créer un compte » en contour neutre', () => {
-    const { element } = render('guest');
-
-    expect(action(element)?.getAttribute('href')).toBe('/account/login');
-    expect(action(element)?.classList).toContain('app-button--neutral');
-  });
-
   it('un compte sans groupe : « Créer un groupe » en contour ambre', () => {
     const { element } = render('no_group');
 

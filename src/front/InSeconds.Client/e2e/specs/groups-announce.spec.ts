@@ -19,13 +19,21 @@ test.describe("Accueil : l'annonce des groupes", () => {
     });
   });
 
-  test("un invité : la carte, puis la croix la remplace par la pastille et le point, qui s'éteint avec l'onglet Groupes", async ({ page }) => {
+  test("un invité : pas d'annonce (les groupes exigent un compte), ni pastille ni point", async ({ page }) => {
     const game = new GamePage(page);
     await game.goto();
     await game.waitForWelcome();
 
+    await expect(page.getByTestId('groups-announce')).toHaveCount(0);
+    await expect(page.getByTestId('friends-card-new')).toHaveCount(0);
+    await expect(page.getByTestId('ranking-new')).toHaveCount(0);
+  });
+
+  test("un compte sans groupe : la croix remplace la carte par la pastille et le point, qui s'éteint avec l'onglet Groupes", async ({ page }) => {
+    await new GamePage(page).gotoAsNewPlayer('lou-annonce@e2e.test', 'LouAnnonce');
+
     const card = page.getByTestId('groups-announce');
-    await expect(card).toHaveAttribute('data-variant', 'guest');
+    await expect(card).toHaveAttribute('data-variant', 'no_group');
     await card.getByTestId('groups-announce-close').click();
     await expect(card).toHaveCount(0);
     await expect(page.getByTestId('friends-card-new')).toBeVisible();
@@ -33,9 +41,8 @@ test.describe("Accueil : l'annonce des groupes", () => {
 
     // Fermée pour de bon : rien ne revient au rechargement.
     await page.reload();
-    await game.waitForWelcome();
-    await expect(page.getByTestId('groups-announce')).toHaveCount(0);
     await expect(page.getByTestId('friends-card-new')).toBeVisible();
+    await expect(page.getByTestId('groups-announce')).toHaveCount(0);
 
     await page.getByTestId('tab-ranking').click();
     await expect(page).toHaveURL(/\/ranking/);

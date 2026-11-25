@@ -29,10 +29,11 @@ describe('GroupsAnnounceEntryComponent', () => {
   const el = (fixture: ComponentFixture<unknown>) => fixture.nativeElement as HTMLElement;
   const card = (fixture: ComponentFixture<unknown>) => el(fixture).querySelector<HTMLElement>('[data-testid="groups-announce"]');
 
-  it("un invité : la carte tout de suite, sans attendre de groupes", () => {
+  it("un invité : pas d'annonce, ni carte ni place gardée (elle parle de groupes, qui exigent un compte)", () => {
     const fixture = render(null, null);
 
-    expect(card(fixture)?.getAttribute('data-variant')).toBe('guest');
+    expect(card(fixture)).toBeNull();
+    expect(el(fixture).querySelector('[data-testid="groups-announce-placeholder"]')).toBeNull();
   });
 
   it("un compte : sa place est gardée tant que ses groupes ne sont pas lus", () => {

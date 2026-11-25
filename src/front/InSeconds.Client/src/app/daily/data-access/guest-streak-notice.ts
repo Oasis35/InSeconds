@@ -1,11 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { StoragePort } from '../../core/storage/storage.port';
+import { GuestTileDismissal } from '../domain/toasts';
 
-/** Clé du stockage local : la série affichée quand l'invité a fermé le bandeau « crée un compte ». */
-export const GUEST_STREAK_DISMISSED_KEY = 'inseconds.guestStreakToastDismissedAt';
+/** Clé du stockage local : le jour et la série affichée quand l'invité a fermé la tuile « crée un compte ». */
+export const GUEST_TILE_DISMISSED_KEY = 'inseconds.guestAccountTile';
 
 /**
- * La fermeture du bandeau « crée un compte » d'un invité, gardée d'une visite à l'autre (les règles d'affichage sont dans
+ * La fermeture de la tuile « crée un compte » d'un invité, gardée d'une visite à l'autre (les règles d'affichage sont dans
  * `domain/toasts`). Hors du `DailyGameStore` (le `localStorage` ne vit pas dans les stores) : la page la relit au chargement et
  * l'écrit à la fermeture, comme `LostStreakNotice`.
  */
@@ -13,13 +14,19 @@ export const GUEST_STREAK_DISMISSED_KEY = 'inseconds.guestStreakToastDismissedAt
 export class GuestStreakNotice {
   private readonly storage = inject(StoragePort);
 
-  /** La série affichée à la dernière fermeture, ou `null` : jamais fermé (ou valeur illisible). */
-  dismissedAt(): number | null {
-    const value = Number.parseInt(this.storage.get(GUEST_STREAK_DISMISSED_KEY) ?? '', 10);
-    return Number.isNaN(value) ? null : value;
+  /** La dernière fermeture, ou `null` : jamais fermée (ou valeur illisible). */
+  dismissed(): GuestTileDismissal | null {
+    try {
+      const value: unknown = JSON.parse(this.storage.get(GUEST_TILE_DISMISSED_KEY) ?? 'null');
+      if (typeof value !== 'object' || value === null) return null;
+      const { day, streak } = value as { day?: unknown; streak?: unknown };
+      return typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day) && typeof streak === 'number' && Number.isFinite(streak) ? { day, streak } : null;
+    } catch {
+      return null;
+    }
   }
 
-  remember(streak: number): void {
-    this.storage.set(GUEST_STREAK_DISMISSED_KEY, String(streak));
+  remember(dismissal: GuestTileDismissal): void {
+    this.storage.set(GUEST_TILE_DISMISSED_KEY, JSON.stringify(dismissal));
   }
 }

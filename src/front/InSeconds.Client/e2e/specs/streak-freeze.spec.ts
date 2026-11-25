@@ -7,7 +7,7 @@ import { ApiTestClient } from '../fixtures/api-client';
 
 /**
  * Gel de série (maquette InSeconds Game.dc.html) : relevé de série sous « Commencer », panneau série/gel,
- * ligne « Un gel a protégé ta série hier. » sur l'accueil, relevé sous « Partager mon score », toasts de fin de partie et toast invité « série perdue ».
+ * ligne « Un gel a protégé ta série hier. » sur l'accueil, relevé sous « Partager mon score », ligne de gel du jour sous la série et tuile invité « série perdue ».
  * L'état de série est posé via POST /api/e2e/set-streak (Testing-only).
  */
 
@@ -78,7 +78,7 @@ test.describe('Gel de série - compte connecté', () => {
     await expect(sheet(page).getByText('Stock plein', { exact: false })).not.toBeVisible();
   });
 
-  test('série protégée : ligne du gel sous le relevé, gel engagé retiré du relevé, panneau avec frise, puis toast « 1 gel a sauvé ta série »', async ({ page, api }) => {
+  test('série protégée : ligne du gel sous le relevé, gel engagé retiré du relevé, panneau avec frise, puis ligne « 1 gel a sauvé ta série »', async ({ page, api }) => {
     await page.clock.install({ time: Date.now() });
     await linkAccount(page, api, 'freeze-protected@e2e.test', 'FreezeProtegeE2E');
     await setStreak(page, api, { streak: 12, lastPlayedDaysAgo: 2, freezes: 2 });
@@ -104,11 +104,10 @@ test.describe('Gel de série - compte connecté', () => {
     }
     await game.waitForDone();
 
-    await expect(page.getByTestId('gel-used-toast')).toContainText('1 gel a sauvé ta série !');
-    await expect(page.getByTestId('gel-used-toast')).toContainText('ta série de 13 jours continue');
+    await expect(page.getByTestId('streak-event')).toContainText('1 gel a sauvé ta série');
   });
 
-  test('palier de 7 jours : toast « +1 gel gagné ! », relevé à jour sous le partage', async ({ page, api }) => {
+  test('palier de 7 jours : ligne « +1 gel gagné », relevé à jour sous le partage', async ({ page, api }) => {
     await page.clock.install({ time: Date.now() });
     await linkAccount(page, api, 'freeze-earned@e2e.test', 'FreezeGagneE2E');
     await setStreak(page, api, { streak: 6, lastPlayedDaysAgo: 1, freezes: 1 });
@@ -116,8 +115,8 @@ test.describe('Gel de série - compte connecté', () => {
     const game = new GamePage(page);
     await game.playFullGame(new BlindRoundPage(page));
 
-    await expect(page.getByTestId('gel-earned-toast')).toContainText('+1 gel');
-    await expect(page.getByTestId('gel-earned-toast')).toContainText('7 jours de série');
+    await expect(page.getByTestId('streak-event')).toContainText('+1 gel gagné');
+    await expect(page.getByTestId('streak-event')).toContainText('7 jours de série');
     // Le relevé est sous le partage de la carte du défi, relu après la partie : 7 jours, et le gel gagné.
     await expect(pill(page)).toHaveText(/7 jours\s*·\s*2 gels/);
   });
@@ -128,7 +127,7 @@ test.describe('Gel de série - invité', () => {
     await api.reset();
   });
 
-  test('série perdue : toast une seule fois, CTA de connexion masqué pendant le toast', async ({ page, api }) => {
+  test('série perdue : tuile une seule fois, sans croix', async ({ page, api }) => {
     await page.goto('/');
     await setStreak(page, api, { streak: 6, lastPlayedDaysAgo: 3, freezes: 0 });
 
@@ -136,23 +135,18 @@ test.describe('Gel de série - invité', () => {
     await game.goto();
     await game.waitForWelcome();
 
-    const toast = page.getByTestId('lost-streak-toast');
-    await expect(toast).toContainText('6 jours');
-    await expect(toast).toContainText('Le premier est offert.');
+    const tile = page.getByTestId('guest-tile');
+    await expect(tile).toHaveAttribute('data-kind', 'lost');
+    await expect(tile).toContainText('Ta série de 6 jours s’est arrêtée');
+    await expect(tile).toContainText('Le premier est offert.');
+    await expect(tile.getByTestId('guest-tile-dismiss')).toHaveCount(0);
     // Plus de série en cours : pas de relevé sous « Commencer ».
     await expect(pill(page)).toHaveCount(0);
-    // Le toast porte l'appel à créer un compte : la carte amis de l'accueil ne pose pas le sien en plus, et le reprend une fois le toast fermé.
-    await expect(page.getByTestId('friends-card')).toHaveAttribute('data-kind', 'guest');
-    await expect(page.getByTestId('friends-card-login')).toHaveCount(0);
 
-    await toast.getByRole('button', { name: 'Fermer' }).click();
-    await expect(toast).toBeHidden();
-    await expect(page.getByTestId('friends-card-login')).toBeVisible();
-
-    // Rechargement : déjà vu pour cette série perdue.
+    // Rechargement : déjà dite pour cette série perdue.
     await game.goto();
     await game.waitForWelcome();
-    await expect(page.getByTestId('lost-streak-toast')).toBeHidden();
+    await expect(page.getByTestId('guest-tile')).toHaveCount(0);
   });
 
   test('le panneau présente le gel comme un avantage du compte', async ({ page, api }) => {
@@ -170,7 +164,7 @@ test.describe('Gel de série - invité', () => {
     await expect(page).toHaveURL(/\/login$/);
   });
 
-  test('palier de 7 jours : toast invité « Tu aurais gagné un gel ! » sur l\'écran déjà joué', async ({ page, api }) => {
+  test('palier de 7 jours : tuile invité « Tu aurais gagné un gel » sur l\'écran déjà joué', async ({ page, api }) => {
     await page.clock.install({ time: Date.now() });
     await page.goto('/');
     await setStreak(page, api, { streak: 6, lastPlayedDaysAgo: 1, freezes: 0 });
@@ -179,6 +173,7 @@ test.describe('Gel de série - invité', () => {
     await game.completeGameThenReload(new BlindRoundPage(page));
 
     await expect(game.alreadyPlayedScreen).toBeVisible();
-    await expect(page.getByText('Tu aurais gagné un gel !')).toBeVisible();
+    await expect(page.getByTestId('guest-tile')).toHaveAttribute('data-kind', 'freezeMiss');
+    await expect(page.getByText('Tu aurais gagné un gel')).toBeVisible();
   });
 });

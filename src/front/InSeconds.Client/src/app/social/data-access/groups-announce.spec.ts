@@ -12,6 +12,7 @@ describe('GroupsAnnounce', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(`${today}T10:00:00Z`));
     TestBed.configureTestingModule({ providers: [{ provide: StoragePort, useValue: storage }] });
+    TestBed.inject(SessionStore).signedIn({ id: 'p1', pseudo: 'Clem', email: 'c@x.fr', isGuest: false, isAdmin: false });
     return { announce: TestBed.inject(GroupsAnnounce), chrome: TestBed.inject(ShellChromeStore), storage };
   }
 
@@ -37,6 +38,17 @@ describe('GroupsAnnounce', () => {
     expect(announce.chip()).toBe(true);
     expect(chrome.groupsNew()).toBe(true);
     expect(storage.get('inseconds.announce.groups.closed')).toBe('1');
+  });
+
+  it("un invité n'a ni pastille ni point, même avec une annonce fermée", () => {
+    const { announce, chrome } = setup();
+    TestBed.inject(SessionStore).signedOut();
+    announce.setGroups([]);
+    announce.close();
+    TestBed.tick();
+
+    expect(announce.chip()).toBe(false);
+    expect(chrome.groupsNew()).toBe(false);
   });
 
   it("ouvrir l'onglet Groupes éteint le point, la pastille reste", () => {
