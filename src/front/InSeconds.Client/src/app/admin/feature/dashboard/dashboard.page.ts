@@ -10,8 +10,7 @@ import { ErrorMessageComponent } from '../../../ui/error-message/error-message.c
 import { ModalService } from '../../../ui/modal/modal.service';
 import { ChallengesStore } from '../../data-access/challenges.store';
 import { DashboardStore } from '../../data-access/dashboard.store';
-import { ChallengeTrackStats } from '../../domain/challenge';
-import { formatMonth, monthOf } from '../../domain/challenge';
+import { ChallengeTrackStats, formatMonth, monthOf } from '../../domain/challenge';
 import { parseDay, todayUtc } from '../../domain/dashboard';
 import { ChallengePlayerChipsComponent } from '../../ui/challenges/challenge-player-chips/challenge-player-chips.component';
 import { ChallengeScoreChartComponent } from '../../ui/challenges/challenge-score-chart/challenge-score-chart.component';

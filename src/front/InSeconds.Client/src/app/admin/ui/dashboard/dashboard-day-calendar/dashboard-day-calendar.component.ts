@@ -56,8 +56,8 @@ export class DashboardDayCalendarComponent {
 
   /** Le mois affiché : celui du jour choisi, tant qu'on n'a pas tourné la page. */
   protected readonly month = linkedSignal(() => {
-    const day = this.selectedDay();
-    return day ? monthOf(day) : (this.availableDays()[0] ? monthOf(this.availableDays()[0]) : new Date().toISOString().slice(0, 7));
+    const day = this.selectedDay() ?? this.availableDays()[0];
+    return day ? monthOf(day) : new Date().toISOString().slice(0, 7);
   });
   protected readonly label = computed(() => formatMonth(this.month(), this.locale()));
   protected readonly cells = computed(() => calendarCells(this.month(), this.availableDays()));
