@@ -39,6 +39,14 @@ public class CspReportParserTests
         Assert.Empty(Parse($$$"""{"csp-report":{"blocked-uri":"inline","source-file":"{{{url}}}","effective-directive":"script-src-elem"}}"""));
     }
 
+    [Theory]
+    [InlineData("sandbox eval code")]
+    [InlineData("Sandbox eval code")]
+    public void ScriptDeBacASableDeFirefox_Ecarte(string sourceFile)
+    {
+        Assert.Empty(Parse($$$"""{"csp-report":{"blocked-uri":"inline","source-file":"{{{sourceFile}}}","line-number":836,"effective-directive":"script-src-elem"}}"""));
+    }
+
     [Fact]
     public void LotTropGros_PlafonneParRequete()
     {

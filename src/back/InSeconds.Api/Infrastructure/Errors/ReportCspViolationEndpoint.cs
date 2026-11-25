@@ -37,6 +37,12 @@ public static class CspReportParser
     private static readonly string[] ExtensionSchemes =
         ["chrome-extension:", "moz-extension:", "safari-extension:", "safari-web-extension:", "ms-browser-extension:"];
 
+    /// <summary>
+    /// Le « fichier » que Firefox donne à un script injecté par une extension (ou son outil de développement) : il n'a ni adresse ni
+    /// extension à reconnaître, seulement ce nom, suivi parfois d'un numéro de ligne.
+    /// </summary>
+    private const string FirefoxSandbox = "sandbox eval code";
+
     public static IReadOnlyList<CspViolation> Parse(ReadOnlyMemory<byte> body)
     {
         try
@@ -93,7 +99,8 @@ public static class CspReportParser
     private static bool FromExtension(CspViolation violation) =>
         ExtensionSchemes.Any(scheme =>
             (violation.BlockedUrl?.StartsWith(scheme, StringComparison.OrdinalIgnoreCase) ?? false)
-            || (violation.SourceFile?.StartsWith(scheme, StringComparison.OrdinalIgnoreCase) ?? false));
+            || (violation.SourceFile?.StartsWith(scheme, StringComparison.OrdinalIgnoreCase) ?? false))
+        || (violation.SourceFile?.StartsWith(FirefoxSandbox, StringComparison.OrdinalIgnoreCase) ?? false);
 
     private static string? String(JsonElement element, string name)
     {
