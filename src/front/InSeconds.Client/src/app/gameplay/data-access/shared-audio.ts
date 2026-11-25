@@ -31,9 +31,14 @@ export function isSharedAudioUnlocked(): boolean {
   return sharedUnlocked;
 }
 
-/** Posé par le lecteur quand il tente (ou rate) son propre déverrouillage. */
-export function setSharedAudioUnlocked(unlocked: boolean): void {
-  sharedUnlocked = unlocked;
+/** Le lecteur tente son propre déverrouillage (dans un clic de la manche) : l'élément est considéré déverrouillé jusqu'à un refus. */
+export function markSharedAudioUnlocked(): void {
+  sharedUnlocked = true;
+}
+
+/** Le déverrouillage a été refusé (pas dans un geste) : le prochain clic réessaie. Une interruption par notre propre `pause()` ou un changement de source n'est pas un refus. */
+export function markSharedAudioUnlockFailed(err: unknown): void {
+  if (!isAbort(err)) sharedUnlocked = false;
 }
 
 /** Le silence du déverrouillage, en octets d'un WAV (la CSP refuse `data:` pour un son : l'appelant en fait une adresse `blob:`). */
@@ -58,7 +63,7 @@ export function unlockSharedAudio(): void {
       URL.revokeObjectURL(url);
     },
     (err: unknown) => {
-      if (!isAbort(err)) sharedUnlocked = false;
+      markSharedAudioUnlockFailed(err);
       URL.revokeObjectURL(url);
     },
   );

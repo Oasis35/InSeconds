@@ -1,17 +1,8 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { isSavingData } from '../../../core/network/save-data';
 import { unlockSharedAudio } from '../../../gameplay/data-access/shared-audio';
-
-/**
- * Ce que la navigation vers la manche (`/daily`) porte quand le joueur a cliqué sur « Commencer » ou « Reprendre » : dans l'état du routeur
- * (`info`), jamais dans l'adresse. Il ne survit ni à un rechargement ni à un favori ni à un lien partagé : une partie ne part jamais sans clic.
- */
-export const START_INTENT = { dailyStart: true } as const;
-
-/** Vrai quand la navigation en cours porte l'intention de lancer la partie (voir `START_INTENT`). */
-export function isStartIntent(info: unknown): boolean {
-  return typeof info === 'object' && info !== null && (info as Record<string, unknown>)['dailyStart'] === true;
-}
+import { START_INTENT } from '../start-intent';
 
 /**
  * Lance la manche depuis l'accueil. Fourni par `DailyShellComponent`, utilisé par l'accueil et par le panneau de série (« Jouer maintenant »).
@@ -49,14 +40,10 @@ export class DailyLauncher {
    * en cache : rien n'en est exécuté. Jamais en économie de données, une seule fois, un échec se rattrape au clic.
    */
   prefetch(): void {
-    if (this.prefetched || savingData()) return;
+    if (this.prefetched || isSavingData()) return;
     this.prefetched = true;
     const load = () => void import('../daily-round.routes').catch(() => { this.prefetched = false; });
     if (typeof requestIdleCallback === 'function') requestIdleCallback(load);
     else setTimeout(load, 1500);
   }
-}
-
-function savingData(): boolean {
-  return (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
 }

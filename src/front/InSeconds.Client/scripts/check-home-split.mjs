@@ -3,20 +3,17 @@
 // `gameplay`. Seul `gameplay/data-access/shared-audio` (aucune dépendance) est permis côté accueil, pour déverrouiller le son dans le clic ;
 // l'import dynamique de `daily-round.routes` (chargement de fond) n'est pas un `from` et reste permis.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const APP = fileURLToPath(new URL('../src/app/', import.meta.url));
 
-// Ce que l'accueil charge d'emblée.
-const HOME_SIDE = [
-  'daily/feature/home',
-  'daily/feature/daily-shell',
-  'daily/feature/daily.routes.ts',
-  'daily/data-access/home.store.ts',
-  'daily/ui/home-challenge-card',
-  'daily/ui/home-done-card',
-  'daily/ui/home-abandoned-card',
+// Tout le domaine `daily` charge avec l'accueil, sauf la manche et ce qui n'est lu que par elle.
+const ROUND_SIDE = [
+  'daily/feature/daily/',
+  'daily/feature/daily-round.routes.ts',
+  'daily/data-access/daily-round.store.ts',
+  'daily/feature/leave-game.guard.ts',
 ];
 
 // Ce qui est réservé à la manche.
@@ -24,24 +21,33 @@ const ROUND_ONLY = [
   /daily-round\.store/,
   /daily-round\.routes/,
   /feature\/daily\/daily\.page/,
+  /leave-game\.guard/,
   /gameplay\/feature\//,
-  /gameplay\/data-access\/(?!shared-audio|testing\/)/,
+  /gameplay\/data-access\/(?!shared-audio$|testing\/)/,
 ];
+
+// Un import ou un export `from`, sur une ou plusieurs lignes.
+const IMPORT = /(?:import|export)\s[^;]*?\sfrom\s+['"]([^'"]+)['"]/gs;
 
 function* filesIn(path) {
   if (statSync(path).isDirectory()) {
     for (const entry of readdirSync(path)) yield* filesIn(join(path, entry));
-  } else if (path.endsWith('.ts') && !path.endsWith('.spec.ts')) yield path;
+  } else if (path.endsWith('.ts') && !path.endsWith('.spec.ts') && !path.includes(`${sep}testing${sep}`)) yield path;
+}
+
+export function violationsIn(source, isRoundOnly = rule => ROUND_ONLY.some(r => r.test(rule))) {
+  const found = [];
+  for (const match of source.matchAll(IMPORT)) {
+    if (isRoundOnly(match[1])) found.push({ line: source.slice(0, match.index).split('\n').length, text: match[0].replace(/\s+/g, ' ') });
+  }
+  return found;
 }
 
 const violations = [];
-for (const part of HOME_SIDE) {
-  for (const file of filesIn(join(APP, part))) {
-    readFileSync(file, 'utf8').split('\n').forEach((line, index) => {
-      const imported = /^\s*(?:import|export)\b.*\bfrom\s+['"]([^'"]+)['"]/.exec(line)?.[1];
-      if (imported && ROUND_ONLY.some(rule => rule.test(imported))) violations.push(`${relative(process.cwd(), file)}:${index + 1}  ${line.trim()}`);
-    });
-  }
+for (const file of filesIn(join(APP, 'daily'))) {
+  const relativePath = relative(APP, file).split(sep).join('/');
+  if (ROUND_SIDE.some(part => relativePath.startsWith(part))) continue;
+  for (const { line, text } of violationsIn(readFileSync(file, 'utf8'))) violations.push(`src/app/${relativePath}:${line}  ${text}`);
 }
 
 if (violations.length > 0) {

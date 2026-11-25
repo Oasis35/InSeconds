@@ -126,7 +126,7 @@ describe('HomeStore', () => {
       await store.init();
       expect(store.stale()).toBe(false);
 
-      store.markStale();
+      store.roundStarted(EMPTY_STREAK);
       expect(store.stale()).toBe(true);
 
       api.today = TODAY({ state: 'resumable', completedCount: 1 });
@@ -137,7 +137,7 @@ describe('HomeStore', () => {
 
     it('la fin de la partie montre le résultat avec les statistiques du jour et la série relues', async () => {
       await store.init();
-      store.markStale();
+      store.roundStarted(EMPTY_STREAK);
       const results = [1, 2, 3].map(position => ANSWERED(position));
 
       store.finishGame(results, 3);
@@ -191,7 +191,7 @@ describe('HomeStore', () => {
 
     it("un démarrage en échec dit pourquoi sur l'accueil (pas de défi, erreur)", async () => {
       await store.init();
-      store.markStale();
+      store.roundStarted(EMPTY_STREAK);
 
       store.fail('no_challenge');
       expect(store.screen()).toBe('no_challenge');

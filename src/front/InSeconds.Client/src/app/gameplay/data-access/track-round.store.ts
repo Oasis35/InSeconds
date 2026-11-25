@@ -7,16 +7,12 @@ import {
 } from '../domain/track-round';
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
 import { Waveform, bassAt, waveformFromBlob } from '../domain/waveform';
+import { isSavingData } from '../../core/network/save-data';
 import { AudioPort } from './audio.port';
 import { WaveformPort } from './waveform.port';
 
 /** Début du message remonté (en Warning) quand la forme n'est pas venue de l'API et que le navigateur la calcule : c'est lui qu'on cherche dans Grafana. */
 export const WAVEFORM_FALLBACK_MESSAGE = 'WaveformFallback';
-
-/** Le navigateur demande d'économiser les données (Chrome sur Android) : la waveform, de confort, n'est pas calculée. */
-function saveData(): boolean {
-  return (globalThis.navigator as { connection?: { saveData?: boolean } } | undefined)?.connection?.saveData === true;
-}
 
 interface TrackRoundState {
   round: TrackRound | null;
@@ -237,7 +233,7 @@ export function withTrackRound() {
          */
         loadWaveform(): void {
           const round = store.round();
-          if (!round?.previewUrl || waveformTrackKey === round.trackKey || saveData()) return;
+          if (!round?.previewUrl || waveformTrackKey === round.trackKey || isSavingData()) return;
           const trackId = round.trackId;
           const trackKey = round.trackKey;
           waveformTrackKey = trackKey;

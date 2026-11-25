@@ -55,7 +55,10 @@ export class DailyPage implements OnInit {
   constructor() {
     // La barre du bas disparaît pendant la manche.
     effect(() => this.chrome.setImmersive(this.store.isPlaying()));
-    inject(DestroyRef).onDestroy(() => this.chrome.setImmersive(false));
+    inject(DestroyRef).onDestroy(() => {
+      this.chrome.setImmersive(false);
+      this.store.dispose();
+    });
     // Si la partie quitte « playing » pendant qu'une confirmation de sortie est ouverte (dernière réponse qui se résout, partie finie
     // ailleurs), il n'y a plus de partie à protéger : la navigation continue.
     effect(() => {

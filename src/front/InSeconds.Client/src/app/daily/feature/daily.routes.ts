@@ -8,7 +8,7 @@ import { HomePage } from './home/home.page';
 import { DailyHistoryPage } from './history/daily-history.page';
 import { EarProfilePage } from './ear-profile/ear-profile.page';
 import { ReplayPage } from './replay/replay.page';
-import { isStartIntent } from './daily-shell/daily-launcher';
+import { isStartIntent } from './start-intent';
 
 /** `/history/daily/latest` : les réponses du jour publié le plus récent, la veille d'ordinaire ; sans jour publié, le jeu du jour. */
 export const latestArchiveGuard: CanActivateFn = async () => {

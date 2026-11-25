@@ -144,7 +144,15 @@ export const DailyRoundStore = signalStore(
       patchState(store, { phase: 'ended' });
     };
 
+    /** La page est détruite (retour pendant l'ouverture) : plus rien ne doit démarrer ni sonner. */
+    let disposed = false;
+
     return {
+      /** Appelé à la destruction de la page : un `begin()` en vol s'arrête avant de lancer un morceau. */
+      dispose(): void {
+        disposed = true;
+      },
+
       /**
        * Arrivée sur la manche après le clic de l'accueil : crée (ou reprend) la partie, puis lance le premier morceau. `home` : rien
        * à jouer ici (déjà jouée ailleurs, pas de défi, échec), l'accueil le dit et la page y retourne.
@@ -155,6 +163,7 @@ export const DailyRoundStore = signalStore(
         patchState(store, { phase: 'starting' });
         await sessionLoader.ensureGuest();
         const settings = await ensureSettings();
+        if (disposed) return 'home';
         if (!settings) {
           patchState(store, { phase: 'ended' });
           home.fail('error');
@@ -163,8 +172,12 @@ export const DailyRoundStore = signalStore(
         const outcome = await api.start();
         switch (outcome.kind) {
           case 'ok':
-            home.markStale();
-            home.setStreak(outcome.session.streak);
+            home.roundStarted(outcome.session.streak);
+            if (disposed) {
+              // Le joueur est déjà revenu à l'accueil : la partie existe, l'accueil la relit (tuile de reprise), aucun son.
+              void home.init();
+              return 'home';
+            }
             applySession(outcome.session);
             return 'playing';
           case 'already_played':

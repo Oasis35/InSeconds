@@ -2,7 +2,7 @@ import { DestroyRef, Injectable, Injector, inject, signal } from '@angular/core'
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
 import { AudioStatus } from '../domain/track-round';
 import { AudioPort } from './audio.port';
-import { audioElement, isAbort, isSharedAudioUnlocked, resetSharedAudioElement, setSharedAudioUnlocked, silenceWavBytes } from './shared-audio';
+import { audioElement, isAbort, isSharedAudioUnlocked, markSharedAudioUnlockFailed, markSharedAudioUnlocked, resetSharedAudioElement, silenceWavBytes } from './shared-audio';
 
 /** Marge sous laquelle le palier est considéré atteint. */
 const STOP_TOLERANCE_SECONDS = 0.01;
@@ -260,7 +260,7 @@ export class HtmlAudioPort extends AudioPort {
     const audio = this.audio;
     if (!audio || isSharedAudioUnlocked()) return;
     const state = this._state();
-    setSharedAudioUnlocked(true);
+    markSharedAudioUnlocked();
     if (state === 'playing') return;
     if (this.currentUrl !== null && state !== 'error') {
       this.unlockLoaded(audio);
@@ -276,7 +276,7 @@ export class HtmlAudioPort extends AudioPort {
       },
       (err: unknown) => {
         // Refusé (pas dans un geste) : on réessaiera au prochain clic. Interrompu par le chargement d'un extrait : c'est fait.
-        if (!isAbort(err)) setSharedAudioUnlocked(false);
+        markSharedAudioUnlockFailed(err);
       },
     );
   }
@@ -297,7 +297,7 @@ export class HtmlAudioPort extends AudioPort {
       },
       (err: unknown) => {
         audio.muted = false;
-        if (!isAbort(err)) setSharedAudioUnlocked(false);
+        markSharedAudioUnlockFailed(err);
       },
     );
   }

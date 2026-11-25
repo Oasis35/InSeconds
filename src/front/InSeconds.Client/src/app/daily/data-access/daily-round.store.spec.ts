@@ -59,6 +59,19 @@ describe('DailyRoundStore', () => {
   }
 
   describe('arrivée sur la manche', () => {
+    it("un retour à l'accueil pendant l'ouverture ne crée aucune partie et ne lance aucun son", async () => {
+      await home.init();
+      api.calls.length = 0;
+
+      const pending = store.begin();
+      store.dispose();
+      const exit = await pending;
+
+      expect(exit).toBe('home');
+      expect(audio.calls).not.toContain('playUntil 0.5');
+      expect(api.calls).not.toContain('start');
+    });
+
     it("crée l'identité, lit les réglages, démarre la partie et lance le premier morceau, sans rien relire de l'état du jour", async () => {
       await home.init();
       api.calls.length = 0;

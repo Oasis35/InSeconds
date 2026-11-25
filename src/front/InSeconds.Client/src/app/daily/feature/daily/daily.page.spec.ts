@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { TODAY } from '../../data-access/testing/fake-daily-api';
-import { START_INTENT } from '../daily-shell/daily-launcher';
+import { START_INTENT } from '../start-intent';
 import { openDailyRoute } from '../testing/open-daily-route';
 
 describe('Le jeu du jour : la racine et /daily', () => {

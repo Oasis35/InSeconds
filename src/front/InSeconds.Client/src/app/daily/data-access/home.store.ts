@@ -171,11 +171,15 @@ export const HomeStore = signalStore(
 
     /** Premier chargement, ou « Réessayer » d'un écran d'erreur. */
     const init = (): Promise<void> => {
-      patchState(store, { screen: 'loading' });
+      // Au retour d'une manche (état périmé), pas d'écran de chargement : l'accueil passe directement à la tuile de reprise.
+      if (!store.stale()) patchState(store, { screen: 'loading' });
       return peek('initial');
     };
 
-    /** Abandonne la partie en pause : la partie existe côté serveur, on retrouve son identifiant puis on l'abandonne. */
+    /**
+     * Abandonne la partie en pause : la partie existe côté serveur, on retrouve son identifiant par la reprise (`POST …/sessions`, la seule
+     * route qui le rend ; elle redonne aussi des adresses d'extrait que l'accueil ignore) puis on l'abandonne.
+     */
     const abandonFromResume = async (): Promise<void> => {
       patchState(store, { abandonLoading: true });
       const outcome = await api.start();
@@ -206,12 +210,10 @@ export const HomeStore = signalStore(
       },
 
       /**
-       * Une partie vient d'être lancée sur `/daily` : l'état du jour lu (« à jouer ») ne dit plus la vérité. Sans effet une fois la partie
-       * finie (`finishGame`) ou abandonnée.
+       * Une partie vient d'être lancée sur `/daily` : l'état du jour lu (« à jouer ») ne dit plus la vérité, l'accueil le relira en y revenant
+       * (sans effet une fois la partie finie, `finishGame`, ou abandonnée). `streak` : la série donnée par le serveur au démarrage.
        */
-      markStale: () => patchState(store, { stale: true }),
-      /** La série de la partie en cours, donnée par le serveur au démarrage. */
-      setStreak: (streak: Streak) => patchState(store, { streak }),
+      roundStarted: (streak: Streak) => patchState(store, { stale: true, streak }),
       /** La partie est finie ailleurs, ou abandonnée ici : l'écran « déjà joué ». */
       enterAlreadyPlayed,
       /** Le démarrage a échoué : l'accueil dit pourquoi (`no_challenge` : pool insuffisant, `error`). */
