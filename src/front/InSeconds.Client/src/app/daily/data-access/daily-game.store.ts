@@ -8,7 +8,9 @@ import { AnsweredTrack, DailySettings, DailyToday, DayStats, ResumedTrack, Start
 import { DailyScreen, PeekContext, isRecapScreen, refocusContext, screenAfterToday } from '../domain/daily-screen';
 import { formatCountdown, secondsUntilMidnightUtc, todayUtc } from '../../core/game-day/game-day';
 import { toRoundResult } from '../domain/round-result';
+import { scoreBreakdown } from '../domain/score-breakdown';
 import { dailyStake } from '../domain/stake';
+import { maxDayScore, scoreVerdict } from '../domain/verdict';
 import { EMPTY_STREAK, Streak, pluralKey } from '../domain/streak';
 import { GuestTileDismissal, guestTile, recapToasts } from '../domain/toasts';
 import { DailyApi } from './daily.api';
@@ -103,6 +105,16 @@ export const DailyGameStore = signalStore(
         return answered ? toRoundResult(answered) : null;
       }),
       roundScore: computed(() => store.results().find(r => r.position === store.position())?.score ?? 0),
+      /** Le maximum du défi du jour (morceaux × meilleur palier), pour « / 5 000 » ; `null` tant que les réglages ou l'état du jour manquent. */
+      maxScore: computed(() => maxDayScore(store.today()?.tracksCount, store.settings()?.durationScores)),
+      /** Le mot du résultat, sur le score final (jamais celui qui monte) ; `null` sans maximum connu. */
+      dayVerdict: computed(() => scoreVerdict(store.stats()?.yourScore ?? totalScore(), maxDayScore(store.today()?.tracksCount, store.settings()?.durationScores))),
+      /** D'où viennent les points du morceau en cours (palier, moitié, indice) ; `null` quand rien n'est trouvé ou que les réglages manquent. */
+      roundBreakdown: computed(() => {
+        const settings = store.settings();
+        const answered = store.results().find(r => r.position === store.position());
+        return settings && answered ? scoreBreakdown(settings, answered) : null;
+      }),
       roundDeezerTrackId: computed(() => store.results().find(r => r.position === store.position())?.deezerTrackId ?? null),
       countdown: computed(() => formatCountdown(store.secondsLeft())),
       /** Les parties terminées du joueur, celle du jour comprise (voir plus haut) ; `null` tant que l'état du jour n'est pas lu. */

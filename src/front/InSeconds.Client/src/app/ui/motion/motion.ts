@@ -115,6 +115,15 @@ export function pop(element: HTMLElement): void {
   gsap.fromTo(element, { scale: 1.15 }, { scale: 1, duration: 0.35, ease: SETTLE, clearProps: 'transform' });
 }
 
+/**
+ * Les lignes du calcul des points d'un morceau (palier, moitié, indice) qui se posent l'une après l'autre, avant que le score ne
+ * descende au résultat. `delay` en secondes.
+ */
+export function explainScore(lines: readonly HTMLElement[], delay = 0.2): void {
+  if (motionReduced() || lines.length === 0) return;
+  gsap.from(lines, { opacity: 0, y: 4, duration: 0.25, stagger: 0.3, delay, ease: SETTLE, clearProps: MOVED });
+}
+
 /** Les verdicts qui arrivent l'un après l'autre. */
 export function revealInTurn(elements: readonly HTMLElement[], delay = 0.25): void {
   if (motionReduced() || elements.length === 0) return;

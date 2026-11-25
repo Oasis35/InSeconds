@@ -960,6 +960,13 @@
     },
     "result": {
       "yourScore": "Ton score du jour",
+      "verdict": {
+        "warmup": "Échauffement",
+        "correct": "Correct",
+        "veryGood": "Très bon",
+        "excellent": "Excellent",
+        "almostPerfect": "Presque parfait"
+      },
       "nextChallenge": "Prochain défi dans",
       "fastIn": "en",
       "fastAfter": " : seuls {{ percent }} % ont fait aussi vite.",
@@ -1050,6 +1057,14 @@
     },
     "round": {
       "points": "pts",
+      "breakdown": {
+        "listen": "Écoute à {{ seconds }}",
+        "missedTitle": "Titre manqué",
+        "missedArtist": "Artiste manqué",
+        "half": "÷ 2",
+        "hint": "Indice",
+        "hintPenalty": "− {{ percent }} %"
+      },
       "nextTrack": "Piste suivante →",
       "seeResult": "Voir le résultat",
       "total": "Total"

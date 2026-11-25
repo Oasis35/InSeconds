@@ -960,6 +960,13 @@
     },
     "result": {
       "yourScore": "Your score today",
+      "verdict": {
+        "warmup": "Warm-up",
+        "correct": "Decent",
+        "veryGood": "Very good",
+        "excellent": "Excellent",
+        "almostPerfect": "Almost perfect"
+      },
       "nextChallenge": "Next challenge in",
       "fastIn": "in",
       "fastAfter": ": only {{ percent }}% were as fast.",
@@ -1050,6 +1057,14 @@
     },
     "round": {
       "points": "pts",
+      "breakdown": {
+        "listen": "Listened for {{ seconds }}",
+        "missedTitle": "Title missed",
+        "missedArtist": "Artist missed",
+        "half": "÷ 2",
+        "hint": "Hint",
+        "hintPenalty": "− {{ percent }}%"
+      },
       "nextTrack": "Next track →",
       "seeResult": "See result",
       "total": "Total"

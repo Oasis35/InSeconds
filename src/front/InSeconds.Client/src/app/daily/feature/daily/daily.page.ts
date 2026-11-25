@@ -18,6 +18,7 @@ import { HomeLegalLineComponent } from '../../../ui/legal-line/home-legal-line.c
 import { DailyProgressComponent } from '../../ui/daily-progress/daily-progress.component';
 import { DeezerBadgeComponent } from '../../../gameplay/ui/deezer-badge/deezer-badge.component';
 import { ResumeScreenComponent } from '../../../gameplay/ui/resume-screen/resume-screen.component';
+import { ScoreBreakdownComponent } from '../../ui/score-breakdown/score-breakdown.component';
 import { ScoreCountComponent } from '../../ui/score-count/score-count.component';
 import { StatusScreenComponent } from '../../ui/status-screen/status-screen.component';
 import { WelcomeScreenComponent } from '../../ui/welcome-screen/welcome-screen.component';
@@ -36,7 +37,7 @@ import { todayUtc } from '../../../core/game-day/game-day';
   imports: [
     TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, BrandComponent, DailyProgressComponent, HomeLegalLineComponent,
     WelcomeScreenComponent, ResumeScreenComponent, StatusScreenComponent,
-    DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent, StreakPillComponent, ButtonComponent, InstagramLinkComponent,
+    DeezerBadgeComponent, ScoreCountComponent, ScoreBreakdownComponent, AccountLinkComponent, StreakPillComponent, ButtonComponent, InstagramLinkComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './daily.page.html',
