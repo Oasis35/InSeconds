@@ -412,14 +412,32 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Actualisation_MorceauDejaUtilise_409_TrackInUse()
+    public async Task Actualisation_MorceauDejaUtilise_RemplaceLaSource_EtGardeSesNoms()
     {
         var track = await _app.AddAsync(FakeDeezerHandler.NoPreviewFrom + 1);
-        _app.Usage.Set(track.Id, new TrackUsage(new DateOnly(2026, 9, 1), 1, new DateOnly(2026, 10, 1), InTodayChallenge: false));
+        var usage = new TrackUsage(new DateOnly(2026, 9, 1), 1, new DateOnly(2026, 10, 1), InTodayChallenge: false);
+        _app.Usage.Set(track.Id, usage);
 
         var response = await _app.Admin().PutAsJsonAsync($"{Tracks}/{track.Id}", new UpdateTrack(2002), Ct);
 
-        await AssertProblemAsync(response, HttpStatusCode.Conflict, CatalogueErrorCodes.TrackInUse);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var listed = Assert.Single(await _app.ListAsync());
+        Assert.Equal(track.Id, listed.Id);
+        Assert.Equal(2002, listed.DeezerTrackId);
+        Assert.Equal(track.Artist, listed.Artist);
+        Assert.Equal(track.Title, listed.Title);
+        Assert.True(listed.IsUsed);
+    }
+
+    [Fact]
+    public async Task Actualisation_MorceauDuDefiDuJour_409_TrackInTodayChallenge_RienNeChange()
+    {
+        var track = await _app.AddAsync(FakeDeezerHandler.NoPreviewFrom + 1);
+        _app.Usage.Set(track.Id, new TrackUsage(new DateOnly(2026, 10, 5), 1, new DateOnly(2026, 11, 4), InTodayChallenge: true));
+
+        var response = await _app.Admin().PutAsJsonAsync($"{Tracks}/{track.Id}", new UpdateTrack(2002), Ct);
+
+        await AssertProblemAsync(response, HttpStatusCode.Conflict, CatalogueErrorCodes.TrackInTodayChallenge);
         Assert.Equal(FakeDeezerHandler.NoPreviewFrom + 1, Assert.Single(await _app.ListAsync()).DeezerTrackId);
     }
 
@@ -557,15 +575,17 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Actualisation_MorceauJoueSeulementParUnAutreMode_409_TrackInUse_RienNeChange()
+    public async Task Actualisation_MorceauJoueSeulementParUnAutreMode_RemplaceLaSource_EtGardeSesNoms()
     {
         var track = await _app.AddAsync(FakeDeezerHandler.NoPreviewFrom + 1);
         _app.OtherMode.Set(track.Id, TrackUsage.None with { UsedByMode = true });
 
         var response = await _app.Admin().PutAsJsonAsync($"{Tracks}/{track.Id}", new UpdateTrack(2002), Ct);
 
-        await AssertProblemAsync(response, HttpStatusCode.Conflict, CatalogueErrorCodes.TrackInUse);
-        Assert.Equal(FakeDeezerHandler.NoPreviewFrom + 1, Assert.Single(await _app.ListAsync()).DeezerTrackId);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var listed = Assert.Single(await _app.ListAsync());
+        Assert.Equal(2002, listed.DeezerTrackId);
+        Assert.Equal((track.Artist, track.Title), (listed.Artist, listed.Title));
     }
 
     [Fact]
@@ -578,7 +598,7 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
         // La liste réunit les deux modes : les dates et le nombre d'usages restent ceux du premier (le second répond « aucun »).
         var listed = Assert.Single(await _app.ListAsync());
         Assert.Equal((new DateOnly(2026, 9, 20), 2, new DateOnly(2026, 10, 20), false), (listed.Daily().LastUsedDate, listed.Daily().UsageCount, listed.Daily().UnlockDate, listed.Daily().InTodayChallenge));
-        // Seules la suppression et l'actualisation sont interdites à un morceau utilisé : renommer et désactiver restent permis.
+        // Seule la suppression est interdite à un morceau utilisé : renommer, désactiver et actualiser restent permis.
         Assert.Equal(HttpStatusCode.OK, (await _app.Admin().PatchAsJsonAsync($"{Tracks}/{track.Id}", new RenameTrack("Nouvel artiste", "Nouveau titre"), Ct)).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await _app.Admin().PutAsJsonAsync($"{Tracks}/{track.Id}/disabled", new SetTrackDisabled(true), Ct)).StatusCode);
     }

@@ -47,7 +47,7 @@ internal static class CatalogueProblems
         ApiProblem.Of(StatusCodes.Status409Conflict, CatalogueErrorCodes.TrackInUse, $"Ce morceau est utilisé dans un défi et ne peut pas être {action}.");
 
     public static ProblemDetails TrackInTodayChallenge() =>
-        ApiProblem.Of(StatusCodes.Status409Conflict, CatalogueErrorCodes.TrackInTodayChallenge, "Ce morceau est dans le défi du jour : désactivable à partir de demain.");
+        ApiProblem.Of(StatusCodes.Status409Conflict, CatalogueErrorCodes.TrackInTodayChallenge, "Ce morceau est dans le défi du jour : réessaie à partir de demain.");
 
     public static ProblemDetails ConcurrentAdd() =>
         ApiProblem.Of(StatusCodes.Status409Conflict, CatalogueErrorCodes.ConcurrentAdd, "Un autre ajout écrit les mêmes genres : réessaie.");
