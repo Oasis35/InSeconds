@@ -9,11 +9,6 @@ interface ShellChromeState {
   immersive: boolean;
   /** Le défi du jour est-il joué ? `null` tant qu'on ne le sait pas. Posé par le jeu du jour, lu par la barre (le défi qui s'agite) et les autres modes. */
   dailyDone: boolean | null;
-  /**
-   * Le jeu du jour montre déjà à un invité un appel à créer un compte (toast de série, partie en pause) : les autres cartes de l'accueil ne le
-   * répètent pas. Posé par le jeu du jour, lu par la carte amis.
-   */
-  accountCtaShown: boolean;
   /** Le point « Nouveau » de l'onglet Groupes (l'annonce des groupes, une fois sa carte fermée). Posé par le domaine des groupes, lu par la barre. */
   groupsNew: boolean;
 }
@@ -24,7 +19,7 @@ interface ShellChromeState {
  */
 export const ShellChromeStore = signalStore(
   { providedIn: 'root' },
-  withState<ShellChromeState>({ survie: false, survieKnown: false, immersive: false, dailyDone: null, accountCtaShown: false, groupsNew: false }),
+  withState<ShellChromeState>({ survie: false, survieKnown: false, immersive: false, dailyDone: null, groupsNew: false }),
   withMethods(store => ({
     /** `known` : faux tant que l'accès n'est pas lu (les tests qui posent seulement `survie` le sont d'office). */
     setSurvie(survie: boolean, known = true): void {
@@ -35,9 +30,6 @@ export const ShellChromeStore = signalStore(
     },
     setDailyDone(dailyDone: boolean | null): void {
       patchState(store, { dailyDone });
-    },
-    setAccountCtaShown(accountCtaShown: boolean): void {
-      patchState(store, { accountCtaShown });
     },
     setGroupsNew(groupsNew: boolean): void {
       patchState(store, { groupsNew });

@@ -4,7 +4,7 @@ import { BlindRoundPage } from '../pages/blind-round.page';
 import { GamePage } from '../pages/game.page';
 import { RunPage } from '../pages/run.page';
 
-// La carte amis de l'accueil, sous la carte du défi : « Créer un compte » pour un invité, « Créer un groupe » pour un compte sans groupe ; pour un
+// La carte amis de l'accueil, sous la carte du défi : « Créer un groupe » pour un compte sans groupe (rien pour un invité) ; pour un
 // membre, qui a joué dans son groupe tant que son défi reste à faire (sans scores), puis le haut du classement du jour une fois le défi fait.
 
 /** Un autre joueur dans son propre navigateur, avec les mêmes réglages de test que `page`. */
@@ -29,15 +29,12 @@ test.describe("Accueil : la carte amis", () => {
     await api.reset();
   });
 
-  test("un invité : « Créer un compte » mène à la connexion", async ({ page }) => {
+  test("un invité : pas de carte amis (groupes et classements exigent un compte)", async ({ page }) => {
     const game = new GamePage(page);
     await game.goto();
     await game.waitForWelcome();
 
-    const card = page.getByTestId('friends-card');
-    await expect(card).toHaveAttribute('data-kind', 'guest');
-    await card.getByTestId('friends-card-login').click();
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByTestId('friends-card')).toHaveCount(0);
   });
 
   test("un compte sans groupe : « Créer un groupe » ouvre la création", async ({ page }) => {

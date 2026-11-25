@@ -6,11 +6,11 @@ import { RoundConfig, RoundSubmission } from '../../gameplay/domain/track-round'
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { AnsweredTrack, DailySettings, DailyToday, DayStats, ResumedTrack, StartedSession, TrackSlot } from '../domain/daily';
 import { DailyScreen, PeekContext, isRecapScreen, refocusContext, screenAfterToday } from '../domain/daily-screen';
-import { formatCountdown, secondsUntilMidnightUtc } from '../../core/game-day/game-day';
+import { formatCountdown, secondsUntilMidnightUtc, todayUtc } from '../../core/game-day/game-day';
 import { toRoundResult } from '../domain/round-result';
 import { dailyStake } from '../domain/stake';
 import { EMPTY_STREAK, Streak, pluralKey } from '../domain/streak';
-import { recapToasts } from '../domain/toasts';
+import { GuestTileDismissal, guestTile, recapToasts } from '../domain/toasts';
 import { DailyApi } from './daily.api';
 
 interface DailyState {
@@ -30,8 +30,7 @@ interface DailyState {
   hintPending: boolean;
   lostStreak: number | null;
   /** Invité : la série affichée quand il a fermé le bandeau « crée un compte » (la page la relit du navigateur, `GuestStreakNotice`). */
-  streakToastDismissedAt: number | null;
-  gelToastDismissed: boolean;
+  guestTileDismissal: GuestTileDismissal | null;
   stats: DayStats | null;
   secondsLeft: number;
 }
@@ -49,8 +48,7 @@ const initialState: DailyState = {
   abandonLoading: false,
   hintPending: false,
   lostStreak: null,
-  streakToastDismissedAt: null,
-  gelToastDismissed: false,
+  guestTileDismissal: null,
   stats: null,
   secondsLeft: 0,
 };
@@ -110,19 +108,22 @@ export const DailyGameStore = signalStore(
       toastStreak,
       toastStreakKey: computed(() => pluralKey(toastStreak())),
       toasts: computed(() =>
-        recapToasts({
+        recapToasts({ linked: session.isLinked(), onRecap: onRecap(), abandoned: store.abandoned(), stats: store.stats() })),
+      /** La tuile « crée un compte » d'un invité, sous la carte du défi ; `null` pour un compte et quand rien n'est dû. */
+      guestTile: computed(() =>
+        guestTile({
           linked: session.isLinked(),
+          onWelcome: store.screen() === 'welcome',
           onRecap: onRecap(),
-          abandoned: store.abandoned(),
-          gelDismissed: store.gelToastDismissed(),
-          streakDismissedAt: store.streakToastDismissedAt(),
+          lostStreak: store.lostStreak(),
           gamesPlayed: gamesPlayed(),
           stats: store.stats(),
           toastStreak: toastStreak(),
+          dismissal: store.guestTileDismissal(),
+          today: todayUtc(new Date()),
         })),
       freezesUsed: computed(() => store.stats()?.freezesUsed ?? 0),
       freezesUsedKey: computed(() => pluralKey(store.stats()?.freezesUsed ?? 0)),
-      showLostToast: computed(() => !session.isLinked() && store.screen() === 'welcome' && store.lostStreak() !== null),
     };
   }),
   withMethods((store, api = inject(DailyApi), round = inject(TrackRoundStore), sessionLoader = inject(SessionLoader)) => {
@@ -164,7 +165,7 @@ export const DailyGameStore = signalStore(
     };
 
     const enterAlreadyPlayed = (abandoned: boolean) => {
-      patchState(store, { screen: 'already_played', abandoned, gelToastDismissed: false });
+      patchState(store, { screen: 'already_played', abandoned });
       startCountdown();
       // Une partie abandonnée relit aussi les stats, pour son score partiel et ses réponses (rien sans réponse).
       void loadStats();
@@ -403,7 +404,7 @@ export const DailyGameStore = signalStore(
           return;
         }
         resetRound();
-        patchState(store, { screen: 'done', gelToastDismissed: false });
+        patchState(store, { screen: 'done' });
         startCountdown();
         void loadStats();
         void refreshStreak();
@@ -415,18 +416,16 @@ export const DailyGameStore = signalStore(
         reportListening(position, seconds);
       },
 
-      /** Ferme le bandeau « crée un compte » d'un invité et rend la série à mémoriser (la page la garde dans le navigateur). */
-      dismissStreakToast(): number {
-        const streak = store.toastStreak();
-        patchState(store, { streakToastDismissedAt: streak });
-        return streak;
+      /** Ferme la tuile « crée un compte » d'un invité et rend la fermeture à mémoriser (la page la garde dans le navigateur). */
+      dismissGuestTile(): GuestTileDismissal {
+        const dismissal = { day: todayUtc(new Date()), streak: store.toastStreak() };
+        patchState(store, { guestTileDismissal: dismissal });
+        return dismissal;
       },
-      /** La fermeture du bandeau « crée un compte » relue du navigateur par la page. */
-      restoreStreakToastDismissal: (streakDismissedAt: number | null) => patchState(store, { streakToastDismissedAt: streakDismissedAt }),
-      dismissGelToast: () => patchState(store, { gelToastDismissed: true }),
-      /** Le toast invité « série perdue » ; la page décide s'il est dû (une seule fois par série perdue, `LostStreakNotice`). */
+      /** La fermeture de la tuile « crée un compte » relue du navigateur par la page. */
+      restoreGuestTileDismissal: (guestTileDismissal: GuestTileDismissal | null) => patchState(store, { guestTileDismissal }),
+      /** La série perdue d'un invité, dite par la tuile ; la page décide si elle est due (une seule fois par série perdue, `LostStreakNotice`). */
       announceLostStreak: (lostStreak: number) => patchState(store, { lostStreak }),
-      dismissLostToast: () => patchState(store, { lostStreak: null }),
 
       /** Libère la minuterie du compte à rebours. */
       stopCountdown,

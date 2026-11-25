@@ -11,11 +11,10 @@ export interface FriendPresence {
 export const FRIENDS_TOP_SIZE = 4;
 
 /**
- * Ce que montre la carte amis de l'accueil : un invité (créer un compte), un compte sans groupe (créer un groupe), qui a joué dans son groupe tant
+ * Ce que montre la carte amis de l'accueil : un compte sans groupe (créer un groupe), qui a joué dans son groupe tant
  * que son défi reste à faire (sans scores), ou le haut du classement du jour une fois le défi fait.
  */
 export type FriendsCardView =
-  | { readonly kind: 'guest' }
   | { readonly kind: 'no_group' }
   | { readonly kind: 'pending'; readonly groupId: number; readonly name: string; readonly played: number; readonly total: number; readonly members: readonly FriendPresence[] }
   | { readonly kind: 'revealed'; readonly groupId: number; readonly name: string; readonly top: readonly TodayScoreEntry[] };

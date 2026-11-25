@@ -29,8 +29,6 @@ export class WelcomeScreenComponent {
   readonly bestScore = input<number | null>(null);
   /** La médiane d'hier, montrée seulement sans record (vide sous 5 joueurs). */
   readonly yesterdayMedian = input<number | null>(null);
-  /** Masque le CTA de connexion invité pendant que le toast « série perdue » le porte déjà. */
-  readonly hideLoginCta = input(false);
   /** Compte connecté (non invité). */
   readonly linked = input.required<boolean>();
   readonly startGame = output<void>();
