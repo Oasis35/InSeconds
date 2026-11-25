@@ -79,8 +79,8 @@ public class DailyOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(
     {
         var document = await ReadDocumentAsync();
 
-        Assert.Equal(["200", "400", "401", "409", "503"], Codes(document, "startSession"));
-        Assert.Equal(["200", "400", "401", "404", "409"], Codes(document, "submitAnswer"));
+        Assert.Equal(["200", "400", "401", "409", "429", "503"], Codes(document, "startSession"));
+        Assert.Equal(["200", "400", "401", "404", "409", "429"], Codes(document, "submitAnswer"));
         Assert.Equal(["204", "400", "401", "404", "409"], Codes(document, "updateListening"));
         // Une 204 n'a pas de corps ; un 404 sans schéma (déclaré partout par Wolverine) n'existe pas.
         Assert.Null(Operation(document, "updateListening")["responses"]!["204"]!["content"]);
