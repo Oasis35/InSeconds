@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ClipboardService } from '../../core/clipboard/clipboard.service';
 import { ChallengeStatsPage } from '../domain/challenge';
-import { AdminCounts } from './admin-counts';
 import { ChallengesStore } from './challenges.store';
 import {
   FakeChallengesApi, challengeStats, fakeChallengesApi, provideChallengesApiFake, statsPage,
@@ -33,27 +32,24 @@ describe('ChallengesStore', () => {
   afterEach(() => vi.useRealTimers());
 
   describe('chargement', () => {
-    it('lit les stats et annonce le nombre de défis', async () => {
+    it('lit les stats des derniers défis', async () => {
       await setup();
 
       expect(api.loadStats).toHaveBeenCalledTimes(1);
       expect(store.isFulfilled()).toBe(true);
       expect(store.stats()).toHaveLength(3);
-      expect(TestBed.inject(AdminCounts).challenges()).toBe(3);
     });
 
     it('ne lit rien avant load()', async () => {
       await setup({}, { load: false });
 
       expect(api.loadStats).not.toHaveBeenCalled();
-      expect(TestBed.inject(AdminCounts).challenges()).toBeNull();
     });
 
-    it('garde l\'erreur de l\'API et ne compte rien', async () => {
+    it('garde l\'erreur de l\'API', async () => {
       await setup({ loadStats: vi.fn(async () => Promise.reject(problem(500, 'common.unexpected'))) });
 
       expect(store.error()?.code).toBe('common.unexpected');
-      expect(TestBed.inject(AdminCounts).challenges()).toBeNull();
     });
 
     it('une lecture plus ancienne, arrivée après une plus récente, n\'écrit rien', async () => {
@@ -81,23 +77,6 @@ describe('ChallengesStore', () => {
       expect(store.statsForMonth().map(c => c.id)).toEqual([5, 4]);
     });
 
-    it('change de mois avec les flèches, dans les bornes', async () => {
-      await setup();
-      expect(store.canGoNext()).toBe(false);
-      expect(store.canGoPrevious()).toBe(true);
-
-      store.shiftMonth(-1);
-      expect(store.month()).toBe('2026-09');
-      expect(store.statsForMonth().map(c => c.id)).toEqual([3]);
-
-      expect(store.canGoPrevious()).toBe(false);
-
-      store.shiftMonth(-1);
-      expect(store.month()).toBe('2026-09');
-      store.shiftMonth(1);
-      expect(store.month()).toBe('2026-10');
-    });
-
     it('reprend le mois demandé (celui de l\'adresse) s\'il a des défis, sinon le plus récent', async () => {
       await setup();
 
@@ -105,12 +84,6 @@ describe('ChallengesStore', () => {
       expect(store.month()).toBe('2026-09');
       store.requestMonth('2025-01');
       expect(store.month()).toBe('2026-10');
-    });
-
-    it('annonce le nombre de tous les défis, pas seulement ceux lus', async () => {
-      await setup({ loadStats: vi.fn(async () => statsPage([october5], { totalCount: 66 })) });
-
-      expect(TestBed.inject(AdminCounts).challenges()).toBe(66);
     });
 
     it('lit un mois plus ancien que les derniers défis quand on y arrive, une seule fois', async () => {
@@ -122,17 +95,16 @@ describe('ChallengesStore', () => {
       });
       expect(store.loadedMonths()).toEqual(['2026-10']);
 
-      await store.shiftMonth(-1);
+      await store.requestMonth('2026-09');
       expect(api.loadStats).toHaveBeenLastCalledWith('2026-09');
-      await store.shiftMonth(-1);
+      await store.requestMonth('2026-08');
 
       expect(store.month()).toBe('2026-08');
       expect(store.statsForMonth().map(c => c.id)).toEqual([1]);
       expect(store.stats().map(c => c.id)).toEqual([5, 4, 3, 1]);
-      expect(store.canGoPrevious()).toBe(false);
 
-      await store.shiftMonth(1);
-      await store.shiftMonth(-1);
+      await store.requestMonth('2026-10');
+      await store.requestMonth('2026-08');
       expect(api.loadStats).toHaveBeenCalledTimes(3);
     });
 
@@ -159,31 +131,12 @@ describe('ChallengesStore', () => {
           : Promise.reject(problem(500, 'common.unexpected'))),
       });
 
-      await store.shiftMonth(-1);
+      await store.requestMonth('2026-08');
 
       expect(store.error()?.code).toBe('common.unexpected');
       expect(store.loadingMonth()).toBeNull();
     });
 
-    it('lâche le joueur surligné en changeant de mois', async () => {
-      await setup();
-      store.toggleHighlight('p1');
-
-      store.shiftMonth(-1);
-
-      expect(store.highlightedPlayerId()).toBeNull();
-    });
-  });
-
-  it('déplie et replie un défi', async () => {
-    await setup();
-
-    store.toggleExpanded(5);
-    store.toggleExpanded(4);
-    expect(store.expandedIds()).toEqual([5, 4]);
-
-    store.toggleExpanded(5);
-    expect(store.expandedIds()).toEqual([4]);
   });
 
   it('surligne un joueur, puis le lâche au second clic ou le remplace par un autre', async () => {

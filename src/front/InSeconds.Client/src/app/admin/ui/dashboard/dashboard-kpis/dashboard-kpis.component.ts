@@ -1,5 +1,5 @@
-import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input, linkedSignal } from '@angular/core';
+import { DatePipe, DecimalPipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, input, linkedSignal, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { DayKpis, sourceLabelKey } from '../../../domain/dashboard';
 
@@ -11,7 +11,7 @@ import { DayKpis, sourceLabelKey } from '../../../domain/dashboard';
  */
 @Component({
   selector: 'app-dashboard-kpis',
-  imports: [DecimalPipe, TranslatePipe],
+  imports: [DatePipe, DecimalPipe, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (kpis(); as kpis) {
@@ -64,6 +64,34 @@ import { DayKpis, sourceLabelKey } from '../../../domain/dashboard';
               {{ (kpis.firstTimeFinishersCount > 1 ? 'admin.dashboard.newcomers' : 'admin.dashboard.newcomer') | translate }}
             </p>
           }
+          <!-- Jour figé en base (J-2 et avant) : la date du calcul et, en petit lien, le recalcul (après confirmation). -->
+          @if (canRecompute()) {
+            <div class="lg:col-span-2 mt-2 pt-2 flex flex-col items-center gap-2 text-[11px]" style="border-top:1px solid var(--border-medium)" data-testid="kpi-frozen">
+              <p>
+                @if (computedAt(); as at) {
+                  {{ 'admin.dashboard.frozenAt' | translate: { date: (at | date: 'dd/MM HH:mm') } }} ·
+                } @else {
+                  {{ 'admin.dashboard.frozen' | translate }} ·
+                }
+                <button type="button" (click)="confirming.set(true)" [disabled]="recomputing() || confirming()" class="underline underline-offset-2 hover:text-(--text-hi) disabled:opacity-50"
+                  data-testid="recompute-link">{{ (recomputing() ? 'admin.challenges.recomputing' : 'admin.challenges.recomputeLink') | translate }}</button>
+              </p>
+              @if (confirming()) {
+                <div class="w-full max-w-sm rounded-lg p-3 flex flex-col gap-2 text-xs" style="background:var(--bg-inactive)" role="alertdialog" data-testid="recompute-confirm">
+                  <p style="color:var(--text-hi)">{{ 'admin.challenges.recomputeConfirm' | translate }}</p>
+                  <div class="flex justify-center gap-2">
+                    <button type="button" (click)="confirming.set(false); recompute.emit()" data-testid="recompute-yes"
+                      class="px-3 py-1.5 rounded-lg font-semibold" style="background:var(--bg-primary);color:var(--bg-page)">{{ 'admin.challenges.recomputeYes' | translate }}</button>
+                    <button type="button" (click)="confirming.set(false)" data-testid="recompute-no"
+                      class="px-3 py-1.5 rounded-lg" style="background:var(--bg-surface);color:var(--text-muted)">{{ 'admin.challenges.recomputeNo' | translate }}</button>
+                  </div>
+                </div>
+              }
+              @if (recomputeErrorKey(); as key) {
+                <p role="alert" style="color:var(--text-error)">{{ key | translate }}</p>
+              }
+            </div>
+          }
         </div>
       }
     } @else {
@@ -80,5 +108,20 @@ export class DashboardKpisComponent {
   readonly openByDefault = input(false);
   protected readonly detailsOpen = linkedSignal(() => this.openByDefault());
 
+  /** Le jour est figé en base (J-2 et avant) : le recalcul est permis. */
+  readonly canRecompute = input(false);
+  /** Quand les chiffres figés ont été calculés (instant ISO), s'il est connu. */
+  readonly computedAt = input<string | null>(null);
+  readonly recomputing = input(false);
+  /** Clé i18n de l'erreur du dernier recalcul, s'il a échoué. */
+  readonly recomputeErrorKey = input<string | null>(null);
+  /** Le recalcul est confirmé : l'accueil le lance pour le jour affiché. */
+  readonly recompute = output<void>();
+
+  /** La confirmation du recalcul ; retombe quand le jour affiché change. */
+  protected readonly confirming = linkedSignal(() => {
+    this.kpis();
+    return false;
+  });
   protected readonly sourceKey = sourceLabelKey;
 }

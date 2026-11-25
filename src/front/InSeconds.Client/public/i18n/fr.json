@@ -356,10 +356,8 @@
     "logout": "Se déconnecter",
     "tabs": {
       "dashboard": "Accueil",
-      "challengesPlain": "Défis",
       "playersPlain": "Joueurs",
       "groupsPlain": "Groupes",
-      "challenges": "Défis ({{ count }})",
       "players": "Joueurs ({{ count }})",
       "content": "Contenu"
     },
@@ -520,9 +518,6 @@
       "registered": "inscrits",
       "active7d": "actifs sur 7 j",
       "active30d": "actifs sur 30 j",
-      "statsPerChallenge": "Stats par défi",
-      "noChallenge": "Aucun défi.",
-      "noChallengeThisMonth": "Aucun défi ce mois.",
       "abandon": "abandon",
       "abandons": "abandons",
       "median": "Médiane",
@@ -556,16 +551,16 @@
       "newcomer": "nouveau",
       "newcomers": "nouveaux",
       "arrivalsTitle": "D'où viennent les nouveaux · 30 jours",
-      "arrivalsCount": "nouveaux joueurs"
+      "arrivalsCount": "nouveaux joueurs",
+      "frozenAt": "Stats figées le {{ date }}",
+      "frozen": "Stats figées",
+      "monthChallenges": "Les défis de {{ month }}"
     },
     "challenges": {
-      "noChallengeThisMonth": "Aucun défi ce mois.",
       "previousMonth": "Mois précédent",
       "nextMonth": "Mois suivant",
       "showChart": "Voir la répartition des temps",
       "guessTimeTitle": "Temps d'écoute des autres joueurs",
-      "computedAt": "Chiffres figés le {{ date }}",
-      "recompute": "Recalculer les stats",
       "recomputing": "Recalcul en cours…",
       "recomputeNotFound": "Aucun défi pour ce jour.",
       "colDate": "Date",
@@ -575,7 +570,11 @@
       "colAccounts": "Comptes",
       "colGuests": "Invités",
       "colCompleted": "Finies",
-      "scoreChart": "Répartition des scores"
+      "scoreChart": "Répartition des scores",
+      "recomputeLink": "Recalculer",
+      "recomputeConfirm": "Recalculer les stats de ce jour ? Les chiffres figés seront remplacés.",
+      "recomputeYes": "Recalculer",
+      "recomputeNo": "Annuler"
     },
     "groups": {
       "title": "Groupes ({{ count }})",

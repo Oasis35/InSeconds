@@ -26,9 +26,9 @@ describe('DashboardPage', () => {
     tracks: [challengeTrack({ position: 1, artist: 'Eminem', title: 'Lose Yourself' })],
   });
 
-  async function render(options: { api?: Partial<FakeDashboardApi>; wide?: boolean; query?: Record<string, string> } = {}) {
+  async function render(options: { api?: Partial<FakeDashboardApi>; wide?: boolean; query?: Record<string, string>; stats?: ReturnType<typeof challengeStats>[]; months?: string[] } = {}) {
     api = fakeDashboardApi(options.api);
-    challenges = fakeChallengesApi({ loadStats: vi.fn(async () => statsPage([october5])) });
+    challenges = fakeChallengesApi({ loadStats: vi.fn(async () => statsPage(options.stats ?? [october5], options.months ? { months: options.months, totalCount: 2 } : {})) });
     router = { navigate: vi.fn(async () => true) };
     TestBed.configureTestingModule({
       providers: [
@@ -223,5 +223,80 @@ describe('DashboardPage', () => {
 
     expect(element.querySelector('app-error-message')?.textContent).toContain('errors.common.unexpected');
     expect(element.querySelector('app-error-message')?.textContent).toContain('trace-1');
+  });
+  describe('défis du mois, calendrier et recalcul', () => {
+    const october4 = challengeStats({ id: 4, date: '2026-10-04' });
+    const frozen = (overrides = {}) => challengeStats({
+      id: 5, date: '2026-10-05', canRecompute: true, computedAt: '2026-10-07T08:05:00Z', players: october5.players, tracks: october5.tracks, ...overrides,
+    });
+
+    it('le tableau des défis du mois est replié d\'office, s\'ouvre au clic, et une ligne change le jour affiché', async () => {
+      const { element, detect } = await render({ stats: [october5, october4] });
+      expect(byTestId(element, 'month-challenges-toggle')).not.toBeNull();
+      expect(byTestId(element, 'challenge-table')).toBeNull();
+
+      byTestId(element, 'month-challenges-toggle')!.click();
+      await detect();
+      const rows = element.querySelectorAll('[data-testid="challenge-table-row"]');
+      expect(rows).toHaveLength(2);
+
+      (rows[1] as HTMLElement).click();
+      await detect();
+
+      expect(api.getDashboard).toHaveBeenLastCalledWith('2026-10-04');
+    });
+
+    it('un clic sur la date ouvre le calendrier, un jour qui a un défi le sélectionne et le referme', async () => {
+      const { element, detect } = await render();
+      expect(byTestId(element, 'day-calendar')).toBeNull();
+
+      byTestId(element, 'day-picker-toggle')!.click();
+      await detect();
+      expect(byTestId(element, 'day-calendar')).not.toBeNull();
+      const days = Array.from(element.querySelectorAll<HTMLElement>('[data-testid="calendar-day"]'));
+      expect(days.map(d => d.textContent?.trim())).toEqual(['2', '4', '5']);
+
+      days[1].click();
+      await detect();
+
+      expect(api.getDashboard).toHaveBeenLastCalledWith('2026-10-04');
+      expect(byTestId(element, 'day-calendar')).toBeNull();
+    });
+
+    it('un jour figé : la date du calcul et « Recalculer » sous le détail, avec confirmation avant le recalcul', async () => {
+      const { element, detect } = await render({ wide: true, stats: [frozen()] });
+      expect(byTestId(element, 'kpi-frozen')?.textContent).toContain('admin.dashboard.frozenAt');
+      expect(byTestId(element, 'recompute-confirm')).toBeNull();
+
+      byTestId(element, 'recompute-link')!.click();
+      await detect();
+      expect(byTestId(element, 'recompute-confirm')).not.toBeNull();
+      expect(challenges.recompute).not.toHaveBeenCalled();
+
+      byTestId(element, 'recompute-no')!.click();
+      await detect();
+      expect(byTestId(element, 'recompute-confirm')).toBeNull();
+      expect(challenges.recompute).not.toHaveBeenCalled();
+
+      byTestId(element, 'recompute-link')!.click();
+      await detect();
+      byTestId(element, 'recompute-yes')!.click();
+      await detect();
+      expect(challenges.recompute).toHaveBeenCalledWith('2026-10-05');
+    });
+
+    it('la veille et le jour même n\'ont aucun recalcul', async () => {
+      const { element } = await render({ wide: true });
+
+      expect(byTestId(element, 'kpi-frozen')).toBeNull();
+      expect(byTestId(element, 'recompute-link')).toBeNull();
+    });
+
+    it('un jour de plus de 30 défis : le mois du jour est lu à la demande', async () => {
+      const { detect } = await render({ query: { jour: '2026-09-12' }, stats: [october5], months: ['2026-10', '2026-09'] });
+      await detect();
+
+      expect(challenges.loadStats).toHaveBeenCalledWith('2026-09');
+    });
   });
 });

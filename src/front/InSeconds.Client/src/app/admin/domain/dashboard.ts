@@ -154,3 +154,36 @@ export function formatDayShort(day: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', timeZone: 'UTC' })
     .format(new Date(`${day}T12:00:00Z`));
 }
+
+/** Une case du calendrier d'un mois : `day` vide pour une case de remplissage, `hasChallenge` faux pour un jour sans défi. */
+export interface CalendarCell {
+  day: string | null;
+  /** Le numéro du jour dans le mois (1 à 31), `null` pour une case de remplissage. */
+  dayOfMonth: number | null;
+  hasChallenge: boolean;
+}
+
+/** Le mois voisin (`delta` = 1 ou -1) d'un mois `aaaa-mm`, sans fuseau. */
+export function shiftCalendarMonth(month: string, delta: 1 | -1): string {
+  const [year, number] = month.split('-').map(Number);
+  const date = new Date(Date.UTC(year, number - 1 + delta, 1));
+  return date.toISOString().slice(0, 7);
+}
+
+/**
+ * Les cases d'un mois, semaine commençant le lundi : des cases vides jusqu'au premier jour, puis un jour par case ;
+ * `hasChallenge` dit si le jour est dans `availableDays`.
+ */
+export function calendarCells(month: string, availableDays: readonly string[]): CalendarCell[] {
+  const [year, number] = month.split('-').map(Number);
+  const first = new Date(Date.UTC(year, number - 1, 1));
+  const lead = (first.getUTCDay() + 6) % 7;
+  const length = new Date(Date.UTC(year, number, 0)).getUTCDate();
+  const available = new Set(availableDays);
+  const cells: CalendarCell[] = Array.from({ length: lead }, () => ({ day: null, dayOfMonth: null, hasChallenge: false }));
+  for (let d = 1; d <= length; d++) {
+    const day = `${month}-${String(d).padStart(2, '0')}`;
+    cells.push({ day, dayOfMonth: d, hasChallenge: available.has(day) });
+  }
+  return cells;
+}

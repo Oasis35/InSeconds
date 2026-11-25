@@ -1,6 +1,6 @@
 import {
   ChallengePlayer, ChallengeStats, accountPlayerCount, completeMonths, guestPlayerCount, mergeChallenges, availableMonths, chipColors, formatMonth, inMonth, monthOf, playerLabel,
-  rateColor, resolveMonth, shiftMonth, shortId, statusDotColor, statusLabelKey, unfinishedCount,
+  rateColor, resolveMonth, shortId, statusDotColor, statusLabelKey, unfinishedCount,
 } from './challenge';
 
 const player = (overrides: Partial<ChallengePlayer> = {}): ChallengePlayer =>
@@ -40,21 +40,6 @@ describe('challenge (domaine)', () => {
 
     it('rend le mois courant sans aucun défi', () => {
       expect(resolveMonth(null, [], '2026-10')).toBe('2026-10');
-    });
-  });
-
-  describe('shiftMonth', () => {
-    const months = ['2026-10', '2026-09', '2026-08'];
-
-    it('+1 va vers le plus récent, -1 vers le plus ancien', () => {
-      expect(shiftMonth(months, '2026-09', 1)).toBe('2026-10');
-      expect(shiftMonth(months, '2026-09', -1)).toBe('2026-08');
-    });
-
-    it('reste sur place aux extrémités et pour un mois inconnu', () => {
-      expect(shiftMonth(months, '2026-10', 1)).toBe('2026-10');
-      expect(shiftMonth(months, '2026-08', -1)).toBe('2026-08');
-      expect(shiftMonth(months, '2025-01', 1)).toBe('2025-01');
     });
   });
 
