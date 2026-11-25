@@ -233,6 +233,23 @@ describe('RoundPlayerComponent pendant l\'envoi de la réponse', () => {
     expect(element.querySelector('[data-testid="round-loader"]')).not.toBeNull();
   });
 
+  it('le bouton de relecture a un nom accessible', () => {
+    const replay = render('listened').buttons().find(button => button.title.includes('gameplay.round.replay'))!;
+    expect(replay.getAttribute('aria-label')).toBe('gameplay.round.replayLabel');
+    expect(replay.getAttribute('aria-busy')).toBe('false');
+  });
+
+  it('le bouton de relecture dit l\'envoi en cours pendant le chargement', () => {
+    const busy = render('submitting').buttons().find(button => button.title.includes('gameplay.round.replay'))!;
+    expect(busy.getAttribute('aria-label')).toBe('gameplay.round.replayBusy');
+    expect(busy.getAttribute('aria-busy')).toBe('true');
+  });
+
+  it('la barre d\'écoute annonce des secondes, pas une position brute', () => {
+    const { element } = render('listened');
+    expect(element.querySelector('[data-testid="waveform"]')!.getAttribute('aria-valuetext')).toBe('gameplay.round.waveformValue');
+  });
+
   it('après un échec d\'envoi : toujours grisés, plus de loader', () => {
     const { element, buttons } = render('submit-error');
     expect(buttons().every(button => button.disabled)).toBe(true);

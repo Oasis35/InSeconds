@@ -174,9 +174,12 @@
       "noPreview": "Aperçu non disponible pour ce morceau.",
       "skip": "Passer (0 pts)",
       "replay": "↺ {{ seconds }}",
+      "replayLabel": "Réécouter l'extrait depuis le début, palier de {{ seconds }}",
+      "replayBusy": "Envoi de ta réponse en cours",
       "listenUpTo": "Écouter jusqu'à {{ seconds }}",
       "stake": "pts en jeu",
       "waveform": "Extrait écouté",
+      "waveformValue": "{{ heard }} sur {{ max }}",
       "playbackError": "Impossible de lire l'aperçu. Réessaie, ou passe ce morceau.",
       "retry": "Réessayer"
     },
@@ -927,7 +930,7 @@
     },
     "leaveSheet": {
       "title": "Partie en cours",
-      "body": "Ta partie n'est pas terminée.\nTu pourras la reprendre demain, mais le défi sera perdu si tu ne la termines pas aujourd'hui.",
+      "body": "Ta partie n'est pas terminée.\nTu peux la reprendre depuis l'accueil jusqu'à minuit UTC. Passé ce délai, elle est perdue.",
       "confirm": "Quitter quand même",
       "cancel": "Continuer à jouer"
     },

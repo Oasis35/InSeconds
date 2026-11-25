@@ -174,9 +174,12 @@
       "noPreview": "Preview not available for this track.",
       "skip": "Skip (0 pts)",
       "replay": "↺ {{ seconds }}",
+      "replayLabel": "Replay the clip from the start (step: {{ seconds }})",
+      "replayBusy": "Sending your answer",
       "listenUpTo": "Listen up to {{ seconds }}",
       "stake": "pts at stake",
       "waveform": "Clip listened",
+      "waveformValue": "{{ heard }} of {{ max }}",
       "playbackError": "Couldn't play the preview. Try again, or skip this track.",
       "retry": "Retry"
     },
@@ -927,7 +930,7 @@
     },
     "leaveSheet": {
       "title": "Game in progress",
-      "body": "Your game isn't finished.\nYou can resume it tomorrow, but the challenge will be lost if you don't finish it today.",
+      "body": "Your game isn't finished.\nYou can resume it from the home screen until midnight UTC. After that it is lost.",
       "confirm": "Leave anyway",
       "cancel": "Keep playing"
     },
