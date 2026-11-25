@@ -116,6 +116,7 @@ Une plage par module, jamais un identifiant réutilisé (les tableaux Grafana et
 | 1006, 1008 à 1010 | `PlayersLog` | connexion, effacement, purge, pseudo remis à zéro |
 | 1007, 1011 | `EmailLog` | emails (`InSeconds.Infrastructure`) |
 | 11xx | `ClientErrorLog` | erreurs du front et rapports CSP |
+| 1110 | `RateLimitLog` | requête refusée par une limite (la route seulement, `InSeconds.Infrastructure`) |
 | 1200 à 1209, 1230 | `CatalogueLog` | pool, candidats, formes d'onde, revérification des extraits |
 | 1210 à 1221 | `DeezerLog` | client Deezer |
 | 1400 à 1416 (sans 1412 à 1414) | `RunsLog` | Survie |
