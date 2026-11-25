@@ -26,7 +26,7 @@ export const INSTALL_LINE_MIN_GAMES = 2;
             class="min-h-11 shrink-0 rounded-(--radius-button) px-3 font-display text-[11px] font-bold uppercase tracking-[.06em] cursor-pointer touch-manipulation"
             style="border:1.5px solid var(--border-neutral);color:var(--text-hi)">{{ 'shell.install.add' | translate }}</button>
           <button type="button" (click)="install.dismissLine()" data-testid="install-dismiss" [attr.aria-label]="'common.close' | translate"
-            class="w-8 min-h-11 shrink-0 text-sm cursor-pointer touch-manipulation" style="color:var(--text-muted)">✕</button>
+            class="min-w-11 min-h-11 shrink-0 text-sm cursor-pointer touch-manipulation" style="color:var(--text-muted)">✕</button>
         </div>
         @if (stepsOpen()) {
           <div class="pb-2 pr-2"><app-install-steps /></div>

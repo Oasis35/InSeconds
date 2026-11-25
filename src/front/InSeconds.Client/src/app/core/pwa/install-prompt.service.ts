@@ -56,9 +56,13 @@ export class InstallPromptService {
     const event = this.nativeEvent();
     if (!event) return false;
     this.nativeEvent.set(null);
-    await event.prompt();
-    const choice = await event.userChoice;
-    return choice.outcome === 'accepted';
+    try {
+      await event.prompt();
+      return (await event.userChoice).outcome === 'accepted';
+    } catch {
+      // Le navigateur refuse de rejouer l'invite (InvalidStateError) : ce n'est pas une erreur du joueur, rien à remonter.
+      return false;
+    }
   }
 
   dismissLine(): void {

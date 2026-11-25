@@ -34,7 +34,7 @@ paths:
 ## Installation de l'appli (`InstallPromptService`)
 
 - Proposée seulement sur un écran tactile (`pointer: coarse`), jamais sur ordinateur, jamais depuis l'appli déjà installée (`display-mode: standalone`, `navigator.standalone`). `InstallPromptService.init()` (initialiseur d'app) garde `beforeinstallprompt` (Android) : l'événement ne part qu'une fois, tôt. Sans lui, seul Safari sur iPhone ou iPad reçoit une proposition, par les deux étapes à la main (`app-install-steps`) ; Chrome et les autres navigateurs d'iOS n'ont rien. Tests : `install-environment.spec.ts`, `install-prompt.service.spec.ts`.
-- `<app-install-line>` (accueil, sous les cartes, défi fait) : à partir de la 2e partie finie, fermable ; la fermeture reste dans `localStorage` (`inseconds.install-line-dismissed`), rien côté serveur. Le Profil a une ligne « Installer l'appli » toujours là quand l'installation est possible.
+- `<app-install-line>` (accueil, sous les cartes, défi fait) : à partir de la 2e partie finie, fermable ; la fermeture reste dans `localStorage` (`inseconds.install-line-dismissed`), rien côté serveur. Le Profil a une ligne « Installer l'appli » tant que l'installation est possible (sur Android, un refus de l'invite la retire jusqu'au prochain `beforeinstallprompt` : l'événement ne se rejoue pas).
 
 ## Service worker et CSP
 

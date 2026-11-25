@@ -107,6 +107,8 @@ export const DailyGameStore = signalStore(
       roundScore: computed(() => store.results().find(r => r.position === store.position())?.score ?? 0),
       roundDeezerTrackId: computed(() => store.results().find(r => r.position === store.position())?.deezerTrackId ?? null),
       countdown: computed(() => formatCountdown(store.secondsLeft())),
+      /** Les parties terminées du joueur, celle du jour comprise (voir plus haut) ; `null` tant que l'état du jour n'est pas lu. */
+      gamesPlayed,
       toastStreak,
       toastStreakKey: computed(() => pluralKey(toastStreak())),
       toasts: computed(() =>

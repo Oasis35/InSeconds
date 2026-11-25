@@ -61,6 +61,14 @@ describe('InstallPromptService', () => {
     expect(await service.promptNative()).toBe(false);
   });
 
+  it("un navigateur qui refuse de rejouer l'invite ne casse rien : rendu `false`", async () => {
+    const { service, fake } = setup();
+    const event = promptEvent('accepted');
+    event.prompt = vi.fn().mockRejectedValue(new DOMException('déjà utilisé', 'InvalidStateError'));
+    fake.listeners.get('beforeinstallprompt')?.(event);
+    expect(await service.promptNative()).toBe(false);
+  });
+
   it("ne propose plus rien une fois l'appli installée", () => {
     const { service, fake } = setup();
     fake.listeners.get('beforeinstallprompt')?.(promptEvent('accepted'));
