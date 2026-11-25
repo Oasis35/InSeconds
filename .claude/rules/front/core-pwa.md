@@ -31,6 +31,11 @@ paths:
 - Module introuvable après un déploiement (`Failed to fetch dynamically imported module`, `isStaleChunkError`) : `GlobalErrorHandler` recharge une fois (`reloadAfterStaleChunk()`, garde-fou d'une minute) au lieu de remonter l'erreur.
 - Tests : `version.service.spec.ts`, `error-handler/global-error-handler.spec.ts`.
 
+## Installation de l'appli (`InstallPromptService`)
+
+- Proposée seulement sur un écran tactile (`pointer: coarse`), jamais sur ordinateur, jamais depuis l'appli déjà installée (`display-mode: standalone`, `navigator.standalone`). `InstallPromptService.init()` (initialiseur d'app) garde `beforeinstallprompt` (Android) : l'événement ne part qu'une fois, tôt. Sans lui, seul Safari sur iPhone ou iPad reçoit une proposition, par les deux étapes à la main (`app-install-steps`) ; Chrome et les autres navigateurs d'iOS n'ont rien. Tests : `install-environment.spec.ts`, `install-prompt.service.spec.ts`.
+- `<app-install-line>` (accueil, sous les cartes, défi fait) : à partir de la 2e partie finie, fermable ; la fermeture reste dans `localStorage` (`inseconds.install-line-dismissed`), rien côté serveur. Le Profil a une ligne « Installer l'appli » toujours là quand l'installation est possible.
+
 ## Service worker et CSP
 
 - `provideServiceWorker('ngsw-worker.js')`, désactivé en dev. `ngsw-config.json` ne met en cache que les fichiers du front, **aucun `dataGroups`** (rien de l'API, aucun audio ni image Deezer : piège 47, règle de sécurité S10, vérifiée par `check-nginx-headers.sh`), et exclut `/jobs` des navigations.

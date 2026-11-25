@@ -6,6 +6,7 @@ import { LanguageService } from '../../../core/i18n/language.service';
 import { InstagramLinkComponent } from '../../../core/shell/instagram-link/instagram-link.component';
 import { AccountLinkComponent } from '../../../core/shell/account-link/account-link.component';
 import { HomeAnnounceSlotComponent } from '../../../core/shell/home-announce-slot/home-announce-slot.component';
+import { InstallLineComponent } from '../../../core/shell/install-line/install-line.component';
 import { HomeModeEntriesComponent } from '../../../core/shell/home-mode-entries/home-mode-entries.component';
 import { secondsUntilMidnightUtc, timeLeft, todayUtc } from '../../../core/game-day/game-day';
 import { BrandComponent } from '../../../ui/brand/brand.component';
@@ -31,7 +32,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
 @Component({
   selector: 'app-home-page',
   imports: [
-    TranslatePipe, RouterLink, ButtonComponent, DecorBackgroundComponent, BrandComponent, InstagramLinkComponent, AccountLinkComponent, HomeAnnounceSlotComponent, HomeModeEntriesComponent, HomeLegalLineComponent,
+    TranslatePipe, RouterLink, ButtonComponent, DecorBackgroundComponent, BrandComponent, InstagramLinkComponent, AccountLinkComponent, HomeAnnounceSlotComponent, HomeModeEntriesComponent, InstallLineComponent, HomeLegalLineComponent,
     HomeChallengeCardComponent, HomeDoneCardComponent, HomeAbandonedCardComponent, StatusScreenComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -117,6 +118,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
               }
             </div>
             <app-home-mode-entries placement="rest" />
+            <app-install-line class="mt-3" [gamesPlayed]="store.sheetGamesPlayed()" />
           }
           @case ('done') {
             <!-- Défi fait : la carte Survie (si le joueur y a accès) passe devant, c'est la prochaine action. -->
@@ -140,6 +142,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                 (share)="result.share()" />
             </div>
             <app-home-mode-entries placement="rest" />
+            <app-install-line class="mt-3" [gamesPlayed]="(store.sheetGamesPlayed() ?? 0) + 1" />
           }
           @case ('no_challenge') {
             <app-status-screen titleKey="daily.noChallenge.title" bodyKey="daily.noChallenge.body" (retry)="store.retryNoChallenge()" />

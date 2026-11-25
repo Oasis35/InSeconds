@@ -112,6 +112,22 @@
           }
         </div>
       </div>
+      @if (install.mode(); as mode) {
+        <!-- Installer l'appli : seulement sur téléphone ou tablette où c'est possible (Android : l'invite du navigateur, iPhone : les étapes de Safari). -->
+        <div class="flex flex-col" style="border-top:1px solid var(--border-medium)" data-testid="profile-install">
+          <button type="button" (click)="installApp(mode)" class="flex min-h-14 items-center justify-between gap-3 text-left text-sm cursor-pointer touch-manipulation"
+            style="color:var(--text-body)" [attr.aria-expanded]="mode === 'ios' ? installSteps() : null">
+            <span class="flex flex-col">
+              <span>{{ 'shell.install.profileTitle' | translate }}</span>
+              <span class="text-xs" style="color:var(--text-muted)">{{ 'shell.install.profileHint' | translate }}</span>
+            </span>
+            <span class="shrink-0" aria-hidden="true" style="color:var(--text-hi)">›</span>
+          </button>
+          @if (mode === 'ios' && installSteps()) {
+            <div class="pb-4"><app-install-steps /></div>
+          }
+        </div>
+      }
       @if (chrome.survie()) {
         <!-- Le nom au classement général (pseudo ou alias musical) se choisit sur la page du classement : le lien ouvre ce choix. Réservé à Survie. -->
         <a routerLink="/ranking" [queryParams]="{ view: 'general', edit: 'name' }" class="flex min-h-14 items-center justify-between gap-3 text-sm"
