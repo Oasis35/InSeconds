@@ -95,12 +95,16 @@ public class RunsTrackUsageTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ActualiserUnMorceauDUnDefiDeRun_409()
+    public async Task ActualiserUnMorceauDUnDefiDeRun_EstPermis_LesNomsSontGardes()
     {
+        var before = (await _admin.GetFromJsonAsync<List<TrackListItem>>(Tracks, Ct))!.Single(t => t.Id == 1);
+
         var response = await _admin.PutAsJsonAsync($"{Tracks}/1", new UpdateTrack(123456), Ct);
 
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-        Assert.Equal("catalogue.track_in_use", (await response.Content.ReadFromJsonAsync<ProblemDetails>(Ct))!.Extensions["code"]?.ToString());
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var after = (await _admin.GetFromJsonAsync<List<TrackListItem>>(Tracks, Ct))!.Single(t => t.Id == 1);
+        Assert.Equal(123456, after.DeezerTrackId);
+        Assert.Equal((before.Artist, before.Title), (after.Artist, after.Title));
     }
 
     [Fact]

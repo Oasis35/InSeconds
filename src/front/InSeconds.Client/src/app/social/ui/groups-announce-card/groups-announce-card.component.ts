@@ -6,7 +6,7 @@ import { AnnounceVariant } from '../../domain/groups-announce';
 
 /**
  * La carte d'annonce des groupes, au-dessus du défi : pastille « Nouveau » en violet (la couleur des autres joueurs), un titre, une phrase et une
- * action selon le joueur : « Créer un compte » (invité, contour neutre), « Créer un groupe » (compte sans groupe, contour ambre) ou « Créer un
+ * action selon le compte : « Créer un groupe » (sans groupe, contour ambre) ou « Créer un
  * nouveau groupe » (membre, contour neutre), chacun avec sa phrase ; aucune n'invite dans un groupe précis. Contour plat, jamais la
  * tuile de focus : le bouton plein reste celui du défi. La croix la ferme.
  */
@@ -28,10 +28,6 @@ import { AnnounceVariant } from '../../domain/groups-announce';
       </div>
       <h2 class="text-xl font-bold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.announce.title' | translate }}</h2>
       @switch (variant()) {
-        @case ('guest') {
-          <p class="text-sm leading-snug" style="color:var(--text-light)">{{ 'social.announce.guest' | translate }}</p>
-          <a appButton variant="neutral" [block]="true" routerLink="/account/login" data-testid="groups-announce-action">{{ 'social.empty.createAccount' | translate }}</a>
-        }
         @case ('no_group') {
           <p class="text-sm leading-snug" style="color:var(--text-light)">{{ 'social.announce.noGroup' | translate }}</p>
           <a appButton variant="accent" [block]="true" routerLink="/ranking/new" data-testid="groups-announce-action">{{ 'social.empty.create' | translate }}</a>

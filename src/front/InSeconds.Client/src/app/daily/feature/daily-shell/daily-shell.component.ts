@@ -10,10 +10,6 @@ import { DailyShare } from '../../data-access/daily-share';
 import { GuestStreakNotice } from '../../data-access/guest-streak-notice';
 import { LostStreakNotice } from '../../data-access/lost-streak-notice';
 import { redirectFor } from '../../domain/daily-screen';
-import { GelEarnedToastComponent } from '../../ui/gel-earned-toast/gel-earned-toast.component';
-import { GelUsedToastComponent } from '../../ui/gel-used-toast/gel-used-toast.component';
-import { GuestStreakToastComponent } from '../../ui/guest-streak-toast/guest-streak-toast.component';
-import { LostStreakToastComponent } from '../../ui/lost-streak-toast/lost-streak-toast.component';
 import { reloadMomentFor } from '../reload-moment';
 import { DailyResultView, DailyStartup, StreakSheetOpener } from './daily-view';
 
@@ -22,34 +18,17 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from './daily-view';
 /**
  * La coquille du jeu du jour : elle porte la partie (`DailyGameStore`, la manche, le partage) et laisse deux pages la montrer, l'accueil (`/`,
  * neutre : les cartes des modes) et le défi (`/daily`, la manche). Les stores vivent tant qu'on passe de l'une à l'autre : le son lancé d'un
- * toucher sur la carte de l'accueil continue sur la page de la manche, et le score qui monte et les toasts de série suivent la fin de la partie.
+ * toucher sur la carte de l'accueil continue sur la page de la manche, et le score qui monte suit la fin de la partie.
  * Elle décide aussi de la page qui montre quoi : sans la V4, la racine renvoie au défi ; avec elle, une manche est sur `/daily`, tout le reste sur `/`.
  */
 @Component({
   selector: 'app-daily-shell',
-  imports: [RouterOutlet, GuestStreakToastComponent, LostStreakToastComponent, GelUsedToastComponent, GelEarnedToastComponent],
+  imports: [RouterOutlet],
   providers: [DailyGameStore, TrackRoundStore, DailyShare, LostStreakNotice, GuestStreakNotice, DailyStartup, StreakSheetOpener, DailyResultView],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <router-outlet />
 
-    <!-- Toasts de fin de partie et d'accueil (série, gels) -->
-    @if (store.toasts().guestStreak) {
-      <app-guest-streak-toast [streak]="store.toastStreak()" [freezeMiss]="store.toasts().guestFreezeMiss" (dismissed)="dismissGuestStreakToast()" />
-    }
-    @if (store.showLostToast(); as _) {
-      <app-lost-streak-toast [lostStreak]="store.lostStreak() ?? 0" (dismissed)="store.dismissLostToast()" />
-    }
-    @if (store.toasts().gelUsed) {
-      <app-gel-used-toast [freezesUsed]="store.freezesUsed()" [streak]="store.pillStreak()?.streak ?? null" (dismissed)="store.dismissGelToast()" />
-    }
-    @if (store.toasts().gelEarned) {
-      <app-gel-earned-toast
-        [streak]="store.pillStreak()?.streak ?? null"
-        [freezes]="store.pillStreak()?.freezes ?? 0"
-        [maxFreezes]="store.pillStreak()?.maxFreezes ?? 0"
-        (dismissed)="store.dismissGelToast()" />
-    }
   `,
   host: {
     '(window:beforeunload)': 'onBeforeUnload($event)',
@@ -61,7 +40,6 @@ export class DailyShellComponent implements OnInit {
   private readonly chrome = inject(ShellChromeStore);
   private readonly router = inject(Router);
   private readonly startup = inject(DailyStartup);
-  private readonly guestStreakNotice = inject(GuestStreakNotice);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly path = toSignal(
@@ -79,18 +57,6 @@ export class DailyShellComponent implements OnInit {
       else if (screen === 'already_played' || screen === 'done') done = true;
       this.chrome.setDailyDone(done);
     });
-    // Un appel à créer un compte est déjà à l'écran (toast de série d'un invité, « Ne plus perdre mes parties » de la partie en pause) : la carte
-    // amis de l'accueil ne pose pas le sien en plus.
-    effect(() => {
-      const screen = this.store.screen();
-      const guestPaused = screen === 'resume_prompt' && !this.store.linked();
-      this.chrome.setAccountCtaShown(this.store.showLostToast() || this.store.toasts().guestStreak || guestPaused);
-    });
-    this.destroyRef.onDestroy(() => {
-      this.chrome.setImmersive(false);
-      this.chrome.setAccountCtaShown(false);
-    });
-
     // Quelle page montre quoi : une manche est sur `/daily`, le reste (carte du défi, pause, résultat, abandon) sur `/`.
     effect(() => {
       const target = redirectFor(this.path(), this.store.screen());
@@ -103,11 +69,6 @@ export class DailyShellComponent implements OnInit {
 
   ngOnInit(): void {
     void this.startup.run();
-  }
-
-  /** Le bandeau « crée un compte » fermé par un invité ne revient pas d'une visite à l'autre (règles dans `domain/toasts`). */
-  protected dismissGuestStreakToast(): void {
-    this.guestStreakNotice.remember(this.store.dismissStreakToast());
   }
 
   protected onVisibilityChange(): void {

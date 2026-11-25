@@ -595,6 +595,56 @@
         }
       }
     },
+    "/api/admin/catalogue/tracks/recheck-previews": {
+      "post": {
+        "tags": [
+          "Catalogue"
+        ],
+        "operationId": "recheckTrackPreviews",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecheckTrackPreviews"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecheckTrackPreviewsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/catalogue/search": {
       "get": {
         "tags": [
@@ -1433,6 +1483,71 @@
           }
         }
       },
+      "RecheckedTrack": {
+        "required": [
+          "id",
+          "previewStatus",
+          "previewCheckedAt",
+          "previewMissingSince",
+          "answered"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "previewStatus": {
+            "type": "string"
+          },
+          "previewCheckedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "previewMissingSince": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "answered": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RecheckTrackPreviews": {
+        "required": [
+          "trackIds"
+        ],
+        "type": "object",
+        "properties": {
+          "trackIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
+      "RecheckTrackPreviewsResponse": {
+        "required": [
+          "tracks"
+        ],
+        "type": "object",
+        "properties": {
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecheckedTrack"
+            }
+          }
+        }
+      },
       "RenameTrack": {
         "required": [
           "artist",
@@ -1597,6 +1712,7 @@
           "rank",
           "previewStatus",
           "previewCheckedAt",
+          "previewMissingSince",
           "isDisabled",
           "isUsed",
           "usages",
@@ -1642,6 +1758,13 @@
             "type": "string"
           },
           "previewCheckedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "previewMissingSince": {
             "type": [
               "null",
               "string"
@@ -1866,6 +1989,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Catalogue.Application.GetCatalogueHealthEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Catalogue.Application.RecheckTrackPreviewsEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Catalogue.Application.SearchTracksEndpoint"

@@ -12,6 +12,8 @@ import {
 } from '../../../account/data-access/testing/fake-players-api';
 import { SessionStore, SessionPlayer } from '../../../core/session/session.store';
 import { AdminCounts } from '../../data-access/admin-counts';
+import { ADMIN_ALERTS_LOADER } from '../../data-access/admin-status';
+import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { FRONT_BUILD } from '../../data-access/system.store';
 import { provideJobsApiFake, fakeJobsApi } from '../../data-access/testing/fake-jobs-api';
 import { FakeSystemApi, fakeSystemApi, provideSystemApisFake } from '../../data-access/testing/fake-system-apis';
@@ -31,11 +33,16 @@ describe('AdminShellPage', () => {
   let reloadMoment: (() => ReloadMoment) | null;
   const versionFake = { provide: VersionService, useValue: { allowReload: (moment: () => ReloadMoment) => { reloadMoment = moment; } } };
 
+  const alertsLoader = vi.fn(async () => 0);
+
   beforeEach(() => { reloadMoment = null; });
 
-  async function open(player: SessionPlayer | null, url = '/admin', options: { deployedAt?: string | null; wide?: boolean } = {}) {
+  async function open(
+    player: SessionPlayer | null, url = '/admin',
+    options: { deployedAt?: string | null; wide?: boolean; systemOverrides?: Partial<FakeSystemApi> } = {},
+  ) {
     api = fakePlayersApi({ getMe: vi.fn(async () => player) });
-    system = fakeSystemApi();
+    system = fakeSystemApi(options.systemOverrides);
     // Les fournisseurs de la route passent avant ceux du module de test : les faux de l'état technique sont ajoutés à la route.
     const shell = { ...ADMIN_ROUTES[0], providers: [...(ADMIN_ROUTES[0].providers ?? []), provideSystemApisFake(system), provideJobsApiFake(fakeJobsApi())] };
     const routes = [{ ...shell, children: [{ path: '**', component: ChildComponent }] }];
@@ -48,6 +55,8 @@ describe('AdminShellPage', () => {
         providePlayersApiFake(api),
         provideRouter([{ path: 'admin', children: routes }]),
         versionFake,
+        // Le témoin de l'en-tête ne lit rien de lui-même ici : la coquille est seule à lire l'état technique.
+        { provide: ADMIN_ALERTS_LOADER, useValue: alertsLoader },
         { provide: WIDE_SCREEN, useValue: signal(options.wide ?? true) },
       ],
     });
@@ -99,7 +108,7 @@ describe('AdminShellPage', () => {
     const { element } = await open(admin, '/admin/catalogue');
 
     for (const links of [sideTabs(element), bottomTabs(element)]) {
-      expect(links.map(a => a.getAttribute('href'))).toEqual(['/admin/dashboard', '/admin/defis', '/admin/catalogue', '/admin/groupes', '/admin/joueurs']);
+      expect(links.map(a => a.getAttribute('href'))).toEqual(['/admin/dashboard', '/admin/catalogue', '/admin/groupes', '/admin/joueurs']);
       expect(links.filter(a => a.getAttribute('aria-current') === 'page').map(a => a.getAttribute('href'))).toEqual(['/admin/catalogue']);
     }
   });
@@ -129,6 +138,22 @@ describe('AdminShellPage', () => {
     expect(element.querySelector('aside [data-testid="admin-tech-panel"]')).not.toBeNull();
     expect(element.querySelectorAll('[data-testid="admin-tech-panel"]')).toHaveLength(1);
     expect(system.getInfo).toHaveBeenCalledTimes(1);
+  });
+
+  it("dit au bouton « Admin » de l'en-tête le nombre d'alertes qu'il vient de lire, sans le lire une seconde fois", async () => {
+    await open(admin, '/admin/catalogue');
+
+    await vi.waitFor(() => expect(TestBed.inject(ShellChromeStore).adminAlerts()).not.toBeNull());
+    expect(alertsLoader).not.toHaveBeenCalled();
+    expect(system.getInfo).toHaveBeenCalledTimes(1);
+  });
+
+  it("ne dit rien au bouton « Admin » quand l'état de l'API n'a pas pu être lu : pas de faux vert", async () => {
+    await open(admin, '/admin/catalogue', { systemOverrides: { getInfo: vi.fn(() => Promise.reject(new Error('500'))) } });
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(system.getInfo).toHaveBeenCalled();
+    expect(TestBed.inject(ShellChromeStore).adminAlerts()).toBeNull();
   });
 
   it('sur téléphone, le panneau technique n\'est rendu qu\'une fois déplié sous la ligne du haut', async () => {
@@ -187,11 +212,11 @@ describe('AdminShellPage', () => {
     expect(Array.from(panel.querySelectorAll('button')).some(b => b.textContent?.includes('admin.logout'))).toBe(true);
   });
 
-  it('montre le libellé nu de Défis et de Joueurs avant leur première ouverture', async () => {
+  it('montre le libellé nu de Joueurs avant leur première ouverture', async () => {
     const { element } = await open(admin, '/admin/catalogue');
 
     expect(sideTabs(element).map(a => a.textContent?.trim())).toEqual([
-      'admin.tabs.dashboard', 'admin.tabs.challengesPlain', 'admin.tabs.content', 'admin.tabs.groupsPlain', 'admin.tabs.playersPlain',
+      'admin.tabs.dashboard', 'admin.tabs.content', 'admin.tabs.groupsPlain', 'admin.tabs.playersPlain',
     ]);
   });
 
@@ -199,15 +224,14 @@ describe('AdminShellPage', () => {
     const { harness, element } = await open(admin, '/admin/catalogue');
     const counts = TestBed.inject(AdminCounts);
 
-    counts.setChallenges(30);
     counts.setPlayers(12);
     harness.detectChanges();
 
     expect(sideTabs(element).map(a => a.textContent?.trim()))
-      .toEqual(['admin.tabs.dashboard', 'admin.tabs.challenges', 'admin.tabs.content', 'admin.tabs.groupsPlain', 'admin.tabs.players']);
+      .toEqual(['admin.tabs.dashboard', 'admin.tabs.content', 'admin.tabs.groupsPlain', 'admin.tabs.players']);
     // La barre du bas, étroite, garde les libellés nus.
     expect(bottomTabs(element).map(a => a.textContent?.trim()))
-      .toEqual(['admin.tabs.dashboard', 'admin.tabs.challengesPlain', 'admin.tabs.content', 'admin.tabs.groupsPlain', 'admin.tabs.playersPlain']);
+      .toEqual(['admin.tabs.dashboard', 'admin.tabs.content', 'admin.tabs.groupsPlain', 'admin.tabs.playersPlain']);
   });
 
   it('ne montre pas l\'heure de déploiement quand le build ne la connaît pas', async () => {

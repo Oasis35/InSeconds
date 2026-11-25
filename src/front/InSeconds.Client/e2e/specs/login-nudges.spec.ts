@@ -3,25 +3,15 @@ import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
 
 test.describe('Nudges de connexion (guest)', () => {
-  test('affiche le CTA de connexion sur l\'écran d\'accueil', async ({ page, api }) => {
+  test("un nouveau visiteur ne voit que « Commencer » : aucune tuile « crée un compte »", async ({ page, api }) => {
     await api.reset();
 
     const game = new GamePage(page);
     await game.goto();
     await game.waitForWelcome();
 
-    await expect(page.getByRole('link', { name: 'Créer un compte' })).toBeVisible();
-  });
-
-  test('le CTA de l\'accueil mène à /login', async ({ page, api }) => {
-    await api.reset();
-
-    const game = new GamePage(page);
-    await game.goto();
-    await game.waitForWelcome();
-    await page.getByRole('link', { name: 'Créer un compte' }).click();
-
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByTestId('guest-tile')).toHaveCount(0);
+    await expect(page.getByTestId('friends-card')).toHaveCount(0);
   });
 
   test('affiche le CTA de connexion sur l\'écran de reprise', async ({ page, api }) => {
@@ -38,8 +28,6 @@ test.describe('Nudges de connexion (guest)', () => {
     await game.waitForResumePrompt();
 
     await expect(page.getByRole('link', { name: 'Ne plus perdre mes parties' })).toBeVisible();
-    // Un seul appel à créer un compte : la carte amis ne répète pas le sien sur la partie en pause.
-    await expect(page.getByTestId('friends-card-login')).toHaveCount(0);
   });
 
   test('pas de bannière "Garde ce score" sur le récap final', async ({ page, api }) => {
@@ -64,18 +52,34 @@ test.describe('Nudges de connexion (guest)', () => {
     await expect(page.getByText('Reviens sur n\'importe quel appareil')).toHaveCount(0);
   });
 
-  test('affiche puis masque le toast de série sur le récap final', async ({ page, api }) => {
+  test("fin de partie : la tuile « Ta partie est sur ce téléphone » mène à la connexion, la croix la ferme", async ({ page, api }) => {
     await api.reset();
     await page.clock.install({ time: Date.now() });
 
     const game = new GamePage(page);
     await game.playFullGame(new BlindRoundPage(page));
 
-    const toast = page.getByText(/Série de \d+ jours?\./);
-    await expect(toast).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Créer' })).toBeVisible();
+    const tile = page.getByTestId('guest-tile');
+    await expect(tile).toHaveAttribute('data-kind', 'afterGame');
+    await expect(tile).toContainText('Ta partie est sur ce téléphone');
 
-    await page.getByRole('button', { name: 'Fermer' }).click();
-    await expect(toast).toBeHidden();
+    await tile.getByTestId('guest-tile-dismiss').click();
+    await expect(tile).toBeHidden();
+
+    // Fermée pour de bon : elle ne revient pas au rechargement.
+    await page.reload();
+    await expect(game.alreadyPlayedScreen).toBeVisible();
+    await expect(page.getByTestId('guest-tile')).toHaveCount(0);
+  });
+
+  test("fin de partie : « Créer un compte » de la tuile mène à /login", async ({ page, api }) => {
+    await api.reset();
+    await page.clock.install({ time: Date.now() });
+
+    const game = new GamePage(page);
+    await game.playFullGame(new BlindRoundPage(page));
+    await page.getByTestId('guest-tile-create').click();
+
+    await expect(page).toHaveURL(/\/login$/);
   });
 });

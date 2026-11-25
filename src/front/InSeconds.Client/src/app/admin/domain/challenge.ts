@@ -123,13 +123,6 @@ export function resolveMonth(requested: string | null, months: readonly string[]
   return months[0] ?? current;
 }
 
-/** Le mois voisin dans la liste (`delta` +1 : plus récent, -1 : plus ancien) ; le même s'il n'y en a pas. */
-export function shiftMonth(months: readonly string[], month: string, delta: 1 | -1): string {
-  const index = months.indexOf(month);
-  if (index === -1) return month;
-  return months[index - delta] ?? month;
-}
-
 export function inMonth<T extends { readonly date: string }>(items: readonly T[], month: string): T[] {
   return items.filter(item => monthOf(item.date) === month);
 }

@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { MemoryStoragePort, StoragePort } from '../../core/storage/storage.port';
-import { GUEST_STREAK_DISMISSED_KEY, GuestStreakNotice } from './guest-streak-notice';
+import { GUEST_TILE_DISMISSED_KEY, GuestStreakNotice } from './guest-streak-notice';
 
 describe('GuestStreakNotice', () => {
   let storage: MemoryStoragePort;
@@ -12,19 +12,19 @@ describe('GuestStreakNotice', () => {
     notice = TestBed.inject(GuestStreakNotice);
   });
 
-  it('jamais fermé : rien de mémorisé', () => {
-    expect(notice.dismissedAt()).toBeNull();
+  it('jamais fermée : rien de mémorisé', () => {
+    expect(notice.dismissed()).toBeNull();
   });
 
-  it('garde la série de la dernière fermeture', () => {
-    notice.remember(2);
-    expect(storage.get(GUEST_STREAK_DISMISSED_KEY)).toBe('2');
-    notice.remember(7);
-    expect(notice.dismissedAt()).toBe(7);
+  it('garde le jour et la série de la dernière fermeture', () => {
+    notice.remember({ day: '2026-11-25', streak: 2 });
+    expect(notice.dismissed()).toEqual({ day: '2026-11-25', streak: 2 });
+    notice.remember({ day: '2026-12-01', streak: 7 });
+    expect(notice.dismissed()).toEqual({ day: '2026-12-01', streak: 7 });
   });
 
-  it('une valeur illisible compte comme jamais fermé', () => {
-    storage.set(GUEST_STREAK_DISMISSED_KEY, 'oui');
-    expect(notice.dismissedAt()).toBeNull();
+  it.each(['oui', '{"day":"hier","streak":2}', '{"day":"2026-11-25"}', '12', 'null'])('une valeur illisible (%s) compte comme jamais fermée', raw => {
+    storage.set(GUEST_TILE_DISMISSED_KEY, raw);
+    expect(notice.dismissed()).toBeNull();
   });
 });

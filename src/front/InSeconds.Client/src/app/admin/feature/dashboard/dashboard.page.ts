@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, linkedSignal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, linkedSignal, signal, untracked } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { errorMessageKey } from '../../../core/errors/error-messages';
@@ -10,7 +10,7 @@ import { ErrorMessageComponent } from '../../../ui/error-message/error-message.c
 import { ModalService } from '../../../ui/modal/modal.service';
 import { ChallengesStore } from '../../data-access/challenges.store';
 import { DashboardStore } from '../../data-access/dashboard.store';
-import { ChallengeTrackStats } from '../../domain/challenge';
+import { ChallengeTrackStats, formatMonth, monthOf } from '../../domain/challenge';
 import { parseDay, todayUtc } from '../../domain/dashboard';
 import { ChallengePlayerChipsComponent } from '../../ui/challenges/challenge-player-chips/challenge-player-chips.component';
 import { ChallengeScoreChartComponent } from '../../ui/challenges/challenge-score-chart/challenge-score-chart.component';
@@ -20,8 +20,10 @@ import { DashboardArrivalsComponent } from '../../ui/dashboard/dashboard-arrival
 import { DashboardDayNavComponent } from '../../ui/dashboard/dashboard-day-nav/dashboard-day-nav.component';
 import { DashboardKpisComponent } from '../../ui/dashboard/dashboard-kpis/dashboard-kpis.component';
 import { DashboardPlayersComponent } from '../../ui/dashboard/dashboard-players/dashboard-players.component';
-import { TrackChartDialog } from '../challenges/track-chart/track-chart.dialog';
+import { ChallengeTableComponent } from '../../ui/challenges/challenge-table/challenge-table.component';
+import { TrackChartDialog } from './track-chart/track-chart.dialog';
 
+const NOT_FOUND = 'common.not_found';
 const CHART_DIALOG_MAX_WIDTH = '22.5rem';
 
 /**
@@ -31,14 +33,16 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
  * - Le détail du défi du jour, rangé comme dans l'onglet Défis : sur PC, une colonne à droite (la répartition des scores, les joueurs
  *   du jour, puis les morceaux du jour, dépliés) ; sur téléphone, dans la carte (les joueurs, puis les morceaux, repliés ; pas de
  *   répartition).
- * - L'activité des 30 derniers jours (un clic sur une barre change de jour), puis les totaux des joueurs, en une ligne.
+ * - Un clic sur la date ouvre le calendrier du mois : n'importe quel jour qui a un défi (ses joueurs et ses morceaux sont lus à la demande
+ *   au-delà des 30 derniers). Un jour figé en base (J-2 et avant) montre, en bas du « Détail », sa date de calcul et un lien « Recalculer » (avec confirmation).
+ * - L'activité des 30 derniers jours (un clic sur une barre change de jour), les totaux des joueurs, les sources d'arrivée, puis les défis du mois (tableau replié).
  * Le jour affiché vit dans l'adresse (`?jour=2026-11-03`, absent pour aujourd'hui) : un F5 rouvre le même jour.
  */
 @Component({
   selector: 'app-admin-dashboard-page',
   imports: [
     NgTemplateOutlet, TranslatePipe, ErrorMessageComponent, DashboardDayNavComponent, DashboardKpisComponent, DashboardActivityComponent, DashboardArrivalsComponent,
-    DashboardPlayersComponent, ChallengePlayerChipsComponent, ChallengeScoreChartComponent, ChallengeTrackStatsComponent,
+    DashboardPlayersComponent, ChallengePlayerChipsComponent, ChallengeScoreChartComponent, ChallengeTrackStatsComponent, ChallengeTableComponent,
   ],
   providers: [DashboardStore, ChallengesStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -80,8 +84,11 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
             <app-dashboard-day-nav
               [day]="store.selectedDay()" [locale]="locale()" [isToday]="store.isSelectedDayToday()"
               [canGoToPrevious]="store.canGoToPreviousDay()" [canGoToNext]="store.canGoToNextDay()"
-              (previous)="store.shiftDay(-1)" (next)="store.shiftDay(1)" />
-            <app-dashboard-kpis class="flex flex-col gap-3" [kpis]="dashboard.kpis" [openByDefault]="wide()" />
+              [availableDays]="dashboard.availableDays"
+              (previous)="store.shiftDay(-1)" (next)="store.shiftDay(1)" (daySelected)="store.selectDay($event)" />
+            <app-dashboard-kpis class="flex flex-col gap-3" [kpis]="dashboard.kpis" [openByDefault]="wide()"
+              [canRecompute]="dayChallenge()?.canRecompute ?? false" [computedAt]="dayChallenge()?.computedAt ?? null"
+              [recomputing]="recomputing()" [recomputeErrorKey]="recomputeErrorKey()" (recompute)="recompute()" />
 
             <!-- Téléphone : les joueurs puis les morceaux du jour dans la carte (sur PC, dans la colonne de droite). -->
             @if (!wide()) {
@@ -99,6 +106,24 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
             [peak]="store.maxDailyPlayers()" [locale]="locale()" (daySelected)="store.selectDay($event)" />
           <app-dashboard-players [players]="dashboard.players" />
           <app-dashboard-arrivals [arrivals]="dashboard.arrivals" />
+
+          <!-- Les défis du mois du jour affiché, replié d'office : un clic sur une ligne change le jour de la carte. -->
+          @if (monthChallenges().length > 0) {
+            <div class="rounded-(--radius-card) p-4 flex flex-col gap-3" style="background:var(--bg-surface)" data-testid="month-challenges">
+              <button type="button" (click)="monthOpen.set(!monthOpen())" [attr.aria-expanded]="monthOpen()"
+                class="min-h-11 flex items-center justify-between gap-2 text-left text-sm font-semibold" style="color:var(--text-muted)"
+                data-testid="month-challenges-toggle">
+                <span>{{ 'admin.dashboard.monthChallenges' | translate: { month: monthLabel() } }}</span>
+                <span aria-hidden="true">{{ monthOpen() ? '▴' : '▾' }}</span>
+              </button>
+              @if (monthOpen()) {
+                <div class="overflow-x-auto">
+                  <app-challenge-table class="block min-w-[22rem]" [challenges]="monthChallenges()" [selectedId]="dayChallenge()?.id ?? null"
+                    (selectChallenge)="pickChallenge($event)" />
+                </div>
+              }
+            </div>
+          }
         </div>
 
         @if (wide()) {
@@ -140,6 +165,22 @@ export class DashboardPage {
   /** Le défi du jour affiché, s'il est parmi les 30 derniers (ses joueurs et ses morceaux) ; sinon rien. */
   protected readonly dayChallenge = computed(() => this.challenges.stats().find(c => c.date === this.store.selectedDay()) ?? null);
 
+  /** Les défis du mois du jour affiché (lus à la demande), pour le tableau replié. */
+  protected readonly monthChallenges = computed(() => this.challenges.statsForMonth());
+  protected readonly monthLabel = computed(() => formatMonth(this.challenges.month(), this.language.current()));
+  protected readonly monthOpen = signal(false);
+  protected readonly recomputing = computed(() => {
+    const day = this.store.selectedDay();
+    return day !== null && this.challenges.recomputingDays().includes(day);
+  });
+  /** La clé i18n de l'échec du dernier recalcul du jour affiché : la table commune, sauf un 404 (« plus de défi ce jour-là »). */
+  protected readonly recomputeErrorKey = computed(() => {
+    const day = this.store.selectedDay();
+    const error = day === null ? undefined : this.challenges.recomputeErrors()[day];
+    if (!error) return null;
+    return error.code === NOT_FOUND ? 'admin.challenges.recomputeNotFound' : errorMessageKey(error.code);
+  });
+
   constructor() {
     const day = parseDay(this.route.snapshot.queryParamMap.get('jour'));
     // Le jour affiché → adresse, une fois lu ; aujourd'hui n'y est pas écrit. `replaceUrl` : « précédent » ne revient pas jour par jour.
@@ -153,8 +194,27 @@ export class DashboardPage {
         replaceUrl: true,
       }));
     });
+    // Le mois du jour affiché est lu à la demande : un jour de plus de 30 défis a ses joueurs et ses morceaux après un instant.
+    effect(() => {
+      const selected = this.store.selectedDay();
+      if (selected === null) return;
+      untracked(() => void this.challenges.requestMonth(monthOf(selected)));
+    });
     void this.store.load(day ?? undefined);
     void this.challenges.load();
+  }
+
+  protected pickChallenge(id: number): void {
+    const day = this.challenges.statsForMonth().find(c => c.id === id)?.date;
+    if (day) void this.store.selectDay(day);
+  }
+
+  /** Recalcule le jour affiché, puis relit l'accueil : les chiffres du jour viennent de la photo figée, que le recalcul vient de refaire. */
+  protected async recompute(): Promise<void> {
+    const day = this.store.selectedDay();
+    if (day === null) return;
+    await this.challenges.recompute(day);
+    if (!this.challenges.recomputeErrors()[day]) await this.store.load(day);
   }
 
   protected openChart(track: ChallengeTrackStats): void {

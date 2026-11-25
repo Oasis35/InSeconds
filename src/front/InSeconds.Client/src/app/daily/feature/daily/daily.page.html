@@ -9,8 +9,8 @@
              de la partie se lit à la révélation de chaque morceau. -->
         @if (screen() !== 'playing' && screen() !== 'loading') {
           <div brandRight class="flex items-center gap-2">
-            <app-instagram-link />
             <app-account-link />
+            <app-instagram-link />
           </div>
         }
       </app-brand>
@@ -33,7 +33,6 @@
           [streak]="store.pillStreak()"
           [bestScore]="store.bestScore()"
           [yesterdayMedian]="store.yesterdayMedian()"
-          [hideLoginCta]="store.showLostToast()"
           [linked]="store.linked()"
           (startGame)="store.begin()"
           (openStreak)="streakSheet.open()" />

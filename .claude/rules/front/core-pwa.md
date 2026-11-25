@@ -17,7 +17,7 @@ paths:
 - `HealthService` sonde `/health` toutes les `HEALTH_POLL_MS` ; l'overlay « Service indisponible » vient après `HEALTH_KO_THRESHOLD` échecs de suite et part au premier succès.
 - `from=legacy` (redirection nginx de l'ancienne adresse `code.run`) ouvre l'avis « l'adresse a changé » par `ModalService` ; le paramètre est retiré avant la première navigation. Son élément hôte est en `block` : resté inline, Chromium le plaçait au-dessus du bouton dans `elementsFromPoint` et Playwright refusait le clic.
 - Drapeaux E2E : `window.__disableAnimations` (classe `no-anim`) et `window.__disableHealthPolling`.
-- `<app-account-link>` (`core/shell/account-link`) : les accès de l'en-tête (le cadenas `/admin` seulement : le compte est dans la barre du bas), projetés par les pages du jeu, de l'historique et des classements ; il n'y a pas d'en-tête global.
+- `<app-account-link>` (`core/shell/account-link`) : les accès de l'en-tête (le mot « Admin » vers `/admin` seulement, dans un rectangle à contour neutre, précédé d'un point plein vert ou rouge (avec le nombre d'alertes) une fois l'état technique lu, `ShellChromeStore.adminAlerts` : le compte est dans la barre du bas), projetés par les pages du jeu, de l'historique et des classements, **avant** le rond Instagram pour que celui-ci reste au même endroit que chez les joueurs ; il n'y a pas d'en-tête global.
 - `PageMetaService` (`core/seo`) : canonique, `og:url`, `noindex`, titre et description à chaque navigation ; pas de `hreflang` (les deux langues partagent les adresses).
 
 ## Nouvelle version (`VersionService`)
@@ -30,6 +30,11 @@ paths:
 - **Remplacement du worker lui-même** (`controllerchange`) traité comme une nouvelle version, au même moment sûr. Si un nouveau worker s'installe au moment de recharger, on attend son `controllerchange` (`WORKER_SWAP_WAIT_MS`) pour ne recharger qu'une fois.
 - Module introuvable après un déploiement (`Failed to fetch dynamically imported module`, `isStaleChunkError`) : `GlobalErrorHandler` recharge une fois (`reloadAfterStaleChunk()`, garde-fou d'une minute) au lieu de remonter l'erreur.
 - Tests : `version.service.spec.ts`, `error-handler/global-error-handler.spec.ts`.
+
+## Installation de l'appli (`InstallPromptService`)
+
+- Proposée seulement sur un écran tactile (`pointer: coarse`), jamais sur ordinateur, jamais depuis l'appli déjà installée (`display-mode: standalone`, `navigator.standalone`). `InstallPromptService.init()` (initialiseur d'app) garde `beforeinstallprompt` (Android) : l'événement ne part qu'une fois, tôt. Sans lui, seul Safari sur iPhone ou iPad reçoit une proposition, par les deux étapes à la main (`app-install-steps`) ; Chrome et les autres navigateurs d'iOS n'ont rien. Tests : `install-environment.spec.ts`, `install-prompt.service.spec.ts`.
+- `<app-install-line>` (accueil, sous les cartes, défi fait) : à partir de la 2e partie finie, fermable ; la fermeture reste dans `localStorage` (`inseconds.install-line-dismissed`), rien côté serveur. Le Profil a une ligne « Installer l'appli » tant que l'installation est possible (sur Android, un refus de l'invite la retire jusqu'au prochain `beforeinstallprompt` : l'événement ne se rejoue pas).
 
 ## Service worker et CSP
 

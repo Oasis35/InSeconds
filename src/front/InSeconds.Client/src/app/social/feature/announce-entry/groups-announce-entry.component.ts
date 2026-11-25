@@ -5,8 +5,8 @@ import { announceVariant } from '../../domain/groups-announce';
 import { GroupsAnnounceCardComponent } from '../../ui/groups-announce-card/groups-announce-card.component';
 
 /**
- * L'annonce des groupes en tête de l'accueil (`HOME_ANNOUNCE`), chargée à la demande. Un invité la voit tout de suite ; pour un compte, elle attend
- * ses groupes (lus par la carte amis) et garde sa place vide en attendant, pour que le défi ne saute pas. Une lecture en échec : rien. Un compte,
+ * L'annonce des groupes en tête de l'accueil (`HOME_ANNOUNCE`), chargée à la demande, réservée aux comptes (un invité n'en a pas). Elle attend
+ * les groupes du compte (lus par la carte amis) et garde sa place vide en attendant, pour que le défi ne saute pas. Une lecture en échec : rien. Un compte,
  * avec ou sans groupe, y trouve de quoi créer un groupe ; au maximum de groupes, elle s'efface. La fermer la remplace par la pastille de la carte amis et le point de l'onglet Groupes (`GroupsAnnounce`).
  */
 @Component({
@@ -15,7 +15,7 @@ import { GroupsAnnounceCardComponent } from '../../ui/groups-announce-card/group
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
-    @if (announce.card() && session.loaded()) {
+    @if (announce.card() && session.loaded() && session.isLinked()) {
       @if (variant(); as variant) {
         <div class="pb-3">
           <app-groups-announce-card [variant]="variant" (dismiss)="announce.close()" />
@@ -34,10 +34,9 @@ export class GroupsAnnounceEntryComponent {
 
   /** `null` : pas encore (les groupes d'un compte se lisent) ou en échec. */
   protected readonly variant = computed(() => {
-    if (!this.session.isLinked()) return announceVariant(false, 0);
     const groups = this.announce.groups();
     if (!Array.isArray(groups)) return null;
     // Au maximum de groupes, rien à proposer : la tuile s'efface plutôt que de n'offrir qu'une phrase.
-    return groups.length > 0 && !this.announce.canCreate() ? null : announceVariant(true, groups.length);
+    return groups.length > 0 && !this.announce.canCreate() ? null : announceVariant(groups.length);
   });
 }

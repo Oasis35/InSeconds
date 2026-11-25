@@ -71,6 +71,96 @@ public class RefreshPreviewsHandlerTests
         Assert.Equal(Now, track.RankUpdatedAt);
     }
 
+    // ---------- Revérifier les manquants (tâche manuelle et bouton de l'admin) ----------
+
+    private Task<MissingPreviewsRecheckResult> RecheckMissingAsync() =>
+        RecheckMissingPreviewsHandler.Handle(
+            new RecheckMissingPreviews(), _store, _deezer, _time, new MutableMonitor(new RefreshOptions { BatchDelay = TimeSpan.Zero }),
+            NullLogger<RecheckMissingPreviews>.Instance, Ct);
+
+    private static TrackMetadataLookup.Found WithPreview(long id) =>
+        new(new DeezerTrack(id, "A", "T", "https://p.mp3", null, 2000, 100, null));
+
+    private static TrackMetadataLookup.Found WithoutPreview(long id) =>
+        new(new DeezerTrack(id, "A", "T", null, null, 2000, 100, null));
+
+    [Fact]
+    public async Task RecheckMissing_NeRegardeQueLesManquantsActifs()
+    {
+        _store.Add(1, PreviewStatus.Missing);
+        _store.Add(2, PreviewStatus.Available);
+        _store.Add(3, PreviewStatus.Missing).Disable(Now);
+        _deezer.Reply(1, WithPreview(1));
+
+        var result = await RecheckMissingAsync();
+
+        Assert.Equal([1L], _deezer.Requested);
+        Assert.Equal(new MissingPreviewsRecheckResult(1, 1, 0, 0), result);
+    }
+
+    [Fact]
+    public async Task RecheckMissing_CompteLesRetrouvesLesToujoursManquantsEtLesSansReponse()
+    {
+        var recovered = _store.Add(1, PreviewStatus.Missing);
+        var still = _store.Add(2, PreviewStatus.Missing);
+        var silent = _store.Add(3, PreviewStatus.Missing);
+        var gone = _store.Add(4, PreviewStatus.Missing);
+        _deezer.Reply(1, WithPreview(1));
+        _deezer.Reply(2, WithoutPreview(2));
+        _deezer.Reply(3, new TrackMetadataLookup.Unavailable());
+        _deezer.Reply(4, new TrackMetadataLookup.NotFound());
+        _store.Vanished.Add(4);
+
+        var result = await RecheckMissingAsync();
+
+        // Le morceau supprimé pendant le contrôle ne compte ni retrouvé ni manquant ; la réponse manquante laisse l'état tel quel.
+        Assert.Equal(new MissingPreviewsRecheckResult(4, 1, 1, 1), result);
+        Assert.Equal(PreviewStatus.Available, recovered.PreviewStatus);
+        Assert.Equal(PreviewStatus.Missing, still.PreviewStatus);
+        Assert.Equal(PreviewStatus.Missing, silent.PreviewStatus);
+        Assert.Equal(PreviewStatus.Missing, gone.PreviewStatus);
+        Assert.Equal(new Dictionary<string, int> { ["checked"] = 4, ["recovered"] = 1, ["stillMissing"] = 1, ["failed"] = 1 }, result.ToReport());
+    }
+
+    [Fact]
+    public async Task RecheckMissing_UnExtraitRetrouve_EfaceLaDateManquantDepuis()
+    {
+        var track = _store.Add(1, PreviewStatus.Missing);
+        Assert.NotNull(track.PreviewMissingSince);
+        _deezer.Reply(1, WithPreview(1));
+
+        await RecheckMissingAsync();
+
+        Assert.Null(track.PreviewMissingSince);
+    }
+
+    [Fact]
+    public async Task RecheckMissing_UnExtraitToujoursManquant_GardeSaDateDOrigine()
+    {
+        var track = _store.Add(1, PreviewStatus.Missing);
+        var since = track.PreviewMissingSince;
+        _time.Advance(TimeSpan.FromDays(10));
+        _deezer.Reply(1, WithoutPreview(1));
+
+        await RecheckMissingAsync();
+
+        Assert.Equal(since, track.PreviewMissingSince);
+        Assert.Equal(Now.AddDays(10), track.PreviewCheckedAt);
+    }
+
+    [Fact]
+    public async Task Recheck_LeBoutonEtLeJobPartagentLaMemeLogique_LesLotsSontEspaces()
+    {
+        for (var id = 1; id <= 25; id++)
+            _store.Add(id, PreviewStatus.Missing);
+
+        var results = await PreviewRechecker.RecheckAsync(
+            await _store.ListByIdsAsync([.. Enumerable.Range(1, 25)], Ct), _store, _deezer, _time, new RefreshOptions { BatchSize = 10, BatchDelay = TimeSpan.Zero }, Ct);
+
+        Assert.Equal(25, results.Count);
+        Assert.Equal([10, 10, 5], _store.SavedBatchSizes);
+    }
+
     // ---------- Genres : un appel par album, rattrapage ----------
 
     private static TrackMetadataLookup.Found OnAlbum(long deezerId, long? albumId) =>
@@ -539,6 +629,12 @@ public class RefreshPreviewsHandlerTests
 
         public Task<IReadOnlyList<Track>> ListRefreshCandidatesAsync(CancellationToken ct) =>
             Task.FromResult<IReadOnlyList<Track>>([.. _tracks.Where(t => !t.IsDisabled)]);
+
+        public Task<IReadOnlyList<Track>> ListByIdsAsync(IReadOnlyCollection<int> ids, CancellationToken ct) =>
+            Task.FromResult<IReadOnlyList<Track>>([.. _tracks.Where(t => ids.Contains(t.Id))]);
+
+        public Task<IReadOnlyList<Track>> ListMissingPreviewTracksAsync(CancellationToken ct) =>
+            Task.FromResult<IReadOnlyList<Track>>([.. _tracks.Where(t => !t.IsDisabled && t.PreviewStatus == PreviewStatus.Missing)]);
 
         public Task<Genre> FindOrAddGenreByNameAsync(string name, CancellationToken ct) => throw new NotSupportedException();
 

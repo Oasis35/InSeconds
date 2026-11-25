@@ -1,5 +1,5 @@
 import { Provider } from '@angular/core';
-import { DeezerResult, PoolTheme, PoolTrack, ThemeAssignment } from '../../domain/pool-track';
+import { DeezerResult, PoolTheme, PoolTrack, PreviewRecheckResult, ThemeAssignment } from '../../domain/pool-track';
 import { Candidate, CandidatePriority } from '../../domain/candidates';
 import { CatalogueApi, ImportResult } from '../catalogue.api';
 
@@ -29,6 +29,9 @@ function defaults() {
     addTrack: vi.fn<(deezerTrackId: number) => Promise<void>>(() => Promise.resolve()),
     renameTrack: vi.fn<(id: number, artist: string, title: string, genre?: string, altTitles?: readonly string[]) => Promise<void>>(() => Promise.resolve()),
     setTrackDisabled: vi.fn<(id: number, isDisabled: boolean) => Promise<void>>(() => Promise.resolve()),
+    recheckPreviews: vi.fn<(ids: readonly number[]) => Promise<PreviewRecheckResult[]>>(
+      ids => Promise.resolve(ids.map(id => ({ id, preview: 'available' as const, previewMissingSince: null, answered: true }))),
+    ),
     deleteTrack: vi.fn<(id: number) => Promise<void>>(() => Promise.resolve()),
     listThemes: vi.fn<() => Promise<PoolTheme[]>>(() => Promise.resolve([])),
     addTheme: vi.fn<(name: string) => Promise<void>>(() => Promise.resolve()),
@@ -48,6 +51,8 @@ function defaults() {
     ),
     candidatePreviewUrl: vi.fn<(id: number) => Promise<string>>(() => Promise.resolve('https://preview/candidate.mp3')),
     searchDeezer: vi.fn<(query: string) => Promise<DeezerResult[]>>(() => Promise.resolve([])),
+    findReplacements: vi.fn<(track: Pick<PoolTrack, 'artist' | 'title' | 'deezerTrackId'>) => Promise<DeezerResult[]>>(() => Promise.resolve([])),
+    replaceSource: vi.fn<(id: number, deezerTrackId: number) => Promise<void>>(() => Promise.resolve()),
     findPreviewUrl: vi.fn<(track: Pick<PoolTrack, 'artist' | 'title' | 'deezerTrackId'>) => Promise<string | null>>(
       () => Promise.resolve(null),
     ),

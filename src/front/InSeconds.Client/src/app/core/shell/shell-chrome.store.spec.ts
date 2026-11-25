@@ -7,7 +7,15 @@ describe('ShellChromeStore', () => {
     expect(store.survie()).toBe(false);
     expect(store.immersive()).toBe(false);
     expect(store.dailyDone()).toBeNull();
-    expect(store.accountCtaShown()).toBe(false);
+    expect(store.adminAlerts()).toBeNull();
+  });
+
+  it("garde le nombre d'alertes de l'admin que son domaine pose, et l'oublie", () => {
+    const store = TestBed.inject(ShellChromeStore);
+    store.setAdminAlerts(2);
+    expect(store.adminAlerts()).toBe(2);
+    store.setAdminAlerts(null);
+    expect(store.adminAlerts()).toBeNull();
   });
 
   it("garde ce que les pages posent", () => {
@@ -15,8 +23,7 @@ describe('ShellChromeStore', () => {
     store.setSurvie(true);
     store.setImmersive(true);
     store.setDailyDone(false);
-    store.setAccountCtaShown(true);
-    expect([store.survie(), store.immersive(), store.dailyDone(), store.accountCtaShown()]).toEqual([true, true, false, true]);
+    expect([store.survie(), store.immersive(), store.dailyDone()]).toEqual([true, true, false]);
   });
 
   it("sait si l'accès Survie a été lu", () => {

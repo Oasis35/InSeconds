@@ -21,6 +21,7 @@ import { PoolViewSelectorComponent } from '../../ui/pool/pool-view-selector/pool
 import { SearchPanelComponent } from '../../ui/pool/search-panel/search-panel.component';
 import { DeleteTrackDialog } from './delete-track/delete-track.dialog';
 import { EditTrackDialog } from './edit-track/edit-track.dialog';
+import { ReplaceTrackDialog } from './replace-track/replace-track.dialog';
 
 const TOGGLE_ERROR_VISIBLE_MS = 4000;
 const DIALOG_MAX_WIDTH = '26rem';
@@ -64,10 +65,12 @@ const DIALOG_MAX_WIDTH = '26rem';
         [cooldownDays]="pool.cooldownDays()"
         [cooldownTone]="pool.cooldownTone()"
         [addPanelOpen]="search.open()"
+        [rechecking]="pool.recheckingIds().length > 0"
         [hardestFirst]="pool.sort()?.column === 'found' && pool.sort()?.direction === 'asc'"
         (sortHardest)="pool.sortByHardest()"
         (deselectAll)="pool.clearSelection()"
         (deleteSelection)="deleteSelection()"
+        (recheckSelection)="pool.recheckPreviews(pool.selectedIds())"
         (toggleAdd)="togglePanel()" />
 
       @if (isPool() && search.open()) {
@@ -105,6 +108,15 @@ const DIALOG_MAX_WIDTH = '26rem';
         </p>
       }
 
+      @if (pool.recheckFailed()) {
+        <p class="text-xs" role="alert" style="color:var(--color-fail)" data-testid="recheck-failed">{{ 'admin.pool.recheckError' | translate }}</p>
+      }
+      @if (pool.recheckSummary(); as summary) {
+        <p class="text-xs" role="status" style="color:var(--text-light)" data-testid="recheck-summary">
+          {{ 'admin.pool.recheckSummary' | translate: summary }}
+        </p>
+      }
+
       @if (pool.error(); as error) {
         <app-error-message [messageKey]="errorMessageKey(error.code)" [traceId]="error.traceId" />
       }
@@ -116,6 +128,7 @@ const DIALOG_MAX_WIDTH = '26rem';
         [view]="pool.view()"
         [selectedIds]="pool.selectedIds()"
         [togglingIds]="pool.togglingIds()"
+        [recheckingIds]="pool.recheckingIds()"
         [sort]="pool.sort()"
         [page]="pool.page()"
         [pages]="pool.pages()"
@@ -128,6 +141,8 @@ const DIALOG_MAX_WIDTH = '26rem';
         (edit)="edit($event)"
         (openInPool)="pool.openInPool($event)"
         (toggleDisabled)="pool.toggleDisabled($event)"
+        (recheck)="pool.recheckPreviews([$event.id])"
+        (replace)="replace($event)"
         (delete)="deleteTracks([$event])"
         (previousPage)="pool.previousPage()"
         (nextPage)="pool.nextPage()" />
@@ -239,6 +254,10 @@ export class CataloguePage {
 
   protected edit(track: PoolTrack): void {
     this.modal.open(EditTrackDialog, { data: track, maxWidth: DIALOG_MAX_WIDTH, injector: this.injector });
+  }
+
+  protected replace(track: PoolTrack): void {
+    this.modal.open(ReplaceTrackDialog, { data: track, maxWidth: DIALOG_MAX_WIDTH, injector: this.injector });
   }
 
   protected deleteTracks(tracks: readonly PoolTrack[]): void {

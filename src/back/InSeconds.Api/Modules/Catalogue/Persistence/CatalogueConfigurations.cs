@@ -29,6 +29,8 @@ internal sealed class TrackConfiguration : IEntityTypeConfiguration<Track>
         builder.Property(t => t.AltTitles).HasColumnType("text[]").HasDefaultValueSql("'{}'::text[]");
         // preview_status : 0 inconnu, 1 disponible, 2 absent.
         builder.Property(t => t.PreviewStatus).HasConversion<short>();
+        // preview_missing_since : depuis quand l'extrait est manquant (vide s'il ne l'est pas).
+        builder.Property(t => t.PreviewMissingSince);
         // album_id : l'album chez Deezer (les genres se lisent sur lui) ; genres_checked_at : vide tant que ses genres n'ont pas été lus.
         builder.Property(t => t.AlbumId);
         builder.Property(t => t.GenresCheckedAt);

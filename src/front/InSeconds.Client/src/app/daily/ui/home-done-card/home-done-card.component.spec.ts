@@ -40,6 +40,18 @@ describe('HomeDoneCardComponent', () => {
     expect(element.querySelector('app-track-results-list')).toBeNull();
   });
 
+  it('la série est sur la même ligne que « Détail », à sa droite, et reste là sans morceaux', () => {
+    const streak = { ...EMPTY_STREAK, streak: 12, freezes: 2, maxFreezes: 2 };
+    const { element, q } = render({ streak, linked: true });
+    const line = q('home-done-summary')!;
+    expect(q('tracks-toggle')?.parentElement).toBe(line);
+    expect(element.querySelector('app-streak-pill')?.parentElement).toBe(line);
+
+    const empty = render({ streak, linked: true, rows: [] });
+    expect(empty.q('tracks-toggle')).toBeNull();
+    expect(empty.element.querySelector('app-streak-pill')).not.toBeNull();
+  });
+
   it('« Détail » déplie dans la carte les morceaux puis les scores du jour, et se referme', () => {
     const { fixture, element, q } = render({ stats: STATS() });
     (q('tracks-toggle') as HTMLButtonElement).click();

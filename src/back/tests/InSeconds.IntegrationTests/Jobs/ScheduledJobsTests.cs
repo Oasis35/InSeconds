@@ -15,6 +15,7 @@ public class ScheduledJobsTests(PostgresFixture postgres)
     private static readonly Dictionary<string, string> ExpectedJobs = new()
     {
         ["catalogue-refresh"] = "0 23 * * *",
+        ["catalogue-recheck-missing-previews"] = Cron.Never(),
         ["daily-close-day"] = "5 0 * * *",
         ["daily-generate-challenge"] = "0 0 * * *",
         ["players-purge-expired-tokens"] = "30 3 * * *",

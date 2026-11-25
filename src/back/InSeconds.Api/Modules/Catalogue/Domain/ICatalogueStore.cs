@@ -62,6 +62,12 @@ public interface ICatalogueStore
     /// </summary>
     Task<IReadOnlyList<Track>> ListRefreshCandidatesAsync(CancellationToken ct);
 
+    /// <summary>Les morceaux de ces identifiants (désactivés compris), renvoyés **détachés** comme <see cref="ListRefreshCandidatesAsync"/> : un identifiant inconnu est absent du résultat.</summary>
+    Task<IReadOnlyList<Track>> ListByIdsAsync(IReadOnlyCollection<int> ids, CancellationToken ct);
+
+    /// <summary>Les morceaux non désactivés dont l'extrait est marqué manquant, renvoyés **détachés** (leur recontrôle appelle Deezer).</summary>
+    Task<IReadOnlyList<Track>> ListMissingPreviewTracksAsync(CancellationToken ct);
+
     /// <summary>
     /// Les genres de ces références, prêts à être posés sur un morceau suivi : un genre déjà là est repris (son nom remis à jour s'il a
     /// changé), les autres sont ajoutés et enregistrés avec la transaction du handler.

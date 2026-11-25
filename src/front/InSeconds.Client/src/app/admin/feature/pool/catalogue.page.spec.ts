@@ -12,6 +12,7 @@ import { PoolTrack } from '../../domain/pool-track';
 import { CataloguePage } from './catalogue.page';
 import { stubContentTabs } from '../../ui/content-tabs/testing/content-tabs.stub';
 import { EditTrackDialog } from './edit-track/edit-track.dialog';
+import { ReplaceTrackDialog } from './replace-track/replace-track.dialog';
 import { DeleteTrackDialog } from './delete-track/delete-track.dialog';
 import { PreviewTrackDialog } from '../../../core/audio-preview/preview-track.dialog';
 import { fakeCooldownApi, provideCooldownApiFake } from '../../data-access/testing/fake-cooldown-api';
@@ -342,6 +343,18 @@ describe('CataloguePage', () => {
       for (const [, options] of modal.open.mock.calls) expect(options.injector.get(PoolStore)).toBe(store);
     });
 
+    it('ouvre « Remplacer par une version avec extrait » pour un morceau manquant, avec l\'injecteur de la page', async () => {
+      const missing = poolTrack({ id: 5, deezerTrackId: 15, artist: 'Queen', title: 'Under Pressure', preview: 'missing' });
+      const { element, fixture } = await render({ tracks: [missing] });
+
+      (element.querySelector('[data-testid="replace-track"]') as HTMLButtonElement).click();
+
+      const [dialog, options] = modal.open.mock.calls[0];
+      expect(dialog).toBe(ReplaceTrackDialog);
+      expect(options.data).toEqual(expect.objectContaining({ id: 5 }));
+      expect(options.injector.get(PoolStore)).toBe(fixture.debugElement.injector.get(PoolStore));
+    });
+
     it('le ▶ d\'un résultat Deezer ouvre la fenêtre d\'écoute avec ce résultat, sans rien jouer dans le panneau', async () => {
       const { click, search, player, detect } = await render({
         api: { searchDeezer: vi.fn(async () => [deezerResult()]) },
@@ -370,6 +383,20 @@ describe('CataloguePage', () => {
 
       expect(modal.open).toHaveBeenCalledTimes(1);
       expect(modal.open.mock.calls[0][1].data.map((t: PoolTrack) => t.id)).toEqual([2, 3]);
+    });
+
+    it('revérifie la sélection par la barre d\'outils, et affiche le bilan', async () => {
+      const { pool, element, click, detect } = await render();
+      pool.toggleSelection(2);
+      pool.toggleSelection(3);
+      await detect();
+
+      click(b => b.getAttribute('data-testid') === 'recheck-selection');
+      await new Promise<void>(resolve => setTimeout(resolve, 0));
+      await detect();
+
+      expect(api.recheckPreviews).toHaveBeenCalledWith([2, 3]);
+      expect(element.querySelector('[data-testid="recheck-summary"]')).not.toBeNull();
     });
 
     it('ne supprime pas une sélection qui contient un morceau utilisé', async () => {

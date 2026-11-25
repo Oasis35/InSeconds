@@ -165,7 +165,7 @@ export class AdminPage {
 
   // Identifiant du navigateur (BrowserIdComponent) - visible sur l'écran de login et dans le shell.
   // Span (pas bouton) montrant les 8 premiers caractères du PlayerId (hex, sans tiret) - le
-  // filtre de tag distingue ce span des chips joueurs de l'onglet Défis, qui sont des <button>.
+  // filtre de tag distingue ce span des chips joueurs de l'Accueil, qui sont des <button>.
   browserIdShort(): Locator {
     return this.page.locator('span.font-mono').filter({ hasText: /^[0-9a-f]{8}$/ });
   }
@@ -174,42 +174,43 @@ export class AdminPage {
     return this.page.getByRole('button', { name: /^Copier$|^Copié !$/ });
   }
 
-  // Chip joueur dans "Stats par défi" (ChallengesTabComponent) - bouton contenant l'ID court.
+  // Chip joueur dans le détail du jour de l'Accueil - bouton contenant l'ID court.
   playerChip(shortId: string): Locator {
     return this.page.getByRole('button', { name: new RegExp(shortId) });
   }
 
-  // Ligne d'un défi dans le tableau du mois (onglet Défis, PC : les E2E tournent sur un écran large).
-  /** Le tableau et le détail des défis affichent les jours au format jj/mm/aaaa. */
-  private static shownDay(dateIso: string): string {
-    const [year, month, day] = dateIso.split('-');
-    return `${day}/${month}/${year}`;
-  }
-
-  challengeTableRow(dateIso: string): Locator {
-    return this.page.getByTestId('challenge-table-row')
-      .filter({ has: this.page.getByRole('button', { name: AdminPage.shownDay(dateIso), exact: true }) });
-  }
-
-  /** Sélectionne un défi dans le tableau et rend son détail (à droite du tableau, déplié). */
-  async challengeRow(dateIso: string): Promise<Locator> {
-    await this.challengeTableRow(dateIso).getByRole('button', { name: AdminPage.shownDay(dateIso), exact: true }).click();
-    const detail = this.page.getByTestId('challenge-detail');
-    await detail.getByText(AdminPage.shownDay(dateIso), { exact: true }).waitFor({ state: 'visible' });
-    return detail;
-  }
-
-  /** Ouvre l'onglet Défis sur le mois du jour `dateIso` (aaaa-mm-jj, UTC), qui peut être le mois précédent (J-2 un 1er du mois). */
-  async openChallengesAt(dateIso: string): Promise<void> {
-    await this.page.getByRole('link', { name: /^Défis/ }).click();
-    await this.challengeTableRow(new Date().toISOString().slice(0, 10)).waitFor({ state: 'visible' });
-    if (dateIso.slice(0, 7) !== new Date().toISOString().slice(0, 7)) {
-      await this.page.getByRole('button', { name: 'Mois précédent' }).click();
+  /**
+   * Choisit un jour dans le calendrier de la date, sur l'Accueil (PC : les E2E tournent sur un écran large) ; le calendrier s'ouvre
+   * sur le mois du jour affiché (aujourd'hui), et `dateIso` peut être du mois précédent (J-2 un 1er du mois).
+   */
+  async openDay(dateIso: string): Promise<void> {
+    const today = new Date().toISOString().slice(0, 10);
+    await this.page.getByTestId('day-picker-toggle').click();
+    if (dateIso.slice(0, 7) !== today.slice(0, 7)) {
+      await this.page.getByTestId('calendar-previous').click();
     }
+    const dayNumber = String(Number(dateIso.slice(8, 10)));
+    await this.page.getByTestId('calendar-day').filter({ hasText: new RegExp(`^${dayNumber}$`) }).click();
+    // Aujourd'hui n'est pas dans l'adresse ; un autre jour y est écrit (`?jour=`) une fois les chiffres lus.
+    if (dateIso !== today) await this.page.waitForURL(new RegExp(`[?&]jour=${dateIso}`));
+    await this.page.getByTestId('day-detail').waitFor({ state: 'visible' });
   }
 
-  recomputeButton(row: Locator): Locator {
-    return row.getByRole('button', { name: 'Recalculer les stats' });
+  /** Affiche un jour de l'Accueil et rend le détail du défi à droite (répartition, joueurs, morceaux du jour). */
+  async challengeRow(dateIso: string): Promise<Locator> {
+    await this.openDay(dateIso);
+    return this.page.getByTestId('day-detail');
+  }
+
+  /** La ligne « Stats figées … · Recalculer » du détail des chiffres du jour (jour figé seulement). */
+  frozenLine(): Locator {
+    return this.page.getByTestId('kpi-frozen');
+  }
+
+  /** Lance le recalcul du jour affiché : le lien, puis la confirmation. */
+  async recomputeDay(): Promise<void> {
+    await this.page.getByTestId('recompute-link').click();
+    await this.page.getByTestId('recompute-yes').click();
   }
 
   // Helpers API directs (évite de passer par l'UI pour le setup)

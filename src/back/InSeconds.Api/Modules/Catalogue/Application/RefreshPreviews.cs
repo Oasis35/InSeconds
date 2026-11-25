@@ -96,30 +96,17 @@ public static class RefreshPreviewsHandler
 
             for (var i = 0; i < batch.Count; i++)
             {
-                var now = time.GetUtcNow();
-                switch (lookups[i])
+                var applied = PreviewLookups.Apply(batch[i], lookups[i], time.GetUtcNow());
+                if (!applied.Answered)
                 {
-                    // Deezer n'a pas répondu (quota, panne, service occupé) : l'état du morceau est inconnu,
-                    // on n'y touche pas (piège 16).
-                    case TrackMetadataLookup.Unavailable:
-                        failed++;
-                        break;
-                    // Morceau supprimé chez Deezer : plus d'extrait.
-                    case TrackMetadataLookup.NotFound:
-                        if (batch[i].RecordPreviewCheck(PreviewCheck.Missing, now))
-                            changed.Add(batch[i].Id);
-                        touched.Add(batch[i]);
-                        break;
-                    case TrackMetadataLookup.Found found:
-                        if (batch[i].RecordPreviewCheck(string.IsNullOrEmpty(found.Track.PreviewUrl) ? PreviewCheck.Missing : PreviewCheck.Available, now))
-                            changed.Add(batch[i].Id);
-                        if (found.Track.Rank is { } rank)
-                            batch[i].RecordRank(rank, now);
-                        // L'album vient dans la même réponse : aucun appel de plus. Les genres se lisent ensuite, album par album.
-                        batch[i].RecordAlbum(found.Track.AlbumId);
-                        touched.Add(batch[i]);
-                        break;
+                    // Deezer n'a pas répondu (quota, panne, service occupé) : l'état du morceau est inconnu, on n'y touche pas (piège 16).
+                    failed++;
+                    continue;
                 }
+
+                if (applied.Changed)
+                    changed.Add(batch[i].Id);
+                touched.Add(batch[i]);
             }
 
             // Un morceau supprimé pendant le contrôle n'est pas enregistré, et n'est pas compté comme mis à jour.

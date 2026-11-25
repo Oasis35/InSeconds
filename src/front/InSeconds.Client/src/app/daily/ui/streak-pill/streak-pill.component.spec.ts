@@ -6,6 +6,16 @@ import { StreakPillComponent } from './streak-pill.component';
 
 const STREAK: Streak = { ...EMPTY_STREAK, streak: 12, freezes: 2, maxFreezes: 2, freezeEveryDays: 7 };
 
+@Component({
+  imports: [StreakPillComponent],
+  template: `<app-streak-pill [streak]="streak" [linked]="true" [stackWhenNarrow]="true" />`,
+})
+class StackedHost {
+  streak: Streak = STREAK;
+}
+
+const separator = (root: HTMLElement) => Array.from(root.querySelectorAll('span[aria-hidden="true"]')).find(e => e.textContent === '·');
+
 describe('StreakPillComponent', () => {
   @Component({
     imports: [StreakPillComponent],
@@ -55,6 +65,21 @@ describe('StreakPillComponent', () => {
     const { button } = render(h => (h.streak = { ...STREAK, status: 'protected', missedDays: 1 }));
     expect(button.dataset['mode']).toBe('protected');
     expect(button.querySelectorAll('app-streak-icon')).toHaveLength(2);
+  });
+
+  it('stackWhenNarrow : flamme et gel empilés sous le seuil, point central caché', () => {
+    TestBed.configureTestingModule({ providers: [provideTranslateService()] });
+    const fixture = TestBed.createComponent(StackedHost);
+    fixture.detectChanges();
+    const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="streak-pill"]')!;
+    expect(button.classList).toContain('flex-col');
+    expect(separator(button)?.classList).toContain('hidden');
+  });
+
+  it('sans stackWhenNarrow : flamme et gel côte à côte', () => {
+    const { button } = render();
+    expect(button.classList).not.toContain('flex-col');
+    expect(separator(button)?.classList).not.toContain('hidden');
   });
 
   it('un clic émet open', () => {

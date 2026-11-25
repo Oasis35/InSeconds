@@ -3,8 +3,7 @@ import { patchState, signalStore, withComputed, withMethods, withState } from '@
 import { ClipboardService } from '../../core/clipboard/clipboard.service';
 import { AppError, toAppError } from '../../core/errors/app-error';
 import { setError, setFulfilled, setPending, withRequestStatus } from '../../core/store/with-request-status';
-import { ChallengeStats, completeMonths, inMonth, mergeChallenges, resolveMonth, shiftMonth } from '../domain/challenge';
-import { AdminCounts } from './admin-counts';
+import { ChallengeStats, completeMonths, inMonth, mergeChallenges, resolveMonth } from '../domain/challenge';
 import { ChallengesApi } from './challenges.api';
 
 const COPIED_VISIBLE_MS = 1500;
@@ -20,7 +19,6 @@ interface ChallengesState {
   loadingMonth: string | null;
   /** Le mois choisi avec ‹ › (ou repris de l'adresse), ou `null` : le mois affiché est alors celui que `resolveMonth` retient. */
   requestedMonth: string | null;
-  expandedIds: readonly number[];
   highlightedPlayerId: string | null;
   /** Le joueur dont l'identifiant vient d'être copié (« Copié ! » pendant un instant). */
   copiedPlayerId: string | null;
@@ -41,7 +39,7 @@ function currentMonth(): string {
 export const ChallengesStore = signalStore(
   withRequestStatus(),
   withState<ChallengesState>({
-    stats: [], months: [], loadedMonths: [], loadingMonth: null, requestedMonth: null, expandedIds: [], highlightedPlayerId: null, copiedPlayerId: null,
+    stats: [], months: [], loadedMonths: [], loadingMonth: null, requestedMonth: null, highlightedPlayerId: null, copiedPlayerId: null,
     recomputingDays: [], recomputeErrors: {},
   }),
   withComputed(({ stats, months, requestedMonth }) => {
@@ -49,11 +47,9 @@ export const ChallengesStore = signalStore(
     return {
       month,
       statsForMonth: computed(() => inMonth(stats(), month())),
-      canGoPrevious: computed(() => shiftMonth(months(), month(), -1) !== month()),
-      canGoNext: computed(() => shiftMonth(months(), month(), 1) !== month()),
     };
   }),
-  withMethods((store, api = inject(ChallengesApi), counts = inject(AdminCounts), clipboard = inject(ClipboardService)) => {
+  withMethods((store, api = inject(ChallengesApi), clipboard = inject(ClipboardService)) => {
     let latestLoad = 0;
     let copiedTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -67,7 +63,6 @@ export const ChallengesStore = signalStore(
       try {
         const page = await api.loadStats(month);
         if (mine !== latestLoad) return;
-        counts.setChallenges(page.totalCount);
         patchState(store, {
           stats: mergeChallenges(store.stats(), page.challenges), months: page.months, loadedMonths: [...store.loadedMonths(), month],
         });
@@ -90,7 +85,6 @@ export const ChallengesStore = signalStore(
         try {
           const page = await api.loadStats();
           if (mine !== latestLoad) return;
-          counts.setChallenges(page.totalCount);
           patchState(store, {
             stats: page.challenges, months: page.months, loadedMonths: completeMonths(page), loadingMonth: null,
           }, setFulfilled());
@@ -102,21 +96,10 @@ export const ChallengesStore = signalStore(
         await loadMonth();
       },
 
-      /** `+1` : mois plus récent, `-1` : plus ancien. Le joueur surligné est lâché (il n'a peut-être pas joué ce mois-là). */
-      async shiftMonth(delta: 1 | -1): Promise<void> {
-        patchState(store, { requestedMonth: shiftMonth(store.months(), store.month(), delta), highlightedPlayerId: null });
-        await loadMonth();
-      },
-
       /** Demande un mois (`aaaa-mm`, celui de l'adresse `?mois=`) ; un mois sans défi laisse `resolveMonth` en choisir un autre. */
       async requestMonth(month: string | null): Promise<void> {
         patchState(store, { requestedMonth: month });
         await loadMonth();
-      },
-
-      toggleExpanded(id: number): void {
-        const open = store.expandedIds();
-        patchState(store, { expandedIds: open.includes(id) ? open.filter(x => x !== id) : [...open, id] });
       },
 
       /** Surligne le joueur sur tous les défis ; un second clic (ou un autre joueur) bascule. */

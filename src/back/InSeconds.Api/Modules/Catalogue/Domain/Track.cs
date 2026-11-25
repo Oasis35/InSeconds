@@ -75,6 +75,13 @@ public sealed class Track
     public DateTimeOffset? PreviewCheckedAt { get; private set; }
 
     /// <summary>
+    /// Depuis quand l'extrait est connu comme manquant : posée au passage à <see cref="PreviewStatus.Missing"/> (ou au premier contrôle qui
+    /// trouve déjà un morceau manquant sans date), **gardée** tant qu'il le reste, effacée dès que l'extrait redevient disponible. Vide si
+    /// l'extrait n'est pas manquant. Elle sépare le couac d'une nuit du vrai manque.
+    /// </summary>
+    public DateTimeOffset? PreviewMissingSince { get; private set; }
+
+    /// <summary>
     /// La forme de l'extrait (barres et basses, environ 2 Ko, blob versionné de <c>InSeconds.Waveform</c>), calculée par l'API et envoyée avec le
     /// morceau. Vide tant qu'elle n'est pas calculée : le navigateur calcule alors la sienne. Seulement des nombres, jamais d'audio (piège 47).
     /// </summary>
@@ -175,11 +182,21 @@ public sealed class Track
 
         var status = check == PreviewCheck.Available ? PreviewStatus.Available : PreviewStatus.Missing;
         var changed = PreviewStatus != status;
-        PreviewStatus = status;
+        SetPreviewStatus(status, now);
         PreviewCheckedAt = now;
         if (changed)
             UpdatedAt = now;
         return changed;
+    }
+
+    /// <summary>
+    /// Pose l'état de l'extrait et la date « manquant depuis » qui l'accompagne : gardée si le morceau l'était déjà (sauf si elle manquait :
+    /// elle prend alors la date de ce contrôle), effacée quand il ne l'est plus.
+    /// </summary>
+    private void SetPreviewStatus(PreviewStatus status, DateTimeOffset now)
+    {
+        PreviewStatus = status;
+        PreviewMissingSince = status == PreviewStatus.Missing ? PreviewMissingSince ?? now : null;
     }
 
     /// <summary>
@@ -289,7 +306,7 @@ public sealed class Track
 
     /// <summary>
     /// Actualise un morceau sans extrait : remplace tout ce qui vient de Deezer (identifiant, noms, pochette,
-    /// année, rang, extrait). Interdit pour un morceau déjà utilisé : la règle est dans l'endpoint (usage).
+    /// année, rang, extrait). Les noms de la source remplacée sont ceux que l'appelant passe : un morceau déjà utilisé garde les siens, la règle est dans l'endpoint (usage).
     /// </summary>
     public void ReplaceDeezerSource(TrackMetadata metadata, DateTimeOffset now)
     {
@@ -304,7 +321,7 @@ public sealed class Track
         Title = RequireText(metadata.Title, nameof(metadata.Title));
         CoverHash = metadata.CoverHash;
         ReleaseYear = metadata.ReleaseYear;
-        PreviewStatus = metadata.Preview;
+        SetPreviewStatus(metadata.Preview, now);
         PreviewCheckedAt = metadata.Preview == PreviewStatus.Unknown ? null : now;
 
         DeezerRank = metadata.Rank;

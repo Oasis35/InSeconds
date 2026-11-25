@@ -120,6 +120,33 @@ describe('SystemStore', () => {
     expect(store.ciRuns().every(c => c.run !== null)).toBe(true);
   });
 
+  it("dit que le nombre d'alertes n'est pas fondé quand l'état de l'API ou les tâches n'ont pas pu être lus : un faux « 0 »", async () => {
+    const whole = await create();
+    expect(whole.readFailed()).toBe(false);
+    TestBed.resetTestingModule();
+
+    const noInfo = await create({ system: { getInfo: vi.fn(() => Promise.reject(new Error('500'))) } });
+    expect(noInfo.readFailed()).toBe(true);
+    TestBed.resetTestingModule();
+
+    const noRuns = await create();
+    expect(noRuns.readFailed()).toBe(false);
+    TestBed.resetTestingModule();
+    const failingRuns = vi.fn(() => Promise.reject(new Error('500')));
+    TestBed.configureTestingModule({
+      providers: [
+        SystemStore,
+        provideSystemApisFake(fakeSystemApi(), fakeGithubCiApi()),
+        provideJobsApiFake(fakeJobsApi({ getLastRuns: failingRuns })),
+        { provide: HealthService, useValue: health },
+        { provide: FRONT_BUILD, useValue: { deployedAt: null, commit: null, branch: null } },
+      ],
+    });
+    const store = TestBed.inject(SystemStore);
+    await store.load();
+    expect(store.readFailed()).toBe(true);
+  });
+
   it('en local et en E2E, aucune branche : pas de commit attendu', async () => {
     const store = await create({ build: { branch: null, commit: null } });
 

@@ -6,6 +6,7 @@ import { LanguageService } from '../../../core/i18n/language.service';
 import { InstagramLinkComponent } from '../../../core/shell/instagram-link/instagram-link.component';
 import { AccountLinkComponent } from '../../../core/shell/account-link/account-link.component';
 import { HomeAnnounceSlotComponent } from '../../../core/shell/home-announce-slot/home-announce-slot.component';
+import { InstallLineComponent } from '../../../core/shell/install-line/install-line.component';
 import { HomeModeEntriesComponent } from '../../../core/shell/home-mode-entries/home-mode-entries.component';
 import { secondsUntilMidnightUtc, timeLeft, todayUtc } from '../../../core/game-day/game-day';
 import { BrandComponent } from '../../../ui/brand/brand.component';
@@ -14,7 +15,9 @@ import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-bac
 import { HomeLegalLineComponent } from '../../../ui/legal-line/home-legal-line.component';
 import { ModalService } from '../../../ui/modal/modal.service';
 import { DailyGameStore } from '../../data-access/daily-game.store';
+import { GuestStreakNotice } from '../../data-access/guest-streak-notice';
 import { formatGameDate } from '../../domain/archive';
+import { GuestAccountTileComponent } from '../../ui/guest-account-tile/guest-account-tile.component';
 import { HomeAbandonedCardComponent } from '../../ui/home-abandoned-card/home-abandoned-card.component';
 import { HomeChallengeCardComponent } from '../../ui/home-challenge-card/home-challenge-card.component';
 import { HomeDoneCardComponent } from '../../ui/home-done-card/home-done-card.component';
@@ -31,8 +34,8 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
 @Component({
   selector: 'app-home-page',
   imports: [
-    TranslatePipe, RouterLink, ButtonComponent, DecorBackgroundComponent, BrandComponent, InstagramLinkComponent, AccountLinkComponent, HomeAnnounceSlotComponent, HomeModeEntriesComponent, HomeLegalLineComponent,
-    HomeChallengeCardComponent, HomeDoneCardComponent, HomeAbandonedCardComponent, StatusScreenComponent,
+    TranslatePipe, RouterLink, ButtonComponent, DecorBackgroundComponent, BrandComponent, InstagramLinkComponent, AccountLinkComponent, HomeAnnounceSlotComponent, HomeModeEntriesComponent, InstallLineComponent, HomeLegalLineComponent,
+    HomeChallengeCardComponent, HomeDoneCardComponent, GuestAccountTileComponent, HomeAbandonedCardComponent, StatusScreenComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -44,8 +47,8 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
           <app-brand>
             @if (screen() !== 'loading') {
               <div brandRight class="flex items-center gap-2">
-                <app-instagram-link />
                 <app-account-link />
+                <app-instagram-link />
               </div>
             }
           </app-brand>
@@ -69,7 +72,10 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                 [linked]="store.linked()"
                 (startGame)="store.begin()"
                 (openStreak)="streakSheet.open()" />
-              <!-- « Créer un compte » d'un invité : porté par la carte amis, juste dessous (un groupe et la série gardée exigent un compte). -->
+              <!-- « Créer un compte » d'un invité : la tuile juste dessous, seulement s'il a déjà joué ou perdu une série. -->
+              @if (store.guestTile(); as tile) {
+                <app-guest-account-tile [kind]="tile" [streak]="tile === 'lost' ? (store.lostStreak() ?? 0) : store.toastStreak()" (dismissed)="dismissGuestTile()" />
+              }
             </div>
             <app-home-mode-entries />
           }
@@ -109,14 +115,20 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                   [lang]="language.current()"
                   [streak]="store.pillStreak()"
                   [linked]="store.linked()"
+                  [gelEvent]="store.toasts().gelEarned ? 'earned' : store.toasts().gelUsed ? 'used' : null"
+                  [freezesUsed]="store.freezesUsed()"
                   (openStreak)="streakSheet.open()"
                   [shareCopied]="result.copied()"
                   [shareFailed]="result.failed()"
                   [canShare]="store.stats()?.yourScore != null"
                   (share)="result.share()" />
               }
+              @if (store.guestTile(); as tile) {
+                <app-guest-account-tile [kind]="tile" [streak]="tile === 'lost' ? (store.lostStreak() ?? 0) : store.toastStreak()" (dismissed)="dismissGuestTile()" />
+              }
             </div>
             <app-home-mode-entries placement="rest" />
+            <app-install-line class="mt-3" [gamesPlayed]="store.gamesPlayed()" />
           }
           @case ('done') {
             <!-- Défi fait : la carte Survie (si le joueur y a accès) passe devant, c'est la prochaine action. -->
@@ -133,13 +145,19 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                 [lang]="language.current()"
                 [streak]="store.pillStreak()"
                 [linked]="store.linked()"
+                [gelEvent]="store.toasts().gelEarned ? 'earned' : store.toasts().gelUsed ? 'used' : null"
+                [freezesUsed]="store.freezesUsed()"
                 (openStreak)="streakSheet.open()"
                 [shareCopied]="result.copied()"
                 [shareFailed]="result.failed()"
                 [canShare]="store.canShare()"
                 (share)="result.share()" />
+              @if (store.guestTile(); as tile) {
+                <app-guest-account-tile [kind]="tile" [streak]="tile === 'lost' ? (store.lostStreak() ?? 0) : store.toastStreak()" (dismissed)="dismissGuestTile()" />
+              }
             </div>
             <app-home-mode-entries placement="rest" />
+            <app-install-line class="mt-3" [gamesPlayed]="store.gamesPlayed()" />
           }
           @case ('no_challenge') {
             <app-status-screen titleKey="daily.noChallenge.title" bodyKey="daily.noChallenge.body" (retry)="store.retryNoChallenge()" />
@@ -168,6 +186,7 @@ export class HomePage {
   protected readonly startup = inject(DailyStartup);
   private readonly modal = inject(ModalService);
   private readonly translate = inject(TranslateService);
+  private readonly guestNotice = inject(GuestStreakNotice);
 
   /** L'écran affiché : celui du jeu du jour. */
   protected readonly screen = this.store.screen;
@@ -175,6 +194,11 @@ export class HomePage {
   protected readonly dateLabel = computed(() => formatGameDate(todayUtc(new Date()), this.language.current(), 'weekday'));
   /** Le temps qu'il reste pour jouer le défi, dit à côté du score à battre (« plus que 6 h »). */
   protected readonly remaining = computed(() => timeLeft(secondsUntilMidnightUtc(new Date())));
+
+  /** La croix de la tuile « crée un compte » : fermée pour de bon, gardée dans le navigateur (règles dans `domain/toasts`). */
+  protected dismissGuestTile(): void {
+    this.guestNotice.remember(this.store.dismissGuestTile());
+  }
 
   /** Abandonner depuis la carte en pause : la même confirmation que l'ancien écran de reprise (la progression et la série sont perdues). */
   protected async confirmAbandonFromResume(): Promise<void> {

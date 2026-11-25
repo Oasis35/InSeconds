@@ -161,27 +161,7 @@ h1, h2, h3, .font-display {
    Toutes s'arrêtent d'elles-mêmes. Les éléments animés portent [data-anim] :
    simple fondu en mouvement réduit, aucune animation sous E2E (.no-anim posé
    par App quand window.__disableAnimations est vrai). */
-@keyframes gel-spin   { from { transform: rotate(-180deg) scale(0.6); } to { transform: rotate(0) scale(1); } }
-@keyframes gel-shine  { from { transform: translateX(0); } to { transform: translateX(450%); } }
 @keyframes gel-fill   { from { opacity: 0; transform: scale(0.2); } to { opacity: 1; transform: scale(1); } }
-@keyframes gel-halo {
-  0%, 100% { box-shadow: inset 0 0 0 0 rgb(var(--rgb-accent-2) / 0); }
-  50%      { box-shadow: inset 0 0 26px 2px rgb(var(--rgb-accent-2) / 0.45); }
-}
-@keyframes gel-shake {
-  0%, 100% { transform: none; }
-  20%      { transform: rotate(-14deg); }
-  40%      { transform: rotate(11deg); }
-  60%      { transform: rotate(-7deg); }
-  80%      { transform: rotate(3deg); }
-}
-@keyframes gel-toast  { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
-@keyframes gel-bounce {
-  0%   { opacity: 0; transform: translateY(28px); }
-  60%  { opacity: 1; transform: translateY(-4px); }
-  80%  { transform: translateY(1px); }
-  100% { opacity: 1; transform: none; }
-}
 @keyframes gel-fade   { from { opacity: 0; } to { opacity: 1; } }
 
 @media (prefers-reduced-motion: reduce) {
@@ -375,10 +355,6 @@ summary {
 /* V4 : la barre du bas (fixe, quatre onglets, ~62px) ; les pages en tiennent compte pour que rien ne passe dessous. */
 html.has-bottom-bar .da-bg {
   padding-bottom: calc(4.25rem + env(safe-area-inset-bottom)); /* les onglets et un souffle : les liens légaux restent collés au-dessus */
-}
-/* Les toasts (série, gels) se posent au-dessus de la barre du bas, sinon elle les recouvre et « Fermer » ne se touche plus. */
-html.has-bottom-bar app-toast-frame {
-  bottom: calc(4.25rem + 18px + env(safe-area-inset-bottom));
 }
 /* Le lecteur collant de « À réécouter » se cale au-dessus de la barre du bas, jamais dessous. */
 html.has-bottom-bar .above-bottom-bar {

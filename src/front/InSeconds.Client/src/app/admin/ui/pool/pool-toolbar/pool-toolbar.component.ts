@@ -27,6 +27,12 @@ const COOLDOWN_COLOR: Record<CooldownTone, string> = {
           <button type="button" (click)="deselectAll.emit()" class="text-xs transition-colors" style="color:var(--text-muted)">
             {{ 'admin.pool.deselectAll' | translate }}
           </button>
+          <button type="button" (click)="recheckSelection.emit()" [disabled]="rechecking()" data-testid="recheck-selection"
+            class="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            style="background:var(--bg-inactive);color:var(--text-light);border:1px solid var(--border-strong)"
+            [title]="'admin.pool.recheckSelectionTitle' | translate">
+            {{ (rechecking() ? 'admin.pool.rechecking' : 'admin.pool.recheck') | translate: { count: selectedCount() } }}
+          </button>
           <span [title]="selectionHasUsedTrack() ? ('admin.pool.deleteUsedSelection' | translate) : ''">
             <button type="button" (click)="deleteSelection.emit()" [disabled]="selectionHasUsedTrack()"
               class="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
@@ -80,11 +86,14 @@ export class PoolToolbarComponent {
   readonly cooldownDays = input.required<number | null>();
   readonly cooldownTone = input.required<CooldownTone | null>();
   readonly addPanelOpen = input.required<boolean>();
+  /** Un contrôle d'extraits est en cours pour la sélection. */
+  readonly rechecking = input(false);
   /** Le tri « Les moins trouvés » est celui en cours. */
   readonly hardestFirst = input(false);
 
   readonly deselectAll = output();
   readonly deleteSelection = output();
+  readonly recheckSelection = output();
   readonly toggleAdd = output();
   readonly sortHardest = output();
 
