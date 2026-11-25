@@ -45,7 +45,7 @@ test.describe('Admin - témoin de l\'en-tête', () => {
     await expect(page).toHaveURL(/\/ranking/);
     await expect(page.getByTestId('header-admin-dot')).toBeVisible();
 
-    expect(reads.length).toBe(onHome);
+    expect(reads).toHaveLength(onHome);
   });
 
   test("un joueur qui n'est pas admin ne lit rien de l'admin et n'a pas de point", async ({ page }) => {
