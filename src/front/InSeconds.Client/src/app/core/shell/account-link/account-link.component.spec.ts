@@ -91,6 +91,15 @@ describe('AccountLinkComponent', () => {
       expect(element.querySelector('[data-testid="header-admin"]')!.getAttribute('aria-label')).toBe('shell.header.adminAlerts');
     });
 
+    it("borne le nombre affiché à « 9+ » : l'en-tête d'un petit téléphone ne déborde pas", () => {
+      const { fixture, element, session, chrome } = render();
+      session.signedIn(admin);
+      chrome.setAdminAlerts(12);
+      fixture.detectChanges();
+
+      expect(element.querySelector('[data-testid="header-admin-count"]')!.textContent?.trim()).toBe('9+');
+    });
+
     it("ne met aucun halo autour du point", () => {
       const { fixture, element, session, chrome } = render();
       session.signedIn(admin);

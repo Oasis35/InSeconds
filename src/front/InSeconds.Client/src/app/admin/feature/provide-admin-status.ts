@@ -16,7 +16,10 @@ export function provideAdminStatus(): EnvironmentProviders {
         // L'identité se lit au démarrage de l'app : tant qu'elle n'est pas connue, on ne conclut rien.
         if (started || !session.loaded() || !session.isAdmin()) return;
         started = true;
-        untracked(() => void import('../data-access/admin-status').then(({ AdminStatus }) => injector.get(AdminStatus)));
+        // Un chargement du module en échec (hors ligne après un déploiement) n'est pas une erreur du joueur : le témoin manque, sans rejet non géré.
+        untracked(() => void import('../data-access/admin-status')
+          .then(({ AdminStatus }) => injector.get(AdminStatus))
+          .catch(() => { started = false; }));
       }, { injector });
     }),
   ]);

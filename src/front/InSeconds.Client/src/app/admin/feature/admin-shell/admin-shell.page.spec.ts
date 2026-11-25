@@ -37,9 +37,12 @@ describe('AdminShellPage', () => {
 
   beforeEach(() => { reloadMoment = null; });
 
-  async function open(player: SessionPlayer | null, url = '/admin', options: { deployedAt?: string | null; wide?: boolean } = {}) {
+  async function open(
+    player: SessionPlayer | null, url = '/admin',
+    options: { deployedAt?: string | null; wide?: boolean; systemOverrides?: Partial<FakeSystemApi> } = {},
+  ) {
     api = fakePlayersApi({ getMe: vi.fn(async () => player) });
-    system = fakeSystemApi();
+    system = fakeSystemApi(options.systemOverrides);
     // Les fournisseurs de la route passent avant ceux du module de test : les faux de l'état technique sont ajoutés à la route.
     const shell = { ...ADMIN_ROUTES[0], providers: [...(ADMIN_ROUTES[0].providers ?? []), provideSystemApisFake(system), provideJobsApiFake(fakeJobsApi())] };
     const routes = [{ ...shell, children: [{ path: '**', component: ChildComponent }] }];
@@ -143,6 +146,14 @@ describe('AdminShellPage', () => {
     await vi.waitFor(() => expect(TestBed.inject(ShellChromeStore).adminAlerts()).not.toBeNull());
     expect(alertsLoader).not.toHaveBeenCalled();
     expect(system.getInfo).toHaveBeenCalledTimes(1);
+  });
+
+  it("ne dit rien au bouton « Admin » quand l'état de l'API n'a pas pu être lu : pas de faux vert", async () => {
+    await open(admin, '/admin/catalogue', { systemOverrides: { getInfo: vi.fn(() => Promise.reject(new Error('500'))) } });
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(system.getInfo).toHaveBeenCalled();
+    expect(TestBed.inject(ShellChromeStore).adminAlerts()).toBeNull();
   });
 
   it('sur téléphone, le panneau technique n\'est rendu qu\'une fois déplié sous la ligne du haut', async () => {

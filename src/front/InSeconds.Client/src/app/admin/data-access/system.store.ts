@@ -52,7 +52,7 @@ export const SystemStore = signalStore(
     info: null, infoFailed: false, lastRuns: null, lastRunsFailed: false, ci: {}, catalogue: null, nextChallenge: null, readAt: new Date(),
   }),
   withProps(() => ({ build: inject(FRONT_BUILD), health: inject(HealthService) })),
-  withComputed(({ info, lastRuns, ci, readAt, build, health, nextChallenge }) => {
+  withComputed(({ info, infoFailed, lastRuns, lastRunsFailed, ci, readAt, build, health, nextChallenge }) => {
     const branchRun = computed(() => (build.branch ? ci()[build.branch] ?? null : null));
     const verdict = computed(() => deploymentVerdict(build.commit, info()?.commit ?? null, branchRun()?.headSha ?? null, branchRun()?.state === 'running'));
     const jobs = computed(() => (lastRuns() ? nightlyJobs(lastRuns() ?? []) : null));
@@ -64,6 +64,11 @@ export const SystemStore = signalStore(
       return value ? nextChallengeState(value, lastRuns()) : null;
     });
     return {
+      /**
+       * Une lecture qui fonde le nombre d'alertes a échoué (l'état de l'API ou les tâches) : sans elles, `alerts` vaut 0 sans que ce soit une
+       * réponse. Ce qui lit ce nombre pour en faire un témoin (`AdminStatus`) ne le prend pas dans ce cas.
+       */
+      readFailed: computed(() => infoFailed() || lastRunsFailed()),
       /** Le dernier commit de la branche déployée par cet environnement (lu chez GitHub) ; `null` s'il n'est pas connu. */
       branchHead: computed(() => branchRun()?.headSha ?? null),
       verdict,

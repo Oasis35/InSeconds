@@ -24,6 +24,8 @@ export const ADMIN_ALERTS_LOADER = new InjectionToken<() => Promise<number>>('AD
       try {
         const system = injector.get(SystemStore);
         await system.load();
+        // `load()` ne rejette jamais : une lecture en échec laisse un état vide, dont `alerts` ferait « 0 », un faux vert.
+        if (system.readFailed()) throw new Error('Admin status unreadable');
         return system.alerts();
       } finally {
         injector.destroy();
@@ -75,6 +77,8 @@ export class AdminStatus {
 
   /** La coquille de l'admin a lu l'état technique : son résultat vaut une lecture, la période repart de là. */
   report(alerts: number): void {
+    // Une lecture de la coquille qui finit après la déconnexion ne repose pas un témoin que l'identité vient d'effacer.
+    if (!this.session.isAdmin()) return;
     this.lastReadAt = Date.now();
     this.chrome.setAdminAlerts(alerts);
   }
@@ -84,10 +88,11 @@ export class AdminStatus {
     if (this.reading || !this.session.isAdmin() || this.doc.visibilityState === 'hidden' || this.inAdmin()) return;
     if (this.lastReadAt !== null && Date.now() - this.lastReadAt < ADMIN_STATUS_REFRESH_MS) return;
     this.reading = true;
+    const startedAt = this.lastReadAt;
     try {
       const alerts = await this.loader();
-      // Le compte a pu changer pendant la lecture : un résultat d'un autre compte ne se pose pas.
-      if (this.session.isAdmin()) this.report(alerts);
+      // Le compte a pu changer, ou l'admin s'ouvrir (sa coquille lit alors de son côté et a posé un résultat plus récent) : on ne pose pas celui-ci.
+      if (this.session.isAdmin() && !this.inAdmin() && this.lastReadAt === startedAt) this.report(alerts);
     } catch {
       this.lastReadAt = Date.now() - ADMIN_STATUS_REFRESH_MS + ADMIN_STATUS_RETRY_MS;
     } finally {

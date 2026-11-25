@@ -101,6 +101,21 @@ describe('AdminStatus', () => {
     expect(chrome.adminAlerts()).toBe(0);
   });
 
+  it("ne pose pas le résultat d'une lecture de fond si l'admin a rendu un résultat plus récent entre-temps", async () => {
+    let release: (alerts: number) => void = () => undefined;
+    const slow = vi.fn(() => new Promise<number>(resolve => { release = resolve; }));
+    const { session, status, chrome } = setup(slow);
+    session.signedIn(adminPlayer);
+    TestBed.tick();
+    await Promise.resolve();
+
+    status.report(4);
+    release(0);
+    await settle();
+
+    expect(chrome.adminAlerts()).toBe(4);
+  });
+
   it("une lecture de l'admin (report) vaut une lecture : la période repart de là", async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     const { session, status, chrome, loader } = setup();
@@ -130,6 +145,33 @@ describe('AdminStatus', () => {
     await status.refresh();
     expect(loader).toHaveBeenCalledTimes(2);
     expect(chrome.adminAlerts()).toBe(3);
+  });
+
+  it("relit au retour au premier plan une fois la période passée", async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const { session, loader } = setup();
+    session.signedIn(adminPlayer);
+    await settle();
+    expect(loader).toHaveBeenCalledTimes(1);
+
+    vi.setSystemTime(Date.now() + ADMIN_STATUS_REFRESH_MS + 1000);
+    document.dispatchEvent(new Event('visibilitychange'));
+    await settle();
+
+    expect(loader).toHaveBeenCalledTimes(2);
+  });
+
+  it("ne pose pas un résultat arrivé après la perte du rôle admin", async () => {
+    const { session, status, chrome } = setup();
+    session.signedIn(adminPlayer);
+    await settle();
+    session.signedIn(plainPlayer);
+    await settle();
+    expect(chrome.adminAlerts()).toBeNull();
+
+    status.report(7);
+
+    expect(chrome.adminAlerts()).toBeNull();
   });
 
   it("efface le témoin quand le compte n'est plus admin", async () => {

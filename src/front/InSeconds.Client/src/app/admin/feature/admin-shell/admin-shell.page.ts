@@ -250,7 +250,8 @@ export class AdminShellPage {
   /** Lit l'état technique, puis dit au bouton « Admin » de l'en-tête ce qu'il en est : en sortant de l'admin, son témoin est à jour sans relire. */
   private async loadSystem(): Promise<void> {
     await this.system.load();
-    this.status.report(this.system.alerts());
+    // Une lecture de l'état ou des tâches en échec ferait un faux « 0 alerte » : le témoin garde alors ce qu'il avait.
+    if (!this.system.readFailed()) this.status.report(this.system.alerts());
   }
 
   /** La fenêtre qui perd le focus (barre d'adresse, autre onglet) n'est pas la fin de la saisie : le champ le garde au retour. */
