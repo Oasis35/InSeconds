@@ -25,7 +25,7 @@ import { WelcomeScreenComponent } from '../../ui/welcome-screen/welcome-screen.c
 import { StreakPillComponent } from '../../ui/streak-pill/streak-pill.component';
 import { formatGameDate } from '../../domain/archive';
 import { isHomeScreen } from '../../domain/daily-screen';
-import { todayUtc } from '../../../core/game-day/game-day';
+import { secondsUntilMidnightUtc, timeLeft, todayUtc } from '../../../core/game-day/game-day';
 
 /**
  * La page du défi (`/daily`) : la manche (les autres écrans du jeu du jour sont sur l'accueil). Elle affiche l'écran que le
@@ -83,9 +83,11 @@ export class DailyPage {
 
   canLeave(): boolean | Promise<boolean> {
     if (this.store.screen() !== 'playing') return true;
+    // Le temps qui reste avant le prochain défi, dit en heures ou en minutes (jamais « minuit UTC »).
+    const left = timeLeft(secondsUntilMidnightUtc(new Date()));
     const data: ConfirmDialogData = {
       title: this.translate.instant('daily.leaveSheet.title'),
-      body: this.translate.instant('daily.leaveSheet.body'),
+      body: this.translate.instant(left.unit === 'hours' ? 'daily.leaveSheet.bodyHours' : 'daily.leaveSheet.bodyMinutes', { n: left.value }),
       // Les rôles sont inversés à dessein : « Continuer à jouer » est l'action sûre, mise en avant.
       confirmLabel: this.translate.instant('daily.leaveSheet.confirm'),
       cancelLabel: this.translate.instant('daily.leaveSheet.cancel'),

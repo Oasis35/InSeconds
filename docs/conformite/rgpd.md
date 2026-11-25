@@ -83,3 +83,5 @@ Copie de la prod anonymisée (`deploy/vps/staging-anonymize.sql`) : emails et ps
 ## Reste ouvert
 
 - **Pas de trace des actions de l'admin** (qui a consulté ou modifié quoi). Un seul admin aujourd'hui : à reconsidérer s'il y en a un deuxième.
+
+Deezer (extraits, pochettes) : le navigateur ouvre une connexion vers `cdnt-preview.dzcdn.net` dès l'ouverture de l'application (preconnect de `index.html`), puis charge extraits et pochettes ; Deezer reçoit donc l'IP du joueur même sans partie lancée. `/privacy` le dit (clés `privacy.*`).
