@@ -4,8 +4,10 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { SessionStore } from '../../session/session.store';
 
 /**
- * Le cadenas de l'admin, à droite du titre IN//SECONDS (compte admin seulement) : un rond gris à contour neutre, sans fond ni lueur. Le compte
- * (« Profil », « Connexion » pour un invité) est dans la barre du bas. Rien tant que l'identité n'est pas lue.
+ * L'accès à l'admin dans l'en-tête, à gauche du rond Instagram (compte admin seulement) : le mot « Admin » dans un rectangle à contour
+ * neutre, de la hauteur du rond, sans fond ni lueur. Le mot se lit d'un coup d'œil, là où l'ancien cadenas se confondait avec l'icône voisine ;
+ * posé avant Instagram, il laisse celui-ci au même endroit que chez les joueurs. Le compte (« Profil », « Connexion » pour un invité) est
+ * dans la barre du bas. Rien tant que l'identité n'est pas lue.
  */
 @Component({
   selector: 'app-account-link',
@@ -13,22 +15,18 @@ import { SessionStore } from '../../session/session.store';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (session.loaded() && session.isLinked() && session.isAdmin()) {
-      <a routerLink="/admin" class="header-round" data-testid="header-admin"
-         [attr.title]="'shell.header.admin' | translate" [attr.aria-label]="'shell.header.admin' | translate">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-             stroke-linejoin="round" aria-hidden="true" style="display:block">
-          <rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>
-        </svg>
-      </a>
+      <a routerLink="/admin" class="header-admin" data-testid="header-admin">{{ 'shell.header.admin' | translate }}</a>
     }
   `,
   styles: `
     :host { display: contents; }
-    .header-round {
-      display: flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; flex-shrink: 0;
-      border-radius: 9999px; border: 1px solid var(--border-neutral); color: var(--text-light); text-decoration: none;
+    .header-admin {
+      display: flex; align-items: center; justify-content: center; height: 2.5rem; padding: 0 0.875rem; flex-shrink: 0;
+      border-radius: var(--radius-button); border: 1px solid var(--border-neutral); color: var(--text-light);
+      font-size: 0.875rem; font-weight: 500; text-decoration: none; touch-action: manipulation;
     }
-    .header-round:focus-visible { outline: 2px solid var(--color-accent-3); outline-offset: 2px; }
+    .header-admin:hover { color: var(--text-hi); }
+    .header-admin:focus-visible { outline: 2px solid var(--color-accent-3); outline-offset: 2px; }
   `,
 })
 export class AccountLinkComponent {

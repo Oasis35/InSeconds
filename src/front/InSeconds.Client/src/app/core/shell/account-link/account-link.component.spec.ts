@@ -31,7 +31,7 @@ describe('AccountLinkComponent', () => {
     }
   });
 
-  it("ajoute le cadenas de l'admin pour un compte admin seulement", () => {
+  it("ajoute le mot « Admin » pour un compte admin seulement", () => {
     const { fixture, element, session } = render();
     session.signedIn({ id: 'p1', pseudo: 'Alice', email: 'a@example.com', isGuest: false, isAdmin: false });
     fixture.detectChanges();
@@ -39,15 +39,19 @@ describe('AccountLinkComponent', () => {
 
     session.signedIn({ id: 'p1', pseudo: 'Alice', email: 'a@example.com', isGuest: false, isAdmin: true });
     fixture.detectChanges();
-    expect(element.querySelector('[data-testid="header-admin"]')).not.toBeNull();
+    const link = element.querySelector('[data-testid="header-admin"]');
+    expect(link).not.toBeNull();
+    // Un mot, pas une icône : c'est le libellé qui fait lire l'accès d'un coup d'œil.
+    expect(link!.textContent?.trim()).toBe('shell.header.admin');
+    expect(link!.querySelector('svg')).toBeNull();
   });
 
   it('ne montre aucune lueur ni dégradé', () => {
     const { fixture, element, session } = render();
     session.signedIn({ id: 'p1', pseudo: 'Alice', email: 'a@example.com', isGuest: false, isAdmin: true });
     fixture.detectChanges();
-    const lock = element.querySelector<HTMLElement>('a[href="/admin"]')!;
-    expect(getComputedStyle(lock).boxShadow).toBe('none');
-    expect(getComputedStyle(lock).backgroundImage).toBe('none');
+    const link = element.querySelector<HTMLElement>('a[href="/admin"]')!;
+    expect(getComputedStyle(link).boxShadow).toBe('none');
+    expect(getComputedStyle(link).backgroundImage).toBe('none');
   });
 });

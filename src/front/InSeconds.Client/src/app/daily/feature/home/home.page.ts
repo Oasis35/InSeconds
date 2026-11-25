@@ -45,8 +45,8 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
           <app-brand>
             @if (screen() !== 'loading') {
               <div brandRight class="flex items-center gap-2">
-                <app-instagram-link />
                 <app-account-link />
+                <app-instagram-link />
               </div>
             }
           </app-brand>

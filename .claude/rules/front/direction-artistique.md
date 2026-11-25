@@ -35,7 +35,7 @@ Tokens dans `:root` de `src/front/InSeconds.Client/src/styles.scss`. Jamais de h
 
 - Tout bouton d'action passe par `<button appButton variant=… size=…>` (`ui/button`) : `primary` (ambre uni `--fill-primary`, texte `--text-on-orange` à environ 8:1, filet `--core-orange`, un seul halo serré `--glow-primary` de 8 px, **sans dégradé** ; un bouton plein par écran, seul à briller), `accent` (contour ambre sans fond), `neutral` (contour `--border-neutral`), `secondary`, `danger`, `ghost` ; `lg` 60 px pour le bouton principal d'un écran, `md` 48 px par défaut, `sm`.
 - L'ambre est vif (#FF9500) : ne pas l'éclaircir, il virerait au pastel. Jamais de texte blanc sur l'ambre (2,4:1).
-- Boutons en rectangle (`rounded-(--radius-button)`, 10 px), jamais `rounded-full` ni `rounded-2xl` sur un bouton, sauf les ronds voulus : commandes du lecteur (↺, « ▶ X s », dans le même ambre) et accès de l'en-tête (ronds gris à contour `--border-neutral`, sans fond ni lueur).
+- Boutons en rectangle (`rounded-(--radius-button)`, 10 px), jamais `rounded-full` ni `rounded-2xl` sur un bouton, sauf les ronds voulus : commandes du lecteur (↺, « ▶ X s », dans le même ambre) et accès de l'en-tête (le rond d'Instagram, gris à contour `--border-neutral`, sans fond ni lueur ; l'accès admin est le mot « Admin » dans un rectangle de même contour et de même hauteur, à gauche du rond).
 - Cartes aux coins réguliers (`--radius-card`, 16 px), pochettes rondes.
 - Capitales réservées au logo et aux boutons (le bouton principal les garde) ; étiquettes et titres en casse normale.
 - Chiffres du résultat : score en `--font-score`, compte à rebours en `--font-clock`.
