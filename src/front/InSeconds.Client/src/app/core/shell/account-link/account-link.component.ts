@@ -23,9 +23,9 @@ import { SessionStore } from '../../session/session.store';
     .header-admin {
       display: flex; align-items: center; justify-content: center; height: 2.5rem; padding: 0 0.875rem; flex-shrink: 0;
       border-radius: var(--radius-button); border: 1px solid var(--border-neutral); color: var(--text-light);
-      font-size: 0.875rem; font-weight: 500; text-decoration: none; touch-action: manipulation;
+      font-size: 0.875rem; font-weight: 500; text-decoration: none; white-space: nowrap; touch-action: manipulation;
     }
-    .header-admin:hover { color: var(--text-hi); }
+    .header-admin:hover { opacity: 0.7; }
     .header-admin:focus-visible { outline: 2px solid var(--color-accent-3); outline-offset: 2px; }
   `,
 })
