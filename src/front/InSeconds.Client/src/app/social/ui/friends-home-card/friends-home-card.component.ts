@@ -9,8 +9,8 @@ import { FriendPresence, FriendsCardView } from '../../domain/friends-card';
 /**
  * La carte amis de l'accueil, sous la carte du défi. Tant que le défi du jour reste à faire : le groupe, « 3 sur 5 ont joué » et une pastille par
  * membre (pleine s'il a joué, éteinte sinon), **jamais un score**. Défi fait : « Potes, aujourd'hui », le haut du classement du jour, la ligne du
- * joueur en ambre. Dans plusieurs groupes : une rangée de pastilles en tête pour choisir celui qu'elle montre. Sans groupe : « Créer un groupe » ;
- * invité : « Créer un compte » en contour neutre (un groupe exige un compte). Un membre a, sous la liste, « Voir tout le classement » (ou « Voir le groupe » avant le défi) en lien à droite, puis « Inviter un ami » (le groupe en cours, dont le nom est le titre de la carte) ;
+ * joueur en ambre. Dans plusieurs groupes : une rangée de pastilles en tête pour choisir celui qu'elle montre. Sans groupe : « Créer un groupe ».
+ * Un membre a, sous la liste, « Voir tout le classement » (ou « Voir le groupe » avant le défi) en lien à droite, puis « Inviter un ami » (le groupe en cours, dont le nom est le titre de la carte) ;
  * sous le maximum de groupes, un « + » en pointillé à la fin de la rangée des groupes en crée un. Jamais la tuile de focus : contour plat, aucune lueur.
  */
 @Component({
@@ -22,19 +22,6 @@ import { FriendPresence, FriendsCardView } from '../../domain/friends-card';
     <section class="rounded-(--radius-card) px-5 py-4 flex flex-col gap-3" data-testid="friends-card" [attr.data-kind]="view().kind"
       style="background:var(--bg-surface);border:1px solid var(--border-medium)">
       @switch (view().kind) {
-        @case ('guest') {
-          <div class="flex items-start justify-between gap-3">
-            <h2 class="text-xl font-bold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.empty.title' | translate }}</h2>
-            @if (showNew()) {
-              <span class="shrink-0 inline-flex items-center h-[22px] px-2 rounded-md text-xs font-bold" data-testid="friends-card-new"
-                style="color:var(--color-violet);border:1px solid rgb(var(--rgb-violet) / 0.6);background:rgb(var(--rgb-violet) / 0.12)">{{ 'social.announce.chip' | translate }}</span>
-            }
-          </div>
-          <p class="text-sm leading-snug" style="color:var(--text-light)">{{ 'social.home.guestBody' | translate }}</p>
-          @if (showLogin()) {
-            <a appButton variant="neutral" [block]="true" routerLink="/account/login" data-testid="friends-card-login">{{ 'social.empty.createAccount' | translate }}</a>
-          }
-        }
         @case ('no_group') {
           <div class="flex items-start justify-between gap-3">
             <h2 class="text-xl font-bold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'social.empty.title' | translate }}</h2>
@@ -143,9 +130,7 @@ export class FriendsHomeCardComponent {
   readonly view = input.required<FriendsCardView>();
   /** La langue des nombres (« 1 380 »). */
   readonly lang = input<'fr' | 'en'>('fr');
-  /** Invité : « Créer un compte » ; masqué quand le jeu du jour montre déjà son propre appel (toast de série, partie en pause). */
-  readonly showLogin = input(true);
-  /** La pastille « Nouveau » (l'annonce des groupes, carte fermée) : seulement pour un invité ou un compte sans groupe. */
+  /** La pastille « Nouveau » (l'annonce des groupes, carte fermée) : seulement pour un compte sans groupe. */
   readonly showNew = input(false);
   /** Les groupes du joueur : dès qu'il y en a plusieurs, une pastille chacun pour changer celui que la carte montre. */
   readonly groups = input<readonly Group[]>([]);

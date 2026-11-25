@@ -6,10 +6,9 @@ export function announceActive(today: string): boolean {
   return today <= GROUPS_ANNOUNCE_UNTIL;
 }
 
-/** Ce que dit la carte d'annonce : un invité (il lui faut un compte), un compte sans groupe (en créer un), un membre (créer un nouveau groupe, tant qu'il est sous le maximum). */
-export type AnnounceVariant = 'guest' | 'no_group' | 'member';
+/** Ce que dit la carte d'annonce, réservée aux comptes : sans groupe (en créer un), membre (créer un nouveau groupe, tant qu'il est sous le maximum). Un invité n'a pas d'annonce : l'accueil lui propose le compte à part (tuile sous le défi). */
+export type AnnounceVariant = 'no_group' | 'member';
 
-export function announceVariant(linked: boolean, groupCount: number): AnnounceVariant {
-  if (!linked) return 'guest';
+export function announceVariant(groupCount: number): AnnounceVariant {
   return groupCount > 0 ? 'member' : 'no_group';
 }

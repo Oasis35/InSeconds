@@ -16,26 +16,7 @@ describe('FriendsHomeCardComponent', () => {
   const all = (element: HTMLElement, id: string) => [...element.querySelectorAll<HTMLElement>(`[data-testid="${id}"]`)];
   const one = (element: HTMLElement, id: string) => element.querySelector<HTMLElement>(`[data-testid="${id}"]`);
 
-  it('un invité : « Créer un compte » en contour neutre', () => {
-    const element = render({ kind: 'guest' });
-
-    const login = one(element, 'friends-card-login');
-    expect(login?.getAttribute('href')).toBe('/account/login');
-    expect(login?.classList).toContain('app-button--neutral');
-    expect(one(element, 'friends-card-create')).toBeNull();
-  });
-
-  it("un invité dont le jeu du jour montre déjà l'appel : pas de second bouton", () => {
-    TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
-    const fixture = TestBed.createComponent(FriendsHomeCardComponent);
-    fixture.componentRef.setInput('view', { kind: 'guest' });
-    fixture.componentRef.setInput('showLogin', false);
-    fixture.detectChanges();
-
-    expect(one(fixture.nativeElement as HTMLElement, 'friends-card-login')).toBeNull();
-  });
-
-  it('la pastille « Nouveau » seulement si on la demande, pour un invité ou un compte sans groupe', () => {
+  it('la pastille « Nouveau » seulement si on la demande, pour un compte sans groupe', () => {
     TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
     const fixture = TestBed.createComponent(FriendsHomeCardComponent);
     fixture.componentRef.setInput('view', { kind: 'no_group' });
@@ -169,9 +150,7 @@ describe('FriendsHomeCardComponent', () => {
       expect(one(element, 'friends-card-invite')?.textContent).toContain('social.invite.copied');
     });
 
-    it("pas d'invitation pour un invité ni pour un compte sans groupe", () => {
-      expect(one(render({ kind: 'guest' }), 'friends-card-invite')).toBeNull();
-      TestBed.resetTestingModule();
+    it("pas d'invitation pour un compte sans groupe", () => {
       expect(one(render({ kind: 'no_group' }), 'friends-card-invite')).toBeNull();
     });
 

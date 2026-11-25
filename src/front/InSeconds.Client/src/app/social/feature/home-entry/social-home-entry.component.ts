@@ -12,10 +12,10 @@ import { Group, preferredGroupId } from '../../domain/group';
 import { FriendsHomeCardComponent } from '../../ui/friends-home-card/friends-home-card.component';
 
 /**
- * L'entrée des groupes sur l'accueil, chargée à la demande, pour tout le monde : un invité y lit qu'un groupe exige un compte, un compte sans groupe
- * qu'il peut en créer un, un membre voit son groupe (le dernier regardé, au classement ou ici, sinon le premier) et, dans plusieurs groupes, une
+ * L'entrée des groupes sur l'accueil, chargée à la demande, pour les comptes : un compte sans groupe
+ * y trouve qu'il peut en créer un, un membre voit son groupe (le dernier regardé, au classement ou ici, sinon le premier) et, dans plusieurs groupes, une
  * pastille chacun pour en changer (`select`, les scores du seul groupe choisi). Les scores du jour n'arrivent qu'une fois
- * son propre défi fini : c'est le serveur qui le décide (`todayRevealed`), la carte se relit quand le défi du jour se termine. Une erreur ne montre
+ * son propre défi fini : c'est le serveur qui le décide (`todayRevealed`), la carte se relit quand le défi du jour se termine. Un invité n'a pas de carte : l'accueil lui propose le compte à part (tuile sous le défi). Une erreur ne montre
  * rien : la carte est un plus, jamais une panne de l'accueil.
  */
 @Component({
@@ -27,7 +27,7 @@ import { FriendsHomeCardComponent } from '../../ui/friends-home-card/friends-hom
   template: `
     @if (shownView(); as view) {
       <div class="pt-3">
-        <app-friends-home-card [view]="view" [lang]="lang()" [showLogin]="!chrome.accountCtaShown()" [showNew]="announce.chip()" [groups]="groups()" [canCreate]="canCreate() && !announce.card()"
+        <app-friends-home-card [view]="view" [lang]="lang()" [showNew]="announce.chip()" [groups]="groups()" [canCreate]="canCreate() && !announce.card()"
           [inviteState]="inviteState()" (groupSelected)="select($event)" (invite)="invite($event)" />
       </div>
     } @else if (reserving() && view() === null) {
@@ -58,12 +58,12 @@ export class SocialHomeEntryComponent {
   /** Sous le maximum de groupes (`Social:MaxGroupsPerPlayer`, rendu par le serveur) : « Créer un nouveau groupe » reste offert. */
   protected readonly canCreate = computed(() => this.groups().length > 0 && this.groups().length < this.maxGroups());
   /**
-   * La carte amis, sauf pour un invité ou un compte sans groupe tant que l'annonce des groupes est ouverte : elle dit déjà la même chose
-   * (« Créer un compte », « Créer un groupe »), une seule tuile s'ajoute au défi. Fermée, la carte revient avec sa pastille « Nouveau ».
+   * La carte amis, sauf pour un compte sans groupe tant que l'annonce des groupes est ouverte : elle dit déjà la même chose
+   * (« Créer un groupe »), une seule tuile s'ajoute au défi. Fermée, la carte revient avec sa pastille « Nouveau ».
    */
   protected readonly shownView = computed(() => {
     const view = this.view();
-    return view !== null && this.announce.card() && (view.kind === 'guest' || view.kind === 'no_group') ? null : view;
+    return view !== null && this.announce.card() && view.kind === 'no_group' ? null : view;
   });
   /** La carte d'un compte se lit (deux appels) : sa place est gardée, vide, tant qu'elle n'est pas là. */
   protected readonly reserving = signal(false);
@@ -95,7 +95,8 @@ export class SocialHomeEntryComponent {
       this.announce.setGroups([]);
       this.groups.set([]);
       this.maxGroups.set(0);
-      this.view.set({ kind: 'guest' });
+      this.view.set(null);
+      this.reserving.set(false);
       return;
     }
     let view: FriendsCardView | null;

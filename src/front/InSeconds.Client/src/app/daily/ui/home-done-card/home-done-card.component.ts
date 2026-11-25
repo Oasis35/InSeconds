@@ -9,17 +9,18 @@ import { trackBar } from '../result-rows/result-rows';
 import { DayHighlightComponent } from '../day-highlight/day-highlight.component';
 import { DayHistory, DayStats } from '../../domain/daily';
 import { Streak } from '../../domain/streak';
+import { StreakEventLineComponent } from '../streak-event-line/streak-event-line.component';
 import { StreakPillComponent } from '../streak-pill/streak-pill.component';
 
 /**
  * La carte du défi du jour sur l'accueil une fois joué : « Ton score du jour » et le compte à rebours, la partie en petites barres avec
  * « Détail », qui déplie sur place les morceaux (réponses, écoute, stats) puis l'égaliseur « Les scores du jour » (rien de plus sans les stats,
- * piège 41), la série et les gels à droite de cette ligne, la phrase du moment fort (sinon « mieux que X % »), « Partager mon score ». Tuile du moment (`focus`) tant que
+ * piège 41), la série et les gels à droite de cette ligne, puis l'événement de gel du jour (une ligne cyan, comptes seulement), la phrase du moment fort (sinon « mieux que X % »), « Partager mon score ». Tuile du moment (`focus`) tant que
  * rien d'autre n'attend le joueur : tube ambre et « Partager » plein ; quand une autre carte passe devant, une carte simple, « Partager » en contour.
  */
 @Component({
   selector: 'app-home-done-card',
-  imports: [TranslatePipe, PointsPipe, ShareButtonComponent, DayHighlightComponent, StreakPillComponent, TrackResultsListComponent, ScoreDistributionChartComponent],
+  imports: [TranslatePipe, PointsPipe, ShareButtonComponent, DayHighlightComponent, StreakPillComponent, StreakEventLineComponent, TrackResultsListComponent, ScoreDistributionChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
@@ -57,6 +58,9 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
         }
         <app-streak-pill class="ml-auto" [streak]="streak()" [linked]="linked()" [stackWhenNarrow]="true" (open)="openStreak.emit()" />
       </div>
+      @if (gelEvent(); as event) {
+        <app-streak-event-line [kind]="event" [streak]="streak()?.streak ?? null" [freezesUsed]="freezesUsed()" />
+      }
       @if (rows().length && detailOpen()) {
         <div class="-mx-5" style="border-top:1px solid var(--border-medium);border-bottom:1px solid var(--border-medium)" data-testid="home-detail">
           <app-track-results-list [rows]="rows()" [lang]="lang()" />
@@ -91,6 +95,9 @@ export class HomeDoneCardComponent {
   /** Le relevé de série et de gels, sous le partage (rien sans série en cours). */
   readonly streak = input<Streak | null>(null);
   readonly linked = input(false);
+  /** Compte : l'événement de gel du jour, dit en une ligne sous la série (gel gagné, ou gels qui ont sauvé la série). */
+  readonly gelEvent = input<'earned' | 'used' | null>(null);
+  readonly freezesUsed = input(0);
   /** « Mieux que X % » quand la partie n'a pas de moment fort ; vide sous 5 joueurs. */
   readonly betterThanPercent = input<number | null>(null);
   /** Ce que l'historique du joueur permet de dire quand les autres joueurs du jour ne suffisent pas. */

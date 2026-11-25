@@ -7,9 +7,8 @@ describe('annonce des groupes', () => {
     expect(announceActive('2026-12-12')).toBe(false);
   });
 
-  it('la variante suit le compte et ses groupes', () => {
-    expect(announceVariant(false, 0)).toBe('guest');
-    expect(announceVariant(true, 0)).toBe('no_group');
-    expect(announceVariant(true, 2)).toBe('member');
+  it('la variante suit les groupes du compte', () => {
+    expect(announceVariant(0)).toBe('no_group');
+    expect(announceVariant(2)).toBe('member');
   });
 });

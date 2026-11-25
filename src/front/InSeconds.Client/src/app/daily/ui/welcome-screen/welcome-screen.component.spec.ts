@@ -30,9 +30,8 @@ describe('WelcomeScreenComponent', () => {
     expect(spy).toHaveBeenCalled();
   });
 
-  it('invité : propose la connexion, sauf si hideLoginCta', () => {
+  it('invité : propose la connexion', () => {
     expect(render().el.querySelector('a[href="/account/login"]')).not.toBeNull();
-    expect(render({ hideLoginCta: true }).el.querySelector('a[href="/account/login"]')).toBeNull();
   });
 
   it('connecté : ni « Créer un compte » ni lien vers le profil (le profil est dans l’en-tête)', () => {
