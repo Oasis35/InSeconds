@@ -120,7 +120,7 @@ public static class SubmitAnswerEndpoint
         DailyLog.AnswerSubmitted(
             logger, session.PlayerId, session.Id, info.Id, outcome.ListenedSeconds, outcome.ArtistCorrect, outcome.TitleCorrect,
             outcome.HintLevelUsed, score, request.Position, info.Artist, info.DisplayTitle);
-        metrics.AnswerSubmitted(outcome);
+        metrics.AnswerSubmitted(outcome, score);
 
         if (completed)
         {

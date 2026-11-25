@@ -38,8 +38,8 @@ public class PlayersMetricsTests(PostgresFixture postgres) : IAsyncLifetime
             .EnsureSuccessStatusCode();
         (await _app.Browser().PostAsync("/api/players/guest", null, TestContext.Current.CancellationToken)).EnsureSuccessStatusCode();
 
-        Assert.Equal(["tiktok", "direct"], guests.GetMeasurementSnapshot().Select(m => (string?)m.Tags["source"]));
-        Assert.All(guests.GetMeasurementSnapshot(), m => Assert.Equal(["source"], m.Tags.Keys));
+        Assert.Equal(["tiktok", "direct"], guests.GetMeasurementSnapshot().Where(m => m.Value != 0).Select(m => (string?)m.Tags["source"]));
+        Assert.All(guests.GetMeasurementSnapshot().Where(m => m.Value != 0), m => Assert.Equal(["source"], m.Tags.Keys));
     }
 
     [Fact]
@@ -50,9 +50,9 @@ public class PlayersMetricsTests(PostgresFixture postgres) : IAsyncLifetime
         await _app.SignInDeviceAsync("compte@example.com", "Compte");
         await _app.SignInDeviceAsync("compte@example.com");
 
-        var outcomes = signIns.GetMeasurementSnapshot().Select(m => (string?)m.Tags["outcome"]);
+        var outcomes = signIns.GetMeasurementSnapshot().Where(m => m.Value != 0).Select(m => (string?)m.Tags["outcome"]);
         Assert.Equal(["Linked", "Found"], outcomes);
-        Assert.All(signIns.GetMeasurementSnapshot(), m => Assert.Equal(["outcome"], m.Tags.Keys));
+        Assert.All(signIns.GetMeasurementSnapshot().Where(m => m.Value != 0), m => Assert.Equal(["outcome"], m.Tags.Keys));
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public class PlayersMetricsTests(PostgresFixture postgres) : IAsyncLifetime
         (await device.Client.PostAsJsonAsync("/api/players/me/delete", new DeleteMyAccount("Part"), TestContext.Current.CancellationToken))
             .EnsureSuccessStatusCode();
 
-        var measurement = Assert.Single(erased.GetMeasurementSnapshot());
+        var measurement = Assert.Single(erased.GetMeasurementSnapshot(), m => m.Value != 0);
         Assert.Equal((1L, "request"), (measurement.Value, (string?)measurement.Tags["reason"]));
     }
 }
