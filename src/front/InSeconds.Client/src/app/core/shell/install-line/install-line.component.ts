@@ -19,12 +19,12 @@ export const INSTALL_LINE_MIN_GAMES = 2;
   template: `
     @if (visible()) {
       <section class="flex flex-col gap-2 rounded-(--radius-card) py-1.5 pl-4 pr-2" style="background:var(--bg-surface);border:1px solid var(--border-medium)"
-        data-testid="install-line" [attr.aria-label]="'pwa.install.lineLabel' | translate">
+        data-testid="install-line" [attr.aria-label]="'shell.install.lineLabel' | translate">
         <div class="flex items-center gap-3">
-          <p class="flex-1 text-[13px] leading-snug" style="color:var(--text-light)">{{ 'pwa.install.line' | translate }}</p>
+          <p class="flex-1 text-[13px] leading-snug" style="color:var(--text-light)">{{ 'shell.install.line' | translate }}</p>
           <button type="button" (click)="add()" data-testid="install-add"
             class="min-h-11 shrink-0 rounded-(--radius-button) px-3 font-display text-[11px] font-bold uppercase tracking-[.06em] cursor-pointer touch-manipulation"
-            style="border:1.5px solid var(--border-neutral);color:var(--text-hi)">{{ 'pwa.install.add' | translate }}</button>
+            style="border:1.5px solid var(--border-neutral);color:var(--text-hi)">{{ 'shell.install.add' | translate }}</button>
           <button type="button" (click)="install.dismissLine()" data-testid="install-dismiss" [attr.aria-label]="'common.close' | translate"
             class="w-8 min-h-11 shrink-0 text-sm cursor-pointer touch-manipulation" style="color:var(--text-muted)">✕</button>
         </div>

@@ -12,9 +12,9 @@ import { TranslatePipe } from '@ngx-translate/core';
       <li>
         <svg class="inline-block align-[-3px] mr-1" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent-2)" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" /></svg>
-        {{ 'pwa.install.step1' | translate }}
+        {{ 'shell.install.step1' | translate }}
       </li>
-      <li>{{ 'pwa.install.step2' | translate }}</li>
+      <li>{{ 'shell.install.step2' | translate }}</li>
     </ol>
   `,
 })

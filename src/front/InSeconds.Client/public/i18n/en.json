@@ -123,6 +123,15 @@
     },
     "header": {
       "admin": "Admin"
+    },
+    "install": {
+      "lineLabel": "Install the app",
+      "line": "Add InSeconds to your home screen to play every day.",
+      "add": "Add",
+      "step1": "Tap Share, at the bottom of Safari.",
+      "step2": "Choose “Add to Home Screen”.",
+      "profileTitle": "Install the app",
+      "profileHint": "A shortcut on your home screen"
     }
   },
   "ui": {
@@ -1702,17 +1711,6 @@
       "me": "You",
       "notPlayed": "not played",
       "hidden": "Finish this challenge to see their scores."
-    }
-  },
-  "pwa": {
-    "install": {
-      "lineLabel": "Install the app",
-      "line": "Add InSeconds to your home screen to play every day.",
-      "add": "Add",
-      "step1": "Tap Share, at the bottom of Safari.",
-      "step2": "Choose “Add to Home Screen”.",
-      "profileTitle": "Install the app",
-      "profileHint": "A shortcut on your home screen"
     }
   }
 }

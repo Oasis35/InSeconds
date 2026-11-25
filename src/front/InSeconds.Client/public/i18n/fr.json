@@ -123,6 +123,15 @@
     },
     "header": {
       "admin": "Admin"
+    },
+    "install": {
+      "lineLabel": "Installer l'appli",
+      "line": "Ajoute InSeconds à ton écran d'accueil pour jouer chaque jour.",
+      "add": "Ajouter",
+      "step1": "Touche Partager, en bas de Safari.",
+      "step2": "Choisis « Sur l'écran d'accueil ».",
+      "profileTitle": "Installer l'appli",
+      "profileHint": "Un raccourci sur ton écran d'accueil"
     }
   },
   "ui": {
@@ -1702,17 +1711,6 @@
       "me": "Toi",
       "notPlayed": "pas joué",
       "hidden": "Finis ce défi pour voir leurs scores."
-    }
-  },
-  "pwa": {
-    "install": {
-      "lineLabel": "Installer l'appli",
-      "line": "Ajoute InSeconds à ton écran d'accueil pour jouer chaque jour.",
-      "add": "Ajouter",
-      "step1": "Touche Partager, en bas de Safari.",
-      "step2": "Choisis « Sur l'écran d'accueil ».",
-      "profileTitle": "Installer l'appli",
-      "profileHint": "Un raccourci sur ton écran d'accueil"
     }
   }
 }
