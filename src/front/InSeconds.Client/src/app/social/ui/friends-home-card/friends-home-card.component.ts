@@ -9,7 +9,7 @@ import { FriendPresence, FriendsCardView } from '../../domain/friends-card';
 /**
  * La carte amis de l'accueil, sous la carte du défi. Tant que le défi du jour reste à faire : le groupe, « 3 sur 5 ont joué » et une pastille par
  * membre (pleine s'il a joué, éteinte sinon), **jamais un score**. Défi fait : « Potes, aujourd'hui », le haut du classement du jour, la ligne du
- * joueur en ambre. Dans plusieurs groupes : une rangée de pastilles en tête pour choisir celui qu'elle montre. Sans groupe : « Créer un groupe ». 
+ * joueur en ambre. Dans plusieurs groupes : une rangée de pastilles en tête pour choisir celui qu'elle montre. Sans groupe : « Créer un groupe ».
  * Un membre a, sous la liste, « Voir tout le classement » (ou « Voir le groupe » avant le défi) en lien à droite, puis « Inviter un ami » (le groupe en cours, dont le nom est le titre de la carte) ;
  * sous le maximum de groupes, un « + » en pointillé à la fin de la rangée des groupes en crée un. Jamais la tuile de focus : contour plat, aucune lueur.
  */

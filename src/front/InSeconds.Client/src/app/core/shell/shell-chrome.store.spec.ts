@@ -7,6 +7,15 @@ describe('ShellChromeStore', () => {
     expect(store.survie()).toBe(false);
     expect(store.immersive()).toBe(false);
     expect(store.dailyDone()).toBeNull();
+    expect(store.adminAlerts()).toBeNull();
+  });
+
+  it("garde le nombre d'alertes de l'admin que son domaine pose, et l'oublie", () => {
+    const store = TestBed.inject(ShellChromeStore);
+    store.setAdminAlerts(2);
+    expect(store.adminAlerts()).toBe(2);
+    store.setAdminAlerts(null);
+    expect(store.adminAlerts()).toBeNull();
   });
 
   it("garde ce que les pages posent", () => {

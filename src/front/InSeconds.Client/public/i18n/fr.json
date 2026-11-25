@@ -122,7 +122,9 @@
       "later": "Plus tard"
     },
     "header": {
-      "admin": "Admin"
+      "admin": "Admin",
+      "adminOk": "Admin, tout va bien",
+      "adminAlerts": "Admin, {{ count }} alerte(s)"
     },
     "install": {
       "lineLabel": "Installer l'appli",
