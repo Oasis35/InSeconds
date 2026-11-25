@@ -6,7 +6,7 @@ import { adminTabOf, rememberTabScroll } from './tab-scroll-memory';
 describe('adminTabOf', () => {
   it('lit l\'onglet d\'une adresse de l\'admin, sans la requête ni le fragment', () => {
     expect(adminTabOf('/admin/joueurs')).toBe('joueurs');
-    expect(adminTabOf('/admin/defis?mois=2026-10')).toBe('defis');
+    expect(adminTabOf('/admin/dashboard?jour=2026-10-04')).toBe('dashboard');
     expect(adminTabOf('/admin/catalogue#haut')).toBe('catalogue');
   });
 
@@ -48,7 +48,7 @@ describe('rememberTabScroll', () => {
   it('retrouve un onglet déjà vu là où on l\'avait laissé, et arrive en haut d\'un onglet pas encore vu', async () => {
     window.scrollTo({ top: 1200, behavior: 'instant' });
 
-    await navigate('/admin/defis');
+    await navigate('/admin/dashboard');
     expect(window.scrollY).toBe(0);
 
     await navigate('/admin/joueurs');
@@ -57,7 +57,7 @@ describe('rememberTabScroll', () => {
 
   it('l\'admin qui fait défiler lui-même pendant la reprise reprend la main', async () => {
     window.scrollTo({ top: 1200, behavior: 'instant' });
-    await navigate('/admin/defis');
+    await navigate('/admin/dashboard');
 
     navigationId += 1;
     events.next(new NavigationStart(navigationId, '/admin/joueurs'));

@@ -476,28 +476,34 @@ test.describe('Admin - panneau technique et cooldown', () => {
   });
 });
 
-test.describe('Admin - défis', () => {
+test.describe('Admin - défis de l\'Accueil', () => {
   test.beforeEach(async ({ api }) => {
     await api.reseed();
   });
 
-  test('liste les défis existants', async ({ page }) => {
+  test('le calendrier et le tableau du mois listent les défis existants ; l\'ancien onglet Défis mène à l\'Accueil', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
     // Le seed écrit un défi par jour où un morceau a servi (J-2, J-1, aujourd'hui, mais aussi J-5,
     // J-15, J-30…, cf. CatalogueSeed). Combien tombent dans le mois UTC courant dépend du jour : on les compte depuis l'API.
-    await page.getByRole('link', { name: /^Défis/ }).click();
     const now = new Date();
-    const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-    const currentMonth = `${monthNames[now.getUTCMonth()]} ${now.getUTCFullYear()}`;
-    await expect(page.getByText(currentMonth)).toBeVisible();
     const monthPrefix = now.toISOString().slice(0, 7);
     const expectedCount = (await admin.apiGetChallengeDates()).filter(d => d.startsWith(monthPrefix)).length;
+
+    await expect(page.getByRole('link', { name: /^Défis/ })).toHaveCount(0);
+    await page.getByTestId('day-picker-toggle').click();
+    await expect(page.getByTestId('calendar-day')).toHaveCount(expectedCount);
+    await page.getByTestId('day-picker-toggle').click();
+
+    // Le tableau du mois est replié d'office ; ouvert, il a une ligne par défi du mois.
+    await expect(page.getByTestId('challenge-table-row')).toHaveCount(0);
+    await page.getByTestId('month-challenges-toggle').click();
     await expect(page.getByTestId('challenge-table-row')).toHaveCount(expectedCount);
-    // Le détail du défi le plus récent du mois est ouvert à droite du tableau, et le mois est dans l'adresse.
-    await expect(page.getByTestId('challenge-detail')).toBeVisible();
-    await expect(page).toHaveURL(new RegExp(`[?&]mois=${monthPrefix}`));
+    await expect(page.getByTestId('day-detail')).toBeVisible();
+
+    await page.goto('/admin/defis?mois=' + monthPrefix);
+    await expect(page).toHaveURL(/\/admin\/dashboard$/);
   });
 });
 
@@ -514,18 +520,17 @@ test.describe('Admin - recalcul des stats', () => {
     await admin.goto();
     await admin.login();
     const day = daysAgo(2);
-    await admin.openChallengesAt(day);
+    await admin.openDay(day);
 
-    const row = await admin.challengeRow(day);
     const recompute = page.waitForResponse(r => r.url().endsWith(`/challenges/${day}/stats/recompute`));
-    await admin.recomputeButton(row).click();
+    await admin.recomputeDay();
     expect((await recompute).status()).toBe(200);
 
     // Le seed fige peut-être déjà ce jour : c'est la date du calcul, aujourd'hui (heure locale du navigateur), qui compte.
     const now = new Date();
-    const today = [now.getDate(), now.getMonth() + 1].map(n => String(n).padStart(2, '0')).join('/') + `/${now.getFullYear()}`;
-    await expect(row.getByTestId('challenge-computed-at')).toContainText(`Chiffres figés le ${today}`);
-    await expect(row.getByRole('alert')).toHaveCount(0);
+    const today = [now.getDate(), now.getMonth() + 1].map(n => String(n).padStart(2, '0')).join('/');
+    await expect(admin.frozenLine()).toContainText(`Stats figées le ${today}`);
+    await expect(admin.frozenLine().getByRole('alert')).toHaveCount(0);
   });
 
   test('refuse le recalcul d\'un jour encore ouvert (admin.day_not_over)', async ({ page }) => {
@@ -533,7 +538,7 @@ test.describe('Admin - recalcul des stats', () => {
     const yesterday = daysAgo(1);
     // La veille n'a pas le bouton (une partie peut encore s'y finir) : on le fait apparaître en retouchant la liste
     // reçue, pour vérifier que l'API refuse quand même et que l'écran le dit.
-    await page.route('**/api/admin/daily/challenges/stats', async route => {
+    await page.route(/\/api\/admin\/daily\/challenges\/stats(\?|$)/, async route => {
       const response = await route.fetch();
       const body = await response.json() as { challenges: { date: string; canRecompute: boolean }[] };
       for (const c of body.challenges) {
@@ -543,7 +548,7 @@ test.describe('Admin - recalcul des stats', () => {
     });
     await admin.goto();
     await admin.login();
-    await admin.openChallengesAt(yesterday);
+    await admin.openDay(yesterday);
 
     // Réponse lue au passage par page.route, comme dans answers-hidden : avec waitForResponse, Chromium peut avoir
     // libéré le corps quand on le lit (« Response body is not available… navigated away from », test instable).
@@ -555,14 +560,12 @@ test.describe('Admin - recalcul des stats', () => {
       await route.fulfill({ response, body });
     });
 
-    const row = await admin.challengeRow(yesterday);
-    await admin.recomputeButton(row).click();
+    await admin.recomputeDay();
     await expect.poll(() => recompute).toBeDefined();
     expect(recompute?.status).toBe(409);
     expect((JSON.parse(recompute?.body ?? '{}') as { code?: string }).code).toBe('admin.day_not_over');
 
-    await expect(row.getByRole('alert')).toHaveText("Ce jour n'est pas encore fini : les stats seront figées demain.");
-    await expect(row.getByTestId('challenge-computed-at')).toHaveCount(0);
+    await expect(admin.frozenLine().getByRole('alert')).toHaveText("Ce jour n'est pas encore fini : les stats seront figées demain.");
   });
 });
 
@@ -600,8 +603,6 @@ test.describe('Admin - chargement paresseux par onglet', () => {
     await admin.goto();
     await admin.login();
 
-    // L'Accueil lit les stats des défis (joueurs et morceaux du jour) : le compteur des Défis apparaît dès l'arrivée.
-    await expect(page.getByRole('link', { name: /^Défis \(\d+\)$/ })).toBeVisible();
     // Avant visite : libellé nu (pas de "(N)")
     await expect(admin.tab('Joueurs')).toBeVisible();
 
@@ -656,7 +657,7 @@ test.describe('Admin - indicateur joueurs / ID navigateur', () => {
     expect(clipText.slice(0, 8)).toBe(shortId);
   });
 
-  test('le joueur qui vient de jouer apparaît en surbrillance "toi" dans Stats par défi', async ({ page, api }) => {
+  test('le joueur qui vient de jouer apparaît en surbrillance "toi" dans le détail du jour de l\'Accueil', async ({ page, api }) => {
     await api.reset();
     await page.clock.install({ time: Date.now() });
 
@@ -669,7 +670,6 @@ test.describe('Admin - indicateur joueurs / ID navigateur', () => {
     expect(browserShortId).toMatch(/^[0-9a-f]{8}$/);
 
     await admin.login();
-    await page.getByRole('link', { name: /^Défis/ }).click();
 
     const today = new Date().toISOString().slice(0, 10);
     const todayRow = await admin.challengeRow(today);
@@ -703,7 +703,6 @@ test.describe('Admin - indicateur joueurs / ID navigateur', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Défis/ }).click();
 
     const today = new Date().toISOString().slice(0, 10);
     const todayRow = await admin.challengeRow(today);

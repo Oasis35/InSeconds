@@ -358,10 +358,8 @@
     "logout": "Sign out",
     "tabs": {
       "dashboard": "Home",
-      "challengesPlain": "Challenges",
       "playersPlain": "Players",
       "groupsPlain": "Groups",
-      "challenges": "Challenges ({{ count }})",
       "players": "Players ({{ count }})",
       "content": "Content"
     },
@@ -522,9 +520,6 @@
       "registered": "registered",
       "active7d": "active in 7 d",
       "active30d": "active in 30 d",
-      "statsPerChallenge": "Stats per challenge",
-      "noChallenge": "No challenge.",
-      "noChallengeThisMonth": "No challenge this month.",
       "abandon": "give-up",
       "abandons": "give-ups",
       "median": "Median",
@@ -558,16 +553,16 @@
       "newcomer": "newcomer",
       "newcomers": "newcomers",
       "arrivalsTitle": "Where newcomers come from · 30 days",
-      "arrivalsCount": "new players"
+      "arrivalsCount": "new players",
+      "frozenAt": "Stats frozen on {{ date }}",
+      "frozen": "Stats frozen",
+      "monthChallenges": "{{ month }} challenges"
     },
     "challenges": {
-      "noChallengeThisMonth": "No challenge this month.",
       "previousMonth": "Previous month",
       "nextMonth": "Next month",
       "showChart": "Show the time distribution",
       "guessTimeTitle": "How long the other players listened",
-      "computedAt": "Figures frozen on {{ date }}",
-      "recompute": "Recompute stats",
       "recomputing": "Recomputing…",
       "recomputeNotFound": "No challenge for this day.",
       "colDate": "Date",
@@ -577,7 +572,11 @@
       "colAccounts": "Accounts",
       "colGuests": "Guests",
       "colCompleted": "Finished",
-      "scoreChart": "Score distribution"
+      "scoreChart": "Score distribution",
+      "recomputeLink": "Recompute",
+      "recomputeConfirm": "Recompute this day's stats? The frozen figures will be replaced.",
+      "recomputeYes": "Recompute",
+      "recomputeNo": "Cancel"
     },
     "groups": {
       "title": "Groups ({{ count }})",

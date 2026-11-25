@@ -10,7 +10,8 @@ Rôle `is_admin` uniquement (piège 5). L'API revérifie l'accès à chaque requ
 
 ## Routes et fournisseurs
 
-- `ADMIN_ROUTES`, sept onglets chargés à la demande : `dashboard` (arrivée), `defis`, `catalogue` (Morceaux), `themes`, `a-valider`, `groupes`, `joueurs`. Anciennes adresses : `/admin` (et `?tab=`) → l'onglet demandé ou `dashboard`, `pool` et `actions` → `catalogue`, un onglet inconnu → `dashboard`.
+- `ADMIN_ROUTES`, six onglets chargés à la demande : `dashboard` (arrivée), `catalogue` (Morceaux), `themes`, `a-valider`, `groupes`, `joueurs`. Anciennes adresses : `/admin` (et `?tab=`) → l'onglet demandé ou `dashboard`, `defis` (l'ancien onglet Défis, `?mois=` abandonné) → `dashboard`, `pool` et `actions` → `catalogue`, un onglet inconnu → `dashboard`.
+- **Accueil** (`DashboardPage`) : le jour affiché (`?jour=`) se choisit par ‹ ›, une barre de l'activité ou le **calendrier** qui s'ouvre sous la date (`DashboardDayCalendarComponent` : tous les `availableDays`, ‹ › de mois). Ses joueurs, ses morceaux et le recalcul viennent du `ChallengesStore` (30 derniers défis, puis le mois du jour affiché lu à la demande par `requestMonth`). Le **recalcul des stats** est un lien discret en bas du « Détail » (`DashboardKpisComponent`), seulement quand `canRecompute` (J-2 et avant : le jour figé en base), avec confirmation ; la veille et le jour même n'en ont pas. Le tableau « Les défis du mois » (`ChallengeTableComponent`) est **replié d'office** ; une ligne change le jour affiché. Les morceaux du jour gardent `ChallengeTrackStatsComponent`.
 - L'onglet « Contenu » de la barre regroupe `catalogue`, `themes` et `a-valider`, reliés par `ContentTabsComponent` (`ui/content-tabs`) ; l'onglet est allumé par l'adresse (`AdminTab.alsoActive`, `AdminShellPage.isActive`), pas par `routerLinkActive`. Onglets dans `ADMIN_TABS` (`feature/admin-tabs.ts`).
 - `provideAdminApi()` (`data-access/admin-api.providers.ts`, dans les `providers` de la route) : clients `AdminClient`, `CatalogueClient`, `DailyClient`, `RunsClient`, `SocialClient`, leurs adresses, `JOBS_DASHBOARD_URL` et tous les adaptateurs de l'admin.
 - Rangement : un dossier par onglet dans `feature/` (sa page, ses fenêtres en sous-dossiers) et dans `ui/` ; l'onglet des morceaux s'appelle `pool/` dans les deux couches (page `CataloguePage`, route `catalogue`).
@@ -25,7 +26,7 @@ Rôle `is_admin` uniquement (piège 5). L'API revérifie l'accès à chaque requ
 - Chaque onglet retrouve sa position de défilement pendant la visite (`rememberTabScroll`, `tab-scroll-memory.ts`), après le retour en haut du routeur.
 - État d'un onglet dans l'adresse quand il se partage : `?jour=`, `?mois=`, `?view=`, `?page=` (à partir de 1, `replaceUrl`), `?theme=`, `?extrait=absent` (effacé après lecture).
 - Rechargement pour une nouvelle version : `background`, sauf quand un champ de texte a le focus (`navigation`).
-- Codes d'erreur `admin.*` dans `ERROR_MESSAGE_KEYS`. Seules adaptations locales : le recalcul des stats lit `common.not_found` comme « aucun défi ce jour », la ligne « Demain » reconnaît `admin.pool_insufficient`.
+- Codes d'erreur `admin.*` dans `ERROR_MESSAGE_KEYS`. Seules adaptations locales : le recalcul des stats (`DashboardPage`) lit `common.not_found` comme « aucun défi ce jour », la ligne « Demain » reconnaît `admin.pool_insufficient`.
 - RGPD : l'email d'un joueur est masqué sur PC (`maskEmail`) jusqu'au clic, absent des cartes du téléphone ; le filtre cherche quand même dans l'adresse complète.
 
 ## Morceaux, thèmes, sas

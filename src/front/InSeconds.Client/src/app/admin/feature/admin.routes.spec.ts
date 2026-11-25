@@ -48,8 +48,13 @@ describe('ADMIN_ROUTES', () => {
     expect(await landOn('/admin?tab=pool&page=2')).toBe('/admin/catalogue?page=2');
   });
 
-  it.each(['dashboard', 'defis', 'joueurs'])('envoie ?tab=%s vers l\'onglet de ce nom', async tab => {
+  it.each(['dashboard', 'joueurs'])('envoie ?tab=%s vers l\'onglet de ce nom', async tab => {
     expect(await landOn(`/admin?tab=${tab}`)).toBe(`/admin/${tab}`);
+  });
+
+  it('l\'ancien onglet Défis mène à l\'accueil, avec ou sans ?tab=, mois ignoré', async () => {
+    expect(await landOn('/admin?tab=defis')).toBe('/admin/dashboard');
+    expect(await landOn('/admin/defis?mois=2026-10')).toBe('/admin/dashboard');
   });
 
   it('l\'ancien onglet Actions mène aux Morceaux, où le cooldown se règle', async () => {

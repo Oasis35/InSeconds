@@ -108,7 +108,7 @@ describe('AdminShellPage', () => {
     const { element } = await open(admin, '/admin/catalogue');
 
     for (const links of [sideTabs(element), bottomTabs(element)]) {
-      expect(links.map(a => a.getAttribute('href'))).toEqual(['/admin/dashboard', '/admin/defis', '/admin/catalogue', '/admin/groupes', '/admin/joueurs']);
+      expect(links.map(a => a.getAttribute('href'))).toEqual(['/admin/dashboard', '/admin/catalogue', '/admin/groupes', '/admin/joueurs']);
       expect(links.filter(a => a.getAttribute('aria-current') === 'page').map(a => a.getAttribute('href'))).toEqual(['/admin/catalogue']);
     }
   });
@@ -212,11 +212,11 @@ describe('AdminShellPage', () => {
     expect(Array.from(panel.querySelectorAll('button')).some(b => b.textContent?.includes('admin.logout'))).toBe(true);
   });
 
-  it('montre le libellé nu de Défis et de Joueurs avant leur première ouverture', async () => {
+  it('montre le libellé nu de Joueurs avant leur première ouverture', async () => {
     const { element } = await open(admin, '/admin/catalogue');
 
     expect(sideTabs(element).map(a => a.textContent?.trim())).toEqual([
-      'admin.tabs.dashboard', 'admin.tabs.challengesPlain', 'admin.tabs.content', 'admin.tabs.groupsPlain', 'admin.tabs.playersPlain',
+      'admin.tabs.dashboard', 'admin.tabs.content', 'admin.tabs.groupsPlain', 'admin.tabs.playersPlain',
     ]);
   });
 
@@ -224,15 +224,14 @@ describe('AdminShellPage', () => {
     const { harness, element } = await open(admin, '/admin/catalogue');
     const counts = TestBed.inject(AdminCounts);
 
-    counts.setChallenges(30);
     counts.setPlayers(12);
     harness.detectChanges();
 
     expect(sideTabs(element).map(a => a.textContent?.trim()))
-      .toEqual(['admin.tabs.dashboard', 'admin.tabs.challenges', 'admin.tabs.content', 'admin.tabs.groupsPlain', 'admin.tabs.players']);
+      .toEqual(['admin.tabs.dashboard', 'admin.tabs.content', 'admin.tabs.groupsPlain', 'admin.tabs.players']);
     // La barre du bas, étroite, garde les libellés nus.
     expect(bottomTabs(element).map(a => a.textContent?.trim()))
-      .toEqual(['admin.tabs.dashboard', 'admin.tabs.challengesPlain', 'admin.tabs.content', 'admin.tabs.groupsPlain', 'admin.tabs.playersPlain']);
+      .toEqual(['admin.tabs.dashboard', 'admin.tabs.content', 'admin.tabs.groupsPlain', 'admin.tabs.playersPlain']);
   });
 
   it('ne montre pas l\'heure de déploiement quand le build ne la connaît pas', async () => {

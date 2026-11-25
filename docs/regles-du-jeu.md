@@ -73,9 +73,9 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
 
 ## Stats admin sur la prolongation
 
-- **Taux de prolongation** (par morceau, `GET /api/admin/daily/challenges/stats`) - % des réponses sur un morceau où le joueur a prolongé l'écoute au moins une fois (`WasExtended=true`). Purement informatif (n'affecte rien côté jeu), affiché dans l'onglet Défis de l'admin, tuile « Prolongé » à côté des taux artiste/titre/écoute moyenne. **[Back + Front]**
-- **Histogramme admin** - même route, chargée à l'ouverture de l'onglet Défis : une icône « graphique » sur chaque carte morceau ouvre une pop-up avec l'histogramme « en combien de temps les autres ont trouvé » **avec les chiffres au-dessus des barres**. Purement informatif. **[Back + Front]**
-- **Photo figée** - les statistiques d'un jour terminé (J-2 et avant) sont figées par la tâche `daily-close-day`, avec les paliers et le barème de ce jour-là ; un bouton « Recalculer les stats » de l'onglet Défis les refait. La veille et le jour même sont calculés en direct. **[Back]**
+- **Taux de prolongation** (par morceau, `GET /api/admin/daily/challenges/stats`) - % des réponses sur un morceau où le joueur a prolongé l'écoute au moins une fois (`WasExtended=true`). Purement informatif (n'affecte rien côté jeu), affiché dans le détail du jour de l'Accueil de l'admin, tuile « Prolongé » à côté des taux artiste/titre/écoute moyenne. **[Back + Front]**
+- **Histogramme admin** - même route, chargée à l'ouverture de l'Accueil de l'admin : une icône « graphique » sur chaque carte morceau ouvre une pop-up avec l'histogramme « en combien de temps les autres ont trouvé » **avec les chiffres au-dessus des barres**. Purement informatif. **[Back + Front]**
+- **Photo figée** - les statistiques d'un jour terminé (J-2 et avant) sont figées par la tâche `daily-close-day`, avec les paliers et le barème de ce jour-là ; un lien « Recalculer » (avec confirmation), sous le « Détail » du jour de l'Accueil de l'admin et seulement sur un jour figé, les refait. La veille et le jour même sont calculés en direct. **[Back]**
 
 ## Indices (hints)
 

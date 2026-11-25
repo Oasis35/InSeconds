@@ -1,6 +1,6 @@
 import {
-  activityBarHeightPx, arrivalShares, canGoToNextDay, canGoToPreviousDay, completionRateColor, formatDayLong, formatDayShort,
-  maxDailyPlayers, parseDay, shiftDay, sourceLabelKey, todayUtc, totalPlayers,
+  activityBarHeightPx, arrivalShares, calendarCells, canGoToNextDay, canGoToPreviousDay, completionRateColor, formatDayLong, formatDayShort,
+  maxDailyPlayers, parseDay, shiftCalendarMonth, shiftDay, sourceLabelKey, todayUtc, totalPlayers,
 } from './dashboard';
 
 describe('dashboard (domaine)', () => {
@@ -96,5 +96,27 @@ describe('sources d\'arrivée', () => {
   it('pas de reste quand tout tient dans les trois premières ; rien sans arrivée', () => {
     expect(arrivalShares([{ source: 'direct', count: 2 }])).toEqual([{ source: 'direct', count: 2, percent: 100 }]);
     expect(arrivalShares([])).toEqual([]);
+  });
+});
+
+describe('calendrier (domaine)', () => {
+  it('calendarCells : des cases vides jusqu\'au lundi, puis un jour par case, ceux qui ont un défi marqués', () => {
+    // Novembre 2026 commence un dimanche : six cases vides (lundi à samedi) avant le 1er.
+    const cells = calendarCells('2026-11', ['2026-11-01', '2026-11-25']);
+
+    expect(cells.slice(0, 6).every(c => c.day === null)).toBe(true);
+    expect(cells).toHaveLength(6 + 30);
+    expect(cells[6]).toEqual({ day: '2026-11-01', dayOfMonth: 1, hasChallenge: true });
+    expect(cells.filter(c => c.hasChallenge).map(c => c.day)).toEqual(['2026-11-01', '2026-11-25']);
+  });
+
+  it('calendarCells : un mois qui commence un lundi n\'a aucune case vide, un mois bissextile a 29 jours', () => {
+    expect(calendarCells('2026-06', [])[0].day).toBe('2026-06-01');
+    expect(calendarCells('2028-02', []).filter(c => c.day !== null)).toHaveLength(29);
+  });
+
+  it('shiftCalendarMonth passe d\'une année à l\'autre', () => {
+    expect(shiftCalendarMonth('2026-01', -1)).toBe('2025-12');
+    expect(shiftCalendarMonth('2026-12', 1)).toBe('2027-01');
   });
 });
