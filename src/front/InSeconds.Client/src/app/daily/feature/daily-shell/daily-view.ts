@@ -3,18 +3,19 @@ import { Router } from '@angular/router';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { ModalService } from '../../../ui/modal/modal.service';
 import { formatSeconds } from '../../../ui/format/format-seconds';
-import { DailyGameStore } from '../../data-access/daily-game.store';
+import { HomeStore } from '../../data-access/home.store';
 import { DailyShare } from '../../data-access/daily-share';
 import { LostStreakNotice } from '../../data-access/lost-streak-notice';
 import { GuestStreakNotice } from '../../data-access/guest-streak-notice';
 import { rowsFromResults, rowsFromStats, shareTracksOf } from '../../ui/result-rows/result-rows';
 import { countUp } from '../../ui/score-count/count-up';
+import { DailyLauncher } from './daily-launcher';
 import { StreakSheetComponent, StreakSheetData, StreakSheetResult } from '../../ui/streak-sheet/streak-sheet.component';
 
 /** Premier chargement du jour (ou « Réessayer ») : l'état du jour, puis la tuile invité « série perdue » si elle est due. Fourni par `DailyShellComponent`. */
 @Injectable()
 export class DailyStartup {
-  private readonly store = inject(DailyGameStore);
+  private readonly store = inject(HomeStore);
   private readonly lostStreakNotice = inject(LostStreakNotice);
   private readonly guestStreakNotice = inject(GuestStreakNotice);
 
@@ -27,10 +28,11 @@ export class DailyStartup {
   }
 }
 
-/** Le panneau de série (« Série de 12 jours »), ouvert depuis l'accueil comme depuis la page du défi. */
+/** Le panneau de série (« Série de 12 jours »), ouvert depuis l'accueil. */
 @Injectable()
 export class StreakSheetOpener {
-  private readonly store = inject(DailyGameStore);
+  private readonly store = inject(HomeStore);
+  private readonly launcher = inject(DailyLauncher);
   private readonly language = inject(LanguageService);
   private readonly modal = inject(ModalService);
   private readonly router = inject(Router);
@@ -41,16 +43,22 @@ export class StreakSheetOpener {
     };
     const dialog = this.modal.openSheet<StreakSheetResult, StreakSheetData, StreakSheetComponent>(StreakSheetComponent, { data });
     dialog.closed.subscribe(result => {
-      if (result === 'playNow') this.store.playNow();
+      if (result === 'playNow') this.playNow();
       else if (result === 'signup') void this.router.navigate(['/account/login']);
     });
+  }
+
+  /** « Jouer maintenant » : lance ou reprend la partie du jour, seulement depuis la carte du défi ou de la pause. */
+  private playNow(): void {
+    const screen = this.store.screen();
+    if (screen === 'welcome' || screen === 'resume_prompt') this.launcher.start();
   }
 }
 
 /** Le résultat du jour : les morceaux, le score qui monte juste après la partie, le partage. Les mêmes sur l'accueil (V4) et sur la page du défi. */
 @Injectable()
 export class DailyResultView {
-  private readonly store = inject(DailyGameStore);
+  private readonly store = inject(HomeStore);
   private readonly dailyShare = inject(DailyShare);
 
   readonly copied = this.dailyShare.copied;

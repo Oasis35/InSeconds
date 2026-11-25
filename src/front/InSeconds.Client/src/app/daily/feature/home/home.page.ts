@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
@@ -14,7 +14,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
 import { HomeLegalLineComponent } from '../../../ui/legal-line/home-legal-line.component';
 import { ModalService } from '../../../ui/modal/modal.service';
-import { DailyGameStore } from '../../data-access/daily-game.store';
+import { HomeStore } from '../../data-access/home.store';
 import { GuestStreakNotice } from '../../data-access/guest-streak-notice';
 import { formatGameDate } from '../../domain/archive';
 import { GuestAccountTileComponent } from '../../ui/guest-account-tile/guest-account-tile.component';
@@ -22,6 +22,7 @@ import { HomeAbandonedCardComponent } from '../../ui/home-abandoned-card/home-ab
 import { HomeChallengeCardComponent } from '../../ui/home-challenge-card/home-challenge-card.component';
 import { HomeDoneCardComponent } from '../../ui/home-done-card/home-done-card.component';
 import { StatusScreenComponent } from '../../ui/status-screen/status-screen.component';
+import { DailyLauncher } from '../daily-shell/daily-launcher';
 import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell/daily-view';
 
 /**
@@ -29,7 +30,8 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
  * la carte du défi en tête, puis la carte amis et la carte Survie. Défi fait : la carte Survie passe devant si le joueur y a accès
  * (`placement="lead"`), puis le résultat (« Détail » déplie les morceaux et les scores du jour dans la carte), puis la carte amis. Les cartes des autres domaines
  * arrivent par `<app-home-mode-entries>` : le Daily n'importe ni `social` ni `runs`. Les stores
- * sont ceux de la coquille du jeu du jour : « Commencer » lance la partie dans ce toucher, et la coquille passe sur `/daily` pour la manche.
+ * sont ceux de la coquille du jeu du jour : « Commencer » déverrouille le son dans ce toucher et ouvre la manche sur `/daily`, chargée à la demande
+ * (`DailyLauncher`) ; l'accueil n'embarque ni le lecteur ni la manche.
  */
 @Component({
   selector: 'app-home-page',
@@ -70,7 +72,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                 [remaining]="remaining()"
                 [firstGame]="store.firstGame()"
                 [linked]="store.linked()"
-                (startGame)="store.begin()"
+                (startGame)="launcher.start()"
                 (openStreak)="streakSheet.open()" />
               <!-- « Créer un compte » d'un invité : la tuile juste dessous, seulement s'il a déjà joué ou perdu une série. -->
               @if (store.guestTile(); as tile) {
@@ -88,7 +90,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                 [linked]="store.linked()"
                 [completedCount]="store.peekCompletedCount()"
                 [abandonLoading]="store.abandonLoading()"
-                (startGame)="store.begin()"
+                (startGame)="launcher.start()"
                 (abandon)="confirmAbandonFromResume()"
                 (openStreak)="streakSheet.open()" />
               @if (!store.linked()) {
@@ -160,7 +162,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
             <app-install-line class="mt-3" [gamesPlayed]="store.gamesPlayed()" />
           }
           @case ('no_challenge') {
-            <app-status-screen titleKey="daily.noChallenge.title" bodyKey="daily.noChallenge.body" (retry)="store.retryNoChallenge()" />
+            <app-status-screen titleKey="daily.noChallenge.title" bodyKey="daily.noChallenge.body" (retry)="retryNoChallenge()" />
             <app-home-mode-entries />
           }
           @case ('error') {
@@ -177,8 +179,9 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
     </div>
   `,
 })
-export class HomePage {
-  protected readonly store = inject(DailyGameStore);
+export class HomePage implements OnInit {
+  protected readonly store = inject(HomeStore);
+  protected readonly launcher = inject(DailyLauncher);
   protected readonly language = inject(LanguageService);
   protected readonly errorReporting = inject(ErrorReportingService);
   protected readonly streakSheet = inject(StreakSheetOpener);
@@ -188,12 +191,35 @@ export class HomePage {
   private readonly translate = inject(TranslateService);
   private readonly guestNotice = inject(GuestStreakNotice);
 
-  /** L'écran affiché : celui du jeu du jour. */
-  protected readonly screen = this.store.screen;
+  /**
+   * L'écran affiché : celui du jeu du jour, ou le chargement pendant que la manche s'ouvre (le temps de son code et de la création de la
+   * partie), comme avant la séparation des deux pages.
+   */
+  protected readonly screen = computed(() => (this.launcher.starting() ? 'loading' : this.store.screen()));
 
   protected readonly dateLabel = computed(() => formatGameDate(todayUtc(new Date()), this.language.current(), 'weekday'));
   /** Le temps qu'il reste pour jouer le défi, dit à côté du score à battre (« plus que 6 h »). */
   protected readonly remaining = computed(() => timeLeft(secondsUntilMidnightUtc(new Date())));
+
+  constructor() {
+    // Le code de la manche se télécharge en tâche de fond dès qu'il y a une partie à lancer ou à reprendre : le clic ne l'attend pas.
+    effect(() => {
+      const screen = this.store.screen();
+      if (screen === 'welcome' || screen === 'resume_prompt') this.launcher.prefetch();
+    });
+  }
+
+  ngOnInit(): void {
+    // On revient de la manche sans l'avoir finie : l'état lu avant la partie est périmé, la carte de reprise vient du serveur.
+    if (this.store.stale()) void this.store.init();
+  }
+
+  /** « Réessayer » sans défi : relit l'état du jour ; si le défi manque encore, le démarrage de la partie le génère à la volée. */
+  protected async retryNoChallenge(): Promise<void> {
+    this.launcher.unlock();
+    await this.store.init();
+    if (this.store.screen() === 'no_challenge') this.launcher.start();
+  }
 
   /** La croix de la tuile « crée un compte » : fermée pour de bon, gardée dans le navigateur (règles dans `domain/toasts`). */
   protected dismissGuestTile(): void {

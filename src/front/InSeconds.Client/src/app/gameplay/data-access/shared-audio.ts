@@ -53,7 +53,8 @@ export function unlockSharedAudio(): void {
   audio.src = url;
   audio.play().then(
     () => {
-      audio.pause();
+      // La manche peut déjà avoir chargé son extrait dans l'élément (code en cache, réseau rapide) : on n'arrête que notre silence.
+      if (audio.src === url) audio.pause();
       URL.revokeObjectURL(url);
     },
     (err: unknown) => {

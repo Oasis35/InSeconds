@@ -58,7 +58,7 @@ test.describe('Mode Setlist', () => {
 
     // L'adresse du mode ne montre rien : retour au jeu du jour, sans laisser /survie dans l'historique.
     await page.goto('/survie');
-    await expect(page).toHaveURL(/\/daily$/);
+    await expect(page).toHaveURL(/\/$/);
     await game.waitForWelcome();
 
     // L'admin ouvre l'accès : la carte apparaît sous « Commencer » et mène au mode.
@@ -97,7 +97,7 @@ test.describe('Mode Setlist', () => {
     await api.grantRunAccess(playerId);
     await game.goto();
     await game.waitForWelcome();
-    // L'accueil est la racine ; le défi seul est sur /daily.
+    // L'accueil est la racine ; la manche seule est sur /daily.
     await expect(page).toHaveURL(/\/$/);
     await expect(bar).toBeVisible();
     await expect(page.getByTestId('header-instagram')).toBeVisible();
@@ -376,7 +376,7 @@ test.describe('Mode Setlist', () => {
 
     // Un seul bouton : le défi du jour.
     await friendPage.getByTestId('run-blocked-daily').click();
-    await expect(friendPage).toHaveURL(/\/daily$/);
+    await expect(friendPage).toHaveURL(/\/$/);
 
     // Un lien inconnu : même écran de blocage (l'accès se vérifie avant de lire la playlist).
     await friendPage.goto('/survie/ZZZZZZ');

@@ -16,8 +16,9 @@ export const redirectRunsLink: RedirectFunction = ({ params, queryParams, fragme
   inject(Router).createUrlTree(['/survie', params['code']], { queryParams, fragment: fragment ?? undefined });
 
 /**
- * La racine (l'accueil) et `/daily` (le défi) vont au même domaine, qui a deux pages sous une coquille commune : le matcher n'en consomme pas
- * le chemin, ce sont ses routes enfants (`''` et `daily`) qui le lisent. Sans l'accès Survie, la racine renvoie à `/daily` (la coquille s'en charge).
+ * La racine (l'accueil) et `/daily` (la manche) vont au même domaine, sous une coquille commune : le matcher n'en consomme pas le chemin, ce
+ * sont ses routes enfants (`''` et `daily`) qui le lisent. `/daily` n'existe qu'après un clic sur « Commencer » (sinon elle renvoie à la racine)
+ * et son code, avec le lecteur audio, se charge à la demande.
  */
 export function homeOrDailyMatcher(segments: UrlSegment[]): UrlMatchResult | null {
   return segments.length === 0 || segments[0].path === 'daily' ? { consumed: [] } : null;
@@ -32,7 +33,7 @@ export function redirectHistoryLink(base: string): RedirectFunction {
 export const routes: Routes = [
 
   // Anciennes adresses : tous les liens existants (partages, favoris, emails) restent valables.
-  { path: 'blindtest', pathMatch: 'full', redirectTo: redirectKeepingQuery('/daily') },
+  { path: 'blindtest', pathMatch: 'full', redirectTo: redirectKeepingQuery('/') },
   { path: 'login', pathMatch: 'full', redirectTo: redirectKeepingQuery('/account/login') },
   { path: 'login/verify', pathMatch: 'full', redirectTo: redirectKeepingQuery('/account/login/verify') },
   { path: 'profile', pathMatch: 'full', redirectTo: redirectKeepingQuery('/account/profile') },

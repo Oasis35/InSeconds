@@ -1,10 +1,6 @@
 import { reloadMomentFor } from './reload-moment';
 
 describe('reloadMomentFor', () => {
-  it('ne recharge jamais en pleine manche, seulement au prochain changement de page', () => {
-    expect(reloadMomentFor('playing')).toBe('navigation');
-  });
-
   it('attend le passage en arrière-plan sur le récap et pendant un chargement', () => {
     expect(reloadMomentFor('done')).toBe('background');
     expect(reloadMomentFor('loading')).toBe('background');

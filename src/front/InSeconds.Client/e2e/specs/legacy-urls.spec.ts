@@ -20,7 +20,7 @@ test.describe('Anciennes adresses', () => {
   test('redirige les anciennes adresses vers les routes actuelles en gardant la query string', async ({ page }) => {
     const cases: [from: string, to: string][] = [
       [`/${QUERY}`, `/${QUERY}`],
-      [`/blindtest${QUERY}`, `/daily${QUERY}`],
+      [`/blindtest${QUERY}`, `/${QUERY}`],
       [`/login${QUERY}`, `/account/login${QUERY}`],
       ['/login/verify?token=jeton-e2e', '/account/login/verify?token=jeton-e2e'],
       ['/profile/confirm-email?token=jeton-e2e', '/account/confirm-email?token=jeton-e2e'],

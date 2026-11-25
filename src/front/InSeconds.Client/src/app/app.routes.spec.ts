@@ -29,15 +29,16 @@ describe('routes', () => {
     return TestBed.inject(Router).url;
   }
 
-  // La racine et `/daily` sont la même page : c'est elle qui renvoie la racine au défi quand le joueur n'a pas l'accueil de la V4.
-  it('sert l\'accueil sur la racine et le défi sur /daily', async () => {
+  // `/daily` est la manche : sans le clic de l'accueil (intention dans l'état de la navigation), un favori ou un lien partagé retombe sur la racine.
+  it('sert l\'accueil sur la racine, et renvoie /daily à la racine sans clic sur « Commencer »', async () => {
     expect(await landOn('/')).toBe('/');
-    expect(await landOn('/daily')).toBe('/daily');
+    expect(await landOn('/daily')).toBe('/');
+    expect(await landOn('/daily?utm_source=share')).toBe('/?utm_source=share');
   });
 
   // Anciennes adresses : liens partagés, favoris, liens des emails déjà envoyés.
   const legacyRedirects: [string, string][] = [
-    ['/blindtest', '/daily'],
+    ['/blindtest', '/'],
     ['/login', '/account/login'],
     ['/login/verify', '/account/login/verify'],
     ['/profile', '/account/profile'],

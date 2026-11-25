@@ -4,17 +4,10 @@
   <main class="relative flex-1 flex flex-col px-5 pt-2 pb-5 w-full max-w-lg mx-auto overflow-x-clip">
 
     <header class="pb-6">
-      <app-brand>
-        <!-- En pleine manche, rien à la place des accès du compte : un toucher par erreur ouvrirait la confirmation de sortie. Le total
-             de la partie se lit à la révélation de chaque morceau. -->
-        @if (screen() !== 'playing' && screen() !== 'loading') {
-          <div brandRight class="flex items-center gap-2">
-            <app-account-link />
-            <app-instagram-link />
-          </div>
-        }
-      </app-brand>
-      @if (store.screen() === 'playing') {
+      <!-- Ni accès du compte ni lien légal sur cette page : en pleine manche, un toucher par erreur ouvrirait la confirmation de sortie, et
+           pendant le chargement la page n'a rien d'autre à montrer. Le total de la partie se lit à la révélation de chaque morceau. -->
+      <app-brand />
+      @if (store.isPlaying()) {
         <app-daily-progress [currentIndex]="store.currentIndex()" [trackCount]="store.trackCount()" (abandon)="confirmAbandon()" />
       }
     </header>
@@ -24,42 +17,6 @@
         <div class="flex-1 flex items-center justify-center">
           <p class="text-sm animate-pulse" style="color:var(--text-faint)">{{ 'daily.common.loading' | translate }}</p>
         </div>
-      }
-
-      @case ('welcome') {
-        <app-welcome-screen
-          [trackCount]="store.peekTracksCount()"
-          [dateLabel]="dateLabel()"
-          [streak]="store.pillStreak()"
-          [bestScore]="store.bestScore()"
-          [yesterdayMedian]="store.yesterdayMedian()"
-          [linked]="store.linked()"
-          (startGame)="store.begin()"
-          (openStreak)="streakSheet.open()" />
-      }
-
-      @case ('resume_prompt') {
-        <app-resume-screen
-          [completedCount]="store.peekCompletedCount()"
-          [trackCount]="store.peekTracksCount()"
-          [dateLabel]="dateLabel()"
-          [abandonLoading]="store.abandonLoading()"
-          [warningBodyKey]="store.linked() ? 'daily.resume.warningBodyLinked' : 'daily.resume.warningBody'"
-          [showLoginCta]="!store.linked()"
-          (resumeGame)="store.begin()"
-          (abandon)="store.abandonFromResume()">
-          <div class="flex justify-center">
-            <app-streak-pill [streak]="store.pillStreak()" [linked]="store.linked()" (open)="streakSheet.open()" />
-          </div>
-        </app-resume-screen>
-      }
-
-      @case ('no_challenge') {
-        <app-status-screen titleKey="daily.noChallenge.title" bodyKey="daily.noChallenge.body" (retry)="store.retryNoChallenge()" />
-      }
-
-      @case ('error') {
-        <app-status-screen titleKey="daily.error.title" bodyKey="daily.error.body" [errorCode]="errorReporting.lastErrorCode()" (retry)="init()" />
       }
 
       @case ('playing') {
@@ -86,7 +43,7 @@
               </p>
             </div>
 
-            <button appButton roundNext type="button" [block]="true" (click)="store.nextTrack()">
+            <button appButton roundNext type="button" [block]="true" (click)="nextTrack()">
               {{ (store.isLastTrack() ? 'daily.round.seeResult' : 'daily.round.nextTrack') | translate }}
             </button>
           </app-track-round>
@@ -95,8 +52,4 @@
     }
 
   </main>
-  <!-- Les liens légaux sont une ligne discrète sous la carte Survie (pas pendant une manche) et la langue est dans le profil. -->
-  @if (screen() !== 'loading' && screen() !== 'playing') {
-    <app-home-legal-line class="mt-auto" />
-  }
 </div>
