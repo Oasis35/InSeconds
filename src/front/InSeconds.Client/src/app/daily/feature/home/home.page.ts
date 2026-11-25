@@ -118,7 +118,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
               }
             </div>
             <app-home-mode-entries placement="rest" />
-            <app-install-line class="mt-3" [gamesPlayed]="store.sheetGamesPlayed()" />
+            <app-install-line class="mt-3" [gamesPlayed]="store.gamesPlayed()" />
           }
           @case ('done') {
             <!-- Défi fait : la carte Survie (si le joueur y a accès) passe devant, c'est la prochaine action. -->
@@ -142,7 +142,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                 (share)="result.share()" />
             </div>
             <app-home-mode-entries placement="rest" />
-            <app-install-line class="mt-3" [gamesPlayed]="(store.sheetGamesPlayed() ?? 0) + 1" />
+            <app-install-line class="mt-3" [gamesPlayed]="store.gamesPlayed()" />
           }
           @case ('no_challenge') {
             <app-status-screen titleKey="daily.noChallenge.title" bodyKey="daily.noChallenge.body" (retry)="store.retryNoChallenge()" />

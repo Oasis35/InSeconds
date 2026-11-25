@@ -1,8 +1,11 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Subject } from 'rxjs';
 import { FileDownload } from '../../../core/download/file-download';
 import { Router, provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
+import { InstallMode } from '../../../core/pwa/install-environment';
+import { InstallPromptService } from '../../../core/pwa/install-prompt.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { SessionStore } from '../../../core/session/session.store';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
@@ -91,6 +94,39 @@ describe('ProfilePage', () => {
       TestBed.inject(ShellChromeStore).setSurvie(true);
       await settle(fixture);
       expect(query(fixture, '[data-testid="profile-general-ranking"]')).not.toBeNull();
+    });
+  });
+
+  describe("installer l'appli", () => {
+    function installFake(mode: InstallMode | null) {
+      const fake = { mode: signal<InstallMode | null>(mode), lineDismissed: signal(false), promptNative: vi.fn().mockResolvedValue(true), dismissLine: vi.fn() };
+      TestBed.overrideProvider(InstallPromptService, { useValue: fake });
+      return fake;
+    }
+
+    it("n'apparaît pas quand l'installation n'est pas possible (ordinateur, appli déjà installée)", async () => {
+      installFake(null);
+      const fixture = await render();
+      expect(query(fixture, '[data-testid="profile-install"]')).toBeNull();
+    });
+
+    it("Android : lance l'invite du navigateur", async () => {
+      const fake = installFake('native');
+      const fixture = await render();
+      (query(fixture, '[data-testid="profile-install"]')?.querySelector('button') as HTMLButtonElement).click();
+      expect(fake.promptNative).toHaveBeenCalledTimes(1);
+    });
+
+    it('iPhone : déplie les étapes de Safari', async () => {
+      const fake = installFake('ios');
+      const fixture = await render();
+      const button = query(fixture, '[data-testid="profile-install"]')?.querySelector('button') as HTMLButtonElement;
+      expect(query(fixture, 'app-install-steps')).toBeNull();
+      button.click();
+      fixture.detectChanges();
+      expect(query(fixture, 'app-install-steps')).not.toBeNull();
+      expect(button.getAttribute('aria-expanded')).toBe('true');
+      expect(fake.promptNative).not.toHaveBeenCalled();
     });
   });
 

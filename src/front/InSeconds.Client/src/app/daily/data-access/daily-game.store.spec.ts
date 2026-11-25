@@ -327,6 +327,22 @@ describe('DailyGameStore', () => {
       expect(store.sheetGamesPlayed()).toBe(5);
     });
 
+    it('gamesPlayed compte la partie du jour une fois, jamais deux (la ligne d\'installation attend la 2e partie)', async () => {
+      expect(store.gamesPlayed()).toBeNull();
+      api.today = TODAY({ completedGames: 1 });
+      await startGame();
+      expect(store.gamesPlayed()).toBe(1);
+
+      api.today = TODAY({ state: 'already_played', completedGames: 2 });
+      for (const position of [1, 2, 3]) {
+        await store.submit(submissionOf(position));
+        store.nextTrack();
+      }
+      await flush();
+
+      expect(store.gamesPlayed()).toBe(2);
+    });
+
     it('un indice attend le palier envoyé, puis s\'affiche', async () => {
       await startGame();
       TestBed.tick();

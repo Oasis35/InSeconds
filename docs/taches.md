@@ -33,7 +33,7 @@ Le reste à faire du mode (réglage des barèmes, catalogue épuisé, ouverture 
 - [ ] Tests sur vrai appareil iOS (Safari + Chrome iOS)
 - [ ] Tests sur vrai appareil Android (Chrome)
 - [ ] Vérifier l'audio en mode silencieux iOS (lecteur sur élément `Audio`)
-- [ ] Installation de la PWA sur l'écran d'accueil (iOS et Android)
+- [x] Installation de la PWA sur l'écran d'accueil (iOS et Android) : ligne d'accueil et entrée du Profil, à recetter sur vrais appareils (cases ci-dessus)
 
 ## Polish & conformité
 
