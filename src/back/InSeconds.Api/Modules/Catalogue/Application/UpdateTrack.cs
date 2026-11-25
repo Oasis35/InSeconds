@@ -17,8 +17,10 @@ public sealed class UpdateTrackValidator : AbstractValidator<UpdateTrack>
 }
 
 /// <summary>Ce que l'actualisation a trouvé, dans l'ordre où elle le cherche : on n'appelle Deezer que si rien ne l'interdit.</summary>
+/// <param name="InUse">Le morceau a déjà servi : ses noms sont gardés (l'historique les montre), seule sa source Deezer est remplacée.</param>
+/// <param name="InTodayChallenge">Le morceau est dans le défi du jour : refusé, on ne change pas l'extrait sous les joueurs en cours de partie.</param>
 /// <param name="Album">Les genres du nouvel album, lus seulement si l'album change (ou si ceux du morceau n'ont jamais été lus) : absents, le contrôle nocturne les rattrape.</param>
-public sealed record TrackRefreshPlan(Track? Track, bool InUse, bool IdTaken, TrackMetadataLookup? Lookup, AlbumLookup? Album);
+public sealed record TrackRefreshPlan(Track? Track, bool InUse, bool InTodayChallenge, bool IdTaken, TrackMetadataLookup? Lookup, AlbumLookup? Album);
 
 public static class UpdateTrackEndpoint
 {
@@ -29,27 +31,27 @@ public static class UpdateTrackEndpoint
         // Avec ses genres : s'il change d'album, les remplacer supprime ceux de l'ancien (sinon EF ne verrait aucune ligne à retirer).
         var track = await store.FindWithGenresAsync(id, ct);
         if (track is null)
-            return new TrackRefreshPlan(null, false, false, null, null);
+            return new TrackRefreshPlan(null, false, false, false, null, null);
 
-        var usages = await usage.GetAsync([id], ct);
-        if (usages.GetValueOrDefault(id, TrackUsage.None).IsUsed)
-            return new TrackRefreshPlan(track, true, false, null, null);
+        var trackUsage = (await usage.GetAsync([id], ct)).GetValueOrDefault(id, TrackUsage.None);
+        if (trackUsage.InTodayChallenge)
+            return new TrackRefreshPlan(track, true, true, false, null, null);
 
         if (track.DeezerTrackId != request.DeezerTrackId && await store.DeezerIdTakenAsync(request.DeezerTrackId, id, ct))
-            return new TrackRefreshPlan(track, false, true, null, null);
+            return new TrackRefreshPlan(track, trackUsage.IsUsed, false, true, null, null);
 
         var lookup = await deezer.GetTrackAsync(request.DeezerTrackId, ct);
         // Comme à l'ajout : les genres du nouvel album tout de suite (un appel de plus), seulement s'ils ne sont pas déjà ceux du morceau.
         var album = lookup is TrackMetadataLookup.Found { Track.AlbumId: { } albumId } && (albumId != track.AlbumId || track.GenresCheckedAt is null)
             ? await albums.GetAlbumAsync(albumId, ct)
             : null;
-        return new TrackRefreshPlan(track, false, false, lookup, album);
+        return new TrackRefreshPlan(track, trackUsage.IsUsed, false, false, lookup, album);
     }
 
     public static ProblemDetails Validate(TrackRefreshPlan plan) => plan switch
     {
         { Track: null } => CatalogueProblems.TrackNotFound(),
-        { InUse: true } => CatalogueProblems.TrackInUse("modifié"),
+        { InTodayChallenge: true } => CatalogueProblems.TrackInTodayChallenge(),
         { IdTaken: true } => CatalogueProblems.DuplicateDeezerId(),
         { Lookup: TrackMetadataLookup.Unavailable } => CatalogueProblems.DeezerUnavailable(),
         { Lookup: TrackMetadataLookup.NotFound } => CatalogueProblems.NotFoundOnDeezer(),
@@ -59,7 +61,7 @@ public static class UpdateTrackEndpoint
     /// <summary>
     /// <c>PUT /api/admin/catalogue/tracks/{id}</c> : actualise un morceau (typiquement sans extrait) depuis
     /// Deezer : remplace l'identifiant Deezer, l'artiste, le titre, la pochette, l'année, le rang et l'état de
-    /// l'extrait, et les genres s'il change d'album (ceux de l'ancien sont retirés). Interdit s'il a déjà servi dans un défi (409 <c>catalogue.track_in_use</c>). Un identifiant
+    /// l'extrait, et les genres s'il change d'album (ceux de l'ancien sont retirés). Un morceau déjà joué est permis mais garde son artiste et son titre ; celui du défi du jour est refusé (409 <c>catalogue.track_in_today_challenge</c>). Un identifiant
     /// pris par un autre morceau : 409 <c>catalogue.duplicate_deezer_id</c>.
     /// </summary>
     [WolverinePut("/api/admin/catalogue/tracks/{id}", OperationId = "updateTrack")]
@@ -74,7 +76,11 @@ public static class UpdateTrackEndpoint
         var found = (TrackMetadataLookup.Found)plan.Lookup!;
         var now = time.GetUtcNow();
         var track = plan.Track!;
-        track.ReplaceDeezerSource(TrackMapping.ToMetadata(found.Track), now);
+        var metadata = TrackMapping.ToMetadata(found.Track);
+        // Un morceau déjà joué garde ses noms : l'historique et les stats les montrent, la nouvelle version ne les renomme pas.
+        if (plan.InUse)
+            metadata = metadata with { Artist = track.Artist, Title = track.Title };
+        track.ReplaceDeezerSource(metadata, now);
         await TrackMapping.RecordAlbumGenresAsync(track, plan.Album, store, now, ct);
 
         return TrackMapping.ToSummary(track, options.CurrentValue);

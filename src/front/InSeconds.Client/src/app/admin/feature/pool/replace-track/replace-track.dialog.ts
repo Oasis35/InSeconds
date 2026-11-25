@@ -17,9 +17,9 @@ type SearchStatus = 'loading' | 'ready' | 'error';
 
 /**
  * Remplacer un morceau dont Deezer n'a plus d'extrait par une autre version du même titre qui en a un. Les versions viennent de la recherche
- * « artiste titre » de Deezer (celles qui ont un extrait, sans le morceau lui-même) ; le choix reprend l'identifiant, les noms, la pochette,
- * l'année, le rang et l'extrait de la version choisie. Thèmes et titres alternatifs sont gardés. Refusé par l'API si le morceau a déjà servi
- * dans un défi (son historique pointe vers l'ancienne version).
+ * « artiste titre » de Deezer (celles qui ont un extrait, sans le morceau lui-même) ; le choix reprend l'identifiant, la pochette,
+ * l'année, le rang et l'extrait de la version choisie, et les noms sauf si le morceau a déjà servi (l'historique les montre). Thèmes et titres
+ * alternatifs sont gardés. Refusé par l'API pour le morceau du défi du jour.
  */
 @Component({
   selector: 'app-replace-track-dialog',

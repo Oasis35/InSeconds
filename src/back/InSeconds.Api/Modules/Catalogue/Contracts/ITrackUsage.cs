@@ -16,7 +16,7 @@ public sealed record TrackUsage(
     /// <summary>Jamais utilisé.</summary>
     public static readonly TrackUsage None = new(null, 0, null, false);
 
-    /// <summary>Déjà dans un défi (de n'importe quel mode) : ni suppression ni actualisation.</summary>
+    /// <summary>Déjà dans un défi (de n'importe quel mode) : pas de suppression ; l'actualisation depuis Deezer garde ses noms.</summary>
     public bool IsUsed => UsageCount > 0 || UsedByMode;
 
     /// <summary>
@@ -50,7 +50,7 @@ public interface ITrackUsage
 
 /// <summary>
 /// L'usage des morceaux **tous modes confondus**, tel que Catalogue le lit pour le pool de l'admin et pour décider qu'un morceau ne peut plus être
-/// supprimé ni actualisé (409 <c>catalogue.track_in_use</c>) : il l'est dès qu'un seul mode l'a utilisé. Réunit les <see cref="ITrackUsage"/> de
+/// supprimé (409 <c>catalogue.track_in_use</c>) et que son actualisation garde ses noms : il l'est dès qu'un seul mode l'a utilisé. Réunit les <see cref="ITrackUsage"/> de
 /// chaque mode (<see cref="TrackUsage.CombinedWith"/>) ; sans aucun mode, rien n'a jamais servi. Le cooldown n'y figure pas : c'est une règle du
 /// Daily seul (<c>IDailyTrackUsage</c>).
 /// </summary>

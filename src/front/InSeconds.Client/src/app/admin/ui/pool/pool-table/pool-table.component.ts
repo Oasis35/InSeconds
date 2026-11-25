@@ -97,8 +97,8 @@ const MODE_COLUMNS: readonly Column[] = [
                             style="color:var(--text-muted);border:1px solid var(--border-strong)"
                             [title]="'admin.pool.recheckTitle' | translate" [attr.aria-label]="'admin.pool.recheckTitle' | translate">↻</button>
                         <!-- Le title est porté par un span : un bouton désactivé n'affiche pas son tooltip partout. -->
-                        <span [title]="(t.isUsed ? 'admin.pool.replaceUsedTitle' : 'admin.pool.replaceTitle') | translate">
-                          <button type="button" (click)="replace.emit(t)" [disabled]="t.isUsed" data-testid="replace-track"
+                        <span [title]="(t.inTodayChallenge ? 'admin.pool.replaceTodayTitle' : 'admin.pool.replaceTitle') | translate">
+                          <button type="button" (click)="replace.emit(t)" [disabled]="t.inTodayChallenge" data-testid="replace-track"
                             class="text-xs px-2 py-1 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             style="color:var(--text-muted);border:1px solid var(--border-strong)"
                             [attr.aria-label]="'admin.pool.replaceTitle' | translate">⇄</button>

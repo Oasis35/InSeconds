@@ -51,7 +51,7 @@
       "theme_name_taken": "Un thème porte déjà ce nom.",
       "theme_not_found": "Ce thème n'existe plus : recharge la liste.",
       "track_in_use": "Ce morceau a déjà servi dans un défi : il ne peut pas être supprimé (désactive-le).",
-      "track_in_today_challenge": "Ce morceau est dans le défi du jour : désactivable à partir de demain.",
+      "track_in_today_challenge": "Ce morceau est dans le défi du jour : réessaie à partir de demain.",
       "candidate_not_found": "Ce morceau n'est plus dans la liste : recharge la liste.",
       "candidate_preview_missing": "Deezer n'a plus d'extrait pour ce morceau."
     },
@@ -373,7 +373,7 @@
       "rechecking": "Vérification…",
       "recheckTitle": "Redemander l'extrait à Deezer",
       "replaceTitle": "Remplacer par une version avec extrait",
-      "replaceUsedTitle": "Ce morceau a déjà servi dans un défi : il ne peut pas être remplacé (désactive-le et ajoute une autre version).",
+      "replaceTodayTitle": "Morceau du défi du jour : remplaçable à partir de demain",
       "recheckSelectionTitle": "Redemander l'extrait à Deezer pour la sélection",
       "recheckSummary": "Contrôle chez Deezer : {{ available }} avec extrait, {{ stillMissing }} toujours manquant(s), {{ noAnswer }} sans réponse de Deezer (état inchangé, réessaie plus tard).",
       "recheckError": "Le contrôle a échoué : rien n'a été modifié pour la suite de la sélection, réessaie.",

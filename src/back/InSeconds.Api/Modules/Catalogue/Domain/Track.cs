@@ -306,7 +306,7 @@ public sealed class Track
 
     /// <summary>
     /// Actualise un morceau sans extrait : remplace tout ce qui vient de Deezer (identifiant, noms, pochette,
-    /// année, rang, extrait). Interdit pour un morceau déjà utilisé : la règle est dans l'endpoint (usage).
+    /// année, rang, extrait). Les noms de la source remplacée sont ceux que l'appelant passe : un morceau déjà utilisé garde les siens, la règle est dans l'endpoint (usage).
     /// </summary>
     public void ReplaceDeezerSource(TrackMetadata metadata, DateTimeOffset now)
     {

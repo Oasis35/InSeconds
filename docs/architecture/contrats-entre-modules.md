@@ -44,7 +44,7 @@ L'implémentation de l'interface reste dans la partie privée du module (souvent
 | `ITrackPreviews` | Catalogue | `DeezerTrackPreviews` | Daily, Runs (adresse de l'extrait) |
 | `ITrackWaveforms` | Catalogue | `EfTrackWaveforms`, enveloppé par `LoggedTrackWaveforms` | Daily, Runs (forme d'onde envoyée avec le morceau) |
 | `ITrackUsage` | Catalogue | `EfTrackUsage` **dans Daily**, `RunsTrackUsage` **dans Runs**, chacun **ajouté** au conteneur | Catalogue, par `ITrackPoolUsage` |
-| `ITrackPoolUsage` | Catalogue | `TrackPoolUsage` (réunit l'`ITrackUsage` de chaque mode) | Catalogue (pool de l'admin, suppression, désactivation et actualisation depuis Deezer d'un morceau déjà utilisé) |
+| `ITrackPoolUsage` | Catalogue | `TrackPoolUsage` (réunit l'`ITrackUsage` de chaque mode) | Catalogue (pool de l'admin, suppression et désactivation d'un morceau déjà utilisé, actualisation depuis Deezer avec noms gardés) |
 | `TrackRound`, `RoundOutcome`, ports d'indice et de correction | Gameplay | Gameplay | Daily, Runs |
 | `IStreakGrants` | Daily | `DailyStreakGrants` | Players, à la création d'un compte (`AccountSignIn`) |
 | `IMemberPerformanceSource` | Social | `RunsMemberPerformance` **dans Runs** | Social (le classement d'un groupe et le classement général) |
