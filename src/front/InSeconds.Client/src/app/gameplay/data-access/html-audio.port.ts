@@ -488,9 +488,7 @@ export class HtmlAudioPort extends AudioPort {
 
   /** Le silence du déverrouillage, en adresse `blob:` (la CSP n'autorise pas `data:` pour les sons). */
   private silence(): string {
-    if (this.silenceUrl === null) {
-      this.silenceUrl = URL.createObjectURL(new Blob([silenceWavBytes()], { type: 'audio/wav' }));
-    }
+    this.silenceUrl ??= URL.createObjectURL(new Blob([silenceWavBytes()], { type: 'audio/wav' }));
     return this.silenceUrl;
   }
 
