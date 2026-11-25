@@ -31,6 +31,7 @@ public static class DailyModule
         services.AddHostedService<DailyOptionsStartupCheck>();
         // Compteurs des parties et des réponses, exportés en OpenTelemetry (tableau Grafana « Activité »).
         services.AddSingleton<DailyMetrics>();
+        services.AddHostedService<Infrastructure.Observability.EagerSingleton<DailyMetrics>>();
         // Le cooldown des morceaux, déduit de la taille du pool à chaque appel (#275).
         services.AddScoped<TrackCooldownPolicy>();
         // L'usage réel des morceaux, calculé sur les défis. **Ajouté, jamais remplacé** : Catalogue réunit l'ITrackUsage de chaque mode

@@ -994,6 +994,12 @@ export class DailyClient {
             result409 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("Conflict", status, _responseText, _headers, result409);
             }));
+        } else if (status === 429) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result429: any = null;
+            result429 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Too Many Requests", status, _responseText, _headers, result429);
+            }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
@@ -1136,6 +1142,12 @@ export class DailyClient {
             result409 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("Conflict", status, _responseText, _headers, result409);
             }));
+        } else if (status === 429) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result429: any = null;
+            result429 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Too Many Requests", status, _responseText, _headers, result429);
+            }));
         } else if (status === 503) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result503: any = null;
@@ -1222,6 +1234,12 @@ export class DailyClient {
             let result409: any = null;
             result409 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("Conflict", status, _responseText, _headers, result409);
+            }));
+        } else if (status === 429) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result429: any = null;
+            result429 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Too Many Requests", status, _responseText, _headers, result429);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
