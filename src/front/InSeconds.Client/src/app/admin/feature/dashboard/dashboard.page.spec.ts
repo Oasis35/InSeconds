@@ -283,6 +283,9 @@ describe('DashboardPage', () => {
       byTestId(element, 'recompute-yes')!.click();
       await detect();
       expect(challenges.recompute).toHaveBeenCalledWith('2026-10-05');
+      // Les chiffres du jour viennent de la photo figée : l'accueil est relu après le recalcul.
+      expect(api.getDashboard).toHaveBeenCalledTimes(2);
+      expect(api.getDashboard).toHaveBeenLastCalledWith('2026-10-05');
     });
 
     it('la veille et le jour même n\'ont aucun recalcul', async () => {

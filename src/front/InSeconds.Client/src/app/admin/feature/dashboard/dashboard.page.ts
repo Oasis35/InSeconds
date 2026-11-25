@@ -109,9 +109,9 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
 
           <!-- Les défis du mois du jour affiché, replié d'office : un clic sur une ligne change le jour de la carte. -->
           @if (monthChallenges().length > 0) {
-            <div class="rounded-xl p-4 flex flex-col gap-3" style="background:var(--bg-surface)" data-testid="month-challenges">
+            <div class="rounded-(--radius-card) p-4 flex flex-col gap-3" style="background:var(--bg-surface)" data-testid="month-challenges">
               <button type="button" (click)="monthOpen.set(!monthOpen())" [attr.aria-expanded]="monthOpen()"
-                class="flex items-center justify-between gap-2 text-left text-sm font-semibold uppercase tracking-wide" style="color:var(--text-muted)"
+                class="min-h-11 flex items-center justify-between gap-2 text-left text-sm font-semibold" style="color:var(--text-muted)"
                 data-testid="month-challenges-toggle">
                 <span>{{ 'admin.dashboard.monthChallenges' | translate: { month: monthLabel() } }}</span>
                 <span aria-hidden="true">{{ monthOpen() ? '▴' : '▾' }}</span>
@@ -209,9 +209,12 @@ export class DashboardPage {
     if (day) void this.store.selectDay(day);
   }
 
-  protected recompute(): void {
+  /** Recalcule le jour affiché, puis relit l'accueil : les chiffres du jour viennent de la photo figée, que le recalcul vient de refaire. */
+  protected async recompute(): Promise<void> {
     const day = this.store.selectedDay();
-    if (day !== null) void this.challenges.recompute(day);
+    if (day === null) return;
+    await this.challenges.recompute(day);
+    if (!this.challenges.recomputeErrors()[day]) await this.store.load(day);
   }
 
   protected openChart(track: ChallengeTrackStats): void {

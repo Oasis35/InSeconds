@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, linkedSignal, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { formatMonth, monthOf } from '../../../domain/challenge';
-import { calendarCells, shiftCalendarMonth } from '../../../domain/dashboard';
+import { calendarCells, shiftCalendarMonth, todayUtc } from '../../../domain/dashboard';
 
 const WEEKDAYS_FR = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 const WEEKDAYS_EN = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -15,30 +15,31 @@ const WEEKDAYS_EN = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   imports: [TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="rounded-xl p-3 flex flex-col gap-2" style="background:var(--bg-inactive);border:1px solid var(--border-medium)" data-testid="day-calendar">
+    <div class="rounded-(--radius-card) p-3 flex flex-col gap-2" style="background:var(--bg-surface);border:1px solid var(--border-medium)" data-testid="day-calendar">
       <div class="flex items-center justify-between gap-2">
         <button type="button" (click)="month.set(shift(-1))" [disabled]="!hasEarlier()" [attr.aria-label]="'admin.challenges.previousMonth' | translate"
-          class="w-9 h-9 flex items-center justify-center rounded-lg text-sm disabled:opacity-30 disabled:cursor-not-allowed"
-          style="background:var(--bg-surface);color:var(--text-hi)" data-testid="calendar-previous">‹</button>
+          class="w-11 h-11 flex items-center justify-center rounded-lg text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+          style="background:var(--bg-inactive);color:var(--text-hi)" data-testid="calendar-previous">‹</button>
         <span class="text-sm font-semibold first-letter:uppercase" style="color:var(--text-hi)" data-testid="calendar-month">{{ label() }}</span>
         <button type="button" (click)="month.set(shift(1))" [disabled]="!hasLater()" [attr.aria-label]="'admin.challenges.nextMonth' | translate"
-          class="w-9 h-9 flex items-center justify-center rounded-lg text-sm disabled:opacity-30 disabled:cursor-not-allowed"
-          style="background:var(--bg-surface);color:var(--text-hi)" data-testid="calendar-next">›</button>
+          class="w-11 h-11 flex items-center justify-center rounded-lg text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+          style="background:var(--bg-inactive);color:var(--text-hi)" data-testid="calendar-next">›</button>
       </div>
       <div class="grid grid-cols-7 gap-1 text-center text-xs">
         @for (d of weekdays(); track $index) {
-          <span class="text-[10px]" style="color:var(--text-muted)" aria-hidden="true">{{ d }}</span>
+          <span class="text-xs" style="color:var(--text-muted)" aria-hidden="true">{{ d }}</span>
         }
         @for (cell of cells(); track $index) {
           @if (cell.day === null) {
             <span></span>
           } @else if (cell.hasChallenge) {
             <button type="button" (click)="daySelected.emit(cell.day)" [attr.aria-pressed]="cell.day === selectedDay()"
-              class="py-2 rounded-lg tabular-nums" data-testid="calendar-day"
-              [style.background]="cell.day === selectedDay() ? 'var(--bg-primary)' : 'var(--bg-surface)'"
-              [style.color]="cell.day === selectedDay() ? 'var(--bg-page)' : 'var(--text-hi)'">{{ cell.dayOfMonth }}</button>
+              class="min-h-11 rounded-lg tabular-nums" data-testid="calendar-day"
+              [style.background]="'var(--bg-inactive)'"
+              [style.box-shadow]="cell.day === selectedDay() ? 'inset 0 0 0 2px var(--color-accent-3)' : null"
+              style="color:var(--text-hi)">{{ cell.dayOfMonth }}</button>
           } @else {
-            <span class="py-2 tabular-nums" style="color:var(--text-faint);opacity:0.5" data-testid="calendar-day-empty">{{ cell.dayOfMonth }}</span>
+            <span class="min-h-11 flex items-center justify-center tabular-nums" style="color:var(--text-faint);opacity:0.5" data-testid="calendar-day-empty">{{ cell.dayOfMonth }}</span>
           }
         }
       </div>
@@ -56,8 +57,8 @@ export class DashboardDayCalendarComponent {
 
   /** Le mois affiché : celui du jour choisi, tant qu'on n'a pas tourné la page. */
   protected readonly month = linkedSignal(() => {
-    const day = this.selectedDay() ?? this.availableDays()[0];
-    return day ? monthOf(day) : new Date().toISOString().slice(0, 7);
+    const day = this.selectedDay() ?? this.availableDays()[0] ?? null;
+    return monthOf(day ?? todayUtc(new Date()));
   });
   protected readonly label = computed(() => formatMonth(this.month(), this.locale()));
   protected readonly cells = computed(() => calendarCells(this.month(), this.availableDays()));

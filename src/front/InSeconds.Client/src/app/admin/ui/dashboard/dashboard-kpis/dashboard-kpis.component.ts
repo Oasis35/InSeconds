@@ -1,6 +1,7 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, linkedSignal, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
+import { ButtonComponent } from '../../../../ui/button/button.component';
 import { DayKpis, sourceLabelKey } from '../../../domain/dashboard';
 
 /**
@@ -11,7 +12,7 @@ import { DayKpis, sourceLabelKey } from '../../../domain/dashboard';
  */
 @Component({
   selector: 'app-dashboard-kpis',
-  imports: [DatePipe, DecimalPipe, TranslatePipe],
+  imports: [DatePipe, DecimalPipe, TranslatePipe, ButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (kpis(); as kpis) {
@@ -66,24 +67,22 @@ import { DayKpis, sourceLabelKey } from '../../../domain/dashboard';
           }
           <!-- Jour figé en base (J-2 et avant) : la date du calcul et, en petit lien, le recalcul (après confirmation). -->
           @if (canRecompute()) {
-            <div class="lg:col-span-2 mt-2 pt-2 flex flex-col items-center gap-2 text-[11px]" style="border-top:1px solid var(--border-medium)" data-testid="kpi-frozen">
+            <div class="lg:col-span-2 mt-2 pt-2 flex flex-col items-center gap-2 text-xs" style="border-top:1px solid var(--border-medium)" data-testid="kpi-frozen">
               <p>
                 @if (computedAt(); as at) {
                   {{ 'admin.dashboard.frozenAt' | translate: { date: (at | date: 'dd/MM HH:mm') } }} ·
                 } @else {
                   {{ 'admin.dashboard.frozen' | translate }} ·
                 }
-                <button type="button" (click)="confirming.set(true)" [disabled]="recomputing() || confirming()" class="underline underline-offset-2 hover:text-(--text-hi) disabled:opacity-50"
+                <button type="button" (click)="confirming.set(true)" [disabled]="recomputing() || confirming()" class="inline-block text-xs py-2 -my-2 underline underline-offset-2 hover:text-(--text-hi) disabled:opacity-50"
                   data-testid="recompute-link">{{ (recomputing() ? 'admin.challenges.recomputing' : 'admin.challenges.recomputeLink') | translate }}</button>
               </p>
               @if (confirming()) {
                 <div class="w-full max-w-sm rounded-lg p-3 flex flex-col gap-2 text-xs" style="background:var(--bg-inactive)" role="alertdialog" data-testid="recompute-confirm">
                   <p style="color:var(--text-hi)">{{ 'admin.challenges.recomputeConfirm' | translate }}</p>
                   <div class="flex justify-center gap-2">
-                    <button type="button" (click)="confirming.set(false); recompute.emit()" data-testid="recompute-yes"
-                      class="px-3 py-1.5 rounded-lg font-semibold" style="background:var(--bg-primary);color:var(--bg-page)">{{ 'admin.challenges.recomputeYes' | translate }}</button>
-                    <button type="button" (click)="confirming.set(false)" data-testid="recompute-no"
-                      class="px-3 py-1.5 rounded-lg" style="background:var(--bg-surface);color:var(--text-muted)">{{ 'admin.challenges.recomputeNo' | translate }}</button>
+                    <button type="button" appButton variant="primary" size="sm" (click)="confirming.set(false); recompute.emit()" data-testid="recompute-yes">{{ 'admin.challenges.recomputeYes' | translate }}</button>
+                    <button type="button" appButton variant="neutral" size="sm" (click)="confirming.set(false)" data-testid="recompute-no">{{ 'admin.challenges.recomputeNo' | translate }}</button>
                   </div>
                 </div>
               }
