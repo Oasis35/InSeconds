@@ -48,6 +48,8 @@ export class DailyPage implements OnInit {
   private readonly translate = inject(TranslateService);
 
   private readonly leaveGuard = new LeaveGuard(inject(ModalService));
+  /** La page est détruite (le joueur est parti pendant l'ouverture) : une réponse tardive ne renvoie plus à l'accueil. */
+  private destroyed = false;
 
   /** L'écran affiché : la manche, sinon le chargement (la partie se crée, ou l'accueil reprend la main). */
   protected readonly screen = computed(() => (this.store.isPlaying() ? 'playing' : 'loading'));
@@ -57,6 +59,7 @@ export class DailyPage implements OnInit {
     effect(() => this.chrome.setImmersive(this.store.isPlaying()));
     inject(DestroyRef).onDestroy(() => {
       this.chrome.setImmersive(false);
+      this.destroyed = true;
       this.store.dispose();
     });
     // Si la partie quitte « playing » pendant qu'une confirmation de sortie est ouverte (dernière réponse qui se résout, partie finie
@@ -113,6 +116,6 @@ export class DailyPage implements OnInit {
 
   /** Plus rien à jouer ici : l'accueil montre le résultat, l'abandon, la pause ou l'erreur (la page de l'adresse précédente ne se garde pas). */
   private leaveIfDone(exit: RoundExit): void {
-    if (exit === 'home') void this.router.navigate(['/'], { queryParamsHandling: 'preserve', replaceUrl: true });
+    if (exit === 'home' && !this.destroyed) void this.router.navigate(['/'], { queryParamsHandling: 'preserve', replaceUrl: true });
   }
 }

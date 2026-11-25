@@ -43,16 +43,19 @@ export function violationsIn(source, isRoundOnly = rule => ROUND_ONLY.some(r => 
   return found;
 }
 
-const violations = [];
-for (const file of filesIn(join(APP, 'daily'))) {
-  const relativePath = relative(APP, file).split(sep).join('/');
-  if (ROUND_SIDE.some(part => relativePath.startsWith(part))) continue;
-  for (const { line, text } of violationsIn(readFileSync(file, 'utf8'))) violations.push(`src/app/${relativePath}:${line}  ${text}`);
-}
+// Le test importe `violationsIn` sans lancer le scan.
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const violations = [];
+  for (const file of filesIn(join(APP, 'daily'))) {
+    const relativePath = relative(APP, file).split(sep).join('/');
+    if (ROUND_SIDE.some(part => relativePath.startsWith(part))) continue;
+    for (const { line, text } of violationsIn(readFileSync(file, 'utf8'))) violations.push(`src/app/${relativePath}:${line}  ${text}`);
+  }
 
-if (violations.length > 0) {
-  console.error("L'accueil (`/`) ne doit pas importer la manche (`/daily`, chargée à la demande) :");
-  for (const violation of violations) console.error(`  ${violation}`);
-  process.exit(1);
+  if (violations.length > 0) {
+    console.error("L'accueil (`/`) ne doit pas importer la manche (`/daily`, chargée à la demande) :");
+    for (const violation of violations) console.error(`  ${violation}`);
+    process.exit(1);
+  }
+  console.log("check-home-split : l'accueil n'importe rien de la manche.");
 }
-console.log("check-home-split : l'accueil n'importe rien de la manche.");

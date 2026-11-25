@@ -29,7 +29,7 @@ E2E_DB_CONNECTION="Host=localhost;…;Database=inseconds_e2e;…" npm run e2e   
 
 ## Frontières (Sheriff)
 
-`npm run lint:arch` = `sheriff verify src/main.ts` + `node scripts/check-pure-domain.mjs` + `node scripts/check-home-split.mjs` (job CI `front` ; le dernier garde l'accueil `/` du jeu du jour sans la manche `/daily`, chargée à la demande : seul `gameplay/data-access/shared-audio` lui est permis). Ce que chaque domaine importe en plus de lui-même, de `core`, `ui` et `api` (`DOMAIN_DEPENDENCIES` de `sheriff.config.ts`) :
+`npm run lint:arch` = `sheriff verify src/main.ts` + `node scripts/check-pure-domain.mjs` + `node scripts/check-home-split.mjs` + son test `node --test scripts/check-home-split.test.mjs` (job CI `front` ; le dernier garde l'accueil `/` du jeu du jour sans la manche `/daily`, chargée à la demande : seul `gameplay/data-access/shared-audio` lui est permis). Ce que chaque domaine importe en plus de lui-même, de `core`, `ui` et `api` (`DOMAIN_DEPENDENCIES` de `sheriff.config.ts`) :
 
 ```ts
 gameplay: [],
