@@ -960,6 +960,7 @@
     },
     "result": {
       "yourScore": "Your score today",
+      "outOf": "out of {{ max }}",
       "verdict": {
         "warmup": "Warm-up",
         "correct": "Decent",

@@ -960,6 +960,7 @@
     },
     "result": {
       "yourScore": "Ton score du jour",
+      "outOf": "sur {{ max }}",
       "verdict": {
         "warmup": "Échauffement",
         "correct": "Correct",

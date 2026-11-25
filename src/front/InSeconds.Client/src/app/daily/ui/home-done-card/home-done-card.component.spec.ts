@@ -33,7 +33,7 @@ describe('HomeDoneCardComponent', () => {
 
   it('le score est sur son maximum, avec le mot du résultat', () => {
     const { q } = render({ maxScore: 5000, verdict: 'veryGood' });
-    expect(q('home-score-max')?.textContent).toMatch(/\/\s*5\s000/);
+    expect(q('home-score-max')?.textContent).toContain('daily.result.outOf');
     expect(q('home-verdict')?.textContent?.trim()).toBe('daily.result.verdict.veryGood');
   });
 

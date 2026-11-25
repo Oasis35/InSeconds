@@ -137,8 +137,8 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
             <app-home-mode-entries #lead placement="lead" class="block" [class.-mt-3]="lead.hasLeadingEntry()" [class.mb-3]="lead.hasLeadingEntry()" />
             <div class="screen-enter flex flex-col gap-3" data-testid="home-v4" data-fresh="true">
               <app-home-done-card
-                  [maxScore]="store.maxScore()"
-                  [verdict]="store.dayVerdict()"
+                [maxScore]="store.maxScore()"
+                [verdict]="store.dayVerdict()"
                 [score]="result.displayedTotal()"
                 [rows]="result.rows()"
                 [countdown]="store.countdown()"

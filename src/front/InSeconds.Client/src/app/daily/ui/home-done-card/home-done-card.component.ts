@@ -31,9 +31,16 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
         <div class="min-w-0">
           <h2 class="text-[13px] font-normal" style="font-family:var(--font-body);color:var(--text-muted)">{{ 'daily.result.yourScore' | translate }}</h2>
           <p class="tabular-nums whitespace-nowrap" data-testid="home-score"
-            style="font-family:var(--font-score);font-size:clamp(2.4rem, 12vw, 3rem);font-weight:900;line-height:0.95;letter-spacing:-0.02em;color:var(--text-hi)">{{ score() !== null ? (score() ?? 0 | appPoints) : '-' }}@if (maxScore(); as max) {<span class="text-base font-medium" style="font-family:var(--font-body);letter-spacing:0;color:var(--text-faint)" data-testid="home-score-max"> / {{ max | appPoints }}</span>}</p>
-          @if (verdict(); as word) {
-            <p class="text-[15px] font-semibold mt-1.5" style="color:var(--text-hi)" data-testid="home-verdict">{{ 'daily.result.verdict.' + word | translate }}</p>
+            style="font-family:var(--font-score);font-size:clamp(2.4rem, 12vw, 3rem);font-weight:900;line-height:0.95;letter-spacing:-0.02em;color:var(--text-hi)">{{ score() !== null ? (score() ?? 0 | appPoints) : '-' }}</p>
+          @if (maxScore() || verdict()) {
+            <p class="flex flex-wrap items-baseline gap-x-2 mt-1.5 text-[13px]" style="color:var(--text-muted)">
+              @if (verdict(); as word) {
+                <span class="text-[15px] font-semibold" style="color:var(--text-hi)" data-testid="home-verdict">{{ 'daily.result.verdict.' + word | translate }}</span>
+              }
+              @if (maxScore(); as max) {
+                <span class="tabular-nums" data-testid="home-score-max">{{ 'daily.result.outOf' | translate: { max: (max | appPoints) } }}</span>
+              }
+            </p>
           }
         </div>
         <div class="text-right shrink-0">
