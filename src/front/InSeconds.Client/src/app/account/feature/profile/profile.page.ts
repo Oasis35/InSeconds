@@ -7,11 +7,14 @@ import { FileDownload } from '../../../core/download/file-download';
 import { AppError } from '../../../core/errors/app-error';
 import { errorMessageKey } from '../../../core/errors/error-messages';
 import { LanguageService } from '../../../core/i18n/language.service';
+import { InstallPromptService } from '../../../core/pwa/install-prompt.service';
+import { InstallMode } from '../../../core/pwa/install-environment';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { SessionStore } from '../../../core/session/session.store';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
 import { ErrorMessageComponent } from '../../../ui/error-message/error-message.component';
+import { InstallStepsComponent } from '../../../ui/install-steps/install-steps.component';
 import { ModalService } from '../../../ui/modal/modal.service';
 import { ToastService } from '../../../ui/toast/toast.service';
 import { DevicesStore } from '../../data-access/devices.store';
@@ -40,7 +43,7 @@ function errorOf(status: ActionStatus): AppError | null {
   selector: 'app-profile-page',
   imports: [
     FormField, FormRoot, RouterLink, TranslatePipe, ButtonComponent, DecorBackgroundComponent, ErrorMessageComponent,
-    DeviceListComponent,
+    DeviceListComponent, InstallStepsComponent,
   ],
   providers: [ProfileStore, DevicesStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,6 +52,15 @@ function errorOf(status: ActionStatus): AppError | null {
 export class ProfilePage implements OnInit {
   protected setLanguage(lang: 'fr' | 'en'): void {
     this.language.use(lang);
+  }
+
+  protected readonly install = inject(InstallPromptService);
+  protected readonly installSteps = signal(false);
+
+  /** « Installer l'appli » : Android lance l'invite du navigateur, iPhone déplie les étapes de Safari. */
+  protected async installApp(mode: InstallMode): Promise<void> {
+    if (mode === 'ios') this.installSteps.update(open => !open);
+    else await this.install.promptNative();
   }
 
   protected readonly session = inject(SessionStore);

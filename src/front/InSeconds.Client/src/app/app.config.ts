@@ -19,6 +19,7 @@ import { credentialsInterceptor } from './core/http/credentials.interceptor';
 import { httpErrorReportingInterceptor } from './core/http/http-error-reporting.interceptor';
 import { LanguageService } from './core/i18n/language.service';
 import { PageMetaService } from './core/seo/page-meta.service';
+import { InstallPromptService } from './core/pwa/install-prompt.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -36,6 +37,7 @@ export const appConfig: ApplicationConfig = {
     }),
     provideAppInitializer(() => inject(LanguageService).init()),
     provideAppInitializer(() => inject(PageMetaService).init()),
+    provideAppInitializer(() => inject(InstallPromptService).init()),
     provideAccount(),
     provideDailyStatus(),
     provideSocial(),
