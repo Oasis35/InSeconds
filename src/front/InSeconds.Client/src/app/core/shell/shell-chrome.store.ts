@@ -16,6 +16,8 @@ interface ShellChromeState {
   accountCtaShown: boolean;
   /** Le point « Nouveau » de l'onglet Groupes (l'annonce des groupes, une fois sa carte fermée). Posé par le domaine des groupes, lu par la barre. */
   groupsNew: boolean;
+  /** Le nombre d'alertes du panneau technique de l'admin, `null` tant qu'il n'est pas lu (et pour tout compte qui n'est pas admin). Posé par le domaine admin, lu par le bouton « Admin » de l'en-tête. */
+  adminAlerts: number | null;
 }
 
 /**
@@ -24,7 +26,7 @@ interface ShellChromeState {
  */
 export const ShellChromeStore = signalStore(
   { providedIn: 'root' },
-  withState<ShellChromeState>({ survie: false, survieKnown: false, immersive: false, dailyDone: null, accountCtaShown: false, groupsNew: false }),
+  withState<ShellChromeState>({ survie: false, survieKnown: false, immersive: false, dailyDone: null, accountCtaShown: false, groupsNew: false, adminAlerts: null }),
   withMethods(store => ({
     /** `known` : faux tant que l'accès n'est pas lu (les tests qui posent seulement `survie` le sont d'office). */
     setSurvie(survie: boolean, known = true): void {
@@ -41,6 +43,9 @@ export const ShellChromeStore = signalStore(
     },
     setGroupsNew(groupsNew: boolean): void {
       patchState(store, { groupsNew });
+    },
+    setAdminAlerts(adminAlerts: number | null): void {
+      patchState(store, { adminAlerts });
     },
   })),
 );

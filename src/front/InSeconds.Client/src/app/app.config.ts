@@ -9,6 +9,7 @@ import { provideTranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 
 import { provideAccount } from './account/feature/provide-account';
+import { provideAdminStatus } from './admin/feature/provide-admin-status';
 import { provideDailyStatus } from './daily/feature/provide-daily-status';
 import { provideRuns } from './runs/feature/provide-runs';
 import { provideSocial } from './social/feature/provide-social';
@@ -42,6 +43,7 @@ export const appConfig: ApplicationConfig = {
     provideDailyStatus(),
     provideSocial(),
     provideRuns(),
+    provideAdminStatus(),
     // Désactivé en dev (`ng serve`) : un service worker y servirait d'anciens fichiers.
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),

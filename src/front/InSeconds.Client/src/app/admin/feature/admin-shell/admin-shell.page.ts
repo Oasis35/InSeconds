@@ -9,6 +9,7 @@ import { BrowserIdComponent } from '../../../account/feature/browser-id/browser-
 import { ProfileStore } from '../../../account/data-access/profile.store';
 import { SessionStore } from '../../../core/session/session.store';
 import { AdminCounts } from '../../data-access/admin-counts';
+import { AdminStatus } from '../../data-access/admin-status';
 import { GRAFANA_DASHBOARD_URL, JOBS_DASHBOARD_URL } from '../../data-access/admin-api.providers';
 import { ciRunsPage } from '../../data-access/github-ci.api';
 import { SystemStore } from '../../data-access/system.store';
@@ -177,6 +178,7 @@ export class AdminShellPage {
   protected readonly session = inject(SessionStore);
   protected readonly profile = inject(ProfileStore);
   private readonly counts = inject(AdminCounts);
+  private readonly status = inject(AdminStatus);
   private readonly router = inject(Router);
   /** L'adresse courante, pour allumer l'onglet qui contient la page ouverte. */
   private readonly url = toSignal(
@@ -212,7 +214,7 @@ export class AdminShellPage {
     effect(() => {
       if (!this.session.isAdmin() || loaded) return;
       loaded = true;
-      untracked(() => void this.system.load());
+      untracked(() => void this.loadSystem());
     });
     rememberTabScroll();
     this.watchAsideHeight();
@@ -242,7 +244,13 @@ export class AdminShellPage {
 
   /** De retour sur l'onglet : l'état technique est relu (un admin laisse souvent l'onglet ouvert d'un jour à l'autre). */
   protected onVisibilityChange(): void {
-    if (this.document.visibilityState === 'visible' && this.session.isAdmin()) void this.system.load();
+    if (this.document.visibilityState === 'visible' && this.session.isAdmin()) void this.loadSystem();
+  }
+
+  /** Lit l'état technique, puis dit au bouton « Admin » de l'en-tête ce qu'il en est : en sortant de l'admin, son témoin est à jour sans relire. */
+  private async loadSystem(): Promise<void> {
+    await this.system.load();
+    this.status.report(this.system.alerts());
   }
 
   /** La fenêtre qui perd le focus (barre d'adresse, autre onglet) n'est pas la fin de la saisie : le champ le garde au retour. */
