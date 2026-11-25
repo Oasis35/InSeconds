@@ -271,7 +271,7 @@ export const PoolStore = signalStore(
         }
         if (track && !track.themeIds.includes(themeId)) await api.setTrackThemes(track.id, [...track.themeIds, themeId]);
       }),
-      /** Reprend le morceau depuis une autre version de Deezer qui a un extrait (refusé s'il a déjà servi dans un défi), puis relit. */
+      /** Reprend le morceau depuis une autre version de Deezer qui a un extrait (refusé pour le morceau du défi du jour), puis relit. */
       replaceSource: (id: number, deezerTrackId: number) => mutate(() => api.replaceSource(id, deezerTrackId)),
       rename: (id: number, artist: string, title: string, genre?: string, altTitles?: readonly string[]) =>
         mutate(() => api.renameTrack(id, artist.trim(), title.trim(), genre?.trim(), altTitles)),

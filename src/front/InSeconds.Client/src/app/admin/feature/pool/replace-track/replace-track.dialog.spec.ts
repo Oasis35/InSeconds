@@ -84,13 +84,13 @@ describe('ReplaceTrackDialog', () => {
   });
 
   it('reste ouverte avec l\'erreur de l\'API quand le remplacement est refusé', async () => {
-    const { fixture, element } = open({ replaceSource: vi.fn(async () => { throw problem(409, 'catalogue.track_in_use'); }) });
+    const { fixture, element } = open({ replaceSource: vi.fn(async () => { throw problem(409, 'catalogue.track_in_today_challenge'); }) });
     await settle(fixture);
 
     element.querySelector<HTMLButtonElement>('[data-testid="replace-choose"]')!.click();
     await settle(fixture);
 
     expect(dialog.close).not.toHaveBeenCalled();
-    expect(element.querySelector('[data-testid="replace-error"]')?.textContent).toContain('errors.catalogue.track_in_use');
+    expect(element.querySelector('[data-testid="replace-error"]')?.textContent).toContain('errors.catalogue.track_in_today_challenge');
   });
 });

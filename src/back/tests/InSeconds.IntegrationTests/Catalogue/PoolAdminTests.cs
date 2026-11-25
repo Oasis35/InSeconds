@@ -442,6 +442,32 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Actualisation_MorceauDejaUtilise_VersUnAutreAlbum_GardeLesNoms_EtPrendLesGenresDuNouvelAlbum()
+    {
+        var track = await _app.AddAsync(FakeDeezerHandler.NoPreviewFrom + 1);
+        _app.Usage.Set(track.Id, new TrackUsage(new DateOnly(2026, 9, 1), 1, new DateOnly(2026, 10, 1), InTodayChallenge: false));
+
+        var response = await _app.Admin().PutAsJsonAsync($"{Tracks}/{track.Id}", new UpdateTrack(2002), Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var listed = Assert.Single(await _app.ListAsync());
+        Assert.Equal((track.Artist, track.Title), (listed.Artist, listed.Title));
+        Assert.Equal(["Rock"], listed.Genres);
+    }
+
+    [Fact]
+    public async Task Actualisation_MorceauDejaUtilise_IdentifiantPrisParUnAutreMorceau_409()
+    {
+        var track = await _app.AddAsync(FakeDeezerHandler.NoPreviewFrom + 1);
+        await _app.AddAsync(2002);
+        _app.Usage.Set(track.Id, new TrackUsage(new DateOnly(2026, 9, 1), 1, new DateOnly(2026, 10, 1), InTodayChallenge: false));
+
+        var response = await _app.Admin().PutAsJsonAsync($"{Tracks}/{track.Id}", new UpdateTrack(2002), Ct);
+
+        await AssertProblemAsync(response, HttpStatusCode.Conflict, CatalogueErrorCodes.DuplicateDeezerId);
+    }
+
+    [Fact]
     public async Task Actualisation_IdentifiantPrisParUnAutreMorceau_409()
     {
         var track = await _app.AddAsync(FakeDeezerHandler.NoPreviewFrom + 1);

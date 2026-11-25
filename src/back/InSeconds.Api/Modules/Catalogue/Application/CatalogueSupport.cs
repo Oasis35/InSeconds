@@ -96,7 +96,7 @@ public sealed record TrackSummary(
 /// <summary>Une ligne du pool admin : le morceau et ce que chaque mode de jeu en a fait.</summary>
 /// <param name="PreviewStatus"><c>unknown</c>, <c>available</c> ou <c>missing</c>.</param>
 /// <param name="PreviewMissingSince">Depuis quand l'extrait est manquant (<see cref="Track.PreviewMissingSince"/>) ; vide s'il ne l'est pas.</param>
-/// <param name="IsUsed">Un mode au moins l'a joué (ou le déclare utilisé) : ni suppression ni actualisation (409 <c>catalogue.track_in_use</c>).</param>
+/// <param name="IsUsed">Un mode au moins l'a joué (ou le déclare utilisé) : pas de suppression (409 <c>catalogue.track_in_use</c>), actualisation avec noms gardés.</param>
 /// <param name="Usages">Un élément par mode qui a quelque chose à dire du morceau, dans l'ordre d'enregistrement des modes.</param>
 /// <param name="Genres">Les genres de l'album du morceau (noms), vides tant qu'ils ne sont pas lus ou si l'album n'en a pas.</param>
 /// <param name="ThemeIds">Les thèmes de la liste de l'admin associés au morceau (plusieurs possibles), vides : aucun.</param>

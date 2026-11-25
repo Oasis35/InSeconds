@@ -462,11 +462,11 @@ describe('PoolStore', () => {
 
     it('s\'arrête à la première erreur et relit quand même le pool', async () => {
       await setup();
-      api.deleteTrack.mockResolvedValueOnce().mockRejectedValueOnce(problem(409, 'catalogue.track_in_use'));
+      api.deleteTrack.mockResolvedValueOnce().mockRejectedValueOnce(problem(409, 'catalogue.track_in_today_challenge'));
 
       const error = await store.remove([3, 4]);
 
-      expect(error?.code).toBe('catalogue.track_in_use');
+      expect(error?.code).toBe('catalogue.track_in_today_challenge');
       expect(api.deleteTrack).toHaveBeenCalledTimes(2);
       expect(api.listTracks).toHaveBeenCalledTimes(2);
     });
@@ -589,12 +589,12 @@ describe('PoolStore', () => {
     });
 
     it('rend l\'erreur de l\'API sans relire quand le remplacement est refusé', async () => {
-      await setup([beatles], { replaceSource: vi.fn(async () => { throw problem(409, 'catalogue.track_in_use'); }) });
+      await setup([beatles], { replaceSource: vi.fn(async () => { throw problem(409, 'catalogue.track_in_today_challenge'); }) });
       api.listTracks.mockClear();
 
       const error = await store.replaceSource(4, 999);
 
-      expect(error?.code).toBe('catalogue.track_in_use');
+      expect(error?.code).toBe('catalogue.track_in_today_challenge');
       expect(api.listTracks).not.toHaveBeenCalled();
     });
   });
