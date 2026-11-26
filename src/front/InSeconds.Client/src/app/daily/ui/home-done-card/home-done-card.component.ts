@@ -67,7 +67,7 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
             </span>
           </button>
         }
-        <app-streak-pill class="ml-auto" [streak]="streak()" [linked]="linked()" [stackWhenNarrow]="true" (open)="openStreak.emit()" />
+        <app-streak-pill class="ml-auto" [streak]="streak()" [linked]="linked()" [stackWhenNarrow]="true" [celebrate]="true" (open)="openStreak.emit()" />
       </div>
       @if (gelEvent(); as event) {
         <app-streak-event-line [kind]="event" [streak]="streak()?.streak ?? null" [freezesUsed]="freezesUsed()" />

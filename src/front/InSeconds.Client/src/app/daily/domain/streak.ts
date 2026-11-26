@@ -67,3 +67,30 @@ export function toUtcDate(value: string | null | undefined): Date | null {
 export function dateKey(value: string | null | undefined): string | null {
   return toUtcDate(value)?.toISOString().slice(0, 10) ?? null;
 }
+
+/** Les jalons de série fêtés par la pastille : 7, 14, 30, 60, 90, 180 et 365 jours, puis chaque année. */
+const MILESTONES = [7, 14, 30, 60, 90, 180, 365] as const;
+const YEAR = 365;
+
+/** Un nombre de jours de série est-il un jalon ? */
+export function isStreakMilestone(days: number): boolean {
+  if (!Number.isInteger(days) || days < MILESTONES[0]) return false;
+  return (MILESTONES as readonly number[]).includes(days) || (days > YEAR && days % YEAR === 0);
+}
+
+/**
+ * L'état de jalon de la pastille de série :
+ * - `reached` : le jalon est atteint par la partie d'aujourd'hui (allumée ce jour-là seulement) ;
+ * - `eve` : la partie d'aujourd'hui, pas encore jouée, atteindrait un jalon (contour en pointillés) ;
+ * - `null` : rien de particulier.
+ * `today` est le jour de jeu (`aaaa-mm-jj`).
+ */
+export type StreakMilestoneState = 'reached' | 'eve' | null;
+
+export function streakMilestoneState(streak: Streak | null, today: string): StreakMilestoneState {
+  if (!streak || streak.streak <= 0) return null;
+  if (streak.lastPlayedDate !== null && streak.lastPlayedDate.slice(0, 10) === today) {
+    return isStreakMilestone(streak.streak) ? 'reached' : null;
+  }
+  return streak.status === 'active' && isStreakMilestone(streak.streak + 1) ? 'eve' : null;
+}

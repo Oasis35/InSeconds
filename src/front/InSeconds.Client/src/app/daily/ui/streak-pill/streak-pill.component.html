@@ -5,14 +5,20 @@
           data-testid="streak-pill"
           [attr.data-mode]="mode"
           [attr.aria-label]="mode === 'protected' ? ('daily.streakFreeze.pillProtectedLabel' | translate) : (labelKey() | translate: { streak: streak()?.streak ?? 0 })"
-          class="inline-flex min-h-11 px-1 text-sm font-semibold tabular-nums whitespace-nowrap cursor-pointer touch-manipulation"
-          [class]="stackWhenNarrow() ? 'flex-col items-end @min-[22rem]:flex-row @min-[22rem]:items-center @min-[22rem]:gap-2.5' : 'items-center gap-2.5'">
-    <span class="flex items-center gap-1.5" style="color:var(--color-accent-3)">
-      <app-streak-icon name="flame" />{{ daysKey() | translate: { n: streak()?.streak ?? 0 } }}
+          [attr.data-milestone]="milestone()"
+          class="relative inline-flex min-h-11 px-1 text-sm font-semibold tabular-nums whitespace-nowrap cursor-pointer touch-manipulation"
+          [class]="(stackWhenNarrow() ? 'flex-col items-end @min-[22rem]:flex-row @min-[22rem]:items-center @min-[22rem]:gap-2.5' : 'items-center gap-2.5') + (milestone() ? ' rounded-full px-3' : '')"
+          [style.background]="milestone() === 'reached' ? 'var(--color-accent-3)' : null"
+          [style.border]="milestone() === 'eve' ? '1.5px dashed var(--color-accent-3)' : null">
+    @if (milestone() === 'reached') {
+      <span #ring aria-hidden="true" class="absolute inset-0 rounded-full pointer-events-none" style="border:2px solid var(--color-accent-3);opacity:0"></span>
+    }
+    <span class="flex items-center gap-1.5" [style.color]="milestone() === 'reached' ? 'var(--text-on-orange)' : 'var(--color-accent-3)'">
+      <span #flame class="inline-flex"><app-streak-icon name="flame" /></span><span #days>{{ daysKey() | translate: { n: streak()?.streak ?? 0 } }}</span>
     </span>
     @if (mode === 'on' || mode === 'protected') {
-      <span aria-hidden="true" [class]="stackWhenNarrow() ? 'hidden @min-[22rem]:inline' : ''" style="color:var(--text-faint)">·</span>
-      <span class="flex items-center gap-1.5" style="color:var(--color-accent-2)">
+      <span aria-hidden="true" [class]="stackWhenNarrow() ? 'hidden @min-[22rem]:inline' : ''" [style.color]="milestone() === 'reached' ? 'var(--text-on-orange)' : 'var(--text-faint)'">·</span>
+      <span class="flex items-center gap-1.5" [style.color]="milestone() === 'reached' ? 'var(--text-on-orange)' : 'var(--color-accent-2)'">
         <app-streak-icon name="snowflake" />{{ freezesKey() | translate: { n: streak()?.freezes ?? 0 } }}
       </span>
     }
