@@ -18,13 +18,13 @@ import { ScoreBreakdown } from '../../domain/score-breakdown';
   host: { class: 'block w-full' },
   template: `
     @if (breakdown(); as b) {
-      <div class="flex flex-col items-start gap-1.5" data-testid="score-breakdown">
-        <div class="w-full h-2 rounded-full overflow-hidden flex" style="background:color-mix(in srgb, var(--color-fail) 35%, transparent)"
+      <div class="flex flex-row flex-wrap items-center gap-x-2.5 gap-y-1" data-testid="score-breakdown">
+        <div class="basis-full h-1.5 rounded-full overflow-hidden flex" style="background:color-mix(in srgb, var(--color-fail) 35%, transparent)"
           role="img" [attr.aria-label]="'daily.round.breakdown.bar' | translate: { score: (b.score | appPoints), base: (b.base | appPoints) }"
           data-motion="breakdown-line" data-testid="breakdown-bar">
           <div class="h-full" style="background:var(--color-accent-3)" [style.width.%]="percent()"></div>
         </div>
-        <p class="m-0 text-[13px] tabular-nums" style="color:var(--text-muted)" data-motion="breakdown-line" data-testid="breakdown-base">
+        <p class="m-0 text-xs tabular-nums" style="color:var(--text-muted)" data-motion="breakdown-line" data-testid="breakdown-base">
           @if (reduced()) {
             {{ 'daily.round.breakdown.outOf' | translate: { points: (b.base | appPoints) } }}
           } @else {
@@ -34,14 +34,14 @@ import { ScoreBreakdown } from '../../domain/score-breakdown';
         @if (reduced()) {
           <ul class="m-0 p-0 list-none flex flex-wrap gap-1.5" data-motion="breakdown-line" data-testid="breakdown-causes">
             @if (b.missed) {
-              <li class="rounded-lg border px-2.5 py-1 text-[13px]" style="color:var(--color-fail);border-color:var(--color-fail)">
+              <li class="rounded-lg border px-2 py-0.5 text-xs" style="color:var(--color-fail);border-color:var(--color-fail)">
                 <span aria-hidden="true">✕</span>
                 {{ (b.missed === 'title' ? 'daily.round.breakdown.missedTitle' : 'daily.round.breakdown.missedArtist') | translate }}
                 · {{ 'daily.round.breakdown.half' | translate }}
               </li>
             }
             @if (b.hintPenaltyPercent > 0) {
-              <li class="rounded-lg border px-2.5 py-1 text-[13px]" style="color:var(--text-muted);border-color:var(--border-neutral)">
+              <li class="rounded-lg border px-2 py-0.5 text-xs" style="color:var(--text-muted);border-color:var(--border-neutral)">
                 {{ 'daily.round.breakdown.hint' | translate }} · {{ 'daily.round.breakdown.hintPenalty' | translate: { percent: b.hintPenaltyPercent } }}
               </li>
             }
