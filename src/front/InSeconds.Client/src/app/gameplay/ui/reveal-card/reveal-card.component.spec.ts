@@ -48,13 +48,13 @@ describe('RevealCardComponent', () => {
     expect(render({ ...RESULT, coverUrl: null }).element.querySelector('img')).toBeNull();
   });
 
-  it('colore l\'artiste et le titre : vert si trouvé, rouge si raté, avec le mot pour les lecteurs d\'écran', () => {
+  it('marque ✓ ce qui est trouvé et ✕ ce qui est raté, avec le mot pour les lecteurs d\'écran', () => {
     const { element } = render();
-    const [artist, title] = Array.from(element.querySelectorAll<HTMLElement>('[data-testid="reveal-answer"] > span:not([style*="text-light"])'));
-    expect(artist.style.color).toBe('var(--color-success)');
-    expect(artist.querySelector('.sr-only')?.textContent).toContain('gameplay.reveal.found');
-    expect(title.style.color).toBe('var(--color-fail)');
-    expect(title.querySelector('.sr-only')?.textContent).toContain('gameplay.reveal.missed');
+    const lines = Array.from(element.querySelectorAll<HTMLElement>('[data-testid="reveal-answer"] > span'));
+    expect(lines[0].textContent).toContain('✓');
+    expect(lines[0].querySelector('.sr-only')?.textContent).toContain('gameplay.reveal.found');
+    expect(lines[1].textContent).toContain('✕');
+    expect(lines[1].querySelector('.sr-only')?.textContent).toContain('gameplay.reveal.missed');
   });
 
   it('place les éléments du mode : points, suite', () => {
