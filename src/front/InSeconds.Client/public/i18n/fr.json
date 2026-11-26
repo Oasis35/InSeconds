@@ -1220,6 +1220,26 @@
       },
       "splitNote": "Le trait violet : la part des joueurs."
     },
+    "weekReview": {
+      "title": "La semaine dernière",
+      "cardTitle": "Ta semaine",
+      "range": "du {{ from }} au {{ to }}",
+      "close": "Fermer",
+      "average": "de moyenne",
+      "averageShort": "moyenne",
+      "daysOfSeven": {
+        "one": "{{ n }} jour sur 7",
+        "other": "{{ n }} jours sur 7"
+      },
+      "daysPlayed": "jours joués",
+      "bestDay": "{{ day }} : {{ score }}",
+      "bestDayLabel": "meilleur jour ({{ day }})",
+      "bestTrack": "Meilleur morceau :",
+      "points": "{{ points }} pts",
+      "seeDetail": "Voir le détail",
+      "dayBarLabel": "{{ day }} : {{ score }}",
+      "dayBarNone": "{{ day }} : pas joué"
+    },
     "streakEvent": {
       "earned": "+1 gel gagné",
       "earnedDetail": "{{ streak }} jours de série",

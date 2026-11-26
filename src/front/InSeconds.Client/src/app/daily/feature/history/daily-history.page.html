@@ -38,6 +38,10 @@
       }
     }
 
+    @if (weekReview(); as week) {
+      <app-week-review-card [review]="week" [lang]="language.current()" />
+    }
+
     @if (earProfile(); as profile) {
       <app-ear-profile-card [profile]="profile" [lang]="language.current()" />
     }

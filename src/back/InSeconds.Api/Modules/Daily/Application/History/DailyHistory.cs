@@ -16,6 +16,12 @@ public interface IDailyHistoryQueries
     /// </summary>
     Task<IReadOnlyList<HistoryCalendarInput>> ListMonthDaysAsync(Guid? playerId, DateOnly start, DateOnly end, CancellationToken ct);
 
+    /// <summary>
+    /// Sa réponse qui a rapporté le plus de points sur les défis de [<paramref name="start"/>, <paramref name="end"/>[, dans ses parties terminées (la plus
+    /// ancienne en cas d'égalité) ; vide sans réponse notée.
+    /// </summary>
+    Task<BestAnswer?> GetBestAnswerAsync(Guid playerId, DateOnly start, DateOnly end, CancellationToken ct);
+
     /// <summary>Le jour du tout premier défi ; vide s'il n'y en a aucun.</summary>
     Task<DateOnly?> GetFirstChallengeDateAsync(CancellationToken ct);
 

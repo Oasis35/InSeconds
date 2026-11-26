@@ -1220,6 +1220,26 @@
       },
       "splitNote": "The purple mark: the players' share."
     },
+    "weekReview": {
+      "title": "Last week",
+      "cardTitle": "Your week",
+      "range": "{{ from }} to {{ to }}",
+      "close": "Close",
+      "average": "average",
+      "averageShort": "average",
+      "daysOfSeven": {
+        "one": "{{ n }} day out of 7",
+        "other": "{{ n }} days out of 7"
+      },
+      "daysPlayed": "days played",
+      "bestDay": "{{ day }}: {{ score }}",
+      "bestDayLabel": "best day ({{ day }})",
+      "bestTrack": "Best track:",
+      "points": "{{ points }} pts",
+      "seeDetail": "See details",
+      "dayBarLabel": "{{ day }}: {{ score }}",
+      "dayBarNone": "{{ day }}: not played"
+    },
     "streakEvent": {
       "earned": "+1 freeze earned",
       "earnedDetail": "{{ streak }}-day streak",
