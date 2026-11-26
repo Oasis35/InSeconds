@@ -34,14 +34,14 @@ import { ScoreBreakdown } from '../../domain/score-breakdown';
         @if (reduced()) {
           <ul class="m-0 p-0 list-none flex flex-wrap gap-1.5" data-motion="breakdown-line" data-testid="breakdown-causes">
             @if (b.missed) {
-              <li class="rounded-lg px-2.5 py-1 text-[13px]" style="color:var(--text-light);background:var(--bg-surface)">
-                <span style="color:var(--color-fail)" aria-hidden="true">✕</span>
+              <li class="rounded-lg border px-2.5 py-1 text-[13px]" style="color:var(--color-fail);border-color:var(--color-fail)">
+                <span aria-hidden="true">✕</span>
                 {{ (b.missed === 'title' ? 'daily.round.breakdown.missedTitle' : 'daily.round.breakdown.missedArtist') | translate }}
                 · {{ 'daily.round.breakdown.half' | translate }}
               </li>
             }
             @if (b.hintPenaltyPercent > 0) {
-              <li class="rounded-lg px-2.5 py-1 text-[13px]" style="color:var(--text-muted);background:var(--bg-surface)">
+              <li class="rounded-lg border px-2.5 py-1 text-[13px]" style="color:var(--text-muted);border-color:var(--border-neutral)">
                 {{ 'daily.round.breakdown.hint' | translate }} · {{ 'daily.round.breakdown.hintPenalty' | translate: { percent: b.hintPenaltyPercent } }}
               </li>
             }

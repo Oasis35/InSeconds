@@ -30,19 +30,20 @@
         <div class="screen-enter flex-1 flex flex-col justify-start pt-4">
           <app-track-round [result]="store.roundResult()" [hintPending]="store.hintPending()"
             (answered)="onAnswered($event)" (hintRequested)="store.requestHint($event)">
-            <!-- Le badge Deezer se pose sous « Artiste - Titre », dans le flux. -->
-            <div roundBadge class="inline-flex items-center justify-center rounded-xl px-2.5"
-                 style="height:30px;background:var(--bg-surface);backdrop-filter:var(--blur-tile);-webkit-backdrop-filter:var(--blur-tile);border:1px solid var(--border-medium)">
-              <app-deezer-badge [deezerTrackId]="store.roundDeezerTrackId() ?? undefined" width="98" height="14" [lang]="language.current()" />
-            </div>
-
             <div roundScore class="flex flex-col items-start gap-2">
-              <p data-testid="round-score" class="tabular-nums"
-                 style="font-family:var(--font-score);font-size:2.2rem;font-weight:900;line-height:0.95;letter-spacing:-0.02em"
-                 [style.color]="store.roundScore() > 0 ? 'var(--text-hi)' : 'var(--text-muted)'">
-                +<app-score-count [value]="store.roundScore()" [from]="store.roundBreakdown()?.base ?? 0" [delay]="store.roundBreakdown() ? 1000 : 0" />
-                <span class="text-sm font-normal" style="font-family:var(--font-body);letter-spacing:0;color:var(--text-muted)"> {{ 'daily.round.points' | translate }}</span>
-              </p>
+              <!-- Les points à gauche, le badge Deezer à leur droite (la place est libre de ce côté). -->
+              <div class="w-full flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                <p data-testid="round-score" class="tabular-nums"
+                   style="font-family:var(--font-score);font-size:2.2rem;font-weight:900;line-height:0.95;letter-spacing:-0.02em"
+                   [style.color]="store.roundScore() > 0 ? 'var(--text-hi)' : 'var(--text-muted)'">
+                  +<app-score-count [value]="store.roundScore()" [from]="store.roundBreakdown()?.base ?? 0" [delay]="store.roundBreakdown() ? 1000 : 0" />
+                  <span class="text-sm font-normal" style="font-family:var(--font-body);letter-spacing:0;color:var(--text-muted)"> {{ 'daily.round.points' | translate }}</span>
+                </p>
+                <div class="inline-flex items-center justify-center rounded-xl px-2.5 shrink-0"
+                     style="height:30px;background:var(--bg-surface);backdrop-filter:var(--blur-tile);-webkit-backdrop-filter:var(--blur-tile);border:1px solid var(--border-medium)">
+                  <app-deezer-badge [deezerTrackId]="store.roundDeezerTrackId() ?? undefined" width="98" height="14" [lang]="language.current()" />
+                </div>
+              </div>
               <!-- D'où viennent les points : le barème du palier, puis la moitié ou l'indice qui les réduit (pastilles visibles) ; le score descend ensuite jusqu'à son résultat. -->
               <app-score-breakdown [breakdown]="store.roundBreakdown()" />
             </div>

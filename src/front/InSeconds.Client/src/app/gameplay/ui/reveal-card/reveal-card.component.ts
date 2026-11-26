@@ -7,7 +7,7 @@ import { MembraneComponent } from '../membrane/membrane.component';
 /**
  * La révélation, en une colonne alignée à gauche : la pochette (qui danse avec les basses de l'extrait rejoué, comme le bouton du lecteur) à
  * côté de « Artiste - Titre » (vert quand c'est trouvé ; rouge et souligné en pointillés quand c'est raté, pour ne pas reposer sur la couleur seule ; « trouvé » ou « raté » en plus pour les lecteurs d'écran) et
- * du badge du mode ; puis les points du mode dans `[roundScore]`, le graphique « en combien de temps les autres ont trouvé » et le bouton
+ * ; puis les points du mode dans `[roundScore]` (avec le badge Deezer à leur droite), le graphique « en combien de temps les autres ont trouvé » et le bouton
  * « suite » dans `[roundNext]`. Rien qui identifie le morceau n'arrive avant la réponse : la carte n'existe qu'à la révélation.
  */
 @Component({
@@ -29,8 +29,6 @@ import { MembraneComponent } from '../membrane/membrane.component';
             <span style="color:var(--text-light)"> - </span>
             <span [style.color]="result().titleCorrect ? 'var(--color-success)' : 'var(--color-fail)'" [class]="result().titleCorrect ? '' : 'underline decoration-dotted underline-offset-4'">{{ result().correctTitle }}<span class="sr-only"> ({{ (result().titleCorrect ? 'gameplay.reveal.found' : 'gameplay.reveal.missed') | translate }})</span></span>
           </p>
-          <!-- Le badge du mode (Deezer) se place sous la ligne, aligné sur le texte. -->
-          <ng-content select="[roundBadge]" />
         </div>
       </div>
 
