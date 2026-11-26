@@ -117,7 +117,8 @@ public static class GetTodayEndpoint
         int? bestScore = current.PlayerId is { } bestOf && completedGames > 0 ? await stats.GetBestScoreAsync(bestOf, ct) : null;
         var yesterdayMedian = bestScore is null ? await YesterdayMedianAsync(stats, today, ct) : null;
 
-        var recap = isLinked && current.PlayerId is { } recapOf && completedGames >= ReturnRecapPolicy.MinGames
+        // Seule la carte du défi à jouer le dit : rien à calculer quand la partie est finie, en pause ou sans défi.
+        var recap = isLinked && row is { SessionStatus: null } && current.PlayerId is { } recapOf && completedGames >= ReturnRecapPolicy.MinGames
             ? await ReturnRecapAsync(history, recapOf, today.AddDays(-1), rules, ct)
             : null;
 

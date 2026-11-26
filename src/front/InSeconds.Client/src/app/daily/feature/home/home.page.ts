@@ -159,6 +159,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                 [betterThanPercent]="store.stats()?.betterThanPercent ?? null"
                 [history]="store.stats()?.history ?? null"
                 [stats]="store.stats()"
+                [celebrate]="true"
                 [focus]="!lead.hasLeadingEntry()"
                 [lang]="language.current()"
                 [streak]="store.pillStreak()"

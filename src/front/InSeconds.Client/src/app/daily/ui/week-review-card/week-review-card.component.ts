@@ -82,10 +82,10 @@ import { pluralKey } from '../../domain/streak';
     </section>
 
     <ng-template #barsTpl>
-      <ol class="flex items-end gap-2 list-none p-0 m-0" [class.flex-1]="!compact()" [class.justify-between]="!compact()" data-testid="week-review-bars">
+      <ol class="flex items-end gap-1.5 list-none p-0 m-0" [class.flex-1]="!compact()" [class.justify-between]="!compact()" data-testid="week-review-bars">
         @for (bar of bars(); track bar.date) {
           <li class="flex flex-col items-center gap-1.5" [class.flex-1]="!compact()" role="img" [attr.aria-label]="bar.label">
-            <span class="w-[22px] rounded-[5px] flex items-end" [style.height.px]="compact() ? 36 : 56">
+            <span class="rounded-[5px] flex items-end" [class.w-[18px]]="compact()" [class.w-[22px]]="!compact()" [style.height.px]="compact() ? 36 : 56">
               @if (bar.ratio > 0) {
                 <span class="w-full rounded-[5px]" data-testid="week-review-bar" [style.height.%]="bar.ratio * 100"
                   [style.background]="bar.best ? 'var(--color-accent-3)' : 'rgb(var(--rgb-accent-3) / 0.45)'"></span>
