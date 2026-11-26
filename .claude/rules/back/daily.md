@@ -44,6 +44,7 @@ Le défi du jour : défis et génération, usage des morceaux et cooldown, parti
 
 ## Administration
 
+- `GET /api/admin/daily/stats?days=7|30|90` (`Admin/AdminStats.cs`, onglet Stats) : activité par jour, parties par issue, réponses, et retours J+1 / J+7 par source et par classe d'appareil (`ReturnCohorts`, calculé à la lecture sur les parties, rien de stocké). Une cohorte n'est comptée éligible que si `jour + n < aujourd'hui` ; les arrivées viennent de `IPlayerDirectory.ListArrivalsAsync`. Période hors 7/30/90 : 400 `admin.invalid_period`. Tests : `ReturnCohortsTests`, `AdminStatsTests`.
 - `GET /api/admin/players` est servie par Daily (elle mêle les comptes, lus par `IPlayerDirectory`, et la série) ; ses routes sont dans le document OpenAPI de Daily.
 - Pseudo et titre joints à la lecture, jamais figés dans la photo.
 - Réglage du cooldown : écrit par `SettingsStore.SetAsync`, route `[NonTransactional]` (dans la transaction, le rechargement lirait la base avant l'enregistrement).

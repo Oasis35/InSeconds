@@ -9,6 +9,7 @@ import { CooldownApi } from './cooldown.api';
 import { CatalogueApi } from './catalogue.api';
 import { ChallengesApi } from './challenges.api';
 import { DashboardApi } from './dashboard.api';
+import { StatsApi } from './stats.api';
 import { AdminGroupsApi } from './groups.api';
 import { GithubCiApi } from './github-ci.api';
 import { JobsApi } from './jobs.api';
@@ -36,6 +37,6 @@ export function provideAdminApi(): Provider[] {
     { provide: SOCIAL_API_BASE_URL, useValue: environment.apiUrl },
     { provide: JOBS_DASHBOARD_URL, useValue: `${environment.apiUrl}/jobs` },
     AdminClient, CatalogueClient, DailyClient, RunsClient, SocialClient,
-    CooldownApi, CatalogueApi, ChallengesApi, DashboardApi, JobsApi, AdminPlayersApi, AdminGroupsApi, SystemApi, GithubCiApi,
+    CooldownApi, CatalogueApi, ChallengesApi, DashboardApi, StatsApi, JobsApi, AdminPlayersApi, AdminGroupsApi, SystemApi, GithubCiApi,
   ];
 }

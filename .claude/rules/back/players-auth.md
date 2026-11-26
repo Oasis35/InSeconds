@@ -51,5 +51,6 @@ Identité, compte, appareils, rôle admin, droits RGPD. Point d'entrée `Players
 
 - `DeviceLabel` (`InSeconds.Infrastructure/Http`) : « Chrome · Android » tiré du `User-Agent` ; ni l'en-tête brut ni l'IP ne sont stockés.
 - Source d'arrivée (`AcquisitionSource`) : nettoyée, jamais une erreur (`other` sinon, `direct` sans source), notée à la création de l'invité seulement.
+- Classe d'appareil (`DeviceClass.From(User-Agent)` : `phone`, `tablet`, `desktop`, `null` sinon) : notée à la création de l'invité seulement, dans `players.players.device_class`, dans l'export ; jamais l'en-tête brut. Lue par `IPlayerDirectory.ListArrivalsAsync` (jour, source, classe) pour l'onglet Stats.
 - `GET /api/players/me` ne crée jamais de joueur (204 sans identité) ; seul `POST /api/players/guest` en crée un (S11).
 - Modération : `Application/AdminPseudo.cs` remet à zéro le pseudo d'un compte (« Joueur » et un nombre libre) ou retire celui d'un invité ; ses routes `api/admin/accounts` sont dans le document OpenAPI de Players.

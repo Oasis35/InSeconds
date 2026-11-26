@@ -16,7 +16,6 @@ import { ChallengePlayerChipsComponent } from '../../ui/challenges/challenge-pla
 import { ChallengeScoreChartComponent } from '../../ui/challenges/challenge-score-chart/challenge-score-chart.component';
 import { ChallengeTrackStatsComponent } from '../../ui/challenges/challenge-track-stats/challenge-track-stats.component';
 import { DashboardActivityComponent } from '../../ui/dashboard/dashboard-activity/dashboard-activity.component';
-import { DashboardArrivalsComponent } from '../../ui/dashboard/dashboard-arrivals/dashboard-arrivals.component';
 import { DashboardDayNavComponent } from '../../ui/dashboard/dashboard-day-nav/dashboard-day-nav.component';
 import { DashboardKpisComponent } from '../../ui/dashboard/dashboard-kpis/dashboard-kpis.component';
 import { DashboardPlayersComponent } from '../../ui/dashboard/dashboard-players/dashboard-players.component';
@@ -35,13 +34,13 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
  *   répartition).
  * - Un clic sur la date ouvre le calendrier du mois : n'importe quel jour qui a un défi (ses joueurs et ses morceaux sont lus à la demande
  *   au-delà des 30 derniers). Un jour figé en base (J-2 et avant) montre, en bas du « Détail », sa date de calcul et un lien « Recalculer » (avec confirmation).
- * - L'activité des 30 derniers jours (un clic sur une barre change de jour), les totaux des joueurs, les sources d'arrivée, puis les défis du mois (tableau replié).
+ * - L'activité des 30 derniers jours (un clic sur une barre change de jour), les totaux des joueurs, puis les défis du mois (tableau replié).
  * Le jour affiché vit dans l'adresse (`?jour=2026-11-03`, absent pour aujourd'hui) : un F5 rouvre le même jour.
  */
 @Component({
   selector: 'app-admin-dashboard-page',
   imports: [
-    NgTemplateOutlet, TranslatePipe, ErrorMessageComponent, DashboardDayNavComponent, DashboardKpisComponent, DashboardActivityComponent, DashboardArrivalsComponent,
+    NgTemplateOutlet, TranslatePipe, ErrorMessageComponent, DashboardDayNavComponent, DashboardKpisComponent, DashboardActivityComponent,
     DashboardPlayersComponent, ChallengePlayerChipsComponent, ChallengeScoreChartComponent, ChallengeTrackStatsComponent, ChallengeTableComponent,
   ],
   providers: [DashboardStore, ChallengesStore],
@@ -105,7 +104,6 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
             [activity]="dashboard.activity" [selectedDay]="store.selectedDay()" [total]="store.totalPlayers()"
             [peak]="store.maxDailyPlayers()" [locale]="locale()" (daySelected)="store.selectDay($event)" />
           <app-dashboard-players [players]="dashboard.players" />
-          <app-dashboard-arrivals [arrivals]="dashboard.arrivals" />
 
           <!-- Les défis du mois du jour affiché, replié d'office : un clic sur une ligne change le jour de la carte. -->
           @if (monthChallenges().length > 0) {

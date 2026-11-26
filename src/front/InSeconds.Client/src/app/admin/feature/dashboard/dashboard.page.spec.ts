@@ -106,13 +106,6 @@ describe('DashboardPage', () => {
     expect(loyalty).toContain('3 admin.dashboard.regulars · 1 admin.dashboard.newcomer');
   });
 
-  it('les sources d\'arrivée des 30 jours sous l\'activité', async () => {
-    const { element } = await render();
-
-    expect(byTestId(element, 'dashboard-arrivals')?.textContent).toContain('12');
-    expect(element.querySelectorAll('[data-testid="arrival-share"]')).toHaveLength(4);
-  });
-
   it('l\'égaliseur des scores du jour sur PC seulement, en tête de la colonne de droite comme dans l\'onglet Défis', async () => {
     expect(byTestId((await render()).element, 'challenge-score-chart')).toBeNull();
     TestBed.resetTestingModule();

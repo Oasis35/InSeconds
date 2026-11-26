@@ -15,6 +15,7 @@ export interface AdminTab {
 export const ADMIN_TABS: readonly AdminTab[] = [
   { path: 'dashboard', label: 'admin.tabs.dashboard' },
   { path: 'catalogue', label: 'admin.tabs.content', alsoActive: ['themes', 'a-valider'] },
+  { path: 'stats', label: 'admin.tabs.stats' },
   { path: 'groupes', label: 'admin.tabs.groupsPlain' },
   { path: 'joueurs', label: 'admin.tabs.playersPlain', counted: { label: 'admin.tabs.players', source: 'players' } },
 ];

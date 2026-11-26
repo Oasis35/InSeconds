@@ -1089,6 +1089,7 @@ export interface PlayerDataExport {
     createdAt: Date;
     lastSeenAt: Date | undefined;
     acquisitionSource: string | undefined;
+    deviceClass: string | undefined;
     guestPseudo: string | undefined;
     account: AccountExport | undefined;
     devices: DeviceExport[];

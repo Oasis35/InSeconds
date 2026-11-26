@@ -49,6 +49,7 @@ export const ADMIN_ROUTES: Routes = [
       { path: 'catalogue', loadComponent: () => import('./pool/catalogue.page').then(m => m.CataloguePage) },
       { path: 'themes', loadComponent: () => import('./themes/themes.page').then(m => m.ThemesPage) },
       { path: 'a-valider', loadComponent: () => import('./candidates/candidates.page').then(m => m.CandidatesPage) },
+      { path: 'stats', loadComponent: () => import('./stats/stats.page').then(m => m.StatsPage) },
       { path: 'groupes', loadComponent: () => import('./groups/groups.page').then(m => m.GroupsPage) },
       { path: 'joueurs', loadComponent: () => import('./players/players.page').then(m => m.PlayersPage) },
       { path: 'actions', pathMatch: 'full', redirectTo: actionsToCatalogue },
