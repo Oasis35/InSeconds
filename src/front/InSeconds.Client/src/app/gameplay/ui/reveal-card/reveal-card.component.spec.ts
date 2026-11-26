@@ -39,9 +39,9 @@ describe('RevealCardComponent', () => {
     return { element, text: () => element.textContent!.replace(/\s+/g, ' ') };
   }
 
-  it('montre la bonne réponse et la pochette', () => {
-    const { element, text } = render();
-    expect(text()).toContain('Daft Punk - Get Lucky');
+  it('montre « Artiste - Titre » et la pochette', () => {
+    const { element } = render();
+    expect(element.querySelector('[data-testid="reveal-answer"]')?.getAttribute('title')).toBe('Daft Punk - Get Lucky');
     expect(element.querySelector('img')?.getAttribute('src')).toBe('https://cdn.example/pochette.jpg');
   });
 
@@ -49,10 +49,13 @@ describe('RevealCardComponent', () => {
     expect(render({ ...RESULT, coverUrl: null }).element.querySelector('img')).toBeNull();
   });
 
-  it('marque ✓ ce qui est juste et ✗ ce qui est faux', () => {
-    const spans = Array.from(render().element.querySelectorAll('span.font-semibold')).map(span => span.textContent!.replace(/\s+/g, ' ').trim());
-    expect(spans[0]).toContain('✓');
-    expect(spans[1]).toContain('✗');
+  it('colore l\'artiste et le titre : vert si trouvé, rouge si raté, avec le mot pour les lecteurs d\'écran', () => {
+    const { element } = render();
+    const [artist, title] = Array.from(element.querySelectorAll<HTMLElement>('[data-testid="reveal-answer"] > span:not([style*="text-light"])'));
+    expect(artist.style.color).toBe('var(--color-success)');
+    expect(artist.querySelector('.sr-only')?.textContent).toContain('gameplay.reveal.found');
+    expect(title.style.color).toBe('var(--color-fail)');
+    expect(title.querySelector('.sr-only')?.textContent).toContain('gameplay.reveal.missed');
   });
 
   it('place les éléments du mode : badge, points, suite', () => {

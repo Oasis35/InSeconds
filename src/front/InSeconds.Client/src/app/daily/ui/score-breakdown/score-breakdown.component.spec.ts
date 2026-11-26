@@ -15,44 +15,34 @@ describe('ScoreBreakdownComponent', () => {
   }
   const base: ScoreBreakdown = { seconds: 1, base: 850, missed: null, hintPenaltyPercent: 0, score: 850 };
 
-  it('tout trouvé sans indice : barre pleine, « maximum possible », rien à déplier', () => {
+  it('tout trouvé sans indice : barre pleine, « maximum possible », aucune pastille', () => {
     const { byId } = render(base);
     expect((byId('breakdown-bar')?.firstElementChild as HTMLElement).style.width).toBe('100%');
     expect(byId('breakdown-base')?.textContent).toContain('daily.round.breakdown.max');
-    expect(byId('breakdown-why')).toBeNull();
+    expect(byId('breakdown-causes')).toBeNull();
   });
 
-  it('un seul des deux trouvé : la barre ne montre que la part gagnée, la cause se déplie au toucher', () => {
-    const { fixture, byId } = render({ ...base, missed: 'title', hintPenaltyPercent: 30, score: 298 });
+  it('un seul des deux trouvé : la barre ne montre que la part gagnée, les pastilles de la cause sont visibles d\'emblée', () => {
+    const { byId } = render({ ...base, missed: 'title', hintPenaltyPercent: 30, score: 298 });
     expect(Number.parseFloat((byId('breakdown-bar')?.firstElementChild as HTMLElement).style.width)).toBeCloseTo(35, 0);
     expect(byId('breakdown-base')?.textContent).toContain('daily.round.breakdown.outOf');
-    expect(byId('breakdown-causes')).toBeNull();
-
-    byId('breakdown-why')!.click();
-    fixture.detectChanges();
-
     const causes = byId('breakdown-causes')!.textContent!;
     expect(causes).toContain('daily.round.breakdown.missedTitle');
     expect(causes).toContain('daily.round.breakdown.half');
     expect(causes).toContain('daily.round.breakdown.hintPenalty');
-    expect(byId('breakdown-why')?.getAttribute('aria-expanded')).toBe('true');
   });
 
   it('un indice seul : la pastille de sa pénalité, sans celle de la moitié', () => {
-    const { fixture, byId } = render({ ...base, hintPenaltyPercent: 30, score: 595 });
-    byId('breakdown-why')!.click();
-    fixture.detectChanges();
+    const { byId } = render({ ...base, hintPenaltyPercent: 30, score: 595 });
     expect(byId('breakdown-causes')!.textContent).not.toContain('daily.round.breakdown.half');
     expect(byId('breakdown-causes')!.textContent).toContain('daily.round.breakdown.hintPenalty');
   });
 
-  it('un nouveau morceau referme les pastilles', () => {
+  it('un nouveau morceau change les pastilles', () => {
     const { fixture, byId } = render({ ...base, missed: 'title', score: 425 });
-    byId('breakdown-why')!.click();
-    fixture.detectChanges();
     fixture.componentRef.setInput('breakdown', { ...base, missed: 'artist', score: 425 });
     fixture.detectChanges();
-    expect(byId('breakdown-causes')).toBeNull();
+    expect(byId('breakdown-causes')!.textContent).toContain('daily.round.breakdown.missedArtist');
   });
 
   it('rien à expliquer : rien d\'affiché', () => {

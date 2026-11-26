@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, afterRenderEffect, computed, inject, input, linkedSignal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterRenderEffect, computed, inject, input } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 import { PointsPipe } from '../../../ui/format/points.pipe';
@@ -7,9 +7,9 @@ import { ScoreBreakdown } from '../../domain/score-breakdown';
 
 /**
  * Ce que vaut le morceau, d'un coup d'œil, sous le score de la révélation : une barre (ce qui est gagné sur ce que le palier pouvait donner,
- * le reste en rouge) et sa légende (« sur 850 pts possibles », ou « Maximum possible à 1 s » quand tout est gagné). Quand quelque chose a
- * réduit les points, un lien « Pourquoi ? » déplie les pastilles de la cause (« ✕ Titre raté · ÷ 2 », « Indice · − 30 % »). Les deux lignes
- * du haut se posent l'une après l'autre ; le score du morceau descend ensuite jusqu'à son résultat.
+ * le reste en rouge), sa légende (« sur 850 pts possibles », ou « Maximum possible à 1 s » quand tout est gagné) et, toujours visibles quand
+ * quelque chose a réduit les points, les pastilles de la cause (« ✕ Titre raté · ÷ 2 », « Indice · − 30 % »). Tout est aligné à gauche, sous
+ * le score ; les lignes se posent l'une après l'autre, puis le score du morceau descend jusqu'à son résultat.
  */
 @Component({
   selector: 'app-score-breakdown',
@@ -18,8 +18,8 @@ import { ScoreBreakdown } from '../../domain/score-breakdown';
   host: { class: 'block w-full' },
   template: `
     @if (breakdown(); as b) {
-      <div class="mx-auto flex flex-col items-center gap-1.5" style="max-width:15rem" data-testid="score-breakdown">
-        <div class="w-full h-2.5 rounded-full overflow-hidden flex" style="background:color-mix(in srgb, var(--color-fail) 35%, transparent)"
+      <div class="flex flex-col items-start gap-1.5" data-testid="score-breakdown">
+        <div class="w-full h-2 rounded-full overflow-hidden flex" style="background:color-mix(in srgb, var(--color-fail) 35%, transparent)"
           role="img" [attr.aria-label]="'daily.round.breakdown.bar' | translate: { score: (b.score | appPoints), base: (b.base | appPoints) }"
           data-motion="breakdown-line" data-testid="breakdown-bar">
           <div class="h-full" style="background:var(--color-accent-3)" [style.width.%]="percent()"></div>
@@ -32,23 +32,20 @@ import { ScoreBreakdown } from '../../domain/score-breakdown';
           }
         </p>
         @if (reduced()) {
-          <button type="button" class="text-[13px] underline py-3 -my-2" style="color:var(--text-light)" data-testid="breakdown-why"
-            [attr.aria-expanded]="open()" (click)="open.set(!open())">{{ 'daily.round.breakdown.why' | translate }}</button>
-          @if (open()) {
-            <div class="flex flex-wrap justify-center gap-1.5" data-testid="breakdown-causes">
-              @if (b.missed) {
-                <span class="rounded-full border px-2.5 py-0.5 text-[13px]" style="color:var(--color-fail);border-color:var(--color-fail)">
-                  ✕ {{ (b.missed === 'title' ? 'daily.round.breakdown.missedTitle' : 'daily.round.breakdown.missedArtist') | translate }}
-                  · {{ 'daily.round.breakdown.half' | translate }}
-                </span>
-              }
-              @if (b.hintPenaltyPercent > 0) {
-                <span class="rounded-full border px-2.5 py-0.5 text-[13px]" style="color:var(--text-muted);border-color:var(--border-neutral)">
-                  {{ 'daily.round.breakdown.hint' | translate }} · {{ 'daily.round.breakdown.hintPenalty' | translate: { percent: b.hintPenaltyPercent } }}
-                </span>
-              }
-            </div>
-          }
+          <ul class="m-0 p-0 list-none flex flex-wrap gap-1.5" data-motion="breakdown-line" data-testid="breakdown-causes">
+            @if (b.missed) {
+              <li class="rounded-lg px-2.5 py-1 text-[13px]" style="color:var(--text-light);background:var(--bg-surface)">
+                <span style="color:var(--color-fail)" aria-hidden="true">✕</span>
+                {{ (b.missed === 'title' ? 'daily.round.breakdown.missedTitle' : 'daily.round.breakdown.missedArtist') | translate }}
+                · {{ 'daily.round.breakdown.half' | translate }}
+              </li>
+            }
+            @if (b.hintPenaltyPercent > 0) {
+              <li class="rounded-lg px-2.5 py-1 text-[13px]" style="color:var(--text-muted);background:var(--bg-surface)">
+                {{ 'daily.round.breakdown.hint' | translate }} · {{ 'daily.round.breakdown.hintPenalty' | translate: { percent: b.hintPenaltyPercent } }}
+              </li>
+            }
+          </ul>
         }
       </div>
     }
@@ -59,8 +56,6 @@ export class ScoreBreakdownComponent {
 
   readonly breakdown = input.required<ScoreBreakdown | null>();
 
-  /** Les pastilles de la cause : fermées à chaque nouveau morceau. */
-  protected readonly open = linkedSignal<ScoreBreakdown | null, boolean>({ source: this.breakdown, computation: () => false });
   /** Vrai quand quelque chose a réduit les points (un seul des deux trouvé, ou un indice pris). */
   protected readonly reduced = computed(() => {
     const b = this.breakdown();

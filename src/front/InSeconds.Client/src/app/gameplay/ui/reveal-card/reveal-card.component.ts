@@ -5,41 +5,33 @@ import { GuessTimeChartComponent } from '../guess-time-chart/guess-time-chart.co
 import { MembraneComponent } from '../membrane/membrane.component';
 
 /**
- * La révélation : pochette (qui danse avec les basses de l'extrait rejoué, comme le bouton du lecteur), ✓/✗ de l'artiste et du titre,
- * bonne réponse, puis le graphique « en
- * combien de temps les autres ont trouvé ». Les points sont ceux du mode : il les projette dans
- * `[roundScore]` (sous la bonne réponse) et son bouton « suite » dans `[roundNext]` (sous le graphique).
+ * La révélation, en une colonne alignée à gauche : la pochette (qui danse avec les basses de l'extrait rejoué, comme le bouton du lecteur) à
+ * côté de « Artiste - Titre » (vert quand c'est trouvé ; rouge et souligné en pointillés quand c'est raté, pour ne pas reposer sur la couleur seule ; « trouvé » ou « raté » en plus pour les lecteurs d'écran) et
+ * du badge du mode ; puis les points du mode dans `[roundScore]`, le graphique « en combien de temps les autres ont trouvé » et le bouton
+ * « suite » dans `[roundNext]`. Rien qui identifie le morceau n'arrive avant la réponse : la carte n'existe qu'à la révélation.
  */
 @Component({
   selector: 'app-reveal-card',
   imports: [TranslatePipe, GuessTimeChartComponent, MembraneComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="relative flex flex-col items-center gap-3 text-center pt-1" data-testid="reveal">
-      <!-- Le badge du mode se place par rapport à la carte (à gauche de la pochette), jamais par rapport à la page. -->
-      <ng-content select="[roundBadge]" />
-
-      @if (result().coverUrl; as cover) {
-        <app-membrane [level]="bass()">
-          <img [src]="cover" [alt]="'gameplay.reveal.coverAlt' | translate" class="block w-24 h-24 object-cover"
-            style="box-shadow:0 8px 32px rgba(0,0,0,0.6);opacity:0.95;border-radius:50%" />
-        </app-membrane>
-      }
-
-      <div class="flex justify-center gap-6">
-        <span class="text-sm font-semibold" [style.color]="result().artistCorrect ? 'var(--color-success)' : 'var(--color-fail)'">
-          {{ result().artistCorrect ? '✓' : '✗' }} {{ 'gameplay.reveal.artist' | translate }}
-        </span>
-        <span class="text-sm font-semibold" [style.color]="result().titleCorrect ? 'var(--color-success)' : 'var(--color-fail)'">
-          {{ result().titleCorrect ? '✓' : '✗' }} {{ 'gameplay.reveal.title' | translate }}
-        </span>
-      </div>
-
-      <div class="space-y-1.5">
-        <p class="text-[13px]" style="color:var(--text-muted)">
-          {{ 'gameplay.reveal.correctAnswer' | translate }}
-        </p>
-        <p class="text-sm leading-relaxed" style="color:var(--text-light)"><b class="font-semibold" style="color:var(--text-hi)">{{ result().correctArtist }}</b> - {{ result().correctTitle }}</p>
+    <div class="flex flex-col items-stretch gap-3 text-left" data-testid="reveal">
+      <div class="flex items-center gap-3 min-w-0">
+        @if (result().coverUrl; as cover) {
+          <app-membrane class="shrink-0" [level]="bass()">
+            <img [src]="cover" [alt]="'gameplay.reveal.coverAlt' | translate" class="block w-14 h-14 min-[375px]:w-16 min-[375px]:h-16 object-cover rounded-full"
+              style="opacity:0.95" />
+          </app-membrane>
+        }
+        <div class="min-w-0 flex-1 flex flex-col items-start gap-1.5">
+          <p class="m-0 text-base font-semibold leading-snug line-clamp-3" [attr.title]="result().correctArtist + ' - ' + result().correctTitle" data-testid="reveal-answer">
+            <span [style.color]="result().artistCorrect ? 'var(--color-success)' : 'var(--color-fail)'" [class]="result().artistCorrect ? '' : 'underline decoration-dotted underline-offset-4'">{{ result().correctArtist }}<span class="sr-only"> ({{ (result().artistCorrect ? 'gameplay.reveal.found' : 'gameplay.reveal.missed') | translate }})</span></span>
+            <span style="color:var(--text-light)"> - </span>
+            <span [style.color]="result().titleCorrect ? 'var(--color-success)' : 'var(--color-fail)'" [class]="result().titleCorrect ? '' : 'underline decoration-dotted underline-offset-4'">{{ result().correctTitle }}<span class="sr-only"> ({{ (result().titleCorrect ? 'gameplay.reveal.found' : 'gameplay.reveal.missed') | translate }})</span></span>
+          </p>
+          <!-- Le badge du mode (Deezer) se place sous la ligne, aligné sur le texte. -->
+          <ng-content select="[roundBadge]" />
+        </div>
       </div>
 
       <ng-content select="[roundScore]" />

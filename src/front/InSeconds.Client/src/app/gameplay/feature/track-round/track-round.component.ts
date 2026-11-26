@@ -18,7 +18,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
  * réponse quand `answered` part, puis donne le `result` du serveur et appelle `reveal()` du store.
  *
  * Emplacements de projection du mode : `[roundActions]` (ses boutons, au-dessus de « Valider »),
- * `[roundBadge]` (à gauche de la pochette), `[roundScore]` (ses points) et `[roundNext]` (sa suite). En ligne
+ * `[roundBadge]` (sous « Artiste - Titre »), `[roundScore]` (ses points) et `[roundNext]` (sa suite). En ligne
  * (`layout="inline"`, un mode à écoute fixe) : `[roundCorner]` (en haut à droite de la carte, son chrono), `[roundAids]` (au-dessus de la
  * saisie, dans les deux dispositions : les coups de pouce du mode), `[roundTheme]` (tout en haut de la saisie : l'indice du mode) et `[roundReveal]` (sa révélation, dans la carte, à la place de la carte de révélation) ; « Passer »
  * y est un simple lien souligné sous « Valider », et `[roundLinks]` y met son propre lien à côté (même style). Avec `choices`, la saisie devient autant de réponses à toucher (une seule est juste,

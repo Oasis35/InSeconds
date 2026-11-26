@@ -1,7 +1,7 @@
 import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 
-/** Bloc « en partie » sous la barre : « Morceau X / N », lien Abandonner, barre de progression. */
+/** Bloc « en partie » sous la barre : « Morceau X / N » (suivi du total de la partie quand la page le projette dans `[progressTotal]`), lien Abandonner, barre de progression. */
 @Component({
   selector: 'app-daily-progress',
   imports: [TranslatePipe],
