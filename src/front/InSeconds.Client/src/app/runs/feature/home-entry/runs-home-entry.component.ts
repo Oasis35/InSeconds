@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
-import { unlockSharedAudio } from '../../../gameplay/data-access/html-audio.port';
+import { unlockSharedAudio } from '../../../gameplay/data-access/shared-audio';
 import { RunsApi } from '../../data-access/runs.api';
 import { provideRunsApi } from '../../data-access/runs.providers';
 import { SetlistAccessStore } from '../../data-access/setlist-access.store';

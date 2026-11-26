@@ -128,9 +128,12 @@ export class FakeDailyApi {
     return this.result(this.answer(answer));
   }
 
+  /** Vrai : l'abandon échoue (le serveur ne répond pas). */
+  abandonError = false;
+
   abandon(sessionId: number): Promise<void> {
     this.calls.push(`abandon ${sessionId}`);
-    return Promise.resolve();
+    return this.abandonError ? Promise.reject(new Error('abandon')) : Promise.resolve();
   }
 
   archiveDatesCall(): Promise<string[]> {
