@@ -52,6 +52,67 @@ public class DailySessionTests
         Assert.Equal(TrackTurn.Unknown, NewSession().TurnOf(4, trackCount: 3));
     }
 
+    // --- la seconde tentative (piège 51) ---
+
+    [Fact]
+    public void RecordFailedAttempt_UneSeuleTentativeEnPlus_EtLePalierAnnonceDevientLePlancher()
+    {
+        var session = NewSession();
+        session.KeepRound(TrackRound.Start.Listen(1));
+
+        session.RecordFailedAttempt(2);
+
+        Assert.Equal(1, session.FailedAttemptsOfCurrentTrack);
+        // La seconde tentative ne peut pas annoncer plus court que la première : le prix suit le dernier palier.
+        Assert.Equal(2, session.RoundOfCurrentTrack(Hints).ListenedSeconds);
+    }
+
+    [Theory]
+    [InlineData(true, 1, false, false, true)]
+    [InlineData(false, 1, false, false, false)] // réglage coupé
+    [InlineData(true, 0, false, false, false)] // palier 0 : pas d'extrait
+    [InlineData(true, 1, true, false, false)] // passer ou réponse vide : définitif
+    [InlineData(true, 1, false, true, false)] // artiste et titre trouvés
+    public void CanOfferRetry_SeulementPourUneVraieReponsePasEntierementJuste(bool enabled, decimal seconds, bool blank, bool foundBoth, bool expected)
+    {
+        Assert.Equal(expected, NewSession().CanOfferRetry(enabled, seconds, blank, foundBoth));
+    }
+
+    [Fact]
+    public void CanOfferRetry_UneSeuleFoisParMorceau()
+    {
+        var session = NewSession();
+        session.RecordFailedAttempt(1);
+
+        Assert.False(session.CanOfferRetry(true, 1, false, false));
+    }
+
+    [Fact]
+    public void RecordFailedAttempt_LePlancherNeDescendJamais()
+    {
+        var session = NewSession();
+        session.KeepRound(TrackRound.Start.Listen(5));
+
+        session.RecordFailedAttempt(1);
+
+        Assert.Equal(5, session.RoundOfCurrentTrack(Hints).ListenedSeconds);
+    }
+
+    [Fact]
+    public void Answer_LibereLeVerrou_EtLaProchainePisteRepartAZeroTentativeRatee()
+    {
+        var session = NewSession();
+        session.RecordFailedAttempt(1);
+
+        session.Answer(Found(), 595, false, 5, Now);
+
+        Assert.Equal(0, session.FailedAttemptsOfCurrentTrack);
+        Assert.Equal(0, session.CurrentFailedAttempts);
+    }
+
+    [Fact]
+    public void FailedAttemptsOfCurrentTrack_ZeroSansVerrou() => Assert.Equal(0, NewSession().FailedAttemptsOfCurrentTrack);
+
     [Fact]
     public void KeepRound_PoseLeVerrouSurLeMorceauEnCours_EtLaMancheSeReconstitue()
     {

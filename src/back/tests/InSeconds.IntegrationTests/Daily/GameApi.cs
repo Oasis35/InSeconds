@@ -27,7 +27,11 @@ internal sealed class GameApi : IAsyncDisposable
         IReadOnlyDictionary<string, string>? settings = null,
         Action<IServiceCollection>? configureServices = null)
     {
-        var game = new GameApi(DailyApi.Create(connectionString, settings, configureServices));
+        // Sans seconde tentative par défaut : les tests qui donnent une réponse non complète attendent la correction tout de suite.
+        // Ceux de la seconde tentative la rouvrent par Daily:RetryScorePercent.
+        var effective = new Dictionary<string, string>(settings ?? new Dictionary<string, string>());
+        effective.TryAdd("Daily:RetryScorePercent", "0");
+        var game = new GameApi(DailyApi.Create(connectionString, effective, configureServices));
         _ = game.Api.Server;
         if (tracks > 0)
             await game.App.AddPlayableTracksAsync(tracks);

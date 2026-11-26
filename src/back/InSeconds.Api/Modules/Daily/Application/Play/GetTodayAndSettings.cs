@@ -14,7 +14,10 @@ public sealed record DurationScoreResponse(decimal Seconds, int Score);
 /// </summary>
 public sealed record HintLevelResponse(int Level, decimal UnlockSeconds, string Kind, int PenaltyPercent);
 
-/// <summary>Les réglages publics du défi du jour, lus à chaud.</summary>
+/// <summary>
+/// Les réglages publics du défi du jour, lus à chaud. <paramref name="RetryScorePercent"/> : le score de la seconde tentative en pourcentage de la première
+/// (0 : pas de seconde tentative).
+/// </summary>
 public sealed record DailySettingsResponse(
     int GuessTimerSeconds,
     int TracksPerChallenge,
@@ -22,7 +25,8 @@ public sealed record DailySettingsResponse(
     IReadOnlyList<DurationScoreResponse> DurationScores,
     IReadOnlyList<HintLevelResponse> Hints,
     int StreakFreezeEveryDays,
-    int StreakFreezeMax);
+    int StreakFreezeMax,
+    int RetryScorePercent);
 
 public static class GetDailySettingsEndpoint
 {
@@ -41,7 +45,8 @@ public static class GetDailySettingsEndpoint
             options.EffectiveDurationScores.Select(d => new DurationScoreResponse(d.Seconds, d.Score)).ToList(),
             rules.HintLevels.Select(l => new HintLevelResponse(l.Level, l.UnlockSeconds, l.KindName, l.PenaltyPercent)).ToList(),
             options.StreakFreezeEveryDays,
-            options.StreakFreezeMax);
+            options.StreakFreezeMax,
+            rules.RetryScorePercent);
     }
 }
 

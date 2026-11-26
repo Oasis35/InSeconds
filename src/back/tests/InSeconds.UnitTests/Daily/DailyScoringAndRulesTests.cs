@@ -15,7 +15,7 @@ public class DailyScoringAndRulesTests
     private static readonly DailyOptions Defaults = new();
 
     private static DurationScoringPolicy Policy() =>
-        new(Defaults.EffectiveDurationScores, Defaults.EffectiveHintPenaltyPercent);
+        new(Defaults.EffectiveDurationScores, Defaults.EffectiveHintPenaltyPercent, Defaults.RetryScorePercent);
 
     // --- le barème ---
 
@@ -63,10 +63,40 @@ public class DailyScoringAndRulesTests
         Assert.Equal(192, Policy().Score(new RoundOutcome(false, true, 2, 1)));
     }
 
+    // --- la seconde tentative : 70 % du score du dernier palier écouté, la moitié et la pénalité d'indice s'appliquent comme avant ---
+
+    [Theory]
+    [InlineData(2, 385)] // 550 × 0,7
+    [InlineData(5, 175)] // 250 × 0,7 : le palier du dernier écouté, pas celui de la première tentative
+    public void Score_SecondeTentative_LeDernierPalierEcoute_FoisLePourcentage(double seconds, int expected) =>
+        Assert.Equal(expected, Policy().Score(new RoundOutcome(true, true, (decimal)seconds, 0), isRetry: true));
+
+    [Fact]
+    public void Score_SecondeTentative_UneMoitie_PuisLePourcentage_ArrondiAuPairLePlusProche()
+    {
+        // 250 × 0,5 = 125 ; 125 × 0,7 = 87,5 → 88.
+        Assert.Equal(88, Policy().Score(new RoundOutcome(true, false, 5, 0), isRetry: true));
+        // 550 × 0,5 = 275 ; 275 × 0,7 = 192,5 → 192.
+        Assert.Equal(192, Policy().Score(new RoundOutcome(false, true, 2, 0), isRetry: true));
+    }
+
+    [Fact]
+    public void Score_SecondeTentative_PuisLaPenaliteDIndice() =>
+        // 850 × 0,7 = 595 ; 595 × 0,7 = 416,5 → 416.
+        Assert.Equal(416, Policy().Score(new RoundOutcome(true, true, 1, 1), isRetry: true));
+
+    [Fact]
+    public void Score_SecondeTentative_RienDeTrouve_ZeroPoint() =>
+        Assert.Equal(0, Policy().Score(new RoundOutcome(false, false, 1, 0), isRetry: true));
+
+    [Fact]
+    public void Score_SansSecondeTentative_LePourcentageNeSAppliquePas() =>
+        Assert.Equal(550, Policy().Score(new RoundOutcome(true, true, 2, 0)));
+
     [Fact]
     public void Score_UnPalierEcritDeuxFois_LeDernierL_Emporte_SansException()
     {
-        var policy = new DurationScoringPolicy([new DurationScore(1, 100), new DurationScore(1, 300)], new Dictionary<int, int>());
+        var policy = new DurationScoringPolicy([new DurationScore(1, 100), new DurationScore(1, 300)], new Dictionary<int, int>(), 70);
 
         Assert.Equal(300, policy.Score(new RoundOutcome(true, true, 1, 0)));
     }
@@ -89,6 +119,20 @@ public class DailyScoringAndRulesTests
         Assert.Equal(2, Defaults.StreakRules.FreezeMax);
         Assert.Equal(2, Defaults.StreakRules.LostNudgeMinDays);
         Assert.Equal(20, Defaults.GuessTimerSeconds);
+        Assert.Equal(70, Defaults.RetryScorePercent);
+    }
+
+    [Theory]
+    [InlineData(0, true)] // pas de seconde tentative
+    [InlineData(70, true)]
+    [InlineData(100, true)]
+    [InlineData(-1, false)]
+    [InlineData(101, false)]
+    public void RetryScorePercent_DeZeroACent(int percent, bool valid)
+    {
+        var problems = DailyOptionsChecks.Problems(new DailyOptions { RetryScorePercent = percent }, maxHintLevel: 2);
+
+        Assert.Equal(valid, problems.All(p => !p.Contains("RetryScorePercent")));
     }
 
     [Fact]

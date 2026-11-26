@@ -35,6 +35,10 @@ public sealed class SubmitAnswerValidator : AbstractValidator<SubmitAnswer>
 /// Ce que la réponse révèle une fois donnée : la correction, les points, le morceau (nom et lien Deezer, jamais envoyés avant), et ce qu'en ont fait les autres.
 /// </summary>
 /// <param name="Completed">C'était le dernier morceau : la partie est terminée, la série et les gels sont à jour.</param>
+/// <param name="Retry">
+/// La réponse n'est pas complète et le joueur a droit à **une** seconde tentative, définitive : rien n'est enregistré ni révélé. Tous les autres champs
+/// sont alors neutres (aucun verdict : ni artiste, ni titre, jamais lequel est juste, piège 51 ; aucun nom de morceau, piège 31).
+/// </param>
 public sealed record SubmitAnswerResponse(
     bool ArtistCorrect,
     bool TitleCorrect,
@@ -49,7 +53,13 @@ public sealed record SubmitAnswerResponse(
     int NotFoundCount,
     int HintLevelUsed,
     int HintPenaltyPercentApplied,
-    bool Completed);
+    bool Completed,
+    bool Retry = false)
+{
+    /// <summary>La réponse « fausse, retente » : aucun verdict, aucun morceau, aucun point (piège 51).</summary>
+    public static SubmitAnswerResponse RetryOffered(decimal listenedSeconds, int hintLevel) =>
+        new(false, false, 0, string.Empty, string.Empty, 0, null, listenedSeconds, null, [], 0, hintLevel, 0, false, true);
+}
 
 /// <summary>La partie et le morceau auquel le joueur répond (nom de référence compris).</summary>
 public sealed record AnswerAttempt(PlayableSession Loaded, TrackInfo? Track);
@@ -111,8 +121,17 @@ public static class SubmitAnswerEndpoint
         var info = attempt.Track!;
         var outcome = Answer(request, attempt, rules, matcher).Outcome!;
 
+        // Piège 51 : une réponse non complète n'est pas corrigée devant le joueur (il saurait quelle moitié est juste) : il a une seconde tentative.
+        if (session.CanOfferRetry(rules.RetryEnabled, request.ListenedSeconds, string.IsNullOrWhiteSpace(request.Artist) && string.IsNullOrWhiteSpace(request.Title), outcome.FoundBoth))
+        {
+            session.RecordFailedAttempt(request.ListenedSeconds);
+            metrics.RetryOffered();
+            return SubmitAnswerResponse.RetryOffered(request.ListenedSeconds, outcome.HintLevelUsed);
+        }
+
+        var isRetry = rules.RetryEnabled && session.FailedAttemptsOfCurrentTrack > 0;
         var scoring = rules.Scoring;
-        var score = scoring.Score(outcome);
+        var score = scoring.Score(outcome, isRetry);
         // Les autres joueurs, avant celui-ci : la révélation montre « en combien de temps ils ont trouvé ».
         var prior = await queries.GetPriorAnswerStatsAsync(challenge.Id, request.Position, ct);
 
@@ -120,7 +139,7 @@ public static class SubmitAnswerEndpoint
         DailyLog.AnswerSubmitted(
             logger, session.PlayerId, session.Id, info.Id, outcome.ListenedSeconds, outcome.ArtistCorrect, outcome.TitleCorrect,
             outcome.HintLevelUsed, score, request.Position, info.Artist, info.DisplayTitle);
-        metrics.AnswerSubmitted(outcome, score);
+        metrics.AnswerSubmitted(outcome, score, isRetry);
 
         if (completed)
         {

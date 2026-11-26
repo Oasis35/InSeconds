@@ -76,6 +76,12 @@ public sealed class DailySession
     /// <summary>Le niveau d'indice le plus haut révélé sur le morceau verrouillé.</summary>
     public short CurrentHintLevel { get; private set; }
 
+    /// <summary>
+    /// Les réponses fausses déjà données sur le morceau verrouillé (0 ou 1) : après une réponse qui n'est pas complète, le joueur a **une** seconde tentative,
+    /// définitive. Jamais envoyé par le client, comme le niveau d'indice.
+    /// </summary>
+    public short CurrentFailedAttempts { get; private set; }
+
     /// <summary>Gels consommés par la complétion (relu pour les toasts de fin de partie).</summary>
     public short FreezesUsed { get; private set; }
 
@@ -115,6 +121,29 @@ public sealed class DailySession
             return TrackRound.Start;
         return TrackRound.Resume(CurrentListenedSeconds ?? 0, Math.Min(CurrentHintLevel, policy.LevelCount));
     }
+
+    /// <summary>Les tentatives déjà ratées sur le morceau en cours (0 si le verrou est sur un autre morceau).</summary>
+    public int FailedAttemptsOfCurrentTrack => CurrentPosition == NextPosition ? CurrentFailedAttempts : 0;
+
+    /// <summary>
+    /// Note la première tentative ratée du morceau en cours : le joueur n'a plus qu'une tentative. Le palier annoncé devient le plancher d'écoute
+    /// (la seconde tentative ne peut pas annoncer un palier plus court : le prix suit le **dernier** palier écouté).
+    /// </summary>
+    public void RecordFailedAttempt(decimal claimedSeconds)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(claimedSeconds);
+        var floor = CurrentPosition == NextPosition ? CurrentListenedSeconds ?? 0 : 0;
+        CurrentPosition = (short)NextPosition;
+        CurrentListenedSeconds = Math.Max(floor, claimedSeconds);
+        CurrentFailedAttempts = 1;
+    }
+
+    /// <summary>
+    /// La seconde tentative est-elle offerte ? Seulement si le réglage est actif, si le morceau n'a pas encore de tentative ratée, pour un morceau avec
+    /// extrait (palier 0 : rien à retenter), pour une réponse qui n'est ni « passer » ni vide, et si l'artiste et le titre ne sont pas tous deux trouvés.
+    /// </summary>
+    public bool CanOfferRetry(bool retryEnabled, decimal claimedSeconds, bool blankAnswer, bool foundBoth) =>
+        retryEnabled && FailedAttemptsOfCurrentTrack == 0 && claimedSeconds > 0 && !blankAnswer && !foundBoth;
 
     /// <summary>Enregistre la manche du morceau en cours (ce que <see cref="TrackRound.Listen"/> ou <see cref="TrackRound.RevealHint"/> a rendu).</summary>
     public void KeepRound(TrackRound round)
@@ -171,6 +200,7 @@ public sealed class DailySession
         CurrentPosition = null;
         CurrentListenedSeconds = null;
         CurrentHintLevel = 0;
+        CurrentFailedAttempts = 0;
     }
 }
 

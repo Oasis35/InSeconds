@@ -466,6 +466,12 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("challenge_id");
 
+                    b.Property<short>("CurrentFailedAttempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("smallint")
+                        .HasDefaultValue((short)0)
+                        .HasColumnName("current_failed_attempts");
+
                     b.Property<short>("CurrentHintLevel")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("smallint")
