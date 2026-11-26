@@ -209,6 +209,85 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
             .ToDictionaryAsync(x => x.PlayerId, x => x.Count, ct);
     }
 
+    public async Task<IReadOnlyList<DaySessionCounts>> GetSessionCountsByDayAsync(DateOnly since, CancellationToken ct)
+    {
+        var challenges = db.Set<DailyChallenge>().AsNoTracking();
+        var sessions = db.Set<DailySession>().AsNoTracking();
+        var rows = await (from s in sessions
+                          join c in challenges on s.ChallengeId equals c.Id
+                          where c.Date >= since
+                          select new
+                          {
+                              c.Date,
+                              s.Status,
+                              First = !(from earlier in sessions
+                                        join ec in challenges on earlier.ChallengeId equals ec.Id
+                                        where earlier.PlayerId == s.PlayerId && ec.Date < c.Date
+                                        select earlier.Id).Any(),
+                          })
+            .GroupBy(x => x.Date)
+            .Select(g => new
+            {
+                Date = g.Key,
+                Completed = g.Count(x => x.Status == SessionStatus.Completed),
+                Abandoned = g.Count(x => x.Status == SessionStatus.Abandoned),
+                Expired = g.Count(x => x.Status == SessionStatus.Expired),
+                Players = g.Count(),
+                First = g.Count(x => x.First),
+            })
+            .ToListAsync(ct);
+        return rows.OrderBy(r => r.Date).Select(r => new DaySessionCounts(r.Date, r.Completed, r.Abandoned, r.Expired, r.Players, r.First)).ToList();
+    }
+
+    public async Task<IReadOnlyList<int>> GetCompletedScoresSinceAsync(DateOnly since, CancellationToken ct) =>
+        await (from s in db.Set<DailySession>().AsNoTracking()
+               join c in db.Set<DailyChallenge>().AsNoTracking() on s.ChallengeId equals c.Id
+               where c.Date >= since && s.Status == SessionStatus.Completed
+               select s.TotalScore)
+            .ToListAsync(ct);
+
+    public async Task<AnswerTotals> GetAnswerTotalsSinceAsync(DateOnly since, CancellationToken ct)
+    {
+        var answers = from a in db.Set<SessionAnswer>().AsNoTracking()
+                      join s in db.Set<DailySession>().AsNoTracking() on a.SessionId equals s.Id
+                      join c in db.Set<DailyChallenge>().AsNoTracking() on s.ChallengeId equals c.Id
+                      where c.Date >= since
+                      select a;
+        var totals = await answers
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Total = g.Count(),
+                ArtistFound = g.Count(a => a.ArtistCorrect),
+                TitleFound = g.Count(a => a.TitleCorrect),
+                WithHint = g.Count(a => a.HintLevel > 0),
+            })
+            .SingleOrDefaultAsync(ct);
+        var byListened = await answers
+            .GroupBy(a => a.ListenedSeconds)
+            .Select(g => new { Seconds = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Seconds, x => x.Count, ct);
+        return new AnswerTotals(totals?.Total ?? 0, totals?.ArtistFound ?? 0, totals?.TitleFound ?? 0, totals?.WithHint ?? 0, byListened);
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<DateOnly>>> GetPlayedDatesAsync(
+        IReadOnlyCollection<Guid> playerIds, DateOnly first, DateOnly last, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(playerIds);
+        if (playerIds.Count == 0)
+            return new Dictionary<Guid, IReadOnlyList<DateOnly>>();
+
+        var ids = playerIds.Distinct().ToList();
+        var rows = await (from s in db.Set<DailySession>().AsNoTracking()
+                          join c in db.Set<DailyChallenge>().AsNoTracking() on s.ChallengeId equals c.Id
+                          where c.Date >= first && c.Date <= last && ids.Contains(s.PlayerId)
+                          select new { s.PlayerId, c.Date })
+            .ToListAsync(ct);
+        return rows
+            .GroupBy(r => r.PlayerId)
+            .ToDictionary(g => g.Key, g => (IReadOnlyList<DateOnly>)g.Select(r => r.Date).ToList());
+    }
+
     public async Task<int?> GetBestScoreAsync(Guid playerId, CancellationToken ct) =>
         await db.Set<DailySession>().AsNoTracking()
             .Where(s => s.PlayerId == playerId && s.Status == SessionStatus.Completed)

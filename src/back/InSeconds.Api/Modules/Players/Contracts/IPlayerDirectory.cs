@@ -14,6 +14,12 @@ public sealed record PlayerBreakdown(int Guests, int Registered, int ActiveLast7
 /// <summary>Les joueurs arrivés par une source (<c>instagram</c>, <c>share</c>, <c>direct</c>, un domaine, <c>other</c>).</summary>
 public sealed record ArrivalCount(string Source, int Count);
 
+/// <summary>Un joueur créé un jour donné, avec ce qu'on a noté de sa première visite (vide avant qu'on le note, ou pour un lien de connexion).</summary>
+/// <param name="Day">Le jour UTC de sa création.</param>
+/// <param name="Source">D'où il vient (<c>instagram</c>, <c>share</c>, <c>direct</c>, un domaine, <c>other</c>).</param>
+/// <param name="DeviceClass">Son appareil de la première visite : <c>phone</c>, <c>tablet</c> ou <c>desktop</c>.</param>
+public sealed record PlayerArrival(Guid PlayerId, DateOnly Day, string? Source, string? DeviceClass);
+
 /// <summary>Ce que les autres modules ont besoin de savoir d'un joueur.</summary>
 public interface IPlayerDirectory
 {
@@ -65,4 +71,10 @@ public interface IPlayerDirectory
     /// présents, par source d'arrivée, la plus fréquente d'abord ; les joueurs créés avant qu'on note la source n'y figurent pas.
     /// </summary>
     Task<IReadOnlyList<ArrivalCount>> CountArrivalsBySourceAsync(DateOnly from, DateOnly to, CancellationToken ct);
+
+    /// <summary>
+    /// Les joueurs créés du jour <paramref name="from"/> au jour <paramref name="to"/> compris (jours UTC) et toujours présents, un par ligne, avec
+    /// leur source et leur appareil : de quoi suivre leur retour sans que Players connaisse les parties.
+    /// </summary>
+    Task<IReadOnlyList<PlayerArrival>> ListArrivalsAsync(DateOnly from, DateOnly to, CancellationToken ct);
 }

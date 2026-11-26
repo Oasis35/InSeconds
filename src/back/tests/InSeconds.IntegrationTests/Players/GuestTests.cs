@@ -62,6 +62,22 @@ public class GuestTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(expected, await SourceAsync(api, guest.PlayerId));
     }
 
+    [Theory]
+    [InlineData("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1", "phone")]
+    [InlineData("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/129.0.0.0 Safari/537.36", "desktop")]
+    [InlineData("curl/8.9.1", null)]
+    public async Task Invite_NoteLaClasseDeSonAppareil_JamaisLEnTeteBrut(string userAgent, string? expected)
+    {
+        await using var api = new ApiFactory(_connectionString);
+        var client = api.CreateClient();
+        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", userAgent);
+
+        var response = await client.PostAsJsonAsync("/api/players/guest", new CreateGuest(null), Ct);
+
+        var guest = (await response.Content.ReadFromJsonAsync<GuestResponse>(Ct))!;
+        Assert.Equal(expected, await api.ScalarAsync<string?>($"SELECT device_class FROM players.players WHERE id = '{guest.PlayerId}'"));
+    }
+
     [Fact]
     public async Task NavigateurDejaIdentifie_GardeSaSourceDArrivee()
     {

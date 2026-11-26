@@ -1,5 +1,6 @@
 using InSeconds.Api.Infrastructure.Persistence;
 using InSeconds.Api.Modules.Players.Domain;
+using InSeconds.Infrastructure.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -16,6 +17,7 @@ internal sealed class PlayerConfiguration : IEntityTypeConfiguration<Player>
         builder.HasKey(p => p.Id);
         builder.Property(p => p.Id).ValueGeneratedNever();
         builder.Property(p => p.AcquisitionSource).HasMaxLength(AcquisitionSource.MaxLength);
+        builder.Property(p => p.DeviceClass).HasMaxLength(DeviceClass.MaxLength);
         builder.Property(p => p.GuestPseudo).HasMaxLength(20);
     }
 }

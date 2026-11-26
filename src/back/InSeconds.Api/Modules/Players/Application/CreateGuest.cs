@@ -38,8 +38,9 @@ public static class CreateGuestEndpoint
 
         var now = time.GetUtcNow();
         var source = AcquisitionSource.Normalize(request?.Source);
-        var player = Player.CreateGuest(Guid.NewGuid(), now, source);
-        var session = DeviceSession.Open(player.Id, now, DeviceLabel.From(context.Request.Headers.UserAgent));
+        var userAgent = context.Request.Headers.UserAgent;
+        var player = Player.CreateGuest(Guid.NewGuid(), now, source, DeviceClass.From(userAgent));
+        var session = DeviceSession.Open(player.Id, now, DeviceLabel.From(userAgent));
         store.Add(player);
         await store.AddAsync(session, ct);
         // Le cookie part avec la réponse, après l'enregistrement de la transaction par Wolverine : si
