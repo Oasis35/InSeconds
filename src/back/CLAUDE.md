@@ -112,7 +112,7 @@ Une plage par module, jamais un identifiant réutilisé (les tableaux Grafana et
 
 | Plage | Classe | Zone |
 |---|---|---|
-| 1000 à 1005, 1300 à 1310 | `DailyLog` | parties ; génération, stats, tâches |
+| 1000 à 1005, 1300 à 1311 | `DailyLog` | parties ; génération, stats, tâches |
 | 1006, 1008 à 1010 | `PlayersLog` | connexion, effacement, purge, pseudo remis à zéro |
 | 1007, 1011 | `EmailLog` | emails (`InSeconds.Infrastructure`) |
 | 11xx | `ClientErrorLog` | erreurs du front et rapports CSP |

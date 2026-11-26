@@ -165,6 +165,19 @@ describe('RoundPlayerComponent', () => {
     expect(element.textContent).toContain('gameplay.round.stake');
   });
 
+  it('le cadre passe à l\'ambre à la seconde tentative (un calque qui apparaît), pas en ligne', () => {
+    const first = render({ stake: 850 });
+    expect(first.element.querySelector<HTMLElement>('[data-testid="round-retry-frame"]')?.style.opacity).toBe('0');
+    TestBed.resetTestingModule();
+
+    const second = render({ stake: 595, secondAttempt: true, retryPercent: 70 });
+    expect(second.element.querySelector<HTMLElement>('[data-testid="round-retry-frame"]')?.style.opacity).toBe('1');
+    expect(second.element.querySelector('[data-testid="round-stake-retry"]')).not.toBeNull();
+    TestBed.resetTestingModule();
+
+    expect(render({ layout: 'inline', secondAttempt: true }).element.querySelector('[data-testid="round-retry-frame"]')).toBeNull();
+  });
+
   it('pendant la lecture, le bouton garde ↺ (il relance à 0), jamais le symbole pause', () => {
     const { element } = render({ phase: 'playing' });
     const button = element.querySelectorAll('button')[0];

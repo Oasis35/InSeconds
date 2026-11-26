@@ -34,6 +34,8 @@ export interface DailySettings {
   /** Ce que rapporte chaque palier, artiste et titre trouvés sans indice : les points en jeu du lecteur. */
   readonly durationScores: readonly DurationScoreSetting[];
   readonly hints: readonly HintLevelSetting[];
+  /** Le pourcentage du score à la seconde tentative (0 : pas de seconde tentative). */
+  readonly retryScorePercent: number;
 }
 
 /** Un palier d'écoute et ses points. */
@@ -83,6 +85,8 @@ export interface ResumedTrack {
   readonly listenedSeconds: number;
   readonly hintLevel: number;
   readonly hintFacts: readonly { readonly kind: string; readonly value: string | null }[];
+  /** Les tentatives ratées déjà enregistrées sur ce morceau (1 : la seconde tentative est en cours). */
+  readonly failedAttempts: number;
 }
 
 export interface StartedSession {
@@ -104,6 +108,11 @@ export interface AnswerToSend {
   readonly artist: string | null;
   readonly title: string | null;
 }
+
+/** Ce que le serveur répond à une réponse : le morceau corrigé, ou une seconde tentative (rien n'est compté, rien n'est révélé). */
+export type SubmitOutcome =
+  | { readonly kind: 'answered'; readonly answered: AnsweredTrack }
+  | { readonly kind: 'retry' };
 
 /** Les chiffres d'un morceau pour la liste de résultats (récap, « déjà joué »). */
 export interface TrackStat {

@@ -1,7 +1,7 @@
 import { Provider } from '@angular/core';
 import { DailyApi } from '../daily.api';
 import {
-  AnswerToSend, AnsweredTrack, DailySettings, DailyToday, DayStats, StartOutcome, StartedSession,
+  AnswerToSend, AnsweredTrack, DailySettings, DailyToday, DayStats, StartOutcome, StartedSession, SubmitOutcome,
 } from '../../domain/daily';
 import { EMPTY_STREAK } from '../../domain/streak';
 import { ArchiveDay, ArchiveMe, ArchiveTrack, NOBODY } from '../../domain/archive';
@@ -18,6 +18,7 @@ export const SETTINGS: DailySettings = {
     { level: 1, unlockSeconds: 5, kind: 'year', penaltyPercent: 30 },
     { level: 2, unlockSeconds: 10, kind: 'artistMasked', penaltyPercent: 60 },
   ],
+  retryScorePercent: 70,
 };
 
 export const TODAY = (over: Partial<DailyToday> = {}): DailyToday => ({
@@ -123,9 +124,17 @@ export class FakeDailyApi {
     return Promise.resolve(this.hintFacts);
   }
 
-  submitAnswer(sessionId: number, answer: AnswerToSend): Promise<AnsweredTrack> {
+  /** Combien de prochaines réponses le serveur refuse en offrant une seconde tentative (rien n'est compté ni révélé). */
+  retriesToOffer = 0;
+
+  submitAnswer(sessionId: number, answer: AnswerToSend): Promise<SubmitOutcome> {
     this.calls.push(`answer ${sessionId}/${answer.position}/${answer.listenedSeconds}`);
-    return this.result(this.answer(answer));
+    if (this.retriesToOffer > 0) {
+      this.retriesToOffer--;
+      return Promise.resolve({ kind: 'retry' });
+    }
+    const outcome = this.answer(answer);
+    return this.result(outcome).then<SubmitOutcome>(answered => ({ kind: 'answered', answered }));
   }
 
   /** Vrai : l'abandon échoue (le serveur ne répond pas). */

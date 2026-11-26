@@ -24,6 +24,16 @@ describe('RoundStakeComponent', () => {
     };
   }
 
+  it('à la seconde tentative, dit le facteur sous les points en jeu', () => {
+    const { fixture, element } = render(700);
+    expect(element.querySelector('[data-testid="round-stake-retry"]')).toBeNull();
+
+    fixture.componentRef.setInput('retryPercent', 70);
+    fixture.detectChanges();
+
+    expect(element.querySelector('[data-testid="round-stake-retry"]')?.textContent).toContain('gameplay.round.stakeRetry');
+  });
+
   it('affiche les points en jeu', () => {
     const { shown, drop, element } = render(1000);
     expect(shown()).toBe('1000');

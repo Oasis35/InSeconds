@@ -47,6 +47,16 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
 - Un seul des deux correct (artiste OU titre) → **score de base × 0,5** (du palier finalement écouté).
 - Les deux corrects → score de base plein (du palier finalement écouté).
 
+## Seconde tentative
+
+- Après une première réponse qui n'est **pas entièrement juste** (artiste et titre faux, ou un seul des deux juste), le joueur a **une seule** autre tentative sur le morceau. Elle est **définitive** et remplace la première : pas de nouveau « presque », pas de troisième essai. **[Back + Front]**
+- Le message est **unique** (une phrase douce tirée parmi neuf, sous le champ, en ambre) et **ne dit jamais** si c'est l'artiste ou le titre qui est juste (piège 51). Le champ tremble une fois, le cadre du lecteur passe du cyan à l'ambre, la saisie est gardée, le bouton s'appelle « Réessayer ». Rien n'est compté ni révélé (ni points, ni bonne réponse) avant la réponse définitive.
+- **Prix** : score du palier finalement écouté, puis × 0,5 si un seul des deux est juste, puis × `Daily:RetryScorePercent` (70 % par défaut, arrondi au pair le plus proche), puis la pénalité d'indice. Le front affiche « 2e tentative : ×0,7 » sous les points en jeu.
+- **Prolonger après un échec** : on paie le dernier palier écouté, pas celui de la première tentative ; le palier annoncé par la première tentative devient le plancher (une seconde tentative ne peut pas annoncer un palier plus court, 400 `daily.listened_duration_below_verified_minimum`).
+- « Passer » et une réponse vide restent définitifs. Un morceau sans extrait n'a pas de seconde tentative. `Daily:RetryScorePercent` à 0 la désactive.
+- Les statistiques du morceau (« en combien de temps les autres ont trouvé », médiane) comptent la réponse définitive comme une réponse ordinaire, seconde tentative comprise. Si le réglage est coupé alors qu'un joueur est entre ses deux tentatives, sa réponse est notée sans réduction.
+- L'état est gardé côté serveur (`daily.sessions.current_failed_attempts`, remis à 0 à chaque morceau) : une reprise de partie retrouve la seconde tentative. Le texte saisi n'est jamais stocké.
+
 ## Feedback après chaque réponse
 
 - L'écran de révélation d'un morceau affiche un **histogramme « en combien de temps les autres ont trouvé »** : une barre par palier d'écoute (« 0,5 s » … « 10 s ») = nombre de joueurs ayant trouvé (artiste OU titre) à ce palier, plus une barre « ✗ » finale = nombre de joueurs n'ayant pas trouvé. La colonne du palier écouté par le joueur courant est mise en avant (ou la barre « ✗ » s'il n'a pas trouvé). Purement informatif, n'affecte pas le score. Données : la réponse de `POST /api/daily/sessions/{id}/answers` (réponse courante incluse dans les comptes ; joueurs effacés exclus). **[Back + Front]**
@@ -163,5 +173,6 @@ Tous relus à chaud (`IOptionsMonitor`), sans redémarrage. L'API refuse de dém
 | `Daily:GuessTimerSeconds` | `20` | ❌ Non appliqué : aucun chrono réel au défi du jour |
 | `Daily:HintUnlockDurationsSeconds` | `[5,10]` | ✅ Back (déblocage côté serveur) + Front (affichage des boutons) |
 | `Daily:HintPenaltyPercent` | `{"1":30,"2":60}` | ✅ Back (pénalité appliquée au score) |
+| `Daily:RetryScorePercent` | `70` (de 0 à 100) | ✅ Back (score de la seconde tentative ; 0 = pas de seconde tentative), exposé aux réglages publics |
 
 Mécanisme de chargement : [`CLAUDE.md`](../CLAUDE.md) (§ Réglages) et [`.claude/rules/back/reglages.md`](../.claude/rules/back/reglages.md).

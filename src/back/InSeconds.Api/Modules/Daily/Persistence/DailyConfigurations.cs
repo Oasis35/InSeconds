@@ -58,6 +58,7 @@ internal sealed class DailySessionConfiguration : IEntityTypeConfiguration<Daily
         builder.Property(s => s.TotalListenedSeconds).HasPrecision(6, 2);
         builder.Property(s => s.CurrentListenedSeconds).HasPrecision(4, 2);
         builder.Property(s => s.CurrentHintLevel).HasDefaultValue((short)0);
+        builder.Property(s => s.CurrentFailedAttempts).HasDefaultValue((short)0);
         builder.Property(s => s.FreezesUsed).HasDefaultValue((short)0);
         builder.Property(s => s.FreezeEarned).HasDefaultValue(false);
         builder.HasIndex(s => new { s.PlayerId, s.ChallengeId }).IsUnique().HasDatabaseName(PlayerChallengeIndex);

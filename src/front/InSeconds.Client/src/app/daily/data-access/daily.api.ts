@@ -6,7 +6,7 @@ import {
 } from '../../api/daily/api.generated';
 import { toAppError } from '../../core/errors/app-error';
 import {
-  AnswerToSend, AnsweredTrack, DailySettings, DailyToday, DayStats, GuessBucket, StartOutcome, StartedSession, TodayState,
+  AnswerToSend, AnsweredTrack, DailySettings, SubmitOutcome, DailyToday, DayStats, GuessBucket, StartOutcome, StartedSession, TodayState,
 } from '../domain/daily';
 import { Streak } from '../domain/streak';
 import { ArchiveDay, ArchiveMe } from '../domain/archive';
@@ -70,7 +70,7 @@ export class DailyApi {
    * Envoie la réponse. Une coupure réseau ou une erreur serveur est retentée (2 fois, 1 s d'écart) : sans enregistrement, la partie ne se
    * termine jamais côté serveur. Une erreur applicative (4xx : déjà répondu, palier trop court) remonte tout de suite (piège 32).
    */
-  async submitAnswer(sessionId: number, answer: AnswerToSend): Promise<AnsweredTrack> {
+  async submitAnswer(sessionId: number, answer: AnswerToSend): Promise<SubmitOutcome> {
     const body = {
       position: answer.position,
       listenedSeconds: answer.listenedSeconds,
@@ -81,7 +81,8 @@ export class DailyApi {
     const request = this.client.submitAnswer(sessionId, body).pipe(
       retry({ count: SUBMIT_RETRIES, delay: error => (isRetryable(error) ? timer(SUBMIT_RETRY_DELAY_MS) : throwError(() => error)) }),
     );
-    return toAnswered(answer.position, await firstValueFrom(request));
+    const response = await firstValueFrom(request);
+    return response.retry ? { kind: 'retry' } : { kind: 'answered', answered: toAnswered(answer.position, response) };
   }
 
   async abandon(sessionId: number): Promise<void> {
@@ -197,6 +198,7 @@ function toSettings(settings: DailySettingsResponse): DailySettings {
     allowedDurationsSeconds: settings.allowedDurationsSeconds,
     durationScores: settings.durationScores.map(d => ({ seconds: d.seconds, score: d.score })),
     hints: settings.hints.map(h => ({ level: h.level, unlockSeconds: h.unlockSeconds, kind: h.kind, penaltyPercent: h.penaltyPercent })),
+    retryScorePercent: settings.retryScorePercent,
   };
 }
 
@@ -254,6 +256,7 @@ function toSession(r: StartSessionResponse): StartedSession {
           listenedSeconds: r.currentTrack.listenedSeconds,
           hintLevel: r.currentTrack.hintLevel,
           hintFacts: r.currentTrack.hintFacts.map(f => ({ kind: f.kind, value: f.value ?? null })),
+          failedAttempts: r.currentTrack.failedAttempts ?? 0,
         }
       : null,
   };

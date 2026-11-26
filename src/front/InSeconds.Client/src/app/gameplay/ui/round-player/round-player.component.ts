@@ -41,8 +41,12 @@ interface StepMark {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <!-- En ligne, le lecteur n'a pas de cadre : il est dans la carte du mode. -->
-    <div [class.px-4]="!inline()" [class.py-5]="!inline()" [style.background]="inline() ? null : 'var(--bg-surface)'"
-      [style.border]="inline() ? null : '1.5px solid rgb(var(--rgb-accent-2) / 0.8)'" [style.box-shadow]="inline() ? null : 'var(--tube-frame-soft)'" [style.border-radius]="inline() ? null : 'var(--radius-card)'">
+    <div class="relative player-frame" [class.px-4]="!inline()" [class.py-5]="!inline()" [style.background]="inline() ? null : 'var(--bg-surface)'"
+      [style.border]="inline() ? null : '1.5px solid rgb(var(--rgb-accent-2) / 0.8)'" [style.box-shadow]="inline() ? null : (secondAttempt() ? 'none' : 'var(--tube-frame-soft)')" [style.border-radius]="inline() ? null : 'var(--radius-card)'">
+      @if (!inline()) {
+        <!-- Seconde tentative : le cadre passe du cyan à l'ambre du joueur par un fondu (un calque qui apparaît, jamais deux couleurs qui se mélangent). -->
+        <span class="retry-frame absolute pointer-events-none" aria-hidden="true" data-testid="round-retry-frame" [style.opacity]="secondAttempt() ? 1 : 0"></span>
+      }
       @switch (phase()) {
         @case ('no-preview') {
           <div class="space-y-5">
@@ -113,7 +117,7 @@ interface StepMark {
                 <div class="flex justify-center">
                   @let points = stake();
                   @if (points !== null) {
-                    <app-round-stake [value]="points" />
+                    <app-round-stake [value]="points" [retryPercent]="secondAttempt() ? retryPercent() : null" />
                   }
                 </div>
 
@@ -203,6 +207,16 @@ interface StepMark {
     </ng-template>
   `,
   styles: `
+    /* Le calque ambre de la seconde tentative, par-dessus le cadre cyan (qui a 1,5 px de bordure : le calque le recouvre exactement). */
+    .player-frame { transition: box-shadow 400ms ease-out; }
+    .retry-frame {
+      inset: -1.5px;
+      border: 1.5px solid rgb(var(--rgb-accent-3) / 0.8);
+      border-radius: var(--radius-card);
+      box-shadow: 0 0 6px rgb(var(--rgb-accent-3) / 0.35);
+      transition: opacity 400ms ease-out;
+    }
+    @media (prefers-reduced-motion: reduce) { .retry-frame, .player-frame { transition: none; } }
     /* Le palier débloqué s'étend en douceur (rien en mouvement réduit). */
     .wave-sweep { transition: transform 300ms ease-out; }
     /* La traîne se fond dans le cyan vif vers l'arrière. */
@@ -225,6 +239,10 @@ export class RoundPlayerComponent {
   readonly bass = input(0);
   /** Les points en jeu ; `null` si le mode n'en a pas (rien à gauche du bouton). */
   readonly stake = input<number | null>(null);
+  /** Le joueur est à sa seconde tentative : le cadre passe à l'ambre et les points en jeu disent leur facteur. */
+  readonly secondAttempt = input(false);
+  /** La part du score de la seconde tentative (70 pour ×0,7) ; `null` si le mode ne la donne pas. */
+  readonly retryPercent = input<number | null>(null);
   /**
    * `inline` : le bouton à gauche de la waveform, sans cadre, sans repères ni « écouter plus » (la carte d'un mode à écoute fixe) ;
    * `stacked` (défaut) : la waveform pleine largeur, ses repères, puis le bouton entre les points en jeu et « écouter plus » (Daily).

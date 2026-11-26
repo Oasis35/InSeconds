@@ -1854,6 +1854,11 @@
             "items": {
               "$ref": "#/components/schemas/HintFactResponse"
             }
+          },
+          "failedAttempts": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
           }
         }
       },
@@ -1882,7 +1887,8 @@
           "durationScores",
           "hints",
           "streakFreezeEveryDays",
-          "streakFreezeMax"
+          "streakFreezeMax",
+          "retryScorePercent"
         ],
         "type": "object",
         "properties": {
@@ -1918,6 +1924,10 @@
             "format": "int32"
           },
           "streakFreezeMax": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "retryScorePercent": {
             "type": "integer",
             "format": "int32"
           }
@@ -2736,6 +2746,10 @@
           },
           "completed": {
             "type": "boolean"
+          },
+          "retry": {
+            "type": "boolean",
+            "default": false
           }
         }
       },

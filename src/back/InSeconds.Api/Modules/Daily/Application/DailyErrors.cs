@@ -107,4 +107,8 @@ internal static partial class DailyLog
     [LoggerMessage(EventId = 1306, Level = LogLevel.Error,
         Message = "Daily:HintUnlockDurationsSeconds n'est pas strictement positif et croissant : les seuils par défaut sont utilisés.")]
     public static partial void InvalidHintThresholds(ILogger logger);
+
+    [LoggerMessage(EventId = 1311, Level = LogLevel.Error,
+        Message = "Daily:RetryScorePercent vaut {Configured}, hors de 0 à 100 : la valeur par défaut est utilisée.")]
+    public static partial void InvalidRetryScorePercent(ILogger logger, int configured);
 }
