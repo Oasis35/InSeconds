@@ -132,7 +132,12 @@ export class HomeChallengeCardComponent {
   protected readonly habit = computed(() => this.recap() !== null && !this.paused() && !this.firstGame());
   protected readonly line = computed<HomeLine | null>(() =>
     this.habit() ? homeLine({ recap: this.recap(), bestScore: this.bestScore(), streak: this.streak(), today: new Date().toISOString().slice(0, 10) }) : null);
-  protected readonly buttonKey = computed(() => (this.paused() ? 'daily.resume.resume' : this.line()?.buttonKey ?? (this.habit() ? 'daily.homeLine.default' : 'daily.welcome.start')));
+  protected readonly buttonKey = computed(() => {
+    if (this.paused()) return 'daily.resume.resume';
+    const lineKey = this.line()?.buttonKey;
+    if (lineKey) return lineKey;
+    return this.habit() ? 'daily.homeLine.default' : 'daily.welcome.start';
+  });
 
   protected readonly paused = computed(() => this.completedCount() !== null);
   protected readonly progressKey = computed(() => `daily.resume.progress.${(this.completedCount() ?? 0) <= 1 ? 'one' : 'other'}`);

@@ -51,7 +51,7 @@ export function homeLine(input: HomeLineInput): HomeLine | null {
   const variant = dayVariant(today);
   const line = (kind: HomeLineKind, value: number, plural?: 'one' | 'other'): HomeLine => ({
     kind,
-    phraseKey: `daily.homeLine.${kind}.${variant}.phrase${plural ? `.${plural}` : ''}`,
+    phraseKey: [`daily.homeLine.${kind}.${variant}.phrase`, plural].filter(Boolean).join('.'),
     buttonKey: `daily.homeLine.${kind}.${variant}.button`,
     value,
   });
