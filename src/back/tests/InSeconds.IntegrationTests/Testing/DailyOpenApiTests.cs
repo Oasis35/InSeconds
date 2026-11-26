@@ -14,7 +14,7 @@ public class DailyOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(
         Assert.Equal(
             [
                 "abandonSession", "getAdminDailySettings", "getArchiveDay", "getArchiveIndex", "getArchivePreview", "getChallengeStats", "getDailyHistory", "getDailySettings", "getDashboard", "getEarProfile",
-                "getMyArchiveDay", "getNextChallenge", "getPlayerHistory", "getReplayTracks", "getToday", "getTodayStats", "listChallenges", "listRegisteredPlayers", "recomputeDayStats", "requestHint",
+                "getMyArchiveDay", "getNextChallenge", "getPlayerHistory", "getReplayTracks", "getStats", "getToday", "getTodayStats", "listChallenges", "listRegisteredPlayers", "recomputeDayStats", "requestHint",
                 "startSession", "submitAnswer", "updateListening", "updateTrackCooldownPoolPercent",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));
@@ -31,6 +31,8 @@ public class DailyOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(
         var document = await ReadDocumentAsync();
 
         Assert.Equal(("get", "/api/admin/daily/dashboard"), (MethodOf(document, "getDashboard"), PathOf(document, "getDashboard")));
+        Assert.Equal(("get", "/api/admin/daily/stats"), (MethodOf(document, "getStats"), PathOf(document, "getStats")));
+        Assert.Contains("400", Codes(document, "getStats"));
         Assert.Equal(("get", "/api/admin/daily/challenges/stats"), (MethodOf(document, "getChallengeStats"), PathOf(document, "getChallengeStats")));
         Assert.Equal(("get", "/api/admin/daily/challenges"), (MethodOf(document, "listChallenges"), PathOf(document, "listChallenges")));
         Assert.Equal(("get", "/api/admin/players"), (MethodOf(document, "listRegisteredPlayers"), PathOf(document, "listRegisteredPlayers")));
