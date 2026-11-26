@@ -2,7 +2,7 @@ import { DestroyRef, Injector, computed, effect, inject, untracked } from '@angu
 import { patchState, signalStore, signalStoreFeature, withComputed, withHooks, withMethods, withState } from '@ngrx/signals';
 import {
   HintFact, RoundAnswer, RoundConfig, RoundSubmission, TrackRound, applyHints, askSkip, availableHintLevels, beginListening,
-  cancelConfirm, confirmPending, createRound, listenMore, maxStep, nextStep, onAudio, previewWithdrawn, replacePreviewUrl, retryPlayback, retrySubmission, reveal,
+  cancelConfirm, confirmPending, createRound, listenMore, maxStep, nextStep, onAudio, previewWithdrawn, replacePreviewUrl, retryOffered, retryPlayback, retrySubmission, reveal,
   showsInput, skipUnplayable, stakeOf, submissionFailed, submitAnswer, timeUp,
 } from '../domain/track-round';
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
@@ -50,6 +50,11 @@ export function withTrackRound() {
       /** Les points en jeu (barème du palier moins l'indice pris) ; `null` si le mode n'a pas de barème. */
       stake: computed(() => { const r = round(); return r ? stakeOf(r) : null; }),
       availableHintLevels: computed(() => { const r = round(); return r ? availableHintLevels(r) : []; }),
+      /** La seconde tentative est en cours (une réponse a été refusée sans être comptée). */
+      isRetry: computed(() => (round()?.failedAttempts ?? 0) > 0),
+      /** Un compteur : il monte à chaque seconde tentative offerte, c'est lui qui fait trembler le champ. */
+      retryOffers: computed(() => round()?.retryOffers ?? 0),
+      retryScorePercent: computed(() => round()?.retryScorePercent ?? null),
       pendingConfirm: computed(() => round()?.confirm ?? null),
       submission: computed(() => round()?.submission ?? null),
       /** La position de lecture, en secondes (pour la waveform). */
@@ -204,6 +209,11 @@ export function withTrackRound() {
 
         /** « Réessayer » après un échec d'envoi : la même réponse repart. */
         retrySubmission: (): RoundSubmission | null => submissionOf(apply(retrySubmission)),
+
+        /** Le serveur offre une seconde tentative : la saisie revient, au même palier, sans rien révéler. */
+        retryOffered: (): void => {
+          apply(round => retryOffered(round, audio.state()));
+        },
 
         /** Le serveur a répondu : la réponse est révélée, et l'extrait se rejoue en entier. */
         reveal(): void {

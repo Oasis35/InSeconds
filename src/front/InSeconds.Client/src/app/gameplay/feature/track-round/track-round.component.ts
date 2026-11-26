@@ -1,10 +1,12 @@
-import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, effect, inject, input, output, signal, untracked, viewChild } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AnswerSearchStore } from '../../data-access/answer-search.store';
 import { TrackRoundStore } from '../../data-access/track-round.store';
 import { RoundResult } from '../../domain/round-result';
 import { AnswerSuggestion } from '../../domain/answer';
+import { nextRetryPhrase } from '../../domain/retry-phrases';
 import { RoundSubmission } from '../../domain/track-round';
+import { shake } from '../../../ui/motion/motion';
 import { AnswerInputComponent } from '../../ui/answer-input/answer-input.component';
 import { HintPanelComponent } from '../../ui/hint-panel/hint-panel.component';
 import { RevealCardComponent } from '../../ui/reveal-card/reveal-card.component';
@@ -43,7 +45,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
         @if (phase !== 'revealed') {
           <app-round-player [layout]="layout()" [phase]="phase" [chosenSeconds]="round.chosenSeconds()" [steps]="round.steps()"
             [nextStep]="round.nextStep()" [position]="round.position()" [peaks]="round.waveform()?.peaks ?? null" [bass]="round.bass()"
-            [stake]="round.stake()"
+            [stake]="round.stake()" [secondAttempt]="round.isRetry()" [retryPercent]="round.retryScorePercent()"
             (replay)="round.replay()" (listenMore)="round.listenMore()" (retry)="round.retryPlayback()" (skip)="skipUnplayable()" />
         }
 
@@ -78,6 +80,13 @@ import { ButtonComponent } from '../../../ui/button/button.component';
                 (dismiss)="search.close()" (focused)="search.openList()" (blurred)="search.close()" />
             }
 
+            @if (retryPhrase(); as phrase) {
+              <!-- Seconde tentative : une phrase douce, en ambre (la couleur du joueur), jamais « Faux » ni de quoi dire ce qui est juste (piège 51). -->
+              <p role="status" class="text-center text-sm font-semibold" style="color:var(--color-accent-3)" data-testid="round-retry-notice">
+                {{ 'gameplay.retry.phrase.' + phrase | translate }}
+              </p>
+            }
+
             <ng-content select="[roundActions]" />
 
             @if (phase === 'submit-error') {
@@ -104,7 +113,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
             } @else {
               @if (!choices()) {
                 <button appButton type="submit" [block]="true" [disabled]="phase === 'submitting' || locked()">
-                  {{ phase === 'submitting' ? '…' : ('gameplay.answer.validate' | translate) }}
+                  {{ phase === 'submitting' ? '…' : ((round.isRetry() ? 'gameplay.answer.validateRetry' : 'gameplay.answer.validate') | translate) }}
                 </button>
               }
               <!-- « Passer » est un lien discret, le même dans tous les modes (une action sans sens propre ne prend pas la place du bouton principal). -->
@@ -182,6 +191,11 @@ export class TrackRoundComponent {
   /** La réponse proposée touchée, le temps de l'envoi. */
   protected readonly picked = signal<number | null>(null);
 
+  /** La phrase de la seconde tentative (de 1 à 9) ; `null` à la première. Jamais la même deux fois de suite, d'un morceau à l'autre. */
+  protected readonly retryPhrase = signal<number | null>(null);
+  private lastPhrase: number | null = null;
+  private readonly answerInput = viewChild(AnswerInputComponent, { read: ElementRef });
+
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
 
@@ -192,6 +206,27 @@ export class TrackRoundComponent {
       if (this.round.phase() !== 'revealed') return;
       untracked(() => afterNextRender(() => {
         if (window.matchMedia('(pointer: fine)').matches) this.host.nativeElement.querySelector<HTMLElement>('[roundNext]')?.focus({ preventScroll: true });
+      }, { injector: this.injector }));
+    });
+    // Une seconde tentative (offerte à l'instant, ou reprise d'une partie) : une phrase tirée au sort ; un autre morceau l'efface.
+    effect(() => {
+      const retry = this.round.isRetry();
+      this.round.trackKey();
+      untracked(() => {
+        if (!retry) {
+          this.retryPhrase.set(null);
+          return;
+        }
+        this.lastPhrase = nextRetryPhrase(this.lastPhrase);
+        this.retryPhrase.set(this.lastPhrase);
+      });
+    });
+    // Chaque seconde tentative offerte fait trembler le champ une fois (pas à la reprise : le compteur repart de 0).
+    effect(() => {
+      if (this.round.retryOffers() === 0) return;
+      untracked(() => afterNextRender(() => {
+        const element = this.answerInput()?.nativeElement;
+        if (element) shake(element);
       }, { injector: this.injector }));
     });
     // Un nouveau morceau (ou un morceau remplacé à la même place) repart d'une saisie vide.

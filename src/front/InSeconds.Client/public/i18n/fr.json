@@ -182,7 +182,8 @@
       "waveform": "Extrait écouté",
       "waveformValue": "{{ heard }} sur {{ max }}",
       "playbackError": "Impossible de lire l'aperçu. Réessaie, ou passe ce morceau.",
-      "retry": "Réessayer"
+      "retry": "Réessayer",
+      "stakeRetry": "2e tentative : ×{{ factor }}"
     },
     "answer": {
       "placeholder": "Artiste - Titre",
@@ -195,7 +196,21 @@
       "skipAnyway": "Passer",
       "submitFailed": "Ta réponse n'a pas pu être enregistrée. Vérifie ta connexion et réessaie.",
       "retry": "Réessayer",
-      "choices": "Réponses proposées"
+      "choices": "Réponses proposées",
+      "validateRetry": "Réessayer"
+    },
+    "retry": {
+      "phrase": {
+        "1": "Ça ne colle pas encore. Retente ta chance.",
+        "2": "Raté pour cette fois. Une seconde tentative t'attend.",
+        "3": "Pas celle-là. Tu en as une autre.",
+        "4": "Pas tout à fait. Une dernière chance.",
+        "5": "Ce n'est pas ça, mais tu as encore un essai.",
+        "6": "Pas cette fois. Tu peux retenter une fois.",
+        "7": "Ça ne passe pas. Un dernier essai ?",
+        "8": "Oups, ce n'est pas ça. À toi de rejouer.",
+        "9": "Pas de panique, il te reste un essai."
+      }
     },
     "hint": {
       "tooltip": "Indice : coûte des points",

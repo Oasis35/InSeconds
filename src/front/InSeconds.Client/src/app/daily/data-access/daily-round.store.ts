@@ -92,12 +92,14 @@ export const DailyRoundStore = signalStore(
       trackId: position,
       previewUrl: store.tracks().find(t => t.position === position)?.previewUrl || null,
       waveform: store.tracks().find(t => t.position === position)?.waveform ?? null,
-      listen: { steps: settings.allowedDurationsSeconds, extendable: true, stake: (seconds, hintLevel) => dailyStake(settings, seconds, hintLevel) },
+      listen: { steps: settings.allowedDurationsSeconds, extendable: true, stake: (seconds, hintLevel, isRetry) => dailyStake(settings, seconds, hintLevel, isRetry) },
       hints: { unlockSeconds: settings.hints.map(h => h.unlockSeconds), kinds: settings.hints.map(h => h.kind) },
       // Reprise : le plancher d'écoute et les indices déjà payés du morceau en cours.
       listenedFloor: resumed && resumed.listenedSeconds > 0 ? resumed.listenedSeconds : null,
       hintLevel: resumed?.hintLevel ?? 0,
       hintFacts: resumed?.hintFacts ?? [],
+      failedAttempts: resumed?.failedAttempts ?? 0,
+      retryScorePercent: settings.retryScorePercent,
       refreshPreviewUrl: () => refreshPreview(position),
     });
 
@@ -253,13 +255,19 @@ export const DailyRoundStore = signalStore(
        */
       async submit(submission: RoundSubmission): Promise<void> {
         try {
-          const answered = await api.submitAnswer(store.sessionId(), {
+          const outcome = await api.submitAnswer(store.sessionId(), {
             position: submission.trackId,
             listenedSeconds: submission.listenedSeconds,
             wasExtended: submission.wasExtended,
             artist: submission.artist,
             title: submission.title,
           });
+          // Une seconde tentative : rien n'est compté ni révélé, la manche rend la saisie (piège 51).
+          if (outcome.kind === 'retry') {
+            round.retryOffered();
+            return;
+          }
+          const answered = outcome.answered;
           patchState(store, { results: [...store.results().filter(r => r.position !== answered.position), answered] });
           round.reveal();
         } catch {

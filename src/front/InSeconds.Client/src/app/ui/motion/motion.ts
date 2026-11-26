@@ -109,6 +109,12 @@ export function riseCard(element: HTMLElement): void {
   gsap.fromTo(element, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.38, ease: SETTLE, clearProps: 'transform,opacity' });
 }
 
+/** Le champ de saisie tremble une fois, léger (une réponse qui ne passe pas, mais sans brusquerie) : environ 300 ms. */
+export function shake(element: HTMLElement): void {
+  if (motionReduced()) return;
+  gsap.fromTo(element, { x: 0 }, { keyframes: { x: [-5, 4, -3, 2, 0] }, duration: 0.3, ease: 'power1.inOut', clearProps: 'transform' });
+}
+
 /** Un chiffre qui change avec un petit temps fort (le décompte des dernières secondes). */
 export function pop(element: HTMLElement): void {
   if (motionReduced()) return;

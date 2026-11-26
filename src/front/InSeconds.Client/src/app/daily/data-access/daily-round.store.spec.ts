@@ -102,7 +102,7 @@ describe('DailyRoundStore', () => {
           isResuming: true,
           nextPosition: 2,
           completedAnswers: [ANSWERED(1, { score: 700 })],
-          currentTrack: { position: 2, listenedSeconds: 2, hintLevel: 1, hintFacts: [{ kind: 'year', value: '1999' }] },
+          currentTrack: { position: 2, listenedSeconds: 2, hintLevel: 1, hintFacts: [{ kind: 'year', value: '1999' }], failedAttempts: 0 },
         }),
       };
 
@@ -176,6 +176,57 @@ describe('DailyRoundStore', () => {
       expect(store.roundScore()).toBe(850);
       expect(store.roundResult()?.correctArtist).toBe('Artiste 1');
       expect(store.roundDeezerTrackId()).toBe(101);
+    });
+
+    it("une seconde tentative offerte ne compte rien et ne révèle rien : la saisie revient, au même palier, au prix réduit (piège 51)", async () => {
+      await startGame();
+      audio.emit('finished');
+      TestBed.tick();
+      api.retriesToOffer = 1;
+      round.listenMore();
+      expect(round.stake()).toBe(850);
+      round.submit({ artist: 'A', title: 'T' });
+
+      await store.submit(submissionOf(1));
+
+      expect(round.phase()).toBe('listened');
+      expect(round.isRetry()).toBe(true);
+      expect(round.retryOffers()).toBe(1);
+      expect(store.results()).toEqual([]);
+      expect(round.stake()).toBe(595);
+      expect(round.chosenSeconds()).toBe(1);
+    });
+
+    it("la seconde réponse est définitive : elle est corrigée et révélée, jamais une troisième tentative", async () => {
+      await startGame();
+      audio.emit('finished');
+      TestBed.tick();
+      api.retriesToOffer = 1;
+      round.submit({ artist: 'A', title: 'T' });
+      await store.submit(submissionOf(1));
+
+      round.submit({ artist: 'B', title: 'U' });
+      await store.submit(submissionOf(1));
+
+      expect(round.phase()).toBe('revealed');
+      expect(store.results()).toHaveLength(1);
+    });
+
+    it("une reprise au milieu de la seconde tentative la garde (les points en jeu sont réduits)", async () => {
+      api.start = {
+        kind: 'ok',
+        session: SESSION({
+          isResuming: true,
+          nextPosition: 1,
+          currentTrack: { position: 1, listenedSeconds: 1, hintLevel: 0, hintFacts: [], failedAttempts: 1 },
+        }),
+      };
+
+      await startGame();
+
+      expect(round.isRetry()).toBe(true);
+      expect(round.retryOffers()).toBe(0);
+      expect(round.stake()).toBe(595);
     });
 
     it("sur un échec d'envoi, rien n'est enregistré : le joueur reste sur le morceau avec « Réessayer » (piège 32)", async () => {

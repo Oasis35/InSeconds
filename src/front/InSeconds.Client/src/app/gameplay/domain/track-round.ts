@@ -36,8 +36,8 @@ export interface ListenPolicy {
   readonly stake?: StakePolicy;
 }
 
-/** Les points en jeu au palier `seconds`, le niveau d'indice `hintLevel` déjà pris. */
-export type StakePolicy = (seconds: number, hintLevel: number) => number;
+/** Les points en jeu au palier `seconds`, le niveau d'indice `hintLevel` déjà pris, à la seconde tentative (`isRetry`) ou non. */
+export type StakePolicy = (seconds: number, hintLevel: number, isRetry: boolean) => number;
 
 /** Quand chaque niveau d'indice se débloque : `unlockSeconds[0]` pour le niveau 1, etc. Vient des réglages du back. */
 export interface HintPolicy {
@@ -76,6 +76,10 @@ export interface RoundConfig {
   /** Le niveau d'indice déjà révélé (reprise). */
   readonly hintLevel?: number;
   readonly hintFacts?: readonly HintFact[];
+  /** Les tentatives ratées déjà enregistrées sur ce morceau (reprise) : 1 = la seconde tentative est en cours. */
+  readonly failedAttempts?: number;
+  /** Le pourcentage du score de la seconde tentative, pour le dire au joueur (`×0,7`) ; le calcul des points reste au mode (`stake`). */
+  readonly retryScorePercent?: number;
   /**
    * Redonne une adresse d'extrait fraîche après un échec de lecture : la signature des extraits
    * Deezer expire au bout de 15 min (piège 14), recharger la même adresse retomberait en erreur. Avec
@@ -126,6 +130,11 @@ export interface TrackRound {
   readonly autoStarted: boolean;
   readonly hintLevel: number;
   readonly hints: readonly HintFact[];
+  /** Les tentatives ratées de ce morceau : 1 = le joueur est à sa seconde tentative (il n'y en a pas de troisième). */
+  readonly failedAttempts: number;
+  /** Combien de fois la seconde tentative a été offerte sur ce morceau, tant que la page vit : un compteur qui fait trembler le champ (jamais restauré à la reprise). */
+  readonly retryOffers: number;
+  readonly retryScorePercent: number | null;
   readonly confirm: PendingConfirm | null;
   readonly submission: RoundSubmission | null;
 }
@@ -154,6 +163,9 @@ export function createRound(config: RoundConfig): TrackRound {
     autoStarted: false,
     hintLevel: config.hintLevel ?? 0,
     hints: config.hintFacts ?? [],
+    failedAttempts: config.failedAttempts ?? 0,
+    retryOffers: 0,
+    retryScorePercent: config.retryScorePercent ?? null,
     confirm: null,
     submission: null,
   };
@@ -234,7 +246,7 @@ export function onAudio(round: TrackRound, audio: AudioStatus): TrackRound {
 
 /** Les points en jeu au palier en cours (le premier tant que rien n'est choisi), indice pris compris ; `null` si le mode n'en a pas. */
 export function stakeOf(round: TrackRound): number | null {
-  return round.stake ? round.stake(round.chosenSeconds || round.steps[0], round.hintLevel) : null;
+  return round.stake ? round.stake(round.chosenSeconds || round.steps[0], round.hintLevel, round.failedAttempts > 0) : null;
 }
 
 // --- indices ---
@@ -314,6 +326,16 @@ export function submissionFailed(round: TrackRound): TrackRound {
 /** « Réessayer » : la même réponse repart. */
 export function retrySubmission(round: TrackRound): TrackRound {
   return round.phase === 'submit-error' && round.submission !== null ? { ...round, phase: 'submitting' } : round;
+}
+
+/**
+ * Le serveur a refusé la réponse sans la compter et offre une seconde tentative (jamais ce qui était juste, piège 51) : la saisie revient
+ * (elle garde ce qui était tapé), au même palier, qui devient le plancher. `audio` dit où en est le son (il ne bouge pas pendant l'envoi).
+ */
+export function retryOffered(round: TrackRound, audio: AudioStatus): TrackRound {
+  if (round.phase !== 'submitting') return round;
+  const phase = PHASE_OF_AUDIO[audio] ?? 'listened';
+  return { ...round, phase: phase === 'audio-error' ? 'listened' : phase, failedAttempts: round.failedAttempts + 1, retryOffers: round.retryOffers + 1, confirm: null, submission: null };
 }
 
 /** Le serveur a répondu : la réponse est révélée. */

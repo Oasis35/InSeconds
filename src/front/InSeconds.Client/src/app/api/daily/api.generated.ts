@@ -1808,6 +1808,7 @@ export interface CurrentTrackState {
     listenedSeconds: number;
     hintLevel: number;
     hintFacts: HintFactResponse[];
+    failedAttempts?: number;
 
     [key: string]: any;
 }
@@ -1827,6 +1828,7 @@ export interface DailySettingsResponse {
     hints: HintLevelResponse[];
     streakFreezeEveryDays: number;
     streakFreezeMax: number;
+    retryScorePercent: number;
 
     [key: string]: any;
 }
@@ -2063,6 +2065,7 @@ export interface SubmitAnswerResponse {
     hintLevelUsed: number;
     hintPenaltyPercentApplied: number;
     completed: boolean;
+    retry?: boolean;
 
     [key: string]: any;
 }

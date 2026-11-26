@@ -1,5 +1,5 @@
 import { gsap } from 'gsap';
-import { enterCard, enterHomeCard, enterRow, fillBarsInTurn, lightLadder, finishSequence, slideBanner, tweenNumber } from './motion';
+import { enterCard, enterHomeCard, enterRow, fillBarsInTurn, lightLadder, finishSequence, shake, slideBanner, tweenNumber } from './motion';
 
 const flag = globalThis.window as { __disableAnimations?: boolean };
 
@@ -28,6 +28,22 @@ describe('motion', () => {
     expect(element.textContent).toBe('120');
     expect(element.style.opacity).toBe('');
     expect(element.style.transform).toBe('');
+  });
+
+  it('le champ qui tremble revient à sa place, sans style laissé', async () => {
+    shake(element);
+    await new Promise(resolve => setTimeout(resolve, 450));
+
+    expect(element.style.transform).toMatch(/^(translate\(0px, 0px\))?$/);
+    expect(element.style.color).toBe('red');
+  });
+
+  it('en mouvement réduit, le champ ne tremble pas', () => {
+    flag.__disableAnimations = true;
+
+    shake(element);
+
+    expect(gsap.isTweening(element)).toBe(false);
   });
 
   it('un nombre qui ne change pas est posé sans animation', () => {

@@ -178,7 +178,7 @@ Solutions `.slnx` ; `global.json` en `rollForward: latestFeature`, qui fixe auss
 
 ## Pièges connus
 
-Les numéros sont stables : le code et les tests y renvoient (`PiegeNN_…`, « piège NN »). Un numéro absent est un piège retiré, jamais repris : le prochain piège prend le 51 (récit des pièges 1 à 47 : `git show b38825d:CLAUDE.md`). Le corps d'un piège vit ici s'il est transverse, sinon dans le fichier de règles indiqué.
+Les numéros sont stables : le code et les tests y renvoient (`PiegeNN_…`, « piège NN »). Un numéro absent est un piège retiré, jamais repris : le prochain piège prend le 52 (récit des pièges 1 à 47 : `git show b38825d:CLAUDE.md`). Le corps d'un piège vit ici s'il est transverse, sinon dans le fichier de règles indiqué.
 
 2. **Healthcheck PostgreSQL** (`pg_isready` dans le conteneur) : `.claude/rules/deploy.md`.
 5. **Admin = rôle sur le compte** (`players.accounts.is_admin`), posé **en SQL manuel uniquement**, jamais par le code ; relu en base par `DeviceSessionValidator` (cache d'une minute), jamais écrit dans le cookie. La policy `Admin` protège `/api/admin*` et `/jobs` (`Security/SecurityTests`).
@@ -224,6 +224,7 @@ Les numéros sont stables : le code et les tests y renvoient (`PiegeNN_…`, « 
 48. **Effacement d'un joueur complet** : `AccountErasure` supprime ses données de jeu (chaque mode par `IPlayerDataContributor`), puis tout ce que Players garde de lui. **Toute nouvelle table avec une colonne `player_id` doit y entrer.** Tests : `PlayerDataTests` (lit toutes les colonnes `player_id` dans `information_schema`), `PlayersPurgeTests`, `PlayerDataCommandTests`.
 49. **Le service worker garde la CSP de son installation** : toute origine tierce lue par la page doit aussi être en `connect-src`, et `Dockerfile.prod` ajoute l'empreinte de la CSP à `ngsw-worker.js` pour qu'il se réinstalle quand elle change (`.claude/rules/deploy.md`, `.claude/rules/front/core-pwa.md`).
 50. **Forme d'onde calculée par l'API** (`InSeconds.Waveform`, MPEG-1 44,1 kHz) : un seul calcul à la fois (verrou consultatif 474), extrait remplacé détecté au nom de fichier, téléchargement limité à `*.dzcdn.net` et 3 Mo, jamais d'URL signée dans un journal, rien de calculé au staging (la copie de la prod apporte les formes). Détail : `.claude/rules/back/catalogue-deezer.md`.
+51. **Seconde tentative : jamais de quoi deviner ce qui est juste** : une réponse refusée pour une seconde tentative ne dit ni lequel (artiste, titre) est juste, ni la bonne réponse, ni de score ; elle est définitive à la seconde, le palier annoncé devient le plancher, l'état (`current_failed_attempts`) vit côté serveur et se retrouve à la reprise. Réglage `Daily:RetryScorePercent`. Détail : `.claude/rules/back/daily.md`. Tests : `SecondAttemptTests`, `DailyScoringAndRulesTests`, `track-round.spec.ts`.
 
 ## Ce que fait l'application
 
