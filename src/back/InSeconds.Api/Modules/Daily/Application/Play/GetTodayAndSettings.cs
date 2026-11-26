@@ -62,14 +62,32 @@ public static class GetDailySettingsEndpoint
 /// Le « score à battre » de l'accueil, pour un joueur qui n'a pas encore de record : la médiane des parties terminées d'hier, comme sur la page
 /// des réponses d'hier. Vide pour un joueur qui a un record, sans défi hier, ou sous <see cref="ScoreDistribution.MinPlayersForPercent"/> parties terminées.
 /// </param>
+/// <param name="Recap">
+/// De quoi accueillir un habitué d'une phrase : seulement pour un compte qui a terminé au moins <see cref="ReturnRecapPolicy.MinGames"/> parties ;
+/// vide sinon (un nouveau venu garde le « Commencer » et la phrase du mode d'emploi). Que ses propres parties.
+/// </param>
 public sealed record TodayResponse(
-    string State, int TracksCount, int CompletedCount, StreakResponse Streak, int CompletedGames, int? BestScore, int? YesterdayMedian)
+    string State, int TracksCount, int CompletedCount, StreakResponse Streak, int CompletedGames, int? BestScore, int? YesterdayMedian,
+    ReturnRecapResponse? Recap = null)
 {
     public const string NoChallenge = "no_challenge";
     public const string CanStart = "can_start";
     public const string Resumable = "resumable";
     public const string AlreadyPlayed = "already_played";
     public const string Abandoned = "abandoned";
+}
+
+/// <summary>Ses parties d'hier et de la semaine, en chiffres bruts : le front choisit la phrase.</summary>
+/// <param name="YesterdayScore">Son score d'hier (partie terminée) ; vide s'il n'a pas joué hier.</param>
+/// <param name="AverageScore">Sa moyenne sur toutes ses parties terminées.</param>
+/// <param name="WeekGames">Ses parties terminées sur les sept jours jusqu'à hier.</param>
+/// <param name="WeekFirstStepFound">Ses morceaux trouvés (artiste et titre) au premier palier sur ces sept jours.</param>
+public sealed record ReturnRecapResponse(int? YesterdayScore, int? AverageScore, int WeekGames, int WeekFirstStepFound);
+
+/// <summary>Qui est un habitué à qui l'accueil parle d'une phrase.</summary>
+public static class ReturnRecapPolicy
+{
+    public const int MinGames = 14;
 }
 
 public static class GetTodayEndpoint
@@ -80,7 +98,7 @@ public static class GetTodayEndpoint
     /// </summary>
     [WolverineGet("/api/daily/today", OperationId = "getToday")]
     public static async Task<TodayResponse> Get(
-        ICurrentPlayer current, IDailyQueries queries, IDailyStatsQueries stats, IPlayerDirectory players, IGameCalendar calendar, DailyRules rules,
+        ICurrentPlayer current, IDailyQueries queries, IDailyStatsQueries stats, IDailyHistoryQueries history, IPlayerDirectory players, IGameCalendar calendar, DailyRules rules,
         CancellationToken ct)
     {
         var today = calendar.Today;
@@ -99,8 +117,12 @@ public static class GetTodayEndpoint
         int? bestScore = current.PlayerId is { } bestOf && completedGames > 0 ? await stats.GetBestScoreAsync(bestOf, ct) : null;
         var yesterdayMedian = bestScore is null ? await YesterdayMedianAsync(stats, today, ct) : null;
 
+        var recap = isLinked && current.PlayerId is { } recapOf && completedGames >= ReturnRecapPolicy.MinGames
+            ? await ReturnRecapAsync(history, recapOf, today.AddDays(-1), rules, ct)
+            : null;
+
         if (row is null)
-            return new TodayResponse(TodayResponse.NoChallenge, 0, 0, streakResponse, completedGames, bestScore, yesterdayMedian);
+            return new TodayResponse(TodayResponse.NoChallenge, 0, 0, streakResponse, completedGames, bestScore, yesterdayMedian, recap);
 
         var state = row.SessionStatus switch
         {
@@ -110,7 +132,14 @@ public static class GetTodayEndpoint
             _ => TodayResponse.Abandoned,
         };
         return new TodayResponse(
-            state, row.TracksCount, row.SessionStatus == SessionStatus.Pending ? row.AnswerCount : 0, streakResponse, completedGames, bestScore, yesterdayMedian);
+            state, row.TracksCount, row.SessionStatus == SessionStatus.Pending ? row.AnswerCount : 0, streakResponse, completedGames, bestScore, yesterdayMedian, recap);
+    }
+
+    private static async Task<ReturnRecapResponse> ReturnRecapAsync(IDailyHistoryQueries history, Guid playerId, DateOnly yesterday, DailyRules rules, CancellationToken ct)
+    {
+        var firstStep = rules.Options.EffectiveDurationScores.Min(d => d.Seconds);
+        var row = await history.GetReturnRecapAsync(playerId, yesterday, firstStep, ct);
+        return new ReturnRecapResponse(row.YesterdayScore, row.AverageScore, row.WeekGames, row.WeekFirstStepFound);
     }
 
     /// <summary>La médiane d'hier, arrondie comme sur la page des réponses d'hier ; vide sous le seuil de joueurs ou sans défi hier.</summary>

@@ -2362,6 +2362,39 @@
           }
         }
       },
+      "ReturnRecapResponse": {
+        "required": [
+          "yesterdayScore",
+          "averageScore",
+          "weekGames",
+          "weekFirstStepFound"
+        ],
+        "type": "object",
+        "properties": {
+          "yesterdayScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "averageScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "weekGames": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "weekFirstStepFound": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "ScoreBucketResponse": {
         "required": [
           "minScore",
@@ -2826,6 +2859,16 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "recap": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReturnRecapResponse"
+              }
+            ]
           }
         }
       },

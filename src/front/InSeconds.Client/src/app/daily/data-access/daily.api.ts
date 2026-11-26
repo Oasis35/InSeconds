@@ -199,6 +199,14 @@ function toToday(today: TodayResponse): DailyToday {
     completedGames: today.completedGames,
     bestScore: today.bestScore ?? null,
     yesterdayMedian: today.yesterdayMedian ?? null,
+    recap: today.recap
+      ? {
+          yesterdayScore: today.recap.yesterdayScore ?? null,
+          averageScore: today.recap.averageScore ?? null,
+          weekGames: today.recap.weekGames,
+          weekFirstStepFound: today.recap.weekFirstStepFound,
+        }
+      : null,
   };
 }
 

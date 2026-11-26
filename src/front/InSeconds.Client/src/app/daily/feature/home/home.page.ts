@@ -74,6 +74,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                 [streak]="store.pillStreak()"
                 [bestScore]="store.bestScore()"
                 [yesterdayMedian]="store.yesterdayMedian()"
+                [recap]="store.recap()"
                 [remaining]="remaining()"
                 [firstGame]="store.firstGame()"
                 [linked]="store.linked()"

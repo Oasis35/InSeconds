@@ -2011,6 +2011,15 @@ export interface ResumedAnswer {
     [key: string]: any;
 }
 
+export interface ReturnRecapResponse {
+    yesterdayScore: number | undefined;
+    averageScore: number | undefined;
+    weekGames: number;
+    weekFirstStepFound: number;
+
+    [key: string]: any;
+}
+
 export interface ScoreBucketResponse {
     minScore: number;
     maxScore: number;
@@ -2134,6 +2143,7 @@ export interface TodayResponse {
     completedGames: number;
     bestScore: number | undefined;
     yesterdayMedian: number | undefined;
+    recap?: ReturnRecapResponse | undefined;
 
     [key: string]: any;
 }
