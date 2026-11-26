@@ -1544,6 +1544,62 @@ export class DailyClient {
     }
 
     /**
+     * @return OK
+     */
+    getWeekReview(): Observable<WeekReviewResponse> {
+        let url_ = this.baseUrl + "/api/daily/week-review";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetWeekReview(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetWeekReview(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<WeekReviewResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<WeekReviewResponse>;
+        }));
+    }
+
+    protected processGetWeekReview(response: HttpResponseBase): Observable<WeekReviewResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WeekReviewResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
      * @param period (optional) 
      * @return OK
      */
@@ -1955,6 +2011,15 @@ export interface ResumedAnswer {
     [key: string]: any;
 }
 
+export interface ReturnRecapResponse {
+    yesterdayScore: number | undefined;
+    averageScore: number | undefined;
+    weekGames: number;
+    weekFirstStepFound: number;
+
+    [key: string]: any;
+}
+
 export interface ScoreBucketResponse {
     minScore: number;
     maxScore: number;
@@ -2078,6 +2143,7 @@ export interface TodayResponse {
     completedGames: number;
     bestScore: number | undefined;
     yesterdayMedian: number | undefined;
+    recap?: ReturnRecapResponse | undefined;
 
     [key: string]: any;
 }
@@ -2145,6 +2211,35 @@ export interface UpdateListening {
 
 export interface UpdateTrackCooldownPoolPercent {
     trackCooldownPoolPercent: number;
+
+    [key: string]: any;
+}
+
+export interface WeekBestTrackResponse {
+    date: Date;
+    artist: string;
+    title: string;
+    score: number;
+
+    [key: string]: any;
+}
+
+export interface WeekReviewDayResponse {
+    date: Date;
+    score: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface WeekReviewResponse {
+    weekStart: Date;
+    days: WeekReviewDayResponse[];
+    maxPossibleScore: number;
+    playedCount: number;
+    averageScore: number | undefined;
+    bestDay: Date | undefined;
+    bestScore: number | undefined;
+    bestTrack: WeekBestTrackResponse | undefined;
 
     [key: string]: any;
 }

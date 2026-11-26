@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
@@ -16,6 +16,10 @@ import { HomeLegalLineComponent } from '../../../ui/legal-line/home-legal-line.c
 import { ModalService } from '../../../ui/modal/modal.service';
 import { HomeStore } from '../../data-access/home.store';
 import { GuestStreakNotice } from '../../data-access/guest-streak-notice';
+import { WeekReviewNotice } from '../../data-access/week-review-notice';
+import { WeekReviewStore } from '../../data-access/week-review.store';
+import { isMonday, showWeekCard } from '../../domain/week-review';
+import { WeekReviewCardComponent } from '../../ui/week-review-card/week-review-card.component';
 import { formatGameDate } from '../../domain/archive';
 import { GuestAccountTileComponent } from '../../ui/guest-account-tile/guest-account-tile.component';
 import { HomeAbandonedCardComponent } from '../../ui/home-abandoned-card/home-abandoned-card.component';
@@ -37,8 +41,9 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
   selector: 'app-home-page',
   imports: [
     TranslatePipe, RouterLink, ButtonComponent, DecorBackgroundComponent, BrandComponent, InstagramLinkComponent, AccountLinkComponent, HomeAnnounceSlotComponent, HomeModeEntriesComponent, InstallLineComponent, HomeLegalLineComponent,
-    HomeChallengeCardComponent, HomeDoneCardComponent, GuestAccountTileComponent, HomeAbandonedCardComponent, StatusScreenComponent,
+    HomeChallengeCardComponent, HomeDoneCardComponent, GuestAccountTileComponent, HomeAbandonedCardComponent, StatusScreenComponent, WeekReviewCardComponent,
   ],
+  providers: [WeekReviewStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="da-bg min-h-dvh flex flex-col relative" style="color:var(--text-body)">
@@ -69,12 +74,16 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                 [streak]="store.pillStreak()"
                 [bestScore]="store.bestScore()"
                 [yesterdayMedian]="store.yesterdayMedian()"
+                [recap]="store.recap()"
                 [remaining]="remaining()"
                 [firstGame]="store.firstGame()"
                 [linked]="store.linked()"
                 (startGame)="launcher.start()"
                 (openStreak)="streakSheet.open()" />
               <!-- « Créer un compte » d'un invité : la tuile juste dessous, seulement s'il a déjà joué ou perdu une série. -->
+              @if (weekCard(); as week) {
+                <app-week-review-card [review]="week" [lang]="language.current()" [compact]="true" (closed)="closeWeekCard(week.weekStart)" />
+              }
               @if (store.guestTile(); as tile) {
                 <app-guest-account-tile [kind]="tile" [streak]="tile === 'lost' ? (store.lostStreak() ?? 0) : store.toastStreak()" (dismissed)="dismissGuestTile()" />
               }
@@ -127,6 +136,9 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                   [canShare]="store.stats()?.yourScore != null"
                   (share)="result.share()" />
               }
+              @if (weekCard(); as week) {
+                <app-week-review-card [review]="week" [lang]="language.current()" [compact]="true" (closed)="closeWeekCard(week.weekStart)" />
+              }
               @if (store.guestTile(); as tile) {
                 <app-guest-account-tile [kind]="tile" [streak]="tile === 'lost' ? (store.lostStreak() ?? 0) : store.toastStreak()" (dismissed)="dismissGuestTile()" />
               }
@@ -147,6 +159,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                 [betterThanPercent]="store.stats()?.betterThanPercent ?? null"
                 [history]="store.stats()?.history ?? null"
                 [stats]="store.stats()"
+                [celebrate]="true"
                 [focus]="!lead.hasLeadingEntry()"
                 [lang]="language.current()"
                 [streak]="store.pillStreak()"
@@ -158,6 +171,9 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
                 [shareFailed]="result.failed()"
                 [canShare]="store.canShare()"
                 (share)="result.share()" />
+              @if (weekCard(); as week) {
+                <app-week-review-card [review]="week" [lang]="language.current()" [compact]="true" (closed)="closeWeekCard(week.weekStart)" />
+              }
               @if (store.guestTile(); as tile) {
                 <app-guest-account-tile [kind]="tile" [streak]="tile === 'lost' ? (store.lostStreak() ?? 0) : store.toastStreak()" (dismissed)="dismissGuestTile()" />
               }
@@ -194,6 +210,9 @@ export class HomePage implements OnInit {
   private readonly modal = inject(ModalService);
   private readonly translate = inject(TranslateService);
   private readonly guestNotice = inject(GuestStreakNotice);
+  private readonly weekStore = inject(WeekReviewStore);
+  private readonly weekNotice = inject(WeekReviewNotice);
+  private readonly dismissedWeek = signal<string | null>(this.weekNotice.dismissedWeek());
 
   /**
    * L'écran affiché : celui du jeu du jour, ou le chargement pendant que la manche s'ouvre (le temps de son code et de la création de la
@@ -205,12 +224,29 @@ export class HomePage implements OnInit {
   /** Le temps qu'il reste pour jouer le défi, dit à côté du score à battre (« plus que 6 h »). */
   protected readonly remaining = computed(() => timeLeft(secondsUntilMidnightUtc(new Date())));
 
+  /** « La semaine dernière » : le lundi seulement, pour un compte qui a joué la semaine passée et n'a pas fermé la carte. */
+  protected readonly weekCard = computed(() => {
+    const review = this.weekStore.review();
+    const shown = showWeekCard({ linked: this.store.linked(), today: todayUtc(new Date()), review, dismissedWeek: this.dismissedWeek() });
+    return shown ? review : null;
+  });
+
   constructor() {
     // Le code de la manche se télécharge en tâche de fond dès qu'il y a une partie à lancer ou à reprendre : le clic ne l'attend pas.
     effect(() => {
       const screen = this.store.screen();
       if (screen === 'welcome' || screen === 'resume_prompt') this.launcher.prefetch();
     });
+    // Le lundi, un compte lit le bilan de la semaine dernière (une fois) ; les autres jours, aucune requête.
+    effect(() => {
+      if (this.store.linked() && isMonday(todayUtc(new Date()))) void this.weekStore.load();
+    });
+  }
+
+  /** La croix de la carte : cette semaine ne revient pas (gardé dans le navigateur). */
+  protected closeWeekCard(weekStart: string): void {
+    this.weekNotice.remember(weekStart);
+    this.dismissedWeek.set(weekStart);
   }
 
   ngOnInit(): void {

@@ -67,7 +67,7 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
             </span>
           </button>
         }
-        <app-streak-pill class="ml-auto" [streak]="streak()" [linked]="linked()" [stackWhenNarrow]="true" (open)="openStreak.emit()" />
+        <app-streak-pill class="ml-auto" [streak]="streak()" [linked]="linked()" [stackWhenNarrow]="true" [celebrate]="celebrate()" (open)="openStreak.emit()" />
       </div>
       @if (gelEvent(); as event) {
         <app-streak-event-line [kind]="event" [streak]="streak()?.streak ?? null" [freezesUsed]="freezesUsed()" />
@@ -122,6 +122,8 @@ export class HomeDoneCardComponent {
   readonly lang = input<'fr' | 'en'>('fr');
   /** Les stats du jour, pour l'égaliseur du détail ; sans elles, le détail ne montre que les morceaux. */
   readonly stats = input<DayStats | null>(null);
+  /** La partie vient de se finir : la pastille de série joue l'animation de son jalon (pas aux visites suivantes). */
+  readonly celebrate = input(false);
   readonly canShare = input(true);
   readonly shareCopied = input(false);
   readonly shareFailed = input(false);

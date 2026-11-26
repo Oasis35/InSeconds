@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom, retry, throwError, timer } from 'rxjs';
 import {
-  ArchiveDayResponse, ArchiveMeResponse, DailyClient, DailyHistoryResponse, DailySettingsResponse, EarProfileResponse, ReplayResponse, GuessBucketResponse, ResumedAnswer, StartSessionResponse, StreakResponse, SubmitAnswerResponse, TodayResponse,
+  ArchiveDayResponse, ArchiveMeResponse, DailyClient, DailyHistoryResponse, DailySettingsResponse, EarProfileResponse, ReplayResponse, WeekReviewResponse, GuessBucketResponse, ResumedAnswer, StartSessionResponse, StreakResponse, SubmitAnswerResponse, TodayResponse,
   TodayStatsResponse,
 } from '../../api/daily/api.generated';
 import { toAppError } from '../../core/errors/app-error';
@@ -13,6 +13,7 @@ import { ArchiveDay, ArchiveMe } from '../domain/archive';
 import { DailyHistory, HistoryDayState, emptyHistory } from '../domain/history';
 import { ReplayFilter, ReplayPage } from '../domain/replay';
 import { EarProfile, ProfilePeriod } from '../domain/ear-profile';
+import { WeekReview } from '../domain/week-review';
 
 /** Des réponses d'erreur que le jeu connaît : refus du démarrage (la partie est finie, pas de défi). */
 const ALREADY_PLAYED = 'daily.already_played';
@@ -142,6 +143,16 @@ export class DailyApi {
     }
   }
 
+  /** Le bilan de sa semaine passée (lundi au dimanche) ; 401 : `null` (rien joué). */
+  async weekReview(): Promise<WeekReview | null> {
+    try {
+      return toWeekReview(await firstValueFrom(this.client.getWeekReview()));
+    } catch (error) {
+      if ((await toAppError(error)).status === 401) return null;
+      throw error;
+    }
+  }
+
   /** Son profil d'oreille sur une période ; 401 : `null` (rien joué). */
   async earProfile(period: ProfilePeriod): Promise<EarProfile | null> {
     try {
@@ -188,6 +199,14 @@ function toToday(today: TodayResponse): DailyToday {
     completedGames: today.completedGames,
     bestScore: today.bestScore ?? null,
     yesterdayMedian: today.yesterdayMedian ?? null,
+    recap: today.recap
+      ? {
+          yesterdayScore: today.recap.yesterdayScore ?? null,
+          averageScore: today.recap.averageScore ?? null,
+          weekGames: today.recap.weekGames,
+          weekFirstStepFound: today.recap.weekFirstStepFound,
+        }
+      : null,
   };
 }
 
@@ -354,6 +373,21 @@ function toHistory(history: DailyHistoryResponse): DailyHistory {
     monthPublishedCount: history.monthPublishedCount,
     monthAverageScore: history.monthAverageScore ?? null,
     monthBestScore: history.monthBestScore ?? null,
+  };
+}
+
+function toWeekReview(review: WeekReviewResponse): WeekReview {
+  return {
+    weekStart: toDateText(review.weekStart) ?? '',
+    days: review.days.map(d => ({ date: toDateText(d.date) ?? '', score: d.score ?? null })),
+    maxPossibleScore: review.maxPossibleScore,
+    playedCount: review.playedCount,
+    averageScore: review.averageScore ?? null,
+    bestDay: toDateText(review.bestDay),
+    bestScore: review.bestScore ?? null,
+    bestTrack: review.bestTrack
+      ? { date: toDateText(review.bestTrack.date) ?? '', artist: review.bestTrack.artist, title: review.bestTrack.title, score: review.bestTrack.score }
+      : null,
   };
 }
 

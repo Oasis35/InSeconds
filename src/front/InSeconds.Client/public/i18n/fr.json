@@ -1220,6 +1220,85 @@
       },
       "splitNote": "Le trait violet : la part des joueurs."
     },
+    "homeLine": {
+      "default": "Oreilles prêtes ?",
+      "eve": {
+        "0": {
+          "phrase": "Plus qu’une partie pour {{ value }} jours de série.",
+          "button": "Je fonce !"
+        },
+        "1": {
+          "phrase": "{{ value }} jours de série, c’est aujourd’hui.",
+          "button": "C’est parti !"
+        }
+      },
+      "record": {
+        "0": {
+          "phrase": "Hier, tu as frôlé ton record de {{ value }}.",
+          "button": "Battre mon record"
+        },
+        "1": {
+          "phrase": "Ton record de {{ value }} n’a plus qu’à tomber.",
+          "button": "Je le bats !"
+        }
+      },
+      "above": {
+        "0": {
+          "phrase": "Hier, {{ value }} : bien au-dessus de ta moyenne.",
+          "button": "Même chose ?"
+        },
+        "1": {
+          "phrase": "{{ value }} hier, tu étais en forme.",
+          "button": "Je confirme !"
+        }
+      },
+      "below": {
+        "0": {
+          "phrase": "Hier, {{ value }} : sous ta moyenne.",
+          "button": "Revanche !"
+        },
+        "1": {
+          "phrase": "{{ value }} hier, ça arrive à tout le monde.",
+          "button": "Je me rattrape"
+        }
+      },
+      "week": {
+        "0": {
+          "phrase": {
+            "one": "{{ value }} trouvé au premier palier cette semaine.",
+            "other": "{{ value }} trouvés au premier palier cette semaine."
+          },
+          "button": "Toujours vif ?"
+        },
+        "1": {
+          "phrase": {
+            "one": "Cette semaine, {{ value }} trouvé dès le premier palier.",
+            "other": "Cette semaine, {{ value }} trouvés dès le premier palier."
+          },
+          "button": "On continue !"
+        }
+      }
+    },
+    "weekReview": {
+      "title": "La semaine dernière",
+      "cardTitle": "Ta semaine",
+      "range": "du {{ from }} au {{ to }}",
+      "close": "Fermer",
+      "average": "de moyenne",
+      "averageShort": "moyenne",
+      "daysOfSeven": {
+        "one": "{{ n }} jour sur 7",
+        "other": "{{ n }} jours sur 7"
+      },
+      "daysPlayed": "jours joués",
+      "bestDay": "{{ day }} : {{ score }}",
+      "bestDayLabel": "meilleur jour ({{ day }})",
+      "bestTrack": "Meilleur morceau :",
+      "points": "{{ points }} pts",
+      "seeDetail": "Voir le détail",
+      "dayBarLabel": "{{ day }} : {{ score }}",
+      "dayBarNone": "{{ day }} : pas joué"
+    },
     "streakEvent": {
       "earned": "+1 gel gagné",
       "earnedDetail": "{{ streak }} jours de série",

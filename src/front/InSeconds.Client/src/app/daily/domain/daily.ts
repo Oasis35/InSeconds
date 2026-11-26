@@ -1,3 +1,4 @@
+import { ReturnRecap } from './home-line';
 import { Streak } from './streak';
 
 /** Ce que le serveur dit de la partie du jour pour ce navigateur (`GET /api/daily/today`). */
@@ -16,6 +17,8 @@ export interface DailyToday {
   readonly bestScore: number | null;
   /** La médiane d'hier, pour qui n'a pas encore de record ; vide sous 5 parties terminées hier, ou pour un joueur qui a un record. */
   readonly yesterdayMedian: number | null;
+  /** De quoi accueillir un habitué d'une phrase (compte avec assez de parties) ; `null` sinon. */
+  readonly recap: ReturnRecap | null;
 }
 
 /** Un niveau d'indice : quand il se débloque, ce qu'il révèle (`year`, `artistMasked`) et son coût en pourcentage du score. */

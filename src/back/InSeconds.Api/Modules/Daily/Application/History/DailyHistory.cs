@@ -16,6 +16,18 @@ public interface IDailyHistoryQueries
     /// </summary>
     Task<IReadOnlyList<HistoryCalendarInput>> ListMonthDaysAsync(Guid? playerId, DateOnly start, DateOnly end, CancellationToken ct);
 
+    /// <summary>
+    /// Sa réponse qui a rapporté le plus de points sur les défis de [<paramref name="start"/>, <paramref name="end"/>[, dans ses parties terminées (la plus
+    /// ancienne en cas d'égalité) ; vide sans réponse notée.
+    /// </summary>
+    Task<BestAnswer?> GetBestAnswerAsync(Guid playerId, DateOnly start, DateOnly end, CancellationToken ct);
+
+    /// <summary>
+    /// Ce que l'accueil d'un habitué dit de ses parties terminées : celle d'hier (<paramref name="yesterday"/>), sa moyenne de toujours et, sur les
+    /// sept jours jusqu'à hier, ses parties et ses morceaux trouvés (artiste et titre) au premier palier (<paramref name="firstStepSeconds"/>).
+    /// </summary>
+    Task<ReturnRecapRow> GetReturnRecapAsync(Guid playerId, DateOnly yesterday, decimal firstStepSeconds, CancellationToken ct);
+
     /// <summary>Le jour du tout premier défi ; vide s'il n'y en a aucun.</summary>
     Task<DateOnly?> GetFirstChallengeDateAsync(CancellationToken ct);
 
@@ -32,6 +44,9 @@ public interface IDailyHistoryQueries
     /// </summary>
     Task<(int None, int Half)> CountMissedAnswersAsync(Guid playerId, DateOnly lastDay, CancellationToken ct);
 }
+
+/// <summary>Les chiffres bruts de l'accueil d'un habitué (voir <see cref="IDailyHistoryQueries.GetReturnRecapAsync"/>).</summary>
+public sealed record ReturnRecapRow(int? YesterdayScore, int? AverageScore, int WeekGames, int WeekFirstStepFound);
 
 /// <summary>Une case du calendrier de l'historique.</summary>
 /// <param name="Date">Le jour du défi.</param>

@@ -1,3 +1,4 @@
+import { WeekReview } from '../../domain/week-review';
 import { Provider } from '@angular/core';
 import { DailyApi } from '../daily.api';
 import {
@@ -22,7 +23,7 @@ export const SETTINGS: DailySettings = {
 };
 
 export const TODAY = (over: Partial<DailyToday> = {}): DailyToday => ({
-  state: 'can_start', tracksCount: 3, completedCount: 0, streak: EMPTY_STREAK, completedGames: 0, bestScore: null, yesterdayMedian: null, ...over,
+  state: 'can_start', tracksCount: 3, completedCount: 0, streak: EMPTY_STREAK, completedGames: 0, bestScore: null, yesterdayMedian: null, recap: null, ...over,
 });
 
 export const SESSION = (over: Partial<StartedSession> = {}): StartedSession => ({
@@ -90,6 +91,7 @@ export class FakeDailyApi {
   /** Les pages de « À réécouter », par jour de départ (`''` : la première). */
   replayPages: Record<string, ReplayPage | Error> = { '': REPLAY_PAGE() };
   earProfile: EarProfile | null | Error = EAR_PROFILE();
+  weekReview: WeekReview | null | Error = null;
   /** La réponse du serveur à chaque réponse envoyée ; `Error` pour un échec. */
   answer: (answer: AnswerToSend) => AnsweredTrack | Error = a => ANSWERED(a.position);
   hintFacts: readonly { kind: string; value: string | null }[] = [{ kind: 'year', value: '2013' }];
@@ -175,6 +177,11 @@ export class FakeDailyApi {
     return this.result(this.replayPages[before ?? ''] ?? { days: [], nextBefore: null, allCount: 0, noneCount: 0, halfCount: 0 });
   }
 
+  weekReviewCall(): Promise<WeekReview | null> {
+    this.calls.push('weekReview');
+    return this.result(this.weekReview);
+  }
+
   earProfileCall(period: ProfilePeriod): Promise<EarProfile | null> {
     this.calls.push(`earProfile ${period}`);
     return this.result(this.earProfile);
@@ -206,6 +213,7 @@ export function provideFakeDailyApi(fake: FakeDailyApi): Provider {
       history: (month: string | null) => fake.historyCall(month),
       replay: (filter: ReplayFilter, before: string | null) => fake.replayCall(filter, before),
       earProfile: (period: ProfilePeriod) => fake.earProfileCall(period),
+      weekReview: () => fake.weekReviewCall(),
     } satisfies Partial<Record<keyof DailyApi, unknown>>,
   };
 }

@@ -88,6 +88,7 @@ export const HomeStore = signalStore(
       /** Le chiffre de l'accueil : le record du joueur, sinon la médiane d'hier (le serveur ne rend la médiane qu'à un joueur sans record). */
       bestScore: computed(() => store.today()?.bestScore ?? null),
       yesterdayMedian: computed(() => store.today()?.yesterdayMedian ?? null),
+      recap: computed(() => store.today()?.recap ?? null),
       /** Série vue par la gélule et le panneau : neutre tant que le serveur n'a pas répondu. */
       pillStreak: computed(() => store.streak()),
       sheetStreak: computed(() => store.streak() ?? EMPTY_STREAK),

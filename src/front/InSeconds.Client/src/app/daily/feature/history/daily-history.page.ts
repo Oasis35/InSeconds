@@ -16,12 +16,14 @@ import { HistoryTabsComponent } from '../../../ui/history/history-tabs.component
 import { HomeLegalLineComponent } from '../../../ui/legal-line/home-legal-line.component';
 import { DailyHistoryStore } from '../../data-access/daily-history.store';
 import { EarProfileStore } from '../../data-access/ear-profile.store';
+import { WeekReviewStore } from '../../data-access/week-review.store';
 import { EarProfileCardComponent } from '../../ui/ear-profile-card/ear-profile-card.component';
 import { HistoryCalendarComponent } from '../../ui/history-calendar/history-calendar.component';
 import { StatusScreenComponent } from '../../ui/status-screen/status-screen.component';
+import { WeekReviewCardComponent } from '../../ui/week-review-card/week-review-card.component';
 
 /**
- * L'historique du joueur sur le défi du jour (`/history/daily`, `?mois=aaaa-mm`) : le défi d'aujourd'hui en tête, la carte de son profil d'oreille,
+ * L'historique du joueur sur le défi du jour (`/history/daily`, `?mois=aaaa-mm`) : le défi d'aujourd'hui en tête, « Ta semaine » (la semaine dernière, du lundi au dimanche), la carte de son profil d'oreille,
  * le calendrier du mois (une case par jour de défi, qui mène à ses réponses) et l'entrée « À réécouter ». L'onglet « Survie » est la page du mode
  * (`/history/survie`) : les modes ne se connaissent pas.
  */
@@ -29,15 +31,16 @@ import { StatusScreenComponent } from '../../ui/status-screen/status-screen.comp
   selector: 'app-daily-history-page',
   imports: [
     HomeLegalLineComponent, TranslatePipe, RouterLink, PointsPipe, DecorBackgroundComponent, BrandComponent, InstagramLinkComponent, AccountLinkComponent,
-    HistoryTabsComponent, HistoryCalendarComponent, EarProfileCardComponent, StatusScreenComponent,
+    HistoryTabsComponent, HistoryCalendarComponent, EarProfileCardComponent, StatusScreenComponent, WeekReviewCardComponent,
   ],
-  providers: [DailyHistoryStore, EarProfileStore],
+  providers: [DailyHistoryStore, EarProfileStore, WeekReviewStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './daily-history.page.html',
 })
 export class DailyHistoryPage {
   protected readonly store = inject(DailyHistoryStore);
   protected readonly profile = inject(EarProfileStore);
+  private readonly weekStore = inject(WeekReviewStore);
   protected readonly language = inject(LanguageService);
   protected readonly chrome = inject(ShellChromeStore);
   protected readonly errorReporting = inject(ErrorReportingService);
@@ -64,6 +67,12 @@ export class DailyHistoryPage {
     return profile && profile.gamesPlayed > 0 ? profile : null;
   });
 
+  /** La carte « Ta semaine » : seulement s'il a terminé au moins une partie la semaine dernière. */
+  protected readonly weekReview = computed(() => {
+    const review = this.weekStore.review();
+    return review && review.playedCount > 0 ? review : null;
+  });
+
   constructor() {
     // Chaque changement de mois dans l'adresse relit l'historique (les flèches sont des liens).
     effect(() => {
@@ -71,6 +80,7 @@ export class DailyHistoryPage {
       untracked(() => void this.store.load(month));
     });
     void this.profile.load('8w');
+    void this.weekStore.load();
   }
 
   protected retry(): void {

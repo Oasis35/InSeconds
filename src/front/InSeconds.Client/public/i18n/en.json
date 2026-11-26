@@ -1220,6 +1220,85 @@
       },
       "splitNote": "The purple mark: the players' share."
     },
+    "homeLine": {
+      "default": "Ears ready?",
+      "eve": {
+        "0": {
+          "phrase": "One more game for a {{ value }}-day streak.",
+          "button": "Let’s go!"
+        },
+        "1": {
+          "phrase": "{{ value }}-day streak: it’s today.",
+          "button": "Here we go!"
+        }
+      },
+      "record": {
+        "0": {
+          "phrase": "Yesterday you nearly beat your {{ value }} record.",
+          "button": "Beat my record"
+        },
+        "1": {
+          "phrase": "Your {{ value }} record is ready to fall.",
+          "button": "I’ll beat it!"
+        }
+      },
+      "above": {
+        "0": {
+          "phrase": "Yesterday, {{ value }}: well above your average.",
+          "button": "Same again?"
+        },
+        "1": {
+          "phrase": "{{ value }} yesterday, you were on fire.",
+          "button": "I’ll confirm!"
+        }
+      },
+      "below": {
+        "0": {
+          "phrase": "Yesterday, {{ value }}: under your average.",
+          "button": "Rematch!"
+        },
+        "1": {
+          "phrase": "{{ value }} yesterday, it happens.",
+          "button": "Catch up"
+        }
+      },
+      "week": {
+        "0": {
+          "phrase": {
+            "one": "{{ value }} found at the first step this week.",
+            "other": "{{ value }} found at the first step this week."
+          },
+          "button": "Still that sharp?"
+        },
+        "1": {
+          "phrase": {
+            "one": "This week, {{ value }} found right at the first step.",
+            "other": "This week, {{ value }} found right at the first step."
+          },
+          "button": "Keep going!"
+        }
+      }
+    },
+    "weekReview": {
+      "title": "Last week",
+      "cardTitle": "Your week",
+      "range": "{{ from }} to {{ to }}",
+      "close": "Close",
+      "average": "average",
+      "averageShort": "average",
+      "daysOfSeven": {
+        "one": "{{ n }} day out of 7",
+        "other": "{{ n }} days out of 7"
+      },
+      "daysPlayed": "days played",
+      "bestDay": "{{ day }}: {{ score }}",
+      "bestDayLabel": "best day ({{ day }})",
+      "bestTrack": "Best track:",
+      "points": "{{ points }} pts",
+      "seeDetail": "See details",
+      "dayBarLabel": "{{ day }}: {{ score }}",
+      "dayBarNone": "{{ day }}: not played"
+    },
     "streakEvent": {
       "earned": "+1 freeze earned",
       "earnedDetail": "{{ streak }}-day streak",

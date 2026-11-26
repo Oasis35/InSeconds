@@ -1081,6 +1081,36 @@
         }
       }
     },
+    "/api/daily/week-review": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getWeekReview",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeekReviewResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/daily/profile": {
       "get": {
         "tags": [
@@ -2332,6 +2362,39 @@
           }
         }
       },
+      "ReturnRecapResponse": {
+        "required": [
+          "yesterdayScore",
+          "averageScore",
+          "weekGames",
+          "weekFirstStepFound"
+        ],
+        "type": "object",
+        "properties": {
+          "yesterdayScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "averageScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "weekGames": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "weekFirstStepFound": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "ScoreBucketResponse": {
         "required": [
           "minScore",
@@ -2796,6 +2859,16 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "recap": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReturnRecapResponse"
+              }
+            ]
           }
         }
       },
@@ -3072,6 +3145,115 @@
           "trackCooldownPoolPercent": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "WeekBestTrackResponse": {
+        "required": [
+          "date",
+          "artist",
+          "title",
+          "score"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "artist": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "WeekReviewDayResponse": {
+        "required": [
+          "date",
+          "score"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "score": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "WeekReviewResponse": {
+        "required": [
+          "weekStart",
+          "days",
+          "maxPossibleScore",
+          "playedCount",
+          "averageScore",
+          "bestDay",
+          "bestScore",
+          "bestTrack"
+        ],
+        "type": "object",
+        "properties": {
+          "weekStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeekReviewDayResponse"
+            }
+          },
+          "maxPossibleScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "playedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "averageScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "bestDay": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "bestScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "bestTrack": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WeekBestTrackResponse"
+              }
+            ]
           }
         }
       },
@@ -3522,6 +3704,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.GetReplayTracksEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetWeekReviewEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.RecomputeDayStatsEndpoint"

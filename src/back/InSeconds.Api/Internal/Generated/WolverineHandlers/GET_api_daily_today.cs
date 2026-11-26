@@ -44,6 +44,7 @@ namespace Internal.Generated.WolverineHandlers
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
             var efPlayerDirectory = new InSeconds.Api.Modules.Players.Persistence.EfPlayerDirectory(inSecondsDbContext);
+            var efDailyHistoryQueries = new InSeconds.Api.Modules.Daily.Persistence.EfDailyHistoryQueries(inSecondsDbContext);
             var efDailyStatsQueries = new InSeconds.Api.Modules.Daily.Persistence.EfDailyStatsQueries(inSecondsDbContext);
             var efDailyQueries = new InSeconds.Api.Modules.Daily.Persistence.EfDailyQueries(inSecondsDbContext);
             var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
@@ -62,7 +63,7 @@ namespace Internal.Generated.WolverineHandlers
             {
                 
                 // The actual HTTP request handler execution
-                var todayResponse_response = await InSeconds.Api.Modules.Daily.Application.GetTodayEndpoint.Get(claimsCurrentPlayer, efDailyQueries, efDailyStatsQueries, efPlayerDirectory, _gameCalendar, _dailyRules, httpContext.RequestAborted).ConfigureAwait(false);
+                var todayResponse_response = await InSeconds.Api.Modules.Daily.Application.GetTodayEndpoint.Get(claimsCurrentPlayer, efDailyQueries, efDailyStatsQueries, efDailyHistoryQueries, efPlayerDirectory, _gameCalendar, _dailyRules, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

@@ -171,3 +171,14 @@ export function finishSequence(root: HTMLElement, format: (value: number) => str
     if (score) score.textContent = format(target);
   };
 }
+
+/**
+ * Le jalon de série atteint : le nombre de jours monte d'un cran, la flamme rebondit une fois et un seul anneau s'élargit autour de la pastille
+ * (transform et opacity seulement). Rien en mouvement réduit.
+ */
+export function celebrateMilestone(parts: { readonly days: HTMLElement; readonly flame: HTMLElement; readonly ring: HTMLElement }): void {
+  if (motionReduced()) return;
+  gsap.fromTo(parts.days, { yPercent: 70, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.4, ease: SETTLE, clearProps: 'transform,opacity' });
+  gsap.fromTo(parts.flame, { scale: 1 }, { keyframes: { scale: [1, 1.5, 1] }, duration: 0.55, delay: 0.25, ease: 'power2.out', clearProps: 'transform' });
+  gsap.fromTo(parts.ring, { scale: 1, opacity: 0.7 }, { scale: 1.5, opacity: 0, duration: 0.8, delay: 0.3, ease: 'power1.out', clearProps: 'transform,opacity' });
+}
