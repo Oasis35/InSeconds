@@ -1085,7 +1085,10 @@
     "round": {
       "points": "pts",
       "breakdown": {
-        "listen": "Listened for {{ seconds }}",
+        "max": "Maximum possible at {{ seconds }}",
+        "outOf": "out of {{ points }} possible pts",
+        "bar": "{{ score }} points out of {{ base }} possible",
+        "why": "Why?",
         "missedTitle": "Title missed",
         "missedArtist": "Artist missed",
         "half": "÷ 2",
