@@ -25,6 +25,7 @@ public static class PlayersModule
         services.AddScoped<PlayerDataExporter>();
         // Compteurs des connexions et des effacements, exportés en OpenTelemetry (tableau Grafana « Activité »).
         services.AddSingleton<PlayersMetrics>();
+        services.AddHostedService<Infrastructure.Observability.EagerSingleton<PlayersMetrics>>();
         services.AddSingleton<IEmailComposer<MagicLinkEmail>, MagicLinkEmailComposer>();
         services.AddSingleton<IEmailComposer<ConfirmEmailChangeEmail>, ConfirmEmailChangeEmailComposer>();
         services.AddScheduledJob<PlayersPurgeJob>(PlayersPurgeJob.Id, PlayersPurgeJob.DefaultCron);

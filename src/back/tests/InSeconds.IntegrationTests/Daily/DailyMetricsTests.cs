@@ -45,7 +45,7 @@ public class DailyMetricsTests(PostgresFixture postgres) : IAsyncLifetime
         (await alice.AnswerAsync(session, 1, 5, $"Artiste {trackId}", "Zzzz")).EnsureSuccessStatusCode();
         var last = await alice.FinishAsync(session, fromPosition: 2, seconds: 0.5m);
 
-        Assert.Equal([DailyMetrics.Started, DailyMetrics.Completed], sessions.GetMeasurementSnapshot().Select(m => Tag(m, "event")));
+        Assert.Equal([DailyMetrics.Started, DailyMetrics.Completed], sessions.GetMeasurementSnapshot().Where(m => m.Value != 0).Select(m => Tag(m, "event")));
         Assert.Equal(["1"], hints.GetMeasurementSnapshot().Select(m => Tag(m, "hint_level")));
         var all = answers.GetMeasurementSnapshot();
         Assert.Equal(5, all.Count);
@@ -71,7 +71,7 @@ public class DailyMetricsTests(PostgresFixture postgres) : IAsyncLifetime
         await bob.StartAsync();
         (await bob.AbandonAsync(session)).EnsureSuccessStatusCode();
 
-        Assert.Equal([DailyMetrics.Started, DailyMetrics.Abandoned], sessions.GetMeasurementSnapshot().Select(m => Tag(m, "event")));
+        Assert.Equal([DailyMetrics.Started, DailyMetrics.Abandoned], sessions.GetMeasurementSnapshot().Where(m => m.Value != 0).Select(m => Tag(m, "event")));
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public class DailyMetricsTests(PostgresFixture postgres) : IAsyncLifetime
         // Une seconde passe n'a plus rien à expirer : rien n'est compté.
         await _game.Api.Services.GetRequiredService<IMessageBus>().InvokeAsync<int>(new ExpireStaleSessions(), TestContext.Current.CancellationToken);
 
-        var expired = Assert.Single(sessions.GetMeasurementSnapshot());
+        var expired = Assert.Single(sessions.GetMeasurementSnapshot(), m => m.Value != 0);
         Assert.Equal((2L, DailyMetrics.Expired), (expired.Value, Tag(expired, "event")));
     }
 }

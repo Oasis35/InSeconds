@@ -32,14 +32,16 @@
               <p data-testid="round-score" class="tabular-nums"
                  style="font-family:var(--font-score);font-size:1.9rem;font-weight:900;line-height:0.95;letter-spacing:-0.02em"
                  [style.color]="store.roundScore() > 0 ? 'var(--text-hi)' : 'var(--text-muted)'">
-                +<app-score-count [value]="store.roundScore()" />
+                +<app-score-count [value]="store.roundScore()" [from]="store.roundBreakdown()?.base ?? 0" [delay]="store.roundBreakdown() ? 1000 : 0" />
                 <span class="text-sm font-normal" style="font-family:var(--font-body);letter-spacing:0;color:var(--text-muted)"> {{ 'daily.round.points' | translate }}</span>
               </p>
+              <!-- D'où viennent les points : le barème du palier, puis la moitié ou l'indice qui les réduit ; le score descend ensuite jusqu'à son résultat. -->
+              <app-score-breakdown [breakdown]="store.roundBreakdown()" />
               <!-- Le total de la partie monte des points du morceau, une fois ceux-ci comptés. -->
               <p class="text-[13px]" style="color:var(--text-muted)">
                 {{ 'daily.round.total' | translate }}
                 <span data-testid="round-total" class="tabular-nums ml-1"
-                  style="font-family:var(--font-score);font-size:1.05rem;font-weight:900;color:var(--text-hi)"><app-score-count [value]="store.totalScore()" [from]="store.totalScore() - store.roundScore()" [delay]="650" /></span>
+                  style="font-family:var(--font-score);font-size:1.05rem;font-weight:900;color:var(--text-hi)"><app-score-count [value]="store.totalScore()" [from]="store.totalScore() - store.roundScore()" [delay]="store.roundBreakdown() ? 1650 : 650" /></span>
               </p>
             </div>
 

@@ -812,6 +812,11 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("DeviceClass")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("device_class");
+
                     b.Property<string>("GuestPseudo")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")

@@ -145,7 +145,8 @@ interface StepMark {
         place) : une barre peut être à moitié jouée, et seul transform change pendant la lecture, quel que soit le nombre de barres. -->
       <div #wave data-testid="waveform" class="relative w-full overflow-hidden" style="height:46px"
         role="progressbar" [attr.aria-valuenow]="heardTenths()" aria-valuemin="0" [attr.aria-valuemax]="maxStep()"
-        [attr.aria-label]="'gameplay.round.waveform' | translate">
+        [attr.aria-label]="'gameplay.round.waveform' | translate"
+        [attr.aria-valuetext]="'gameplay.round.waveformValue' | translate: { heard: (heardTenths() | appSeconds: 1), max: (maxStep() | appSeconds) }">
         <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-locked)', shadow: 'none', heights: flatHeights }" />
         <div data-testid="waveform-unlocked" class="absolute inset-0 overflow-hidden" [class.wave-sweep]="!reduced"
           [style.transform]="layerShift(unlockedRatio(), waveWidth())">
@@ -185,6 +186,8 @@ interface StepMark {
       <app-membrane [level]="bass()">
         <!-- Toujours ↺ : le bouton relance le palier depuis 0, même en lecture (jamais le symbole pause, qui promettrait une reprise). -->
         <button type="button" (click)="replay.emit()" [disabled]="locked()" [title]="'gameplay.round.replay' | translate: { seconds: (chosenSeconds() | appSeconds) }"
+          [attr.aria-label]="(submitting() ? 'gameplay.round.replayBusy' : 'gameplay.round.replayLabel') | translate: { seconds: (chosenSeconds() | appSeconds) }"
+          [attr.aria-busy]="submitting()"
           class="relative rounded-full transition active:scale-95 touch-manipulation flex items-center justify-center overflow-hidden disabled:opacity-40 disabled:grayscale disabled:active:scale-100"
           [style.width.px]="size" [style.height.px]="size" style="background:var(--fill-primary);border:1.5px solid var(--core-orange);color:var(--text-on-orange)">
           @if (submitting()) {

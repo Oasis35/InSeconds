@@ -160,6 +160,22 @@ for path in / /i18n/fr.json /ngsw.json; do
     fail=1
   fi
 done
+# Connexion à l'API préparée : l'en-tête Link de la page (location `/` seulement, préparé dans preconnect.conf, hors de la
+# CSP pour ne pas changer l'empreinte du service worker), et la ligne preconnect du CDN des extraits dans l'index.
+link=$(header "/" link)
+if [[ "$link" != '<https://api.inseconds.cc>; rel=preconnect; crossorigin=use-credentials' ]]; then
+  echo "FAIL /: Link attendu <https://api.inseconds.cc>; rel=preconnect; crossorigin=use-credentials (reçu '$link')"
+  fail=1
+fi
+if [[ -n "$(header "/i18n/fr.json" link)" ]]; then
+  echo "FAIL /i18n/fr.json: aucun en-tête Link attendu hors de la page"
+  fail=1
+fi
+if ! curl -sS "$BASE/" | grep -qE '<link rel="preconnect" href="https://cdnt-preview\.dzcdn\.net">'; then
+  echo "FAIL /: preconnect vers cdnt-preview.dzcdn.net absent de index.html"
+  fail=1
+fi
+
 # Aucun script en ligne dans l'index (sinon la CSP, bloquante, casserait l'app) : balises <script> avec src, pas
 # de gestionnaire onload= (la mise en ligne du CSS critique d'Angular en pose un).
 index=$(curl -sS "$BASE/")

@@ -97,7 +97,7 @@ public class PlayersPurgeTests(PostgresFixture postgres) : IAsyncLifetime
         var report = await RunAsync();
 
         Assert.Equal(2, report["accounts"]);
-        Assert.Equal(["inactive", "inactive"], erased.GetMeasurementSnapshot().Select(m => (string?)m.Tags["reason"]));
+        Assert.Equal(["inactive", "inactive"], erased.GetMeasurementSnapshot().Where(m => m.Value != 0).Select(m => (string?)m.Tags["reason"]));
         Assert.Equal(
             new[] { admin, recent, guest }.Order().ToArray(),
             (await _api.ScalarAsync<Guid[]>("SELECT array_agg(id) FROM players.players"))!.Order().ToArray());

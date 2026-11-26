@@ -42,6 +42,7 @@ public sealed class ForwardedHeadersAndRateLimitingTests : IAsyncLifetime
         _app.UseRateLimiter();
         _app.MapGet("/ip", (HttpContext context) => context.Connection.RemoteIpAddress!.ToString());
         _app.MapGet("/limited", () => "ok").RequireRateLimiting(RateLimitPolicies.MagicLinkRequest);
+        _app.MapPost("/answers", () => "ok").RequireRateLimiting(RateLimitPolicies.DailyAnswer);
 
         await _app.StartAsync(TestContext.Current.CancellationToken);
         _client = _app.GetTestClient();
@@ -83,6 +84,25 @@ public sealed class ForwardedHeadersAndRateLimitingTests : IAsyncLifetime
 
         // Même edge Cloudflare, autre joueur : pas concerné.
         Assert.Equal(HttpStatusCode.OK, (await GetLimitedAsync("203.0.113.11")).StatusCode);
+    }
+
+    [Fact]
+    public async Task ReponsesDuDaily_UneVraiePartieNEstJamaisGenee_MaisLaRafaleEstLimitee()
+    {
+        // Cinq réponses par partie : la limite (60 par 5 minutes) est très au-dessus d'un vrai joueur, même avec des nouveaux essais.
+        for (var i = 0; i < 60; i++)
+            Assert.Equal(HttpStatusCode.OK, (await PostAnswerAsync("203.0.113.20")).StatusCode);
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, (await PostAnswerAsync("203.0.113.20")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await PostAnswerAsync("203.0.113.21")).StatusCode);
+    }
+
+    private Task<HttpResponseMessage> PostAnswerAsync(string playerIp)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "/answers");
+        request.Headers.Add(TcpSourceHeader, Caddy);
+        request.Headers.Add("X-Forwarded-For", $"{playerIp}, {CloudflareEdge}");
+        return _client.SendAsync(request, TestContext.Current.CancellationToken);
     }
 
     private async Task<string> GetIpAsync(string tcpSource, string forwardedFor)

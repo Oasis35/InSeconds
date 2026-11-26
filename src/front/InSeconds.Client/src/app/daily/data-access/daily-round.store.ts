@@ -5,6 +5,7 @@ import { RoundConfig, RoundSubmission } from '../../gameplay/domain/track-round'
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { AnsweredTrack, DailySettings, ResumedTrack, StartedSession, TrackSlot } from '../domain/daily';
 import { toRoundResult } from '../domain/round-result';
+import { scoreBreakdown } from '../domain/score-breakdown';
 import { dailyStake } from '../domain/stake';
 import { DailyApi } from './daily.api';
 import { HomeStore } from './home.store';
@@ -61,6 +62,12 @@ export const DailyRoundStore = signalStore(
         return answered ? toRoundResult(answered) : null;
       }),
       roundScore: computed(() => store.results().find(r => r.position === store.position())?.score ?? 0),
+      /** D'où viennent les points du morceau en cours (palier, moitié, indice) ; `null` quand rien n'est trouvé ou que les réglages manquent. */
+      roundBreakdown: computed(() => {
+        const settings = store.settings();
+        const answered = store.results().find(r => r.position === store.position());
+        return settings && answered ? scoreBreakdown(settings, answered) : null;
+      }),
       roundDeezerTrackId: computed(() => store.results().find(r => r.position === store.position())?.deezerTrackId ?? null),
     };
   }),

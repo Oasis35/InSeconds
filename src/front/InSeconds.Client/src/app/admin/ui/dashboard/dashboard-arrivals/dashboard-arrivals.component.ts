@@ -11,7 +11,7 @@ const SHARE_STYLES = [
 const REST_STYLE = 'background:var(--text-sep)';
 
 /**
- * « D'où viennent les nouveaux · 30 jours », sous l'activité de l'accueil : les joueurs créés ces 30 jours, une barre empilée des trois
+ * « D'où viennent les nouveaux · N jours », en tête de l'onglet Stats : les joueurs créés ces 30 jours, une barre empilée des trois
  * sources les plus fréquentes et du reste, et la légende en pourcentages. Rien sans arrivée.
  */
 @Component({
@@ -22,7 +22,7 @@ const REST_STYLE = 'background:var(--text-sep)';
     @if (shares().length > 0) {
       <div class="rounded-xl p-4 flex flex-col gap-2" style="background:var(--bg-surface)" data-testid="dashboard-arrivals">
         <div class="flex items-baseline justify-between gap-2 text-xs" style="color:var(--text-muted)">
-          <span class="font-semibold">{{ 'admin.dashboard.arrivalsTitle' | translate }}</span>
+          <span class="font-semibold">{{ 'admin.dashboard.arrivalsTitle' | translate: { days: days() } }}</span>
           <span><span class="font-semibold tabular-nums" style="color:var(--text-hi)">{{ total() }}</span> {{ 'admin.dashboard.arrivalsCount' | translate }}</span>
         </div>
         <div class="flex h-3 gap-0.5 rounded-full overflow-hidden" aria-hidden="true">
@@ -45,6 +45,8 @@ const REST_STYLE = 'background:var(--text-sep)';
 })
 export class DashboardArrivalsComponent {
   readonly arrivals = input.required<readonly ArrivalCount[]>();
+  /** La période comptée, dans le titre. */
+  readonly days = input(30);
 
   protected readonly shares = computed(() => arrivalShares(this.arrivals()));
   protected readonly total = computed(() => this.arrivals().reduce((sum, a) => sum + a.count, 0));

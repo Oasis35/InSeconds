@@ -1,0 +1,9 @@
+# Préparation de la connexion vers l'API (DNS, TCP, TLS) pendant que la page se charge : l'en-tête Link de la page
+# (location `/` seulement) demande au navigateur d'ouvrir la connexion avant même que le code de l'appli s'exécute.
+# Modèle : Dockerfile.prod remplace __CSP_API_ORIGIN__ (origine de l'API de l'environnement, la même que celle de la CSP)
+# et installe le résultat dans snippets/preconnect.conf. Vérifié par scripts/check-nginx-headers.sh.
+# `crossorigin=use-credentials` : les appels de l'appli à l'API portent le cookie, et le navigateur ne réutilise pas une
+# connexion préparée sans cookie pour une requête avec cookie.
+# Cet en-tête n'est volontairement pas dans csp.conf : l'empreinte de la CSP (piège 49) change le service worker de chaque joueur.
+# L'index.html lu depuis le service worker n'a pas cet en-tête : il vise la première visite, avant l'installation.
+add_header Link '<__CSP_API_ORIGIN__>; rel=preconnect; crossorigin=use-credentials' always;

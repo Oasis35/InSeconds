@@ -1,10 +1,11 @@
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withHooks, withMethods, withState } from '@ngrx/signals';
 import { SessionStore } from '../../core/session/session.store';
-import { AnsweredTrack, DailyToday, DayStats } from '../domain/daily';
+import { AnsweredTrack, DailySettings, DailyToday, DayStats } from '../domain/daily';
 import { DailyScreen, PeekContext, isRecapScreen, refocusContext, screenAfterToday } from '../domain/daily-screen';
 import { formatCountdown, secondsUntilMidnightUtc, todayUtc } from '../../core/game-day/game-day';
 import { EMPTY_STREAK, Streak, pluralKey } from '../domain/streak';
+import { maxDayScore, scoreVerdict } from '../domain/verdict';
 import { GuestTileDismissal, guestTile, recapToasts } from '../domain/toasts';
 import { DailyApi } from './daily.api';
 
@@ -28,6 +29,8 @@ interface HomeState {
   /** Invité : la série affichée quand il a fermé le bandeau « crée un compte » (la page la relit du navigateur, `GuestStreakNotice`). */
   guestTileDismissal: GuestTileDismissal | null;
   stats: DayStats | null;
+  /** Les réglages du jeu, lus avec le résultat pour le maximum du défi (« / 5 000 ») ; `null` tant qu'ils manquent ou en cas d'échec (rien n'est alors affiché). */
+  settings: DailySettings | null;
   secondsLeft: number;
 }
 
@@ -43,6 +46,7 @@ const initialState: HomeState = {
   lostStreak: null,
   guestTileDismissal: null,
   stats: null,
+  settings: null,
   secondsLeft: 0,
 };
 
@@ -70,8 +74,13 @@ export const HomeStore = signalStore(
       if (!today) return null;
       return today.completedGames + (store.screen() === 'done' && today.state !== 'already_played' ? 1 : 0);
     });
+    const maxScore = computed(() => maxDayScore(store.today()?.tracksCount, store.settings()?.durationScores));
     return {
       totalScore,
+      /** Le maximum du défi du jour (morceaux × meilleur palier), pour « / 5 000 » ; `null` tant que les réglages ou l'état du jour manquent. */
+      maxScore,
+      /** Le mot du résultat, sur le score final (jamais celui qui monte) ; `null` sans maximum connu. */
+      dayVerdict: computed(() => scoreVerdict(store.stats()?.yourScore ?? totalScore(), maxScore())),
       linked: session.isLinked,
       canShare: computed(() => store.finishedTrackCount() > 0 && store.results().length >= store.finishedTrackCount()),
       peekTracksCount: computed(() => store.today()?.tracksCount ?? 0),
@@ -125,7 +134,18 @@ export const HomeStore = signalStore(
       countdownTimer = setInterval(tick, 1000);
     };
 
+    /** Les réglages servent au maximum du défi : un échec les laisse vides, le résultat s'affiche sans verdict. */
+    const loadSettings = async () => {
+      if (store.settings()) return;
+      try {
+        patchState(store, { settings: await api.settings() });
+      } catch {
+        // pas de verdict sans réglages
+      }
+    };
+
     const loadStats = async () => {
+      void loadSettings();
       const id = ++statsRequest;
       try {
         const stats = await api.stats();

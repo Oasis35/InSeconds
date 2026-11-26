@@ -237,6 +237,46 @@
         }
       }
     },
+    "/api/admin/daily/stats": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getStats",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/daily/archive": {
       "get": {
         "tags": [
@@ -667,6 +707,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -791,6 +841,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -865,6 +925,16 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2324,6 +2394,179 @@
           }
         }
       },
+      "StatsAnswersResponse": {
+        "required": [
+          "total",
+          "artistFound",
+          "titleFound",
+          "withHint",
+          "byListened"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "artistFound": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "titleFound": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "withHint": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "byListened": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatsListenedResponse"
+            }
+          }
+        }
+      },
+      "StatsCohortResponse": {
+        "required": [
+          "key",
+          "new",
+          "day1Eligible",
+          "day1Returned",
+          "day7Eligible",
+          "day7Returned"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "new": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "day1Eligible": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "day1Returned": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "day7Eligible": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "day7Returned": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "StatsDayResponse": {
+        "required": [
+          "date",
+          "completed",
+          "abandoned",
+          "expired",
+          "players",
+          "firstTimePlayers"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "abandoned": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expired": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "players": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firstTimePlayers": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "StatsListenedResponse": {
+        "required": [
+          "seconds",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "seconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "StatsResponse": {
+        "required": [
+          "days",
+          "daily",
+          "medianScore",
+          "overall",
+          "sources",
+          "devices",
+          "answers"
+        ],
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "daily": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatsDayResponse"
+            }
+          },
+          "medianScore": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "overall": {
+            "$ref": "#/components/schemas/StatsCohortResponse"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatsCohortResponse"
+            }
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatsCohortResponse"
+            }
+          },
+          "answers": {
+            "$ref": "#/components/schemas/StatsAnswersResponse"
+          }
+        }
+      },
       "StreakResponse": {
         "required": [
           "status",
@@ -3244,6 +3487,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.UpdateTrackCooldownPoolPercentEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetStatsEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.GetArchiveIndexEndpoint"

@@ -46,9 +46,9 @@ export class BlindRoundPage {
     this.timer                = page.getByTestId('round-timer');
   }
 
-  /** Bouton « ↺ X s » (rejoue le palier courant en entier) - visible une fois le palier terminé. */
+  /** Bouton « ↺ X s » (nom accessible « Réécouter l'extrait depuis le début, palier de X s » ; rejoue le palier courant en entier) - visible une fois le palier terminé. */
   replayButton(seconds: number | string): Locator {
-    return this.page.getByRole('button', { name: new RegExp(`^↺ ${frSeconds(seconds)}$`) });
+    return this.page.getByRole('button', { name: new RegExp(`^Réécouter l'extrait depuis le début, palier de ${frSeconds(seconds)}$`) });
   }
 
   /**

@@ -25,7 +25,19 @@ public sealed class PlayersMetrics
         _guestsCreated = meter.CreateCounter<long>(GuestsCreatedName, description: "Invités créés, par source d'arrivée (nettoyée : utm_source ou domaine du référent, direct, other).");
         _signIns = meter.CreateCounter<long>(SignInsName, description: "Connexions par lien magique : Found (compte existant) ou Linked (compte créé).");
         _accountsErased = meter.CreateCounter<long>(AccountsErasedName, description: "Comptes effacés : request (demande du joueur) ou inactive (purge).");
+
+        // Un compteur n'a de série qu'après son premier ajout, et Prometheus ne compte pas le premier échantillon d'une série neuve :
+        // sans ces zéros, le premier invité ou la première connexion de chaque démarrage disparaissait de increase() (3 invités
+        // affichés sur 13 jours pour une trentaine). Les sources courantes, les deux issues de connexion et les deux causes d'effacement.
+        foreach (var source in SeededSources)
+            _guestsCreated.Add(0, new KeyValuePair<string, object?>("source", source));
+        foreach (var outcome in new[] { "Found", "Linked" })
+            _signIns.Add(0, new KeyValuePair<string, object?>("outcome", outcome));
+        foreach (var reason in new[] { "request", "inactive" })
+            _accountsErased.Add(0, new KeyValuePair<string, object?>("reason", reason));
     }
+
+    private static readonly string[] SeededSources = [Domain.AcquisitionSource.Direct, Domain.AcquisitionSource.Other, "instagram", "share", "google.com"];
 
     /// <param name="source">Déjà nettoyée par <see cref="Domain.AcquisitionSource"/> : un nombre limité de valeurs.</param>
     public void GuestCreated(string source) => _guestsCreated.Add(1, new KeyValuePair<string, object?>("source", source));

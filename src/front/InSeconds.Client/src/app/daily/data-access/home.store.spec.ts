@@ -34,6 +34,25 @@ describe('HomeStore', () => {
       expect(store.peekCompletedCount()).toBe(2);
     });
 
+    it("« déjà joué » lit aussi les réglages : le maximum du défi et le verdict du jour", async () => {
+      api.today = TODAY({ state: 'already_played' });
+      await store.init();
+      await flush();
+      expect(api.calls).toContain('settings');
+      expect(store.maxScore()).not.toBeNull();
+      expect(store.dayVerdict()).not.toBeNull();
+    });
+
+    it("sans réglages, le résultat s'affiche sans maximum ni verdict", async () => {
+      api.today = TODAY({ state: 'already_played' });
+      api.settings = new Error('indisponible');
+      await store.init();
+      await flush();
+      expect(store.screen()).toBe('already_played');
+      expect(store.maxScore()).toBeNull();
+      expect(store.dayVerdict()).toBeNull();
+    });
+
     it("« déjà joué » charge les statistiques du jour, pas une partie abandonnée", async () => {
       api.today = TODAY({ state: 'already_played' });
       await store.init();
@@ -80,7 +99,7 @@ describe('HomeStore', () => {
 
       await store.abandonFromResume();
 
-      expect(api.calls.slice(-3)).toEqual(['start', 'abandon 11', 'stats']);
+      expect(api.calls.filter(c => c !== 'settings').slice(-3)).toEqual(['start', 'abandon 11', 'stats']);
       expect(store.screen()).toBe('already_played');
       expect(store.abandoned()).toBe(true);
     });

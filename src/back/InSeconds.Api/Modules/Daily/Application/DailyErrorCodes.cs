@@ -56,6 +56,9 @@ public static class DailyAdminErrorCodes
     /// <summary>Un mois qui n'est pas au format aaaa-mm.</summary>
     public const string InvalidMonth = "admin.invalid_month";
 
+    /// <summary>Une période de statistiques qui n'est ni de 7, ni de 30, ni de 90 jours.</summary>
+    public const string InvalidPeriod = "admin.invalid_period";
+
     /// <summary>La photo figée n'a de sens que pour un jour terminé pour de bon (J-2 et avant) : la veille peut encore recevoir une fin de partie (piège 18).</summary>
     public const string DayNotOver = "admin.day_not_over";
 

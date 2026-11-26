@@ -47,8 +47,6 @@ export interface Dashboard {
   availableDays: readonly string[];
   /** `null` si le jour demandé n'a pas de défi. */
   kpis: DayKpis | null;
-  /** Les joueurs arrivés les 30 derniers jours, par source, la plus fréquente d'abord. */
-  arrivals: readonly ArrivalCount[];
 }
 
 const KNOWN_SOURCES: ReadonlySet<string> = new Set(['instagram', 'tiktok', 'share', 'direct', 'other']);

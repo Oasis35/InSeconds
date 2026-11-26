@@ -17,9 +17,11 @@ public sealed record DeviceExport(string? Label, DateTimeOffset CreatedAt, DateT
 /// <summary>Ce que Players garde d'un joueur.</summary>
 /// <param name="GuestPseudo">Le pseudo qu'un invité s'est donné (vide pour un compte, qui a le sien, ou sans pseudo).</param>
 /// <param name="AcquisitionSource">D'où vient le joueur (<c>instagram</c>, <c>google.com</c>, <c>direct</c>…), notée à la création de l'invité.</param>
+/// <param name="DeviceClass">La classe de l'appareil de la première visite (<c>phone</c>, <c>tablet</c>, <c>desktop</c>), notée à la création de l'invité.</param>
 /// <param name="Account">Rien pour un invité.</param>
 public sealed record PlayerRecordExport(
-    DateTimeOffset CreatedAt, DateTimeOffset? LastSeenAt, string? AcquisitionSource, string? GuestPseudo, AccountExport? Account, IReadOnlyList<DeviceExport> Devices);
+    DateTimeOffset CreatedAt, DateTimeOffset? LastSeenAt, string? AcquisitionSource, string? DeviceClass, string? GuestPseudo, AccountExport? Account,
+    IReadOnlyList<DeviceExport> Devices);
 
 /// <summary>
 /// La copie de toutes les données d'un joueur (droit d'accès et portabilité, RGPD art. 15 et 20) : le téléchargement du profil et la
@@ -32,6 +34,7 @@ public sealed record PlayerDataExport(
     DateTimeOffset CreatedAt,
     DateTimeOffset? LastSeenAt,
     string? AcquisitionSource,
+    string? DeviceClass,
     string? GuestPseudo,
     AccountExport? Account,
     IReadOnlyList<DeviceExport> Devices,
@@ -56,7 +59,7 @@ public sealed class PlayerDataExporter(IPlayerQueries queries, IEnumerable<IPlay
         var modules = new Dictionary<string, object>(StringComparer.Ordinal);
         foreach (var contributor in contributors)
             modules.Add(contributor.Module, await contributor.ExportAsync(playerId, ct));
-        return new PlayerDataExport(time.GetUtcNow(), playerId, player.CreatedAt, player.LastSeenAt, player.AcquisitionSource, player.GuestPseudo, player.Account, player.Devices, modules);
+        return new PlayerDataExport(time.GetUtcNow(), playerId, player.CreatedAt, player.LastSeenAt, player.AcquisitionSource, player.DeviceClass, player.GuestPseudo, player.Account, player.Devices, modules);
     }
 }
 

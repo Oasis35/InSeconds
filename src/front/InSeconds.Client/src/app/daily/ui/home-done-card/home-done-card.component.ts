@@ -8,6 +8,7 @@ import { TrackResultRow, TrackResultsListComponent } from '../../../gameplay/ui/
 import { trackBar } from '../result-rows/result-rows';
 import { DayHighlightComponent } from '../day-highlight/day-highlight.component';
 import { DayHistory, DayStats } from '../../domain/daily';
+import { ScoreVerdict } from '../../domain/verdict';
 import { Streak } from '../../domain/streak';
 import { StreakEventLineComponent } from '../streak-event-line/streak-event-line.component';
 import { StreakPillComponent } from '../streak-pill/streak-pill.component';
@@ -31,6 +32,16 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
           <h2 class="text-[13px] font-normal" style="font-family:var(--font-body);color:var(--text-muted)">{{ 'daily.result.yourScore' | translate }}</h2>
           <p class="tabular-nums whitespace-nowrap" data-testid="home-score"
             style="font-family:var(--font-score);font-size:clamp(2.4rem, 12vw, 3rem);font-weight:900;line-height:0.95;letter-spacing:-0.02em;color:var(--text-hi)">{{ score() !== null ? (score() ?? 0 | appPoints) : '-' }}</p>
+          @if (maxScore() || verdict()) {
+            <p class="flex flex-wrap items-baseline gap-x-2 mt-1.5 text-[13px]" style="color:var(--text-muted)">
+              @if (verdict(); as word) {
+                <span class="text-[15px] font-semibold" style="color:var(--text-hi)" data-testid="home-verdict">{{ 'daily.result.verdict.' + word | translate }}</span>
+              }
+              @if (maxScore(); as max) {
+                <span class="tabular-nums" data-testid="home-score-max">{{ 'daily.result.outOf' | translate: { max: (max | appPoints) } }}</span>
+              }
+            </p>
+          }
         </div>
         <div class="text-right shrink-0">
           <p class="text-[13px]" style="color:var(--text-muted)">{{ 'daily.result.nextChallenge' | translate }}</p>
@@ -90,6 +101,9 @@ export class HomeDoneCardComponent {
   }
 
   readonly score = input.required<number | null>();
+  /** Le maximum du défi (« / 5 000 ») et le mot du résultat ; vides tant que le défi n'est pas connu. */
+  readonly maxScore = input<number | null>(null);
+  readonly verdict = input<ScoreVerdict | null>(null);
   readonly rows = input.required<readonly TrackResultRow[]>();
   readonly countdown = input.required<string>();
   /** Le relevé de série et de gels, sous le partage (rien sans série en cours). */

@@ -4,8 +4,10 @@ using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Daily.Domain;
 using InSeconds.Api.Modules.Gameplay.Contracts;
 using InSeconds.Api.Modules.Players.Contracts;
+using InSeconds.Infrastructure.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Wolverine.Http;
 
 namespace InSeconds.Api.Modules.Daily.Application;
@@ -85,6 +87,8 @@ public static class SubmitAnswerEndpoint
     /// </summary>
     [Authorize]
     [WolverinePost("/api/daily/sessions/{id}/answers", OperationId = "submitAnswer")]
+    [EnableRateLimiting(RateLimitPolicies.DailyAnswer)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -116,7 +120,7 @@ public static class SubmitAnswerEndpoint
         DailyLog.AnswerSubmitted(
             logger, session.PlayerId, session.Id, info.Id, outcome.ListenedSeconds, outcome.ArtistCorrect, outcome.TitleCorrect,
             outcome.HintLevelUsed, score, request.Position, info.Artist, info.DisplayTitle);
-        metrics.AnswerSubmitted(outcome);
+        metrics.AnswerSubmitted(outcome, score);
 
         if (completed)
         {

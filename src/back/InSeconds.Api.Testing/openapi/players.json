@@ -920,6 +920,7 @@
           "createdAt",
           "lastSeenAt",
           "acquisitionSource",
+          "deviceClass",
           "guestPseudo",
           "account",
           "devices",
@@ -947,6 +948,12 @@
             "format": "date-time"
           },
           "acquisitionSource": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "deviceClass": {
             "type": [
               "null",
               "string"

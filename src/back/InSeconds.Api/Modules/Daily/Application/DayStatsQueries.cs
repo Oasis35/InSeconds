@@ -19,6 +19,12 @@ public sealed record ChallengeListRow(int Id, DateOnly Date, IReadOnlyList<Chall
 /// <summary>Une partie d'un joueur, pour son historique dans l'admin.</summary>
 public sealed record PlayerHistoryRow(DateOnly Date, SessionStatus Status, int TotalScore, int FreezesUsed, bool FreezeEarned);
 
+/// <summary>Les parties d'un jour de défi pour l'onglet Stats : par statut, et les joueurs du jour (toute partie, tout statut) dont la toute première.</summary>
+public sealed record DaySessionCounts(DateOnly Date, int Completed, int Abandoned, int Expired, int Players, int FirstTimePlayers);
+
+/// <summary>Les réponses d'une période : totaux, et le nombre de réponses par palier écouté.</summary>
+public sealed record AnswerTotals(int Total, int ArtistFound, int TitleFound, int WithHint, IReadOnlyDictionary<decimal, int> ByListened);
+
 /// <summary>
 /// Lectures des statistiques, en agrégats. **Les joueurs effacés n'y figurent pas** : l'effacement (<c>AccountErasure</c>) supprime leurs
 /// parties.
@@ -80,6 +86,21 @@ public interface IDailyStatsQueries
 
     /// <summary>Parties **terminées** par jour de défi, depuis <paramref name="since"/> (les jours sans partie sont absents).</summary>
     Task<IReadOnlyDictionary<DateOnly, int>> GetCompletedCountsByDayAsync(DateOnly since, CancellationToken ct);
+
+    /// <summary>Les parties de chaque jour de défi depuis <paramref name="since"/> (les jours sans partie sont absents), pour l'onglet Stats.</summary>
+    Task<IReadOnlyList<DaySessionCounts>> GetSessionCountsByDayAsync(DateOnly since, CancellationToken ct);
+
+    /// <summary>Les scores des parties **terminées** des défis depuis <paramref name="since"/>.</summary>
+    Task<IReadOnlyList<int>> GetCompletedScoresSinceAsync(DateOnly since, CancellationToken ct);
+
+    /// <summary>Les réponses des parties des défis depuis <paramref name="since"/>, tous statuts : trouvé, indice et palier écouté.</summary>
+    Task<AnswerTotals> GetAnswerTotalsSinceAsync(DateOnly since, CancellationToken ct);
+
+    /// <summary>
+    /// Les jours de défi joués (une partie, tout statut) par ces joueurs, du jour <paramref name="first"/> au jour <paramref name="last"/> compris ;
+    /// un joueur sans partie sur la période n'y figure pas.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, IReadOnlyList<DateOnly>>> GetPlayedDatesAsync(IReadOnlyCollection<Guid> playerIds, DateOnly first, DateOnly last, CancellationToken ct);
 
     /// <summary>Le meilleur score de ce joueur sur ses parties terminées, tous jours confondus ; vide sans partie terminée.</summary>
     Task<int?> GetBestScoreAsync(Guid playerId, CancellationToken ct);

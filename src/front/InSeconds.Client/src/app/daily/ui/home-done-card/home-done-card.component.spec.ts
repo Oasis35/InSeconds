@@ -31,6 +31,18 @@ describe('HomeDoneCardComponent', () => {
     expect(element.querySelectorAll('[data-testid="track-bar"]')).toHaveLength(3);
   });
 
+  it('le score est sur son maximum, avec le mot du résultat', () => {
+    const { q } = render({ maxScore: 5000, verdict: 'veryGood' });
+    expect(q('home-score-max')?.textContent).toContain('daily.result.outOf');
+    expect(q('home-verdict')?.textContent?.trim()).toBe('daily.result.verdict.veryGood');
+  });
+
+  it('sans maximum connu : ni « / max » ni mot', () => {
+    const { q } = render();
+    expect(q('home-score-max')).toBeNull();
+    expect(q('home-verdict')).toBeNull();
+  });
+
   it('carte repliée : « Ton score », la série et « Détail » sous les barres, ni égaliseur ni liste des morceaux', () => {
     const { element, q } = render({ streak: { ...EMPTY_STREAK, streak: 12, freezes: 2, maxFreezes: 2 }, linked: true });
     expect(element.querySelector('h2')?.textContent?.trim()).toBe('daily.result.yourScore');

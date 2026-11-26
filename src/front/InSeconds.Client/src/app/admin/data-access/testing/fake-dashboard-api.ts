@@ -15,7 +15,6 @@ export function dashboard(overrides: Partial<Dashboard> = {}): Dashboard {
       totalSessions: 6, completionRate: 66.7, medianScore: 4200, newPlayersCount: 2, accountsCreatedCount: 1,
       firstTimeFinishersCount: 1, arrivals: [{ source: 'instagram', count: 2 }, { source: 'direct', count: 1 }],
     },
-    arrivals: [{ source: 'instagram', count: 6 }, { source: 'share', count: 3 }, { source: 'direct', count: 2 }, { source: 'google.com', count: 1 }],
     ...overrides,
   };
 }

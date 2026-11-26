@@ -16,6 +16,8 @@ import { DailyRoundStore, RoundExit } from '../../data-access/daily-round.store'
 import { BrandComponent } from '../../../ui/brand/brand.component';
 import { DailyProgressComponent } from '../../ui/daily-progress/daily-progress.component';
 import { DeezerBadgeComponent } from '../../../gameplay/ui/deezer-badge/deezer-badge.component';
+import { secondsUntilMidnightUtc, timeLeft } from '../../../core/game-day/game-day';
+import { ScoreBreakdownComponent } from '../../ui/score-breakdown/score-breakdown.component';
 import { ScoreCountComponent } from '../../ui/score-count/score-count.component';
 
 /**
@@ -28,7 +30,7 @@ import { ScoreCountComponent } from '../../ui/score-count/score-count.component'
   selector: 'app-daily-page',
   imports: [
     TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, BrandComponent, DailyProgressComponent,
-    DeezerBadgeComponent, ScoreCountComponent, ButtonComponent,
+    DeezerBadgeComponent, ScoreCountComponent, ScoreBreakdownComponent, ButtonComponent,
   ],
   providers: [DailyRoundStore, TrackRoundStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -76,9 +78,11 @@ export class DailyPage implements OnInit {
   /** Garde de sortie : en cours de partie, une fenêtre demande confirmation (aussi vers l'accueil, qui montrera la reprise). */
   canLeave(): boolean | Promise<boolean> {
     if (!this.store.isPlaying()) return true;
+    // Le temps qui reste avant le prochain défi, dit en heures ou en minutes (jamais « minuit UTC »).
+    const left = timeLeft(secondsUntilMidnightUtc(new Date()));
     const data: ConfirmDialogData = {
       title: this.translate.instant('daily.leaveSheet.title'),
-      body: this.translate.instant('daily.leaveSheet.body'),
+      body: this.translate.instant(left.unit === 'hours' ? 'daily.leaveSheet.bodyHours' : 'daily.leaveSheet.bodyMinutes', { n: left.value }),
       // Les rôles sont inversés à dessein : « Continuer à jouer » est l'action sûre, mise en avant.
       confirmLabel: this.translate.instant('daily.leaveSheet.confirm'),
       cancelLabel: this.translate.instant('daily.leaveSheet.cancel'),
