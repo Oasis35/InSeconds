@@ -214,7 +214,8 @@
       "coverAlt": "Cover",
       "artist": "Artist",
       "title": "Title",
-      "correctAnswer": "Correct answer"
+      "found": "found",
+      "missed": "missed"
     }
   },
   "account": {
@@ -1085,7 +1086,9 @@
     "round": {
       "points": "pts",
       "breakdown": {
-        "listen": "Listened for {{ seconds }}",
+        "max": "Maximum possible at {{ seconds }}",
+        "outOf": "out of {{ points }} possible pts",
+        "bar": "{{ score }} points out of {{ base }} possible",
         "missedTitle": "Title missed",
         "missedArtist": "Artist missed",
         "half": "÷ 2",

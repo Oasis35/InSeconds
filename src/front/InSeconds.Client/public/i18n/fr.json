@@ -214,7 +214,8 @@
       "coverAlt": "Pochette",
       "artist": "Artiste",
       "title": "Titre",
-      "correctAnswer": "Bonne réponse"
+      "found": "trouvé",
+      "missed": "raté"
     }
   },
   "account": {
@@ -1085,9 +1086,11 @@
     "round": {
       "points": "pts",
       "breakdown": {
-        "listen": "Écoute à {{ seconds }}",
-        "missedTitle": "Titre manqué",
-        "missedArtist": "Artiste manqué",
+        "max": "Maximum possible à {{ seconds }}",
+        "outOf": "sur {{ points }} pts possibles",
+        "bar": "{{ score }} points sur {{ base }} possibles",
+        "missedTitle": "Titre raté",
+        "missedArtist": "Artiste raté",
         "half": "÷ 2",
         "hint": "Indice",
         "hintPenalty": "− {{ percent }} %"

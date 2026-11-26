@@ -1,6 +1,6 @@
 <div class="mt-4 space-y-1.5">
   <div class="flex justify-between text-xs font-semibold" style="color:var(--text-faint)">
-    <span>{{ 'daily.header.track' | translate: { current: currentIndex() + 1, total: trackCount() } }}</span>
+    <span>{{ 'daily.header.track' | translate: { current: currentIndex() + 1, total: trackCount() } }}<ng-content select="[progressTotal]" /></span>
     <button (click)="abandon.emit()"
             class="text-xs underline transition-colors hover:text-red-400"
             style="color:var(--text-muted)">
