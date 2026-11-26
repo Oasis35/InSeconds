@@ -32,7 +32,7 @@ import { ScoreBreakdown } from '../../domain/score-breakdown';
           }
         </p>
         @if (reduced()) {
-          <button type="button" class="text-[13px] underline py-1 -my-1" style="color:var(--text-light)" data-testid="breakdown-why"
+          <button type="button" class="text-[13px] underline py-3 -my-2" style="color:var(--text-light)" data-testid="breakdown-why"
             [attr.aria-expanded]="open()" (click)="open.set(!open())">{{ 'daily.round.breakdown.why' | translate }}</button>
           @if (open()) {
             <div class="flex flex-wrap justify-center gap-1.5" data-testid="breakdown-causes">
@@ -43,7 +43,7 @@ import { ScoreBreakdown } from '../../domain/score-breakdown';
                 </span>
               }
               @if (b.hintPenaltyPercent > 0) {
-                <span class="rounded-full border px-2.5 py-0.5 text-[13px]" style="color:var(--color-warn);border-color:var(--color-warn)">
+                <span class="rounded-full border px-2.5 py-0.5 text-[13px]" style="color:var(--text-muted);border-color:var(--border-neutral)">
                   {{ 'daily.round.breakdown.hint' | translate }} · {{ 'daily.round.breakdown.hintPenalty' | translate: { percent: b.hintPenaltyPercent } }}
                 </span>
               }
