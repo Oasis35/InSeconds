@@ -24,7 +24,8 @@ public class PublishedErrorCodesTests
         var expected = PublishedCodes();
         var file = Path.Combine(FrontErrorsDirectory(), "published-error-codes.json");
 
-        if (Environment.GetEnvironmentVariable(UpdateVariable) == "1")
+        // Jamais en CI : une variable oubliée dans l'environnement désactiverait le contrôle.
+        if (Environment.GetEnvironmentVariable(UpdateVariable) == "1" && Environment.GetEnvironmentVariable("GITHUB_ACTIONS") != "true")
             File.WriteAllText(file, JsonSerializer.Serialize(expected, Json) + "\n");
 
         var committed = JsonSerializer.Deserialize<string[]>(File.ReadAllText(file))!;
