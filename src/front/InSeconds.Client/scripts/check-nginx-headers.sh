@@ -191,7 +191,7 @@ fi
 
 # Prérendu (construction) : la racine et les pages légales arrivent déjà rendues ; toute autre adresse reçoit la coquille vide
 # (index.csr.html), sinon le texte de l'accueil clignoterait avant la page demandée.
-if ! grep -q 'le blind test musical du jour</h1>' <<<"$index"; then
+if ! grep -q 'le blind test musical du jour</p>' <<<"$index"; then
   echo "FAIL /: texte prérendu de l'accueil absent"
   fail=1
 fi

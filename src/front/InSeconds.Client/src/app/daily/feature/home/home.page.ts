@@ -192,7 +192,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
           @default {
             <!-- Prérendu seulement : le texte que lisent les moteurs de recherche et les lecteurs d'écran, avant que le navigateur ne charge l'état du joueur. -->
             @if (!isBrowser) {
-              <h1 class="sr-only">{{ 'daily.common.seoTitle' | translate }}</h1>
+              <p class="sr-only">{{ 'daily.common.seoTitle' | translate }}</p>
               <p class="sr-only">{{ 'daily.common.seoBody' | translate }}</p>
             }
             <div class="flex-1 flex items-center justify-center">
