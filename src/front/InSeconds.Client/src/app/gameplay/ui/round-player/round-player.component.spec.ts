@@ -170,12 +170,33 @@ describe('RoundPlayerComponent', () => {
     expect(first.element.querySelector<HTMLElement>('[data-testid="round-retry-frame"]')?.style.opacity).toBe('0');
     TestBed.resetTestingModule();
 
-    const second = render({ stake: 595, secondAttempt: true, retryPercent: 70 });
+    const second = render({ stake: 595, secondAttempt: true });
     expect(second.element.querySelector<HTMLElement>('[data-testid="round-retry-frame"]')?.style.opacity).toBe('1');
-    expect(second.element.querySelector('[data-testid="round-stake-retry"]')).not.toBeNull();
+    // Plus de « ×0,7 » : les points en jeu ont simplement baissé, et le chiffre prend l'ambre du joueur.
+    expect(second.element.querySelector('[data-testid="round-stake-retry"]')).toBeNull();
+    expect(second.element.querySelector<HTMLElement>('[data-testid="round-stake"]')?.style.color).toContain('accent-3');
+    expect(first.element.querySelector<HTMLElement>('[data-testid="round-stake"]')?.style.color).toContain('text-hi');
     TestBed.resetTestingModule();
 
     expect(render({ layout: 'inline', secondAttempt: true }).element.querySelector('[data-testid="round-retry-frame"]')).toBeNull();
+  });
+
+  it('à la seconde tentative, la forme d\'onde, le repère du palier et le chiffre passent à l\'ambre ; le rond « écouter plus » reste cyan', () => {
+    const played = (e: HTMLElement) => e.querySelector('[data-testid="waveform-played"]')!.innerHTML;
+    const first = render({ stake: 850 });
+    const firstPlayed = played(first.element);
+    TestBed.resetTestingModule();
+    expect(firstPlayed).toContain('accent-2');
+
+    const { element } = render({ stake: 595, secondAttempt: true });
+    expect(played(element)).toContain('accent-3');
+    expect(played(element)).not.toContain('accent-2');
+    const colors = Array.from(element.querySelectorAll<HTMLElement>('[data-testid="step-mark"]')).map(mark => mark.style.color);
+    expect(colors.some(color => color.includes('accent-3'))).toBe(true);
+    expect(colors.some(color => color.includes('accent-2'))).toBe(false);
+    const more = Array.from(element.querySelectorAll('button')).find(button => button.textContent?.includes('▶'));
+    expect(more?.getAttribute('style')).toContain('accent-2');
+    expect(element.querySelector('[data-testid="waveform-trail"]')!.innerHTML).toContain('wave-trail-retry');
   });
 
   it('pendant la lecture, le bouton garde ↺ (il relance à 0), jamais le symbole pause', () => {

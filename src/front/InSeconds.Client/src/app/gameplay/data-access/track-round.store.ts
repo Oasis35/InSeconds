@@ -54,7 +54,6 @@ export function withTrackRound() {
       isRetry: computed(() => (round()?.failedAttempts ?? 0) > 0),
       /** Un compteur : il monte à chaque seconde tentative offerte, c'est lui qui fait trembler le champ. */
       retryOffers: computed(() => round()?.retryOffers ?? 0),
-      retryScorePercent: computed(() => round()?.retryScorePercent ?? null),
       pendingConfirm: computed(() => round()?.confirm ?? null),
       submission: computed(() => round()?.submission ?? null),
       /** La position de lecture, en secondes (pour la waveform). */

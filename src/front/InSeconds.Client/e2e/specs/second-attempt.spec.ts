@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
 
-// Seconde tentative (piège 51) : une réponse pas entièrement juste ne montre rien de la correction, une phrase douce apparaît sous le champ, la saisie
+// Seconde tentative (piège 51) : une réponse pas entièrement juste ne montre rien de la correction, une phrase factuelle (« dernier essai ») apparaît sous le champ, la saisie
 // reste, et la seconde réponse est définitive, à 70 % du prix du palier.
 test.describe('Seconde tentative', () => {
   test.beforeEach(async ({ api }) => {

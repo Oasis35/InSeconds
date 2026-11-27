@@ -449,10 +449,9 @@ describe('envoi et révélation', () => {
     });
 
     it('une reprise repart à la seconde tentative, sans faire trembler le champ', () => {
-      const r = round({ failedAttempts: 1, retryScorePercent: 70 });
+      const r = round({ failedAttempts: 1 });
       expect(r.failedAttempts).toBe(1);
       expect(r.retryOffers).toBe(0);
-      expect(r.retryScorePercent).toBe(70);
     });
 
     it('l\'écoute plus loin reste possible, au prix du dernier palier', () => {

@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, signal, untracked } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { motionReduced } from '../../../ui/motion/reduced-motion';
 
 /** Durée du décompte quand les points baissent. */
@@ -24,15 +24,10 @@ const DROP_LABEL_MS = 900;
     <!-- Recréé à chaque baisse (identifiant neuf) : deux baisses rapprochées rebondissent deux fois. -->
     @for (bump of bumps(); track bump) {
       <span data-testid="round-stake" class="tabular-nums" [class.stake-bump]="bump > 0"
-        style="font-family:var(--font-score);font-size:1.9rem;font-weight:900;line-height:0.95;letter-spacing:-0.02em;color:var(--text-hi)">{{ shown() }}</span>
+        style="font-family:var(--font-score);font-size:1.9rem;font-weight:900;line-height:0.95;letter-spacing:-0.02em"
+        [style.color]="retry() ? 'var(--color-accent-3)' : 'var(--text-hi)'">{{ shown() }}</span>
     }
     <span class="text-xs mt-1" style="color:var(--text-muted)">{{ 'gameplay.round.stake' | translate }}</span>
-    @if (retryPercent() !== null) {
-      <!-- La seconde tentative rapporte une part du score : le joueur voit le prix avant d'écouter plus. -->
-      <span class="text-xs mt-0.5 text-center whitespace-nowrap" style="color:var(--color-accent-3)" data-testid="round-stake-retry">
-        {{ 'gameplay.round.stakeRetry' | translate: { factor: factor() } }}
-      </span>
-    }
   `,
   styles: `
     .stake-drop { animation: stake-drop 900ms ease-out forwards; }
@@ -49,13 +44,8 @@ const DROP_LABEL_MS = 900;
 })
 export class RoundStakeComponent {
   readonly value = input.required<number>();
-  /** À la seconde tentative, la part du score qu'elle rapporte (70 pour ×0,7) ; `null` à la première tentative. */
-  readonly retryPercent = input<number | null>(null);
-
-  private readonly translate = inject(TranslateService);
-  /** Le facteur écrit à la française (`0,7`), ou à l'anglaise selon la langue. */
-  protected readonly factor = computed(() =>
-    new Intl.NumberFormat(this.translate.getCurrentLang() ?? 'fr', { maximumFractionDigits: 2 }).format((this.retryPercent() ?? 0) / 100));
+  /** À la seconde tentative, le chiffre prend l'ambre du joueur ; les points ont déjà baissé (le prix de la seconde tentative est dans `stake`). */
+  readonly retry = input(false);
 
   protected readonly shown = signal(0);
   /** La dernière baisse, le temps que « −150 » s'envole (un identifiant neuf relance l'animation). */
