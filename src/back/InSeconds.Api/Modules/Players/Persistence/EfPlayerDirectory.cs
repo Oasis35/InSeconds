@@ -97,4 +97,17 @@ public sealed class EfPlayerDirectory(InSecondsDbContext db) : IPlayerDirectory
             .Select(r => new ArrivalCount(r.Source, r.Count))
             .ToList();
     }
+
+    public async Task<IReadOnlyList<PlayerArrival>> ListArrivalsAsync(DateOnly from, DateOnly to, CancellationToken ct)
+    {
+        var start = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var end = new DateTimeOffset(to.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var rows = await db.Set<Player>().AsNoTracking()
+            .Where(p => p.CreatedAt >= start && p.CreatedAt < end)
+            .Select(p => new { p.Id, p.CreatedAt, p.AcquisitionSource, p.DeviceClass })
+            .ToListAsync(ct);
+        return rows
+            .Select(r => new PlayerArrival(r.Id, DateOnly.FromDateTime(r.CreatedAt.UtcDateTime), r.AcquisitionSource, r.DeviceClass))
+            .ToList();
+    }
 }

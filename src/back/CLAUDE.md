@@ -28,6 +28,7 @@ Commandes de l'API (`Program.cs`, avant toute composition ; hôte minimal, ni se
 | `--migrate-only` | applique les migrations (déploiement, copie prod → staging) | 0 |
 | `--rotate-data-protection-key` | crée une clé Data Protection active tout de suite (après une copie de base, piège 17) | 0 |
 | `--freeze-day-stats` | fige les stats de tous les jours terminés sans photo, une transaction par jour, rejouable | 0 ; 1 si les réglages ne passent pas `DailyOptionsChecks` ou si un jour a échoué |
+| `--purge-daily-before aaaa-mm-jj [--apply]` | efface les jours de défi **avant** cette date (parties, réponses, photos de stats, défis) et rejoue les séries ; sans `--apply`, simulation (compte, ne supprime rien) ; mode d'emploi : `docs/exploitation/purge-parties.md` | 0 ; 1 réglages incohérents ou date trop récente (au plus J-1) ; 64 date manquante ou illisible |
 | `--export-player <email>` | JSON de `PlayerDataExporter` sur la sortie standard, journaux sur la sortie d'erreur, jamais l'adresse | 0 ; 2 aucun compte ; 64 adresse manquante |
 | `--delete-player <email>` | `AccountErasure` dans une transaction | 0 ; 2 ; 64 |
 
@@ -112,10 +113,11 @@ Une plage par module, jamais un identifiant réutilisé (les tableaux Grafana et
 
 | Plage | Classe | Zone |
 |---|---|---|
-| 1000 à 1005, 1300 à 1310 | `DailyLog` | parties ; génération, stats, tâches |
+| 1000 à 1005, 1300 à 1311 | `DailyLog` | parties ; génération, stats, tâches |
 | 1006, 1008 à 1010 | `PlayersLog` | connexion, effacement, purge, pseudo remis à zéro |
 | 1007, 1011 | `EmailLog` | emails (`InSeconds.Infrastructure`) |
 | 11xx | `ClientErrorLog` | erreurs du front et rapports CSP |
+| 1110 | `RateLimitLog` | requête refusée par une limite (la route seulement, `InSeconds.Infrastructure`) |
 | 1200 à 1209, 1230 | `CatalogueLog` | pool, candidats, formes d'onde, revérification des extraits |
 | 1210 à 1221 | `DeezerLog` | client Deezer |
 | 1400 à 1416 (sans 1412 à 1414) | `RunsLog` | Survie |

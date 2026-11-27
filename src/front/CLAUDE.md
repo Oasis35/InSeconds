@@ -22,14 +22,14 @@ E2E_DB_CONNECTION="Host=localhost;…;Database=inseconds_e2e;…" npm run e2e   
 ## Couches et dossiers
 
 - `src/app/<domaine>/` pour `gameplay`, `daily`, `runs`, `social`, `account`, `admin`, chacun en quatre couches : `domain/` (TypeScript pur), `data-access/` (stores, adaptateurs de l'API), `feature/` (pages routées, fenêtres, `provide-*.ts`, gardes, routes), `ui/` (présentation).
-- `core/` : transverse (session, erreurs, langue, version, santé, partage, presse-papier, stockage, coque) ; `ui/` : kit visuel de la DA ; `api/<module>/api.generated.ts` : clients NSwag générés.
+- `core/` : transverse (session, erreurs, langue, version, santé, partage, presse-papier, stockage, bruitages, coque) ; `ui/` : kit visuel de la DA ; `api/<module>/api.generated.ts` : clients NSwag générés.
 - `app.ts`, `app.config.ts`, `app.routes.ts` : la composition (seuls fichiers qui voient toutes les couches `feature`).
 - Dans `feature/` et `ui/`, un composant = un dossier à son nom (`login/login.page.ts`, `run-disc/run-disc.component.ts`) avec son `.spec.ts`. Restent à la racine de la couche : routes, `provide-*.ts`, gardes, `reload-moment.ts`.
 - Aides de test dans `testing/` de la couche qui s'en sert, exclues du build par `tsconfig.app.json` comme les `.spec.ts`.
 
 ## Frontières (Sheriff)
 
-`npm run lint:arch` = `sheriff verify src/main.ts` + `node scripts/check-pure-domain.mjs` (job CI `front`). Ce que chaque domaine importe en plus de lui-même, de `core`, `ui` et `api` (`DOMAIN_DEPENDENCIES` de `sheriff.config.ts`) :
+`npm run lint:arch` = `sheriff verify src/main.ts` + `node scripts/check-pure-domain.mjs` + `node scripts/check-home-split.mjs` + son test `node --test scripts/check-home-split.test.mjs` (job CI `front` ; le dernier garde l'accueil `/` du jeu du jour sans la manche `/daily`, chargée à la demande : seul `gameplay/data-access/shared-audio` lui est permis). Ce que chaque domaine importe en plus de lui-même, de `core`, `ui` et `api` (`DOMAIN_DEPENDENCIES` de `sheriff.config.ts`) :
 
 ```ts
 gameplay: [],
@@ -51,8 +51,8 @@ Sheriff ne vérifie que les fichiers atteignables depuis `src/main.ts` (routes �
 
 ## Fournir un domaine
 
-- **Par sa route, chargée à la demande** : `DAILY_ROUTES` (`provideDailyApi()`, `provideGameplay()`), `RUNS_ROUTES` (`provideRunsApi()`, `provideSocialApi()`, `provideGameplay()`), `SOCIAL_ROUTES` (`provideSocialApi()`), `ADMIN_ROUTES` (`provideAdminApi()` : clients admin, catalogue, daily, runs et social). Seul le client Players est au démarrage (`provideAccount()`, l'accueil lit `/me`). Raisons : importer le jeton d'un client met tout le fichier généré dans le bundle initial (budget 500 kB) ; un client généré pris à la racine n'y trouve pas son adresse et appelle le domaine du front, sans erreur en dev et en E2E où l'adresse est vide. Les adaptateurs de ces clients sont en `@Injectable()` sans `providedIn` : hors de leur route, ils lèvent « No provider ».
-- **Stores de page** : `providers: [XStore]` sur la page (ou la coque qui porte l'état, `DailyShellComponent`). Seuls stores à la racine : `SessionStore`, `ShellChromeStore`, `SetlistAccessStore`.
+- **Par sa route, chargée à la demande** : `DAILY_ROUTES` (`provideDailyApi()` ; la manche `/daily` est une route enfant à la demande, `DAILY_ROUND_ROUTES` : `provideGameplay()`), `RUNS_ROUTES` (`provideRunsApi()`, `provideSocialApi()`, `provideGameplay()`), `SOCIAL_ROUTES` (`provideSocialApi()`), `ADMIN_ROUTES` (`provideAdminApi()` : clients admin, catalogue, daily, runs et social). Seul le client Players est au démarrage (`provideAccount()`, l'accueil lit `/me`). Raisons : importer le jeton d'un client met tout le fichier généré dans le bundle initial (budget 500 kB) ; un client généré pris à la racine n'y trouve pas son adresse et appelle le domaine du front, sans erreur en dev et en E2E où l'adresse est vide. Les adaptateurs de ces clients sont en `@Injectable()` sans `providedIn` : hors de leur route, ils lèvent « No provider ».
+- **Stores de page** : `providers: [XStore]` sur la page (ou la coque qui porte l'état, `DailyShellComponent` : `HomeStore`). Seuls stores à la racine : `SessionStore`, `ShellChromeStore`, `SetlistAccessStore`.
 - **Brancher un domaine dans `core`** : `core` ne connaît aucun domaine. Il déclare un jeton (`HOME_MODE_ENTRIES` multi, `BOTTOM_BAR_SLOT`, `DAY_FRIENDS_SLOT`, `DAILY_DONE_LOADER`), le domaine le remplit dans son `provideX()` appelé par `app.config.ts` (`provideSocial()`, `provideRuns()`, `provideDailyStatus()`, `provideAdminStatus()` : il pose `ShellChromeStore.adminAlerts`, son lecteur ne se charge que pour un admin), composants en `load: () => import(…)` qui fournissent eux-mêmes le client de leur API (`providers: [provideSocialApi()]`). Les entrées de `HOME_MODE_ENTRIES` se rangent par leur `order` (`HOME_ENTRY_ORDER` : la carte amis, puis la carte Survie), pas par l'ordre des fournisseurs.
 - **Client d'un domaine hors de sa route** : injecteur jetable, `createEnvironmentInjector(provideXApi(), parent)` détruit dans un `finally`, derrière un jeton que les tests remplacent (`SETLIST_ACCESS_LOADER`, `DAILY_DONE_LOADER`).
 
@@ -97,8 +97,9 @@ Un client par module dans `src/app/api/<module>/api.generated.ts` (fichier gén�
 
 ## Routes (mécanisme)
 
-- `/` et `/daily` : un `UrlMatcher` (`homeOrDailyMatcher`) les envoie à `DAILY_ROUTES` sans consommer de segment ; la coque `DailyShellComponent` porte la partie et ses deux pages (`HomePage`, `DailyPage`) la montrent, d'où une partie qui survit au passage de l'une à l'autre.
+- `/` et `/daily` : une route vide (`path: ''`, la **dernière** avant `**` : le routeur charge ses enfants pour l'essayer, les autres adresses ne doivent pas payer ce chargement) les envoie à `DAILY_ROUTES` ; la coque `DailyShellComponent` porte l'état du jour (`HomeStore`) et l'accueil (`HomePage`) ; la manche (`DailyPage`, ses stores et le lecteur) est une route enfant chargée à la demande, ouverte par le clic de l'accueil (intention dans l'état de la navigation) : `/daily` sans clic renvoie à `/` (`startIntentGuard`). Détail : `daily.md`.
 - Toute ancienne adresse redirige en gardant query string et fragment : `redirectKeepingQuery`, ou `redirectRunsLink` / `redirectHistoryLink` pour un paramètre (lien magique, `from=legacy`, `utm_source`). Chaque redirection a son test dans `app.routes.spec.ts`.
+- **Prérendu** : `/`, `/legal` et `/privacy` sont rendues à la construction (`@angular/ssr`, `outputMode: 'static'`, `app.routes.server.ts` ; toute autre route reste `RenderMode.Client`). Ce qui lit le navigateur ou l'API au démarrage se garde par `isPlatformBrowser(inject(PLATFORM_ID))` (`App`, `provideAccount`, `DailyShellComponent`, `BottomBarComponent`) ; l'accueil prérendu garde son écran d'attente et un titre et une présentation en `sr-only` (`daily.common.seoTitle` / `seoBody`). Pas d'hydratation : le navigateur refait la page au démarrage. Détail : `core-pwa.md`.
 - Tout le reste : `NotFoundPage`. Liste fonctionnelle des routes : `CLAUDE.md` racine.
 
 ## Recette : ajouter un écran de bout en bout

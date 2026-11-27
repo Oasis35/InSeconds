@@ -25,6 +25,12 @@ public sealed class Player
     public string? AcquisitionSource { get; private set; }
 
     /// <summary>
+    /// La classe de l'appareil de la première visite (<c>phone</c>, <c>tablet</c> ou <c>desktop</c>), déduite de l'en-tête du navigateur à la
+    /// création de l'invité, jamais changée ensuite. Vide pour un joueur créé par un lien de connexion, ou avant qu'on la note.
+    /// </summary>
+    public string? DeviceClass { get; private set; }
+
+    /// <summary>
     /// Le pseudo qu'un invité s'est donné (jamais celui d'un compte : <see cref="Account.Pseudo"/> a la priorité), retrouvé à chaque visite
     /// par son navigateur. Aucune unicité entre invités. Vide tant qu'il n'en a pas choisi.
     /// </summary>
@@ -32,6 +38,6 @@ public sealed class Player
 
     public void SetGuestPseudo(string? pseudo) => GuestPseudo = pseudo;
 
-    public static Player CreateGuest(Guid id, DateTimeOffset now, string? acquisitionSource = null) =>
-        new() { Id = id, CreatedAt = now, LastSeenAt = now, AcquisitionSource = acquisitionSource };
+    public static Player CreateGuest(Guid id, DateTimeOffset now, string? acquisitionSource = null, string? deviceClass = null) =>
+        new() { Id = id, CreatedAt = now, LastSeenAt = now, AcquisitionSource = acquisitionSource, DeviceClass = deviceClass };
 }

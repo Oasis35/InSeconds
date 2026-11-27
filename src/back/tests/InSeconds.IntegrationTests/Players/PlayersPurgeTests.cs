@@ -97,7 +97,7 @@ public class PlayersPurgeTests(PostgresFixture postgres) : IAsyncLifetime
         var report = await RunAsync();
 
         Assert.Equal(2, report["accounts"]);
-        Assert.Equal(["inactive", "inactive"], erased.GetMeasurementSnapshot().Select(m => (string?)m.Tags["reason"]));
+        Assert.Equal(["inactive", "inactive"], erased.GetMeasurementSnapshot().Where(m => m.Value != 0).Select(m => (string?)m.Tags["reason"]));
         Assert.Equal(
             new[] { admin, recent, guest }.Order().ToArray(),
             (await _api.ScalarAsync<Guid[]>("SELECT array_agg(id) FROM players.players"))!.Order().ToArray());
@@ -107,6 +107,34 @@ public class PlayersPurgeTests(PostgresFixture postgres) : IAsyncLifetime
         // Les parties d'un invité restent, anonymes : plus rien ne permet de le retrouver une fois ses appareils effacés.
         var played = await _api.ScalarAsync<Guid[]>("SELECT array_agg(player_id) FROM daily.sessions");
         Assert.Equal(new[] { guest }, played);
+    }
+
+    [Fact]
+    public async Task EffaceLesComptesInactifs_UnGroupeSansAutreMembreDisparait_UnGroupeAvecDAutresPasseLaMain_JamaisDeGroupeVide()
+    {
+        var soloOwner = await AddPlayerAsync("now() - interval '1100 days'", "solo");
+        var duoOwner = await AddPlayerAsync("now() - interval '1100 days'", "duo");
+        var stays = await AddPlayerAsync("now() - interval '10 days'", "reste");
+        await _api.ExecuteAsync($"""
+            INSERT INTO social.groups (id, name, invite_code, owner_id, created_at) VALUES
+              (9001, 'Solo', 'ABCD2345', '{soloOwner}', now() - interval '2000 days'),
+              (9002, 'Duo', 'EFGH6789', '{duoOwner}', now() - interval '2000 days');
+            INSERT INTO social.group_members (group_id, player_id, joined_at) VALUES
+              (9001, '{soloOwner}', now() - interval '2000 days'),
+              (9002, '{duoOwner}', now() - interval '2000 days'),
+              (9002, '{stays}', now() - interval '1900 days');
+            """);
+
+        var report = await RunAsync();
+
+        Assert.Equal(2, report["accounts"]);
+        // Le groupe dont le dernier membre est effacé disparaît ; l'autre passe au membre resté, qui est seul dedans.
+        Assert.Equal(new[] { 9002 }, await _api.ScalarAsync<int[]>("SELECT array_agg(id) FROM social.groups"));
+        Assert.Equal(stays, await _api.ScalarAsync<Guid>("SELECT owner_id FROM social.groups WHERE id = 9002"));
+        Assert.Equal(new[] { stays }, await _api.ScalarAsync<Guid[]>("SELECT array_agg(player_id) FROM social.group_members"));
+        // Aucun groupe sans membre.
+        Assert.Equal(0L, await _api.ScalarAsync<long>(
+            "SELECT count(*) FROM social.groups g WHERE NOT EXISTS (SELECT 1 FROM social.group_members m WHERE m.group_id = g.id)"));
     }
 
     [Fact]

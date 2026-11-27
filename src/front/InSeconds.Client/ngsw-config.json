@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
-  "index": "/index.html",
+  "index": "/index.csr.html",
   "assetGroups": [
     {
       "name": "app",
@@ -9,9 +9,11 @@
         "files": [
           "/favicon.svg",
           "/index.html",
+          "/index.csr.html",
           "/manifest.webmanifest",
           "/*.css",
           "/*.js",
+          "/media/*.woff2",
           "!/safety-worker.js",
           "!/worker-basic.min.js",
           "/i18n/*.json"
@@ -25,6 +27,7 @@
       "resources": {
         "files": [
           "/icons/**",
+          "/sounds/**",
           "/*.(svg|png|jpg|webp|woff2)"
         ]
       }

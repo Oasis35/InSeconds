@@ -24,6 +24,18 @@ describe('RoundStakeComponent', () => {
     };
   }
 
+  it('à la seconde tentative, le chiffre prend l\'ambre du joueur, sans rien écrire de plus', () => {
+    const { fixture, element } = render(700);
+    const number = () => element.querySelector<HTMLElement>('[data-testid="round-stake"]')!;
+    expect(number().style.color).toContain('text-hi');
+
+    fixture.componentRef.setInput('retry', true);
+    fixture.detectChanges();
+
+    expect(number().style.color).toContain('accent-3');
+    expect(element.querySelector('[data-testid="round-stake-retry"]')).toBeNull();
+  });
+
   it('affiche les points en jeu', () => {
     const { shown, drop, element } = render(1000);
     expect(shown()).toBe('1000');

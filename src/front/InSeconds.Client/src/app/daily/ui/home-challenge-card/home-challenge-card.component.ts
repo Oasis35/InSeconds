@@ -3,6 +3,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { enterHomeCard } from '../../../ui/motion/motion';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { PointsPipe } from '../../../ui/format/points.pipe';
+import { HomeLine, ReturnRecap, VALUE_MARKER, homeLine, splitPhrase } from '../../domain/home-line';
 import { Streak, isStreakProtected, pluralKey } from '../../domain/streak';
 import { StreakIconComponent } from '../streak-icon/streak-icon.component';
 import { StreakPillComponent } from '../streak-pill/streak-pill.component';
@@ -23,6 +24,19 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
     <section class="tube-amber rounded-(--radius-card) px-5 pt-7 pb-3 flex flex-col text-center" data-testid="home-challenge"
       style="background:var(--bg-surface)">
       <div class="flex flex-col items-center">
+        @if (habit()) {
+          <!-- L'habitué : la date et le nombre de morceaux sur une ligne, puis une phrase sur lui ; son libellé de bouton y répond. -->
+          <p class="text-sm first-letter:uppercase" style="color:var(--text-muted)" data-testid="welcome-date">
+            {{ dateLabel() }}<span aria-hidden="true"> · </span>{{ 'daily.welcome.subtitle' | translate: { count: trackCount() } }}
+          </p>
+          <h2 class="mt-1 text-[27px] font-extrabold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'daily.welcome.title' | translate: { count: trackCount() } }}</h2>
+          @if (line(); as l) {
+            @let parts = split(l.phraseKey | translate: { value: marker });
+            <p class="mt-4 max-w-72 text-[18px] font-bold leading-snug" style="color:var(--text-hi)" data-testid="home-line">
+              {{ parts.before }}@if (parts.hasValue) {<b class="tabular-nums" style="font-family:var(--font-score);color:var(--color-accent-3)">{{ l.kind === 'eve' || l.kind === 'week' ? l.value : (l.value | appPoints) }}</b>}{{ parts.after }}
+            </p>
+          }
+        } @else {
         @if (dateLabel()) {
           <p class="text-sm first-letter:uppercase" style="color:var(--text-muted)" data-testid="welcome-date">{{ dateLabel() }}</p>
         }
@@ -58,9 +72,10 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
             </p>
           }
         }
+        }
       </div>
       <button appButton type="button" size="lg" [block]="true" class="mt-7" (click)="startGame.emit()" data-testid="home-start">
-        {{ (paused() ? 'daily.resume.resume' : 'daily.welcome.start') | translate }}
+        {{ buttonKey() | translate }}
       </button>
       @if (paused()) {
         <!-- Abandonner : un lien discret, jamais un second bouton (un seul bouton plein par écran). -->
@@ -98,6 +113,8 @@ export class HomeChallengeCardComponent {
   readonly yesterdayMedian = input<number | null>(null);
   /** Le temps qu'il reste pour jouer le défi, `null` tant qu'il n'est pas calculé. */
   readonly remaining = input<{ readonly unit: 'hours' | 'minutes'; readonly value: number } | null>(null);
+  /** De quoi accueillir un habitué (compte avec assez de parties) : la phrase et le libellé du bouton changent, la carte se resserre. */
+  readonly recap = input<ReturnRecap | null>(null);
   /** La date du jour de jeu, en haut à droite de la carte. */
   readonly dateLabel = input('');
   /** Les morceaux déjà joués d'une partie en pause ; `null` : pas de partie en cours (la carte propose « Commencer »). */
@@ -108,6 +125,19 @@ export class HomeChallengeCardComponent {
   readonly startGame = output<void>();
   readonly abandon = output<void>();
   readonly openStreak = output<void>();
+
+  protected readonly marker = VALUE_MARKER;
+  protected readonly split = splitPhrase;
+  /** L'accueil d'un habitué : seulement pour la partie à jouer, jamais pour une partie en pause ni un premier jeu. */
+  protected readonly habit = computed(() => this.recap() !== null && !this.paused() && !this.firstGame());
+  protected readonly line = computed<HomeLine | null>(() =>
+    this.habit() ? homeLine({ recap: this.recap(), bestScore: this.bestScore(), streak: this.streak(), today: new Date().toISOString().slice(0, 10) }) : null);
+  protected readonly buttonKey = computed(() => {
+    if (this.paused()) return 'daily.resume.resume';
+    const lineKey = this.line()?.buttonKey;
+    if (lineKey) return lineKey;
+    return this.habit() ? 'daily.homeLine.default' : 'daily.welcome.start';
+  });
 
   protected readonly paused = computed(() => this.completedCount() !== null);
   protected readonly progressKey = computed(() => `daily.resume.progress.${(this.completedCount() ?? 0) <= 1 ? 'one' : 'other'}`);

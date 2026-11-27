@@ -21,7 +21,6 @@ describe('RevealCardComponent', () => {
     imports: [RevealCardComponent],
     template: `
       <app-reveal-card [result]="result">
-        <span roundBadge>badge</span>
         <span roundScore>+850</span>
         <button roundNext>Suite</button>
       </app-reveal-card>`,
@@ -39,9 +38,9 @@ describe('RevealCardComponent', () => {
     return { element, text: () => element.textContent!.replace(/\s+/g, ' ') };
   }
 
-  it('montre la bonne réponse et la pochette', () => {
-    const { element, text } = render();
-    expect(text()).toContain('Daft Punk - Get Lucky');
+  it('montre « Artiste - Titre » et la pochette', () => {
+    const { element } = render();
+    expect(element.querySelector('[data-testid="reveal-answer"]')?.getAttribute('title')).toBe('Daft Punk - Get Lucky');
     expect(element.querySelector('img')?.getAttribute('src')).toBe('https://cdn.example/pochette.jpg');
   });
 
@@ -49,15 +48,28 @@ describe('RevealCardComponent', () => {
     expect(render({ ...RESULT, coverUrl: null }).element.querySelector('img')).toBeNull();
   });
 
-  it('marque ✓ ce qui est juste et ✗ ce qui est faux', () => {
-    const spans = Array.from(render().element.querySelectorAll('span.font-semibold')).map(span => span.textContent!.replace(/\s+/g, ' ').trim());
-    expect(spans[0]).toContain('✓');
-    expect(spans[1]).toContain('✗');
+  it('marque ✓ ce qui est trouvé et ✕ ce qui est raté, avec le mot pour les lecteurs d\'écran', () => {
+    const { element } = render();
+    const lines = Array.from(element.querySelectorAll<HTMLElement>('[data-testid="reveal-answer"] > span'));
+    expect(lines[0].textContent).toContain('✓');
+    expect(lines[0].querySelector('.sr-only')?.textContent).toContain('gameplay.reveal.found');
+    expect(lines[1].textContent).toContain('✕');
+    expect(lines[1].querySelector('.sr-only')?.textContent).toContain('gameplay.reveal.missed');
   });
 
-  it('place les éléments du mode : badge, points, suite', () => {
+  it('met le tout dans la tuile du lecteur, avec le graphique, et le bouton « suite » dessous', () => {
     const { element } = render();
-    expect(element.querySelector('[roundBadge]')?.textContent).toBe('badge');
+    const tile = element.querySelector('[data-testid="reveal-tile"]')!;
+    expect(tile.querySelector('[roundScore]')).not.toBeNull();
+    expect(tile.querySelector('[data-testid="guess-time-chart"]')).not.toBeNull();
+    expect(tile.querySelector('[roundNext]')).toBeNull();
+    expect(element.querySelector('[roundNext]')).not.toBeNull();
+    const heights = Array.from(tile.querySelectorAll<HTMLElement>('[data-bucket] > div')).map(bar => Number.parseInt(bar.style.height));
+    expect(Math.max(...heights)).toBeLessThanOrEqual(32);
+  });
+
+  it('place les éléments du mode : points, suite', () => {
+    const { element } = render();
     expect(element.querySelector('[roundScore]')?.textContent).toBe('+850');
     expect(element.querySelector('[roundNext]')?.textContent).toBe('Suite');
   });

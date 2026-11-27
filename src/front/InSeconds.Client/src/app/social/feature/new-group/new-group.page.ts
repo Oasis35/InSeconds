@@ -12,6 +12,7 @@ import { GROUP_NAME_MAX, isGroupNameValid } from '../../domain/group';
 /** Le message de chaque refus de la création (les autres : une erreur à réessayer). */
 const REFUSAL_KEYS: Readonly<Record<string, string>> = {
   invalid_name: 'errors.social.invalid_name',
+  reserved_name: 'errors.social.reserved_name',
   too_many_groups: 'social.create.tooMany',
   account_required: 'social.create.accountRequired',
 };

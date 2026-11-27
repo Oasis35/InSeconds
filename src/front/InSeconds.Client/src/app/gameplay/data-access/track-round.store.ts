@@ -2,21 +2,17 @@ import { DestroyRef, Injector, computed, effect, inject, untracked } from '@angu
 import { patchState, signalStore, signalStoreFeature, withComputed, withHooks, withMethods, withState } from '@ngrx/signals';
 import {
   HintFact, RoundAnswer, RoundConfig, RoundSubmission, TrackRound, applyHints, askSkip, availableHintLevels, beginListening,
-  cancelConfirm, confirmPending, createRound, listenMore, maxStep, nextStep, onAudio, previewWithdrawn, replacePreviewUrl, retryPlayback, retrySubmission, reveal,
+  cancelConfirm, confirmPending, createRound, listenMore, maxStep, nextStep, onAudio, previewWithdrawn, replacePreviewUrl, retryOffered, retryPlayback, retrySubmission, reveal,
   showsInput, skipUnplayable, stakeOf, submissionFailed, submitAnswer, timeUp,
 } from '../domain/track-round';
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
 import { Waveform, bassAt, waveformFromBlob } from '../domain/waveform';
+import { isSavingData } from '../../core/network/save-data';
 import { AudioPort } from './audio.port';
 import { WaveformPort } from './waveform.port';
 
 /** Début du message remonté (en Warning) quand la forme n'est pas venue de l'API et que le navigateur la calcule : c'est lui qu'on cherche dans Grafana. */
 export const WAVEFORM_FALLBACK_MESSAGE = 'WaveformFallback';
-
-/** Le navigateur demande d'économiser les données (Chrome sur Android) : la waveform, de confort, n'est pas calculée. */
-function saveData(): boolean {
-  return (globalThis.navigator as { connection?: { saveData?: boolean } } | undefined)?.connection?.saveData === true;
-}
 
 interface TrackRoundState {
   round: TrackRound | null;
@@ -54,6 +50,10 @@ export function withTrackRound() {
       /** Les points en jeu (barème du palier moins l'indice pris) ; `null` si le mode n'a pas de barème. */
       stake: computed(() => { const r = round(); return r ? stakeOf(r) : null; }),
       availableHintLevels: computed(() => { const r = round(); return r ? availableHintLevels(r) : []; }),
+      /** La seconde tentative est en cours (une réponse a été refusée sans être comptée). */
+      isRetry: computed(() => (round()?.failedAttempts ?? 0) > 0),
+      /** Un compteur : il monte à chaque seconde tentative offerte, c'est lui qui fait trembler le champ. */
+      retryOffers: computed(() => round()?.retryOffers ?? 0),
       pendingConfirm: computed(() => round()?.confirm ?? null),
       submission: computed(() => round()?.submission ?? null),
       /** La position de lecture, en secondes (pour la waveform). */
@@ -209,6 +209,11 @@ export function withTrackRound() {
         /** « Réessayer » après un échec d'envoi : la même réponse repart. */
         retrySubmission: (): RoundSubmission | null => submissionOf(apply(retrySubmission)),
 
+        /** Le serveur offre une seconde tentative : la saisie revient, au même palier, sans rien révéler. */
+        retryOffered: (): void => {
+          apply(round => retryOffered(round, audio.state()));
+        },
+
         /** Le serveur a répondu : la réponse est révélée, et l'extrait se rejoue en entier. */
         reveal(): void {
           const round = apply(reveal)?.after;
@@ -237,7 +242,7 @@ export function withTrackRound() {
          */
         loadWaveform(): void {
           const round = store.round();
-          if (!round?.previewUrl || waveformTrackKey === round.trackKey || saveData()) return;
+          if (!round?.previewUrl || waveformTrackKey === round.trackKey || isSavingData()) return;
           const trackId = round.trackId;
           const trackKey = round.trackKey;
           waveformTrackKey = trackKey;

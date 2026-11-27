@@ -1,18 +1,19 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom, retry, throwError, timer } from 'rxjs';
 import {
-  ArchiveDayResponse, ArchiveMeResponse, DailyClient, DailyHistoryResponse, DailySettingsResponse, EarProfileResponse, ReplayResponse, GuessBucketResponse, ResumedAnswer, StartSessionResponse, StreakResponse, SubmitAnswerResponse, TodayResponse,
+  ArchiveDayResponse, ArchiveMeResponse, DailyClient, DailyHistoryResponse, DailySettingsResponse, EarProfileResponse, ReplayResponse, WeekReviewResponse, GuessBucketResponse, ResumedAnswer, StartSessionResponse, StreakResponse, SubmitAnswerResponse, TodayResponse,
   TodayStatsResponse,
 } from '../../api/daily/api.generated';
 import { toAppError } from '../../core/errors/app-error';
 import {
-  AnswerToSend, AnsweredTrack, DailySettings, DailyToday, DayStats, GuessBucket, StartOutcome, StartedSession, TodayState,
+  AnswerToSend, AnsweredTrack, DailySettings, SubmitOutcome, DailyToday, DayStats, GuessBucket, StartOutcome, StartedSession, TodayState,
 } from '../domain/daily';
 import { Streak } from '../domain/streak';
 import { ArchiveDay, ArchiveMe } from '../domain/archive';
 import { DailyHistory, HistoryDayState, emptyHistory } from '../domain/history';
 import { ReplayFilter, ReplayPage } from '../domain/replay';
 import { EarProfile, ProfilePeriod } from '../domain/ear-profile';
+import { WeekReview } from '../domain/week-review';
 
 /** Des réponses d'erreur que le jeu connaît : refus du démarrage (la partie est finie, pas de défi). */
 const ALREADY_PLAYED = 'daily.already_played';
@@ -70,7 +71,7 @@ export class DailyApi {
    * Envoie la réponse. Une coupure réseau ou une erreur serveur est retentée (2 fois, 1 s d'écart) : sans enregistrement, la partie ne se
    * termine jamais côté serveur. Une erreur applicative (4xx : déjà répondu, palier trop court) remonte tout de suite (piège 32).
    */
-  async submitAnswer(sessionId: number, answer: AnswerToSend): Promise<AnsweredTrack> {
+  async submitAnswer(sessionId: number, answer: AnswerToSend): Promise<SubmitOutcome> {
     const body = {
       position: answer.position,
       listenedSeconds: answer.listenedSeconds,
@@ -81,7 +82,8 @@ export class DailyApi {
     const request = this.client.submitAnswer(sessionId, body).pipe(
       retry({ count: SUBMIT_RETRIES, delay: error => (isRetryable(error) ? timer(SUBMIT_RETRY_DELAY_MS) : throwError(() => error)) }),
     );
-    return toAnswered(answer.position, await firstValueFrom(request));
+    const response = await firstValueFrom(request);
+    return response.retry ? { kind: 'retry' } : { kind: 'answered', answered: toAnswered(answer.position, response) };
   }
 
   async abandon(sessionId: number): Promise<void> {
@@ -141,6 +143,16 @@ export class DailyApi {
     }
   }
 
+  /** Le bilan de sa semaine passée (lundi au dimanche) ; 401 : `null` (rien joué). */
+  async weekReview(): Promise<WeekReview | null> {
+    try {
+      return toWeekReview(await firstValueFrom(this.client.getWeekReview()));
+    } catch (error) {
+      if ((await toAppError(error)).status === 401) return null;
+      throw error;
+    }
+  }
+
   /** Son profil d'oreille sur une période ; 401 : `null` (rien joué). */
   async earProfile(period: ProfilePeriod): Promise<EarProfile | null> {
     try {
@@ -187,6 +199,14 @@ function toToday(today: TodayResponse): DailyToday {
     completedGames: today.completedGames,
     bestScore: today.bestScore ?? null,
     yesterdayMedian: today.yesterdayMedian ?? null,
+    recap: today.recap
+      ? {
+          yesterdayScore: today.recap.yesterdayScore ?? null,
+          averageScore: today.recap.averageScore ?? null,
+          weekGames: today.recap.weekGames,
+          weekFirstStepFound: today.recap.weekFirstStepFound,
+        }
+      : null,
   };
 }
 
@@ -197,6 +217,7 @@ function toSettings(settings: DailySettingsResponse): DailySettings {
     allowedDurationsSeconds: settings.allowedDurationsSeconds,
     durationScores: settings.durationScores.map(d => ({ seconds: d.seconds, score: d.score })),
     hints: settings.hints.map(h => ({ level: h.level, unlockSeconds: h.unlockSeconds, kind: h.kind, penaltyPercent: h.penaltyPercent })),
+    retryScorePercent: settings.retryScorePercent,
   };
 }
 
@@ -254,6 +275,7 @@ function toSession(r: StartSessionResponse): StartedSession {
           listenedSeconds: r.currentTrack.listenedSeconds,
           hintLevel: r.currentTrack.hintLevel,
           hintFacts: r.currentTrack.hintFacts.map(f => ({ kind: f.kind, value: f.value ?? null })),
+          failedAttempts: r.currentTrack.failedAttempts ?? 0,
         }
       : null,
   };
@@ -351,6 +373,21 @@ function toHistory(history: DailyHistoryResponse): DailyHistory {
     monthPublishedCount: history.monthPublishedCount,
     monthAverageScore: history.monthAverageScore ?? null,
     monthBestScore: history.monthBestScore ?? null,
+  };
+}
+
+function toWeekReview(review: WeekReviewResponse): WeekReview {
+  return {
+    weekStart: toDateText(review.weekStart) ?? '',
+    days: review.days.map(d => ({ date: toDateText(d.date) ?? '', score: d.score ?? null })),
+    maxPossibleScore: review.maxPossibleScore,
+    playedCount: review.playedCount,
+    averageScore: review.averageScore ?? null,
+    bestDay: toDateText(review.bestDay),
+    bestScore: review.bestScore ?? null,
+    bestTrack: review.bestTrack
+      ? { date: toDateText(review.bestTrack.date) ?? '', artist: review.bestTrack.artist, title: review.bestTrack.title, score: review.bestTrack.score }
+      : null,
   };
 }
 

@@ -92,6 +92,16 @@ public sealed class DailyOptions
 
     public IReadOnlyDictionary<int, int> EffectiveHintPenaltyPercent => HintPenaltyPercent ?? DefaultHintPenaltyPercent;
 
+    /// <summary>
+    /// Le score d'une réponse donnée à la **seconde tentative**, en pourcentage de celui de la première : 70 vaut 70 % (le palier du dernier
+    /// écouté, puis la moitié si un seul des deux est trouvé, puis la pénalité d'indice). 0 : pas de seconde tentative.
+    /// </summary>
+    public int RetryScorePercent { get; set; } = DefaultRetryScorePercent;
+
+    public const int DefaultRetryScorePercent = 70;
+
+    public static bool IsValidRetryScorePercent(int percent) => percent is >= 0 and <= 100;
+
     /// <summary>+1 gel à chaque multiple de ce nombre de jours de série (0 : aucun gel gagné).</summary>
     public int StreakFreezeEveryDays { get; set; } = DefaultStreakFreezeEveryDays;
 

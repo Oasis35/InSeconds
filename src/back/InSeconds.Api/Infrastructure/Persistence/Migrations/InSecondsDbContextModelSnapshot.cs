@@ -466,6 +466,12 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("challenge_id");
 
+                    b.Property<short>("CurrentFailedAttempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("smallint")
+                        .HasDefaultValue((short)0)
+                        .HasColumnName("current_failed_attempts");
+
                     b.Property<short>("CurrentHintLevel")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("smallint")
@@ -811,6 +817,11 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<string>("DeviceClass")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("device_class");
 
                     b.Property<string>("GuestPseudo")
                         .HasMaxLength(20)

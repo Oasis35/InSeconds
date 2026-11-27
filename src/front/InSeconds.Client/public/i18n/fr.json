@@ -31,6 +31,7 @@
       "day_not_over": "Ce jour n'est pas encore fini : les stats seront figées demain.",
       "invalid_date": "Date invalide : le format attendu est aaaa-mm-jj.",
       "invalid_month": "Mois invalide : le format attendu est aaaa-mm.",
+      "invalid_period": "Période invalide : 7, 30 ou 90 jours.",
       "pool_insufficient": "Pool insuffisant : ajoutez des morceaux avec preview."
     },
     "players": {
@@ -39,6 +40,7 @@
       "invalid_or_expired_token": "Ce lien est invalide ou a expiré.",
       "pseudo_mismatch": "Ce n'est pas ton pseudo.",
       "pseudo_taken": "Ce pseudo est déjà pris.",
+      "pseudo_reserved": "Ce pseudo est réservé. Choisis-en un autre.",
       "not_a_guest": "Ce compte n'est plus un invité : change ton pseudo depuis ton profil.",
       "same_email": "C'est déjà ton adresse actuelle."
     },
@@ -95,6 +97,7 @@
       "member_not_found": "Ce membre n'est plus dans le groupe.",
       "too_many_groups": "Tu as atteint le nombre de groupes possible.",
       "invalid_name": "Ce nom de groupe n'est pas valide.",
+      "reserved_name": "Ce nom est réservé. Choisis-en un autre.",
       "group_not_found": "Ce groupe n'existe plus.",
       "invalid_date": "Ce jour n'existe pas, ou il n'est pas encore passé."
     }
@@ -137,6 +140,11 @@
     }
   },
   "ui": {
+    "sound": {
+      "label": "Bruitages",
+      "hintTitle": "Bruitages",
+      "hintBody": "Touche pour couper"
+    },
     "envBanner": {
       "label": "environnement de développement"
     },
@@ -174,9 +182,12 @@
       "noPreview": "Aperçu non disponible pour ce morceau.",
       "skip": "Passer (0 pts)",
       "replay": "↺ {{ seconds }}",
+      "replayLabel": "Réécouter l'extrait depuis le début, palier de {{ seconds }}",
+      "replayBusy": "Envoi de ta réponse en cours",
       "listenUpTo": "Écouter jusqu'à {{ seconds }}",
       "stake": "pts en jeu",
       "waveform": "Extrait écouté",
+      "waveformValue": "{{ heard }} sur {{ max }}",
       "playbackError": "Impossible de lire l'aperçu. Réessaie, ou passe ce morceau.",
       "retry": "Réessayer"
     },
@@ -191,7 +202,19 @@
       "skipAnyway": "Passer",
       "submitFailed": "Ta réponse n'a pas pu être enregistrée. Vérifie ta connexion et réessaie.",
       "retry": "Réessayer",
-      "choices": "Réponses proposées"
+      "choices": "Réponses proposées",
+      "validateRetry": "Réessayer"
+    },
+    "retry": {
+      "phrase": {
+        "1": "Ce n'est pas ça. Dernier essai.",
+        "2": "Mauvaise réponse. Dernier essai.",
+        "3": "Raté. Il reste un dernier essai.",
+        "4": "Dernière tentative.",
+        "5": "Nouvel essai.",
+        "6": "Deuxième essai.",
+        "7": "Réponse fausse. Dernier essai."
+      }
     },
     "hint": {
       "tooltip": "Indice : coûte des points",
@@ -210,7 +233,8 @@
       "coverAlt": "Pochette",
       "artist": "Artiste",
       "title": "Titre",
-      "correctAnswer": "Bonne réponse"
+      "found": "trouvé",
+      "missed": "raté"
     }
   },
   "account": {
@@ -361,7 +385,8 @@
       "playersPlain": "Joueurs",
       "groupsPlain": "Groupes",
       "players": "Joueurs ({{ count }})",
-      "content": "Contenu"
+      "content": "Contenu",
+      "stats": "Stats"
     },
     "pool": {
       "cooldown": "cooldown {{ days }} j",
@@ -552,7 +577,7 @@
       "regulars": "habitués",
       "newcomer": "nouveau",
       "newcomers": "nouveaux",
-      "arrivalsTitle": "D'où viennent les nouveaux · 30 jours",
+      "arrivalsTitle": "D'où viennent les nouveaux · {{ days }} jours",
       "arrivalsCount": "nouveaux joueurs",
       "frozenAt": "Stats figées le {{ date }}",
       "frozen": "Stats figées",
@@ -734,6 +759,29 @@
       "nextChallengeRetryAt": "échec · nouvel essai à {{ time }}",
       "nextChallengeFailed": "échec",
       "todayChallenge": "Défi du jour"
+    },
+    "stats": {
+      "period": "Période",
+      "periodDays": "{{ days }} j",
+      "returnBySource": "Ils reviennent ? Par source",
+      "returnByDevice": "Ils reviennent ? Par appareil",
+      "returnNote": "J+1 : revenus le lendemain. J+7 : revenus une semaine après. Un point : personne n'a encore eu le temps de revenir.",
+      "colNew": "Nouv.",
+      "colDay1": "J+1",
+      "colDay7": "J+7",
+      "devices": { "phone": "Téléphone", "tablet": "Tablette", "desktop": "Ordinateur", "unknown": "Inconnu" },
+      "regularsTitle": "Habitués et nouveaux par jour",
+      "regulars": "Habitués",
+      "newcomers": "Nouveaux",
+      "gamesTitle": "Parties par jour",
+      "median": "Score médian",
+      "completed": "Terminées",
+      "abandoned": "Abandonnées",
+      "expired": "Expirées",
+      "answersTitle": "Réponses",
+      "artistFound": "Artiste trouvé",
+      "titleFound": "Titre trouvé",
+      "withHint": "Avec indice"
     },
     "sources": {
       "instagram": "Instagram",
@@ -927,7 +975,8 @@
     },
     "leaveSheet": {
       "title": "Partie en cours",
-      "body": "Ta partie n'est pas terminée.\nTu pourras la reprendre demain, mais le défi sera perdu si tu ne la termines pas aujourd'hui.",
+      "bodyHours": "Ta partie n'est pas terminée.\nTu peux la reprendre depuis l'accueil pendant encore {{ n }} h, jusqu'au prochain défi. Ensuite, elle est perdue.",
+      "bodyMinutes": "Ta partie n'est pas terminée.\nTu peux la reprendre depuis l'accueil pendant encore {{ n }} min, jusqu'au prochain défi. Ensuite, elle est perdue.",
       "confirm": "Quitter quand même",
       "cancel": "Continuer à jouer"
     },
@@ -957,6 +1006,14 @@
     },
     "result": {
       "yourScore": "Ton score du jour",
+      "outOf": "sur {{ max }}",
+      "verdict": {
+        "warmup": "Échauffement",
+        "correct": "Correct",
+        "veryGood": "Très bon",
+        "excellent": "Excellent",
+        "almostPerfect": "Presque parfait"
+      },
       "nextChallenge": "Prochain défi dans",
       "fastIn": "en",
       "fastAfter": " : seuls {{ percent }} % ont fait aussi vite.",
@@ -1047,13 +1104,25 @@
     },
     "round": {
       "points": "pts",
+      "breakdown": {
+        "max": "Maximum possible à {{ seconds }}",
+        "outOf": "sur {{ points }} pts possibles",
+        "bar": "{{ score }} points sur {{ base }} possibles",
+        "missedTitle": "Titre raté",
+        "missedArtist": "Artiste raté",
+        "half": "÷ 2",
+        "hint": "Indice",
+        "hintPenalty": "− {{ percent }} %"
+      },
       "nextTrack": "Piste suivante →",
       "seeResult": "Voir le résultat",
       "total": "Total"
     },
     "common": {
       "abandon": "Abandonner",
-      "loading": "Chargement du défi…"
+      "loading": "Chargement du défi…",
+      "seoTitle": "InSeconds, le blind test musical du jour",
+      "seoBody": "Écoute quelques secondes et devine l'artiste et le titre. Moins tu écoutes, plus tu scores. Un nouveau défi chaque jour, le même pour tout le monde, à jouer sans compte."
     },
     "archive": {
       "titlePrefix": "Blind test du",
@@ -1157,6 +1226,85 @@
       },
       "splitNote": "Le trait violet : la part des joueurs."
     },
+    "homeLine": {
+      "default": "Oreilles prêtes ?",
+      "eve": {
+        "0": {
+          "phrase": "Plus qu’une partie pour {{ value }} jours de série.",
+          "button": "Je fonce !"
+        },
+        "1": {
+          "phrase": "{{ value }} jours de série, c’est aujourd’hui.",
+          "button": "C’est parti !"
+        }
+      },
+      "record": {
+        "0": {
+          "phrase": "Hier, tu as frôlé ton record de {{ value }}.",
+          "button": "Battre mon record"
+        },
+        "1": {
+          "phrase": "Ton record de {{ value }} n’a plus qu’à tomber.",
+          "button": "Je le bats !"
+        }
+      },
+      "above": {
+        "0": {
+          "phrase": "Hier, {{ value }} : bien au-dessus de ta moyenne.",
+          "button": "Même chose ?"
+        },
+        "1": {
+          "phrase": "{{ value }} hier, tu étais en forme.",
+          "button": "Je confirme !"
+        }
+      },
+      "below": {
+        "0": {
+          "phrase": "Hier, {{ value }} : sous ta moyenne.",
+          "button": "Revanche !"
+        },
+        "1": {
+          "phrase": "{{ value }} hier, ça arrive à tout le monde.",
+          "button": "Je me rattrape"
+        }
+      },
+      "week": {
+        "0": {
+          "phrase": {
+            "one": "{{ value }} trouvé au premier palier cette semaine.",
+            "other": "{{ value }} trouvés au premier palier cette semaine."
+          },
+          "button": "Toujours vif ?"
+        },
+        "1": {
+          "phrase": {
+            "one": "Cette semaine, {{ value }} trouvé dès le premier palier.",
+            "other": "Cette semaine, {{ value }} trouvés dès le premier palier."
+          },
+          "button": "On continue !"
+        }
+      }
+    },
+    "weekReview": {
+      "title": "La semaine dernière",
+      "cardTitle": "Ta semaine",
+      "range": "du {{ from }} au {{ to }}",
+      "close": "Fermer",
+      "average": "de moyenne",
+      "averageShort": "moyenne",
+      "daysOfSeven": {
+        "one": "{{ n }} jour sur 7",
+        "other": "{{ n }} jours sur 7"
+      },
+      "daysPlayed": "jours joués",
+      "bestDay": "{{ day }} : {{ score }}",
+      "bestDayLabel": "meilleur jour ({{ day }})",
+      "bestTrack": "Meilleur morceau :",
+      "points": "{{ points }} pts",
+      "seeDetail": "Voir le détail",
+      "dayBarLabel": "{{ day }} : {{ score }}",
+      "dayBarNone": "{{ day }} : pas joué"
+    },
     "streakEvent": {
       "earned": "+1 gel gagné",
       "earnedDetail": "{{ streak }} jours de série",
@@ -1219,7 +1367,7 @@
     },
     "data": {
       "title": "Données collectées, finalités et base légale",
-      "body": "Aucune donnée n'est exigée pour jouer : le mode invité ne demande ni nom, ni email, ni inscription.\nSelon votre usage, l'application traite les catégories de données suivantes :\n· identifiant technique pseudonyme : généré aléatoirement et stocké dans un cookie, il permet de reconnaître votre navigateur d'une visite à l'autre (reprise de partie, limitation à une partie par jour, série de victoires). Finalité : fourniture du jeu. Base légale : exécution du service demandé (article 6.1.b du RGPD) ;\n· appareils connectés : pour chaque navigateur où vous jouez, l'application garde la date de première connexion, la date de dernière visite et un libellé grossier du navigateur et de l'appareil (par exemple « Safari · iPhone », jamais l'en-tête technique complet). Avec un compte, la liste de vos appareils s'affiche dans votre profil, où vous pouvez déconnecter chacun d'eux. Finalité : sécurité du compte et connexion multi-appareils. Base légale : exécution du service demandé (article 6.1.b) ;\n· email et pseudo, uniquement si vous créez un compte : un compte optionnel, activé par un lien de connexion envoyé par email (sans mot de passe), permet de retrouver votre historique et votre série sur n'importe quel appareil ; le pseudo est un nom d'affichage que vous choisissez librement. Finalité : gestion du compte et connexion multi-appareils. Base légale : votre consentement (article 6.1.a du RGPD), vous restez libre de jouer en invité sans jamais fournir ces informations ;\n· données de partie : le résultat de chaque réponse (artiste et titre trouvés ou non, sans le texte que vous tapez, qui n'est jamais conservé), durées d'écoute choisies, scores et dates de jeu. Finalité : faire fonctionner le jeu et calculer des statistiques globales anonymes (score médian, moyenne des joueurs par semaine ou par mois, taux de réussite par morceau et par palier d'écoute ; jamais sous 5 parties ni sous 100 réponses). Base légale : exécution du service demandé (article 6.1.b). Avec un compte, l'éditeur peut consulter dans l'espace d'administration votre pseudo, votre adresse email, votre série et l'historique de vos parties des 30 derniers jours, uniquement pour faire fonctionner le service et répondre à vos demandes ;\n· mode Survie (sur invitation) : pour chaque partie, le résultat de chaque morceau (artiste et titre trouvés ou non, jamais le texte que vous tapez), ses points, l'heure de la réponse, les manches passées, le score et les dates de jeu (les vies perdues et le palier d'écoute se déduisent de ces résultats ; le thème de chaque manche est fixé pour tous les joueurs de la playlist par le premier arrivé, il n'est pas rattaché à votre compte) ; votre record (meilleur score et plus grand nombre de manches passées) ; votre niveau Survie (vos points, le nombre de parties comptées, la date de la dernière, à partir de laquelle il baisse si vous ne jouez plus, et l'écart de points qu'elle a donné), visible des membres de vos groupes et, si vous avez l'accès au mode Survie, au classement général ; les playlists que vous lancez et leur auteur ; l'autorisation d'accès que l'éditeur vous a donnée. Une playlist se partage par un lien : ceux qui l'ouvrent voient le pseudo de son auteur (celui de son compte, sinon son pseudo d'invité, sinon « Invité »), pendant leur partie le total de l'auteur morceau par morceau (jusqu'au morceau où ils en sont) si l'auteur a fini la playlist et, une fois leur propre partie finie, le pseudo (celui du compte, sinon le pseudo d'invité, sinon « Invité »), le disque et le score de chacun de ceux qui l'ont jouée. Ce n'est pas un classement public : seuls ceux qui ont le lien les voient. Sans compte, vous donnez un pseudo d'invité à la fin de votre première partie sur la playlist d'un ami : il est obligatoire pour voir la comparaison, rattaché à votre identifiant technique (donc à votre navigateur) pour que vous le retrouviez à chaque visite, modifiable à tout moment, et jamais identique à celui d'un compte ; si deux joueurs d'une même comparaison ont le même pseudo, une courte marque dérivée de leur identifiant les distingue. Il figure dans la copie de vos données et est effacé automatiquement 91 jours après votre dernière visite (et si vous créez un compte, c'est le pseudo du compte qui compte). Si vous supprimez votre compte, vos parties disparaissent ; les playlists que vous avez lancées restent jouables, sans auteur. Finalité : faire fonctionner ce mode, varier les morceaux et les thèmes qu'il vous propose (le tirage tient compte de vos parties récentes, calculé à la volée sans rien conserver de plus) et permettre la comparaison entre ceux qui ont joué la même playlist. Base légale : exécution du service demandé (article 6.1.b) ;\n· défis d'amis reçus (compte requis) : si vous ouvrez avec votre compte le lien d'une playlist lancée par un autre joueur, nous gardons le lien de cette playlist, la date de réception et votre refus éventuel, pour vous la rappeler pendant 7 jours sur votre accueil, avec le pseudo de l'auteur et son score s'il a fini la playlist. Finalité : faire fonctionner le jeu. Base légale : exécution du service demandé (article 6.1.b). Conservation : jusqu'à la suppression de la playlist ou de votre compte (la ligne ne dit que quelle playlist vous avez ouverte). Vous pouvez refuser le défi ; ces données figurent dans votre export et sont effacées avec votre compte ;\n· groupes entre amis (compte requis) : le nom du groupe que vous créez ou rejoignez (texte libre, aux caractères d'un pseudo), votre rôle (créateur ou membre) et la date à laquelle vous l'avez rejoint. Les membres d'un groupe, et eux seuls (hors la modération par l'éditeur, décrite plus bas), voient le pseudo de votre compte et vos classements dans le groupe : pour le mode Survie, votre disque et vos points de niveau ; pour le défi du jour, le fait que vous l'ayez fini ou non aujourd'hui (visible de tous les membres, y compris sur la carte amis de leur accueil), votre score de ce défi (montré seulement aux membres qui ont fini le leur), la somme de vos scores des 7 derniers jours et les jours joués sur cette période (y compris les jours précédant l'arrivée d'un nouveau membre), et, sur la page de chaque jour passé de l'historique, votre score de ce défi si vous l'avez fini (montré seulement aux membres qui ne peuvent plus jouer ce défi, y compris pour les jours précédant votre arrivée ou la leur dans le groupe), calculés à partir de vos parties sans rien conserver de plus ; une personne qui a le lien d'invitation voit seulement le nom du groupe et le nombre de places. Le classement général du mode Survie est à part : il réunit tous les comptes qui ont l'accès à ce mode et y ont fini une partie ; votre nom, votre disque et vos points de niveau y sont visibles des autres joueurs. Par défaut, ce nom est le pseudo de votre compte ; vous pouvez à tout moment le remplacer par un alias musical tiré au hasard (par exemple « Hibou rêveur 12 »), depuis la page du classement ou votre profil. L'alias, la date de son tirage et votre choix figurent dans la copie de vos données et sont effacés avec votre compte (l'alias redevient alors libre). Base légale de ce classement : intérêt légitime (article 6.1.f), le classement faisant partie du jeu ; vous vous y opposez en choisissant l'alias. Vous pouvez quitter un groupe à tout moment (le créateur peut le supprimer) et l'effacement de votre compte vous en retire ; la copie de vos données les contient. Pour les modérer, l'éditeur voit dans l'espace d'administration le nom des groupes, leur nombre de membres, le pseudo de leur créateur et, en ouvrant un groupe, le pseudo de ses membres (jamais le lien d'invitation), et peut renommer ou supprimer un groupe au nom inapproprié, en retirer un membre ou en changer le créateur. Finalité : jouer avec ses amis et comparer ses résultats. Base légale : exécution du service demandé (article 6.1.b) ;\n· adresse IP : traitée techniquement à chaque requête, comme pour tout site web, à des fins de sécurité (limitation du nombre de tentatives de connexion pour prévenir les abus). Finalité : sécurité du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· journaux techniques : à chaque requête, l'application enregistre l'identifiant technique pseudonyme décrit ci-dessus, la page ou l'action concernée, sa durée, son résultat, le type de navigateur et d'appareil (par exemple « Safari · iPhone ») et, en cas de bug, le message d'erreur, sa pile d'appels, la version de l'application et l'état de la connexion (en ligne ou non). Ces journaux ne contiennent jamais votre email, votre pseudo, vos réponses saisies ni votre cookie. Finalité : détecter et corriger les bugs, surveiller le bon fonctionnement du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· mesure d'audience : à chaque page affichée, un petit script de Cloudflare Web Analytics envoie à Cloudflare l'adresse de la page, le site d'où vous venez, le type de navigateur et d'appareil, et les temps de chargement de la page. Cloudflare en tire des statistiques agrégées (visites, pages vues, pays, sites d'origine, appareils, vitesse du site), sans cookie ni identifiant qui permette de vous reconnaître ; l'éditeur ne voit que ces statistiques. Finalité : connaître la fréquentation du site et sa vitesse. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· source d'arrivée : à la création de votre identifiant d'invité, l'application note d'où vous arrivez : le nom de campagne porté par le lien que vous avez suivi (par exemple « instagram », ou « share » pour un lien partagé par un joueur), sinon le seul nom de domaine du site d'où vous venez (par exemple « google.com », jamais l'adresse complète de la page), ou « direct ». Elle est gardée dans votre navigateur le temps de la visite, puis rattachée à votre identifiant pseudonyme ; elle figure dans la copie de vos données et disparaît avec elles. Finalité : savoir quels canaux amènent de nouveaux joueurs (mesure d'audience). Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· préférences locales : votre langue préférée, le choix de couper les sons du mode Survie, le souvenir des messages d'information déjà affichés (par exemple l'annonce des groupes ou la tuile « crée un compte » que vous avez fermée), le code d'une invitation dans un groupe que vous ouvrez avant d'avoir un compte (pour vous la reproposer une fois connecté) et le numéro du dernier groupe que vous avez consulté (pour montrer celui-là sur l'accueil) sont stockés localement dans votre navigateur ; ils ne sont transmis à nos serveurs que dans deux cas : le code d'invitation si vous choisissez de rejoindre le groupe, et le numéro du dernier groupe consulté, pour charger sur l'accueil ce groupe dont vous êtes membre."
+      "body": "Aucune donnée n'est exigée pour jouer : le mode invité ne demande ni nom, ni email, ni inscription.\nSelon votre usage, l'application traite les catégories de données suivantes :\n· identifiant technique pseudonyme : généré aléatoirement et stocké dans un cookie, il permet de reconnaître votre navigateur d'une visite à l'autre (reprise de partie, limitation à une partie par jour, série de victoires). Finalité : fourniture du jeu. Base légale : exécution du service demandé (article 6.1.b du RGPD) ;\n· appareils connectés : pour chaque navigateur où vous jouez, l'application garde la date de première connexion, la date de dernière visite et un libellé grossier du navigateur et de l'appareil (par exemple « Safari · iPhone », jamais l'en-tête technique complet). Avec un compte, la liste de vos appareils s'affiche dans votre profil, où vous pouvez déconnecter chacun d'eux. Finalité : sécurité du compte et connexion multi-appareils. Base légale : exécution du service demandé (article 6.1.b) ;\n· email et pseudo, uniquement si vous créez un compte : un compte optionnel, activé par un lien de connexion envoyé par email (sans mot de passe), permet de retrouver votre historique et votre série sur n'importe quel appareil ; le pseudo est un nom d'affichage que vous choisissez librement. Finalité : gestion du compte et connexion multi-appareils. Base légale : votre consentement (article 6.1.a du RGPD), vous restez libre de jouer en invité sans jamais fournir ces informations ;\n· données de partie : le résultat de chaque réponse (artiste et titre trouvés ou non, sans le texte que vous tapez, qui n'est jamais conservé), durées d'écoute choisies, scores et dates de jeu. Finalité : faire fonctionner le jeu et calculer des statistiques globales anonymes (score médian, moyenne des joueurs par semaine ou par mois, taux de réussite par morceau et par palier d'écoute ; jamais sous 5 parties ni sous 100 réponses). Base légale : exécution du service demandé (article 6.1.b). Avec un compte, l'éditeur peut consulter dans l'espace d'administration votre pseudo, votre adresse email, votre série et l'historique de vos parties des 30 derniers jours, uniquement pour faire fonctionner le service et répondre à vos demandes ;\n· mode Survie (sur invitation) : pour chaque partie, le résultat de chaque morceau (artiste et titre trouvés ou non, jamais le texte que vous tapez), ses points, l'heure de la réponse, les manches passées, le score et les dates de jeu (les vies perdues et le palier d'écoute se déduisent de ces résultats ; le thème de chaque manche est fixé pour tous les joueurs de la playlist par le premier arrivé, il n'est pas rattaché à votre compte) ; votre record (meilleur score et plus grand nombre de manches passées) ; votre niveau Survie (vos points, le nombre de parties comptées, la date de la dernière, à partir de laquelle il baisse si vous ne jouez plus, et l'écart de points qu'elle a donné), visible des membres de vos groupes et, si vous avez l'accès au mode Survie, au classement général ; les playlists que vous lancez et leur auteur ; l'autorisation d'accès que l'éditeur vous a donnée. Une playlist se partage par un lien : ceux qui l'ouvrent voient le pseudo de son auteur (celui de son compte, sinon son pseudo d'invité, sinon « Invité »), pendant leur partie le total de l'auteur morceau par morceau (jusqu'au morceau où ils en sont) si l'auteur a fini la playlist et, une fois leur propre partie finie, le pseudo (celui du compte, sinon le pseudo d'invité, sinon « Invité »), le disque et le score de chacun de ceux qui l'ont jouée. Ce n'est pas un classement public : seuls ceux qui ont le lien les voient. Sans compte, vous donnez un pseudo d'invité à la fin de votre première partie sur la playlist d'un ami : il est obligatoire pour voir la comparaison, rattaché à votre identifiant technique (donc à votre navigateur) pour que vous le retrouviez à chaque visite, modifiable à tout moment, et jamais identique à celui d'un compte ; si deux joueurs d'une même comparaison ont le même pseudo, une courte marque dérivée de leur identifiant les distingue. Il figure dans la copie de vos données et est effacé automatiquement 91 jours après votre dernière visite (et si vous créez un compte, c'est le pseudo du compte qui compte). Si vous supprimez votre compte, vos parties disparaissent ; les playlists que vous avez lancées restent jouables, sans auteur. Finalité : faire fonctionner ce mode, varier les morceaux et les thèmes qu'il vous propose (le tirage tient compte de vos parties récentes, calculé à la volée sans rien conserver de plus) et permettre la comparaison entre ceux qui ont joué la même playlist. Base légale : exécution du service demandé (article 6.1.b) ;\n· défis d'amis reçus (compte requis) : si vous ouvrez avec votre compte le lien d'une playlist lancée par un autre joueur, nous gardons le lien de cette playlist, la date de réception et votre refus éventuel, pour vous la rappeler pendant 7 jours sur votre accueil, avec le pseudo de l'auteur et son score s'il a fini la playlist. Finalité : faire fonctionner le jeu. Base légale : exécution du service demandé (article 6.1.b). Conservation : jusqu'à la suppression de la playlist ou de votre compte (la ligne ne dit que quelle playlist vous avez ouverte). Vous pouvez refuser le défi ; ces données figurent dans votre export et sont effacées avec votre compte ;\n· groupes entre amis (compte requis) : le nom du groupe que vous créez ou rejoignez (texte libre, aux caractères d'un pseudo), votre rôle (créateur ou membre) et la date à laquelle vous l'avez rejoint. Les membres d'un groupe, et eux seuls (hors la modération par l'éditeur, décrite plus bas), voient le pseudo de votre compte et vos classements dans le groupe : pour le mode Survie, votre disque et vos points de niveau ; pour le défi du jour, le fait que vous l'ayez fini ou non aujourd'hui (visible de tous les membres, y compris sur la carte amis de leur accueil), votre score de ce défi (montré seulement aux membres qui ont fini le leur), la somme de vos scores des 7 derniers jours et les jours joués sur cette période (y compris les jours précédant l'arrivée d'un nouveau membre), et, sur la page de chaque jour passé de l'historique, votre score de ce défi si vous l'avez fini (montré seulement aux membres qui ne peuvent plus jouer ce défi, y compris pour les jours précédant votre arrivée ou la leur dans le groupe), calculés à partir de vos parties sans rien conserver de plus ; une personne qui a le lien d'invitation voit seulement le nom du groupe et le nombre de places. Le classement général du mode Survie est à part : il réunit tous les comptes qui ont l'accès à ce mode et y ont fini une partie ; votre nom, votre disque et vos points de niveau y sont visibles des autres joueurs. Par défaut, ce nom est le pseudo de votre compte ; vous pouvez à tout moment le remplacer par un alias musical tiré au hasard (par exemple « Hibou rêveur 12 »), depuis la page du classement ou votre profil. L'alias, la date de son tirage et votre choix figurent dans la copie de vos données et sont effacés avec votre compte (l'alias redevient alors libre). Base légale de ce classement : intérêt légitime (article 6.1.f), le classement faisant partie du jeu ; vous vous y opposez en choisissant l'alias. Vous pouvez quitter un groupe à tout moment (le créateur peut le supprimer) et l'effacement de votre compte vous en retire ; la copie de vos données les contient. Pour les modérer, l'éditeur voit dans l'espace d'administration le nom des groupes, leur nombre de membres, le pseudo de leur créateur et, en ouvrant un groupe, le pseudo de ses membres (jamais le lien d'invitation), et peut renommer ou supprimer un groupe au nom inapproprié, en retirer un membre ou en changer le créateur. Finalité : jouer avec ses amis et comparer ses résultats. Base légale : exécution du service demandé (article 6.1.b) ;\n· adresse IP : traitée techniquement à chaque requête, comme pour tout site web, à des fins de sécurité (limitation du nombre de tentatives de connexion pour prévenir les abus). Finalité : sécurité du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· journaux techniques : à chaque requête, l'application enregistre l'identifiant technique pseudonyme décrit ci-dessus, la page ou l'action concernée, sa durée, son résultat, le type de navigateur et d'appareil (par exemple « Safari · iPhone ») et, en cas de bug, le message d'erreur, sa pile d'appels, la version de l'application et l'état de la connexion (en ligne ou non). Ces journaux ne contiennent jamais votre email, votre pseudo, vos réponses saisies ni votre cookie. Finalité : détecter et corriger les bugs, surveiller le bon fonctionnement du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· mesure d'audience : à chaque page affichée, un petit script de Cloudflare Web Analytics envoie à Cloudflare l'adresse de la page, le site d'où vous venez, le type de navigateur et d'appareil, et les temps de chargement de la page. Cloudflare en tire des statistiques agrégées (visites, pages vues, pays, sites d'origine, appareils, vitesse du site), sans cookie ni identifiant qui permette de vous reconnaître ; l'éditeur ne voit que ces statistiques. Finalité : connaître la fréquentation du site et sa vitesse. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· source d'arrivée : à la création de votre identifiant d'invité, l'application note d'où vous arrivez : le nom de campagne porté par le lien que vous avez suivi (par exemple « instagram », ou « share » pour un lien partagé par un joueur), sinon le seul nom de domaine du site d'où vous venez (par exemple « google.com », jamais l'adresse complète de la page), ou « direct ». Elle est gardée dans votre navigateur le temps de la visite, puis rattachée à votre identifiant pseudonyme ; à la même occasion, l'application note la classe de votre appareil (téléphone, tablette ou ordinateur), déduite de l'en-tête du navigateur sans rien vous demander, jamais l'en-tête complet. Source et classe figurent dans la copie de vos données et disparaissent avec elles. Finalité : savoir quels canaux et quels appareils amènent de nouveaux joueurs, et s'ils reviennent (mesure d'audience). Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· préférences locales : votre langue préférée, le choix de couper les sons du mode Survie, le souvenir des messages d'information déjà affichés (par exemple l'annonce des groupes ou la tuile « crée un compte » que vous avez fermée), le code d'une invitation dans un groupe que vous ouvrez avant d'avoir un compte (pour vous la reproposer une fois connecté) et le numéro du dernier groupe que vous avez consulté (pour montrer celui-là sur l'accueil) sont stockés localement dans votre navigateur ; ils ne sont transmis à nos serveurs que dans deux cas : le code d'invitation si vous choisissez de rejoindre le groupe, et le numéro du dernier groupe consulté, pour charger sur l'accueil ce groupe dont vous êtes membre."
     },
     "cookie": {
       "title": "Cookie",
@@ -1231,7 +1379,7 @@
     },
     "thirdParties": {
       "title": "Destinataires, hébergement et transferts hors UE",
-      "body": "Vos données ne sont ni vendues, ni cédées, ni transmises à des tiers à des fins commerciales ou publicitaires. Elles ne sont partagées qu'avec les prestataires techniques strictement nécessaires au fonctionnement du service :\n· hébergement : l'application, son code et sa base de données sont hébergés sur un serveur privé (VPS) d'OVH SAS (voir les mentions légales), dans un centre de données situé à Gravelines (France) ;\n· réseau et nom de domaine : le nom de domaine inseconds.cc transite par le réseau de Cloudflare, Inc. (États-Unis), qui agit comme relais technique (résolution DNS, protection anti-DDoS et contre les abus) : vos échanges avec le site le traversent, mais Cloudflare ne les exploite pas pour son propre compte ; il produit aussi pour l'éditeur les statistiques de fréquentation décrites dans « Données collectées » (Cloudflare Web Analytics) ;\n· sauvegardes : les copies de sauvegarde de la base de données sont chiffrées sur notre serveur avant d'être envoyées dans le service de stockage R2 de Cloudflare, Inc., dans sa juridiction européenne (données stockées dans l'Union européenne) ; Cloudflare n'a pas la clé de chiffrement et ne peut pas les lire ;\n· envoi des emails : si vous créez un compte, l'email contenant votre lien de connexion (ou le lien de confirmation d'un changement d'adresse) est envoyé via l'API de Brevo (Sendinblue SAS, France, données hébergées dans l'Union européenne) ; seule votre adresse email lui est transmise, dans le seul but de vous faire parvenir ce message ;\n· journaux techniques : les journaux décrits plus haut sont stockés chez Grafana Labs, dans la région européenne de son service Grafana Cloud, pour être consultés par l'éditeur en cas de bug ;\n· surveillance des tâches automatiques : le service healthchecks.io reçoit un simple signal à la fin de chaque tâche nocturne (génération du défi, sauvegarde…) et prévient l'éditeur si l'une d'elles échoue ; aucune donnée vous concernant ne lui est transmise ;\n· extraits musicaux et pochettes : fournis par Deezer (Deezer S.A., France). La recherche de morceaux passe par notre serveur, mais votre navigateur charge les extraits et les pochettes directement depuis les serveurs de Deezer, qui reçoivent donc votre adresse IP, comme pour toute ressource chargée par une page web. Aucune autre information vous concernant (compte, pseudo, email, parties) n'est transmise à Deezer (voir « Contenus musicaux » dans les mentions légales).\nTransferts hors Union européenne : Cloudflare et Grafana Labs, basés aux États-Unis, sont susceptibles de traiter des données hors de l'UE. Ces transferts sont encadrés par les clauses contractuelles types de la Commission européenne, intégrées à leurs accords de traitement des données (DPA) respectifs, ainsi que par leur adhésion au cadre de protection des données UE-États-Unis (EU-U.S. Data Privacy Framework), deux mécanismes reconnus par la Commission européenne comme offrant des garanties de protection équivalentes à celles du RGPD."
+      "body": "Vos données ne sont ni vendues, ni cédées, ni transmises à des tiers à des fins commerciales ou publicitaires. Elles ne sont partagées qu'avec les prestataires techniques strictement nécessaires au fonctionnement du service :\n· hébergement : l'application, son code et sa base de données sont hébergés sur un serveur privé (VPS) d'OVH SAS (voir les mentions légales), dans un centre de données situé à Gravelines (France) ;\n· réseau et nom de domaine : le nom de domaine inseconds.cc transite par le réseau de Cloudflare, Inc. (États-Unis), qui agit comme relais technique (résolution DNS, protection anti-DDoS et contre les abus) : vos échanges avec le site le traversent, mais Cloudflare ne les exploite pas pour son propre compte ; il produit aussi pour l'éditeur les statistiques de fréquentation décrites dans « Données collectées » (Cloudflare Web Analytics) ;\n· sauvegardes : les copies de sauvegarde de la base de données sont chiffrées sur notre serveur avant d'être envoyées dans le service de stockage R2 de Cloudflare, Inc., dans sa juridiction européenne (données stockées dans l'Union européenne) ; Cloudflare n'a pas la clé de chiffrement et ne peut pas les lire ;\n· envoi des emails : si vous créez un compte, l'email contenant votre lien de connexion (ou le lien de confirmation d'un changement d'adresse) est envoyé via l'API de Brevo (Sendinblue SAS, France, données hébergées dans l'Union européenne) ; seule votre adresse email lui est transmise, dans le seul but de vous faire parvenir ce message ;\n· journaux techniques : les journaux décrits plus haut sont stockés chez Grafana Labs, dans la région européenne de son service Grafana Cloud, pour être consultés par l'éditeur en cas de bug ;\n· surveillance des tâches automatiques : le service healthchecks.io reçoit un simple signal à la fin de chaque tâche nocturne (génération du défi, sauvegarde…) et prévient l'éditeur si l'une d'elles échoue ; aucune donnée vous concernant ne lui est transmise ;\n· extraits musicaux et pochettes : fournis par Deezer (Deezer S.A., France). La recherche de morceaux passe par notre serveur, mais votre navigateur se connecte aux serveurs de Deezer dès l'ouverture de l'application (connexion préparée pour lire plus vite), puis y charge les extraits et les pochettes ; Deezer reçoit donc votre adresse IP, même si vous ne lancez pas de partie. Aucune autre information vous concernant (compte, pseudo, email, parties) n'est transmise à Deezer (voir « Contenus musicaux » dans les mentions légales).\nTransferts hors Union européenne : Cloudflare et Grafana Labs, basés aux États-Unis, sont susceptibles de traiter des données hors de l'UE. Ces transferts sont encadrés par les clauses contractuelles types de la Commission européenne, intégrées à leurs accords de traitement des données (DPA) respectifs, ainsi que par leur adhésion au cadre de protection des données UE-États-Unis (EU-U.S. Data Privacy Framework), deux mécanismes reconnus par la Commission européenne comme offrant des garanties de protection équivalentes à celles du RGPD."
     },
     "security": {
       "title": "Sécurité des données",
@@ -1619,7 +1767,7 @@
       "label": "Nouveau nom",
       "confirm": "Renommer",
       "cancel": "Annuler",
-      "failed": "Impossible de renommer le groupe pour le moment."
+      "failed": "Impossible de renommer le groupe. Ce nom est peut-être réservé."
     },
     "transfer": {
       "link": "Changer de créateur",

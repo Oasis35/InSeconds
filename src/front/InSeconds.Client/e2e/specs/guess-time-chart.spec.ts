@@ -19,7 +19,9 @@ async function revealFirstTrack(page: Page, answer: string): Promise<BlindRoundP
   await round.chooseDuration(1);
   await round.waitForAnswerInput();
   await round.typeAnswer(answer);
-  await round.submit();
+  // Une réponse fausse ouvre une seconde tentative : elle repart, définitive.
+  if (answer.startsWith('zzz')) await round.submitWrongTwice();
+  else await round.submit();
   await round.nextButton.waitFor({ state: 'visible' });
   return round;
 }

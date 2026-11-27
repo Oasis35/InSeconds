@@ -65,6 +65,50 @@ public class SocialGroupTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(SocialErrorCodes.InvalidName, await CodeOfAsync(response));
     }
 
+    [Theory]
+    [InlineData("InSeconds")]
+    [InlineData("In Seconds Officiel")]
+    [InlineData("1nSeconds.cc")]
+    [InlineData("Admin")]
+    [InlineData("Deezer")]
+    public async Task Creation_NomReserve_400_EtAucunGroupe(string name)
+    {
+        var alice = await _game.NewPlayerAsync("Alice");
+
+        var response = await alice.Client.PostAsJsonAsync("/api/social/groups", new CreateGroup(name), Ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(SocialErrorCodes.ReservedName, await CodeOfAsync(response));
+        Assert.Equal(0L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM social.groups"));
+    }
+
+    [Fact]
+    public async Task Renommer_NomReserve_400_EtRienNeChange()
+    {
+        var alice = await _game.NewPlayerAsync("Alice");
+        var group = await CreateAsync(alice, "Les copains");
+
+        var response = await alice.Client.PutAsJsonAsync($"/api/social/groups/{group.Id}/name", new RenameGroup("Équipe InSeconds"), Ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(SocialErrorCodes.ReservedName, await CodeOfAsync(response));
+        Assert.Equal("Les copains", (await alice.Client.GetFromJsonAsync<GroupDetailResponse>($"/api/social/groups/{group.Id}", Ct))!.Name);
+    }
+
+    [Fact]
+    public async Task NomsReserves_LeReglageSeRelitAChaud_EtRemplaceLaListeDeDepart()
+    {
+        var alice = await _game.NewPlayerAsync("Alice");
+        await _game.SetSettingAsync("Players:ReservedContains", "[\"zorglub\"]");
+
+        var custom = await alice.Client.PostAsJsonAsync("/api/social/groups", new CreateGroup("Les Zorglub"), Ct);
+        var former = await alice.Client.PostAsJsonAsync("/api/social/groups", new CreateGroup("InSeconds"), Ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, custom.StatusCode);
+        Assert.Equal(SocialErrorCodes.ReservedName, await CodeOfAsync(custom));
+        Assert.Equal(HttpStatusCode.OK, former.StatusCode);
+    }
+
     [Fact]
     public async Task Creation_LimiteDeGroupesParJoueur_EtReglageRelu()
     {

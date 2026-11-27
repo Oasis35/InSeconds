@@ -30,12 +30,15 @@ public static class SetGuestPseudoEndpoint
         return new GuestLoad(await store.FindPlayerAsync(playerId, ct), await store.HasAccountAsync(playerId, ct));
     }
 
-    public static async Task<ProblemDetails> ValidateAsync(SetGuestPseudo request, GuestLoad load, IPlayerStore store, CancellationToken ct)
+    public static async Task<ProblemDetails> ValidateAsync(
+        SetGuestPseudo request, GuestLoad load, IPlayerStore store, IReservedNames reservedNames, CancellationToken ct)
     {
         if (load.Player is null)
             return PlayersProblems.GuestForbidden();
         if (load.HasAccount)
             return PlayersProblems.NotAGuest();
+        if (reservedNames.IsReserved(request.Pseudo))
+            return PlayersProblems.PseudoReserved();
         // Les comptes ont la priorité sur les pseudos : un invité ne prend jamais celui d'un compte (comparaison sans casse). Entre invités, aucune
         // unicité (la comparaison d'une playlist distingue deux homonymes par un repère).
         return await store.IsPseudoTakenAsync(request.Pseudo.Trim(), ct) ? PlayersProblems.PseudoTaken() : WolverineContinue.NoProblems;

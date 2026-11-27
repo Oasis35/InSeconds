@@ -41,8 +41,12 @@ interface StepMark {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <!-- En ligne, le lecteur n'a pas de cadre : il est dans la carte du mode. -->
-    <div [class.px-4]="!inline()" [class.py-5]="!inline()" [style.background]="inline() ? null : 'var(--bg-surface)'"
-      [style.border]="inline() ? null : '1.5px solid rgb(var(--rgb-accent-2) / 0.8)'" [style.box-shadow]="inline() ? null : 'var(--tube-frame-soft)'" [style.border-radius]="inline() ? null : 'var(--radius-card)'">
+    <div class="relative player-frame" [class.px-4]="!inline()" [class.py-5]="!inline()" [style.background]="inline() ? null : 'var(--bg-surface)'"
+      [style.border]="inline() ? null : '1.5px solid rgb(var(--rgb-accent-2) / 0.8)'" [style.box-shadow]="inline() ? null : (secondAttempt() ? 'none' : 'var(--tube-frame-soft)')" [style.border-radius]="inline() ? null : 'var(--radius-card)'">
+      @if (!inline()) {
+        <!-- Seconde tentative : le cadre passe du cyan à l'ambre du joueur par un fondu (un calque qui apparaît, jamais deux couleurs qui se mélangent). -->
+        <span class="retry-frame absolute pointer-events-none" aria-hidden="true" data-testid="round-retry-frame" [style.opacity]="secondAttempt() ? 1 : 0"></span>
+      }
       @switch (phase()) {
         @case ('no-preview') {
           <div class="space-y-5">
@@ -99,9 +103,9 @@ interface StepMark {
                     [style.left.%]="mark.left"
                     [class.items-center]="mark.align === 'center'" [class.items-end]="mark.align === 'end'"
                     [style.transform]="shiftOf(mark)"
-                    [style.color]="mark.current ? 'var(--color-accent-2)' : 'var(--text-muted)'">
+                    [style.color]="mark.current ? tone() : 'var(--text-muted)'">
                     <i class="block" style="width:1.5px" [style.height.px]="mark.current ? 7 : 5"
-                      [style.background]="mark.unlocked ? 'var(--color-accent-2)' : 'rgb(var(--rgb-text) / 0.25)'"></i>
+                      [style.background]="mark.unlocked ? tone() : 'rgb(var(--rgb-text) / 0.25)'"></i>
                     @if (mark.labelled) {
                       {{ mark.seconds | appSeconds }}
                     }
@@ -113,7 +117,7 @@ interface StepMark {
                 <div class="flex justify-center">
                   @let points = stake();
                   @if (points !== null) {
-                    <app-round-stake [value]="points" />
+                    <app-round-stake [value]="points" [retry]="secondAttempt()" />
                   }
                 </div>
 
@@ -145,22 +149,23 @@ interface StepMark {
         place) : une barre peut être à moitié jouée, et seul transform change pendant la lecture, quel que soit le nombre de barres. -->
       <div #wave data-testid="waveform" class="relative w-full overflow-hidden" style="height:46px"
         role="progressbar" [attr.aria-valuenow]="heardTenths()" aria-valuemin="0" [attr.aria-valuemax]="maxStep()"
-        [attr.aria-label]="'gameplay.round.waveform' | translate">
+        [attr.aria-label]="'gameplay.round.waveform' | translate"
+        [attr.aria-valuetext]="'gameplay.round.waveformValue' | translate: { heard: (heardTenths() | appSeconds: 1), max: (maxStep() | appSeconds) }">
         <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-locked)', shadow: 'none', heights: flatHeights }" />
         <div data-testid="waveform-unlocked" class="absolute inset-0 overflow-hidden" [class.wave-sweep]="!reduced"
           [style.transform]="layerShift(unlockedRatio(), waveWidth())">
           <div class="absolute inset-0" [class.wave-sweep]="!reduced" [style.transform]="innerShift(unlockedRatio(), waveWidth())">
-            <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-listened)', shadow: 'none', heights: flatHeights }" />
+            <ng-container *ngTemplateOutlet="barRow; context: { color: waveListened(), shadow: 'none', heights: flatHeights }" />
           </div>
         </div>
         <div #seenLayer data-testid="waveform-seen" class="absolute inset-0 overflow-hidden" style="will-change:transform">
           <div #seenInner class="absolute inset-0" style="will-change:transform">
-            <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-listened)', shadow: 'none', heights: heights() }" />
+            <ng-container *ngTemplateOutlet="barRow; context: { color: waveListened(), shadow: 'none', heights: heights() }" />
           </div>
         </div>
         <div #playedLayer data-testid="waveform-played" class="absolute inset-0 overflow-hidden" style="will-change:transform">
           <div #playedInner class="absolute inset-0" style="will-change:transform">
-            <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--color-accent-2)', shadow: 'var(--tube-wave-played)', heights: heights() }" />
+            <ng-container *ngTemplateOutlet="barRow; context: { color: tone(), shadow: wavePlayedShadow(), heights: heights() }" />
           </div>
         </div>
         <!-- La traîne : une fenêtre de 15 % calée à droite sur la tête de lecture, fondue de transparent à opaque. -->
@@ -168,7 +173,7 @@ interface StepMark {
           <div class="wave-trail absolute right-0 top-0 bottom-0 overflow-hidden" style="width:15%">
             <!-- 100 % / 0,15 : exactement la largeur de la waveform, sans arrondi (les barres restent sur celles des autres couches). -->
             <div #trailInner class="absolute right-0 top-0 bottom-0" style="width:calc(100% / 0.15);will-change:transform">
-              <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-trail)', shadow: 'none', heights: heights() }" />
+              <ng-container *ngTemplateOutlet="barRow; context: { color: waveTrail(), shadow: 'none', heights: heights() }" />
             </div>
           </div>
         </div>
@@ -185,6 +190,8 @@ interface StepMark {
       <app-membrane [level]="bass()">
         <!-- Toujours ↺ : le bouton relance le palier depuis 0, même en lecture (jamais le symbole pause, qui promettrait une reprise). -->
         <button type="button" (click)="replay.emit()" [disabled]="locked()" [title]="'gameplay.round.replay' | translate: { seconds: (chosenSeconds() | appSeconds) }"
+          [attr.aria-label]="(submitting() ? 'gameplay.round.replayBusy' : 'gameplay.round.replayLabel') | translate: { seconds: (chosenSeconds() | appSeconds) }"
+          [attr.aria-busy]="submitting()"
           class="relative rounded-full transition active:scale-95 touch-manipulation flex items-center justify-center overflow-hidden disabled:opacity-40 disabled:grayscale disabled:active:scale-100"
           [style.width.px]="size" [style.height.px]="size" style="background:var(--fill-primary);border:1.5px solid var(--core-orange);color:var(--text-on-orange)">
           @if (submitting()) {
@@ -200,6 +207,16 @@ interface StepMark {
     </ng-template>
   `,
   styles: `
+    /* Le calque ambre de la seconde tentative, par-dessus le cadre cyan (qui a 1,5 px de bordure : le calque le recouvre exactement). */
+    .player-frame { transition: box-shadow 400ms ease-out; }
+    .retry-frame {
+      inset: -1.5px;
+      border: 1.5px solid rgb(var(--rgb-accent-3) / 0.8);
+      border-radius: var(--radius-card);
+      box-shadow: 0 0 6px rgb(var(--rgb-accent-3) / 0.35);
+      transition: opacity 400ms ease-out;
+    }
+    @media (prefers-reduced-motion: reduce) { .retry-frame, .player-frame { transition: none; } }
     /* Le palier débloqué s'étend en douceur (rien en mouvement réduit). */
     .wave-sweep { transition: transform 300ms ease-out; }
     /* La traîne se fond dans le cyan vif vers l'arrière. */
@@ -222,6 +239,8 @@ export class RoundPlayerComponent {
   readonly bass = input(0);
   /** Les points en jeu ; `null` si le mode n'en a pas (rien à gauche du bouton). */
   readonly stake = input<number | null>(null);
+  /** Le joueur est à sa seconde tentative : le lecteur passe à l'ambre (cadre, forme d'onde, repères, chiffre des points en jeu, qui ont déjà baissé). */
+  readonly secondAttempt = input(false);
   /**
    * `inline` : le bouton à gauche de la waveform, sans cadre, sans repères ni « écouter plus » (la carte d'un mode à écoute fixe) ;
    * `stacked` (défaut) : la waveform pleine largeur, ses repères, puis le bouton entre les points en jeu et « écouter plus » (Daily).
@@ -238,6 +257,14 @@ export class RoundPlayerComponent {
   /** La réponse part (ou son envoi a échoué) : on ne réécoute plus, on attend. */
   protected readonly locked = computed(() => this.phase() === 'submitting' || this.phase() === 'submit-error');
   protected readonly submitting = computed(() => this.phase() === 'submitting');
+  /** La couleur du son : le cyan, l'ambre du joueur à la seconde tentative (le lecteur entier prend la couleur de ce qu'il fait). Le rond « écouter plus » reste cyan. */
+  protected readonly tone = computed(() => (this.secondAttempt() ? 'var(--color-accent-3)' : 'var(--color-accent-2)'));
+  protected readonly waveListened = computed(() =>
+    this.secondAttempt() ? 'var(--wave-listened-retry)' : 'var(--wave-listened)');
+  protected readonly waveTrail = computed(() =>
+    this.secondAttempt() ? 'var(--wave-trail-retry)' : 'var(--wave-trail)');
+  protected readonly wavePlayedShadow = computed(() =>
+    this.secondAttempt() ? 'var(--tube-wave-played-retry)' : 'var(--tube-wave-played)');
   protected readonly maxStep = computed(() => this.steps().at(-1) ?? 0);
 
   /** Jusqu'où l'extrait est joué : la position en lecture, le palier entier une fois joué, rien pendant le chargement. */

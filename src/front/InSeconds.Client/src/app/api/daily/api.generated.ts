@@ -425,6 +425,67 @@ export class DailyClient {
     }
 
     /**
+     * @param days (optional) 
+     * @return OK
+     */
+    getStats(days: number | undefined): Observable<StatsResponse> {
+        let url_ = this.baseUrl + "/api/admin/daily/stats?";
+        if (days === null)
+            throw new globalThis.Error("The parameter 'days' cannot be null.");
+        else if (days !== undefined)
+            url_ += "days=" + encodeURIComponent("" + days) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetStats(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetStats(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<StatsResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<StatsResponse>;
+        }));
+    }
+
+    protected processGetStats(response: HttpResponseBase): Observable<StatsResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StatsResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
      * @return OK
      */
     getArchiveIndex(): Observable<ArchiveIndexResponse> {
@@ -994,6 +1055,12 @@ export class DailyClient {
             result409 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("Conflict", status, _responseText, _headers, result409);
             }));
+        } else if (status === 429) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result429: any = null;
+            result429 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Too Many Requests", status, _responseText, _headers, result429);
+            }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
@@ -1136,6 +1203,12 @@ export class DailyClient {
             result409 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("Conflict", status, _responseText, _headers, result409);
             }));
+        } else if (status === 429) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result429: any = null;
+            result429 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Too Many Requests", status, _responseText, _headers, result429);
+            }));
         } else if (status === 503) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result503: any = null;
@@ -1222,6 +1295,12 @@ export class DailyClient {
             let result409: any = null;
             result409 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("Conflict", status, _responseText, _headers, result409);
+            }));
+        } else if (status === 429) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result429: any = null;
+            result429 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Too Many Requests", status, _responseText, _headers, result429);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -1449,6 +1528,62 @@ export class DailyClient {
             let result400: any = null;
             result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("Bad Request", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getWeekReview(): Observable<WeekReviewResponse> {
+        let url_ = this.baseUrl + "/api/daily/week-review";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetWeekReview(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetWeekReview(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<WeekReviewResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<WeekReviewResponse>;
+        }));
+    }
+
+    protected processGetWeekReview(response: HttpResponseBase): Observable<WeekReviewResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WeekReviewResponse;
+            return _observableOf(result200);
             }));
         } else if (status === 401) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -1729,6 +1864,7 @@ export interface CurrentTrackState {
     listenedSeconds: number;
     hintLevel: number;
     hintFacts: HintFactResponse[];
+    failedAttempts?: number;
 
     [key: string]: any;
 }
@@ -1748,6 +1884,7 @@ export interface DailySettingsResponse {
     hints: HintLevelResponse[];
     streakFreezeEveryDays: number;
     streakFreezeMax: number;
+    retryScorePercent: number;
 
     [key: string]: any;
 }
@@ -1874,6 +2011,15 @@ export interface ResumedAnswer {
     [key: string]: any;
 }
 
+export interface ReturnRecapResponse {
+    yesterdayScore: number | undefined;
+    averageScore: number | undefined;
+    weekGames: number;
+    weekFirstStepFound: number;
+
+    [key: string]: any;
+}
+
 export interface ScoreBucketResponse {
     minScore: number;
     maxScore: number;
@@ -1890,6 +2036,57 @@ export interface StartSessionResponse {
     nextPosition: number;
     completedAnswers: ResumedAnswer[];
     currentTrack: CurrentTrackState | undefined;
+
+    [key: string]: any;
+}
+
+export interface StatsAnswersResponse {
+    total: number;
+    artistFound: number;
+    titleFound: number;
+    withHint: number;
+    byListened: StatsListenedResponse[];
+
+    [key: string]: any;
+}
+
+export interface StatsCohortResponse {
+    key: string;
+    new: number;
+    day1Eligible: number;
+    day1Returned: number;
+    day7Eligible: number;
+    day7Returned: number;
+
+    [key: string]: any;
+}
+
+export interface StatsDayResponse {
+    date: Date;
+    completed: number;
+    abandoned: number;
+    expired: number;
+    players: number;
+    firstTimePlayers: number;
+
+    [key: string]: any;
+}
+
+export interface StatsListenedResponse {
+    seconds: number;
+    count: number;
+
+    [key: string]: any;
+}
+
+export interface StatsResponse {
+    days: number;
+    daily: StatsDayResponse[];
+    medianScore: number | undefined;
+    overall: StatsCohortResponse;
+    sources: StatsCohortResponse[];
+    devices: StatsCohortResponse[];
+    answers: StatsAnswersResponse;
 
     [key: string]: any;
 }
@@ -1933,6 +2130,7 @@ export interface SubmitAnswerResponse {
     hintLevelUsed: number;
     hintPenaltyPercentApplied: number;
     completed: boolean;
+    retry?: boolean;
 
     [key: string]: any;
 }
@@ -1945,6 +2143,7 @@ export interface TodayResponse {
     completedGames: number;
     bestScore: number | undefined;
     yesterdayMedian: number | undefined;
+    recap?: ReturnRecapResponse | undefined;
 
     [key: string]: any;
 }
@@ -2012,6 +2211,35 @@ export interface UpdateListening {
 
 export interface UpdateTrackCooldownPoolPercent {
     trackCooldownPoolPercent: number;
+
+    [key: string]: any;
+}
+
+export interface WeekBestTrackResponse {
+    date: Date;
+    artist: string;
+    title: string;
+    score: number;
+
+    [key: string]: any;
+}
+
+export interface WeekReviewDayResponse {
+    date: Date;
+    score: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface WeekReviewResponse {
+    weekStart: Date;
+    days: WeekReviewDayResponse[];
+    maxPossibleScore: number;
+    playedCount: number;
+    averageScore: number | undefined;
+    bestDay: Date | undefined;
+    bestScore: number | undefined;
+    bestTrack: WeekBestTrackResponse | undefined;
 
     [key: string]: any;
 }

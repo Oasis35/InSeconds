@@ -31,6 +31,7 @@ public sealed class DailyRules(IOptionsMonitor<DailyOptions> options, IEnumerabl
     // fois par requête), et de nouveau si elle change ou revient après avoir été corrigée.
     private string? _reportedInvalidThresholds;
     private string? _reportedLevelsBeyondProviders;
+    private string? _reportedInvalidRetryPercent;
 
     public DailyOptions Options => options.CurrentValue;
 
@@ -44,7 +45,26 @@ public sealed class DailyRules(IOptionsMonitor<DailyOptions> options, IEnumerabl
     public StreakRules Streak => Options.StreakRules;
 
     public IDailyScoringPolicy Scoring =>
-        new DurationScoringPolicy(Options.EffectiveDurationScores, Options.EffectiveHintPenaltyPercent);
+        new DurationScoringPolicy(Options.EffectiveDurationScores, Options.EffectiveHintPenaltyPercent, RetryScorePercent);
+
+    /// <summary>
+    /// Le score de la seconde tentative en pourcentage de la première (0 : pas de seconde tentative). Un réglage hors de 0 à 100, changé à chaud,
+    /// retombe sur le défaut avec une erreur au journal (le contrôle du démarrage le refuse).
+    /// </summary>
+    public int RetryScorePercent
+    {
+        get
+        {
+            var configured = Options.RetryScorePercent;
+            var valid = DailyOptions.IsValidRetryScorePercent(configured);
+            if (ReportOnce(ref _reportedInvalidRetryPercent, valid ? null : configured.ToString(System.Globalization.CultureInfo.InvariantCulture)))
+                DailyLog.InvalidRetryScorePercent(logger, configured);
+            return valid ? configured : DailyOptions.DefaultRetryScorePercent;
+        }
+    }
+
+    /// <summary>Le joueur a-t-il droit à une seconde tentative après une réponse non complète ?</summary>
+    public bool RetryEnabled => RetryScorePercent > 0;
 
     /// <summary>
     /// Le nombre de niveaux d'indice révélés **sans trou depuis le niveau 1** : un niveau sans fournisseur arrête la politique (un
@@ -135,6 +155,9 @@ public static class DailyOptionsChecks
             problems.Add(
                 $"Daily:TrackCooldownPoolPercent : de {DailyOptions.MinTrackCooldownPoolPercent} à {DailyOptions.MaxTrackCooldownPoolPercent} % du pool en cooldown.");
         }
+
+        if (!DailyOptions.IsValidRetryScorePercent(options.RetryScorePercent))
+            problems.Add("Daily:RetryScorePercent : un pourcentage de 0 (pas de seconde tentative) à 100.");
 
         if (options.StreakFreezeEveryDays < 0 || options.StreakFreezeMax < 0 || options.StreakLostNudgeMinDays < 0)
             problems.Add("Daily:StreakFreeze* et StreakLostNudgeMinDays ne peuvent pas être négatifs.");

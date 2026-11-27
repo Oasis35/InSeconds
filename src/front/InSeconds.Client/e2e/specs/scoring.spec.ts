@@ -57,7 +57,7 @@ test.describe('Scoring par palier', () => {
     await round.chooseDuration(1);
     await round.waitForAnswerInput();
     await round.typeAnswer('zzz réponse invalide zzz');
-    await round.submit();
+    await round.submitWrongTwice();
 
     // Le score affiché dans le résultat est "+0"
     await expect(round.page.getByText('+0')).toBeVisible();
@@ -77,11 +77,14 @@ test.describe('Scoring par palier', () => {
     await round.chooseDuration(1);
     await round.waitForAnswerInput();
     await round.typeAnswer('Eminem - ');
+    // Réponse pas entièrement juste : seconde tentative (la même réponse repart, définitive), 425 × 0,7 = 297,5 → 298 (au pair le plus proche).
+    await round.submit();
+    await round.retryNotice.waitFor({ state: 'visible' });
     await round.submit();
 
     const score = await round.readRoundScore();
-    // Artiste seul = 50 % × 850 = 425 pts
-    expect(score).toBe(425);
+    // Artiste seul = 50 % × 850 = 425 pts, puis × 0,7 à la seconde tentative
+    expect(score).toBe(298);
 
     await round.goNext();
     // Finir les 4 morceaux restants (5 morceaux/défi au total)

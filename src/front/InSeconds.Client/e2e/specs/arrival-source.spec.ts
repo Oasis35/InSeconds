@@ -3,7 +3,7 @@ import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
 
-// Source d'arrivée d'un invité (#445) : le utm_source du lien est lu à l'ouverture, survit à la redirection vers /daily et
+// Source d'arrivée d'un invité (#445) : le utm_source du lien est lu à l'ouverture, survit à la redirection vers / et
 // part avec la création de l'invité au premier « Commencer ». Lue ici dans la copie des données du joueur.
 
 test.describe("Source d'arrivée", () => {

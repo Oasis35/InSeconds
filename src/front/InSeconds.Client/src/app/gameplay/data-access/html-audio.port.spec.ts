@@ -2,7 +2,8 @@ import { EnvironmentInjector, createEnvironmentInjector } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { AudioStatus } from '../domain/track-round';
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
-import { HtmlAudioPort, resetSharedAudio, describeAudioError, describeStall, isSignatureExpired, probePreview, unlockSharedAudio } from './html-audio.port';
+import { HtmlAudioPort, resetSharedAudio, describeAudioError, describeStall, isSignatureExpired, probePreview } from './html-audio.port';
+import { unlockSharedAudio } from './shared-audio';
 import { makeToneUrl } from './testing/wav';
 
 /**

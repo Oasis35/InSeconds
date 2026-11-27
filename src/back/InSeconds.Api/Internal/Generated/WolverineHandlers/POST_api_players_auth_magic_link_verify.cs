@@ -3,6 +3,7 @@
 using FluentValidation;
 using InSeconds.Api.Modules.Players.Application;
 using InSeconds.Api.Modules.Players.Auth;
+using InSeconds.Api.Modules.Players.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,6 +26,7 @@ namespace Internal.Generated.WolverineHandlers
         private readonly InSeconds.Api.Modules.Players.Application.PlayersMetrics _playersMetrics;
         private readonly InSeconds.Api.Modules.Players.Auth.IDeviceSessionValidationCache _deviceSessionValidationCache;
         private readonly InSeconds.Api.Modules.Players.Auth.TrustedOrigins _trustedOrigins;
+        private readonly InSeconds.Api.Modules.Players.Contracts.IReservedNames _reservedNames;
         private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor1;
         private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor2;
         private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor3;
@@ -35,13 +37,14 @@ namespace Internal.Generated.WolverineHandlers
         private readonly Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Players.Application.VerifyMagicLink> _problemDetailSourceOfVerifyMagicLink;
         private readonly Wolverine.Runtime.IWolverineRuntime _wolverineRuntime;
 
-        public POST_api_players_auth_magic_link_verify(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, FluentValidation.IValidator<InSeconds.Api.Modules.Players.Application.VerifyMagicLink> validatorOfVerifyMagicLink, InSeconds.Api.Modules.Players.Application.PlayersMetrics playersMetrics, InSeconds.Api.Modules.Players.Auth.IDeviceSessionValidationCache deviceSessionValidationCache, InSeconds.Api.Modules.Players.Auth.TrustedOrigins trustedOrigins, Microsoft.AspNetCore.Http.IHttpContextAccessor __httpContextAccessor1, Microsoft.AspNetCore.Http.IHttpContextAccessor __httpContextAccessor2, Microsoft.AspNetCore.Http.IHttpContextAccessor __httpContextAccessor3, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Players.Application.VerifyMagicLink> loggerForMessage, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Players.Application.VerifyMagicLink> problemDetailSourceOfVerifyMagicLink, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
+        public POST_api_players_auth_magic_link_verify(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, FluentValidation.IValidator<InSeconds.Api.Modules.Players.Application.VerifyMagicLink> validatorOfVerifyMagicLink, InSeconds.Api.Modules.Players.Application.PlayersMetrics playersMetrics, InSeconds.Api.Modules.Players.Auth.IDeviceSessionValidationCache deviceSessionValidationCache, InSeconds.Api.Modules.Players.Auth.TrustedOrigins trustedOrigins, InSeconds.Api.Modules.Players.Contracts.IReservedNames reservedNames, Microsoft.AspNetCore.Http.IHttpContextAccessor __httpContextAccessor1, Microsoft.AspNetCore.Http.IHttpContextAccessor __httpContextAccessor2, Microsoft.AspNetCore.Http.IHttpContextAccessor __httpContextAccessor3, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Players.Application.VerifyMagicLink> loggerForMessage, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Players.Application.VerifyMagicLink> problemDetailSourceOfVerifyMagicLink, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
         {
             _wolverineHttpOptions = wolverineHttpOptions;
             _validatorOfVerifyMagicLink = validatorOfVerifyMagicLink;
             _playersMetrics = playersMetrics;
             _deviceSessionValidationCache = deviceSessionValidationCache;
             _trustedOrigins = trustedOrigins;
+            _reservedNames = reservedNames;
             _httpContextAccessor1 = __httpContextAccessor1;
             _httpContextAccessor2 = __httpContextAccessor2;
             _httpContextAccessor3 = __httpContextAccessor3;
@@ -103,7 +106,7 @@ namespace Internal.Generated.WolverineHandlers
                 }
 
                 var magicLinkAttempt = await InSeconds.Api.Modules.Players.Application.VerifyMagicLinkEndpoint.LoadAsync(request, efPlayerStore, accountSignIn, _timeProvider, httpContext.RequestAborted).ConfigureAwait(false);
-                var problemDetails3 = InSeconds.Api.Modules.Players.Application.VerifyMagicLinkEndpoint.Validate(magicLinkAttempt);
+                var problemDetails3 = InSeconds.Api.Modules.Players.Application.VerifyMagicLinkEndpoint.Validate(request, magicLinkAttempt, _reservedNames);
                 // Evaluate whether the processing should stop if there are any problems
                 if (!(ReferenceEquals(problemDetails3, Wolverine.Http.WolverineContinue.NoProblems)))
                 {

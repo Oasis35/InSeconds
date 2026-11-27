@@ -9,6 +9,7 @@ import { errorMessageKey } from '../../../core/errors/error-messages';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { InstallPromptService } from '../../../core/pwa/install-prompt.service';
 import { InstallMode } from '../../../core/pwa/install-environment';
+import { SoundService } from '../../../core/sound/sound.service';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { SessionStore } from '../../../core/session/session.store';
 import { ButtonComponent } from '../../../ui/button/button.component';
@@ -16,6 +17,7 @@ import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-bac
 import { ErrorMessageComponent } from '../../../ui/error-message/error-message.component';
 import { InstallStepsComponent } from '../../../ui/install-steps/install-steps.component';
 import { ModalService } from '../../../ui/modal/modal.service';
+import { SoundToggleComponent } from '../../../ui/sound-toggle/sound-toggle.component';
 import { ToastService } from '../../../ui/toast/toast.service';
 import { DevicesStore } from '../../data-access/devices.store';
 import { ActionStatus, ProfileStore } from '../../data-access/profile.store';
@@ -43,7 +45,7 @@ function errorOf(status: ActionStatus): AppError | null {
   selector: 'app-profile-page',
   imports: [
     FormField, FormRoot, RouterLink, TranslatePipe, ButtonComponent, DecorBackgroundComponent, ErrorMessageComponent,
-    DeviceListComponent, InstallStepsComponent,
+    DeviceListComponent, InstallStepsComponent, SoundToggleComponent,
   ],
   providers: [ProfileStore, DevicesStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -68,6 +70,7 @@ export class ProfilePage implements OnInit {
   protected readonly devices = inject(DevicesStore);
   private readonly language = inject(LanguageService);
   protected readonly locale = this.language.current;
+  protected readonly sounds = inject(SoundService);
   protected readonly chrome = inject(ShellChromeStore);
   private readonly modal = inject(ModalService);
   private readonly toast = inject(ToastService);

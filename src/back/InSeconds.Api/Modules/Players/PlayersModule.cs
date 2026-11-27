@@ -20,11 +20,14 @@ public static class PlayersModule
         services.AddScoped<IPlayerQueries, EfPlayerQueries>();
         services.AddScoped<IPlayerSessions, EfPlayerSessions>();
         services.AddScoped<IPlayerDirectory, EfPlayerDirectory>();
+        services.AddOptions<PlayersOptions>().BindConfiguration(PlayersOptions.Section);
+        services.AddSingleton<IReservedNames, ReservedNames>();
         services.AddScoped<AccountSignIn>();
         services.AddScoped<AccountErasure>();
         services.AddScoped<PlayerDataExporter>();
         // Compteurs des connexions et des effacements, exportés en OpenTelemetry (tableau Grafana « Activité »).
         services.AddSingleton<PlayersMetrics>();
+        services.AddHostedService<Infrastructure.Observability.EagerSingleton<PlayersMetrics>>();
         services.AddSingleton<IEmailComposer<MagicLinkEmail>, MagicLinkEmailComposer>();
         services.AddSingleton<IEmailComposer<ConfirmEmailChangeEmail>, ConfirmEmailChangeEmailComposer>();
         services.AddScheduledJob<PlayersPurgeJob>(PlayersPurgeJob.Id, PlayersPurgeJob.DefaultCron);

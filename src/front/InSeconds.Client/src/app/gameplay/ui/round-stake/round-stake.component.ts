@@ -24,7 +24,8 @@ const DROP_LABEL_MS = 900;
     <!-- Recréé à chaque baisse (identifiant neuf) : deux baisses rapprochées rebondissent deux fois. -->
     @for (bump of bumps(); track bump) {
       <span data-testid="round-stake" class="tabular-nums" [class.stake-bump]="bump > 0"
-        style="font-family:var(--font-score);font-size:1.9rem;font-weight:900;line-height:0.95;letter-spacing:-0.02em;color:var(--text-hi)">{{ shown() }}</span>
+        style="font-family:var(--font-score);font-size:1.9rem;font-weight:900;line-height:0.95;letter-spacing:-0.02em"
+        [style.color]="retry() ? 'var(--color-accent-3)' : 'var(--text-hi)'">{{ shown() }}</span>
     }
     <span class="text-xs mt-1" style="color:var(--text-muted)">{{ 'gameplay.round.stake' | translate }}</span>
   `,
@@ -43,6 +44,8 @@ const DROP_LABEL_MS = 900;
 })
 export class RoundStakeComponent {
   readonly value = input.required<number>();
+  /** À la seconde tentative, le chiffre prend l'ambre du joueur ; les points ont déjà baissé (le prix de la seconde tentative est dans `stake`). */
+  readonly retry = input(false);
 
   protected readonly shown = signal(0);
   /** La dernière baisse, le temps que « −150 » s'envole (un identifiant neuf relance l'animation). */

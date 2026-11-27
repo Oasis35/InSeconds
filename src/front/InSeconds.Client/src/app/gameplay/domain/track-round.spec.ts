@@ -1,6 +1,6 @@
 import {
   RoundConfig, TrackRound, applyHints, askSkip, availableHintLevels, beginListening, cancelConfirm, confirmPending,
-  createRound, isAnswering, listenMore, maxStep, nextStep, onAudio, previewWithdrawn, replacePreviewUrl, retryPlayback, retrySubmission, reveal, showsInput,
+  createRound, isAnswering, listenMore, maxStep, nextStep, onAudio, previewWithdrawn, replacePreviewUrl, retryOffered, retryPlayback, retrySubmission, reveal, showsInput,
   skipUnplayable, stakeOf, submissionFailed, submitAnswer, timeUp, unlockedHintLevel,
 } from './track-round';
 
@@ -412,5 +412,52 @@ describe('envoi et révélation', () => {
     const r = submitAnswer(listened(started()), answer);
     expect(retrySubmission(r)).toBe(r);
     expect(submissionFailed(listened(started())).phase).toBe('listened');
+  });
+
+  describe('la seconde tentative', () => {
+    const stake = (seconds: number, hint: number, isRetry: boolean) => (isRetry ? 700 : 1000) - hint;
+
+    it('une réponse refusée sans être comptée rend la saisie, au même palier, sans rien envoyer de plus', () => {
+      const sent = submitAnswer(listened(started({ listen: { steps: [0.5, 1], extendable: true } })), answer);
+
+      const again = retryOffered(sent, 'finished');
+
+      expect(again.phase).toBe('listened');
+      expect(again.failedAttempts).toBe(1);
+      expect(again.retryOffers).toBe(1);
+      expect(again.submission).toBeNull();
+      expect(again.chosenSeconds).toBe(0.5);
+      expect(showsInput(again)).toBe(true);
+    });
+
+    it('la saisie revient en lecture si le son joue encore', () => {
+      expect(retryOffered(submitAnswer(playing(started()), answer), 'playing').phase).toBe('playing');
+    });
+
+    it('ne fait rien hors d\'un envoi', () => {
+      const r = listened(started());
+      expect(retryOffered(r, 'finished')).toBe(r);
+    });
+
+    it('les points en jeu passent au prix de la seconde tentative, le palier choisi inchangé', () => {
+      const first = listened(started({ listen: { steps: [0.5, 1], extendable: true, stake } }));
+      expect(stakeOf(first)).toBe(1000);
+
+      const second = retryOffered(submitAnswer(first, answer), 'finished');
+
+      expect(stakeOf(second)).toBe(700);
+    });
+
+    it('une reprise repart à la seconde tentative, sans faire trembler le champ', () => {
+      const r = round({ failedAttempts: 1 });
+      expect(r.failedAttempts).toBe(1);
+      expect(r.retryOffers).toBe(0);
+    });
+
+    it('l\'écoute plus loin reste possible, au prix du dernier palier', () => {
+      const second = retryOffered(submitAnswer(listened(started({ listen: { steps: [0.5, 1, 2], extendable: true, stake } })), answer), 'finished');
+      expect(nextStep(second)).toBe(1);
+      expect(listenMore(second).chosenSeconds).toBe(1);
+    });
   });
 });

@@ -277,7 +277,7 @@ public class ChallengeArchiveTests(PostgresFixture postgres) : IAsyncLifetime
         // lastmod : aujourd'hui pour le jeu, rien pour les pages légales, la date de calcul de la photo pour un jour figé, aujourd'hui sinon.
         Assert.Equal(
             [
-                (front.Link("/daily"), $"{Today:yyyy-MM-dd}"),
+                (front.Link("/"), $"{Today:yyyy-MM-dd}"),
                 (front.Link("/legal"), null),
                 (front.Link("/privacy"), null),
                 (front.Link($"/history/daily/{Yesterday:yyyy-MM-dd}"), $"{Today:yyyy-MM-dd}"),

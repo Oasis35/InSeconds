@@ -87,6 +87,7 @@ fi
 # Non hashé (index.html/routes SPA, traductions) : toujours revalider.
 check_header "/" "$NO_CACHE"
 check_header "/daily" "$NO_CACHE"
+check_header "/legal" "$NO_CACHE"
 check_header "/admin" "$NO_CACHE"
 check_header "/i18n/fr.json" "$NO_CACHE"
 
@@ -108,6 +109,14 @@ fi
 # Hashé : cache long et immuable.
 if [[ -n "$js_file" ]]; then
   check_header "/$js_file" "public, max-age=31536000, immutable"
+fi
+# Les polices auto-hébergées sont hashées comme les bundles (media/*.woff2).
+font_file=$(curl -sS "$BASE/ngsw.json" | grep -oE '/media/[A-Za-z0-9._-]+\.woff2' | head -1 || true)
+if [[ -z "$font_file" ]]; then
+  echo "FAIL: aucune police /media/*.woff2 dans ngsw.json"
+  fail=1
+else
+  check_header "$font_file" "public, max-age=31536000, immutable"
 fi
 
 # S10 : aucun dataGroups dans le manifeste servi (le service worker ne met jamais l'API en cache).
@@ -145,7 +154,7 @@ for path in / /i18n/fr.json /ngsw.json; do
 done
 if [[ -n "$js_file" ]]; then
   csp=$(header "/$js_file" content-security-policy-report-only)
-  for fragment in "script-src 'self' https://static.cloudflareinsights.com;" "connect-src 'self' https://api.inseconds.cc https://*.dzcdn.net https://fonts.googleapis.com https://fonts.gstatic.com https://static.cloudflareinsights.com https://api.github.com;" "media-src 'self' blob: https://*.dzcdn.net;" "object-src 'none'" "frame-ancestors 'none'; report-uri https://api.inseconds.cc/api/csp-reports; report-to csp"; do
+  for fragment in "script-src 'self' https://static.cloudflareinsights.com;" "connect-src 'self' https://api.inseconds.cc https://*.dzcdn.net https://static.cloudflareinsights.com https://api.github.com;" "media-src 'self' blob: https://*.dzcdn.net;" "object-src 'none'" "frame-ancestors 'none'; report-uri https://api.inseconds.cc/api/csp-reports; report-to csp"; do
     if [[ "$csp" != *"$fragment"* ]]; then
       echo "FAIL /$js_file: la CSP ne contient pas \"$fragment\" ($csp)"
       fail=1
@@ -160,6 +169,22 @@ for path in / /i18n/fr.json /ngsw.json; do
     fail=1
   fi
 done
+# Connexion à l'API préparée : l'en-tête Link de la page (location `/` seulement, préparé dans preconnect.conf, hors de la
+# CSP pour ne pas changer l'empreinte du service worker), et la ligne preconnect du CDN des extraits dans l'index.
+link=$(header "/" link)
+if [[ "$link" != '<https://api.inseconds.cc>; rel=preconnect; crossorigin=use-credentials' ]]; then
+  echo "FAIL /: Link attendu <https://api.inseconds.cc>; rel=preconnect; crossorigin=use-credentials (reçu '$link')"
+  fail=1
+fi
+if [[ -n "$(header "/i18n/fr.json" link)" ]]; then
+  echo "FAIL /i18n/fr.json: aucun en-tête Link attendu hors de la page"
+  fail=1
+fi
+if ! curl -sS "$BASE/" | grep -qE '<link rel="preconnect" href="https://cdnt-preview\.dzcdn\.net">'; then
+  echo "FAIL /: preconnect vers cdnt-preview.dzcdn.net absent de index.html"
+  fail=1
+fi
+
 # Aucun script en ligne dans l'index (sinon la CSP, bloquante, casserait l'app) : balises <script> avec src, pas
 # de gestionnaire onload= (la mise en ligne du CSS critique d'Angular en pose un).
 index=$(curl -sS "$BASE/")
@@ -171,6 +196,29 @@ if grep -qE ' on(load|click|error)=' <<<"$index"; then
   echo "FAIL /: gestionnaire d'événement en ligne dans index.html"
   fail=1
 fi
+
+# Prérendu (construction) : la racine et les pages légales arrivent déjà rendues ; toute autre adresse reçoit la coquille vide
+# (index.csr.html), sinon le texte de l'accueil clignoterait avant la page demandée.
+if ! grep -q 'le blind test musical du jour</p>' <<<"$index"; then
+  echo "FAIL /: texte prérendu de l'accueil absent"
+  fail=1
+fi
+for page in /legal /privacy; do
+  if ! curl -sS "$BASE$page" | grep -q 'ng-server-context="ssg"'; then
+    echo "FAIL $page: page prérendue absente (coquille vide servie)"
+    fail=1
+  else
+    echo "OK   $page -> prérendue"
+  fi
+done
+for page in /history/daily /daily /admin; do
+  if ! curl -sS "$BASE$page" | grep -q '<app-root></app-root>'; then
+    echo "FAIL $page: la coquille vide (index.csr.html) était attendue"
+    fail=1
+  else
+    echo "OK   $page -> coquille vide"
+  fi
+done
 
 # robots.txt / sitemap.xml servis tels quels, pas l'index.html du fallback SPA.
 check_content_type "/robots.txt" "text/plain"

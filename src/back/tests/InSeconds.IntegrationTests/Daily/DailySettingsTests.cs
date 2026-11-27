@@ -20,10 +20,13 @@ public class DailySettingsTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task ParDefaut_LesValeursDeLaV1_SansAucuneLigneEnBase()
     {
-        await using var game = await GameApi.CreateAsync(_connectionString, tracks: 0);
+        // La seconde tentative est coupée par défaut dans ces tests (GameApi) : le réglage est donc donné, sa valeur par défaut (70) est vue par DailyScoringAndRulesTests.
+        await using var game = await GameApi.CreateAsync(
+            _connectionString, tracks: 0, settings: new Dictionary<string, string> { ["Daily:RetryScorePercent"] = "70" });
 
         var settings = await ReadAsync(game);
 
+        Assert.Equal(70, settings.RetryScorePercent);
         Assert.Equal((20, 5, 7, 2), (settings.GuessTimerSeconds, settings.TracksPerChallenge, settings.StreakFreezeEveryDays, settings.StreakFreezeMax));
         Assert.Equal([0.5m, 1m, 1.5m, 2m, 3m, 5m, 10m], settings.AllowedDurationsSeconds);
         Assert.Equal(

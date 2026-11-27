@@ -85,6 +85,40 @@ public sealed class EfDailyHistoryQueries(InSecondsDbContext db) : IDailyHistory
         return (counts.Where(c => c.Nothing).Sum(c => c.Count), counts.Where(c => !c.Nothing).Sum(c => c.Count));
     }
 
+    public async Task<BestAnswer?> GetBestAnswerAsync(Guid playerId, DateOnly start, DateOnly end, CancellationToken ct)
+    {
+        var row = await (from session in db.Set<DailySession>().AsNoTracking()
+                         join challenge in db.Set<DailyChallenge>().AsNoTracking() on session.ChallengeId equals challenge.Id
+                         from answer in session.Answers
+                         join track in db.Set<ChallengeTrack>().AsNoTracking() on new { session.ChallengeId, answer.Position } equals new { track.ChallengeId, track.Position }
+                         where session.PlayerId == playerId && session.Status == SessionStatus.Completed && challenge.Date >= start && challenge.Date < end
+                         orderby answer.Score descending, challenge.Date, answer.Position
+                         select new { challenge.Date, answer.Position, track.TrackId, answer.Score })
+            .FirstOrDefaultAsync(ct);
+        return row is null || row.Score <= 0 ? null : new BestAnswer(row.Date, row.Position, row.TrackId, row.Score);
+    }
+
+    public async Task<ReturnRecapRow> GetReturnRecapAsync(Guid playerId, DateOnly yesterday, decimal firstStepSeconds, CancellationToken ct)
+    {
+        var completed = from session in db.Set<DailySession>().AsNoTracking()
+                        join challenge in db.Set<DailyChallenge>().AsNoTracking() on session.ChallengeId equals challenge.Id
+                        where session.PlayerId == playerId && session.Status == SessionStatus.Completed
+                        select new { session.Id, challenge.Date, session.TotalScore };
+        var weekStart = yesterday.AddDays(-6);
+        var average = await completed.AverageAsync(x => (double?)x.TotalScore, ct);
+        var yesterdayScore = await completed.Where(x => x.Date == yesterday).Select(x => (int?)x.TotalScore).FirstOrDefaultAsync(ct);
+        var week = completed.Where(x => x.Date >= weekStart && x.Date <= yesterday);
+        var weekGames = await week.CountAsync(ct);
+        var found = await (from session in db.Set<DailySession>().AsNoTracking()
+                           join challenge in db.Set<DailyChallenge>().AsNoTracking() on session.ChallengeId equals challenge.Id
+                           from answer in session.Answers
+                           where session.PlayerId == playerId && session.Status == SessionStatus.Completed
+                                 && challenge.Date >= weekStart && challenge.Date <= yesterday
+                                 && answer.ArtistCorrect && answer.TitleCorrect && answer.ListenedSeconds <= firstStepSeconds
+                           select answer.Position).CountAsync(ct);
+        return new ReturnRecapRow(yesterdayScore, average is { } a ? (int)Math.Round(a, MidpointRounding.AwayFromZero) : null, weekGames, found);
+    }
+
     public async Task<DateOnly?> GetFirstChallengeDateAsync(CancellationToken ct) =>
         await db.Set<DailyChallenge>().AsNoTracking().MinAsync(c => (DateOnly?)c.Date, ct);
 }

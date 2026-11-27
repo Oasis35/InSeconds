@@ -1,4 +1,5 @@
 @use "tailwindcss";
+@use "fonts";
 
 /* ── Palette InSeconds - DA "IN//SECONDS" (ambre/cyan/violet sur bleu nuit) ──────── */
 :root {
@@ -34,7 +35,7 @@
   --text-hi:          rgb(var(--rgb-text));
   --text-body:        rgb(var(--rgb-text));
   --text-muted:       rgb(var(--rgb-text) / 0.7);
-  --text-faint:       rgb(var(--rgb-text) / 0.5);
+  --text-faint:       rgb(var(--rgb-text) / 0.56);
   --text-sep:         rgb(var(--rgb-text) / 0.08);
   --text-accent:      rgb(var(--rgb-accent));
   --text-streak:      rgb(var(--rgb-accent-3));
@@ -66,6 +67,8 @@
   --wave-listened: color-mix(in srgb, rgb(var(--rgb-accent-2)) 34%, rgb(var(--rgb-bg))); /* débloqué, ou déjà écouté (lecteur de manche) */
   --wave-unlocked: color-mix(in srgb, rgb(var(--rgb-accent-2)) 18%, rgb(var(--rgb-bg))); /* débloqué : la forme de la révélation de Survie */
   --wave-trail:    color-mix(in srgb, rgb(var(--rgb-accent-2)) 30%, white);              /* traîne derrière la tête de lecture */
+  --wave-listened-retry: color-mix(in srgb, rgb(var(--rgb-accent-3)) 34%, rgb(var(--rgb-bg))); /* la même, à la seconde tentative : l'ambre du joueur */
+  --wave-trail-retry:    color-mix(in srgb, rgb(var(--rgb-accent-3)) 30%, white);
   --wave-old:      color-mix(in srgb, rgb(var(--rgb-text)) 30%, rgb(var(--rgb-bg)));     /* un morceau déjà joué (la pile de Setlist) */
 
   /* Bordures / overlays */
@@ -91,6 +94,7 @@
   /* Le seul halo d'un bouton plein : un par écran. */
   --glow-primary: 0 0 8px rgb(var(--rgb-accent-3) / 0.6);
   --tube-wave-lit: inset 0 0 0 1.5px var(--core-cyan), 0 0 4px rgb(var(--rgb-accent-2) / 0.65);
+  --tube-wave-played-retry: 0 0 6px rgb(var(--rgb-accent-3) / 0.55); /* idem, à la seconde tentative */
   --tube-wave-played: 0 0 6px rgb(var(--rgb-accent-2) / 0.55); /* le halo de la seule partie jouée du lecteur */
   --glow-accent-2: 0 0 12px rgb(var(--rgb-accent-2) / 0.5);
   --glow-success: 0 0 12px rgb(var(--rgb-success) / 0.4);

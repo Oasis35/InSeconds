@@ -1,7 +1,8 @@
+import { WeekReview } from '../../domain/week-review';
 import { Provider } from '@angular/core';
 import { DailyApi } from '../daily.api';
 import {
-  AnswerToSend, AnsweredTrack, DailySettings, DailyToday, DayStats, StartOutcome, StartedSession,
+  AnswerToSend, AnsweredTrack, DailySettings, DailyToday, DayStats, StartOutcome, StartedSession, SubmitOutcome,
 } from '../../domain/daily';
 import { EMPTY_STREAK } from '../../domain/streak';
 import { ArchiveDay, ArchiveMe, ArchiveTrack, NOBODY } from '../../domain/archive';
@@ -18,10 +19,11 @@ export const SETTINGS: DailySettings = {
     { level: 1, unlockSeconds: 5, kind: 'year', penaltyPercent: 30 },
     { level: 2, unlockSeconds: 10, kind: 'artistMasked', penaltyPercent: 60 },
   ],
+  retryScorePercent: 70,
 };
 
 export const TODAY = (over: Partial<DailyToday> = {}): DailyToday => ({
-  state: 'can_start', tracksCount: 3, completedCount: 0, streak: EMPTY_STREAK, completedGames: 0, bestScore: null, yesterdayMedian: null, ...over,
+  state: 'can_start', tracksCount: 3, completedCount: 0, streak: EMPTY_STREAK, completedGames: 0, bestScore: null, yesterdayMedian: null, recap: null, ...over,
 });
 
 export const SESSION = (over: Partial<StartedSession> = {}): StartedSession => ({
@@ -89,6 +91,7 @@ export class FakeDailyApi {
   /** Les pages de « À réécouter », par jour de départ (`''` : la première). */
   replayPages: Record<string, ReplayPage | Error> = { '': REPLAY_PAGE() };
   earProfile: EarProfile | null | Error = EAR_PROFILE();
+  weekReview: WeekReview | null | Error = null;
   /** La réponse du serveur à chaque réponse envoyée ; `Error` pour un échec. */
   answer: (answer: AnswerToSend) => AnsweredTrack | Error = a => ANSWERED(a.position);
   hintFacts: readonly { kind: string; value: string | null }[] = [{ kind: 'year', value: '2013' }];
@@ -123,14 +126,25 @@ export class FakeDailyApi {
     return Promise.resolve(this.hintFacts);
   }
 
-  submitAnswer(sessionId: number, answer: AnswerToSend): Promise<AnsweredTrack> {
+  /** Combien de prochaines réponses le serveur refuse en offrant une seconde tentative (rien n'est compté ni révélé). */
+  retriesToOffer = 0;
+
+  submitAnswer(sessionId: number, answer: AnswerToSend): Promise<SubmitOutcome> {
     this.calls.push(`answer ${sessionId}/${answer.position}/${answer.listenedSeconds}`);
-    return this.result(this.answer(answer));
+    if (this.retriesToOffer > 0) {
+      this.retriesToOffer--;
+      return Promise.resolve({ kind: 'retry' });
+    }
+    const outcome = this.answer(answer);
+    return this.result(outcome).then<SubmitOutcome>(answered => ({ kind: 'answered', answered }));
   }
+
+  /** Vrai : l'abandon échoue (le serveur ne répond pas). */
+  abandonError = false;
 
   abandon(sessionId: number): Promise<void> {
     this.calls.push(`abandon ${sessionId}`);
-    return Promise.resolve();
+    return this.abandonError ? Promise.reject(new Error('abandon')) : Promise.resolve();
   }
 
   archiveDatesCall(): Promise<string[]> {
@@ -161,6 +175,11 @@ export class FakeDailyApi {
   replayCall(filter: ReplayFilter, before: string | null): Promise<ReplayPage> {
     this.calls.push(`replay ${filter} ${before ?? ''}`);
     return this.result(this.replayPages[before ?? ''] ?? { days: [], nextBefore: null, allCount: 0, noneCount: 0, halfCount: 0 });
+  }
+
+  weekReviewCall(): Promise<WeekReview | null> {
+    this.calls.push('weekReview');
+    return this.result(this.weekReview);
   }
 
   earProfileCall(period: ProfilePeriod): Promise<EarProfile | null> {
@@ -194,6 +213,7 @@ export function provideFakeDailyApi(fake: FakeDailyApi): Provider {
       history: (month: string | null) => fake.historyCall(month),
       replay: (filter: ReplayFilter, before: string | null) => fake.replayCall(filter, before),
       earProfile: (period: ProfilePeriod) => fake.earProfileCall(period),
+      weekReview: () => fake.weekReviewCall(),
     } satisfies Partial<Record<keyof DailyApi, unknown>>,
   };
 }

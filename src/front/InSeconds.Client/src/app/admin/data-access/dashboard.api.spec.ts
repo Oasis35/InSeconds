@@ -14,7 +14,6 @@ describe('DashboardApi', () => {
       totalSessions: 4, completionRate: 75, medianScore: 4200, newPlayersCount: 2, accountsCreatedCount: 1,
       firstTimeFinishersCount: 1, arrivals: [{ source: 'instagram', count: 2 }],
     },
-    arrivals: [{ source: 'instagram', count: 5 }, { source: 'direct', count: 1 }],
   } as unknown as DashboardResponse;
 
   function setup(result: DashboardResponse) {
@@ -35,7 +34,6 @@ describe('DashboardApi', () => {
       totalSessions: 4, completionRate: 75, medianScore: 4200, newPlayersCount: 2, accountsCreatedCount: 1,
       firstTimeFinishersCount: 1, arrivals: [{ source: 'instagram', count: 2 }],
     });
-    expect(dashboard.arrivals).toEqual([{ source: 'instagram', count: 5 }, { source: 'direct', count: 1 }]);
     expect(dashboard.players.totalGuests).toBe(5);
   });
 

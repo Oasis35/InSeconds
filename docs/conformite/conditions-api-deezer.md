@@ -61,7 +61,7 @@ Le dépôt est public : une capture de l'app qui montrerait une pochette y stock
 | Exigence | Texte | Où |
 |---|---|---|
 | Informer que l'écoute est limitée à un usage privé, dans le cadre familial | art. IV : « inform […] that the streaming of the recordings is limited to a strictly private use within a family scope » | `/legal`, section « Contenus musicaux (API Deezer) » (clé `legal.music.body`, FR et EN) |
-| Dire ce que Deezer reçoit du joueur | (RGPD) | `/privacy` : le navigateur charge extraits et pochettes depuis les serveurs de Deezer, qui reçoivent l'IP du joueur ; rien d'autre ne leur est transmis (clés `privacy.*`) |
+| Dire ce que Deezer reçoit du joueur | (RGPD) | `/privacy` : le navigateur se connecte aux serveurs de Deezer dès l'ouverture de l'application (preconnect de `index.html`) puis y charge extraits et pochettes ; Deezer reçoit l'IP du joueur, même sans partie lancée ; rien d'autre ne leur est transmis (clés `privacy.*`) |
 
 ## Rappels
 

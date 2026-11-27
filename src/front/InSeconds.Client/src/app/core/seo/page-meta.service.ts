@@ -6,8 +6,8 @@ import { filter } from 'rxjs';
 
 const SITE_ORIGIN = 'https://inseconds.cc';
 
-/** Les seules adresses que Google doit indexer (le jeu du jour, les réponses d'un jour passé, les deux pages légales). */
-const INDEXABLE = [/^\/daily$/, /^\/history\/daily\/\d{4}-\d{2}-\d{2}$/, /^\/legal$/, /^\/privacy$/];
+/** Les seules adresses que Google doit indexer (l'accueil, qui est le jeu du jour, les réponses d'un jour passé, les deux pages légales). */
+const INDEXABLE = [/^\/$/, /^\/history\/daily\/\d{4}-\d{2}-\d{2}$/, /^\/legal$/, /^\/privacy$/];
 
 /** Les pages légales ont leur propre titre et description (clés de traduction) ; les autres gardent ceux de `index.html`. */
 const TEXT_KEYS: Readonly<Record<string, { title: string; description: string }>> = {
@@ -116,10 +116,10 @@ export class PageMetaService {
   }
 }
 
-/** Chemin seul, sans query string ni fragment ni slash final ; la racine est le jeu du jour. */
+/** Chemin seul, sans query string ni fragment ni slash final ; la racine est le jeu du jour (`/daily`, la manche, n'est pas indexée). */
 export function normalize(url: string): string {
   let end = url.search(/[?#]/);
   if (end < 0) end = url.length;
   while (end > 0 && url[end - 1] === '/') end--;
-  return end === 0 ? '/daily' : url.slice(0, end);
+  return end === 0 ? '/' : url.slice(0, end);
 }

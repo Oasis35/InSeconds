@@ -28,7 +28,6 @@ function toDashboard(response: DashboardResponse): Dashboard {
     },
     availableDays: response.availableDates.map(toDay),
     kpis: response.selectedDayKpis ? toKpis(response.selectedDayKpis) : null,
-    arrivals: response.arrivals.map(toArrival),
   };
 }
 

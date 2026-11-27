@@ -86,4 +86,28 @@ describe('HomeChallengeCardComponent', () => {
   it('sans partie en cours, pas de lien « Abandonner »', () => {
     expect(render().q('home-abandon')).toBeNull();
   });
+
+  describe('accueil d\'un habitué', () => {
+    const RECAP = { yesterdayScore: 2300, averageScore: 2000, weekGames: 6, weekFirstStepFound: 0 };
+
+    it('une phrase sur lui, et le libellé du bouton y répond ; plus de « plus que 5 h » ni de score à battre', () => {
+      const { q } = render({ recap: RECAP, remaining: { unit: 'hours', value: 5 }, bestScore: 4000 });
+      expect(q('home-line')?.textContent).toContain('daily.homeLine.above');
+      expect(q('home-start')?.textContent).toContain('daily.homeLine.above');
+      expect(q('home-remaining')).toBeNull();
+      expect(q('welcome-record')).toBeNull();
+    });
+
+    it('rien à dire : le libellé par défaut, sans phrase', () => {
+      const { q } = render({ recap: { ...RECAP, yesterdayScore: 2000 } });
+      expect(q('home-line')).toBeNull();
+      expect(q('home-start')?.textContent).toContain('daily.homeLine.default');
+    });
+
+    it('sans récap, ou en pause, ou au premier jeu : la carte d\'avant', () => {
+      expect(render().q('home-start')?.textContent).toContain('daily.welcome.start');
+      expect(render({ recap: RECAP, completedCount: 2 }).q('home-start')?.textContent).toContain('daily.resume.resume');
+      expect(render({ recap: RECAP, firstGame: true }).q('home-line')).toBeNull();
+    });
+  });
 });

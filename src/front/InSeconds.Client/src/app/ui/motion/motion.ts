@@ -109,10 +109,25 @@ export function riseCard(element: HTMLElement): void {
   gsap.fromTo(element, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.38, ease: SETTLE, clearProps: 'transform,opacity' });
 }
 
+/** Le champ de saisie tremble une fois, léger (une réponse qui ne passe pas, mais sans brusquerie) : environ 300 ms. */
+export function shake(element: HTMLElement): void {
+  if (motionReduced()) return;
+  gsap.fromTo(element, { x: 0 }, { keyframes: { x: [-5, 4, -3, 2, 0] }, duration: 0.3, ease: 'power1.inOut', clearProps: 'transform' });
+}
+
 /** Un chiffre qui change avec un petit temps fort (le décompte des dernières secondes). */
 export function pop(element: HTMLElement): void {
   if (motionReduced()) return;
   gsap.fromTo(element, { scale: 1.15 }, { scale: 1, duration: 0.35, ease: SETTLE, clearProps: 'transform' });
+}
+
+/**
+ * Les lignes du calcul des points d'un morceau (palier, moitié, indice) qui se posent l'une après l'autre, avant que le score ne
+ * descende au résultat. `delay` en secondes.
+ */
+export function explainScore(lines: readonly HTMLElement[], delay = 0.2): void {
+  if (motionReduced() || lines.length === 0) return;
+  gsap.from(lines, { opacity: 0, y: 4, duration: 0.25, stagger: 0.3, delay, ease: SETTLE, clearProps: MOVED });
 }
 
 /** Les verdicts qui arrivent l'un après l'autre. */
@@ -155,4 +170,15 @@ export function finishSequence(root: HTMLElement, format: (value: number) => str
     timeline.progress(1);
     if (score) score.textContent = format(target);
   };
+}
+
+/**
+ * Le jalon de série atteint : le nombre de jours monte d'un cran, la flamme rebondit une fois et un seul anneau s'élargit autour de la pastille
+ * (transform et opacity seulement). Rien en mouvement réduit.
+ */
+export function celebrateMilestone(parts: { readonly days: HTMLElement; readonly flame: HTMLElement; readonly ring: HTMLElement }): void {
+  if (motionReduced()) return;
+  gsap.fromTo(parts.days, { yPercent: 70, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.4, ease: SETTLE, clearProps: 'transform,opacity' });
+  gsap.fromTo(parts.flame, { scale: 1 }, { keyframes: { scale: [1, 1.5, 1] }, duration: 0.55, delay: 0.25, ease: 'power2.out', clearProps: 'transform' });
+  gsap.fromTo(parts.ring, { scale: 1, opacity: 0.7 }, { scale: 1.5, opacity: 0, duration: 0.8, delay: 0.3, ease: 'power1.out', clearProps: 'transform,opacity' });
 }

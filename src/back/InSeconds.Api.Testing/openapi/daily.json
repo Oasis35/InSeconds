@@ -237,6 +237,46 @@
         }
       }
     },
+    "/api/admin/daily/stats": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getStats",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/daily/archive": {
       "get": {
         "tags": [
@@ -667,6 +707,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -791,6 +841,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -865,6 +925,16 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1004,6 +1074,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ReplayResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/daily/week-review": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getWeekReview",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeekReviewResponse"
                 }
               }
             }
@@ -1784,6 +1884,11 @@
             "items": {
               "$ref": "#/components/schemas/HintFactResponse"
             }
+          },
+          "failedAttempts": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
           }
         }
       },
@@ -1812,7 +1917,8 @@
           "durationScores",
           "hints",
           "streakFreezeEveryDays",
-          "streakFreezeMax"
+          "streakFreezeMax",
+          "retryScorePercent"
         ],
         "type": "object",
         "properties": {
@@ -1848,6 +1954,10 @@
             "format": "int32"
           },
           "streakFreezeMax": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "retryScorePercent": {
             "type": "integer",
             "format": "int32"
           }
@@ -2252,6 +2362,39 @@
           }
         }
       },
+      "ReturnRecapResponse": {
+        "required": [
+          "yesterdayScore",
+          "averageScore",
+          "weekGames",
+          "weekFirstStepFound"
+        ],
+        "type": "object",
+        "properties": {
+          "yesterdayScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "averageScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "weekGames": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "weekFirstStepFound": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "ScoreBucketResponse": {
         "required": [
           "minScore",
@@ -2321,6 +2464,179 @@
                 "$ref": "#/components/schemas/CurrentTrackState"
               }
             ]
+          }
+        }
+      },
+      "StatsAnswersResponse": {
+        "required": [
+          "total",
+          "artistFound",
+          "titleFound",
+          "withHint",
+          "byListened"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "artistFound": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "titleFound": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "withHint": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "byListened": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatsListenedResponse"
+            }
+          }
+        }
+      },
+      "StatsCohortResponse": {
+        "required": [
+          "key",
+          "new",
+          "day1Eligible",
+          "day1Returned",
+          "day7Eligible",
+          "day7Returned"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "new": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "day1Eligible": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "day1Returned": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "day7Eligible": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "day7Returned": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "StatsDayResponse": {
+        "required": [
+          "date",
+          "completed",
+          "abandoned",
+          "expired",
+          "players",
+          "firstTimePlayers"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "abandoned": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expired": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "players": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firstTimePlayers": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "StatsListenedResponse": {
+        "required": [
+          "seconds",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "seconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "StatsResponse": {
+        "required": [
+          "days",
+          "daily",
+          "medianScore",
+          "overall",
+          "sources",
+          "devices",
+          "answers"
+        ],
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "daily": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatsDayResponse"
+            }
+          },
+          "medianScore": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "overall": {
+            "$ref": "#/components/schemas/StatsCohortResponse"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatsCohortResponse"
+            }
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatsCohortResponse"
+            }
+          },
+          "answers": {
+            "$ref": "#/components/schemas/StatsAnswersResponse"
           }
         }
       },
@@ -2493,6 +2809,10 @@
           },
           "completed": {
             "type": "boolean"
+          },
+          "retry": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -2539,6 +2859,16 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "recap": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReturnRecapResponse"
+              }
+            ]
           }
         }
       },
@@ -2815,6 +3145,115 @@
           "trackCooldownPoolPercent": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "WeekBestTrackResponse": {
+        "required": [
+          "date",
+          "artist",
+          "title",
+          "score"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "artist": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "WeekReviewDayResponse": {
+        "required": [
+          "date",
+          "score"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "score": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "WeekReviewResponse": {
+        "required": [
+          "weekStart",
+          "days",
+          "maxPossibleScore",
+          "playedCount",
+          "averageScore",
+          "bestDay",
+          "bestScore",
+          "bestTrack"
+        ],
+        "type": "object",
+        "properties": {
+          "weekStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeekReviewDayResponse"
+            }
+          },
+          "maxPossibleScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "playedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "averageScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "bestDay": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "bestScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "bestTrack": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WeekBestTrackResponse"
+              }
+            ]
           }
         }
       },
@@ -3246,6 +3685,9 @@
       "name": "InSeconds.Api.Modules.Daily.Application.UpdateTrackCooldownPoolPercentEndpoint"
     },
     {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetStatsEndpoint"
+    },
+    {
       "name": "InSeconds.Api.Modules.Daily.Application.GetArchiveIndexEndpoint"
     },
     {
@@ -3262,6 +3704,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.GetReplayTracksEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetWeekReviewEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.RecomputeDayStatsEndpoint"

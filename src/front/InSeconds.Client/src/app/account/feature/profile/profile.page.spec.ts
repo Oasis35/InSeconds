@@ -1,3 +1,4 @@
+import { provideSoundsAvailable } from '../../../core/sound/sound-feature';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Subject } from 'rxjs';
@@ -38,6 +39,7 @@ describe('ProfilePage', () => {
         provideRouter([]),
         provideTranslateService(),
         providePlayersApiFake(api),
+        provideSoundsAvailable(),
         { provide: ModalService, useValue: { confirm, open } },
         { provide: FileDownload, useValue: { saveText } },
       ],
@@ -85,6 +87,23 @@ describe('ProfilePage', () => {
       const hrefs = [...(fixture.nativeElement as HTMLElement).querySelectorAll('a')].map(a => a.getAttribute('href'));
       expect(hrefs).not.toContain('/legal');
       expect(hrefs).not.toContain('/privacy');
+    });
+
+    it('les bruitages se coupent et se rallument ici, le choix est gardé dans le navigateur', async () => {
+      localStorage.removeItem('inseconds.sounds');
+      const fixture = await render();
+      const toggle = () => query<HTMLButtonElement>(fixture, '[data-testid="profile-sounds"] button')!;
+
+      expect(toggle().getAttribute('aria-pressed')).toBe('true');
+      toggle().click();
+      await settle(fixture);
+      expect(toggle().getAttribute('aria-pressed')).toBe('false');
+      expect(localStorage.getItem('inseconds.sounds')).toBe('off');
+
+      toggle().click();
+      await settle(fixture);
+      expect(toggle().getAttribute('aria-pressed')).toBe('true');
+      expect(localStorage.getItem('inseconds.sounds')).toBeNull();
     });
 
     it("le lien du nom au classement général n'est là qu'avec l'accès Survie", async () => {

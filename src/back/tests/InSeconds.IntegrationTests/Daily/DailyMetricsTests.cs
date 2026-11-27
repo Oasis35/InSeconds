@@ -45,7 +45,7 @@ public class DailyMetricsTests(PostgresFixture postgres) : IAsyncLifetime
         (await alice.AnswerAsync(session, 1, 5, $"Artiste {trackId}", "Zzzz")).EnsureSuccessStatusCode();
         var last = await alice.FinishAsync(session, fromPosition: 2, seconds: 0.5m);
 
-        Assert.Equal([DailyMetrics.Started, DailyMetrics.Completed], sessions.GetMeasurementSnapshot().Select(m => Tag(m, "event")));
+        Assert.Equal([DailyMetrics.Started, DailyMetrics.Completed], sessions.GetMeasurementSnapshot().Where(m => m.Value != 0).Select(m => Tag(m, "event")));
         Assert.Equal(["1"], hints.GetMeasurementSnapshot().Select(m => Tag(m, "hint_level")));
         var all = answers.GetMeasurementSnapshot();
         Assert.Equal(5, all.Count);
@@ -55,10 +55,32 @@ public class DailyMetricsTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.All(all.Skip(1), m => Assert.Equal(("0.5", "0", "True", "True"),
             (Tag(m, "listened_seconds"), Tag(m, "hint_level"), Tag(m, "artist_found"), Tag(m, "title_found"))));
         // Jamais d'identifiant : un joueur ou un morceau en étiquette ferait exploser le nombre de séries.
-        Assert.All(all, m => Assert.Equal(["artist_found", "hint_level", "listened_seconds", "title_found"], m.Tags.Keys.Order()));
+        Assert.All(all, m => Assert.Equal(["artist_found", "hint_level", "listened_seconds", "retry", "title_found"], m.Tags.Keys.Order()));
+        Assert.All(all, m => Assert.Equal("False", Tag(m, "retry")));
         Assert.True(last.Completed);
         var total = await _game.Api.ScalarAsync<int>($"SELECT total_score FROM daily.sessions WHERE id = {session}");
         Assert.Equal([total], scores.GetMeasurementSnapshot().Select(m => m.Value));
+    }
+
+    [Fact]
+    public async Task SecondeTentative_CompteLOuverture_EtLaReponseDefinitiveEstMarqueeRetry()
+    {
+        await using var game = await GameApi.CreateAsync(
+            await postgres.CreateDatabaseAsync(), settings: new Dictionary<string, string> { ["Daily:RetryScorePercent"] = "70" });
+        await game.GenerateAsync();
+        var meters = game.Api.Services.GetRequiredService<IMeterFactory>();
+        using var retries = new MetricCollector<long>(meters, DailyMetrics.MeterName, DailyMetrics.RetriesName);
+        using var answers = new MetricCollector<long>(meters, DailyMetrics.MeterName, DailyMetrics.AnswersName);
+        var carol = await game.NewPlayerAsync();
+        var session = (await carol.StartAsync()).SessionId;
+        var trackId = await game.TrackAtAsync(Today, 1);
+
+        await carol.AnswerAsync(session, 1, 2, "Zzzz", "Yyyy");
+        await carol.AnswerAsync(session, 1, 2, $"Artiste {trackId}", $"Titre {trackId}");
+
+        Assert.Equal([1L], retries.GetMeasurementSnapshot().Select(m => m.Value));
+        // Seule la réponse définitive est comptée, avec son étiquette.
+        Assert.Equal(["True"], answers.GetMeasurementSnapshot().Select(m => Tag(m, "retry")));
     }
 
     [Fact]
@@ -71,7 +93,7 @@ public class DailyMetricsTests(PostgresFixture postgres) : IAsyncLifetime
         await bob.StartAsync();
         (await bob.AbandonAsync(session)).EnsureSuccessStatusCode();
 
-        Assert.Equal([DailyMetrics.Started, DailyMetrics.Abandoned], sessions.GetMeasurementSnapshot().Select(m => Tag(m, "event")));
+        Assert.Equal([DailyMetrics.Started, DailyMetrics.Abandoned], sessions.GetMeasurementSnapshot().Where(m => m.Value != 0).Select(m => Tag(m, "event")));
     }
 
     [Fact]
@@ -87,7 +109,7 @@ public class DailyMetricsTests(PostgresFixture postgres) : IAsyncLifetime
         // Une seconde passe n'a plus rien à expirer : rien n'est compté.
         await _game.Api.Services.GetRequiredService<IMessageBus>().InvokeAsync<int>(new ExpireStaleSessions(), TestContext.Current.CancellationToken);
 
-        var expired = Assert.Single(sessions.GetMeasurementSnapshot());
+        var expired = Assert.Single(sessions.GetMeasurementSnapshot(), m => m.Value != 0);
         Assert.Equal((2L, DailyMetrics.Expired), (expired.Value, Tag(expired, "event")));
     }
 }

@@ -7,7 +7,7 @@ export const GUEST_TILE_DISMISSED_KEY = 'inseconds.guestAccountTile';
 
 /**
  * La fermeture de la tuile « crée un compte » d'un invité, gardée d'une visite à l'autre (les règles d'affichage sont dans
- * `domain/toasts`). Hors du `DailyGameStore` (le `localStorage` ne vit pas dans les stores) : la page la relit au chargement et
+ * `domain/toasts`). Hors du `HomeStore` (le `localStorage` ne vit pas dans les stores) : la page la relit au chargement et
  * l'écrit à la fermeture, comme `LostStreakNotice`.
  */
 @Injectable()

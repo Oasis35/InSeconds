@@ -18,6 +18,7 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'admin.day_not_over': 'errors.admin.day_not_over',
   'admin.invalid_date': 'errors.admin.invalid_date',
   'admin.invalid_month': 'errors.admin.invalid_month',
+  'admin.invalid_period': 'errors.admin.invalid_period',
   'admin.pool_insufficient': 'errors.admin.pool_insufficient',
 
   // Catalogue
@@ -52,6 +53,7 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'players.guest_forbidden': 'errors.players.guest_forbidden',
   'players.invalid_or_expired_token': 'errors.players.invalid_or_expired_token',
   'players.pseudo_mismatch': 'errors.players.pseudo_mismatch',
+  'players.pseudo_reserved': 'errors.players.pseudo_reserved',
   'players.pseudo_taken': 'errors.players.pseudo_taken',
   'players.not_a_guest': 'errors.players.not_a_guest',
   'players.same_email': 'errors.players.same_email',
@@ -75,6 +77,7 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'social.group_full': 'errors.social.group_full',
   'social.group_not_found': 'errors.social.group_not_found',
   'social.invalid_name': 'errors.social.invalid_name',
+  'social.reserved_name': 'errors.social.reserved_name',
   'social.invalid_ranking_mode': 'errors.social.invalid_ranking_mode',
   'social.invitation_not_found': 'errors.social.invitation_not_found',
   'social.invalid_date': 'errors.social.invalid_date',

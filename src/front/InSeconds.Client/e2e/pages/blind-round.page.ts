@@ -12,6 +12,8 @@ export class BlindRoundPage {
   readonly confirmSubmitButton: Locator;
   readonly clearSearchButton: Locator;
   readonly nextButton: Locator;
+  /** La phrase de la seconde tentative (sous le champ). */
+  readonly retryNotice: Locator;
   readonly roundScore: Locator;
   /** Le total de la partie, sous les points du morceau à la révélation (il n'est plus dans l'en-tête). */
   readonly roundTotal: Locator;
@@ -33,6 +35,7 @@ export class BlindRoundPage {
     this.confirmSubmitButton = page.getByRole('button', { name: 'Valider quand même' });
     this.clearSearchButton   = page.getByRole('button', { name: '✕' });
     this.nextButton          = page.getByRole('button', { name: /Piste suivante|Voir le résultat/ });
+    this.retryNotice         = page.getByTestId('round-retry-notice');
     // Score affiché dans le résultat du round : "+850 pts"
     this.roundScore          = page.getByTestId('round-score');
     this.roundTotal          = page.getByTestId('round-total');
@@ -46,9 +49,9 @@ export class BlindRoundPage {
     this.timer                = page.getByTestId('round-timer');
   }
 
-  /** Bouton « ↺ X s » (rejoue le palier courant en entier) - visible une fois le palier terminé. */
+  /** Bouton « ↺ X s » (nom accessible « Réécouter l'extrait depuis le début, palier de X s » ; rejoue le palier courant en entier) - visible une fois le palier terminé. */
   replayButton(seconds: number | string): Locator {
-    return this.page.getByRole('button', { name: new RegExp(`^↺ ${frSeconds(seconds)}$`) });
+    return this.page.getByRole('button', { name: new RegExp(`^Réécouter l'extrait depuis le début, palier de ${frSeconds(seconds)}$`) });
   }
 
   /**
@@ -133,6 +136,16 @@ export class BlindRoundPage {
     // surlignerait une suggestion, qu'Entrée choisirait au lieu d'envoyer la saisie.
     await this.page.mouse.move(0, 0);
     await this.answerInput.press('Enter');
+  }
+
+  /**
+   * Répond une réponse fausse jusqu'au bout : la première tentative est refusée (la phrase de la seconde tentative apparaît, la saisie reste),
+   * la seconde est définitive et montre la révélation.
+   */
+  async submitWrongTwice(): Promise<void> {
+    await this.submit();
+    await this.retryNotice.waitFor({ state: 'visible' });
+    await this.submit();
   }
 
   async submitEmpty(): Promise<void> {

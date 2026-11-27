@@ -61,9 +61,10 @@ public static class VerifyMagicLinkEndpoint
             : new MagicLinkAttempt(token, await accountSignIn.PrepareAsync(token.Email!, request.Pseudo, ct));
     }
 
-    public static ProblemDetails Validate(MagicLinkAttempt attempt) => attempt switch
+    public static ProblemDetails Validate(VerifyMagicLink request, MagicLinkAttempt attempt, IReservedNames reservedNames) => attempt switch
     {
         { Token: null } => PlayersProblems.InvalidOrExpiredToken(),
+        { Plan.ExistingAccount: null } when reservedNames.IsReserved(request.Pseudo) => PlayersProblems.PseudoReserved(),
         { Plan.PseudoTaken: true } => PlayersProblems.PseudoTaken(),
         _ => WolverineContinue.NoProblems,
     };

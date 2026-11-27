@@ -47,6 +47,24 @@ describe('StreakPillComponent', () => {
     expect(button.style.animation).toBe('');
   });
 
+  it('jalon atteint aujourd\'hui : pastille remplie d\'orange', () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const { button } = render(h => (h.streak = { ...STREAK, streak: 7, lastPlayedDate: today }));
+    expect(button.dataset['milestone']).toBe('reached');
+    expect(button.style.background).not.toBe('');
+  });
+
+  it('la veille d\'un jalon : contour en pointillés', () => {
+    const { button } = render(h => (h.streak = { ...STREAK, streak: 6, lastPlayedDate: '2000-01-01' }));
+    expect(button.dataset['milestone']).toBe('eve');
+    expect(button.style.border).toContain('dashed');
+  });
+
+  it('hors jalon : pastille normale', () => {
+    const { button } = render();
+    expect(button.dataset['milestone']).toBeUndefined();
+  });
+
   it('aucune série en cours : rien à afficher', () => {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     const fixture = TestBed.createComponent(Host);

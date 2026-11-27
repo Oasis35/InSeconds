@@ -3,8 +3,10 @@ using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Daily.Domain;
 using InSeconds.Api.Modules.Gameplay.Contracts;
 using InSeconds.Api.Modules.Players.Contracts;
+using InSeconds.Infrastructure.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using Wolverine.Http;
 
@@ -31,7 +33,9 @@ public sealed record ResumedAnswer(
 /// <param name="ListenedSeconds">Le plus long palier déjà écouté : le plancher anti-triche, les paliers plus courts ne sont plus proposés.</param>
 /// <param name="HintLevel">Le niveau d'indice déjà révélé.</param>
 /// <param name="HintFacts">Ce que ces indices ont révélé.</param>
-public sealed record CurrentTrackState(int Position, decimal ListenedSeconds, int HintLevel, IReadOnlyList<HintFactResponse> HintFacts);
+/// <param name="FailedAttempts">Les réponses fausses déjà données sur ce morceau (0 ou 1) : à 1, la reprise rouvre la seconde tentative.</param>
+public sealed record CurrentTrackState(
+    int Position, decimal ListenedSeconds, int HintLevel, IReadOnlyList<HintFactResponse> HintFacts, int FailedAttempts = 0);
 
 /// <param name="NextPosition">Le morceau à jouer maintenant : le premier sans réponse (1 pour une nouvelle partie).</param>
 /// <param name="CurrentTrack">Ce que la partie a déjà vu du morceau en cours ; vide si le joueur n'a encore rien écouté dessus.</param>
@@ -100,6 +104,8 @@ public static class StartSessionEndpoint
     /// </summary>
     [Authorize]
     [WolverinePost("/api/daily/sessions", OperationId = "startSession")]
+    [EnableRateLimiting(RateLimitPolicies.DailyStart)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable)]
@@ -172,6 +178,6 @@ public static class StartSessionEndpoint
             ? []
             : HintFacts.UpTo(round.HintLevel, rules.HintProviders, subject)
                 .Select(f => new HintFactResponse(HintLevelInfo.KindNameOf(f.Kind), f.Value)).ToList();
-        return new CurrentTrackState(session.NextPosition, round.ListenedSeconds, round.HintLevel, facts);
+        return new CurrentTrackState(session.NextPosition, round.ListenedSeconds, round.HintLevel, facts, session.FailedAttemptsOfCurrentTrack);
     }
 }

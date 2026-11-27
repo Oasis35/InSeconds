@@ -27,6 +27,17 @@ public class GuestPseudoTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task UnInvite_PseudoReserve_400_EtRienNestEnregistre()
+    {
+        var guest = await GuestAsync();
+
+        var response = await guest.PutAsJsonAsync("/api/players/me/guest-pseudo", new SetGuestPseudo("InSeconds"), Ct);
+
+        await ProfileTests.AssertProblemAsync(response, HttpStatusCode.BadRequest, PlayersErrorCodes.PseudoReserved);
+        Assert.Null((await MagicLinkApi.MeAsync(guest))!.Pseudo);
+    }
+
+    [Fact]
     public async Task UnInvite_SeDonneUnPseudo_QuIlRetrouveALaVisiteSuivante()
     {
         var guest = await GuestAsync();
