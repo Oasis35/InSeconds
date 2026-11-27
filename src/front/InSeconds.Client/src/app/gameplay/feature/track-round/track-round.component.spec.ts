@@ -344,7 +344,7 @@ describe('TrackRoundComponent', () => {
       expect(fixture.componentInstance.answered[1]).toEqual(fixture.componentInstance.answered[0]);
     });
 
-    it('une seconde tentative offerte garde la saisie, dit une phrase douce en ambre et renomme le bouton', () => {
+    it('une seconde tentative offerte garde la saisie, dit une phrase factuelle en ambre et renomme le bouton', () => {
       type('Daft Punk - Get Lucky');
       submitForm();
       expect(element.querySelector('[data-testid="round-retry-notice"]')).toBeNull();
@@ -354,7 +354,7 @@ describe('TrackRoundComponent', () => {
 
       const notice = element.querySelector('[data-testid="round-retry-notice"]');
       expect(notice?.getAttribute('role')).toBe('status');
-      expect(notice?.textContent).toMatch(/gameplay\.retry\.phrase\.[1-9]/);
+      expect(notice?.textContent).toMatch(/gameplay\.retry\.phrase\.[1-7]/);
       expect(input().value).toBe('Daft Punk - Get Lucky');
       expect(button('gameplay.answer.validateRetry')).toBeDefined();
       // La seconde réponse est définitive : elle repart comme une autre.

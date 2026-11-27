@@ -239,7 +239,7 @@ export class RoundPlayerComponent {
   readonly bass = input(0);
   /** Les points en jeu ; `null` si le mode n'en a pas (rien à gauche du bouton). */
   readonly stake = input<number | null>(null);
-  /** Le joueur est à sa seconde tentative : le cadre passe à l'ambre et les points en jeu disent leur facteur. */
+  /** Le joueur est à sa seconde tentative : le lecteur passe à l'ambre (cadre, forme d'onde, repères, chiffre des points en jeu, qui ont déjà baissé). */
   readonly secondAttempt = input(false);
   /**
    * `inline` : le bouton à gauche de la waveform, sans cadre, sans repères ni « écouter plus » (la carte d'un mode à écoute fixe) ;
@@ -260,11 +260,11 @@ export class RoundPlayerComponent {
   /** La couleur du son : le cyan, l'ambre du joueur à la seconde tentative (le lecteur entier prend la couleur de ce qu'il fait). Le rond « écouter plus » reste cyan. */
   protected readonly tone = computed(() => (this.secondAttempt() ? 'var(--color-accent-3)' : 'var(--color-accent-2)'));
   protected readonly waveListened = computed(() =>
-    this.secondAttempt() ? 'color-mix(in srgb, rgb(var(--rgb-accent-3)) 34%, rgb(var(--rgb-bg)))' : 'var(--wave-listened)');
+    this.secondAttempt() ? 'var(--wave-listened-retry)' : 'var(--wave-listened)');
   protected readonly waveTrail = computed(() =>
-    this.secondAttempt() ? 'color-mix(in srgb, rgb(var(--rgb-accent-3)) 30%, white)' : 'var(--wave-trail)');
+    this.secondAttempt() ? 'var(--wave-trail-retry)' : 'var(--wave-trail)');
   protected readonly wavePlayedShadow = computed(() =>
-    this.secondAttempt() ? '0 0 6px rgb(var(--rgb-accent-3) / 0.55)' : 'var(--tube-wave-played)');
+    this.secondAttempt() ? 'var(--tube-wave-played-retry)' : 'var(--tube-wave-played)');
   protected readonly maxStep = computed(() => this.steps().at(-1) ?? 0);
 
   /** Jusqu'où l'extrait est joué : la position en lecture, le palier entier une fois joué, rien pendant le chargement. */

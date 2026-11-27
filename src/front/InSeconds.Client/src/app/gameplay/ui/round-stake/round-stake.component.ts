@@ -47,7 +47,6 @@ export class RoundStakeComponent {
   /** À la seconde tentative, le chiffre prend l'ambre du joueur ; les points ont déjà baissé (le prix de la seconde tentative est dans `stake`). */
   readonly retry = input(false);
 
-
   protected readonly shown = signal(0);
   /** La dernière baisse, le temps que « −150 » s'envole (un identifiant neuf relance l'animation). */
   protected readonly drops = signal<readonly { id: number; amount: number }[]>([]);
