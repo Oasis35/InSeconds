@@ -62,8 +62,13 @@ public class PersistenceTests
     {
         using var db = CreateContext();
 
-        var offenders = db.Model.GetEntityTypes()
+        var navigations = db.Model.GetEntityTypes()
             .SelectMany(e => e.GetNavigations().Cast<INavigationBase>().Concat(e.GetSkipNavigations()))
+            .ToArray();
+        // Un modèle sans aucune navigation ferait passer la règle à vide.
+        Assert.NotEmpty(navigations);
+
+        var offenders = navigations
             .Where(n => ModuleOf(n.DeclaringEntityType.ClrType) != ModuleOf(n.TargetEntityType.ClrType))
             .Select(n => $"{n.DeclaringEntityType.Name}.{n.Name} -> {n.TargetEntityType.Name}")
             .Distinct();
@@ -76,9 +81,10 @@ public class PersistenceTests
     public void AucunRepositoryGenerique()
     {
         var offenders = typeof(Program).Assembly.GetTypes()
-            .Where(t => t.IsGenericTypeDefinition && t.Name.StartsWith("IRepository`", StringComparison.Ordinal)
-                        || t.IsGenericTypeDefinition && t.Name.StartsWith("Repository`", StringComparison.Ordinal)
-                        || t.IsGenericTypeDefinition && t.Name.StartsWith("IGenericRepository`", StringComparison.Ordinal))
+            .Where(t => t.IsGenericTypeDefinition
+                        && (t.Name.StartsWith("IRepository`", StringComparison.Ordinal)
+                            || t.Name.StartsWith("Repository`", StringComparison.Ordinal)
+                            || t.Name.StartsWith("IGenericRepository`", StringComparison.Ordinal)))
             .Select(t => t.FullName);
 
         Assert.Empty(offenders);
