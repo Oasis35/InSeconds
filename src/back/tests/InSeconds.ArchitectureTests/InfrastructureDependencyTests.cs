@@ -22,9 +22,10 @@ public class InfrastructureDependencyTests
         // Configure Wolverine pour toute l'API : les services des modules que le code généré doit demander au conteneur.
         // (InSecondsDbContext n'a pas besoin d'y être : il lit les configurations des modules par réflexion sur l'assembly.)
         "InSeconds.Api.Infrastructure.Messaging.WolverineSetup",
-        // Points d'entrée en ligne de commande : --export-player / --delete-player (Players) et --freeze-day-stats (Daily).
+        // Points d'entrée en ligne de commande : --export-player / --delete-player (Players) et --freeze-day-stats et --purge-daily-before (Daily).
         "InSeconds.Api.Infrastructure.Hosting.PlayerDataCommand",
         "InSeconds.Api.Infrastructure.Hosting.FreezeDayStatsCommand",
+        "InSeconds.Api.Infrastructure.Hosting.PurgeDailyCommand",
     ];
 
     [Fact]

@@ -31,6 +31,8 @@ public class HandlerRulesTests
         "InSeconds.Api.Modules.Catalogue.Persistence.EfCatalogueStore.SaveAlbumGenresAsync",
         // Commande en ligne --freeze-day-stats : ni serveur ni Wolverine, une transaction par jour.
         "InSeconds.Api.Infrastructure.Hosting.FreezeDayStatsCommand.CloseOneAsync",
+        // Commande en ligne --purge-daily-before : une transaction, sous verrou, annulée en simulation.
+        "InSeconds.Api.Modules.Daily.Persistence.DailyPurge.RunAsync",
     ];
 
     [Fact]

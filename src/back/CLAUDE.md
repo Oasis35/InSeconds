@@ -28,6 +28,7 @@ Commandes de l'API (`Program.cs`, avant toute composition ; hôte minimal, ni se
 | `--migrate-only` | applique les migrations (déploiement, copie prod → staging) | 0 |
 | `--rotate-data-protection-key` | crée une clé Data Protection active tout de suite (après une copie de base, piège 17) | 0 |
 | `--freeze-day-stats` | fige les stats de tous les jours terminés sans photo, une transaction par jour, rejouable | 0 ; 1 si les réglages ne passent pas `DailyOptionsChecks` ou si un jour a échoué |
+| `--purge-daily-before aaaa-mm-jj [--apply]` | efface les jours de défi **avant** cette date (parties, réponses, photos de stats, défis) et rejoue les séries ; sans `--apply`, simulation (compte, ne supprime rien) ; mode d'emploi : `docs/exploitation/purge-parties.md` | 0 ; 1 réglages incohérents ou date trop récente (au plus J-1) ; 64 date manquante ou illisible |
 | `--export-player <email>` | JSON de `PlayerDataExporter` sur la sortie standard, journaux sur la sortie d'erreur, jamais l'adresse | 0 ; 2 aucun compte ; 64 adresse manquante |
 | `--delete-player <email>` | `AccountErasure` dans une transaction | 0 ; 2 ; 64 |
 
