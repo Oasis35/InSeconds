@@ -40,6 +40,7 @@
       "invalid_or_expired_token": "This link is invalid or has expired.",
       "pseudo_mismatch": "That's not your pseudo.",
       "pseudo_taken": "This pseudo is already taken.",
+      "pseudo_reserved": "This pseudo is reserved. Pick another one.",
       "not_a_guest": "This account is no longer a guest: change your pseudo from your profile.",
       "same_email": "That's already your current address."
     },
@@ -96,6 +97,7 @@
       "member_not_found": "This member is no longer in the group.",
       "too_many_groups": "You've reached the maximum number of groups.",
       "invalid_name": "That group name isn't valid.",
+      "reserved_name": "This name is reserved. Pick another one.",
       "group_not_found": "This group no longer exists.",
       "invalid_date": "This day doesn't exist, or it hasn't happened yet."
     }
@@ -1760,7 +1762,7 @@
       "label": "New name",
       "confirm": "Rename",
       "cancel": "Cancel",
-      "failed": "Could not rename the group right now."
+      "failed": "Could not rename the group. That name may be reserved."
     },
     "transfer": {
       "link": "Change owner",

@@ -149,6 +149,21 @@ describe('VerifyPage', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
+  it('un pseudo réservé ramène au champ avec son message', async () => {
+    const fixture = render('jeton', newAddress());
+    confirmButton(fixture).click();
+    await settle(fixture);
+    await createAccount(fixture);
+
+    api.verifyMagicLink.mockRejectedValue(problem(400, 'players.pseudo_reserved'));
+    type(pseudoInput(fixture), 'Admin');
+    query<HTMLButtonElement>(fixture, 'button[type="submit"]')!.click();
+    await settle(fixture);
+
+    expect(text(fixture)).toContain('errors.players.pseudo_reserved');
+    expect(pseudoInput(fixture)).not.toBeNull();
+  });
+
   it('efface le message sur le pseudo dès que le joueur retape', async () => {
     const fixture = render('jeton', newAddress());
     confirmButton(fixture).click();

@@ -20,6 +20,8 @@ public static class PlayersModule
         services.AddScoped<IPlayerQueries, EfPlayerQueries>();
         services.AddScoped<IPlayerSessions, EfPlayerSessions>();
         services.AddScoped<IPlayerDirectory, EfPlayerDirectory>();
+        services.AddOptions<PlayersOptions>().BindConfiguration(PlayersOptions.Section);
+        services.AddSingleton<IReservedNames, ReservedNames>();
         services.AddScoped<AccountSignIn>();
         services.AddScoped<AccountErasure>();
         services.AddScoped<PlayerDataExporter>();

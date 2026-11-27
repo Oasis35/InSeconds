@@ -8,6 +8,7 @@ public static class PlayersErrorCodes
 {
     public const string InvalidOrExpiredToken = "players.invalid_or_expired_token";
     public const string PseudoTaken = "players.pseudo_taken";
+    public const string PseudoReserved = "players.pseudo_reserved";
     public const string EmailTaken = "players.email_taken";
     public const string SameEmail = "players.same_email";
     public const string GuestForbidden = "players.guest_forbidden";
@@ -22,6 +23,10 @@ internal static class PlayersProblems
 
     public static ProblemDetails PseudoTaken() =>
         ApiProblem.Of(StatusCodes.Status409Conflict, PlayersErrorCodes.PseudoTaken, "Ce pseudo est déjà pris.");
+
+    /// <summary>Un pseudo qui prête à confusion (« Admin », « InSeconds »…) : on ne dit pas quel terme l'a fait refuser.</summary>
+    public static ProblemDetails PseudoReserved() =>
+        ApiProblem.Of(StatusCodes.Status400BadRequest, PlayersErrorCodes.PseudoReserved, "Ce pseudo est réservé. Choisis-en un autre.");
 
     public static ProblemDetails EmailTaken() =>
         ApiProblem.Of(StatusCodes.Status409Conflict, PlayersErrorCodes.EmailTaken, "Cette adresse est déjà utilisée par un autre compte.");

@@ -59,7 +59,7 @@ describe('NewGroupPage', () => {
   });
 
   it.each([
-    ['invalid_name', 'errors.social.invalid_name'], ['too_many_groups', 'social.create.tooMany'], ['error', 'social.create.failed'],
+    ['invalid_name', 'errors.social.invalid_name'], ['reserved_name', 'errors.social.reserved_name'], ['too_many_groups', 'social.create.tooMany'], ['error', 'social.create.failed'],
   ] as const)('un refus du serveur (%s) s\'affiche sous le champ, sans partage', async (kind, key) => {
     const { el, submit } = render();
     api.createOutcome = { kind };

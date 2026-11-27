@@ -40,6 +40,7 @@
       "invalid_or_expired_token": "Ce lien est invalide ou a expiré.",
       "pseudo_mismatch": "Ce n'est pas ton pseudo.",
       "pseudo_taken": "Ce pseudo est déjà pris.",
+      "pseudo_reserved": "Ce pseudo est réservé. Choisis-en un autre.",
       "not_a_guest": "Ce compte n'est plus un invité : change ton pseudo depuis ton profil.",
       "same_email": "C'est déjà ton adresse actuelle."
     },
@@ -96,6 +97,7 @@
       "member_not_found": "Ce membre n'est plus dans le groupe.",
       "too_many_groups": "Tu as atteint le nombre de groupes possible.",
       "invalid_name": "Ce nom de groupe n'est pas valide.",
+      "reserved_name": "Ce nom est réservé. Choisis-en un autre.",
       "group_not_found": "Ce groupe n'existe plus.",
       "invalid_date": "Ce jour n'existe pas, ou il n'est pas encore passé."
     }
@@ -1760,7 +1762,7 @@
       "label": "Nouveau nom",
       "confirm": "Renommer",
       "cancel": "Annuler",
-      "failed": "Impossible de renommer le groupe pour le moment."
+      "failed": "Impossible de renommer le groupe. Ce nom est peut-être réservé."
     },
     "transfer": {
       "link": "Changer de créateur",

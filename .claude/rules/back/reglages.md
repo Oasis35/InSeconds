@@ -45,6 +45,7 @@ paths:
 | `Runs:Levels:InactivityGraceDays` / `InactivityWeeklyDropPercent` / `InactivityFloorPercent` | `14` / `5` / `50` | 1 à 365 / 0 à 50 / 0 à 100 ; calculé à la lecture |
 | `Runs:Levels:Discs` | `runs.discs.scratched` 300, `bronze` 900, `silver` 2000, `gold` 3600, `platinum` 6000, `double_platinum` 9600, `diamond` 13000 | liste d'objets `{"disc":"runs.discs.gold","points":3600}`, 1 à 12 disques distincts, premier seuil au-dessus de 0, points strictement croissants |
 | `Social:MaxMembersPerGroup` / `MaxGroupsPerPlayer` / `MaxNameLength` | `15` / `5` / `24` | 2 à 100 / 1 à 50 / 3 à 40 ; hors bornes : défaut |
+| `Players:ReservedContains` / `ReservedWords` / `ReservedExact` | listes de départ de `ReservedNameDefaults` | listes de termes ; une liste renseignée remplace celle de départ en entier, une liste vide la garde ; relues à chaud (voir `players-auth.md`) |
 | `Catalogue:CoverUrlTemplate` | `https://cdn-images.dzcdn.net/images/cover/{hash}/250x250-000000-80-0-0.jpg` | pochette reconstruite depuis `cover_hash` |
 | `Catalogue:Refresh:BatchSize` / `BatchDelay` | `10` / `00:00:01.5` | cadence du contrôle nocturne et des candidats (Deezer : ~50 requêtes / 5 s) |
 | `Catalogue:Waveform:ComputeOnAdd` / `DelayMinutes` | `true` / `15` | `false` au staging (piège 50) |
