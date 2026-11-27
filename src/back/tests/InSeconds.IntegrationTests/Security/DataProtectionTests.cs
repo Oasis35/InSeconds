@@ -1,4 +1,5 @@
 using System.Net;
+using InSeconds.Api.Infrastructure.Hosting;
 using InSeconds.IntegrationTests.Players;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Hosting;
@@ -62,12 +63,57 @@ public class DataProtectionTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Contains("DataProtection:CertificatePath", Flatten(exception));
     }
 
+    [Fact]
+    public async Task Piege17_RotationDeLaCle_LaCleNeuveEstChiffreeEtDevientCelleDesNouveauxCookies()
+    {
+        // Une base copiée : sans certificat, la clé du moment est en clair.
+        await using (var clear = new ApiFactory(_connectionString))
+            await clear.CreateClient().PostAsync("/api/players/guest", null, Ct);
+        var before = await Keys.CountAsync(_connectionString);
+        Assert.Contains("unencrypted form", await Keys.XmlAsync(_connectionString));
+
+        string[] args =
+        [
+            RotateDataProtectionKeyCommand.Flag,
+            $"--ConnectionStrings:DefaultConnection={_connectionString}",
+            .. TestCertificate.Settings().Select(setting => $"--{setting.Key}={setting.Value}"),
+        ];
+        Assert.Equal(0, await RotateDataProtectionKeyCommand.RunAsync(args));
+
+        // Une clé de plus, les anciennes restent (pour relire les anciens cookies).
+        Assert.Equal(before + 1, await Keys.CountAsync(_connectionString));
+
+        // La clé neuve est la clé par défaut : un cookie émis maintenant n'est lisible qu'avec le certificat.
+        string cookie;
+        await using (var withCertificate = new ApiFactory(_connectionString, settings: TestCertificate.Settings()))
+            cookie = CookieHeaders.Pair(await withCertificate.CreateClient().PostAsync("/api/players/guest", null, Ct), "inseconds");
+
+        await using var withoutCertificate = new ApiFactory(_connectionString);
+        Assert.Equal(HttpStatusCode.NoContent, (await GetMeAsync(withoutCertificate, cookie)).StatusCode);
+    }
+
     private static async Task<HttpResponseMessage> GetMeAsync(ApiFactory api, string cookie)
     {
         var client = api.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/players/me");
         request.Headers.Add("Cookie", cookie);
         return await client.SendAsync(request, Ct);
+    }
+
+    /// <summary>Les clés Data Protection de la base de ce test.</summary>
+    private static class Keys
+    {
+        public static Task<long> CountAsync(string connectionString) => ScalarAsync<long>(connectionString, "SELECT count(*) FROM infra.data_protection_keys");
+
+        public static Task<string> XmlAsync(string connectionString) => ScalarAsync<string>(connectionString, "SELECT string_agg(xml, '') FROM infra.data_protection_keys");
+
+        private static async Task<T> ScalarAsync<T>(string connectionString, string sql)
+        {
+            await using var connection = new Npgsql.NpgsqlConnection(connectionString);
+            await connection.OpenAsync(Ct);
+            await using var command = new Npgsql.NpgsqlCommand(sql, connection);
+            return (T)(await command.ExecuteScalarAsync(Ct))!;
+        }
     }
 
     private static string Flatten(Exception exception)

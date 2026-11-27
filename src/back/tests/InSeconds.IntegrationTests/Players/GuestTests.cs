@@ -159,7 +159,7 @@ public class GuestTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Staging_CookieHostSecureLax()
+    public async Task Piege7_Staging_CookieHostSecureLaxHttpOnly()
     {
         await using var api = new ApiFactory(_connectionString, environment: Environments.Staging,
             settings: TestCertificate.StagingSettings());
@@ -168,8 +168,29 @@ public class GuestTests(PostgresFixture postgres) : IAsyncLifetime
 
         var cookie = CookieHeaders.Find(response, "__Host-inseconds");
         Assert.NotNull(cookie);
+        AssertHostCookie(cookie);
+    }
+
+    [Fact]
+    public async Task Piege7_Production_CookieHostSecureLaxHttpOnly()
+    {
+        await using var api = new ApiFactory(_connectionString, environment: Environments.Production,
+            settings: new Dictionary<string, string>(TestCertificate.Settings()) { ["Brevo:ApiKey"] = "clé" });
+
+        var response = await api.CreateClient().PostAsync("/api/players/guest", null, Ct);
+
+        AssertHostCookie(CookieHeaders.Find(response, "__Host-inseconds"));
+        Assert.Null(CookieHeaders.Find(response, "inseconds"));
+    }
+
+    /// <summary>Jamais <c>SameSite=None</c> (Safari purgerait le cookie, piège 7) : <c>__Host-</c>, Secure, Lax, HttpOnly, sans domaine.</summary>
+    private static void AssertHostCookie(string? cookie)
+    {
+        Assert.NotNull(cookie);
         Assert.Contains("secure", cookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("httponly", cookie, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("samesite=lax", cookie, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("samesite=none", cookie, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("path=/", cookie, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("domain=", cookie, StringComparison.OrdinalIgnoreCase);
     }
