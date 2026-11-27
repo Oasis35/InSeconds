@@ -18,6 +18,8 @@ import { DailyProgressComponent } from '../../ui/daily-progress/daily-progress.c
 import { DeezerBadgeComponent } from '../../../gameplay/ui/deezer-badge/deezer-badge.component';
 import { secondsUntilMidnightUtc, timeLeft } from '../../../core/game-day/game-day';
 import { ScoreBreakdownComponent } from '../../ui/score-breakdown/score-breakdown.component';
+import { SoundService } from '../../../core/sound/sound.service';
+import { SoundToggleComponent } from '../../../ui/sound-toggle/sound-toggle.component';
 import { ScoreCountComponent } from '../../ui/score-count/score-count.component';
 
 /**
@@ -30,7 +32,7 @@ import { ScoreCountComponent } from '../../ui/score-count/score-count.component'
   selector: 'app-daily-page',
   imports: [
     TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, BrandComponent, DailyProgressComponent,
-    DeezerBadgeComponent, ScoreCountComponent, ScoreBreakdownComponent, ButtonComponent,
+    DeezerBadgeComponent, ScoreCountComponent, ScoreBreakdownComponent, ButtonComponent, SoundToggleComponent,
   ],
   providers: [DailyRoundStore, TrackRoundStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,6 +45,7 @@ import { ScoreCountComponent } from '../../ui/score-count/score-count.component'
 export class DailyPage implements OnInit {
   protected readonly store = inject(DailyRoundStore);
   protected readonly language = inject(LanguageService);
+  protected readonly sounds = inject(SoundService);
   protected readonly session = inject(SessionStore);
   private readonly router = inject(Router);
   private readonly chrome = inject(ShellChromeStore);

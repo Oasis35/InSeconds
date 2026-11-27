@@ -140,6 +140,11 @@
     }
   },
   "ui": {
+    "sound": {
+      "label": "Bruitages",
+      "turnOff": "Couper les bruitages",
+      "turnOn": "Activer les bruitages"
+    },
     "envBanner": {
       "label": "environnement de développement"
     },

@@ -27,6 +27,7 @@
       "resources": {
         "files": [
           "/icons/**",
+          "/sounds/**",
           "/*.(svg|png|jpg|webp|woff2)"
         ]
       }

@@ -1,5 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { SoundService } from '../../../core/sound/sound.service';
 import { isSavingData } from '../../../core/network/save-data';
 import { unlockSharedAudio } from '../../../gameplay/data-access/shared-audio';
 import { START_INTENT } from '../start-intent';
@@ -13,6 +14,7 @@ import { START_INTENT } from '../start-intent';
 @Injectable()
 export class DailyLauncher {
   private readonly router = inject(Router);
+  private readonly sounds = inject(SoundService);
 
   /** La manche s'ouvre (code à télécharger, partie à créer) : l'accueil montre son écran de chargement, comme avant la séparation. */
   readonly starting = signal(false);
@@ -22,6 +24,7 @@ export class DailyLauncher {
   /** Déverrouille le son : à appeler dans le gestionnaire d'un clic, avant tout `await`. */
   unlock(): void {
     unlockSharedAudio();
+    this.sounds.unlock();
   }
 
   /** À appeler dans le gestionnaire du clic. La manche prend la place de l'accueil dans l'historique : le retour arrière en pleine partie quitte la partie (avec confirmation), comme avant. */

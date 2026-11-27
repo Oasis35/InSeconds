@@ -140,6 +140,11 @@
     }
   },
   "ui": {
+    "sound": {
+      "label": "Sounds",
+      "turnOff": "Turn sounds off",
+      "turnOn": "Turn sounds on"
+    },
     "envBanner": {
       "label": "development environment"
     },
