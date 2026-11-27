@@ -14,7 +14,7 @@ public sealed record DailyPurgeReport(
 /// Efface les jours de défi d'avant une date (strictement) : réponses, parties, photos de statistiques, morceaux de défi et défis, puis
 /// rejoue chaque série depuis les seuls jours restants (<see cref="StreakReplay"/>). Appelée par <c>--purge-daily-before</c>, jamais par l'API.
 /// La date est celle du défi (piège 18), jamais l'heure de complétion. Une seule transaction, sous un verrou consultatif : une purge à la fois,
-/// rejouable (rien à supprimer, séries déjà rejouées : aucun changement).
+/// rejouable (rien à supprimer, séries déjà rejouées : aucun changement). La table des séries est verrouillée en écriture pendant la transaction.
 /// </summary>
 public sealed class DailyPurge(InSecondsDbContext db, IPlayerDirectory players)
 {
@@ -25,6 +25,10 @@ public sealed class DailyPurge(InSecondsDbContext db, IPlayerDirectory players)
     {
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock({PurgeLockNamespace}, 0)", ct);
+
+        // Les séries sont lues puis réécrites : on bloque les écritures de `daily.streaks` (une partie qui se termine attend la fin de la purge),
+        // sinon le rejeu écraserait une série mise à jour entre la lecture et l'enregistrement. Les lectures continuent.
+        await db.Database.ExecuteSqlRawAsync("LOCK TABLE daily.streaks IN SHARE ROW EXCLUSIVE MODE", ct);
 
         var challenges = db.Set<DailyChallenge>().Where(c => c.Date < before);
         var sessions = db.Set<DailySession>().Where(s => challenges.Any(c => c.Id == s.ChallengeId));

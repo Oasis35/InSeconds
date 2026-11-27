@@ -27,18 +27,30 @@ public static class PurgeDailyCommand
 
     public static bool IsRequested(string[] args) => args.Contains(Flag, StringComparer.Ordinal);
 
+    /// <summary>La date limite, <c>--apply</c>, et les arguments restants pour l'hôte (ni le drapeau, ni la date, ni <c>--apply</c>).</summary>
+    public static bool TryParseArguments(string[] args, out DateOnly before, out bool apply, out string[] rest)
+    {
+        before = default;
+        apply = args.Contains(ApplyFlag, StringComparer.Ordinal);
+        rest = [];
+        var index = Array.IndexOf(args, Flag);
+        if (index < 0 || index + 1 >= args.Length
+            || !DateOnly.TryParseExact(args[index + 1], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out before))
+            return false;
+
+        var date = index + 1;
+        rest = args.Where((a, i) => i != index && i != date && a != ApplyFlag).ToArray();
+        return true;
+    }
+
     public static async Task<int> RunAsync(string[] args, CancellationToken cancellationToken = default)
     {
-        var index = Array.IndexOf(args, Flag);
-        if (index + 1 >= args.Length
-            || !DateOnly.TryParseExact(args[index + 1], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var before))
+        if (!TryParseArguments(args, out var before, out var apply, out var rest))
         {
             await Console.Error.WriteLineAsync($"Usage : {Flag} aaaa-mm-jj [{ApplyFlag}]");
             return 64;
         }
 
-        var apply = args.Contains(ApplyFlag, StringComparer.Ordinal);
-        var rest = args.Where((a, i) => i != index && i != index + 1 && a != ApplyFlag).ToArray();
         var builder = Host.CreateApplicationBuilder(rest);
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection manquante.");
@@ -57,7 +69,7 @@ public static class PurgeDailyCommand
         var logger = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(PurgeDailyCommand));
         var calendar = host.Services.GetRequiredService<IGameCalendar>();
 
-        // Un jour qui peut encore se jouer ou se figer n'a pas à être effacé : la limite reste au plus à J-2 (piège 18).
+        // Un jour qui peut encore se jouer ou se figer n'a pas à être effacé : la date limite reste au plus à J-1, donc le dernier jour effacé est J-2 (piège 18).
         var lastAllowed = CloseChallengeDayHandler.LastClosableDay(calendar).AddDays(1);
         if (before > lastAllowed)
         {

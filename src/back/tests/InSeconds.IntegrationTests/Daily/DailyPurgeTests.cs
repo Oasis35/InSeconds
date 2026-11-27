@@ -73,7 +73,8 @@ public class DailyPurgeTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(6, await CountAsync("daily.answers"));
         Assert.Equal(2, await CountAsync("daily.challenge_day_stats"));
         Assert.Equal(3, await CountAsync("daily.streaks"));
-        Assert.Equal(5, await _game.Api.ScalarAsync<int>("SELECT current_streak FROM daily.streaks WHERE freezes = 0 AND last_played_date = '2026-09-16'"));
+        // Les trois séries sont inchangées en base : Alice 3, Bob 1, Carol 5.
+        Assert.Equal("1,3,5", await _game.Api.ScalarAsync<string>("SELECT string_agg(current_streak::text, ',' ORDER BY current_streak) FROM daily.streaks"));
     }
 
     [Fact]
@@ -116,5 +117,28 @@ public class DailyPurgeTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal((0, 0, 0, 0, 0, 0), (again.Challenges, again.ChallengeTracks, again.DayStats, again.Sessions, again.Answers, again.Players));
         Assert.Equal((2, 0, 0), (again.StreaksKept, again.StreaksChanged, again.StreaksRemoved));
+    }
+
+    [Fact]
+    public async Task JoursConserves_PartiesNonTermineesIgnorees_SansLigneDeSerieAucuneCreee_SurvieIntacte()
+    {
+        await _game.App.AddChallengeAsync(new DateOnly(2026, 9, 16), 1, 2, 3, 4, 5);
+        var dave = await _game.NewPlayerAsync();
+        var eve = await _game.NewPlayerAsync("Eve");
+        var answer = new (decimal, bool, bool, bool, int)[] { (1m, true, true, false, 850) };
+        // Dave : partie abandonnée sur un jour conservé, et une série d'avant ; Eve : partie terminée mais aucune ligne de série.
+        await _game.AddSessionAsync(dave.Id, new DateOnly(2026, 9, 16), 2, answer);
+        await _game.SetStreakAsync(dave.Id, 4, new DateOnly(2026, 9, 16), 0);
+        await _game.AddSessionAsync(eve.Id, new DateOnly(2026, 9, 16), 1, answer);
+        await _game.Api.ExecuteAsync($"INSERT INTO runs.access (player_id, granted_at) VALUES ('{eve.Id}', now())");
+
+        var report = await PurgeAsync(apply: true);
+
+        Assert.Equal((0, 0, 0, 0, 0, 1), (report.Challenges, report.Sessions, report.Answers, report.StreaksKept, report.StreaksChanged, report.StreaksRemoved));
+        // Dave n'a aucune partie terminée restante : sa série part. Eve n'en reçoit pas.
+        Assert.Equal(0, await CountAsync("daily.streaks"));
+        Assert.Equal(2, await CountAsync("daily.sessions"));
+        Assert.Equal(5, await CountAsync("daily.challenge_tracks"));
+        Assert.Equal(1, await CountAsync("runs.access"));
     }
 }
