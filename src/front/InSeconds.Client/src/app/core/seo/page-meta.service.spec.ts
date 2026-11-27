@@ -47,8 +47,13 @@ describe('PageMetaService', () => {
 
   it('donne à la racine la canonique du jeu du jour', () => {
     service.apply('/');
-    expect(canonical()).toBe('https://inseconds.cc/daily');
-    expect(ogUrl()).toBe('https://inseconds.cc/daily');
+    expect(canonical()).toBe('https://inseconds.cc/');
+    expect(ogUrl()).toBe('https://inseconds.cc/');
+  });
+
+  it('n\'indexe pas la manche (/daily), qui renvoie à la racine sans clic sur « Commencer »', () => {
+    service.apply('/daily');
+    expect(canonical()).toBeNull();
   });
 
   it('donne à chaque page publique sa propre canonique, sans query string', () => {
@@ -79,7 +84,7 @@ describe('PageMetaService', () => {
     const title = TestBed.inject(Title);
     service.apply('/privacy');
     expect(title.getTitle()).toBe('Confidentialité - InSeconds');
-    service.apply('/daily');
+    service.apply('/');
     expect(title.getTitle()).toBe('InSeconds - Blind test musical du jour');
   });
 
@@ -90,7 +95,7 @@ describe('PageMetaService', () => {
     for (const [attr, name] of [['name', 'description'], ['property', 'og:description'], ['name', 'twitter:description']]) {
       expect(content(attr, name)).toBe('Description vie privée');
     }
-    service.apply('/daily');
+    service.apply('/');
     expect(content('property', 'og:title')).toBe('Titre du site');
     expect(content('name', 'description')).toBe('Description du site');
     expect(content('property', 'og:description')).toBe('Aperçu du site');
@@ -107,9 +112,9 @@ describe('PageMetaService', () => {
   });
 
   it('normalise les adresses', () => {
-    expect(normalize('')).toBe('/daily');
+    expect(normalize('')).toBe('/');
     expect(normalize('/daily/?a=1')).toBe('/daily');
     expect(normalize('/privacy//#x')).toBe('/privacy');
-    expect(normalize('/?utm_source=share')).toBe('/daily');
+    expect(normalize('/?utm_source=share')).toBe('/');
   });
 });

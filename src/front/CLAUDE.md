@@ -97,8 +97,9 @@ Un client par module dans `src/app/api/<module>/api.generated.ts` (fichier gén�
 
 ## Routes (mécanisme)
 
-- `/` et `/daily` : un `UrlMatcher` (`homeOrDailyMatcher`) les envoie à `DAILY_ROUTES` sans consommer de segment ; la coque `DailyShellComponent` porte l'état du jour (`HomeStore`) et l'accueil (`HomePage`) ; la manche (`DailyPage`, ses stores et le lecteur) est une route enfant chargée à la demande, ouverte par le clic de l'accueil (intention dans l'état de la navigation) : `/daily` sans clic renvoie à `/` (`startIntentGuard`). Détail : `daily.md`.
+- `/` et `/daily` : une route vide (`path: ''`, la **dernière** avant `**` : le routeur charge ses enfants pour l'essayer, les autres adresses ne doivent pas payer ce chargement) les envoie à `DAILY_ROUTES` ; la coque `DailyShellComponent` porte l'état du jour (`HomeStore`) et l'accueil (`HomePage`) ; la manche (`DailyPage`, ses stores et le lecteur) est une route enfant chargée à la demande, ouverte par le clic de l'accueil (intention dans l'état de la navigation) : `/daily` sans clic renvoie à `/` (`startIntentGuard`). Détail : `daily.md`.
 - Toute ancienne adresse redirige en gardant query string et fragment : `redirectKeepingQuery`, ou `redirectRunsLink` / `redirectHistoryLink` pour un paramètre (lien magique, `from=legacy`, `utm_source`). Chaque redirection a son test dans `app.routes.spec.ts`.
+- **Prérendu** : `/`, `/legal` et `/privacy` sont rendues à la construction (`@angular/ssr`, `outputMode: 'static'`, `app.routes.server.ts` ; toute autre route reste `RenderMode.Client`). Ce qui lit le navigateur ou l'API au démarrage se garde par `isPlatformBrowser(inject(PLATFORM_ID))` (`App`, `provideAccount`, `DailyShellComponent`, `BottomBarComponent`) ; l'accueil prérendu garde son écran d'attente et un titre et une présentation en `sr-only` (`daily.common.seoTitle` / `seoBody`). Pas d'hydratation : le navigateur refait la page au démarrage. Détail : `core-pwa.md`.
 - Tout le reste : `NotFoundPage`. Liste fonctionnelle des routes : `CLAUDE.md` racine.
 
 ## Recette : ajouter un écran de bout en bout

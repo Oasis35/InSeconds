@@ -87,6 +87,7 @@ fi
 # Non hashé (index.html/routes SPA, traductions) : toujours revalider.
 check_header "/" "$NO_CACHE"
 check_header "/daily" "$NO_CACHE"
+check_header "/legal" "$NO_CACHE"
 check_header "/admin" "$NO_CACHE"
 check_header "/i18n/fr.json" "$NO_CACHE"
 
@@ -195,6 +196,29 @@ if grep -qE ' on(load|click|error)=' <<<"$index"; then
   echo "FAIL /: gestionnaire d'événement en ligne dans index.html"
   fail=1
 fi
+
+# Prérendu (construction) : la racine et les pages légales arrivent déjà rendues ; toute autre adresse reçoit la coquille vide
+# (index.csr.html), sinon le texte de l'accueil clignoterait avant la page demandée.
+if ! grep -q 'le blind test musical du jour</p>' <<<"$index"; then
+  echo "FAIL /: texte prérendu de l'accueil absent"
+  fail=1
+fi
+for page in /legal /privacy; do
+  if ! curl -sS "$BASE$page" | grep -q 'ng-server-context="ssg"'; then
+    echo "FAIL $page: page prérendue absente (coquille vide servie)"
+    fail=1
+  else
+    echo "OK   $page -> prérendue"
+  fi
+done
+for page in /history/daily /daily /admin; do
+  if ! curl -sS "$BASE$page" | grep -q '<app-root></app-root>'; then
+    echo "FAIL $page: la coquille vide (index.csr.html) était attendue"
+    fail=1
+  else
+    echo "OK   $page -> coquille vide"
+  fi
+done
 
 # robots.txt / sitemap.xml servis tels quels, pas l'index.html du fallback SPA.
 check_content_type "/robots.txt" "text/plain"

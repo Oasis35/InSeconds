@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { ChangeDetectionStrategy, Component, PLATFORM_ID, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
 import { environment } from '../environments/environment';
@@ -33,6 +34,8 @@ export class App {
   protected readonly health = inject(HealthService);
 
   constructor() {
+    // Prérendu (construction) : ni fenêtre, ni historique, ni sonde de santé ; le navigateur fait tout cela au démarrage.
+    if (!isPlatformBrowser(inject(PLATFORM_ID))) return;
     const flags = window as E2EFlags;
     if (flags.__disableAnimations === true) document.documentElement.classList.add('no-anim');
     if (flags.__disableHealthPolling !== true) this.health.start();

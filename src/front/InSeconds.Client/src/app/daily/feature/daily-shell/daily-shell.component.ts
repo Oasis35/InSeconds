@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, effect, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, PLATFORM_ID, effect, inject } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
@@ -39,6 +40,7 @@ export class DailyShellComponent implements OnInit {
   private readonly startup = inject(DailyStartup);
   private readonly launcher = inject(DailyLauncher);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   private readonly path = toSignal(
     this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd), map(() => this.router.url.split(/[?#]/)[0])),
@@ -62,6 +64,8 @@ export class DailyShellComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Prérendu (construction) : pas de joueur, pas d'API ; l'accueil reste sur son écran d'attente, le navigateur lit l'état du jour.
+    if (!this.isBrowser) return;
     void this.startup.run();
   }
 

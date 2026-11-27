@@ -15,10 +15,10 @@ public static class SitemapEndpoint
     private static readonly XNamespace Ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
 
     /// <summary>Les pages fixes du front, toujours en tête du plan.</summary>
-    private static readonly string[] FixedPages = ["/daily", "/legal", "/privacy"];
+    private static readonly string[] FixedPages = ["/", "/legal", "/privacy"];
 
-    /// <summary>La page du jeu change chaque jour : elle seule, parmi les pages fixes, porte une date de modification.</summary>
-    private const string DailyPage = "/daily";
+    /// <summary>La page du jeu (l'accueil) change chaque jour : elle seule, parmi les pages fixes, porte une date de modification.</summary>
+    private const string DailyPage = "/";
 
     /// <summary>
     /// Le plan du site pour les moteurs de recherche : les pages fixes, puis un jour passé publié par ligne, du plus récent au plus ancien.

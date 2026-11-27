@@ -14,7 +14,6 @@ interface Bar {
 }
 
 const BAR_MAX_PX = 32;
-const BAR_MAX_COMPACT_PX = 26;
 const HIGHLIGHT = 'var(--color-accent-3)';
 const DURATION_BAR = 'var(--color-violet)';
 const NOT_FOUND_BAR = 'var(--color-fail)';
@@ -31,7 +30,7 @@ const FAINT = 'var(--text-faint)';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div data-testid="guess-time-chart" class="mx-auto" style="max-width:210px">
-      <div class="flex items-end gap-1" [style.height.px]="showCounts() ? 48 : compact() ? 26 : 36">
+      <div class="flex items-end gap-1" [style.height.px]="showCounts() ? 48 : 36">
         @for (bar of bars(); track bar.key) {
           <div class="flex-1 flex flex-col items-center justify-end gap-0.5 h-full"
                [attr.data-bucket]="bar.key" [attr.data-highlight]="bar.highlighted ? 'true' : null">
@@ -45,7 +44,7 @@ const FAINT = 'var(--text-faint)';
       </div>
       <div class="flex gap-1 mt-0.5">
         @for (bar of bars(); track bar.key) {
-          <span class="flex-1 text-center leading-none" [class.text-[9px]]="!compact()" [class.text-[11px]]="compact()" [style.color]="bar.labelColor">{{ bar.label }}</span>
+          <span class="flex-1 text-center text-[9px] leading-none" [style.color]="bar.labelColor">{{ bar.label }}</span>
         }
       </div>
     </div>
@@ -64,8 +63,6 @@ export class GuessTimeChartComponent {
   readonly showCounts = input(false);
   /** Unité écrite après chaque valeur (« % » sur la page d'un jour passé). */
   readonly countSuffix = input('');
-  /** Version resserrée (la révélation du défi, où la place est comptée) : colonnes plus basses. */
-  readonly compact = input(false);
 
   private readonly lang = inject(TranslateService).currentLang;
 
@@ -75,8 +72,7 @@ export class GuessTimeChartComponent {
     const notFound = this.notFoundCount();
     const highlightDuration = this.highlightDuration();
     const max = Math.max(1, notFound, ...distribution.map(bucket => bucket.count));
-    const barMax = this.compact() ? BAR_MAX_COMPACT_PX : BAR_MAX_PX;
-    const height = (count: number) => (count === 0 ? '2px' : `${Math.max(4, Math.round((count / max) * barMax))}px`);
+    const height = (count: number) => (count === 0 ? '2px' : `${Math.max(4, Math.round((count / max) * BAR_MAX_PX))}px`);
 
     const bars: Bar[] = distribution.map(bucket => {
       const highlighted = highlightDuration !== null && bucket.durationSeconds === highlightDuration;

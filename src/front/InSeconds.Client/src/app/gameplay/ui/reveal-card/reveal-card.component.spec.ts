@@ -57,7 +57,7 @@ describe('RevealCardComponent', () => {
     expect(lines[1].querySelector('.sr-only')?.textContent).toContain('gameplay.reveal.missed');
   });
 
-  it('met le tout dans la tuile du lecteur, avec le graphique resserré, et le bouton « suite » dessous', () => {
+  it('met le tout dans la tuile du lecteur, avec le graphique, et le bouton « suite » dessous', () => {
     const { element } = render();
     const tile = element.querySelector('[data-testid="reveal-tile"]')!;
     expect(tile.querySelector('[roundScore]')).not.toBeNull();
@@ -65,7 +65,7 @@ describe('RevealCardComponent', () => {
     expect(tile.querySelector('[roundNext]')).toBeNull();
     expect(element.querySelector('[roundNext]')).not.toBeNull();
     const heights = Array.from(tile.querySelectorAll<HTMLElement>('[data-bucket] > div')).map(bar => Number.parseInt(bar.style.height));
-    expect(Math.max(...heights)).toBeLessThanOrEqual(26);
+    expect(Math.max(...heights)).toBeLessThanOrEqual(32);
   });
 
   it('place les éléments du mode : points, suite', () => {
@@ -108,12 +108,6 @@ describe('GuessTimeChartComponent', () => {
     const element = render({ distribution: [...buckets, { durationSeconds: 2, count: 0 }], notFoundCount: 3 });
     const heights = Array.from(element.querySelectorAll<HTMLElement>('[data-bucket] > div')).map(bar => bar.style.height);
     expect(heights).toEqual(['11px', '32px', '2px', '16px']);
-  });
-
-  it('en version resserrée (la révélation), la plus haute barre fait 26 px', () => {
-    const element = render({ distribution: [...buckets, { durationSeconds: 2, count: 0 }], notFoundCount: 3, compact: true });
-    const heights = Array.from(element.querySelectorAll<HTMLElement>('[data-bucket] > div')).map(bar => bar.style.height);
-    expect(heights).toEqual(['9px', '26px', '2px', '13px']);
   });
 
   it('écrit les comptes au-dessus des barres quand on le demande', () => {
