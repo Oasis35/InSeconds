@@ -18,12 +18,13 @@ import { MembraneComponent } from '../membrane/membrane.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col items-stretch gap-3 text-left" data-testid="reveal">
-      <div class="flex flex-col gap-2 p-3" data-testid="reveal-tile"
+      <div class="flex flex-col gap-3 p-4" data-testid="reveal-tile"
            style="background:var(--bg-surface);backdrop-filter:var(--blur-tile);-webkit-backdrop-filter:var(--blur-tile);border:1.5px solid rgb(var(--rgb-accent-2) / 0.8);box-shadow:var(--tube-frame-soft);border-radius:var(--radius-card)">
         <div class="flex items-center gap-3 min-w-0">
           @if (result().coverUrl; as cover) {
             <app-membrane class="shrink-0" [level]="bass()">
-              <img [src]="cover" [alt]="'gameplay.reveal.coverAlt' | translate" class="block w-14 h-14 object-cover rounded-full" style="opacity:0.95" />
+              <img [src]="cover" [alt]="'gameplay.reveal.coverAlt' | translate" class="block w-16 h-16 min-[375px]:w-20 min-[375px]:h-20 object-cover rounded-full"
+                style="opacity:0.95" />
             </app-membrane>
           }
           <p class="m-0 min-w-0 flex-1 leading-tight line-clamp-4" [attr.title]="result().correctArtist + ' - ' + result().correctTitle" data-testid="reveal-answer">
@@ -39,7 +40,7 @@ import { MembraneComponent } from '../membrane/membrane.component';
         <ng-content select="[roundScore]" />
 
         <div class="w-full">
-          <app-guess-time-chart [compact]="true" [distribution]="result().distribution" [notFoundCount]="result().notFoundCount"
+          <app-guess-time-chart [distribution]="result().distribution" [notFoundCount]="result().notFoundCount"
             [highlightDuration]="found() ? result().listenedSeconds : null" [highlightNotFound]="!found()" />
         </div>
       </div>
