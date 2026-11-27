@@ -43,8 +43,18 @@ export class WebAudioSoundPort extends SoundPort {
 
   play(name: SoundName): void {
     const context = this.context;
+    if (!context || !this.buffers.has(name)) return;
+    if (context.state === 'running') {
+      this.start(context, name);
+      return;
+    }
+    // Contexte suspendu (iPhone : appel, retour d'arrière-plan) : on tente de le relancer, le son part s'il y arrive.
+    void context.resume().then(() => this.start(context, name)).catch(() => undefined);
+  }
+
+  private start(context: AudioContext, name: SoundName): void {
     const buffer = this.buffers.get(name);
-    if (!context || !buffer || context.state !== 'running') return;
+    if (!buffer || context.state !== 'running') return;
     try {
       const source = context.createBufferSource();
       const gain = context.createGain();
@@ -57,19 +67,24 @@ export class WebAudioSoundPort extends SoundPort {
     }
   }
 
+  /** Charge les fichiers qui manquent encore ; un échec se retente au déverrouillage suivant, sans refaire ceux qui ont réussi. */
   private load(): void {
     const context = this.context;
     if (this.loading || !context) return;
+    const missing = (Object.keys(SOUND_FILES) as SoundName[]).filter(name => !this.buffers.has(name));
+    if (missing.length === 0) return;
     this.loading = true;
-    for (const name of Object.keys(SOUND_FILES) as SoundName[]) {
-      void fetch(SOUND_FILES[name])
+    const loads = missing.map(name =>
+      fetch(SOUND_FILES[name])
         .then(response => (response.ok ? response.arrayBuffer() : Promise.reject(new Error('sound'))))
         .then(bytes => context.decodeAudioData(bytes))
         .then(buffer => {
           this.buffers.set(name, buffer);
-        })
-        .catch(() => { this.loading = false; });
-    }
+        }),
+    );
+    void Promise.allSettled(loads).then(() => {
+      this.loading = false;
+    });
   }
 }
 

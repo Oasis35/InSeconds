@@ -18,7 +18,7 @@ import { TranslatePipe } from '@ngx-translate/core';
       </span>
     }
     <button type="button" (click)="toggled.emit()" data-testid="sound-toggle" [attr.aria-pressed]="enabled()"
-            [attr.aria-label]="(enabled() ? 'ui.sound.turnOff' : 'ui.sound.turnOn') | translate"
+            [attr.aria-label]="'ui.sound.label' | translate"
             class="inline-flex items-center justify-center rounded-full cursor-pointer touch-manipulation"
             [class]="ringed() ? 'size-10 shrink-0 hover:opacity-70' : 'size-11'"
             [style.border]="ringed() ? '1px solid var(--border-neutral)' : null"
@@ -53,6 +53,11 @@ import { TranslatePipe } from '@ngx-translate/core';
     }
     @keyframes sound-hint-wave { 0% { opacity: 0.6; transform: scale(1); } 100% { opacity: 0; transform: scale(1.7); } }
     @keyframes sound-hint-tip { from { opacity: 0; transform: translateY(-50%) translateX(0.375rem); } to { opacity: 1; transform: translateY(-50%); } }
+    /* Sous 360 px, la bulle ne tient plus à gauche de la cloche (elle passerait sur le logo) : elle s'ouvre dessous. */
+    @media (max-width: 359px) {
+      .hint-tip { right: 0; top: calc(100% + 0.625rem); transform: none; animation: none; }
+      .hint-tip::after { right: 0.875rem; top: -0.3125rem; margin-top: 0; border-top: 1px solid var(--border-medium); border-left: 1px solid var(--border-medium); border-right: 0; }
+    }
     @media (prefers-reduced-motion: reduce) { .hint-wave { display: none; } .hint-tip { animation: none; } }
   `,
 })

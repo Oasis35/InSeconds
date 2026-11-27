@@ -11,18 +11,19 @@ describe('SoundToggleComponent', () => {
     return fixture;
   }
 
-  it('annonce son état et propose de couper quand les sons sont actifs', () => {
+  it('annonce son état (aria-pressed) sous un nom fixe quand les sons sont actifs', () => {
     const button: HTMLButtonElement = setup(true).nativeElement.querySelector('[data-testid="sound-toggle"]');
     expect(button.getAttribute('aria-pressed')).toBe('true');
-    expect(button.getAttribute('aria-label')).toBe('ui.sound.turnOff');
+    expect(button.getAttribute('aria-label')).toBe('ui.sound.label');
   });
 
-  it('propose de les activer quand ils sont coupés, et émet au clic', () => {
+  it("annonce l'état coupé, et émet au clic", () => {
     const fixture = setup(false);
     let toggles = 0;
     fixture.componentInstance.toggled.subscribe(() => toggles++);
     const button: HTMLButtonElement = fixture.nativeElement.querySelector('[data-testid="sound-toggle"]');
-    expect(button.getAttribute('aria-label')).toBe('ui.sound.turnOn');
+    expect(button.getAttribute('aria-label')).toBe('ui.sound.label');
+    expect(button.getAttribute('aria-pressed')).toBe('false');
     button.click();
     expect(toggles).toBe(1);
   });

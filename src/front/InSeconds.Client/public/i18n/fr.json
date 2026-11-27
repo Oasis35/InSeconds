@@ -142,10 +142,8 @@
   "ui": {
     "sound": {
       "label": "Bruitages",
-      "turnOff": "Couper les bruitages",
       "hintTitle": "Bruitages",
-      "hintBody": "Touche pour couper",
-      "turnOn": "Activer les bruitages"
+      "hintBody": "Touche pour couper"
     },
     "envBanner": {
       "label": "environnement de développement"

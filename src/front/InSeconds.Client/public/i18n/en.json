@@ -142,10 +142,8 @@
   "ui": {
     "sound": {
       "label": "Sounds",
-      "turnOff": "Turn sounds off",
       "hintTitle": "Sounds",
-      "hintBody": "Tap to turn off",
-      "turnOn": "Turn sounds on"
+      "hintBody": "Tap to turn off"
     },
     "envBanner": {
       "label": "development environment"
