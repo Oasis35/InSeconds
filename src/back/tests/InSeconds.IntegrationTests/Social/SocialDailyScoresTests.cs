@@ -134,7 +134,7 @@ public class SocialDailyScoresTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task PartieDeLaVeilleFinieApresMinuit_LaVeilleResteCacheeJusquALaFin_PuisCompteSurLaVeille_Piege18()
+    public async Task Piege18_PartieDeLaVeilleFinieApresMinuit_LaVeilleResteCacheeJusquALaFin_PuisCompteSurLaVeille()
     {
         var (alice, bob, _, group) = await GroupOfThreeAsync();
         await AddGameAsync(bob, 0, 800);

@@ -118,7 +118,7 @@ public class AdminChallengesTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task LaVeille_EstCalculeeEnDirect_NonRecalculable_PiegeDixHuit()
+    public async Task Piege18_LaVeille_EstCalculeeEnDirect_NonRecalculable()
     {
         await SeedDayAsync(Today.AddDays(-1));
 

@@ -61,7 +61,7 @@ public class DailyPeriodScoresTests
     }
 
     [Fact]
-    public void PartieDeLaVeilleFinieApresMinuit_CompteSurLaDateDuDefi_Piege18()
+    public void Piege18_PartieDeLaVeilleFinieApresMinuit_CompteSurLaDateDuDefi()
     {
         // La partie porte la date de son défi (la veille), même finie à 0 h 30 : elle n'est pas la partie du jour.
         var scores = DailyPeriodScores.Compute([Game(Alice, 1, 400)], Today, Week, NothingHidden);
@@ -95,7 +95,7 @@ public class DailyPeriodScoresTests
         Assert.Empty(DailyPeriodScores.HiddenDays(Today, [new ViewerGame(Today, SessionStatus.Completed, 5)]));
 
     [Fact]
-    public void HiddenDays_VeilleEnCoursApresMinuit_LaVeilleEstCachee_Piege18() =>
+    public void Piege18_HiddenDays_VeilleEnCoursApresMinuit_LaVeilleEstCachee() =>
         Assert.Equal(
             [Yesterday, Today],
             DailyPeriodScores.HiddenDays(Today, [new ViewerGame(Yesterday, SessionStatus.Pending, 2)]).Order());
