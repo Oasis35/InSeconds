@@ -4,6 +4,7 @@ import { FakeAudioPort, provideFakeAudio } from '../../gameplay/data-access/test
 import { FakeWaveformPort, provideFakeWaveform } from '../../gameplay/data-access/testing/fake-waveform.port';
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RoundSubmission } from '../../gameplay/domain/track-round';
+import { provideSoundsAvailable } from '../../core/sound/sound-feature';
 import { FakeSoundPort, SoundPort } from '../../core/sound/sound.port';
 import { DailyRoundStore, answerSound } from './daily-round.store';
 import { HomeStore } from './home.store';
@@ -30,6 +31,7 @@ describe('DailyRoundStore', () => {
         provideFakeDailyApi(api),
         provideFakeAudio(audio),
         { provide: SoundPort, useValue: sounds },
+        provideSoundsAvailable(),
         provideFakeWaveform(new FakeWaveformPort()),
         { provide: SessionLoader, useValue: { ensureGuest: async () => { guestCreated++; } } },
         TrackRoundStore,

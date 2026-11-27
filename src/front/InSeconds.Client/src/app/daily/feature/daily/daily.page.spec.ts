@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { TODAY } from '../../data-access/testing/fake-daily-api';
 import { START_INTENT } from '../start-intent';
 import { openDailyRoute } from '../testing/open-daily-route';
+import { provideSoundsAvailable } from '../../../core/sound/sound-feature';
 
 describe('Le jeu du jour : la racine et /daily', () => {
   const open = openDailyRoute;
@@ -41,7 +42,7 @@ describe('Le jeu du jour : la racine et /daily', () => {
 
   it("la première manche invite à couper les bruitages (onde et bulle), une seule fois par navigateur", async () => {
     localStorage.removeItem('inseconds.soundHintSeen');
-    const router = await open('/');
+    const router = await open('/', TODAY(), [provideSoundsAvailable()]);
 
     await router.navigate(['/daily'], { info: START_INTENT });
     await new Promise(resolve => setTimeout(resolve, 50));

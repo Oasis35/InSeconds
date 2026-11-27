@@ -1,3 +1,4 @@
+import { provideSoundsAvailable } from '../../../core/sound/sound-feature';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Subject } from 'rxjs';
@@ -38,6 +39,7 @@ describe('ProfilePage', () => {
         provideRouter([]),
         provideTranslateService(),
         providePlayersApiFake(api),
+        provideSoundsAvailable(),
         { provide: ModalService, useValue: { confirm, open } },
         { provide: FileDownload, useValue: { saveText } },
       ],

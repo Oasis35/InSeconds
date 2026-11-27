@@ -112,10 +112,12 @@
           }
         </div>
       </div>
-      <div class="flex min-h-14 items-center justify-between gap-3" style="border-top:1px solid var(--border-medium)" data-testid="profile-sounds">
-        <span class="text-sm" style="color:var(--text-body)">{{ 'ui.sound.label' | translate }}</span>
-        <app-sound-toggle [enabled]="sounds.enabled()" (toggled)="sounds.setEnabled(!sounds.enabled())" />
-      </div>
+      @if (sounds.available) {
+        <div class="flex min-h-14 items-center justify-between gap-3" style="border-top:1px solid var(--border-medium)" data-testid="profile-sounds">
+          <span class="text-sm" style="color:var(--text-body)">{{ 'ui.sound.label' | translate }}</span>
+          <app-sound-toggle [enabled]="sounds.enabled()" (toggled)="sounds.setEnabled(!sounds.enabled())" />
+        </div>
+      }
       @if (install.mode(); as mode) {
         <!-- Installer l'appli : seulement sur téléphone ou tablette où c'est possible (Android : l'invite du navigateur, iPhone : les étapes de Safari). -->
         <div class="flex flex-col" style="border-top:1px solid var(--border-medium)" data-testid="profile-install">

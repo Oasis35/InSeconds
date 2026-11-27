@@ -1,5 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { StoragePort } from '../storage/storage.port';
+import { SOUNDS_AVAILABLE } from './sound-feature';
 import { SoundName, SoundPort } from './sound.port';
 
 const KEY = 'inseconds.sounds';
@@ -14,15 +15,17 @@ export class SoundService {
   private readonly port = inject(SoundPort);
   private readonly on = signal(this.storage.get(KEY) !== 'off');
 
-  readonly enabled = computed(() => this.on());
+  /** Les bruitages existent-ils dans cette version (`SOUNDS_AVAILABLE`) ? Faux : rien ne joue et aucune commande n'est montrée. */
+  readonly available = inject(SOUNDS_AVAILABLE);
+  readonly enabled = computed(() => this.available && this.on());
 
   /** À appeler dans un clic, avant tout `await`. Sans effet quand les sons sont coupés. */
   unlock(): void {
-    if (this.on()) this.port.unlock();
+    if (this.enabled()) this.port.unlock();
   }
 
   play(name: SoundName): void {
-    if (this.on()) this.port.play(name);
+    if (this.enabled()) this.port.play(name);
   }
 
   setEnabled(enabled: boolean): void {
