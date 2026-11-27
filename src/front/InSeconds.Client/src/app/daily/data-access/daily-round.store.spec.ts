@@ -83,12 +83,12 @@ describe('DailyRoundStore', () => {
       home.stopCountdown();
     });
 
-    it('une seconde tentative offerte ne joue aucun son', async () => {
+    it('une seconde tentative offerte joue le son « faux », jamais « à moitié juste » (piège 51)', async () => {
       api.retriesToOffer = 1;
       await startGame();
       round.submit({ artist: 'A', title: 'T' });
       await store.submit(submissionOf(1));
-      expect(sounds.played).toEqual([]);
+      expect(sounds.played).toEqual(['wrong']);
     });
   });
 
