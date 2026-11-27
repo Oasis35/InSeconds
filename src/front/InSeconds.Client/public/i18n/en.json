@@ -140,6 +140,11 @@
     }
   },
   "ui": {
+    "sound": {
+      "label": "Sounds",
+      "hintTitle": "Sounds",
+      "hintBody": "Tap to turn off"
+    },
     "envBanner": {
       "label": "development environment"
     },

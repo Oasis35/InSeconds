@@ -9,6 +9,14 @@ import { scoreBreakdown } from '../domain/score-breakdown';
 import { dailyStake } from '../domain/stake';
 import { DailyApi } from './daily.api';
 import { HomeStore } from './home.store';
+import { SoundService } from '../../core/sound/sound.service';
+import { SoundName } from '../../core/sound/sound.port';
+
+/** Le son d'une réponse corrigée : tout juste, à moitié juste (artiste ou titre), ou raté. */
+export function answerSound(artistCorrect: boolean, titleCorrect: boolean): SoundName {
+  if (artistCorrect && titleCorrect) return 'correct';
+  return artistCorrect || titleCorrect ? 'partial' : 'wrong';
+}
 
 /** Où mène la fin d'une étape de la manche : la partie continue ici, ou on rend la main à l'accueil. */
 export type RoundExit = 'playing' | 'home';
@@ -71,7 +79,7 @@ export const DailyRoundStore = signalStore(
       roundDeezerTrackId: computed(() => store.results().find(r => r.position === store.position())?.deezerTrackId ?? null),
     };
   }),
-  withMethods((store, api = inject(DailyApi), round = inject(TrackRoundStore), sessionLoader = inject(SessionLoader), home = inject(HomeStore)) => {
+  withMethods((store, api = inject(DailyApi), round = inject(TrackRoundStore), sessionLoader = inject(SessionLoader), home = inject(HomeStore), sounds = inject(SoundService)) => {
     /** Les écoutes envoyées au serveur se suivent : une demande d'indice attend la dernière (sinon le serveur refuse, 409). */
     let listeningQueue: Promise<void> = Promise.resolve();
     const sentListening = new Map<number, number>();
@@ -168,6 +176,7 @@ export const DailyRoundStore = signalStore(
       async begin(): Promise<RoundExit> {
         // Déjà déverrouillé par le clic de l'accueil (sans effet) ; sinon un essai de plus, qui ne coûte rien.
         round.unlockAudio();
+        sounds.unlock();
         patchState(store, { phase: 'starting' });
         await sessionLoader.ensureGuest();
         const settings = await ensureSettings();
@@ -269,6 +278,7 @@ export const DailyRoundStore = signalStore(
           const answered = outcome.answered;
           patchState(store, { results: [...store.results().filter(r => r.position !== answered.position), answered] });
           round.reveal();
+          sounds.play(answerSound(answered.artistCorrect === true, answered.titleCorrect === true));
         } catch {
           round.submissionFailed();
         }
@@ -295,6 +305,7 @@ export const DailyRoundStore = signalStore(
        */
       nextTrack(): RoundExit {
         round.unlockAudio();
+        sounds.unlock();
         if (!store.isLastTrack()) {
           startTrack(store.position() + 1, null);
           return 'playing';
@@ -302,6 +313,7 @@ export const DailyRoundStore = signalStore(
         const results = store.results();
         const trackCount = store.trackCount();
         end();
+        sounds.play('finish');
         home.finishGame(results, trackCount);
         return 'home';
       },

@@ -4,7 +4,8 @@ import { FakeAudioPort, provideFakeAudio } from '../../gameplay/data-access/test
 import { FakeWaveformPort, provideFakeWaveform } from '../../gameplay/data-access/testing/fake-waveform.port';
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RoundSubmission } from '../../gameplay/domain/track-round';
-import { DailyRoundStore } from './daily-round.store';
+import { FakeSoundPort, SoundPort } from '../../core/sound/sound.port';
+import { DailyRoundStore, answerSound } from './daily-round.store';
 import { HomeStore } from './home.store';
 import { ANSWERED, FakeDailyApi, SESSION, TODAY, provideFakeDailyApi } from './testing/fake-daily-api';
 
@@ -13,6 +14,7 @@ const flush = () => new Promise<void>(resolve => setTimeout(resolve, 0));
 describe('DailyRoundStore', () => {
   let api: FakeDailyApi;
   let audio: FakeAudioPort;
+  let sounds: FakeSoundPort;
   let guestCreated: number;
   let store: InstanceType<typeof DailyRoundStore>;
   let home: InstanceType<typeof HomeStore>;
@@ -21,11 +23,13 @@ describe('DailyRoundStore', () => {
   beforeEach(() => {
     api = new FakeDailyApi();
     audio = new FakeAudioPort();
+    sounds = new FakeSoundPort();
     guestCreated = 0;
     TestBed.configureTestingModule({
       providers: [
         provideFakeDailyApi(api),
         provideFakeAudio(audio),
+        { provide: SoundPort, useValue: sounds },
         provideFakeWaveform(new FakeWaveformPort()),
         { provide: SessionLoader, useValue: { ensureGuest: async () => { guestCreated++; } } },
         TrackRoundStore,
@@ -57,6 +61,36 @@ describe('DailyRoundStore', () => {
     }
     await flush();
   }
+
+  describe('bruitages', () => {
+    it('le son de la réponse dépend de ce qui est trouvé', () => {
+      expect(answerSound(true, true)).toBe('correct');
+      expect(answerSound(true, false)).toBe('partial');
+      expect(answerSound(false, true)).toBe('partial');
+      expect(answerSound(false, false)).toBe('wrong');
+    });
+
+    it('la révélation joue le son de la réponse, la fin du défi son jingle, et le clic déverrouille le son', async () => {
+      api.answer = a => ANSWERED(a.position, a.position === 2 ? { artistCorrect: true, titleCorrect: false } : a.position === 3 ? { artistCorrect: false, titleCorrect: false } : {});
+      await startGame();
+      expect(sounds.unlocks).toBeGreaterThan(0);
+      for (const position of [1, 2, 3]) {
+        await store.submit(submissionOf(position));
+        store.nextTrack();
+      }
+      await flush();
+      expect(sounds.played).toEqual(['correct', 'partial', 'wrong', 'finish']);
+      home.stopCountdown();
+    });
+
+    it('une seconde tentative offerte ne joue aucun son', async () => {
+      api.retriesToOffer = 1;
+      await startGame();
+      round.submit({ artist: 'A', title: 'T' });
+      await store.submit(submissionOf(1));
+      expect(sounds.played).toEqual([]);
+    });
+  });
 
   describe('arrivée sur la manche', () => {
     it("un retour à l'accueil pendant l'ouverture ne crée aucune partie et ne lance aucun son", async () => {

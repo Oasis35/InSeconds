@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { LanguageService } from '../../../core/i18n/language.service';
@@ -18,6 +18,9 @@ import { DailyProgressComponent } from '../../ui/daily-progress/daily-progress.c
 import { DeezerBadgeComponent } from '../../../gameplay/ui/deezer-badge/deezer-badge.component';
 import { secondsUntilMidnightUtc, timeLeft } from '../../../core/game-day/game-day';
 import { ScoreBreakdownComponent } from '../../ui/score-breakdown/score-breakdown.component';
+import { SoundHint } from '../../../core/sound/sound-hint';
+import { SoundService } from '../../../core/sound/sound.service';
+import { SoundToggleComponent } from '../../../ui/sound-toggle/sound-toggle.component';
 import { ScoreCountComponent } from '../../ui/score-count/score-count.component';
 
 /**
@@ -30,7 +33,7 @@ import { ScoreCountComponent } from '../../ui/score-count/score-count.component'
   selector: 'app-daily-page',
   imports: [
     TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, BrandComponent, DailyProgressComponent,
-    DeezerBadgeComponent, ScoreCountComponent, ScoreBreakdownComponent, ButtonComponent,
+    DeezerBadgeComponent, ScoreCountComponent, ScoreBreakdownComponent, ButtonComponent, SoundToggleComponent,
   ],
   providers: [DailyRoundStore, TrackRoundStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,11 +46,17 @@ import { ScoreCountComponent } from '../../ui/score-count/score-count.component'
 export class DailyPage implements OnInit {
   protected readonly store = inject(DailyRoundStore);
   protected readonly language = inject(LanguageService);
+  protected readonly sounds = inject(SoundService);
   protected readonly session = inject(SessionStore);
   private readonly router = inject(Router);
   private readonly chrome = inject(ShellChromeStore);
   private readonly modal = inject(ModalService);
   private readonly translate = inject(TranslateService);
+
+  private readonly soundHint = inject(SoundHint);
+  /** L'invitation à couper les bruitages : la première manche de ce navigateur, quelques secondes. */
+  protected readonly hintVisible = signal(false);
+  private hintTimer: ReturnType<typeof setTimeout> | null = null;
 
   private readonly leaveGuard = new LeaveGuard(inject(ModalService));
   /** La page est détruite (le joueur est parti pendant l'ouverture) : une réponse tardive ne renvoie plus à l'accueil. */
@@ -59,9 +68,19 @@ export class DailyPage implements OnInit {
   constructor() {
     // La barre du bas disparaît pendant la manche.
     effect(() => this.chrome.setImmersive(this.store.isPlaying()));
+    // Première manche : la cloche pulse et une bulle dit qu'on peut couper les bruitages (une fois, trois secondes).
+    effect(() => {
+      if (!this.store.isPlaying() || !this.soundHint.pending() || !this.sounds.enabled()) return;
+      untracked(() => {
+        this.soundHint.markSeen();
+        this.hintVisible.set(true);
+        this.hintTimer = setTimeout(() => this.hintVisible.set(false), 3000);
+      });
+    });
     inject(DestroyRef).onDestroy(() => {
       this.chrome.setImmersive(false);
       this.destroyed = true;
+      if (this.hintTimer) clearTimeout(this.hintTimer);
       this.store.dispose();
     });
     // Si la partie quitte « playing » pendant qu'une confirmation de sortie est ouverte (dernière réponse qui se résout, partie finie

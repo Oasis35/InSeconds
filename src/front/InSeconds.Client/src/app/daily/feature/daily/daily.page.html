@@ -6,7 +6,9 @@
     <header class="pb-6">
       <!-- Ni accès du compte ni lien légal sur cette page : en pleine manche, un toucher par erreur ouvrirait la confirmation de sortie, et
            pendant le chargement la page n'a rien d'autre à montrer. Le total de la partie se lit à la révélation de chaque morceau. -->
-      <app-brand />
+      <app-brand>
+        <app-sound-toggle brandRight [ringed]="true" [enabled]="sounds.enabled()" [hint]="hintVisible()" (toggled)="hintVisible.set(false); sounds.setEnabled(!sounds.enabled())" />
+      </app-brand>
       @if (store.isPlaying()) {
         <app-daily-progress [currentIndex]="store.currentIndex()" [trackCount]="store.trackCount()" (abandon)="confirmAbandon()">
           <!-- Le total de la partie se lit ici, à côté du numéro du morceau, une fois le morceau révélé : il monte des points du morceau quand ceux-ci sont comptés. -->

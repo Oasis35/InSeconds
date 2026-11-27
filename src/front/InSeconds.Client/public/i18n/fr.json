@@ -140,6 +140,11 @@
     }
   },
   "ui": {
+    "sound": {
+      "label": "Bruitages",
+      "hintTitle": "Bruitages",
+      "hintBody": "Touche pour couper"
+    },
     "envBanner": {
       "label": "environnement de développement"
     },

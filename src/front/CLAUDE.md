@@ -22,7 +22,7 @@ E2E_DB_CONNECTION="Host=localhost;…;Database=inseconds_e2e;…" npm run e2e   
 ## Couches et dossiers
 
 - `src/app/<domaine>/` pour `gameplay`, `daily`, `runs`, `social`, `account`, `admin`, chacun en quatre couches : `domain/` (TypeScript pur), `data-access/` (stores, adaptateurs de l'API), `feature/` (pages routées, fenêtres, `provide-*.ts`, gardes, routes), `ui/` (présentation).
-- `core/` : transverse (session, erreurs, langue, version, santé, partage, presse-papier, stockage, coque) ; `ui/` : kit visuel de la DA ; `api/<module>/api.generated.ts` : clients NSwag générés.
+- `core/` : transverse (session, erreurs, langue, version, santé, partage, presse-papier, stockage, bruitages, coque) ; `ui/` : kit visuel de la DA ; `api/<module>/api.generated.ts` : clients NSwag générés.
 - `app.ts`, `app.config.ts`, `app.routes.ts` : la composition (seuls fichiers qui voient toutes les couches `feature`).
 - Dans `feature/` et `ui/`, un composant = un dossier à son nom (`login/login.page.ts`, `run-disc/run-disc.component.ts`) avec son `.spec.ts`. Restent à la racine de la couche : routes, `provide-*.ts`, gardes, `reload-moment.ts`.
 - Aides de test dans `testing/` de la couche qui s'en sert, exclues du build par `tsconfig.app.json` comme les `.spec.ts`.
