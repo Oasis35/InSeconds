@@ -276,6 +276,17 @@ public class MagicLinkTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task CompteExistant_LePseudoEnvoyeEstIgnore_MemeReserve()
+    {
+        await InsertAccountAsync("habitue2@example.com", "Habitue2");
+        var token = await _app.RequestTokenAsync("habitue2@example.com");
+
+        var response = await MagicLinkApi.VerifyAsync(_app.Browser(), token, "Admin");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
     public async Task PseudoReserve_400_JetonGarde()
     {
         var browser = _app.Browser();

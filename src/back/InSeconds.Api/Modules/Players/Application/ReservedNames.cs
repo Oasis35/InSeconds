@@ -34,17 +34,20 @@ public sealed class PlayersOptions
 /// </summary>
 public sealed class ReservedNames(IOptionsMonitor<PlayersOptions> options) : IReservedNames
 {
-    private (PlayersOptions Options, ReservedNamePolicy Policy)? _cache;
+    private sealed record Snapshot(PlayersOptions Options, ReservedNamePolicy Policy);
+
+    private volatile Snapshot? _cache;
 
     public bool IsReserved(string? name) => Current().IsReserved(name);
 
     private ReservedNamePolicy Current()
     {
         var value = options.CurrentValue;
-        if (_cache is { } cached && ReferenceEquals(cached.Options, value))
+        var cached = _cache;
+        if (cached is not null && ReferenceEquals(cached.Options, value))
             return cached.Policy;
         var policy = new ReservedNamePolicy(value.EffectiveReservedContains, value.EffectiveReservedWords, value.EffectiveReservedExact);
-        _cache = (value, policy);
+        _cache = new Snapshot(value, policy);
         return policy;
     }
 }

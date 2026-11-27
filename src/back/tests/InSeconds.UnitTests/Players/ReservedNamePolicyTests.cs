@@ -4,6 +4,16 @@ namespace InSeconds.UnitTests.Players;
 
 public class ReservedNamePolicyTests
 {
+    [Fact]
+    public void Une_liste_vide_dans_les_reglages_rend_la_liste_de_depart()
+    {
+        var empty = new InSeconds.Api.Modules.Players.Application.PlayersOptions { ReservedContains = [], ReservedWords = null };
+
+        Assert.Same(ReservedNameDefaults.Contains, empty.EffectiveReservedContains);
+        Assert.Same(ReservedNameDefaults.Words, empty.EffectiveReservedWords);
+        Assert.Same(ReservedNameDefaults.Exact, empty.EffectiveReservedExact);
+    }
+
     private static readonly ReservedNamePolicy Defaults =
         new(ReservedNameDefaults.Contains, ReservedNameDefaults.Words, ReservedNameDefaults.Exact);
 
@@ -53,6 +63,8 @@ public class ReservedNamePolicyTests
     [InlineData("Équipe Rocket")]
     [InlineData("Quiz du lundi")]
     [InlineData("Marie")]
+    [InlineData("Claude Dupont")]
+    [InlineData("Marie Claude")]
     public void Un_nom_ordinaire_est_accepte(string name) => Assert.False(Defaults.IsReserved(name));
 
     [Theory]
@@ -61,6 +73,13 @@ public class ReservedNamePolicyTests
     [InlineData("   ")]
     [InlineData("...")]
     public void Un_nom_vide_nest_pas_reserve(string? name) => Assert.False(Defaults.IsReserved(name));
+
+    [Fact]
+    public void Un_pseudo_reserve_est_refuse_seul_et_pas_dans_un_nom_plus_long()
+    {
+        Assert.True(Defaults.IsReserved("Claude"));
+        Assert.True(Defaults.IsReserved("Genius2"));
+    }
 
     [Fact]
     public void Les_termes_du_reglage_remplacent_ceux_de_depart()

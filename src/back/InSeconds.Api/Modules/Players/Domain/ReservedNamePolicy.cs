@@ -151,14 +151,14 @@ public static class ReservedNameDefaults
         "admin", "modo", "staff", "owner", "fondateur", "founder", "proprietaire",
         "support", "assistance",
         "officiel", "official", "certifie", "verifie", "verified",
-        "claude", "anthropic", "genius",
+        "anthropic",
     ];
 
     /// <summary>Mots courants : refusés seulement quand ils sont tout le nom (avec des chiffres derrière).</summary>
     public static readonly string[] Exact =
     [
         "equipe", "team", "crew", "aide", "help", "info", "infos", "contact", "systeme", "system", "root", "bot", "null", "undefined", "test",
-        "anonyme", "anonymous", "invite", "guest", "classement", "ranking", "general", "defi", "daily",
+        "claude", "genius", "anonyme", "anonymous", "invite", "guest", "classement", "ranking", "general", "defi", "daily",
         "survie", "hits", "moderation",
         "tidal", "apple", "amazon", "google", "pandora", "vevo", "twitch", "tiktok", "instagram", "facebook", "snapchat", "discord", "reddit",
     ];
