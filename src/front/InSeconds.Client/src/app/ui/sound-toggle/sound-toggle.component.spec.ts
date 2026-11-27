@@ -26,4 +26,12 @@ describe('SoundToggleComponent', () => {
     button.click();
     expect(toggles).toBe(1);
   });
+
+  it("montre la bulle d'invitation seulement quand la page le demande", () => {
+    const fixture = setup(true);
+    expect(fixture.nativeElement.querySelector('[data-testid="sound-hint"]')).toBeNull();
+    fixture.componentRef.setInput('hint', true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="sound-hint"]')).not.toBeNull();
+  });
 });

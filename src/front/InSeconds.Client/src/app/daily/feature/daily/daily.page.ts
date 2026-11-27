@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { LanguageService } from '../../../core/i18n/language.service';
@@ -18,6 +18,7 @@ import { DailyProgressComponent } from '../../ui/daily-progress/daily-progress.c
 import { DeezerBadgeComponent } from '../../../gameplay/ui/deezer-badge/deezer-badge.component';
 import { secondsUntilMidnightUtc, timeLeft } from '../../../core/game-day/game-day';
 import { ScoreBreakdownComponent } from '../../ui/score-breakdown/score-breakdown.component';
+import { SoundHint } from '../../../core/sound/sound-hint';
 import { SoundService } from '../../../core/sound/sound.service';
 import { SoundToggleComponent } from '../../../ui/sound-toggle/sound-toggle.component';
 import { ScoreCountComponent } from '../../ui/score-count/score-count.component';
@@ -52,6 +53,11 @@ export class DailyPage implements OnInit {
   private readonly modal = inject(ModalService);
   private readonly translate = inject(TranslateService);
 
+  private readonly soundHint = inject(SoundHint);
+  /** L'invitation à couper les bruitages : la première manche de ce navigateur, quelques secondes. */
+  protected readonly hintVisible = signal(false);
+  private hintTimer: ReturnType<typeof setTimeout> | null = null;
+
   private readonly leaveGuard = new LeaveGuard(inject(ModalService));
   /** La page est détruite (le joueur est parti pendant l'ouverture) : une réponse tardive ne renvoie plus à l'accueil. */
   private destroyed = false;
@@ -62,9 +68,19 @@ export class DailyPage implements OnInit {
   constructor() {
     // La barre du bas disparaît pendant la manche.
     effect(() => this.chrome.setImmersive(this.store.isPlaying()));
+    // Première manche : la cloche pulse et une bulle dit qu'on peut couper les bruitages (une fois, trois secondes).
+    effect(() => {
+      if (!this.store.isPlaying() || !this.soundHint.pending() || !this.sounds.enabled()) return;
+      untracked(() => {
+        this.soundHint.markSeen();
+        this.hintVisible.set(true);
+        this.hintTimer = setTimeout(() => this.hintVisible.set(false), 3000);
+      });
+    });
     inject(DestroyRef).onDestroy(() => {
       this.chrome.setImmersive(false);
       this.destroyed = true;
+      if (this.hintTimer) clearTimeout(this.hintTimer);
       this.store.dispose();
     });
     // Si la partie quitte « playing » pendant qu'une confirmation de sortie est ouverte (dernière réponse qui se résout, partie finie

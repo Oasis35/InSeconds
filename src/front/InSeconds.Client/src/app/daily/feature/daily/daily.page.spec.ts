@@ -39,6 +39,18 @@ describe('Le jeu du jour : la racine et /daily', () => {
     expect(document.querySelector('app-daily-page')).not.toBeNull();
   });
 
+  it("la première manche invite à couper les bruitages (onde et bulle), une seule fois par navigateur", async () => {
+    localStorage.removeItem('inseconds.soundHintSeen');
+    const router = await open('/');
+
+    await router.navigate(['/daily'], { info: START_INTENT });
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(document.querySelector('[data-testid="sound-hint"]')).not.toBeNull();
+    expect(localStorage.getItem('inseconds.soundHintSeen')).toBe('1');
+    localStorage.removeItem('inseconds.soundHintSeen');
+  });
+
   it('une partie en pause est un état de la carte du défi (Reprendre, Abandonner), sur l\'accueil', async () => {
     const router = await open('/', TODAY({ state: 'resumable', completedCount: 2 }));
 

@@ -143,6 +143,8 @@
     "sound": {
       "label": "Bruitages",
       "turnOff": "Couper les bruitages",
+      "hintTitle": "Bruitages",
+      "hintBody": "Touche pour couper",
       "turnOn": "Activer les bruitages"
     },
     "envBanner": {
