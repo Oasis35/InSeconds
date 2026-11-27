@@ -65,7 +65,9 @@ export class WebAudioSoundPort extends SoundPort {
       void fetch(SOUND_FILES[name])
         .then(response => (response.ok ? response.arrayBuffer() : Promise.reject(new Error('sound'))))
         .then(bytes => context.decodeAudioData(bytes))
-        .then(buffer => void this.buffers.set(name, buffer))
+        .then(buffer => {
+          this.buffers.set(name, buffer);
+        })
         .catch(() => { this.loading = false; });
     }
   }
