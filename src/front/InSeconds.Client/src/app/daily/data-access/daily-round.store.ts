@@ -99,7 +99,6 @@ export const DailyRoundStore = signalStore(
       hintLevel: resumed?.hintLevel ?? 0,
       hintFacts: resumed?.hintFacts ?? [],
       failedAttempts: resumed?.failedAttempts ?? 0,
-      retryScorePercent: settings.retryScorePercent,
       refreshPreviewUrl: () => refreshPreview(position),
     });
 

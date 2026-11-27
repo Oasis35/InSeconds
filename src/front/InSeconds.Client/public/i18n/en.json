@@ -182,8 +182,7 @@
       "waveform": "Clip listened",
       "waveformValue": "{{ heard }} of {{ max }}",
       "playbackError": "Couldn't play the preview. Try again, or skip this track.",
-      "retry": "Retry",
-      "stakeRetry": "2nd attempt: ×{{ factor }}"
+      "retry": "Retry"
     },
     "answer": {
       "placeholder": "Artist - Title",
@@ -201,15 +200,13 @@
     },
     "retry": {
       "phrase": {
-        "1": "That doesn't fit yet. Try again.",
-        "2": "Missed this time. A second attempt is waiting.",
-        "3": "Not that one. You've got another.",
-        "4": "Not quite. One last chance.",
-        "5": "That's not it, but you still have a try.",
-        "6": "Not this time. You can try once more.",
-        "7": "That doesn't work. One last try?",
-        "8": "Oops, that's not it. Your turn again.",
-        "9": "Don't panic, you've got one try left."
+        "1": "That's not it. Last try.",
+        "2": "Wrong answer. Last try.",
+        "3": "Missed. One last try left.",
+        "4": "Last attempt.",
+        "5": "New try.",
+        "6": "Second try.",
+        "7": "Wrong answer. Last try."
       }
     },
     "hint": {

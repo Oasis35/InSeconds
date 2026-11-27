@@ -182,8 +182,7 @@
       "waveform": "Extrait écouté",
       "waveformValue": "{{ heard }} sur {{ max }}",
       "playbackError": "Impossible de lire l'aperçu. Réessaie, ou passe ce morceau.",
-      "retry": "Réessayer",
-      "stakeRetry": "2e tentative : ×{{ factor }}"
+      "retry": "Réessayer"
     },
     "answer": {
       "placeholder": "Artiste - Titre",
@@ -201,15 +200,13 @@
     },
     "retry": {
       "phrase": {
-        "1": "Ça ne colle pas encore. Retente ta chance.",
-        "2": "Raté pour cette fois. Une seconde tentative t'attend.",
-        "3": "Pas celle-là. Tu en as une autre.",
-        "4": "Pas tout à fait. Une dernière chance.",
-        "5": "Ce n'est pas ça, mais tu as encore un essai.",
-        "6": "Pas cette fois. Tu peux retenter une fois.",
-        "7": "Ça ne passe pas. Un dernier essai ?",
-        "8": "Oups, ce n'est pas ça. À toi de rejouer.",
-        "9": "Pas de panique, il te reste un essai."
+        "1": "Ce n'est pas ça. Dernier essai.",
+        "2": "Mauvaise réponse. Dernier essai.",
+        "3": "Raté. Il reste un dernier essai.",
+        "4": "Dernière tentative.",
+        "5": "Nouvel essai.",
+        "6": "Deuxième essai.",
+        "7": "Réponse fausse. Dernier essai."
       }
     },
     "hint": {

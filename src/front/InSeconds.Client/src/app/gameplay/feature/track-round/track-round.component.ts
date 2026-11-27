@@ -45,7 +45,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
         @if (phase !== 'revealed') {
           <app-round-player [layout]="layout()" [phase]="phase" [chosenSeconds]="round.chosenSeconds()" [steps]="round.steps()"
             [nextStep]="round.nextStep()" [position]="round.position()" [peaks]="round.waveform()?.peaks ?? null" [bass]="round.bass()"
-            [stake]="round.stake()" [secondAttempt]="round.isRetry()" [retryPercent]="round.retryScorePercent()"
+            [stake]="round.stake()" [secondAttempt]="round.isRetry()"
             (replay)="round.replay()" (listenMore)="round.listenMore()" (retry)="round.retryPlayback()" (skip)="skipUnplayable()" />
         }
 

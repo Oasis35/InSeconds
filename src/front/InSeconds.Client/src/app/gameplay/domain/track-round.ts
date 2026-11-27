@@ -78,8 +78,6 @@ export interface RoundConfig {
   readonly hintFacts?: readonly HintFact[];
   /** Les tentatives ratées déjà enregistrées sur ce morceau (reprise) : 1 = la seconde tentative est en cours. */
   readonly failedAttempts?: number;
-  /** Le pourcentage du score de la seconde tentative, pour le dire au joueur (`×0,7`) ; le calcul des points reste au mode (`stake`). */
-  readonly retryScorePercent?: number;
   /**
    * Redonne une adresse d'extrait fraîche après un échec de lecture : la signature des extraits
    * Deezer expire au bout de 15 min (piège 14), recharger la même adresse retomberait en erreur. Avec
@@ -134,7 +132,6 @@ export interface TrackRound {
   readonly failedAttempts: number;
   /** Combien de fois la seconde tentative a été offerte sur ce morceau, tant que la page vit : un compteur qui fait trembler le champ (jamais restauré à la reprise). */
   readonly retryOffers: number;
-  readonly retryScorePercent: number | null;
   readonly confirm: PendingConfirm | null;
   readonly submission: RoundSubmission | null;
 }
@@ -165,7 +162,6 @@ export function createRound(config: RoundConfig): TrackRound {
     hints: config.hintFacts ?? [],
     failedAttempts: config.failedAttempts ?? 0,
     retryOffers: 0,
-    retryScorePercent: config.retryScorePercent ?? null,
     confirm: null,
     submission: null,
   };
