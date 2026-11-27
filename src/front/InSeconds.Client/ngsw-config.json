@@ -13,6 +13,7 @@
           "/manifest.webmanifest",
           "/*.css",
           "/*.js",
+          "/media/*.woff2",
           "!/safety-worker.js",
           "!/worker-basic.min.js",
           "/i18n/*.json"

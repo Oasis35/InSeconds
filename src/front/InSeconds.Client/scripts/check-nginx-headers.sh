@@ -110,6 +110,14 @@ fi
 if [[ -n "$js_file" ]]; then
   check_header "/$js_file" "public, max-age=31536000, immutable"
 fi
+# Les polices auto-hébergées sont hashées comme les bundles (media/*.woff2).
+font_file=$(curl -sS "$BASE/ngsw.json" | grep -oE '/media/[A-Za-z0-9._-]+\.woff2' | head -1 || true)
+if [[ -z "$font_file" ]]; then
+  echo "FAIL: aucune police /media/*.woff2 dans ngsw.json"
+  fail=1
+else
+  check_header "$font_file" "public, max-age=31536000, immutable"
+fi
 
 # S10 : aucun dataGroups dans le manifeste servi (le service worker ne met jamais l'API en cache).
 if curl -sS "$BASE/ngsw.json" | node -e '
@@ -146,7 +154,7 @@ for path in / /i18n/fr.json /ngsw.json; do
 done
 if [[ -n "$js_file" ]]; then
   csp=$(header "/$js_file" content-security-policy-report-only)
-  for fragment in "script-src 'self' https://static.cloudflareinsights.com;" "connect-src 'self' https://api.inseconds.cc https://*.dzcdn.net https://fonts.googleapis.com https://fonts.gstatic.com https://static.cloudflareinsights.com https://api.github.com;" "media-src 'self' blob: https://*.dzcdn.net;" "object-src 'none'" "frame-ancestors 'none'; report-uri https://api.inseconds.cc/api/csp-reports; report-to csp"; do
+  for fragment in "script-src 'self' https://static.cloudflareinsights.com;" "connect-src 'self' https://api.inseconds.cc https://*.dzcdn.net https://static.cloudflareinsights.com https://api.github.com;" "media-src 'self' blob: https://*.dzcdn.net;" "object-src 'none'" "frame-ancestors 'none'; report-uri https://api.inseconds.cc/api/csp-reports; report-to csp"; do
     if [[ "$csp" != *"$fragment"* ]]; then
       echo "FAIL /$js_file: la CSP ne contient pas \"$fragment\" ($csp)"
       fail=1
