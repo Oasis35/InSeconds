@@ -75,7 +75,6 @@ Appliquées chaque nuit par `players-purge-expired-tokens` :
 | Invité | jamais effacé ; son pseudo d'invité est vidé 91 jours après sa dernière visite, il est ensuite anonyme une fois ses appareils supprimés |
 | Playlist de Survie | sans limite, comme les défis du jour ; sans auteur une fois son compte effacé |
 | Texte tapé par le joueur | jamais stocké (seule la correction est gardée) |
-| Jours de défi anciens | purge manuelle `--purge-daily-before` (par l'éditeur sur le VPS, après sauvegarde archivée) : efface parties, réponses, statistiques figées et défis d'avant une date, et rejoue les séries ; ne touche ni comptes ni Survie ; mode d'emploi : `docs/exploitation/purge-parties.md` |
 
 ## Staging
 
