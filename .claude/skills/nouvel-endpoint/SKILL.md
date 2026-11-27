@@ -60,7 +60,7 @@ Les tests relisent ce code commité : sans régénération, ils tournent sur l'a
    - enregistrer `GET http://localhost:5177/openapi/<module>.json`, indenté à 2 espaces, dans le fichier du module ; arrêter l'hôte et supprimer le conteneur.
    - Nouveau préfixe de route hors des documents existants : l'ajouter dans `InSeconds.Api.Testing/ApiDocs/OpenApiDocuments.cs` (`AddModuleDocument`).
 2. Depuis `src/front/InSeconds.Client` : `npm run generate-api` (réécrit `src/app/api/<module>/api.generated.ts`).
-3. Chaque nouveau code d'erreur : une ligne dans `ERROR_MESSAGE_KEYS` (`src/app/core/errors/error-messages.ts`) et la clé `errors.<module>.<raison>` dans `public/i18n/fr.json` **et** `en.json` (un test vérifie les deux).
+3. Chaque nouveau code d'erreur : l'ajouter à `src/app/core/errors/published-error-codes.json` (le test back `PublishedErrorCodesTests` échoue sinon ; `UPDATE_PUBLISHED_ERROR_CODES=1` le réécrit), puis une ligne dans `ERROR_MESSAGE_KEYS` (`error-messages.ts`) et la clé `errors.<module>.<raison>` dans `public/i18n/fr.json` **et** `en.json` (des tests vérifient les deux). Un code sans message à l'écran se déclare dans `CODES_SANS_MESSAGE` de `error-messages.spec.ts`, avec sa raison.
 4. L'appel côté front passe par l'adaptateur du domaine (`data-access/`), seul à importer le client généré (Sheriff : `npm run lint:arch`).
 
 ## 7. Commit

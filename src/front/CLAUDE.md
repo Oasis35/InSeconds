@@ -78,7 +78,7 @@ Un client par module dans `src/app/api/<module>/api.generated.ts` (fichier gén�
 ## Erreurs
 
 - `toAppError()` (`core/errors/app-error.ts`) convertit toute erreur (`HttpClient`, `ApiException` ou `ProblemDetails` d'un client NSwag, corps JSON ou Blob) en `AppError { code, status, traceId }` ; `common.network` sans réponse, `common.unexpected` sans code lisible.
-- `ERROR_MESSAGE_KEYS` (`core/errors/error-messages.ts`) est la seule table code → clé i18n. Un code inconnu s'affiche en `errors.common.unknown` avec son `traceId` (`<app-error-message>`). Un nouveau code d'API s'ajoute à la table et à `fr.json` / `en.json`. Ne jamais renommer un code publié.
+- `ERROR_MESSAGE_KEYS` (`core/errors/error-messages.ts`) est la seule table code → clé i18n. Un code inconnu s'affiche en `errors.common.unknown` avec son `traceId` (`<app-error-message>`). Un nouveau code d'API s'ajoute à `core/errors/published-error-codes.json` (liste des codes publiés par le back, tenue à jour par `PublishedErrorCodesTests`), à la table et à `fr.json` / `en.json` ; `error-messages.spec.ts` échoue pour un code publié sans message, sauf s'il figure dans `CODES_SANS_MESSAGE` avec sa raison. Ne jamais renommer un code publié.
 - Remontée vers `POST /api/client-errors` : `ErrorReportingService`, `GlobalErrorHandler`, intercepteur des 5xx et coupures réseau. Jamais de query string, codes de liens masqués (`maskLinkCodes`). Détail : `core-pwa.md`.
 - Les violations CSP partent à `POST /api/csp-reports` envoyées par le navigateur lui-même, pas par le front (aucun écouteur `securitypolicyviolation`).
 
