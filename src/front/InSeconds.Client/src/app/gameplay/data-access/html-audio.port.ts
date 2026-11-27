@@ -182,6 +182,8 @@ export class HtmlAudioPort extends AudioPort {
   private timings: PlaybackTimings | null = null;
   /** Résolu au premier envoi seulement : le lecteur n'impose pas `HttpClient` à ses tests. */
   private readonly injector = inject(Injector);
+  /** Vrai une fois l'injecteur détruit : une sonde d'adresse en retard ne doit plus rien signaler. */
+  private disposed = false;
 
   constructor() {
     super();
@@ -463,6 +465,7 @@ export class HtmlAudioPort extends AudioPort {
 
   /** Remonte un diagnostic du lecteur vers l'API (l'appareil est déduit par l'API). */
   private report(message: string): void {
+    if (this.disposed) return;
     this.injector.get(ErrorReportingService).report({ source: 'js', message });
   }
 
@@ -493,6 +496,7 @@ export class HtmlAudioPort extends AudioPort {
   }
 
   private dispose(): void {
+    this.disposed = true;
     this.stop();
     // La touche ne vise plus une manche disparue : elle revient au navigateur, sauf si un autre lecteur l'a reprise.
     for (const key of this.playPauseKeys) releasePlayPauseKey(key);

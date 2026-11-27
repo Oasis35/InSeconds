@@ -342,6 +342,13 @@ describe('HtmlAudioPort', () => {
       return { player: injector.get(HtmlAudioPort), destroy: () => injector.destroy() };
     }
 
+    it('une sonde d\'adresse en retard ne remonte plus rien une fois le lecteur détruit', () => {
+      const { player, destroy } = portIn();
+      destroy();
+      (player as unknown as { report: (message: string) => void }).report('AudioError: en retard');
+      expect(report).not.toHaveBeenCalled();
+    });
+
     it('lecture / pause fait ce que la manche a branché, au lieu de relancer l’extrait arrêté à son palier', () => {
       const pressed = vi.fn();
       const release = port.onPlayPauseKey(pressed);
