@@ -388,6 +388,41 @@ describe('TrackRoundStore', () => {
       expect(store.phase()).toBe('submitting');
     });
 
+    it('une seconde tentative offerte pendant l\'écoute ne coupe pas le son : le palier va jusqu\'au bout', () => {
+      store.start(CONFIG);
+      emit('ready');
+      store.listenMore();
+      store.listenMore();
+      emit('playing', 0.8);
+      store.submit({ artist: 'Daft Punk', title: 'Get Lucky' });
+      audio.calls.length = 0;
+
+      store.retryOffered();
+      TestBed.tick();
+
+      expect(audio.calls).toEqual([]);
+      expect(store.phase()).toBe('playing');
+      expect(store.chosenSeconds()).toBe(2);
+      expect(store.isRetry()).toBe(true);
+
+      emit('finished', 2);
+      expect(store.phase()).toBe('listened');
+      expect(audio.calls).toEqual([]);
+    });
+
+    it('le palier fini pendant l\'envoi : la seconde tentative rend la manche au repos, sans relancer le son', () => {
+      store.start(CONFIG);
+      emit('playing', 0.2);
+      store.submit({ artist: 'Daft Punk', title: 'Get Lucky' });
+      emit('finished', 0.5);
+      audio.calls.length = 0;
+
+      store.retryOffered();
+
+      expect(store.phase()).toBe('listened');
+      expect(audio.calls).toEqual([]);
+    });
+
     it('révéler rejoue l\'extrait en entier', () => {
       listenedTo(1);
       store.submit({ artist: 'Daft Punk', title: 'Get Lucky' });
