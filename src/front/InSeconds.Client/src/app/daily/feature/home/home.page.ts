@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { ChangeDetectionStrategy, Component, OnInit, PLATFORM_ID, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
@@ -189,6 +190,11 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
             <app-status-screen titleKey="daily.error.title" bodyKey="daily.error.body" [errorCode]="errorReporting.lastErrorCode()" (retry)="startup.run()" />
           }
           @default {
+            <!-- Prérendu seulement : le texte que lisent les moteurs de recherche et les lecteurs d'écran, avant que le navigateur ne charge l'état du joueur. -->
+            @if (!isBrowser) {
+              <h1 class="sr-only">{{ 'daily.common.seoTitle' | translate }}</h1>
+              <p class="sr-only">{{ 'daily.common.seoBody' | translate }}</p>
+            }
             <div class="flex-1 flex items-center justify-center">
               <p class="text-sm animate-pulse" style="color:var(--text-faint)">{{ 'daily.common.loading' | translate }}</p>
             </div>
@@ -204,6 +210,7 @@ export class HomePage implements OnInit {
   protected readonly launcher = inject(DailyLauncher);
   protected readonly language = inject(LanguageService);
   protected readonly errorReporting = inject(ErrorReportingService);
+  protected readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   protected readonly streakSheet = inject(StreakSheetOpener);
   protected readonly result = inject(DailyResultView);
   protected readonly startup = inject(DailyStartup);

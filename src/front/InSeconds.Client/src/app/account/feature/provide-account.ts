@@ -1,4 +1,5 @@
-import { EnvironmentProviders, inject, makeEnvironmentProviders, provideAppInitializer } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { EnvironmentProviders, PLATFORM_ID, inject, makeEnvironmentProviders, provideAppInitializer } from '@angular/core';
 import { ArrivalSourceService } from '../data-access/arrival-source.service';
 import { providePlayersApi } from '../data-access/players.providers';
 import { SessionLoader } from '../data-access/session-loader';
@@ -13,6 +14,8 @@ export function provideAccount(): EnvironmentProviders {
   return makeEnvironmentProviders([
     providePlayersApi(),
     provideAppInitializer(() => {
+      // Le prérendu (construction) n'a ni joueur, ni onglet, ni API : l'identité et la source d'arrivée sont l'affaire du navigateur.
+      if (!isPlatformBrowser(inject(PLATFORM_ID))) return;
       inject(ArrivalSourceService).capture();
       void inject(SessionLoader).ensureLoaded();
     }),

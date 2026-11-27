@@ -7,7 +7,6 @@ import { SessionLoader } from '../../../account/data-access/session-loader';
 import { providePlayersApiFake, fakePlayersApi } from '../../../account/data-access/testing/fake-players-api';
 import { FakeAudioPort, provideFakeAudio } from '../../../gameplay/data-access/testing/fake-audio.port';
 import { FakeWaveformPort, provideFakeWaveform } from '../../../gameplay/data-access/testing/fake-waveform.port';
-import { homeOrDailyMatcher } from '../../../app.routes';
 import { DAILY_ROUTES } from '../daily.routes';
 import { DailyShellComponent } from '../daily-shell/daily-shell.component';
 import { FakeDailyApi, TODAY, provideFakeDailyApi } from '../../data-access/testing/fake-daily-api';
@@ -23,7 +22,7 @@ export async function openDailyRoute(url: string, today = TODAY()): Promise<Rout
     providers: [
       provideTranslateService(),
       // Les routes du domaine sans leurs fournisseurs (le vrai client d'API prendrait la place du faux).
-      provideRouter([{ matcher: homeOrDailyMatcher, component: DailyShellComponent, children: DAILY_ROUTES[0].children }, { path: '**', children: [] }]),
+      provideRouter([{ path: '', component: DailyShellComponent, children: DAILY_ROUTES[0].children }, { path: '**', children: [] }]),
       provideFakeDailyApi(api),
       provideFakeAudio(new FakeAudioPort()),
       provideFakeWaveform(new FakeWaveformPort()),

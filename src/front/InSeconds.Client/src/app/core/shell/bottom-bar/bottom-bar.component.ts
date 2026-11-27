@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, DOCUMENT, computed, effect, inject, untracked } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { ChangeDetectionStrategy, Component, DOCUMENT, PLATFORM_ID, computed, effect, inject, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -103,7 +104,8 @@ export class BottomBarComponent {
   constructor() {
     // Arrivé directement sur Survie, le classement ou l'historique, la page du jeu du jour n'a rien dit : on lit si le défi est joué, pour le point qui s'agite.
     const dailyDone = inject(DAILY_DONE_LOADER);
-    let dailyAsked = false;
+    // Prérendu (construction) : pas de joueur, pas d'API.
+    let dailyAsked = !isPlatformBrowser(inject(PLATFORM_ID));
     effect(() => {
       if (this.chrome.dailyDone() !== null || dailyAsked) return;
       dailyAsked = true;
