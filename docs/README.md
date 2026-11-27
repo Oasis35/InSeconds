@@ -28,6 +28,7 @@ InSeconds est un blind test musical : un défi du jour, le même pour tout le mo
 | **Exploitation** | |
 | VPS, stacks, déploiement, staging, commandes utiles | [`exploitation/deploiement.md`](exploitation/deploiement.md) |
 | Secrets : inventaire, rôle, renouvellement | [`exploitation/secrets.md`](exploitation/secrets.md) |
+| Purger les anciens jours de défi (`--purge-daily-before`) | [`exploitation/purge-parties.md`](exploitation/purge-parties.md) |
 | CI, SonarCloud, Dependabot, quand un job casse | [`exploitation/ci.md`](exploitation/ci.md) |
 | Accès SSH de secours | [`exploitation/acces-secours-ssh.md`](exploitation/acces-secours-ssh.md) |
 | Postgres partagé, sauvegardes, contrôle de restauration | [`deploy/infra/README.md`](../deploy/infra/README.md) |

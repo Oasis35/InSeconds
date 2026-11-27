@@ -10,6 +10,9 @@ if (RotateDataProtectionKeyCommand.IsRequested(args))
 if (FreezeDayStatsCommand.IsRequested(args))
     return await FreezeDayStatsCommand.RunAsync(args);
 
+if (PurgeDailyCommand.IsRequested(args))
+    return await PurgeDailyCommand.RunAsync(args);
+
 if (PlayerDataCommand.IsRequested(args))
     return await PlayerDataCommand.RunAsync(args);
 
