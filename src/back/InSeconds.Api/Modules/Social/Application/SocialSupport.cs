@@ -56,6 +56,9 @@ public static class SocialErrorCodes
 
     public const string InvalidName = "social.invalid_name";
 
+    /// <summary>Un nom qui prête à confusion (« Admin », « InSeconds »…).</summary>
+    public const string ReservedName = "social.reserved_name";
+
     public const string GroupFull = "social.group_full";
 
     public const string TooManyGroups = "social.too_many_groups";
@@ -130,6 +133,9 @@ internal static class SocialProblems
         ApiProblem.Of(
             StatusCodes.Status400BadRequest, SocialErrorCodes.InvalidName,
             $"Le nom doit faire {GroupName.MinLength} à {maxLength} caractères (lettres, chiffres, espace, _, . ou -).");
+
+    public static ProblemDetails ReservedName() =>
+        ApiProblem.Of(StatusCodes.Status400BadRequest, SocialErrorCodes.ReservedName, "Ce nom est réservé. Choisis-en un autre.");
 
     public static ProblemDetails GroupFull() =>
         ApiProblem.Of(StatusCodes.Status409Conflict, SocialErrorCodes.GroupFull, "Ce groupe est complet.");

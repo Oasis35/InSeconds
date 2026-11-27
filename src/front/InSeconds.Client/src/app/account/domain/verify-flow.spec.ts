@@ -1,5 +1,5 @@
 import {
-  BAD_REQUEST_CODE, INVALID_LINK_CODE, PSEUDO_TAKEN_CODE, afterFailure, afterVerified, chooseNewAccount, confirming, initialVerifyStep,
+  BAD_REQUEST_CODE, INVALID_LINK_CODE, PSEUDO_RESERVED_CODE, PSEUDO_TAKEN_CODE, afterFailure, afterVerified, chooseNewAccount, confirming, initialVerifyStep,
 } from './verify-flow';
 
 describe('verify-flow', () => {
@@ -29,6 +29,7 @@ describe('verify-flow', () => {
   it('un pseudo pris ou refusé ramène à l\'étape du pseudo', () => {
     expect(afterFailure(PSEUDO_TAKEN_CODE, true)).toEqual({ kind: 'needs-pseudo', problem: 'taken' });
     expect(afterFailure(BAD_REQUEST_CODE, true)).toEqual({ kind: 'needs-pseudo', problem: 'invalid' });
+    expect(afterFailure(PSEUDO_RESERVED_CODE, true)).toEqual({ kind: 'needs-pseudo', problem: 'reserved' });
   });
 
   it('sans pseudo envoyé, une 400 ou un pseudo pris ne sont pas un problème de pseudo', () => {

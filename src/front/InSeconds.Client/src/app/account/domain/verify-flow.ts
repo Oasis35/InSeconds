@@ -3,7 +3,7 @@
  * se consomme jamais au chargement de la page (piège 21 : les scanners d'e-mails pré-visitent
  * les liens) : un clic explicite sur « Confirmer » lance la vérification.
  */
-export type PseudoProblem = 'none' | 'taken' | 'invalid';
+export type PseudoProblem = 'none' | 'taken' | 'invalid' | 'reserved';
 
 /** Réponse de la vérification : `email` n'est donné que s'il faut créer le compte (`needsPseudo`). */
 export interface MagicLinkVerification {
@@ -31,6 +31,7 @@ export type VerifyStep =
 /** Codes d'erreur de l'API qui changent le déroulement (cf. `PlayersErrorCodes` côté back). */
 export const INVALID_LINK_CODE = 'players.invalid_or_expired_token';
 export const PSEUDO_TAKEN_CODE = 'players.pseudo_taken';
+export const PSEUDO_RESERVED_CODE = 'players.pseudo_reserved';
 export const BAD_REQUEST_CODE = 'common.bad_request';
 
 export function initialVerifyStep(token: string | null): VerifyStep {
@@ -55,6 +56,7 @@ export function chooseNewAccount(step: VerifyStep): VerifyStep {
 export function afterFailure(code: string, pseudoSent: boolean): VerifyStep {
   if (code === INVALID_LINK_CODE) return { kind: 'invalid-link' };
   if (pseudoSent && code === PSEUDO_TAKEN_CODE) return { kind: 'needs-pseudo', problem: 'taken' };
+  if (pseudoSent && code === PSEUDO_RESERVED_CODE) return { kind: 'needs-pseudo', problem: 'reserved' };
   if (pseudoSent && code === BAD_REQUEST_CODE) return { kind: 'needs-pseudo', problem: 'invalid' };
   return { kind: 'failed' };
 }

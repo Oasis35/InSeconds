@@ -99,7 +99,7 @@ describe('SocialApi', () => {
   });
 
   it.each([
-    ['social.invalid_name', 'invalid_name'], ['social.too_many_groups', 'too_many_groups'], ['social.account_required', 'account_required'],
+    ['social.invalid_name', 'invalid_name'], ['social.reserved_name', 'reserved_name'], ['social.too_many_groups', 'too_many_groups'], ['social.account_required', 'account_required'],
   ])('un refus de création connu (%s) est une issue', async (code, kind) => {
     client['createGroup'].mockReturnValue(throwError(() => problem(400, code)));
 

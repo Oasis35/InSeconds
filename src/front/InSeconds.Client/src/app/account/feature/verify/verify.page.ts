@@ -41,6 +41,7 @@ export class VerifyPage {
   private readonly pseudoEdited = signal(false);
   protected readonly pseudoInvalid = computed(() => !this.pseudoEdited() && (this.pseudoRejected() || this.pseudoProblem() === 'invalid'));
   protected readonly pseudoTaken = computed(() => !this.pseudoEdited() && this.pseudoProblem() === 'taken');
+  protected readonly pseudoReserved = computed(() => !this.pseudoEdited() && this.pseudoProblem() === 'reserved');
 
   /** Adresse du compte déjà ouvert dans ce navigateur, s'il y en a un. */
   protected readonly connectedEmail = computed(() => (this.session.isLinked() ? this.session.player()?.email ?? null : null));

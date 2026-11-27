@@ -43,7 +43,7 @@
           [formField]="pseudoForm.pseudo"
           [placeholder]="'account.verify.pseudoPlaceholder' | translate"
           aria-describedby="login-pseudo-help"
-          [attr.aria-invalid]="pseudoInvalid() || pseudoTaken() ? 'true' : null"
+          [attr.aria-invalid]="pseudoInvalid() || pseudoTaken() || pseudoReserved() ? 'true' : null"
           (input)="editPseudo()"
         />
         <output id="login-pseudo-help" class="block">
@@ -51,6 +51,8 @@
             <p class="text-xs" style="color:var(--text-error)">{{ 'account.verify.invalidPseudo' | translate }}</p>
           } @else if (pseudoTaken()) {
             <p class="text-xs" style="color:var(--text-error)">{{ 'errors.players.pseudo_taken' | translate }}</p>
+          } @else if (pseudoReserved()) {
+            <p class="text-xs" style="color:var(--text-error)">{{ 'errors.players.pseudo_reserved' | translate }}</p>
           } @else {
             <p class="text-xs" style="color:var(--text-faint)">{{ 'account.verify.pseudoHint' | translate }}</p>
           }

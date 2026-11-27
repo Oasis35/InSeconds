@@ -44,18 +44,20 @@ public static class CreateGroupEndpoint
         return new GroupCreation(playerId, await players.HasAccountAsync(playerId, ct), await store.CountMembershipsAsync(playerId, ct));
     }
 
-    public static ProblemDetails Validate(CreateGroup request, GroupCreation creation, SocialRules rules)
+    public static ProblemDetails Validate(CreateGroup request, GroupCreation creation, SocialRules rules, IReservedNames reserved)
     {
         if (!creation.HasAccount)
             return SocialProblems.AccountRequired();
         if (!GroupName.IsValid(request.Name, rules.MaxNameLength))
             return SocialProblems.InvalidName(rules.MaxNameLength);
+        if (reserved.IsReserved(request.Name))
+            return SocialProblems.ReservedName();
         return creation.Memberships >= rules.MaxGroups ? SocialProblems.TooManyGroups() : WolverineContinue.NoProblems;
     }
 
     /// <summary>
     /// <c>POST /api/social/groups</c> : crée un groupe dont le joueur est le créateur et le premier membre. 403 <c>social.account_required</c> pour un
-    /// invité, 400 <c>social.invalid_name</c> (mêmes caractères permis qu'un pseudo), 409 <c>social.too_many_groups</c>, 429 au-delà de 20 écritures
+    /// invité, 400 <c>social.invalid_name</c> (mêmes caractères permis qu'un pseudo), 400 <c>social.reserved_name</c> (un nom qui prête à confusion), 409 <c>social.too_many_groups</c>, 429 au-delà de 20 écritures
     /// en 10 minutes.
     /// </summary>
     [Authorize]
@@ -368,17 +370,19 @@ public static class RenameGroupEndpoint
     public static Task<GroupAction> LoadAsync(int id, ICurrentPlayer current, IGroupStore store, CancellationToken ct) =>
         GroupActionSteps.LoadAsync(id, current, store, ct);
 
-    public static ProblemDetails Validate(RenameGroup request, GroupAction action, SocialRules rules)
+    public static ProblemDetails Validate(RenameGroup request, GroupAction action, SocialRules rules, IReservedNames reserved)
     {
         var owner = GroupActionSteps.ValidateOwner(action);
         if (!ReferenceEquals(owner, WolverineContinue.NoProblems))
             return owner;
-        return GroupName.IsValid(request.Name, rules.MaxNameLength) ? WolverineContinue.NoProblems : SocialProblems.InvalidName(rules.MaxNameLength);
+        if (!GroupName.IsValid(request.Name, rules.MaxNameLength))
+            return SocialProblems.InvalidName(rules.MaxNameLength);
+        return reserved.IsReserved(request.Name) ? SocialProblems.ReservedName() : WolverineContinue.NoProblems;
     }
 
     /// <summary>
     /// <c>PUT /api/social/groups/{id}/name</c> : le créateur renomme son groupe (mêmes caractères permis et même longueur qu'à la création) et rend le
-    /// nom enregistré. 400 <c>social.invalid_name</c>, 404 <c>social.group_not_found</c> pour un non-membre, 403 <c>social.not_owner</c> pour un simple
+    /// nom enregistré. 400 <c>social.invalid_name</c> ou <c>social.reserved_name</c>, 404 <c>social.group_not_found</c> pour un non-membre, 403 <c>social.not_owner</c> pour un simple
     /// membre.
     /// </summary>
     [Authorize]

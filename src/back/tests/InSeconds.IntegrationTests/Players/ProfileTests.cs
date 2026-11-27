@@ -54,6 +54,19 @@ public partial class ProfileTests(PostgresFixture postgres) : IAsyncLifetime
         await AssertProblemAsync(response, HttpStatusCode.Conflict, PlayersErrorCodes.PseudoTaken);
     }
 
+    [Theory]
+    [InlineData("Admin")]
+    [InlineData("1nSeconds")]
+    public async Task Pseudo_Reserve_400_EtLePseudoNeChangePas(string pseudo)
+    {
+        var device = await _app.SignInDeviceAsync("reserve@example.com", "Reserve");
+
+        var response = await device.Client.PutAsJsonAsync("/api/players/me/pseudo", new UpdatePseudo(pseudo), Ct);
+
+        await AssertProblemAsync(response, HttpStatusCode.BadRequest, PlayersErrorCodes.PseudoReserved);
+        Assert.Equal("Reserve", (await MagicLinkApi.MeAsync(device.Client))!.Pseudo);
+    }
+
     [Fact]
     public async Task Pseudo_Invalide_400()
     {

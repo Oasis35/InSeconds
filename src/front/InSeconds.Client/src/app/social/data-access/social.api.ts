@@ -9,7 +9,7 @@ import { GeneralRanking, Group, GroupRanking, Invitation, MyGroups, RankingEntry
 import { DailyScores, GroupDayScores, GroupScores } from '../domain/group-scores';
 
 /** Les refus que les écrans connaissent : ils deviennent des issues, pas des erreurs. */
-const REFUSALS = ['account_required', 'invalid_name', 'too_many_groups', 'group_full', 'invitation_not_found', 'group_not_found'] as const;
+const REFUSALS = ['account_required', 'invalid_name', 'reserved_name', 'too_many_groups', 'group_full', 'invitation_not_found', 'group_not_found'] as const;
 export type SocialRefusal = (typeof REFUSALS)[number];
 
 /** Une écriture : réussie avec le groupe, refusée pour une raison connue, ou en erreur. */
