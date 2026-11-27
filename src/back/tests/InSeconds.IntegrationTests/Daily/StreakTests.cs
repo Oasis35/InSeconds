@@ -128,7 +128,7 @@ public class StreakTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task PartieDeLaVeilleTermineeApresMinuit_ContinueLaSerie_Piege18()
+    public async Task Piege18_PartieDeLaVeilleTermineeApresMinuit_ContinueLaSerie()
     {
         var alice = await _game.NewPlayerAsync("Alice");
         await _game.SetStreakAsync(alice.Id, 3, Today.AddDays(-1), 0);

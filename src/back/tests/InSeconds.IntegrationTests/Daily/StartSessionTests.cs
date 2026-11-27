@@ -273,6 +273,41 @@ public class StartSessionTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal((short)0, await _game.Api.ScalarAsync<short>($"SELECT status FROM daily.sessions WHERE id = {started.SessionId}"));
     }
 
+    // --- Minuit UTC : la frontière entre deux jours de jeu ---
+
+    [Fact]
+    public async Task Piege18_Minuit_UneSecondeAvantLeDefiDuJour_UneSecondeApresCeluiDuLendemain_EtLaVeilleSeTermine()
+    {
+        var alice = await _game.NewPlayerAsync();
+        var bob = await _game.NewPlayerAsync();
+        await _game.GenerateAsync();
+        _game.Time.SetUtcNow(new DateTimeOffset(Today.Year, Today.Month, Today.Day, 23, 59, 59, TimeSpan.Zero));
+
+        // 23:59:59 : c'est encore le défi du jour.
+        Assert.Equal("can_start", (await bob.TodayAsync()).State);
+        var session = (await alice.StartAsync()).SessionId;
+        await alice.AnswerCorrectlyAsync(session, 1, 1);
+
+        // 00:00:00 : le jour de jeu a changé, rien n'est généré par la simple lecture.
+        _game.Time.Advance(TimeSpan.FromSeconds(1));
+        Assert.Equal("no_challenge", (await bob.TodayAsync()).State);
+        Assert.Equal(1L, await _game.App.ChallengeCountAsync());
+
+        // La partie commencée avant minuit reste jouable et se termine sur le défi de la veille (piège 18).
+        var finished = await alice.FinishAsync(session, fromPosition: 2);
+        Assert.NotNull(finished);
+        Assert.Equal((short)1, await _game.Api.ScalarAsync<short>($"SELECT status FROM daily.sessions WHERE id = {session}"));
+
+        // Le premier départ après minuit prend le défi du nouveau jour (généré à la volée), pas celui de la veille.
+        var started = await bob.StartAsync();
+        Assert.False(started.IsResuming);
+        Assert.Equal(2L, await _game.App.ChallengeCountAsync());
+        Assert.Equal(
+            Today.AddDays(1),
+            await _game.Api.ScalarAsync<DateOnly>(
+                $"SELECT c.date FROM daily.sessions s JOIN daily.challenges c ON c.id = s.challenge_id WHERE s.id = {started.SessionId}"));
+    }
+
     // --- GET /api/daily/today : lecture seule ---
 
     [Fact]
