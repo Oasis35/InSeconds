@@ -45,7 +45,8 @@ paths:
 
 - CSP (règle de sécurité S14, vérifiée par `check-nginx-headers.sh`, job `nginx-headers`) : `nginx/csp.conf.template`, transformé au build (`CSP_MODE` = `report-only` par défaut ou `enforce`, `CSP_API_ORIGIN`), inclus par `security-headers.conf` dans chaque `location`. Le mode de la prod et du staging est fixé dans leur `docker-compose.*.yml`. Aucun script en ligne (`script-src 'self'`) : `inlineCritical: false` dans `angular.json`, l'inlining du CSS critique ajoutant un `onload=`. Une nouvelle origine tierce s'ajoute à la directive qui la lit **et** à `connect-src`.
 - Les violations sont envoyées par le navigateur (`report-to`, `report-uri`) à `POST /api/csp-reports`, dès le chargement de la page : aucun écouteur `securitypolicyviolation` côté Angular (il ne voyait rien avant le démarrage et doublerait les rapports).
-- nginx : cache immuable des bundles hashés, `no-cache` pour `index.html`, traductions, fichiers du worker et `manifest.webmanifest` ; la `location` qui sert les fichiers du worker est déclarée avant celle des `.js` (piège 20). Les E2E tournent sur `ng serve`, sans nginx : seul `check-nginx-headers.sh` vérifie en-têtes, types MIME et redirection `code.run`.
+- Polices : auto-hébergées (`@fontsource`, sous-ensemble latin, `src/fonts.scss`), servies hashées sous `/media/*.woff2` (cache immuable) et préchargées par le service worker ; aucune origine tierce.
+- nginx : cache immuable des bundles et polices hashés, `no-cache` pour `index.html`, traductions, fichiers du worker et `manifest.webmanifest` ; la `location` qui sert les fichiers du worker est déclarée avant celle des `.js` (piège 20). Les E2E tournent sur `ng serve`, sans nginx : seul `check-nginx-headers.sh` vérifie en-têtes, types MIME et redirection `code.run`.
 
 ## Fichiers publics (`public/`)
 
