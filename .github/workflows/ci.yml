@@ -496,6 +496,12 @@ jobs:
       - name: Unit, architecture and VPS script tests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         timeout-minutes: 10
+        # Contournement : le 27/11 le processus des tests unitaires est mort deux fois de suite (« Fatal error. Internal CLR error
+        # 0x80131506 » dans System.Runtime.EH.DispatchEx, au premier Assert.Throws d'un test) alors que rien ne change côté code et
+        # que le même commit passe en local. Cette variable rend au runtime l'ancien traitement des exceptions. À retirer quand le
+        # crash n'est plus reproduit sans elle.
+        env:
+          DOTNET_LegacyExceptionHandling: "1"
         run: |
           status=0
           for project in tests/*/*.csproj; do
