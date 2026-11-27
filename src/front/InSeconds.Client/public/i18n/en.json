@@ -1116,7 +1116,9 @@
     },
     "common": {
       "abandon": "Give up",
-      "loading": "Loading the challenge…"
+      "loading": "Loading the challenge…",
+      "seoTitle": "InSeconds, the daily music blind test",
+      "seoBody": "Listen for a few seconds and guess the artist and the title. The less you listen, the more you score. A new challenge every day, the same for everyone, playable without an account."
     },
     "archive": {
       "titlePrefix": "Blind test of",

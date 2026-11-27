@@ -1116,7 +1116,9 @@
     },
     "common": {
       "abandon": "Abandonner",
-      "loading": "Chargement du défi…"
+      "loading": "Chargement du défi…",
+      "seoTitle": "InSeconds, le blind test musical du jour",
+      "seoBody": "Écoute quelques secondes et devine l'artiste et le titre. Moins tu écoutes, plus tu scores. Un nouveau défi chaque jour, le même pour tout le monde, à jouer sans compte."
     },
     "archive": {
       "titlePrefix": "Blind test du",

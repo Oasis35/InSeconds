@@ -1,5 +1,5 @@
 import { inject } from '@angular/core';
-import { RedirectFunction, Router, Routes, UrlMatchResult, UrlSegment } from '@angular/router';
+import { RedirectFunction, Router, Routes } from '@angular/router';
 
 /**
  * Redirection qui garde la query string et le fragment : un lien magique
@@ -14,15 +14,6 @@ export function redirectKeepingQuery(target: string): RedirectFunction {
 /** `/runs/<code>` et `/setlist/<code>` deviennent `/survie/<code>` : les liens d'ami déjà envoyés restent valables, query string et fragment gardés. */
 export const redirectRunsLink: RedirectFunction = ({ params, queryParams, fragment }) =>
   inject(Router).createUrlTree(['/survie', params['code']], { queryParams, fragment: fragment ?? undefined });
-
-/**
- * La racine (l'accueil) et `/daily` (la manche) vont au même domaine, sous une coquille commune : le matcher n'en consomme pas le chemin, ce
- * sont ses routes enfants (`''` et `daily`) qui le lisent. `/daily` n'existe qu'après un clic sur « Commencer » (sinon elle renvoie à la racine)
- * et son code, avec le lecteur audio, se charge à la demande.
- */
-export function homeOrDailyMatcher(segments: UrlSegment[]): UrlMatchResult | null {
-  return segments.length === 0 || segments[0].path === 'daily' ? { consumed: [] } : null;
-}
 
 /** `/daily/archive/<jour>` et `/setlist/history/<partie>` : mêmes pages sous `/history`, query string et fragment gardés. */
 export function redirectHistoryLink(base: string): RedirectFunction {
@@ -57,7 +48,6 @@ export const routes: Routes = [
   { path: 'history/setlist/:id', pathMatch: 'full', redirectTo: redirectHistoryLink('/history/survie') },
 
   // Domaines : chacun remplace sa page d'attente par ses routes (chargées à la demande, avec leurs stores).
-  { matcher: homeOrDailyMatcher, loadChildren: () => import('./daily/feature/daily.routes').then(m => m.DAILY_ROUTES) },
   { path: 'history', pathMatch: 'full', redirectTo: redirectKeepingQuery('/history/daily') },
   { path: 'history/daily', loadChildren: () => import('./daily/feature/daily.routes').then(m => m.DAILY_HISTORY_ROUTES) },
   { path: 'history/survie', loadChildren: () => import('./runs/feature/runs.routes').then(m => m.RUNS_HISTORY_ROUTES) },
@@ -67,6 +57,9 @@ export const routes: Routes = [
   { path: 'admin', loadChildren: () => import('./admin/feature/admin.routes').then(m => m.ADMIN_ROUTES) },
   { path: 'legal', loadComponent: () => import('./core/shell/legal/legal.page').then(m => m.LegalPage) },
   { path: 'privacy', loadComponent: () => import('./core/shell/privacy/privacy.page').then(m => m.PrivacyPage) },
+  // La racine (l'accueil) et `/daily` (la manche) vont au même domaine, sous une coquille commune. Cette route vide vient après toutes les
+  // autres : le routeur charge ses enfants pour essayer de la faire correspondre, et `/legal`, `/history`... ne doivent pas payer ce chargement.
+  { path: '', loadChildren: () => import('./daily/feature/daily.routes').then(m => m.DAILY_ROUTES) },
 
   {
     path: '**',
