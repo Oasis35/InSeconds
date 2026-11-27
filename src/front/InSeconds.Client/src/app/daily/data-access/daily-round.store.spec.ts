@@ -4,6 +4,7 @@ import { FakeAudioPort, provideFakeAudio } from '../../gameplay/data-access/test
 import { FakeWaveformPort, provideFakeWaveform } from '../../gameplay/data-access/testing/fake-waveform.port';
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RoundSubmission } from '../../gameplay/domain/track-round';
+import { provideSoundsAvailable } from '../../core/sound/sound-feature';
 import { FakeSoundPort, SoundPort } from '../../core/sound/sound.port';
 import { DailyRoundStore, answerSound } from './daily-round.store';
 import { HomeStore } from './home.store';
@@ -30,6 +31,7 @@ describe('DailyRoundStore', () => {
         provideFakeDailyApi(api),
         provideFakeAudio(audio),
         { provide: SoundPort, useValue: sounds },
+        provideSoundsAvailable(),
         provideFakeWaveform(new FakeWaveformPort()),
         { provide: SessionLoader, useValue: { ensureGuest: async () => { guestCreated++; } } },
         TrackRoundStore,
@@ -83,12 +85,12 @@ describe('DailyRoundStore', () => {
       home.stopCountdown();
     });
 
-    it('une seconde tentative offerte ne joue aucun son', async () => {
+    it('une seconde tentative offerte joue le son « faux », jamais « à moitié juste » (piège 51)', async () => {
       api.retriesToOffer = 1;
       await startGame();
       round.submit({ artist: 'A', title: 'T' });
       await store.submit(submissionOf(1));
-      expect(sounds.played).toEqual([]);
+      expect(sounds.played).toEqual(['wrong']);
     });
   });
 

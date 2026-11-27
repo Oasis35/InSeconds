@@ -273,6 +273,8 @@ export const DailyRoundStore = signalStore(
           // Une seconde tentative : rien n'est compté ni révélé, la manche rend la saisie (piège 51).
           if (outcome.kind === 'retry') {
             round.retryOffered();
+            // Même son quel que soit ce qui était juste : un son « à moitié juste » dirait ce que le serveur tait (piège 51).
+            sounds.play('wrong');
             return;
           }
           const answered = outcome.answered;

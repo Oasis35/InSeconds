@@ -1,3 +1,4 @@
+import { Provider } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { SwUpdate } from '@angular/service-worker';
@@ -15,7 +16,7 @@ import { FakeDailyApi, TODAY, provideFakeDailyApi } from '../../data-access/test
  * Ouvre une adresse du jeu du jour (`/` ou `/daily`) sous la vraie coquille et ses vraies routes, avec le faux client d'API et un
  * état du jour donné, puis laisse l'écran suivre : les specs des pages qui en dépendent partent de là.
  */
-export async function openDailyRoute(url: string, today = TODAY()): Promise<Router> {
+export async function openDailyRoute(url: string, today = TODAY(), extraProviders: Provider[] = []): Promise<Router> {
   const api = new FakeDailyApi();
   api.today = today;
   TestBed.configureTestingModule({
@@ -29,6 +30,7 @@ export async function openDailyRoute(url: string, today = TODAY()): Promise<Rout
       providePlayersApiFake(fakePlayersApi()),
       { provide: SessionLoader, useValue: { ensureGuest: () => Promise.resolve() } },
       { provide: SwUpdate, useValue: { isEnabled: false } },
+      ...extraProviders,
     ],
   });
   const harness = await RouterTestingHarness.create();

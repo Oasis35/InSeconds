@@ -5,6 +5,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { SoundLinkComponent } from '../../../core/shell/sound-link/sound-link.component';
+import { SoundService } from '../../../core/sound/sound.service';
 import { InstagramLinkComponent } from '../../../core/shell/instagram-link/instagram-link.component';
 import { AccountLinkComponent } from '../../../core/shell/account-link/account-link.component';
 import { HomeAnnounceSlotComponent } from '../../../core/shell/home-announce-slot/home-announce-slot.component';
@@ -57,7 +58,9 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
             @if (screen() !== 'loading') {
               <div brandRight class="flex items-center gap-2">
                 <app-account-link />
-                <app-sound-link />
+                @if (sounds.available) {
+                  <app-sound-link />
+                }
                 <app-instagram-link />
               </div>
             }
@@ -209,6 +212,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
 })
 export class HomePage implements OnInit {
   protected readonly store = inject(HomeStore);
+  protected readonly sounds = inject(SoundService);
   protected readonly launcher = inject(DailyLauncher);
   protected readonly language = inject(LanguageService);
   protected readonly errorReporting = inject(ErrorReportingService);
