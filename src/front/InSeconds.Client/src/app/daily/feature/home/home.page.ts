@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ErrorReportingService } from '../../../core/errors/error-reporting.service';
 import { LanguageService } from '../../../core/i18n/language.service';
+import { SoundLinkComponent } from '../../../core/shell/sound-link/sound-link.component';
 import { InstagramLinkComponent } from '../../../core/shell/instagram-link/instagram-link.component';
 import { AccountLinkComponent } from '../../../core/shell/account-link/account-link.component';
 import { HomeAnnounceSlotComponent } from '../../../core/shell/home-announce-slot/home-announce-slot.component';
@@ -41,7 +42,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
 @Component({
   selector: 'app-home-page',
   imports: [
-    TranslatePipe, RouterLink, ButtonComponent, DecorBackgroundComponent, BrandComponent, InstagramLinkComponent, AccountLinkComponent, HomeAnnounceSlotComponent, HomeModeEntriesComponent, InstallLineComponent, HomeLegalLineComponent,
+    TranslatePipe, RouterLink, ButtonComponent, DecorBackgroundComponent, BrandComponent, InstagramLinkComponent, SoundLinkComponent, AccountLinkComponent, HomeAnnounceSlotComponent, HomeModeEntriesComponent, InstallLineComponent, HomeLegalLineComponent,
     HomeChallengeCardComponent, HomeDoneCardComponent, GuestAccountTileComponent, HomeAbandonedCardComponent, StatusScreenComponent, WeekReviewCardComponent,
   ],
   providers: [WeekReviewStore],
@@ -56,6 +57,7 @@ import { DailyResultView, DailyStartup, StreakSheetOpener } from '../daily-shell
             @if (screen() !== 'loading') {
               <div brandRight class="flex items-center gap-2">
                 <app-account-link />
+                <app-sound-link />
                 <app-instagram-link />
               </div>
             }
