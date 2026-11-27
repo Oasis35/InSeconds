@@ -50,15 +50,18 @@ public partial class SecurityRulesTests
         Assert.Empty(offenders);
     }
 
-    // is_admin = true (SQL), IsAdmin = true / IsAdmin: true (code), « SET is_admin » : toute écriture du rôle.
-    [GeneratedRegex(@"is_admin\s*=\s*(true|1)\b|\bSET\s+is_admin\b|\bIsAdmin\s*(=|:)\s*true\b", RegexOptions.IgnoreCase)]
+    // Toute écriture de is_admin : SQL (is_admin = …, SET is_admin), instruction IsAdmin = …; ou IsAdmin = true / IsAdmin: true, SetProperty(a => a.IsAdmin, …) en EF.
+    // Les projections (IsAdmin = a.IsAdmin,) sont des lectures ; les migrations décrivent la colonne (valeur par défaut false) et sont exclues.
+    [GeneratedRegex(@"\bis_admin\s*=|\bSET\s+is_admin\b|\bIsAdmin\s*=\s*true\b|\bIsAdmin\s*=\s*[^=;,]+;|\bIsAdmin\s*:\s*true\b|SetProperty\([^)]*IsAdmin", RegexOptions.IgnoreCase)]
     private static partial Regex AdminWrite();
 
     private static IEnumerable<string> ApiSources()
     {
         var directory = Path.Combine(SolutionDirectory(), "InSeconds.Api");
         return Directory.EnumerateFiles(directory, "*.cs", SearchOption.AllDirectories)
-            .Where(file => !IsBuildOutput(file) && !file.Contains($"{Path.DirectorySeparatorChar}Generated{Path.DirectorySeparatorChar}", StringComparison.Ordinal));
+            .Where(file => !IsBuildOutput(file)
+                           && !file.Contains($"{Path.DirectorySeparatorChar}Generated{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                           && !file.Contains($"{Path.DirectorySeparatorChar}Migrations{Path.DirectorySeparatorChar}", StringComparison.Ordinal));
     }
 
     private static string RelativePath(string file) => Path.GetRelativePath(SolutionDirectory(), file);
