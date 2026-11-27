@@ -463,7 +463,7 @@ public class DeezerClientTests
     }
 
     [Fact]
-    public async Task Annulation_EstPropagee_SurLesCinqPorts()
+    public async Task Annulation_EstPropagee_AlbumEtTelechargement()
     {
         var client = Create(new StubHttpHandler((_, ct) =>
         {
@@ -478,22 +478,21 @@ public class DeezerClientTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.DownloadAsync(SignedUrl, cts.Token));
     }
 
-    [Theory]
-    [InlineData(HttpStatusCode.Forbidden)]
-    [InlineData(HttpStatusCode.OK)]
-    public async Task Telechargement_Journal_JamaisLAdresseSigneeNiSaQuery(HttpStatusCode status)
+    [Fact]
+    public async Task Telechargement_Journal_JamaisLAdresseSigneeNiSaQuery()
     {
         var logger = new CapturingLogger<DeezerClient>();
-        // OK + hôte final hors CDN, ou 403 : deux échecs qui journalisent.
-        var handler = new StubHttpHandler((_, _) => Task.FromResult(new HttpResponseMessage(status)
+        // Quatre échecs qui journalisent : statut 403, hôte final hors CDN après redirection, hôte initial refusé, exception réseau.
+        var forbidden = new StubHttpHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.Forbidden) { Content = new ByteArrayContent([1]) }));
+        var redirected = new StubHttpHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = new ByteArrayContent([1]),
-            RequestMessage = status == HttpStatusCode.OK ? new HttpRequestMessage(HttpMethod.Get, "https://evil.example/x.mp3?hdnea=SIGNATURE") : null,
+            RequestMessage = new HttpRequestMessage(HttpMethod.Get, "https://evil.example/x.mp3?hdnea=SIGNATURE"),
         }));
-        var client = new DeezerClient(new HttpClient(handler), logger);
 
-        await client.DownloadAsync(SignedUrl, Ct);
-        await client.DownloadAsync("https://evil.example/x.mp3?hdnea=SIGNATURE", Ct);
+        await new DeezerClient(new HttpClient(forbidden), logger).DownloadAsync(SignedUrl, Ct);
+        await new DeezerClient(new HttpClient(redirected), logger).DownloadAsync(SignedUrl, Ct);
+        await new DeezerClient(new HttpClient(forbidden), logger).DownloadAsync("https://evil.example/x.mp3?hdnea=SIGNATURE", Ct);
         await new DeezerClient(new HttpClient(new StubHttpHandler((_, _) => throw new HttpRequestException("boom"))), logger).DownloadAsync(SignedUrl, Ct);
 
         Assert.NotEmpty(logger.Entries);
