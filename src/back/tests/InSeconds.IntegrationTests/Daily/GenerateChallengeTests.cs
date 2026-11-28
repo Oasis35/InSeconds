@@ -251,7 +251,7 @@ public class GenerateChallengeTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task Course_DeuxGenerationsSimultanees_UnSeulDefi_LaSecondeAttendEtVoitLeDefiDeLaPremiere()
     {
         await _app.DisposeAsync();
-        var selector = new GatedSelector(held: true);
+        using var selector = new GatedSelector(held: true);
         _app = DailyApi.Create(await postgres.CreateDatabaseAsync(),
             configureServices: services => services.Replace(ServiceDescriptor.Singleton<ITrackSelector>(selector)));
         _ = _app.Api.Server;
@@ -287,7 +287,7 @@ public class GenerateChallengeTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task Course_DeuxJoursDifferents_NeSAttendentPas()
     {
         await _app.DisposeAsync();
-        var selector = new GatedSelector(rendezvous: 2);
+        using var selector = new GatedSelector(rendezvous: 2);
         _app = DailyApi.Create(await postgres.CreateDatabaseAsync(),
             configureServices: services => services.Replace(ServiceDescriptor.Singleton<ITrackSelector>(selector)));
         _ = _app.Api.Server;
@@ -372,26 +372,31 @@ public class GenerateChallengeTests(PostgresFixture postgres) : IAsyncLifetime
     /// le garde dans son tirage jusqu'à <see cref="Release"/>, <paramref name="rendezvous"/> fait attendre les tirages entre eux.
     /// Aucune durée : ni pause, ni délai.
     /// </summary>
-    private sealed class GatedSelector(int rendezvous = 1, bool held = false) : ITrackSelector
+    private sealed class GatedSelector(int rendezvous = 1, bool held = false) : ITrackSelector, IDisposable
     {
         private readonly ManualResetEventSlim _gate = new(initialState: !held);
         private readonly Barrier? _barrier = rendezvous > 1 ? new Barrier(rendezvous) : null;
-
-        /// <summary>Laisse partir les tirages retenus.</summary>
-        public void Release() => _gate.Set();
         private int _rendezvousReached;
-
-        /// <summary>Combien de tirages ont trouvé les autres au point de rendez-vous.</summary>
-        public int RendezvousReached => _rendezvousReached;
-
         private int _calls;
         private int _running;
         private int _maxConcurrent;
+
+        /// <summary>Combien de tirages ont trouvé les autres au point de rendez-vous.</summary>
+        public int RendezvousReached => _rendezvousReached;
 
         public int Calls => _calls;
 
         /// <summary>Le plus grand nombre de tirages en cours au même moment.</summary>
         public int MaxConcurrent => _maxConcurrent;
+
+        /// <summary>Laisse partir les tirages retenus.</summary>
+        public void Release() => _gate.Set();
+
+        public void Dispose()
+        {
+            _gate.Dispose();
+            _barrier?.Dispose();
+        }
 
         public TrackSelection Select(IEnumerable<int> candidates, IReadOnlySet<int> inCooldown, int count, int seed)
         {

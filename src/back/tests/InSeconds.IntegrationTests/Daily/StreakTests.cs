@@ -242,8 +242,8 @@ public class StreakTests(PostgresFixture postgres) : IAsyncLifetime
         var player = await _game.NewPlayerAsync("Eve");
         // La première tient le verrou de la série (transaction ouverte) jusqu'à ce que le test la libère ; la seconde est lancée
         // une fois le verrou pris, et le test attend de la voir bloquée dessus avant de libérer la première.
-        var holdingLock = new TaskCompletionSource();
-        var release = new TaskCompletionSource();
+        var holdingLock = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         async Task GrantAsync(TaskCompletionSource? signalLockTaken, Task beforeSave)
         {
             using var scope = _game.Api.Services.CreateScope();

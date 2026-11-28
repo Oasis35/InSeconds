@@ -32,7 +32,8 @@ public class RefreshPreviewsHandlerTests
         while (true)
         {
             var pause = _time.Pauses.ReadAsync(Ct).AsTask();
-            if (await Task.WhenAny(run, pause) == run)
+            // Une échéance large : un contrôle qui se bloque sur autre chose qu'une pause fait échouer le test, il ne le suspend pas.
+            if (await Task.WhenAny(run, pause).WaitAsync(TimeSpan.FromSeconds(30), Ct) == run)
                 return await run;
             _time.Advance(await pause);
         }
