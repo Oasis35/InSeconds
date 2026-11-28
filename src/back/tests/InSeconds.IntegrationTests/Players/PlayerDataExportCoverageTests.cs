@@ -23,6 +23,7 @@ public class PlayerDataExportCoverageTests(PostgresFixture postgres) : IAsyncLif
         ["daily.sessions"] = "daily",              // GameExport : les parties et leurs réponses
         ["daily.streaks"] = "daily",               // StreakExport : série, gels, meilleure série
         ["players.accounts"] = "account",          // AccountExport : adresse, pseudo, date de liaison, rôle
+        ["players.auth_tokens"] = "account",       // AccountExport.EmailChangeRequests : la nouvelle adresse demandée (les jetons de connexion n'ont pas de player_id)
         ["players.device_sessions"] = "devices",   // DeviceExport : les appareils connectés
         ["runs.access"] = "runs",                  // Access : quand l'accès à la Survie a été donné
         ["runs.player_levels"] = "runs",           // Level
@@ -36,7 +37,6 @@ public class PlayerDataExportCoverageTests(PostgresFixture postgres) : IAsyncLif
     /// <summary>Les tables que la copie ne contient pas, et pourquoi : rien de plus que ce que la personne a déjà, ou rien de personnel.</summary>
     private static readonly Dictionary<string, string> Excluded = new()
     {
-        ["players.auth_tokens"] = "Jeton à usage unique du lien magique ou du changement d'adresse : hash du jeton, adresse à laquelle le lien a été envoyé (connexion) ou nouvelle adresse demandée par le joueur (changement, rattachée à player_id). Valable 15 minutes, consommé une fois (la ligne reste jusqu'à son expiration, supprimée par la purge nocturne), effacé avec le compte. Non exporté : donnée éphémère que la personne vient de saisir elle-même, déjà dans l'email qu'elle reçoit. Décision à confirmer : docs/conformite/rgpd.md.",
         ["players.legacy_tokens"] = "Hash d'un ancien cookie, gardé pour la reprise des anciens navigateurs : un secret, aucune donnée en clair ; effacé avec le compte.",
     };
 

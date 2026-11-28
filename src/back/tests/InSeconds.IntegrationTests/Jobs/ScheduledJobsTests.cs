@@ -22,7 +22,7 @@ public class ScheduledJobsTests(PostgresFixture postgres)
     };
 
     [Fact]
-    public async Task LApi_DeclareExactementLesTachesDuPlan()
+    public async Task LApi_DeclareExactementLesTachesPlanifiees()
     {
         await using var api = new ApiFactory(await postgres.CreateDatabaseAsync());
 

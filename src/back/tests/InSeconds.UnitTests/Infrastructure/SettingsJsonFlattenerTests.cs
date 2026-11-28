@@ -22,7 +22,7 @@ public class SettingsJsonFlattenerTests
     }
 
     [Fact]
-    public void Flatten_LesValeursDuPlan_SeLientAuxOptions()
+    public void Flatten_LesValeursDeDaily_SeLientAuxOptions()
     {
         var data = new Dictionary<string, string?>();
         SettingsJsonFlattener.Flatten("Daily:GuessTimerSeconds", "20", data);

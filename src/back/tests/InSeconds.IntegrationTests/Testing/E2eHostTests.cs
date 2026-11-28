@@ -19,7 +19,7 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
     public ValueTask DisposeAsync() => _host.DisposeAsync();
 
     [Fact]
-    public async Task Seed_ReprendLesMorceauxReelsDeLaV1_DansLOrdreDeLaV1()
+    public async Task Seed_ReprendLesMorceauxReelsDuPool_DansLOrdreDuSeed()
     {
         var admin = await SeededAdminAsync();
 
@@ -40,7 +40,7 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Usage_ReproduitCeluiDeLaV1()
+    public async Task Usage_DesMorceauxDuSeed_EstCeluiAttendu()
     {
         var admin = await SeededAdminAsync();
         var today = DateOnly.FromDateTime(DateTime.UtcNow);

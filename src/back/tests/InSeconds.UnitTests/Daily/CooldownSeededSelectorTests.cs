@@ -102,7 +102,7 @@ public class CooldownSeededSelectorTests
         Assert.Throws<ArgumentOutOfRangeException>(() => _selector.Select(Pool(5), NoCooldown, count, seed: 1));
 
     [Fact]
-    public void LaGraineEstLeNumeroDuJour_CommeEnV1()
+    public void LaGraineEstLeNumeroDuJour()
     {
         // 2026-10-05 : le numéro du jour sert de graine, pour que tout le monde joue le même défi, quelle que soit la façon de le générer.
         Assert.Equal(new DateOnly(2026, 10, 5).DayNumber, DailyChallenge.SeedOf(new DateOnly(2026, 10, 5)));

@@ -16,7 +16,7 @@ public class AuthTokenTests
     }
 
     [Fact]
-    public void Hash_Sha256DuTexteEnUtf8_CommeLaV1()
+    public void Hash_Sha256DuTexteEnUtf8()
     {
         // Vecteur de référence de SHA-256.
         Assert.Equal("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",

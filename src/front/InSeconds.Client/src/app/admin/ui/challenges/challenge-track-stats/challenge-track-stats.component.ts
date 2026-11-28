@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
+import { SecondsPipe } from '../../../../ui/format/seconds.pipe';
 import { ChallengeTrackStats, rateColor } from '../../../domain/challenge';
 
 /** Un morceau d'un défi : les taux (artiste, titre, prolongation, écoute moyenne) et l'icône de la répartition des temps. */
 @Component({
   selector: 'app-challenge-track-stats',
-  imports: [DecimalPipe, TranslatePipe],
+  imports: [DecimalPipe, TranslatePipe, SecondsPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let t = track();
@@ -37,7 +38,7 @@ import { ChallengeTrackStats, rateColor } from '../../../domain/challenge';
         <div class="flex flex-col gap-0.5">
           <span style="color:var(--text-muted)">{{ 'admin.dashboard.avgListen' | translate }}</span>
           <span class="font-medium" style="color:var(--text-light)">
-            @if (t.avgListenedSeconds !== null) { {{ t.avgListenedSeconds }}s } @else { - }
+            @if (t.avgListenedSeconds !== null) { {{ t.avgListenedSeconds | appSeconds }} } @else { - }
           </span>
         </div>
       </div>

@@ -5,7 +5,7 @@ namespace InSeconds.UnitTests.Players;
 public class ConfirmEmailChangeEmailComposerTests
 {
     [Fact]
-    public void GabaritV1_LienEtNouvelleAdresse_SansJetonNonRemplace()
+    public void Gabarit_LienEtNouvelleAdresse_SansJetonNonRemplace()
     {
         const string link = "https://inseconds.cc/account/confirm-email?token=abc_DEF-123";
 

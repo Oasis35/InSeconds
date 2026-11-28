@@ -5,7 +5,7 @@ namespace InSeconds.UnitTests.Players;
 public class MagicLinkEmailComposerTests
 {
     [Fact]
-    public void GabaritV1_LienDansLeBoutonEtEnClair_SansJetonNonRemplace()
+    public void Gabarit_LienDansLeBoutonEtEnClair_SansJetonNonRemplace()
     {
         const string link = "https://inseconds.cc/account/login/verify?token=abc_DEF-123";
 
