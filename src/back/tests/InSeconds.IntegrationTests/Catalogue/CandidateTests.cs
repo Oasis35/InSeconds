@@ -53,34 +53,13 @@ public class CandidateTests(PostgresFixture postgres) : IAsyncLifetime
         (await _app.Admin().GetFromJsonAsync<List<CandidateItem>>(Candidates, Ct))!;
 
     /// <summary>Attend que la lecture en arrière-plan ait fini (plus aucun candidat « pending »).</summary>
-    private async Task<IReadOnlyList<CandidateItem>> ListWhenReadAsync(int expected)
-    {
-        for (var attempt = 0; attempt < 100; attempt++)
-        {
-            var list = await ListAsync();
-            if (list.Count == expected && list.All(c => c.Status != "pending"))
-                return list;
-            await Task.Delay(100, Ct);
-        }
-
-        Assert.Fail("La lecture des candidats n'a pas fini à temps.");
-        return [];
-    }
+    private Task<IReadOnlyList<CandidateItem>> ListWhenReadAsync(int expected) =>
+        Waiting.UntilAsync(ListAsync, list => list.Count == expected && list.All(c => c.Status != "pending"),
+            "La lecture des candidats n'a pas fini à temps.", Ct);
 
     /// <summary>Attend que la liste vérifie la condition (l'ajout au pool passe aussi par un message).</summary>
-    private async Task<IReadOnlyList<CandidateItem>> ListUntilAsync(Func<IReadOnlyList<CandidateItem>, bool> done)
-    {
-        for (var attempt = 0; attempt < 100; attempt++)
-        {
-            var list = await ListAsync();
-            if (done(list))
-                return list;
-            await Task.Delay(100, Ct);
-        }
-
-        Assert.Fail("L'état attendu du sas n'est pas arrivé à temps.");
-        return [];
-    }
+    private Task<IReadOnlyList<CandidateItem>> ListUntilAsync(Func<IReadOnlyList<CandidateItem>, bool> done) =>
+        Waiting.UntilAsync(ListAsync, done, "L'état attendu du sas n'est pas arrivé à temps.", Ct);
 
     private async Task<HttpResponseMessage> PostAsync(string path, object body) => await _app.Admin().PostAsJsonAsync(path, body, Ct);
 

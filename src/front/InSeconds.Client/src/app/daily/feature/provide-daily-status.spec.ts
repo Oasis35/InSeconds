@@ -13,11 +13,11 @@ describe('provideDailyStatus', () => {
   ];
 
   it.each(cases)('l\'état %s donne %s', async (state, expected) => {
-    const today = vi.spyOn(DailyApi.prototype, 'today').mockResolvedValue({ state } as never);
+    // L'espion est rendu après chaque test par `restoreMocks` (vitest.config.mts), même quand une assertion échoue.
+    vi.spyOn(DailyApi.prototype, 'today').mockResolvedValue({ state } as never);
     TestBed.configureTestingModule({ providers: [provideDailyStatus()] });
     const loader = TestBed.inject(DAILY_DONE_LOADER);
 
     expect(await loader()).toBe(expected);
-    today.mockRestore();
   });
 });

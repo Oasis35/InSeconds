@@ -6,8 +6,8 @@ using static InSeconds.IntegrationTests.Daily.DailyApi;
 namespace InSeconds.IntegrationTests.Daily;
 
 /// <summary>
-/// Jouer une partie : écouter, demander un indice, répondre, abandonner. Le verrou du morceau (piège 35), le plancher d'écoute, le score,
-/// l'indice payé, la fin de partie sur le nombre réel de morceaux (piège 38).
+/// Jouer une partie : écouter, répondre, abandonner. Le verrou du morceau (piège 35), le plancher d'écoute, le score,
+/// la fin de partie sur le nombre réel de morceaux (piège 38).
 /// </summary>
 public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
 {
@@ -138,9 +138,8 @@ public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
         await _alice.ListenAsync(_session, 1, 5);
 
         await GameAsserts.ProblemAsync(await _alice.ListenAsync(_session, 2, 0.5m), HttpStatusCode.Conflict, "daily.track_lock_not_released");
-        await GameAsserts.ProblemAsync(await _alice.HintAsync(_session, 2, 1), HttpStatusCode.Conflict, "daily.track_lock_not_released");
         await GameAsserts.ProblemAsync(await _alice.AnswerAsync(_session, 2, 1, "x", "y"), HttpStatusCode.Conflict, "daily.track_lock_not_released");
-        // Le verrou n'a pas bougé : l'indice et le plancher du morceau 1 sont intacts.
+        // Le verrou n'a pas bougé : le plancher du morceau 1 est intact.
         Assert.Equal((short)1, await _game.Api.ScalarAsync<short>($"SELECT current_position FROM daily.sessions WHERE id = {_session}"));
         Assert.Equal(5m, await _game.Api.ScalarAsync<decimal>($"SELECT current_listened_seconds FROM daily.sessions WHERE id = {_session}"));
     }
@@ -152,7 +151,6 @@ public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
 
         await GameAsserts.ProblemAsync(await _alice.AnswerAsync(_session, 1, 1, "x", "y"), HttpStatusCode.Conflict, "daily.already_answered");
         await GameAsserts.ProblemAsync(await _alice.ListenAsync(_session, 1, 1), HttpStatusCode.Conflict, "daily.already_answered");
-        await GameAsserts.ProblemAsync(await _alice.HintAsync(_session, 1, 1), HttpStatusCode.Conflict, "daily.already_answered");
         Assert.Equal(1L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM daily.answers"));
     }
 
@@ -167,15 +165,12 @@ public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task Verrou_LeMorceauSuivant_SeLibereAvecLaReponse_EtRepartASonPlancher()
     {
         await _alice.ListenAsync(_session, 1, 10);
-        await _alice.HintAsync(_session, 1, 2);
         await _alice.AnswerCorrectlyAsync(_session, 1, 10);
 
-        // Plus de verrou, plus d'indice, plus de plancher : le morceau 2 repart de zéro.
+        // Plus de verrou, plus de plancher : le morceau 2 repart de zéro.
         Assert.Null(await _game.Api.ScalarAsync<short?>($"SELECT current_position FROM daily.sessions WHERE id = {_session}"));
-        Assert.Equal((short)0, await _game.Api.ScalarAsync<short>($"SELECT current_hint_level FROM daily.sessions WHERE id = {_session}"));
         Assert.Equal(HttpStatusCode.NoContent, (await _alice.ListenAsync(_session, 2, 0.5m)).StatusCode);
-        var second = await ReadAnswerAsync(await _alice.AnswerAsync(_session, 2, 0.5m, "x", "y"));
-        Assert.Equal(0, second.HintLevelUsed);
+        Assert.Equal(HttpStatusCode.OK, (await _alice.AnswerAsync(_session, 2, 0.5m, "x", "y")).StatusCode);
     }
 
     [Fact]
@@ -199,97 +194,6 @@ public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.All(responses.Where(r => r.StatusCode != HttpStatusCode.OK), r => Assert.Equal(HttpStatusCode.Conflict, r.StatusCode));
         Assert.Equal(1L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM daily.answers"));
         Assert.Equal(850, await _game.Api.ScalarAsync<int>($"SELECT total_score FROM daily.sessions WHERE id = {_session}"));
-    }
-
-    // --- les indices ---
-
-    [Fact]
-    public async Task Indice_TantQueLePalierNEstPasAtteint_409HintLocked()
-    {
-        await GameAsserts.ProblemAsync(await _alice.HintAsync(_session, 1, 1), HttpStatusCode.Conflict, "daily.hint_locked");
-
-        await _alice.ListenAsync(_session, 1, 3);
-        await GameAsserts.ProblemAsync(await _alice.HintAsync(_session, 1, 1), HttpStatusCode.Conflict, "daily.hint_locked");
-
-        await _alice.ListenAsync(_session, 1, 5);
-        Assert.Equal(HttpStatusCode.OK, (await _alice.HintAsync(_session, 1, 1)).StatusCode);
-        await GameAsserts.ProblemAsync(await _alice.HintAsync(_session, 1, 2), HttpStatusCode.Conflict, "daily.hint_locked");
-    }
-
-    [Fact]
-    public async Task Indice_RendLAnneeEtLArtisteMasque_Cumulatif()
-    {
-        var trackId = await _game.TrackAtAsync(Today, 1);
-        await _game.Api.ExecuteAsync($"UPDATE catalogue.tracks SET release_year = 1999 WHERE id = {trackId}");
-        await _alice.ListenAsync(_session, 1, 10);
-
-        var level1 = await ReadHintAsync(await _alice.HintAsync(_session, 1, 1));
-        var level2 = await ReadHintAsync(await _alice.HintAsync(_session, 1, 2));
-
-        Assert.Equal([("year", "1999")], level1.Select(f => (f.Kind, f.Value)));
-        // Le niveau 2 rend aussi l'année, que le niveau 1 ait été demandé ou non.
-        Assert.Equal(["year", "artistMasked"], level2.Select(f => f.Kind));
-        Assert.StartsWith("A _ _ _ _ _ _", level2[1].Value, StringComparison.Ordinal);
-        // Le nom entier n'est jamais envoyé.
-        Assert.DoesNotContain("Artiste", level2[1].Value!, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task Indice_AnneeInconnue_ValeurVide()
-    {
-        await _alice.ListenAsync(_session, 1, 5);
-
-        var facts = await ReadHintAsync(await _alice.HintAsync(_session, 1, 1));
-
-        Assert.Null(Assert.Single(facts).Value);
-    }
-
-    [Fact]
-    public async Task Indice_DemandeDirectementLeNiveau2_EtRedemanderLeNiveau1_GardeLeMax()
-    {
-        await _alice.ListenAsync(_session, 1, 10);
-        await _alice.HintAsync(_session, 1, 2);
-        await _alice.HintAsync(_session, 1, 1);
-
-        Assert.Equal((short)2, await _game.Api.ScalarAsync<short>($"SELECT current_hint_level FROM daily.sessions WHERE id = {_session}"));
-    }
-
-    [Fact]
-    public async Task Indice_NiveauInexistant_400()
-    {
-        await _alice.ListenAsync(_session, 1, 10);
-
-        Assert.Equal(HttpStatusCode.BadRequest, (await _alice.HintAsync(_session, 1, 3)).StatusCode);
-        Assert.Equal(HttpStatusCode.BadRequest, (await _alice.HintAsync(_session, 1, 0)).StatusCode);
-    }
-
-    [Fact]
-    public async Task Indice_EcouterPlusNeLeRevelePas_EtLePrixEstCelDuClic()
-    {
-        var trackId = await _game.TrackAtAsync(Today, 1);
-        await _alice.ListenAsync(_session, 1, 10);
-
-        // Écouter jusqu'à 10 s ne révèle rien et ne coûte rien : seul le clic explicite révèle.
-        var free = await ReadAnswerAsync(await _alice.AnswerAsync(_session, 1, 10, $"Artiste {trackId}", $"Titre {trackId}"));
-
-        Assert.Equal((100, 0, 0), (free.Score, free.HintLevelUsed, free.HintPenaltyPercentApplied));
-    }
-
-    [Theory]
-    [InlineData(5, 1, 175, 30)] // 250 × 0,7
-    [InlineData(10, 1, 70, 30)] // 100 × 0,7
-    [InlineData(10, 2, 40, 60)] // 100 × 0,4
-    public async Task Indice_PayeSurLePalierReellementAtteint(int seconds, int level, int expectedScore, int expectedPenalty)
-    {
-        var trackId = await _game.TrackAtAsync(Today, 1);
-        await _alice.ListenAsync(_session, 1, seconds);
-        await _alice.HintAsync(_session, 1, level);
-
-        // Le niveau d'indice n'est jamais envoyé par le client : il vient de la partie.
-        var answer = await ReadAnswerAsync(await _alice.AnswerAsync(_session, 1, seconds, $"Artiste {trackId}", $"Titre {trackId}"));
-
-        Assert.Equal((expectedScore, level, expectedPenalty), (answer.Score, answer.HintLevelUsed, answer.HintPenaltyPercentApplied));
-        Assert.Equal((short)level, await _game.Api.ScalarAsync<short>($"SELECT hint_level FROM daily.answers WHERE session_id = {_session}"));
     }
 
     // --- la fin de partie ---
@@ -330,7 +234,6 @@ public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
 
         await GameAsserts.ProblemAsync(await _alice.AnswerAsync(_session, 5, 1, "x", "y"), HttpStatusCode.Conflict, "daily.already_played");
         await GameAsserts.ProblemAsync(await _alice.ListenAsync(_session, 1, 1), HttpStatusCode.Conflict, "daily.already_played");
-        await GameAsserts.ProblemAsync(await _alice.HintAsync(_session, 1, 1), HttpStatusCode.Conflict, "daily.already_played");
         await GameAsserts.ProblemAsync(await _alice.AbandonAsync(_session), HttpStatusCode.Conflict, "daily.already_played");
     }
 
@@ -345,7 +248,6 @@ public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
 
         _game.Time.Advance(TimeSpan.FromDays(1));
         await GameAsserts.ProblemAsync(await _alice.ListenAsync(_session, 2, 2), HttpStatusCode.Conflict, "daily.abandoned");
-        await GameAsserts.ProblemAsync(await _alice.HintAsync(_session, 2, 1), HttpStatusCode.Conflict, "daily.abandoned");
         await GameAsserts.ProblemAsync(await _alice.AnswerAsync(_session, 2, 2, "x", "y"), HttpStatusCode.Conflict, "daily.abandoned");
         await GameAsserts.ProblemAsync(await _alice.AbandonAsync(_session), HttpStatusCode.Conflict, "daily.abandoned");
 
@@ -404,7 +306,6 @@ public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
 
         await GameAsserts.ProblemAsync(await bob.AnswerAsync(_session, 1, 1, "x", "y"), HttpStatusCode.NotFound, "daily.session_not_found");
         await GameAsserts.ProblemAsync(await bob.ListenAsync(_session, 1, 1), HttpStatusCode.NotFound, "daily.session_not_found");
-        await GameAsserts.ProblemAsync(await bob.HintAsync(_session, 1, 1), HttpStatusCode.NotFound, "daily.session_not_found");
         await GameAsserts.ProblemAsync(await bob.AbandonAsync(_session), HttpStatusCode.NotFound, "daily.session_not_found");
         await GameAsserts.ProblemAsync(await _alice.AnswerAsync(99999, 1, 1, "x", "y"), HttpStatusCode.NotFound, "daily.session_not_found");
         Assert.Equal(0L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM daily.answers"));
@@ -417,7 +318,6 @@ public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.PostAsJsonAsync($"/api/daily/sessions/{_session}/answers", new SubmitAnswer(1, 1, false, "x", "y"), Ct)).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.PatchAsJsonAsync($"/api/daily/sessions/{_session}/listening", new UpdateListening(1, 1), Ct)).StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.PostAsJsonAsync($"/api/daily/sessions/{_session}/hints", new RequestHint(1, 1), Ct)).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.PostAsync($"/api/daily/sessions/{_session}/abandon", null, Ct)).StatusCode);
     }
 
@@ -449,12 +349,6 @@ public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
     {
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return (await response.Content.ReadFromJsonAsync<SubmitAnswerResponse>(Ct))!;
-    }
-
-    private static async Task<IReadOnlyList<HintFactResponse>> ReadHintAsync(HttpResponseMessage response)
-    {
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        return (await response.Content.ReadFromJsonAsync<HintResponse>(Ct))!.Facts;
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;

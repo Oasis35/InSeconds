@@ -61,7 +61,6 @@
       "abandoned": "Tu as abandonné le défi d'aujourd'hui.",
       "already_answered": "Tu as déjà répondu à ce morceau.",
       "already_played": "Tu as déjà joué le défi d'aujourd'hui.",
-      "hint_locked": "Cet indice n'est pas encore débloqué.",
       "invalid_month": "Mois invalide : le format attendu est aaaa-mm.",
       "listened_duration_below_verified_minimum": "Le palier annoncé est plus court que ce que tu as écouté.",
       "no_challenge": "Il n'y a pas de défi aujourd'hui.",
@@ -214,19 +213,6 @@
         "5": "Nouvel essai.",
         "6": "Deuxième essai.",
         "7": "Réponse fausse. Dernier essai."
-      }
-    },
-    "hint": {
-      "tooltip": "Indice : coûte des points",
-      "button": "Indice {{ level }}",
-      "ask": {
-        "year": "Indice : l'année",
-        "artist": "Indice : l'artiste"
-      },
-      "kind": {
-        "year": "Année",
-        "artist": "Artiste",
-        "other": "Indice"
       }
     },
     "reveal": {
@@ -780,8 +766,7 @@
       "expired": "Expirées",
       "answersTitle": "Réponses",
       "artistFound": "Artiste trouvé",
-      "titleFound": "Titre trouvé",
-      "withHint": "Avec indice"
+      "titleFound": "Titre trouvé"
     },
     "sources": {
       "instagram": "Instagram",
@@ -1110,9 +1095,7 @@
         "bar": "{{ score }} points sur {{ base }} possibles",
         "missedTitle": "Titre raté",
         "missedArtist": "Artiste raté",
-        "half": "÷ 2",
-        "hint": "Indice",
-        "hintPenalty": "− {{ percent }} %"
+        "half": "÷ 2"
       },
       "nextTrack": "Piste suivante →",
       "seeResult": "Voir le résultat",

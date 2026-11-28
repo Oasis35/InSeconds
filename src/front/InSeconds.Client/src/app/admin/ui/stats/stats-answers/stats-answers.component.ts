@@ -3,7 +3,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { SecondsPipe } from '../../../../ui/format/seconds.pipe';
 import { StatsAnswers, percentOf } from '../../../domain/stats';
 
-/** Les réponses de la période : part d'artistes et de titres trouvés, part avec indice, et combien de réponses à chaque palier d'écoute. */
+/** Les réponses de la période : part d'artistes et de titres trouvés, et combien de réponses à chaque palier d'écoute. */
 @Component({
   selector: 'app-stats-answers',
   imports: [TranslatePipe, SecondsPipe],
@@ -44,7 +44,6 @@ export class StatsAnswersComponent {
     return [
       { labelKey: 'admin.stats.artistFound', percent: percentOf(a.artistFound, a.total) ?? 0, color: 'var(--color-success)' },
       { labelKey: 'admin.stats.titleFound', percent: percentOf(a.titleFound, a.total) ?? 0, color: 'var(--color-accent-2)' },
-      { labelKey: 'admin.stats.withHint', percent: percentOf(a.withHint, a.total) ?? 0, color: 'var(--color-warn)' },
     ];
   });
 }

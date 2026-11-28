@@ -21,6 +21,7 @@ import { ReloadMoment, VersionService } from '../../../core/version/version.serv
 import { AdminShellPage } from './admin-shell.page';
 import { ADMIN_ROUTES } from '../admin.routes';
 import { provideAdminApi } from '../../data-access/admin-api.providers';
+import { flushMicrotasks } from '../../../core/testing/settle';
 
 @Component({ template: '<p id="child">contenu de l\'onglet</p>' })
 class ChildComponent {}
@@ -150,7 +151,9 @@ describe('AdminShellPage', () => {
 
   it("ne dit rien au bouton « Admin » quand l'état de l'API n'a pas pu être lu : pas de faux vert", async () => {
     await open(admin, '/admin/catalogue', { systemOverrides: { getInfo: vi.fn(() => Promise.reject(new Error('500'))) } });
-    await new Promise(resolve => setTimeout(resolve, 50));
+    // La lecture a eu lieu et son rejet a été traité : ce qui reste en route se termine dans les microtâches.
+    await vi.waitFor(() => expect(system.getInfo).toHaveBeenCalled());
+    await flushMicrotasks();
 
     expect(system.getInfo).toHaveBeenCalled();
     expect(TestBed.inject(ShellChromeStore).adminAlerts()).toBeNull();

@@ -6,17 +6,8 @@ export function type(input: HTMLInputElement, value: string): void {
   input.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-/**
- * Laisse passer les promesses en attente (appels API simulés) puis rafraîchit l'écran. Un tour de
- * boucle d'événements entre les deux : `whenStable` n'attend pas les micro-tâches des stores.
- */
-export async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
-  await fixture.whenStable();
-  await new Promise<void>(resolve => setTimeout(resolve, 0));
-  fixture.detectChanges();
-  await fixture.whenStable();
-  fixture.detectChanges();
-}
+/** Voir `core/testing/settle` : le même helper sert aux specs de tous les domaines. */
+export { settle } from '../../../core/testing/settle';
 
 export function query<T extends Element = HTMLElement>(fixture: ComponentFixture<unknown>, selector: string): T | null {
   return (fixture.nativeElement as HTMLElement).querySelector<T>(selector);

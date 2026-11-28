@@ -15,6 +15,7 @@ Specs dans `e2e/specs/`, page objects dans `e2e/pages/`, fixtures dans `e2e/fixt
 - **Piège 10 : ports** - hôte de test et front sur 5175 / 5176 en CI (`--configuration e2e-ci`, `proxy.e2e.ci.conf.json`), 5177 / 5178 en local (`--configuration e2e`, `proxy.e2e.conf.json`). L'extrait du faux Deezer pointe sur le front de test (`E2E_FRONT_PORT`, 5178 posé en local par la configuration). Un port de front oublié dans `Auth:TrustedOrigins` de l'hôte de test casse silencieusement le lien magique (piège 22).
 - `ng serve --configuration e2e` ne relaie pas `/health` : les E2E coupent la sonde (`__disableHealthPolling`) ; pour lancer l'app à la main, utiliser `npm start`.
 - `serviceWorkers: 'block'` et `reducedMotion: 'reduce'` dans `playwright.config.ts` ; la fixture `test.ts` pose `__disableAnimations`. En mouvement réduit, l'enchaînement automatique de la Survie est coupé : chaque morceau et chaque manche se lancent par leur bouton.
+- **Projet `webkit`** (moteur WebKit, profil iPhone 13) : joué en CI, et en local avec `E2E_WEBKIT=1` après `npx playwright install webkit`. Il ne joue que les tests marqués `{ tag: '@webkit' }` : le son sur un clic (`sound-on-click`), l'échec de lecture (`audio-error`), la partie complète (`happy-path`) et le menu de partage du téléphone (`share-button`). Un test de plus y passe en prenant l'étiquette ; un test qui lit le presse-papier de bureau ou suppose un pointeur fin n'y va pas. Chromium joue toujours tout.
 
 ## Données
 
@@ -37,3 +38,5 @@ Specs dans `e2e/specs/`, page objects dans `e2e/pages/`, fixtures dans `e2e/fixt
 ## Répartition en CI
 
 Six jobs `e2e` dans l'image `mcr.microsoft.com/playwright` ; `scripts/e2e-shard.mjs <n> 6` donne les specs du job n selon leur durée mesurée (`scripts/e2e-weights.json`, une spec nouvelle compte 10 s). Recalcul quand l'écart entre les jobs se creuse ou après l'ajout de specs : `gh run download <run> -p 'playwright-report-*' -D <dossier>` puis `node scripts/e2e-weights.mjs <dossier>`.
+
+**Tests instables** : `retries: 1` en CI garde le job vert quand un test ne réussit qu'à sa seconde tentative ; l'étape « Tests E2E instables » (`scripts/e2e-flaky.mjs`, test dans `scripts/e2e-flaky.test.mjs`, lancé par `lint:arch`) les signale en avertissement et dans le résumé du job. Elle n'échoue pas par défaut ; `--max <n>` la ferait échouer au-delà de n tests instables (non utilisé aujourd'hui). Une spec de plus de 60 s se coupe par sujet, comme les specs `admin-*` (une par onglet).

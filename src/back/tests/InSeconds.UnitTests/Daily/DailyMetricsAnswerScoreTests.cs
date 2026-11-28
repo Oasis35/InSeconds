@@ -38,7 +38,7 @@ public sealed class DailyMetricsAnswerScoreTests
             recorded.Add((value, tags.ToArray().Single(t => t.Key == "listened_seconds").Value as string)));
         listener.Start();
 
-        metrics.AnswerSubmitted(new RoundOutcome(true, false, 1m, 0), 425);
+        metrics.AnswerSubmitted(new RoundOutcome(true, false, 1m), 425);
 
         Assert.Equal([(425, "1")], recorded);
     }

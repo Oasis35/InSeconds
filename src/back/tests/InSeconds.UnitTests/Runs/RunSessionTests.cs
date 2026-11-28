@@ -9,9 +9,9 @@ public class RunSessionTests
 {
     private static readonly DateTimeOffset Now = new(2026, 10, 23, 8, 0, 0, TimeSpan.Zero);
     private static readonly IRunScoringPolicy Scoring = new ArtistTitleScoring();
-    private static readonly RoundOutcome Found = new(true, true, 10m, 0);
-    private static readonly RoundOutcome Half = new(true, false, 10m, 0);
-    private static readonly RoundOutcome Missed = new(false, false, 10m, 0);
+    private static readonly RoundOutcome Found = new(true, true, 10m);
+    private static readonly RoundOutcome Half = new(true, false, 10m);
+    private static readonly RoundOutcome Missed = new(false, false, 10m);
 
     /// <summary>Un défi aux règles par défaut, dont <paramref name="rounds"/> manches sont tirées (morceaux 1, 2, 3…), d'identifiant 0 comme la partie.</summary>
     private static RunChallenge Challenge(int rounds = 4, RunRules? rules = null)

@@ -96,8 +96,7 @@ public class PlayerTelemetryTests(PostgresFixture postgres) : IAsyncLifetime
         bool Matches(Activity a) =>
             a.GetTagItem("url.path") as string == path && a.GetTagItem("inseconds.player_id") as string == expectedPlayerId;
 
-        for (var i = 0; i < 40 && !activities.Any(Matches); i++)
-            await Task.Delay(50, Ct);
+        await Waiting.UntilAsync(() => activities.Any(Matches), $"Le span de {path} n'a pas été fermé.", Ct);
         return Assert.Single(activities, Matches);
     }
 

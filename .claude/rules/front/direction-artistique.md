@@ -29,7 +29,7 @@ Tokens dans `:root` de `src/front/InSeconds.Client/src/styles.scss`. Jamais de h
   - **Exception, seconde tentative du défi du jour** (décision du 27/11/2026) : le lecteur prend l'ambre du joueur (cadre, forme d'onde `--wave-listened-retry` / `--wave-trail-retry` / `--tube-wave-played-retry`, repères de palier, chiffre des points en jeu) ; le rond « ▶ X s » reste cyan.
 - **Violet** (`--rgb-violet`, `--avatar-1` à `--avatar-4`) : les autres joueurs (histogrammes, égaliseur, médiane, classement).
 - **Vert / rouge** (`--color-success`, `--color-fail`) : juste ou faux, et l'état technique de l'admin (rien à signaler, ou des alertes : le point du bouton « Admin », comme dans le panneau technique).
-- Une action sans sens propre (indices, « Connexion » de l'en-tête, « Créer un compte », « Abandonner », toasts de série) est en contour neutre (`--border-neutral`). **« Passer »** est un lien souligné discret sous « Valider » (`--text-light`, `data-testid="round-skip"`), le même dans tous les modes, porté par `TrackRoundComponent`.
+- Une action sans sens propre (« Connexion » de l'en-tête, « Créer un compte », « Abandonner », toasts de série) est en contour neutre (`--border-neutral`). **« Passer »** est un lien souligné discret sous « Valider » (`--text-light`, `data-testid="round-skip"`), le même dans tous les modes, porté par `TrackRoundComponent`.
 - Disques de niveau : `--disc-*`, seulement pour un disque.
 
 ## Boutons et formes

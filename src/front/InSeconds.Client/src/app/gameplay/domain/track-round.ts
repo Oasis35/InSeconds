@@ -2,7 +2,7 @@
  * La manche d'un morceau, en TypeScript pur : écouter, saisir, envoyer, voir la
  * réponse. Chaque transition prend la manche et en rend une autre (la même si elle n'a pas lieu
  * d'être). Rien ici ne connaît le mode de jeu, le son ni le réseau : le store l'enveloppe, le mode
- * lui fournit sa politique d'écoute et d'indices et envoie la réponse.
+ * lui fournit sa politique d'écoute et envoie la réponse.
  *
  * Phases : `ready` (rien n'a démarré) → `loading` → `playing` → `listened` (le palier est joué),
  * puis `submitting` → `revealed`. À côté : `audio-error` (la lecture a échoué), `no-preview` (le
@@ -30,30 +30,14 @@ export interface ListenPolicy {
   /** Le joueur peut-il prolonger l'écoute au palier suivant ? */
   readonly extendable: boolean;
   /**
-   * Les points en jeu à un palier, avec un niveau d'indice déjà pris, si le mode a un barème (Daily) : le lecteur les montre à gauche
+   * Les points en jeu à un palier, si le mode a un barème (Daily) : le lecteur les montre à gauche
    * de son bouton. Le calcul est celui du mode ; sans lui, le lecteur n'en montre pas (Runs).
    */
   readonly stake?: StakePolicy;
 }
 
-/** Les points en jeu au palier `seconds`, le niveau d'indice `hintLevel` déjà pris, à la seconde tentative (`isRetry`) ou non. */
-export type StakePolicy = (seconds: number, hintLevel: number, isRetry: boolean) => number;
-
-/** Quand chaque niveau d'indice se débloque : `unlockSeconds[0]` pour le niveau 1, etc. Vient des réglages du back. */
-export interface HintPolicy {
-  readonly unlockSeconds: readonly number[];
-  /**
-   * Ce que révèle chaque niveau, quand le back le dit (`kinds[0]` pour le niveau 1, ex. `year`,
-   * `artistMasked`) : le bouton s'appelle alors « Indice année », « Indice artiste ». Sans lui, « Indice 1 ».
-   */
-  readonly kinds?: readonly (string | null)[];
-}
-
-/** Un indice révélé par le back : l'année, l'artiste masqué… Le front l'affiche, il n'en invente aucun. */
-export interface HintFact {
-  readonly kind: string;
-  readonly value: string | null;
-}
+/** Les points en jeu au palier `seconds`, à la seconde tentative (`isRetry`) ou non. */
+export type StakePolicy = (seconds: number, isRetry: boolean) => number;
 
 export interface RoundConfig {
   readonly trackId: number;
@@ -67,15 +51,11 @@ export interface RoundConfig {
   /** La forme de l'extrait calculée par l'API (blob en base64) ; absente : le navigateur la calcule, une fois le son lancé. */
   readonly waveform?: string | null;
   readonly listen: ListenPolicy;
-  readonly hints: HintPolicy;
   /**
    * Le plus long palier déjà écouté sur ce morceau (reprise d'une partie, piège 35) : les paliers
    * plus courts ne sont plus proposés, le serveur refuserait la réponse.
    */
   readonly listenedFloor?: number | null;
-  /** Le niveau d'indice déjà révélé (reprise). */
-  readonly hintLevel?: number;
-  readonly hintFacts?: readonly HintFact[];
   /** Les tentatives ratées déjà enregistrées sur ce morceau (reprise) : 1 = la seconde tentative est en cours. */
   readonly failedAttempts?: number;
   /**
@@ -117,17 +97,12 @@ export interface TrackRound {
   readonly extendable: boolean;
   /** Les points en jeu selon le mode (`null` : le mode n'en a pas). */
   readonly stake: StakePolicy | null;
-  readonly hintUnlockSeconds: readonly number[];
-  /** Ce que révèle chaque niveau (`null` : inconnu). */
-  readonly hintKinds: readonly (string | null)[];
   readonly phase: RoundPhase;
   /** Le palier en cours (0 tant que le joueur n'a pas commencé à écouter). */
   readonly chosenSeconds: number;
   readonly extended: boolean;
   /** L'écoute automatique n'a lieu qu'une fois par morceau (piège 44). */
   readonly autoStarted: boolean;
-  readonly hintLevel: number;
-  readonly hints: readonly HintFact[];
   /** Les tentatives ratées de ce morceau : 1 = le joueur est à sa seconde tentative (il n'y en a pas de troisième). */
   readonly failedAttempts: number;
   /** Combien de fois la seconde tentative a été offerte sur ce morceau, tant que la page vit : un compteur qui fait trembler le champ (jamais restauré à la reprise). */
@@ -152,14 +127,10 @@ export function createRound(config: RoundConfig): TrackRound {
     steps,
     extendable: config.listen.extendable,
     stake: config.listen.stake ?? null,
-    hintUnlockSeconds: config.hints.unlockSeconds,
-    hintKinds: config.hints.kinds ?? [],
     phase: hasPreview ? 'ready' : 'no-preview',
     chosenSeconds: 0,
     extended: false,
     autoStarted: false,
-    hintLevel: config.hintLevel ?? 0,
-    hints: config.hintFacts ?? [],
     failedAttempts: config.failedAttempts ?? 0,
     retryOffers: 0,
     confirm: null,
@@ -240,33 +211,9 @@ export function onAudio(round: TrackRound, audio: AudioStatus): TrackRound {
   return phase === null || phase === round.phase ? round : { ...round, phase };
 }
 
-/** Les points en jeu au palier en cours (le premier tant que rien n'est choisi), indice pris compris ; `null` si le mode n'en a pas. */
+/** Les points en jeu au palier en cours (le premier tant que rien n'est choisi) ; `null` si le mode n'en a pas. */
 export function stakeOf(round: TrackRound): number | null {
-  return round.stake ? round.stake(round.chosenSeconds || round.steps[0], round.hintLevel, round.failedAttempts > 0) : null;
-}
-
-// --- indices ---
-
-/** Le plus haut niveau d'indice débloqué par le palier choisi (0 s'il n'y en a aucun). */
-export function unlockedHintLevel(round: TrackRound): number {
-  return round.hintUnlockSeconds.filter(seconds => round.chosenSeconds >= seconds).length;
-}
-
-/**
- * Les niveaux qu'on peut demander : tous ceux débloqués au-dessus du niveau déjà révélé
- * (à 10 s, « Indice année » et « Indice artiste » ensemble ; le niveau 2 révèle aussi l'année).
- */
-export function availableHintLevels(round: TrackRound): number[] {
-  if (!isAnswering(round)) return [];
-  const levels: number[] = [];
-  for (let level = round.hintLevel + 1; level <= unlockedHintLevel(round); level++) levels.push(level);
-  return levels;
-}
-
-/** Le back a révélé jusqu'à ce niveau, avec ces indices (cumulés). Le niveau ne redescend jamais. */
-export function applyHints(round: TrackRound, level: number, facts: readonly HintFact[]): TrackRound {
-  if (level <= round.hintLevel) return round;
-  return { ...round, hintLevel: level, hints: facts };
+  return round.stake ? round.stake(round.chosenSeconds || round.steps[0], round.failedAttempts > 0) : null;
 }
 
 // --- réponse ---

@@ -8,7 +8,7 @@ import { ScoreBreakdown } from '../../domain/score-breakdown';
 /**
  * Ce que vaut le morceau, d'un coup d'œil, sous le score de la révélation : une barre (ce qui est gagné sur ce que le palier pouvait donner,
  * le reste en rouge), sa légende (« sur 850 pts possibles », ou « Maximum possible à 1 s » quand tout est gagné) et, toujours visibles quand
- * quelque chose a réduit les points, les pastilles de la cause (« ✕ Titre raté · ÷ 2 », « Indice · − 30 % »). Tout est aligné à gauche, sous
+ * quelque chose a réduit les points, les pastilles de la cause (« ✕ Titre raté · ÷ 2 »). Tout est aligné à gauche, sous
  * le score ; les lignes se posent l'une après l'autre, puis le score du morceau descend jusqu'à son résultat.
  */
 @Component({
@@ -40,11 +40,6 @@ import { ScoreBreakdown } from '../../domain/score-breakdown';
                 · {{ 'daily.round.breakdown.half' | translate }}
               </li>
             }
-            @if (b.hintPenaltyPercent > 0) {
-              <li class="rounded-lg border px-2.5 py-1 text-[13px]" style="color:var(--text-muted);border-color:var(--border-neutral)">
-                {{ 'daily.round.breakdown.hint' | translate }} · {{ 'daily.round.breakdown.hintPenalty' | translate: { percent: b.hintPenaltyPercent } }}
-              </li>
-            }
           </ul>
         }
       </div>
@@ -56,10 +51,10 @@ export class ScoreBreakdownComponent {
 
   readonly breakdown = input.required<ScoreBreakdown | null>();
 
-  /** Vrai quand quelque chose a réduit les points (un seul des deux trouvé, ou un indice pris). */
+  /** Vrai quand quelque chose a réduit les points (un seul des deux trouvé). */
   protected readonly reduced = computed(() => {
     const b = this.breakdown();
-    return b !== null && (b.missed !== null || b.hintPenaltyPercent > 0);
+    return b !== null && b.missed !== null;
   });
   /** La part gagnée du barème, en pourcentage de la barre. */
   protected readonly percent = computed(() => {

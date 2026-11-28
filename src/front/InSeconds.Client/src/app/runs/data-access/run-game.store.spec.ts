@@ -163,12 +163,11 @@ describe('RunGameStore', () => {
       expect(store.screen()).toBe(screen);
     });
 
-    it('pas d\'indice, pas de « écouter plus » : un seul palier', async () => {
+    it('pas de « écouter plus » : un seul palier', async () => {
       await startRun();
 
       expect(round.maxStep()).toBe(10);
       expect(round.nextStep()).toBeNull();
-      expect(round.availableHintLevels()).toEqual([]);
     });
   });
 

@@ -7,7 +7,7 @@ test.describe('Happy path - partie complète', () => {
     await api.reset();
   });
 
-  test('joue 5 morceaux et voit le score final', async ({ page, api }) => {
+  test('joue 5 morceaux et voit le score final', { tag: '@webkit' }, async ({ page, api }) => {
     await page.clock.install({ time: Date.now() });
 
     const game = new GamePage(page);

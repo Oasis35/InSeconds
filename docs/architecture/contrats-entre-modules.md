@@ -45,7 +45,7 @@ L'implémentation de l'interface reste dans la partie privée du module (souvent
 | `ITrackWaveforms` | Catalogue | `EfTrackWaveforms`, enveloppé par `LoggedTrackWaveforms` | Daily, Runs (forme d'onde envoyée avec le morceau) |
 | `ITrackUsage` | Catalogue | `EfTrackUsage` **dans Daily**, `RunsTrackUsage` **dans Runs**, chacun **ajouté** au conteneur | Catalogue, par `ITrackPoolUsage` |
 | `ITrackPoolUsage` | Catalogue | `TrackPoolUsage` (réunit l'`ITrackUsage` de chaque mode) | Catalogue (pool de l'admin, suppression et désactivation d'un morceau déjà utilisé, actualisation depuis Deezer avec noms gardés) |
-| `TrackRound`, `RoundOutcome`, ports d'indice et de correction | Gameplay | Gameplay | Daily, Runs |
+| `TrackRound`, `RoundOutcome`, port de correction | Gameplay | Gameplay | Daily, Runs |
 | `IStreakGrants` | Daily | `DailyStreakGrants` | Players, à la création d'un compte (`AccountSignIn`) |
 | `IMemberPerformanceSource` | Social | `RunsMemberPerformance` **dans Runs** | Social (le classement d'un groupe et le classement général) |
 | `IMemberScoreSource` | Social | `DailyMemberScores` **dans Daily** | Social (le classement d'un groupe par score, jour, semaine et jour passé, un par mode) |

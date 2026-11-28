@@ -52,9 +52,6 @@ public static class RateLimitPolicies
     /// <summary>Réponses de la partie du jour : par joueur, très large (cinq par partie, plus les nouveaux essais après une coupure).</summary>
     public const string DailyAnswer = "daily-answer";
 
-    /// <summary>Indices de la partie du jour : par joueur, très large (deux niveaux par morceau).</summary>
-    public const string DailyHint = "daily-hint";
-
     /// <summary>Lecture du lien d'invitation d'un groupe (public, sans authentification) : par IP, contre l'énumération des codes.</summary>
     public const string SocialInvitation = "social-invitation";
 }

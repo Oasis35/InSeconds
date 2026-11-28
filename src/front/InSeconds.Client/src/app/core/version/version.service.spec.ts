@@ -8,6 +8,7 @@ import { ErrorReportingService } from '../errors/error-reporting.service';
 import {
   isStaleChunkError, PAGE_RELOAD, ReloadMoment, SERVICE_WORKER_CONTAINER, UPDATE_CHECK_INTERVAL_MS, VersionService, WORKER_SWAP_WAIT_MS,
 } from './version.service';
+import { flushMicrotasks } from '../testing/settle';
 
 describe('VersionService', () => {
   const READY: VersionEvent = { type: 'VERSION_READY', currentVersion: { hash: 'a' }, latestVersion: { hash: 'b' } };
@@ -74,7 +75,7 @@ describe('VersionService', () => {
 
   /** Laisse l'activation de la version (une promesse) se terminer avant le rechargement. */
   async function settle(): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve));
+    await flushMicrotasks();
   }
 
   function goToBackground(): void {

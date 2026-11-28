@@ -61,7 +61,6 @@
       "abandoned": "You abandoned today's challenge.",
       "already_answered": "You've already answered this track.",
       "already_played": "You've already played today's challenge.",
-      "hint_locked": "This hint isn't unlocked yet.",
       "invalid_month": "Invalid month: the expected format is yyyy-mm.",
       "listened_duration_below_verified_minimum": "The announced step is shorter than what you listened to.",
       "no_challenge": "There's no challenge today.",
@@ -214,19 +213,6 @@
         "5": "New try.",
         "6": "Second try.",
         "7": "Incorrect. Last try."
-      }
-    },
-    "hint": {
-      "tooltip": "Hint: costs points",
-      "button": "Hint {{ level }}",
-      "ask": {
-        "year": "Hint: year",
-        "artist": "Hint: artist"
-      },
-      "kind": {
-        "year": "Year",
-        "artist": "Artist",
-        "other": "Hint"
       }
     },
     "reveal": {
@@ -780,8 +766,7 @@
       "expired": "Expired",
       "answersTitle": "Answers",
       "artistFound": "Artist found",
-      "titleFound": "Title found",
-      "withHint": "With hint"
+      "titleFound": "Title found"
     },
     "sources": {
       "instagram": "Instagram",
@@ -1110,9 +1095,7 @@
         "bar": "{{ score }} points out of {{ base }} possible",
         "missedTitle": "Title missed",
         "missedArtist": "Artist missed",
-        "half": "÷ 2",
-        "hint": "Hint",
-        "hintPenalty": "− {{ percent }}%"
+        "half": "÷ 2"
       },
       "nextTrack": "Next track →",
       "seeResult": "See result",

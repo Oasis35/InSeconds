@@ -26,7 +26,7 @@ public static class DailyModule
         services.AddScoped<IDailyHistoryQueries, EfDailyHistoryQueries>();
         services.AddScoped<IDailyProfileQueries, EfDailyProfileQueries>();
         services.AddSingleton<ITrackSelector, CooldownSeededSelector>();
-        // Les règles du jeu lues à chaud dans les réglages (paliers, barème, indices, gels), et le contrôle de leur cohérence au démarrage.
+        // Les règles du jeu lues à chaud dans les réglages (paliers, barème, gels), et le contrôle de leur cohérence au démarrage.
         services.AddSingleton<DailyRules>();
         services.AddHostedService<DailyOptionsStartupCheck>();
         // Compteurs des parties et des réponses, exportés en OpenTelemetry (tableau Grafana « Activité »).

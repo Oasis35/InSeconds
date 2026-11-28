@@ -80,8 +80,8 @@ internal sealed class GameApi : IAsyncDisposable
             var x = answers[i];
             await Api.ExecuteAsync(
                 $"""
-                INSERT INTO daily.answers (session_id, position, listened_seconds, was_extended, hint_level, artist_correct, title_correct, score)
-                VALUES ({id}, {i + 1}, {x.Seconds.ToString(System.Globalization.CultureInfo.InvariantCulture)}, {x.Extended}, 0, {x.Artist}, {x.Title}, {x.Score})
+                INSERT INTO daily.answers (session_id, position, listened_seconds, was_extended, artist_correct, title_correct, score)
+                VALUES ({id}, {i + 1}, {x.Seconds.ToString(System.Globalization.CultureInfo.InvariantCulture)}, {x.Extended}, {x.Artist}, {x.Title}, {x.Score})
                 """);
         }
 
@@ -131,9 +131,6 @@ internal sealed class Gamer(GameApi game, Guid id, HttpClient client)
 
     public Task<HttpResponseMessage> ListenAsync(int sessionId, int position, decimal seconds) =>
         Client.PatchAsJsonAsync($"/api/daily/sessions/{sessionId}/listening", new UpdateListening(position, seconds), Ct);
-
-    public Task<HttpResponseMessage> HintAsync(int sessionId, int position, int level) =>
-        Client.PostAsJsonAsync($"/api/daily/sessions/{sessionId}/hints", new RequestHint(position, level), Ct);
 
     public Task<HttpResponseMessage> AnswerAsync(
         int sessionId, int position, decimal seconds, string? artist, string? title, bool wasExtended = false) =>

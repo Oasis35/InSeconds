@@ -21,7 +21,7 @@ export function stats(overrides: Partial<Stats> = {}): Stats {
       { key: 'desktop', newPlayers: 5, day1Eligible: 4, day1Returned: 2, day7Eligible: 2, day7Returned: 1 },
     ],
     answers: {
-      total: 100, artistFound: 60, titleFound: 50, withHint: 20,
+      total: 100, artistFound: 60, titleFound: 50,
       byListened: [{ seconds: 0.5, count: 10 }, { seconds: 1, count: 30 }, { seconds: 2, count: 25 }],
     },
     ...overrides,

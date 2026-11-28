@@ -191,8 +191,7 @@ public class ClientErrorTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
         // L'activité de la requête s'arrête à la fin du pipeline, parfois juste après la réponse.
-        for (var i = 0; i < 40 && !activities.Any(IsClientErrorRequest); i++)
-            await Task.Delay(50, TestContext.Current.CancellationToken);
+        await Waiting.UntilAsync(() => activities.Any(IsClientErrorRequest), "Le span de /api/client-errors n'a pas été fermé.", TestContext.Current.CancellationToken);
 
         Assert.Contains(activities, IsClientErrorRequest);
         foreach (var tag in activities.SelectMany(a => a.TagObjects))

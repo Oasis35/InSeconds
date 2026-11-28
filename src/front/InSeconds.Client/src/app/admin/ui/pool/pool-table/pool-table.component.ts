@@ -84,11 +84,11 @@ const MODE_COLUMNS: readonly Column[] = [
                   }
                   <td class="px-3 py-2.5" [class.pl-4]="!isPool()">
                     <div class="flex items-center gap-2">
-                      <button type="button" (click)="listen.emit(t)" class="text-xs px-2 py-1 rounded transition-colors"
+                      <button type="button" data-testid="listen-track" (click)="listen.emit(t)" class="text-xs px-2 py-1 rounded transition-colors"
                         style="color:var(--text-indigo);border:1px solid rgb(var(--rgb-violet) / 0.3)"
                         [title]="'admin.pool.listenTitle' | translate">▶</button>
                       @if (isPool()) {
-                        <button type="button" (click)="edit.emit(t)" class="text-xs px-2 py-1 rounded transition-colors"
+                        <button type="button" data-testid="edit-track" (click)="edit.emit(t)" class="text-xs px-2 py-1 rounded transition-colors"
                           style="color:var(--text-muted);border:1px solid var(--border-strong)"
                           [title]="'admin.pool.editTitle' | translate">✎</button>
                         @if (t.preview === 'missing') {
@@ -117,12 +117,12 @@ const MODE_COLUMNS: readonly Column[] = [
                           </span>
                         } @else {
                           <span [title]="'admin.pool.deleteTitle' | translate">
-                            <button type="button" (click)="delete.emit(t)" class="text-xs px-2 py-1 rounded transition-colors"
+                            <button type="button" data-testid="delete-track" (click)="delete.emit(t)" class="text-xs px-2 py-1 rounded transition-colors"
                               style="color:var(--text-muted);border:1px solid var(--border-strong)">🗑</button>
                           </span>
                         }
                       } @else {
-                        <button type="button" (click)="openInPool.emit(t)" class="text-xs px-2 py-1 rounded transition-colors"
+                        <button type="button" data-testid="open-in-pool" (click)="openInPool.emit(t)" class="text-xs px-2 py-1 rounded transition-colors"
                           style="color:var(--text-muted);border:1px solid var(--border-strong)"
                           [title]="'admin.pool.openInPoolTitle' | translate" [attr.aria-label]="'admin.pool.openInPoolTitle' | translate">↗</button>
                       }

@@ -8,6 +8,7 @@ import {
 import { problem } from '../../data-access/testing/fake-catalogue-api';
 import { RegisteredPlayer } from '../../domain/registered-player';
 import { PlayersPage } from './players.page';
+import { flushMicrotasks } from '../../../core/testing/settle';
 
 describe('PlayersPage', () => {
   const alice = registeredPlayer({ id: 'a', pseudo: 'Alice', isAdmin: true });
@@ -24,7 +25,7 @@ describe('PlayersPage', () => {
     const element = fixture.nativeElement as HTMLElement;
     const settle = async () => {
       await fixture.whenStable();
-      await new Promise<void>(resolve => setTimeout(resolve, 0));
+      await flushMicrotasks();
       fixture.detectChanges();
     };
     fixture.detectChanges();

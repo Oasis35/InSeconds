@@ -79,7 +79,7 @@
   --border-field:   rgb(150 190 255 / 0.6);
   /* La zone sous un objectif (écran « Difficulté ? » de Setlist) : assombrie. */
   --shade-below:    rgb(0 0 0 / 0.28);
-  /* Contour des boutons secondaires sans couleur de sens (Passer, indices) */
+  /* Contour des boutons secondaires sans couleur de sens (Passer) */
   --border-neutral: rgb(var(--rgb-text) / 0.28);
   --overlay-dark:   rgba(0,0,0,0.7);
 
@@ -348,7 +348,7 @@ input::placeholder,
   outline-offset: 2px;
 }
 
-/* Tailwind v4 laisse le curseur par défaut sur les boutons : tout ce qui se touche montre la main (cartes, Joker, indices…). Hors couche :
+/* Tailwind v4 laisse le curseur par défaut sur les boutons : tout ce qui se touche montre la main (cartes, Joker…). Hors couche :
    passe devant le reset de Tailwind. */
 button:not(:disabled),
 [role='button']:not([aria-disabled='true']),

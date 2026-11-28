@@ -66,7 +66,7 @@ public class PlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
             second =>
             {
                 Assert.Equal((2, "Artiste 2", "Titre 2"), (second.Position, second.Artist, second.Title));
-                Assert.Equal((1m, true, false, 850, 1), (second.ListenedSeconds, second.ArtistFound, second.TitleFound, second.Score, second.HintLevel));
+                Assert.Equal((1m, true, false, 850), (second.ListenedSeconds, second.ArtistFound, second.TitleFound, second.Score));
             });
     }
 
@@ -216,16 +216,16 @@ internal static class PlayerDataSeed
             INSERT INTO daily.challenge_tracks (challenge_id, position, track_id) VALUES ({ChallengeId}, 1, 1), ({ChallengeId}, 2, 2);
             """);
 
-    /// <summary>Partie terminée : 0,5 s tout juste (1000), puis 1 s, artiste seulement, un indice (850).</summary>
+    /// <summary>Partie terminée : 0,5 s tout juste (1000), puis 1 s, artiste seulement (850).</summary>
     public static async Task AddGameAsync(ApiFactory api, Guid playerId)
     {
         var id = await api.ScalarAsync<int>("SELECT 900000 + count(*)::int FROM daily.sessions");
         await api.ExecuteAsync($"""
             INSERT INTO daily.sessions (id, player_id, challenge_id, status, started_at, ended_at, total_score, total_listened_seconds)
             VALUES ({id}, '{playerId}', {ChallengeId}, 1, '2026-10-01T08:00:00Z', '2026-10-01T08:05:00Z', 1850, 1.5);
-            INSERT INTO daily.answers (session_id, position, listened_seconds, was_extended, hint_level, artist_correct, title_correct, score) VALUES
-              ({id}, 1, 0.5, false, 0, true, true, 1000),
-              ({id}, 2, 1, true, 1, true, false, 850);
+            INSERT INTO daily.answers (session_id, position, listened_seconds, was_extended, artist_correct, title_correct, score) VALUES
+              ({id}, 1, 0.5, false, true, true, 1000),
+              ({id}, 2, 1, true, true, false, 850);
             """);
     }
 }
