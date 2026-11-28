@@ -61,7 +61,15 @@ function main(args) {
     console.log(`Pas de rapport (${file}) : rien à signaler.`);
     return 0;
   }
-  const flaky = flakyTests(JSON.parse(readFileSync(file, 'utf8')));
+  let report;
+  try {
+    report = JSON.parse(readFileSync(file, 'utf8'));
+  } catch {
+    // Un rapport tronqué (job annulé pendant l'écriture) : le vrai échec est ailleurs, cette étape n'en ajoute pas un.
+    console.log(`Rapport illisible (${file}) : rien à signaler.`);
+    return 0;
+  }
+  const flaky = flakyTests(report);
   if (flaky.length === 0) {
     console.log('Aucun test instable.');
     return 0;

@@ -63,6 +63,19 @@ test('un rapport absent n\'est pas une erreur, un appel sans fichier est refusé
   assert.equal(run('--max', 'x', 'absent.json').status, 64);
 });
 
+test("un rapport tronqué n'est pas une erreur de cette étape", () => {
+  const dir = mkdtempSync(join(tmpdir(), 'e2e-flaky-'));
+  try {
+    const file = join(dir, 'results.json');
+    writeFileSync(file, '{"suites": [{"specs": [');
+    const result = run(file);
+    assert.equal(result.status, 0);
+    assert.match(result.stdout, /Rapport illisible/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('les tests instables sont annoncés, et seul un seuil dépassé fait échouer', () => {
   const dir = mkdtempSync(join(tmpdir(), 'e2e-flaky-'));
   try {
