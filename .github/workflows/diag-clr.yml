@@ -8,10 +8,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04]
-        legacy: ['0', '1']
-        rep: [1, 2, 3]
-    runs-on: ${{ matrix.os }}
+        variant:
+          - base
+          - tc0
+          - pgo0
+          - r2r0
+          - quickjit0
+          - osr0
+          - serial
+          - direct
+          - gen0
+    runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v6
@@ -21,20 +28,27 @@ jobs:
       - name: Build unit tests
         working-directory: src/back
         run: dotnet build tests/InSeconds.UnitTests --configuration Release
-      - name: Environment
-        run: |
-          lscpu | grep -E "Model name|Flags" | cut -c1-400
-          dotnet --info | head -30
-          cat /etc/os-release | head -3
       - name: Loop
         working-directory: src/back
-        env:
-          DOTNET_LegacyExceptionHandling: ${{ matrix.legacy }}
         run: |
+          case "${{ matrix.variant }}" in
+            tc0) export DOTNET_TieredCompilation=0 ;;
+            pgo0) export DOTNET_TieredPGO=0 ;;
+            r2r0) export DOTNET_ReadyToRun=0 ;;
+            quickjit0) export DOTNET_TC_QuickJit=0 ;;
+            osr0) export DOTNET_TC_OnStackReplacement=0 ;;
+            gen0) export DOTNET_GCgen0size=4000000 ;;
+          esac
+          lscpu | grep "Model name"
           fail=0
           for i in $(seq 1 40); do
-            if ! dotnet test --project tests/InSeconds.UnitTests --configuration Release --no-build > /tmp/out.txt 2>&1; then
-              fail=$((fail+1)); echo "run $i failed"; grep -m3 -E "Fatal|CLR" /tmp/out.txt; lscpu | grep "Model name"
+            case "${{ matrix.variant }}" in
+              serial) cmd="dotnet test --project tests/InSeconds.UnitTests --configuration Release --no-build --maximum-parallel-threads 1" ;;
+              direct) cmd="tests/InSeconds.UnitTests/bin/Release/net10.0/InSeconds.UnitTests" ;;
+              *) cmd="dotnet test --project tests/InSeconds.UnitTests --configuration Release --no-build" ;;
+            esac
+            if ! $cmd > /tmp/out.txt 2>&1; then
+              fail=$((fail+1)); grep -m2 -E "Fatal|CLR|failed" /tmp/out.txt | cut -c1-160
             fi
           done
-          echo "ECHECS $fail / 40 (os=${{ matrix.os }} legacy=${{ matrix.legacy }})"
+          echo "ECHECS $fail / 40 (variant=${{ matrix.variant }})"
