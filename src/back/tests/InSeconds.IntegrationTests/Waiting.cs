@@ -39,6 +39,21 @@ public static class Waiting
         UntilAsync(() => Task.FromResult(condition()), done => done, failure, ct, timeout);
 
     /// <summary>
+    /// Attend que Wolverine ait traité tous les messages durables publiés jusque-là (plus aucun « Incoming » dans la boîte de
+    /// réception de la base du test). Remplace une pause « le temps que le message passe » avant d'affirmer qu'un message
+    /// n'a rien produit : il est traité, pas seulement en retard.
+    /// </summary>
+    public static async Task MessagesHandledAsync(ApiFactory api, CancellationToken ct)
+    {
+        await UntilAsync(
+            async () => await api.ScalarAsync<long>("SELECT count(*) FROM messaging.wolverine_incoming_envelopes WHERE status = 'Incoming'") == 0,
+            "Des messages Wolverine attendent encore d'être traités.", ct);
+        // Un message dont le handler a définitivement échoué quitte aussi « Incoming » : il ne compte pas comme traité.
+        if (await api.ScalarAsync<long>("SELECT count(*) FROM messaging.wolverine_dead_letters") > 0)
+            throw new InvalidOperationException("Un message Wolverine est en dead letter : son handler a échoué.");
+    }
+
+    /// <summary>
     /// Attend qu'au moins <paramref name="count"/> requêtes de la base du test soient bloquées sur un verrou (un verrou consultatif
     /// compris) : la preuve qu'une écriture concurrente attend bien celle qui tient le verrou.
     /// </summary>

@@ -203,20 +203,25 @@ public class JobLastRunsTests(JobLastRunsTests.AppFixture fixture) : IClassFixtu
     private async Task<string> WaitUntilRawAsync(string id, string state)
     {
         var client = Api.CreateClient(TestUser.Admin);
-        string body = "";
-        for (var waited = 0; waited < 30_000; waited += 200)
+        var last = "";
+        try
         {
-            var runs = await client.GetFromJsonAsync<JsonElement>(Route, Ct);
-            var run = runs.EnumerateArray().Single(r => r.GetProperty("id").GetString() == id);
-            body = run.GetRawText();
-            if (run.TryGetProperty("state", out var current) && current.ValueKind == JsonValueKind.String
-                && current.GetString() == state)
-                return body;
-            await Task.Delay(200, Ct);
+            var run = await Waiting.UntilAsync(
+                async () =>
+                {
+                    var runs = await client.GetFromJsonAsync<JsonElement>(Route, Ct);
+                    var current = runs.EnumerateArray().Single(r => r.GetProperty("id").GetString() == id);
+                    last = current.GetRawText();
+                    return current;
+                },
+                current => current.TryGetProperty("state", out var value) && value.ValueKind == JsonValueKind.String && value.GetString() == state,
+                $"La tâche {id} n'a pas atteint l'état {state}.", Ct, timeout: TimeSpan.FromSeconds(30));
+            return run.GetRawText();
         }
-
-        Assert.Fail($"La tâche {id} n'a pas atteint l'état {state} : {body}");
-        return body;
+        catch (TimeoutException timeout)
+        {
+            throw new TimeoutException($"{timeout.Message} Dernier état lu : {last}", timeout);
+        }
     }
 
     private static async Task<string?> ReadCodeAsync(HttpResponseMessage response)
