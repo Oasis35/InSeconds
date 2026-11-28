@@ -163,6 +163,26 @@ describe('RunGameStore', () => {
       expect(store.screen()).toBe(screen);
     });
 
+    it('la reprise rend la pile, le total et le morceau courant de la partie quittée', async () => {
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+      api.joinResult = {
+        kind: 'ok',
+        play: PLAY({
+          isResuming: true,
+          session: SESSION({ totalScore: 100, round: ROUND({ score: 100 }), roundTracks: [TRACK()], playedTracks: [TRACK()] }),
+          current: CURRENT({ position: 2, positionInRound: 2, previewUrl: 'https://cdn/preview-2.mp3' }),
+        }),
+      };
+      await store.init();
+
+      await store.begin();
+
+      expect(store.screen()).toBe('playing');
+      expect(store.pile()).toEqual([{ kind: 'track', track: TRACK(), past: false }]);
+      expect(store.totalScore()).toBe(100);
+      expect(round.trackId()).toBe(2);
+    });
+
     it('pas de « écouter plus » : un seul palier', async () => {
       await startRun();
 
@@ -599,6 +619,10 @@ describe('RunGameStore', () => {
       expect(api.calls).toContain('launch');
       expect(store.screen()).toBe('playing');
       expect(audio.calls).toContain('load https://cdn/preview-neuf.mp3');
+      expect(store.shownRound()).toBe(1);
+      expect(store.lives()).toEqual([true, true, true]);
+      expect(store.pile()).toEqual([]);
+      expect(store.totalScore()).toBe(0);
     });
 
     it('« Rejouer » seulement avec l\'accès', async () => {

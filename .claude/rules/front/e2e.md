@@ -23,7 +23,7 @@ Specs dans `e2e/specs/`, page objects dans `e2e/pages/`, fixtures dans `e2e/fixt
 - L'admin se connecte par `POST /api/e2e/login-as-admin` ; les données de l'admin viennent de `POST /api/e2e/reseed` (défis à J-5, J-15, J-30… : compter par `AdminPage.apiGetChallengeDates`, pas par une valeur fixe).
 - Les liens des emails se lisent dans le dernier email capturé (`/api/e2e/last-email`) ; l'email part de l'outbox après la réponse 204 : attendre un lien différent du précédent.
 - `error-reporting.spec.ts` provoque une erreur par `GET /api/e2e/throw`.
-- Survie : `api.grantRunAccess` ouvre l'accès ; le tirage est paresseux, `api.latestRunTracks()` ne rend que les morceaux déjà tirés et `RunPage.winRound` le relit à chaque manche ; `api.removePreviews` retire des extraits ; `api.useLegacyRunRules()` pose des manches de 5 morceaux sans vie rendue pour les parcours écrits ainsi (les règles actuelles sont couvertes par les tests d'intégration du back).
+- Survie : `api.grantRunAccess` ouvre l'accès ; le tirage est paresseux, `api.latestRunTracks()` ne rend que les morceaux déjà tirés et `RunPage.winRound` le relit à chaque manche. `runs.spec.ts` ne garde que la coque, l'accès, l'invitation et un seul parcours aux règles actuelles (manches de 3 morceaux) ; les règles d'une manche (vies, thèmes, morceau retiré, chrono, reprise) sont tenues par les tests d'intégration du back et par Vitest (`runs.page.spec.ts` monte le vrai gabarit de la page).
 
 ## Écrire une spec
 

@@ -40,6 +40,7 @@ describe('RunFinishComponent', () => {
   it('une défaite : les manches passées, le record, le score au format de la langue, les morceaux trouvés et 20 carrés', () => {
     const { element } = render(finish());
 
+    expect(element.querySelector('[data-testid="run-finished"]')?.getAttribute('data-status')).toBe('lost');
     expect(text(element, 'run-disc')).toBe('runs.finished.rounds');
     expect(text(element, 'run-record')).toBe('runs.finished.record');
     expect(text(element, 'run-final-score')?.replace(/\s/g, ' ')).toBe('1 284');
@@ -51,6 +52,7 @@ describe('RunFinishComponent', () => {
   it('une Série complète : le titre et le détail des bonus (vies restantes, complétion)', () => {
     const { element } = render(finish({ status: 'completed', livesLeft: 2, lifeBonus: 500, completeBonus: 500, roundsPassed: 8 }));
 
+    expect(element.querySelector('[data-testid="run-finished"]')?.getAttribute('data-status')).toBe('completed');
     expect(text(element, 'run-disc')).toBe('runs.finished.complete');
     expect(text(element, 'run-bonus-lives')).toBe('runs.finished.bonusLives');
     expect(text(element, 'run-bonus-complete')).toBe('runs.finished.bonusComplete');
