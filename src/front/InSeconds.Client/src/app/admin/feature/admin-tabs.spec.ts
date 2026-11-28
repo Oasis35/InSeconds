@@ -1,18 +1,6 @@
-import fr from '../../../../public/i18n/fr.json';
-import en from '../../../../public/i18n/en.json';
+import { isTranslated } from '../domain/testing/translations';
 import { ADMIN_ROUTES } from './admin.routes';
 import { ADMIN_TABS, DEFAULT_TAB, LEGACY_TAB_NAMES } from './admin-tabs';
-
-type Tree = { [key: string]: string | Tree };
-
-function has(tree: Tree, path: string): boolean {
-  let node: string | Tree | undefined = tree;
-  for (const part of path.split('.')) {
-    if (typeof node !== 'object' || node === null) return false;
-    node = node[part];
-  }
-  return typeof node === 'string' && node.length > 0;
-}
 
 /** Les chemins des pages de l'admin : les enfants de la coquille qui chargent une page (les redirections ne comptent pas). */
 const pagePaths = (ADMIN_ROUTES[0].children ?? []).filter(route => route.loadComponent !== undefined).map(route => route.path);
@@ -45,8 +33,7 @@ describe('onglets de l\'admin', () => {
   it('les libellés, nus ou avec effectif, sont traduits en français et en anglais', () => {
     for (const tab of ADMIN_TABS) {
       for (const key of [tab.label, tab.counted?.label].filter((label): label is string => label !== undefined)) {
-        expect(has(fr as Tree, key), `${key} (fr)`).toBe(true);
-        expect(has(en as Tree, key), `${key} (en)`).toBe(true);
+        expect(isTranslated(key), key).toEqual({ fr: true, en: true });
       }
     }
   });

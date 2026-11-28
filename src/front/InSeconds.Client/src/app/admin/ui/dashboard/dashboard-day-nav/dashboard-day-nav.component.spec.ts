@@ -32,7 +32,7 @@ describe('DashboardDayNavComponent', () => {
     const fr = render({ day: '2026-11-20', locale: 'fr' }).toggle().textContent!;
     expect(fr.toLowerCase()).toContain('vendredi');
     expect(fr.toLowerCase()).toContain('novembre');
-    expect(fr).toContain('20');
+    expect(fr).toMatch(/\b20\b/);
 
     TestBed.resetTestingModule();
     const en = render({ day: '2026-11-20', locale: 'en' }).toggle().textContent!;

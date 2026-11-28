@@ -28,6 +28,22 @@ class HostComponent {
   readonly accessRequests: boolean[] = [];
 }
 
+@Component({
+  selector: 'app-test-two-rows',
+  imports: [PlayerRowComponent],
+  template: `
+    <table><tbody>
+      @for (p of players; track p.id) { <tr appPlayerRow [player]="p"></tr> }
+    </tbody></table>
+  `,
+})
+class TwoRowsHostComponent {
+  readonly players: readonly RegisteredPlayer[] = [
+    { ...base, id: 'p-1', email: 'alice@example.com' },
+    { ...base, id: 'p-2', pseudo: 'Bob', email: 'bob@example.com' },
+  ];
+}
+
 describe('PlayerRowComponent', () => {
   function render(player: Partial<RegisteredPlayer> = {}, inputs: { expanded?: boolean; runAccess?: boolean; pending?: boolean } = {}) {
     TestBed.resetTestingModule(); // un test peut monter plusieurs lignes : chaque rendu repart d'un module neuf
@@ -73,7 +89,8 @@ describe('PlayerRowComponent', () => {
     });
 
     it('jamais l\'adresse complète dans la page avant le clic', () => {
-      expect(render().row.textContent).not.toContain('alice@example.com');
+      // Ni dans le texte, ni dans un attribut (title, aria-label) : la page entière, balises comprises.
+      expect(render().row.outerHTML).not.toContain('alice@example.com');
     });
 
     it('un compte sans adresse : un trait, aucun bouton', () => {
@@ -82,12 +99,15 @@ describe('PlayerRowComponent', () => {
       expect(view.text(1)).toBe('-');
     });
 
-    it('chaque ligne garde son propre état : révéler une adresse ne montre pas celle d\'une autre ligne', () => {
-      const first = render({ id: 'p-1', email: 'alice@example.com' });
-      first.email()!.click();
-      first.fixture.detectChanges();
-      const second = render({ id: 'p-2', email: 'bob@example.com' });
-      expect(second.email()!.textContent!.trim()).toBe('b•••@example.com');
+    it('chaque ligne garde son propre état : révéler une adresse ne montre pas celle de la ligne d\'à côté', () => {
+      TestBed.resetTestingModule();
+      const { fixture, element } = renderHost(TwoRowsHostComponent);
+      const emails = () => Array.from(element.querySelectorAll<HTMLButtonElement>('[data-testid="player-email"]'));
+
+      emails()[0].click();
+      fixture.detectChanges();
+
+      expect(emails().map(button => button.textContent!.trim())).toEqual(['alice@example.com', 'b•••@example.com']);
     });
   });
 
@@ -104,7 +124,7 @@ describe('PlayerRowComponent', () => {
     expect(render({ currentStreak: 3, streakProtected: false }).cells[3].title).toBe('');
   });
 
-  it('la dernière visite en heure locale, ou « jamais vu »', () => {
+  it('la dernière visite, ou « jamais vu » quand il n\'y en a pas', () => {
     expect(render({ lastSeenAt: '2026-11-20T09:30:00Z' }).text(6)).toContain('admin.players.lastSeenAt');
     const never = render({ lastSeenAt: null }).text(6);
     expect(never).toContain('admin.players.neverSeen');

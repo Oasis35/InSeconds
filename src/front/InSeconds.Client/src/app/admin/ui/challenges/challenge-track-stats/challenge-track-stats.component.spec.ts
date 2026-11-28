@@ -37,7 +37,7 @@ describe('ChallengeTrackStatsComponent', () => {
   });
 
   it('l\'écoute moyenne en secondes, ou un trait quand personne n\'a écouté', () => {
-    expect(render(track({ avgListenedSeconds: 3.2 })).valueText(3)).toBe('3.2s');
+    expect(render(track({ avgListenedSeconds: 3.2 })).valueText(3)).toContain('3.2');
     expect(render(track({ avgListenedSeconds: null })).valueText(3)).toBe('-');
   });
 

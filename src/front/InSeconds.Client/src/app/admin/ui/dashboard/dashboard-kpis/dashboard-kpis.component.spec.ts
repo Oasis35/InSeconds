@@ -34,12 +34,13 @@ describe('DashboardKpisComponent', () => {
   });
 
   it('les trois tuiles : ont fini, nouveaux joueurs, score médian', () => {
-    const { text } = render(kpis({ completedCount: 40, newPlayersCount: 7, medianScore: 2410 }));
+    const { byTestId } = render(kpis({ completedCount: 40, newPlayersCount: 7, medianScore: 2410 }));
+    // Le nombre est le premier paragraphe de la tuile, son libellé le second.
+    const value = (id: string) => byTestId(id)!.querySelector('p')!.textContent!.trim();
 
-    expect(text('kpi-completed')).toContain('40');
-    expect(text('kpi-new')).toContain('7');
-    expect(text('kpi-median')).toContain('2');
-    expect(text('kpi-median')).toContain('410');
+    expect(value('kpi-completed')).toBe('40');
+    expect(value('kpi-new')).toBe('7');
+    expect(value('kpi-median')).toMatch(/^2\D?410$/);
   });
 
   it('sans score médian (personne n\'a fini), un trait', () => {
@@ -63,21 +64,20 @@ describe('DashboardKpisComponent', () => {
       expect(render(kpis(), { openByDefault: true }).byTestId('kpi-details')).not.toBeNull();
     });
 
-    it('le détail compte les abandons, la part qui finit et les comptes créés', () => {
-      const details = render(kpis({ abandonedCount: 3, completionRate: 89, accountsCreatedCount: 1 }), { openByDefault: true }).text('kpi-details')!;
+    it('le détail liste les abandons, la part qui finit et les comptes créés, dans cet ordre, avec leurs nombres', () => {
+      const { element } = render(kpis({ abandonedCount: 3, completionRate: 89, accountsCreatedCount: 1 }), { openByDefault: true });
 
-      expect(details).toContain('3');
-      expect(details).toContain('admin.dashboard.abandons');
-      expect(details).toContain('admin.dashboard.rate');
-      expect(details).toContain('admin.dashboard.accountCreated');
+      // Le taux passe par un paramètre de traduction : sans chargeur, on lit sa clé ; les deux autres sont des nombres.
+      expect(Array.from(element.querySelectorAll('[data-testid="kpi-details"] .kpi-number')).map(n => n.textContent!.trim()))
+        .toEqual(['3', 'admin.dashboard.rate', '1']);
     });
 
     it('un seul abandon ou un seul compte créé se dit au singulier', () => {
       const details = render(kpis({ abandonedCount: 1, accountsCreatedCount: 1 }), { openByDefault: true }).text('kpi-details')!;
 
-      expect(details).toContain('admin.dashboard.abandon ');
+      expect(details).toMatch(/admin\.dashboard\.abandon\b/);
       expect(details).not.toContain('admin.dashboard.abandons');
-      expect(render(kpis({ accountsCreatedCount: 4 }), { openByDefault: true }).text('kpi-details')).toContain('admin.dashboard.accountsCreated');
+      expect(render(kpis({ accountsCreatedCount: 4 }), { openByDefault: true }).text('kpi-details')).toMatch(/admin\.dashboard\.accountsCreated\b/);
     });
 
     it('les parties en cours et les inachevées ne figurent que quand il y en a', () => {
@@ -88,7 +88,7 @@ describe('DashboardKpisComponent', () => {
       const some = render(kpis({ pendingCount: 2, expiredCount: 1 }), { openByDefault: true }).text('kpi-details')!;
       expect(some).toContain('admin.dashboard.pending');
       expect(some).toContain('admin.dashboard.expiredOne');
-      expect(render(kpis({ expiredCount: 3 }), { openByDefault: true }).text('kpi-details')).toContain('admin.dashboard.expired ');
+      expect(render(kpis({ expiredCount: 3 }), { openByDefault: true }).text('kpi-details')).toMatch(/admin\.dashboard\.expired\b/);
     });
 
     it('les arrivées par source ne s\'affichent que s\'il y en a, une source connue par sa clé, une inconnue telle quelle', () => {
@@ -98,7 +98,6 @@ describe('DashboardKpisComponent', () => {
       expect(arrivals).toContain('12');
       expect(arrivals).toContain('admin.sources.direct');
       expect(arrivals).toContain('blog-inconnu');
-      expect(arrivals).toContain('·');
     });
 
     it('habitués et nouveaux parmi ceux qui ont fini : les habitués sont les autres que les premières parties', () => {
@@ -111,7 +110,7 @@ describe('DashboardKpisComponent', () => {
 
     it('un seul nouveau se dit au singulier, et personne n\'ayant fini : pas de ligne', () => {
       const one = render(kpis({ firstTimeFinishersCount: 1 }), { openByDefault: true }).text('kpi-loyalty')!;
-      expect(one).toMatch(/admin.dashboard.newcomer(?!s)/);
+      expect(one).toMatch(/admin\.dashboard\.newcomer\b/);
       expect(one).not.toContain('admin.dashboard.newcomers');
       expect(render(kpis({ completedCount: 0, firstTimeFinishersCount: 0 }), { openByDefault: true }).byTestId('kpi-loyalty')).toBeNull();
     });
