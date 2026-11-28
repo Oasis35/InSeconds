@@ -10,7 +10,6 @@ export class BlindRoundPage {
   readonly answerInput: Locator;
   readonly submitButton: Locator;
   readonly confirmSubmitButton: Locator;
-  readonly clearSearchButton: Locator;
   readonly nextButton: Locator;
   /** La phrase de la seconde tentative (sous le champ). */
   readonly retryNotice: Locator;
@@ -33,7 +32,6 @@ export class BlindRoundPage {
     this.answerInput         = page.getByPlaceholder('Artiste - Titre');
     this.submitButton        = page.getByRole('button', { name: 'Valider' });
     this.confirmSubmitButton = page.getByRole('button', { name: 'Valider quand même' });
-    this.clearSearchButton   = page.getByRole('button', { name: '✕' });
     this.nextButton          = page.getByRole('button', { name: /Piste suivante|Voir le résultat/ });
     this.retryNotice         = page.getByTestId('round-retry-notice');
     // Score affiché dans le résultat du round : "+850 pts"
@@ -105,20 +103,6 @@ export class BlindRoundPage {
     await this.answerInput.evaluate(el => (el as HTMLElement).blur());
     // Avance la clock pour que le setTimeout(150ms) de onBlur() s'exécute
     await this.page.clock.fastForward(200);
-  }
-
-  /**
-   * Tape le déclencheur `dedup-test` du FakeDeezerHandler (back, mode Testing) : 3 variantes
-   * parenthésées du même morceau + un morceau distinct, soit 2 suggestions une fois nettoyées.
-   */
-  async showDedupSuggestions(): Promise<Locator> {
-    await this.answerInput.fill('dedup-test');
-    // Déclenche le debounce 300ms de DeezerAutocompleteService (RxJS, soumis à la fake clock) ;
-    // la requête HTTP réelle qui suit revient en temps réel.
-    await this.page.clock.fastForward(350);
-    const suggestions = this.page.getByRole('option');
-    await expect(suggestions).toHaveCount(2);
-    return suggestions;
   }
 
   /** Attend l'écran de résultat du morceau et renvoie les points marqués. */

@@ -277,6 +277,27 @@ describe('TrackRoundComponent', () => {
       expect(fixture.componentInstance.answered).toHaveLength(1);
     });
 
+    it('↓ Entrée enchaînés sans rafraîchir entre les deux choisissent la première proposition (frappes rapides)', async () => {
+      await showSuggestions('daf');
+      const down = new KeyboardEvent('keydown', { key: 'ArrowDown', cancelable: true, bubbles: true });
+      const enter = new KeyboardEvent('keydown', { key: 'Enter', cancelable: true, bubbles: true });
+      input().dispatchEvent(down);
+      input().dispatchEvent(enter);
+      refresh();
+
+      expect(enter.defaultPrevented).toBe(true);
+      expect(input().value).toBe('Daft Punk - Get Lucky');
+      expect(fixture.componentInstance.answered).toEqual([]);
+    });
+
+    it('↑ sans surbrillance puis Entrée choisit la dernière proposition', async () => {
+      await showSuggestions('daf');
+      press('ArrowUp');
+
+      expect(press('Enter').defaultPrevented).toBe(true);
+      expect(input().value).toBe('Muse - Uprising');
+    });
+
     it('Échap ferme la liste sans toucher au champ', async () => {
       await showSuggestions('daf');
       press('Escape');
