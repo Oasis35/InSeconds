@@ -142,11 +142,7 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
 
         var first = admin.PostAsJsonAsync(Tracks, new AddTrack(7777), Ct);
         var second = admin.PostAsJsonAsync(Tracks, new AddTrack(7777), Ct);
-        for (var waited = 0; _app.Deezer.Requests.Count < 2; waited += 20)
-        {
-            Assert.True(waited < 20_000, "Les deux ajouts n'ont pas atteint Deezer.");
-            await Task.Delay(20, Ct);
-        }
+        await Waiting.UntilAsync(() => _app.Deezer.Requests.Count >= 2, "Les deux ajouts n'ont pas atteint Deezer.", Ct);
 
         gate.SetResult();
         var responses = await Task.WhenAll(first, second);
