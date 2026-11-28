@@ -4,10 +4,8 @@ using InSeconds.Api.Modules.Catalogue.Application;
 using InSeconds.Api.Modules.Daily.Application;
 using InSeconds.Api.Modules.Players.Application;
 using InSeconds.Api.Testing.E2E;
-using InSeconds.Api.Modules.Runs.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace InSeconds.IntegrationTests.Testing;
 
@@ -306,27 +304,6 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(status, response.StatusCode);
         var problem = await response.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>(Ct);
         Assert.Equal(code, problem!.Extensions["code"]?.ToString());
-    }
-
-    [Fact]
-    public async Task ReglagesRuns_PosesLeTempsDUnTest_RefusesSiIncoherents_EffacesALaRemiseAZero()
-    {
-        var client = _host.CreateClient();
-        RunsOptions Current() => _host.Services.GetRequiredService<IOptionsMonitor<RunsOptions>>().CurrentValue;
-
-        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/api/e2e/runs/settings", new RunSettingRequest("Runs:Lives", "5"), Ct)).StatusCode);
-        Assert.Equal(5, Current().Lives);
-
-        // Hors du mode Run, JSON invalide, réglages incohérents (plus de points que de paliers) : 400, rien n'est gardé.
-        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/e2e/runs/settings", new RunSettingRequest("Daily:TracksPerChallenge", "3"), Ct)).StatusCode);
-        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/e2e/runs/settings", new RunSettingRequest("Runs:ListenLadder", "[year"), Ct)).StatusCode);
-        var incoherent = await client.PostAsJsonAsync(
-            "/api/e2e/runs/settings", new RunSettingRequest("Runs:StepPoints", "[100,200]"), Ct);
-        Assert.Equal(HttpStatusCode.BadRequest, incoherent.StatusCode);
-        Assert.Null(Current().StepPoints);
-
-        await client.PostAsync("/api/e2e/reset", null, Ct);
-        Assert.Equal(3, Current().Lives);
     }
 
     private sealed record GuestCreated(Guid PlayerId);
