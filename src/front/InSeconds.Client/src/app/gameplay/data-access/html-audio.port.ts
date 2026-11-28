@@ -466,7 +466,16 @@ export class HtmlAudioPort extends AudioPort {
   /** Remonte un diagnostic du lecteur vers l'API (l'appareil est déduit par l'API). */
   private report(message: string): void {
     if (this.disposed) return;
-    this.injector.get(ErrorReportingService).report({ source: 'js', message });
+    let reporting: ErrorReportingService;
+    try {
+      reporting = this.injector.get(ErrorReportingService);
+    } catch (error) {
+      // Une sonde d'adresse peut répondre après la destruction de l'injecteur sans que le lecteur ait été libéré (NG0205) :
+      // il n'y a plus personne à qui signaler, et le rejet resterait sans gestionnaire. Toute autre erreur est relancée.
+      if (String(error).includes('NG0205')) return;
+      throw error;
+    }
+    reporting.report({ source: 'js', message });
   }
 
   private clearStopTimer(): void {
