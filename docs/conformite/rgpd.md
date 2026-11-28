@@ -26,6 +26,7 @@ Panneau technique de l'admin : lecture anonyme de l'API publique de GitHub (`api
 ## Droits du joueur
 
 - **Copie** : `GET /api/players/me/export` (JSON : source d'arrivée, compte, appareils, puis une section par mode de jeu sous `modules` : `modules.daily` pour la série (en cours et la meilleure) et les parties, `modules.runs` pour les parties (réponses), les playlists créées, le record, l'accès, le niveau et les défis d'amis reçus, `modules.social` pour les groupes), bouton « Tes données » du profil.
+- **Ce que la copie ne contient pas** : les jetons à usage unique (`players.auth_tokens` : hash du jeton et adresse du lien, ou, pour un changement d'adresse en cours, la nouvelle adresse demandée, rattachée au joueur) et l'ancien cookie (`players.legacy_tokens`, un hash). Ce sont des données éphémères que la personne vient de saisir elle-même (jeton valable 15 minutes, ligne supprimée par la purge nocturne après son expiration, et avec le compte). `PlayerDataExportCoverageTests` classe chaque table avec `player_id` comme exportée ou exclue avec sa raison : une table nouvelle oblige à décider.
 - **Effacement** : `POST /api/players/me/delete` (pseudo retapé pour confirmer), effacement réel (`AccountErasure`, qui appelle l'`IPlayerDataContributor` de chaque mode de jeu dans la même transaction).
 - **Sans connexion possible** : commandes de secours sur le VPS `--export-player` / `--delete-player` (cf. [`src/back/CLAUDE.md`](../../src/back/CLAUDE.md) § Commandes), réponse sous un mois, uniquement à l'adresse du compte.
 
