@@ -237,6 +237,7 @@ describe('RoundPlayerComponent', () => {
 
   it('après un échec de lecture : « Réessayer » et « Passer », la zone d\'écoute disparaît (piège 33)', () => {
     const { component, element, button } = render({ phase: 'audio-error' });
+    expect(element.querySelector('[data-testid="round-playback-error"]')?.getAttribute('role')).toBe('alert');
     const retry = vi.fn(), skip = vi.fn();
     component.retry.subscribe(retry);
     component.skip.subscribe(skip);

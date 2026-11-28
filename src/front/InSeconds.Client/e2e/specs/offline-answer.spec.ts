@@ -29,7 +29,7 @@ test.describe('Réponse envoyée hors connexion', () => {
       await page.clock.fastForward(1000);
       await expect(game.retryButton).toBeVisible({ timeout: 500 });
     }).toPass({ timeout: 15_000 });
-    await expect(page.getByRole('alert').filter({ hasText: /pas pu être enregistrée/ })).toBeVisible();
+    await expect(page.getByTestId('round-submit-error')).toBeVisible();
     // Aucun résultat : pas de points, pas de morceau suivant, et le serveur n'a rien reçu.
     await expect(round.nextButton).toBeHidden();
     await expect(round.roundScore).toBeHidden();
