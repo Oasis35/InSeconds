@@ -6,18 +6,20 @@ import { LeaveGuard } from './leave-guard';
 const DATA: ConfirmDialogData = { title: 'Quitter ?', body: 'La partie est en cours.', confirmLabel: 'Quitter', cancelLabel: 'Rester', tone: 'danger' };
 
 /** Une fenêtre simulée : se ferme avec le résultat donné, comme `DialogRef.close`. */
-function fakeDialog() {
+function fakeDialog(deferred = false) {
   const closed = new Subject<boolean | undefined>();
-  const close = vi.fn((result?: boolean) => { closed.next(result); closed.complete(); });
+  const emit = (result?: boolean) => { closed.next(result); closed.complete(); };
+  // `deferred` : la fermeture n'est annoncée qu'au tour suivant (une animation de sortie), après une éventuelle seconde demande.
+  const close = vi.fn((result?: boolean) => (deferred ? queueMicrotask(() => emit(result)) : emit(result)));
   return { closed, close };
 }
 
 describe('LeaveGuard', () => {
-  function setup() {
+  function setup(deferred = false) {
     const dialogs: ReturnType<typeof fakeDialog>[] = [];
     const modal = {
       openSheet: vi.fn(() => {
-        const dialog = fakeDialog();
+        const dialog = fakeDialog(deferred);
         dialogs.push(dialog);
         return dialog;
       }),
@@ -68,6 +70,20 @@ describe('LeaveGuard', () => {
     expect(dialogs[0].close).toHaveBeenCalledWith(false);
     expect(await first).toBe(false);
     dialogs[1].close(true);
+    expect(await second).toBe(true);
+  });
+
+  it('la fermeture tardive de la première fenêtre ne fait pas oublier la seconde : la libération la ferme bien', async () => {
+    const { guard, dialogs } = setup(true);
+    const first = guard.confirm(DATA);
+    const second = guard.confirm(DATA);
+    // La fermeture de la première arrive maintenant, après que la seconde est posée.
+    await first;
+
+    guard.release();
+
+    expect(dialogs[1].close).toHaveBeenCalledWith(true);
+    expect(await first).toBe(false);
     expect(await second).toBe(true);
   });
 

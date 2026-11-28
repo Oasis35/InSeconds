@@ -29,7 +29,7 @@ describe('StreakIconComponent', () => {
     expect(drawings.every(drawing => drawing.length > 0)).toBe(true);
   });
 
-  it('la flamme et le cœur brisé sont remplis à demi-transparence, le gel et le joueur seulement tracés', () => {
+  it('la flamme et le cœur brisé sont remplis, le gel et le joueur seulement tracés', () => {
     expect(render('flame').svg.getAttribute('fill')).toBe('currentColor');
     expect(render('heart-crack').svg.getAttribute('fill')).toBe('currentColor');
     expect(render('snowflake').svg.getAttribute('fill')).toBe('none');

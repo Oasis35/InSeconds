@@ -38,8 +38,12 @@ describe('PrivacyPage', () => {
     ]);
   });
 
-  it('le texte des durées de conservation est celui des traductions (les durées sont annoncées au joueur)', () => {
-    expect(render().element.textContent).toContain(fr.privacy.retention.body.split('\n')[0]);
+  it('le texte des durées de conservation est celui des traductions, avec la durée d\'inactivité des comptes (3 ans, annoncée au joueur)', () => {
+    const text = render().element.textContent!;
+
+    expect(text).toContain(fr.privacy.retention.body.split('\n')[0]);
+    expect(fr.privacy.retention.body).toContain('3 ans');
+    expect(text).toContain('3 ans');
   });
 
   it('renvoie aux mentions légales et au jeu', () => {

@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HomePlaceReader } from './home-place';
-import { FakeSocialApi, GENERAL, GROUP, OTHER_GROUP, RANKING, provideFakeSocialApi } from './testing/fake-social-api';
+import { FakeSocialApi, GENERAL, GROUP, RANKING, provideFakeSocialApi } from './testing/fake-social-api';
 
 describe('HomePlaceReader', () => {
   let api: FakeSocialApi;
@@ -68,7 +68,7 @@ describe('HomePlaceReader', () => {
   });
 
   it('un joueur absent du général (il n\'y apparaît pas par choix) : pas de place générale', async () => {
-    api.general = { ...GENERAL, top: GENERAL.top, around: [] };
+    api.general = { ...GENERAL, around: [] };
 
     expect((await reader.load()).general).toBeNull();
   });
@@ -77,6 +77,5 @@ describe('HomePlaceReader', () => {
     api.rankings.set(4, { ...RANKING, entries: [{ rank: 1, pseudo: 'Moi', isMe: true, points: 100, badge: null }] });
 
     expect((await reader.load()).group).toEqual({ name: 'Potes', rank: 1 });
-    expect([GROUP, OTHER_GROUP].map(group => group.id)).toEqual([4, 7]);
   });
 });

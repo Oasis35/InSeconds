@@ -48,7 +48,7 @@ describe('ConfirmDialogComponent', () => {
     expect(ref.close).toHaveBeenCalledWith(false);
   });
 
-  it('l\'annulation prend le focus d\'office : Entrée par réflexe ne détruit rien', () => {
+  it('l\'annulation porte `cdkFocusInitial` (le CDK lui donne le focus à l\'ouverture : Entrée par réflexe ne détruit rien), pas la confirmation', () => {
     const { confirm, cancel } = render();
 
     expect(cancel().hasAttribute('cdkfocusinitial')).toBe(true);

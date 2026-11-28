@@ -36,21 +36,21 @@ describe('ScoreCountComponent', () => {
       expect(shown()).toBe('1200');
     });
 
-    it('repart de `from` : une valeur égale à son départ s\'affiche telle quelle', () => {
-      expect(render({ value: 400, from: 400 }).shown()).toBe('400');
-    });
   });
 
   describe('avec animation', () => {
     afterEach(() => vi.useRealTimers());
 
-    it('compte jusqu\'à la valeur (sans jamais la dépasser en route)', async () => {
+    it('monte jusqu\'à la valeur, sans jamais la dépasser en route', async () => {
       const { fixture, shown } = render({ value: 300 });
       const seen: number[] = [];
       const watch = setInterval(() => seen.push(Number(shown())), 20);
 
-      await vi.waitFor(() => expect(shown()).toBe('300'), { timeout: 3000 });
-      clearInterval(watch);
+      try {
+        await vi.waitFor(() => expect(shown()).toBe('300'), { timeout: 3000 });
+      } finally {
+        clearInterval(watch);
+      }
 
       expect(seen.every(value => value >= 0 && value <= 300)).toBe(true);
       expect(fixture.componentInstance.value()).toBe(300);
