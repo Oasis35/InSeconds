@@ -55,7 +55,7 @@ Une API (`InSeconds.Api`) découpée en modules (`Modules/<Module>/`), chacun av
 | `Players` | invités, comptes, appareils, cookie, lien magique, rôle admin, droits RGPD | noyau |
 | `Catalogue` | le pool de morceaux, leurs métadonnées Deezer, l'état de l'extrait, le sas « À valider », les thèmes | noyau |
 | `Social` | groupes entre amis, classement des groupes et classement général | noyau |
-| `Gameplay` | la mécanique d'un morceau (manche, correction, indices, tirage) : logique pure, ni table ni route | partagé |
+| `Gameplay` | la mécanique d'un morceau (manche, correction, tirage) : logique pure, ni table ni route | partagé |
 | `Daily` | le défi du jour, parties, score, série et gels, statistiques, admin du jeu | mode |
 | `Runs` | la Survie : défis sans fin tirés à la volée, vies, paliers, thèmes, fantôme, niveau, Hits ([`docs/runs/`](docs/runs/README.md)) | mode |
 
@@ -208,7 +208,7 @@ Les numéros sont stables : le code et les tests y renvoient (`PiegeNN_…`, « 
 32. **Réponse perdue sur coupure réseau** : `.claude/rules/front/daily.md`.
 33. **Échec de lecture = état `error`, jamais `idle`** : `.claude/rules/front/gameplay-audio.md`.
 34. **`trusted_proxies` dans le Caddyfile** : `.claude/rules/deploy.md`.
-35. **Verrou du morceau en cours et plancher d'écoute** : le morceau en cours est le premier sans réponse, un autre ne prend pas le verrou (409 `daily.track_lock_not_released`) ; l'écoute garde le maximum vu par le serveur, une réponse sous ce plancher est refusée (400 `daily.listened_duration_below_verified_minimum`), le niveau d'indice vient de la session, jamais du client. Vaut aussi pour Runs. Tests : `PlaySessionTests`, `UnitTests/Gameplay`.
+35. **Verrou du morceau en cours et plancher d'écoute** : le morceau en cours est le premier sans réponse, un autre ne prend pas le verrou (409 `daily.track_lock_not_released`) ; l'écoute garde le maximum vu par le serveur, une réponse sous ce plancher est refusée (400 `daily.listened_duration_below_verified_minimum`). Vaut aussi pour Runs. Tests : `PlaySessionTests`, `UnitTests/Gameplay`.
 36. **Jamais le texte d'une recherche dans les journaux**, seulement sa longueur ; le tag `url.query` est absent ou masqué. Tests : `SearchTelemetryTests`, `DeezerClientTests`.
 37. **Une erreur de base ne déconnecte jamais** : la validation de l'appareil qui ne lit pas la base répond 500 ; seul un cookie réellement invalide ou révoqué est rejeté. Tests : `CookieValidationTests`, `LegacyCookieTests`.
 38. **Fin de partie sur le nombre réel de morceaux du défi**, jamais sur `TracksPerChallenge` (`DailySession.Answer`). Tests : `PlaySessionTests`.
@@ -230,7 +230,7 @@ Les numéros sont stables : le code et les tests y renvoient (`PiegeNN_…`, « 
 
 Une ligne par surface ; le détail fonctionnel est dans la doc citée, les libellés dans `public/i18n/{fr,en}.json`.
 
-- **Défi du jour** (`/` pour l'accueil, qui porte aussi le résultat du jour, `/daily` pour la manche) : accueil, manche par paliers avec indices et autocomplétion, révélation, résultat du jour (la carte de l'accueil : barres, « Détail » qui déplie les morceaux et les scores du jour), partage, série et gels (comptes seulement). [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md).
+- **Défi du jour** (`/` pour l'accueil, qui porte aussi le résultat du jour, `/daily` pour la manche) : accueil, manche par paliers avec seconde tentative et autocomplétion, révélation, résultat du jour (la carte de l'accueil : barres, « Détail » qui déplie les morceaux et les scores du jour), partage, série et gels (comptes seulement). [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md).
 - **Historique du défi** (`/history/daily`, `?mois=aaaa-mm`) : le calendrier du mois (une case par jour, teintée selon le score), les réponses d'un jour passé (`/history/daily/aaaa-mm-jj` : publiées dès le lendemain, montrées d'office même à qui ne l'a pas joué, en pourcentages, **rien sous 5 joueurs**, plus « Tes amis ce jour-là »), « À réécouter » (`/history/daily/a-reecouter` : ses morceaux ratés) et « Ton profil d'oreille » (`/history/daily/profil`, repris en carte sur l'historique). Pas de mode entraînement. [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md).
 - **Survie** (`/survie`, `/survie/<code>` ; sur invitation : lien d'un ami **réservé aux comptes qui ont l'accès**) : vies, manches, paliers, thèmes, fantôme, duels, niveau et disques, Hits (`/survie/hits`). [`docs/runs/regles.md`](docs/runs/regles.md), [`docs/runs/ecrans.md`](docs/runs/ecrans.md).
 - **Coque V4** (pour tout le monde, invité compris) : accueil (la carte du défi, la carte amis d'un compte : qui a joué dans son groupe puis le haut du classement du jour, ou « Créer un groupe » ; la tuile « Créer un compte » d'un invité, sous la carte du défi ; plus la carte Survie pour un compte qui a l'accès), barre du bas (Jouer, Groupes, Historique, Profil ou Connexion), historique `/history/daily`. **Ce qui touche Survie reste derrière l'accès** : carte Survie, niveau, Hits, défi d'ami, pastille « Général » du classement, onglet « Survie » de l'historique, lien du nom au classement général du profil.

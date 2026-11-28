@@ -51,7 +51,7 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
 
 - Après une première réponse qui n'est **pas entièrement juste** (artiste et titre faux, ou un seul des deux juste), le joueur a **une seule** autre tentative sur le morceau. Elle est **définitive** et remplace la première : pas de nouveau « presque », pas de troisième essai. **[Back + Front]**
 - Le message est **unique** (une phrase courte et factuelle tirée parmi sept (« Mauvaise réponse. Dernier essai. »…), sous le champ, en ambre) et **ne dit jamais** si c'est l'artiste ou le titre qui est juste (piège 51). Le champ tremble une fois, le lecteur passe du cyan à l'ambre (cadre, forme d'onde, chiffre des points en jeu), la saisie est gardée, le bouton s'appelle « Réessayer ». Rien n'est compté ni révélé (ni points, ni bonne réponse) avant la réponse définitive.
-- **Prix** : score du palier finalement écouté, puis × 0,5 si un seul des deux est juste, puis × `Daily:RetryScorePercent` (70 % par défaut, arrondi au pair le plus proche), puis la pénalité d'indice. Le front ne parle ni de pourcentage ni de facteur : les points en jeu baissent simplement (comme à un palier) et la phrase dit que c'est le dernier essai.
+- **Prix** : score du palier finalement écouté, puis × 0,5 si un seul des deux est juste, puis × `Daily:RetryScorePercent` (70 % par défaut, arrondi au pair le plus proche). Le front ne parle ni de pourcentage ni de facteur : les points en jeu baissent simplement (comme à un palier) et la phrase dit que c'est le dernier essai.
 - **Prolonger après un échec** : on paie le dernier palier écouté, pas celui de la première tentative ; le palier annoncé par la première tentative devient le plancher (une seconde tentative ne peut pas annoncer un palier plus court, 400 `daily.listened_duration_below_verified_minimum`).
 - « Passer » et une réponse vide restent définitifs. Un morceau sans extrait n'a pas de seconde tentative. `Daily:RetryScorePercent` à 0 la désactive.
 - Les statistiques du morceau (« en combien de temps les autres ont trouvé », médiane) comptent la réponse définitive comme une réponse ordinaire, seconde tentative comprise. Si le réglage est coupé alors qu'un joueur est entre ses deux tentatives, sa réponse est notée sans réduction.
@@ -89,25 +89,6 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
 - **Histogramme admin** - même route, chargée à l'ouverture de l'Accueil de l'admin : une icône « graphique » sur chaque carte morceau ouvre une pop-up avec l'histogramme « en combien de temps les autres ont trouvé » **avec les chiffres au-dessus des barres**. Purement informatif. **[Back + Front]**
 - **Photo figée** - les statistiques d'un jour terminé (J-2 et avant) sont figées par la tâche `daily-close-day`, avec les paliers et le barème de ce jour-là ; un lien « Recalculer » (avec confirmation), sous le « Détail » du jour de l'Accueil de l'admin et seulement sur un jour figé, les refait. La veille et le jour même sont calculés en direct. **[Back]**
 
-## Indices (hints)
-
-- **2 niveaux**, débloqués respectivement aux paliers d'écoute configurés dans `Daily:HintUnlockDurationsSeconds` (défaut **5s** pour le niveau 1, **10s** pour le niveau 2). Le bouton "Indice" est **masqué avant déblocage** (pas juste désactivé) - apparaît et devient utilisable dès que le joueur a **choisi** ce palier (ex. clic sur "écouter plus" jusqu'à 5s), sans attendre que l'audio ait fini de le jouer jusqu'au bout ; révélation sur **clic explicite** uniquement, jamais automatique. **[Back + Front]**
-- **Contenu** : niveau 1 = année de sortie du morceau (`catalogue.tracks.release_year`) ; niveau 2 = **cumulatif**, ajoute le nom d'artiste masqué façon "pendu" (1re lettre de chaque mot révélée, le reste en `_`, ex. `D _ _ _   P _ _ _`). Demander directement l'indice niveau 2 renvoie les deux contenus d'un coup, que le niveau 1 ait été révélé séparément avant ou non. **[Back]**, fournisseurs `YearHint` et `HangmanArtistHint` (module Gameplay) : un indice de plus = un fournisseur de plus.
-- **Pénalité** : appliquée sur le score du **palier d'écoute réellement atteint** (`DurationScoringPolicy`, après le calcul base/moitié habituel), proportionnelle au **niveau max révélé** - `Daily:HintPenaltyPercent` (défaut **30%** niveau 1, **60%** niveau 2). Aucune pénalité si l'indice n'a jamais été révélé. **[Back]**
-- **Anti-triche** : le niveau d'indice utilisé n'est **jamais envoyé par le client** avec la réponse - source de vérité serveur (`daily.sessions.current_hint_level`, comme le plancher d'écoute), posée par `POST /api/daily/sessions/{id}/hints` (vérifie que la durée d'écoute vue par le serveur atteint le seuil, **409** `daily.hint_locked` sinon) et lue au moment du calcul du score. **[Back]**
-- **Interaction avec "écouter plus"** : **prolonger l'écoute seule ne coûte jamais de points liés aux indices** - cohérent avec la règle "pas de malus de prolongation" ci-dessus. Le niveau d'indice révélé garde son **maximum** (`TrackRound.RevealHint`), il ne redescend jamais si l'utilisateur redemande un niveau inférieur, et il **n'est pas réinitialisé** par une simple prolongation d'écoute sur le même morceau (seul un changement de morceau, ou la soumission de la réponse, le remet à 0). Exemples (pénalités par défaut 30%/60%, `DurationScores[5]=250`, `DurationScores[10]=100`) :
-
-  | Scénario | Palier final | Indice révélé | Score |
-  |---|---|---|---|
-  | Répond à 5s sans indice | 5s | aucun | 250 |
-  | Révèle indice 1 à 5s, répond à 5s | 5s | niveau 1 | 250 × 0.70 ≈ 175 |
-  | Révèle indice 1 à 5s, prolonge à 10s sans redemander, répond à 10s | 10s | niveau 1 | 100 × 0.70 = 70 |
-  | Révèle indice 1 à 5s, prolonge à 10s, révèle aussi indice 2, répond à 10s | 10s | niveau 2 (max) | 100 × 0.40 = 40 |
-  | Prolonge direct jusqu'à 10s sans jamais cliquer indice 1, révèle indice 2 | 10s | niveau 2 | 100 × 0.40 = 40 |
-
-- **Année absente** (inconnue de Deezer, qui renvoie `0000-00-00`) : l'indice niveau 1 renvoie `null`, le front masque simplement la pastille année - pas d'erreur, l'indice niveau 2 (artiste) reste disponible indépendamment.
-- **Feedback** : `hintLevelUsed`/`hintPenaltyPercentApplied` de la réponse (pourcentage **réellement appliqué**, pas à recalculer côté front) : donnée disponible mais **pas affichée** sur l'écran de révélation (choix produit).
-
 ## Passer un morceau
 
 Pendant l'écoute, un lien **« Passer (0 pts) »** sous « Valider » permet d'abandonner le morceau en cours sans répondre. Il demande une confirmation (même encart que la confirmation d'une réponse vide), puis envoie une réponse vide au palier déjà écouté : **0 point**, le morceau compte comme « pas trouvé » dans les stats. Aucune règle serveur spécifique : c'est une réponse vide ordinaire. **[Front]** En Survie, le même lien s'appelle « Passer (une vie) » et coûte une vie ([`runs/regles.md`](runs/regles.md#un-morceau)).
@@ -118,7 +99,7 @@ Seuls les morceaux dont l'extrait est **disponible** (`preview_status` = 1, jama
 
 ## Anti-triche
 
-- **Scoring 100 % serveur** - le client n'envoie que le palier choisi et le texte saisi ; le serveur recalcule tout, le front ne fait qu'afficher le résultat renvoyé. Les **points en jeu** affichés pendant l'écoute (barème du palier moins la pénalité d'indice, `daily/domain/stake.ts`) ne sont qu'un affichage, calqué sur `DurationScoringPolicy` ; le coût d'un indice n'est pas écrit sur son bouton, il se voit à la baisse des points en jeu. À la révélation, le calcul se lit d'un coup d'œil sous les points du morceau : une barre (la part gagnée sur le barème du palier) et sa légende (« sur 850 pts possibles », ou « Maximum possible à 1 s » quand rien ne réduit les points), et, si un seul des deux est trouvé ou si un indice est pris, les causes en pastilles toujours visibles (« Titre raté · ÷ 2 », « Indice · − 30 % ») ; la carte du résultat montre le score sur son maximum avec un mot (Échauffement, Correct, Très bon, Excellent, Presque parfait : un cinquième du maximum chacun). **[Front]**
+- **Scoring 100 % serveur** - le client n'envoie que le palier choisi et le texte saisi ; le serveur recalcule tout, le front ne fait qu'afficher le résultat renvoyé. Les **points en jeu** affichés pendant l'écoute (barème du palier, puis le facteur de la seconde tentative, `daily/domain/stake.ts`) ne sont qu'un affichage, calqué sur `DurationScoringPolicy` . À la révélation, le calcul se lit d'un coup d'œil sous les points du morceau : une barre (la part gagnée sur le barème du palier) et sa légende (« sur 850 pts possibles », ou « Maximum possible à 1 s » quand rien ne réduit les points), et, si un seul des deux est trouvé, la cause en pastille toujours visible (« Titre raté · ÷ 2 ») ; la carte du résultat montre le score sur son maximum avec un mot (Échauffement, Correct, Très bon, Excellent, Presque parfait : un cinquième du maximum chacun). **[Front]**
 - **Rien qui identifie le morceau avant la réponse** - ni artiste, ni titre, ni année, ni identifiant Deezer au démarrage de la partie ; pochette et lien Deezer n'arrivent qu'avec la réponse. **[Back]**
 - **Anti-rejeu** : contrainte unique `(player_id, challenge_id)` - impossible de rejouer un défi déjà terminé, abandonné ou expiré en re-soumettant une requête ; une seule réponse par morceau (clé `(session_id, position)`). **[Back]**
 - **Verrou du morceau en cours** : le morceau en cours est le premier sans réponse, un autre morceau ne peut pas prendre le verrou (409 `daily.track_lock_not_released`). **[Back]**
@@ -163,7 +144,7 @@ Un groupe d'amis (compte obligatoire, ouvert à tous les comptes, avec ou sans l
 
 ## Réglages modifiables (`infra.settings`)
 
-Tous relus à chaud (`IOptionsMonitor`), sans redémarrage. L'API refuse de démarrer si les réglages du jeu sont incohérents (plus de niveaux d'indice que de fournisseurs, seuils non croissants, paliers ou pourcentages aberrants).
+Tous relus à chaud (`IOptionsMonitor`), sans redémarrage. L'API refuse de démarrer si les réglages du jeu sont incohérents (seuils non croissants, paliers ou pourcentages aberrants).
 
 | Clé | Défaut | Appliqué réellement ? |
 |---|---|---|
@@ -174,8 +155,6 @@ Tous relus à chaud (`IOptionsMonitor`), sans redémarrage. L'API refuse de dém
 | `Daily:StreakFreezeEveryDays` / `StreakFreezeMax` / `StreakLostNudgeMinDays` | `7` / `2` / `2` | ✅ Back (gel de série, cf. § Série) |
 | `Catalogue:CoverUrlTemplate` | URL Deezer | ✅ Back (reconstruction des pochettes depuis leur hash) |
 | `Daily:GuessTimerSeconds` | `20` | ❌ Non appliqué : aucun chrono réel au défi du jour |
-| `Daily:HintUnlockDurationsSeconds` | `[5,10]` | ✅ Back (déblocage côté serveur) + Front (affichage des boutons) |
-| `Daily:HintPenaltyPercent` | `{"1":30,"2":60}` | ✅ Back (pénalité appliquée au score) |
 | `Daily:RetryScorePercent` | `70` (de 0 à 100) | ✅ Back (score de la seconde tentative ; 0 = pas de seconde tentative), exposé aux réglages publics |
 
 Mécanisme de chargement : [`CLAUDE.md`](../CLAUDE.md) (§ Réglages) et [`.claude/rules/back/reglages.md`](../.claude/rules/back/reglages.md).
