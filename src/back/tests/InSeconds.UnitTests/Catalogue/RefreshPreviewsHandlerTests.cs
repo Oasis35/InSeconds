@@ -3,6 +3,7 @@ using InSeconds.Api.Modules.Catalogue.Domain;
 using InSeconds.Deezer;
 using InSeconds.Waveform;
 using System.Diagnostics.Metrics;
+using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -20,7 +21,38 @@ public class RefreshPreviewsHandlerTests
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    private readonly FakeTimeProvider _time = new(Now);
+    private readonly PausingTimeProvider _time = new(Now);
+
+    /// <summary>
+    /// Attend que le contrôle s'arrête sur chacune de ses pauses (un minuteur créé sur l'horloge simulée), puis avance l'horloge
+    /// de la durée de cette pause. Déterministe : aucune attente en temps réel, l'horloge n'avance jamais au milieu d'un lot.
+    /// </summary>
+    private async Task<T> CrossPausesAsync<T>(Task<T> run)
+    {
+        while (true)
+        {
+            var pause = _time.Pauses.ReadAsync(Ct).AsTask();
+            if (await Task.WhenAny(run, pause) == run)
+                return await run;
+            _time.Advance(await pause);
+        }
+    }
+
+    /// <summary>Une horloge simulée qui annonce chaque minuteur créé avec une échéance (donc chaque pause d'un <c>Task.Delay</c>).</summary>
+    private sealed class PausingTimeProvider(DateTimeOffset start) : FakeTimeProvider(start)
+    {
+        private readonly Channel<TimeSpan> _pauses = Channel.CreateUnbounded<TimeSpan>();
+
+        public ChannelReader<TimeSpan> Pauses => _pauses.Reader;
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            var timer = base.CreateTimer(callback, state, dueTime, period);
+            if (dueTime > TimeSpan.Zero && dueTime != Timeout.InfiniteTimeSpan)
+                _pauses.Writer.TryWrite(dueTime);
+            return timer;
+        }
+    }
 
     public RefreshPreviewsHandlerTests()
     {
@@ -254,15 +286,7 @@ public class RefreshPreviewsHandlerTests
             _albums.Reply(100 + id, new AlbumLookup.Found([]));
         }
 
-        var run = RunAsync(batchSize: 2, delaySeconds: 2);
-        // Chaque pause du contrôle se franchit en avançant l'horloge simulée.
-        while (!run.IsCompleted)
-        {
-            _time.Advance(TimeSpan.FromSeconds(2));
-            await Task.Delay(10, Ct);
-        }
-
-        await run;
+        await CrossPausesAsync(RunAsync(batchSize: 2, delaySeconds: 2));
 
         var lastTrackAt = _deezer.Stamps.Max(s => s.At);
         var albumStamps = _albums.Stamps.OrderBy(s => s.At).ToList();
@@ -346,16 +370,9 @@ public class RefreshPreviewsHandlerTests
         for (var i = 1; i <= 25; i++)
             _store.Add(i, PreviewStatus.Available);
 
-        var run = RunAsync(batchSize: 10, delaySeconds: 1.5);
-        // L'horloge est simulée : on la fait avancer par petits pas jusqu'à la fin ; chaque requête note l'heure simulée
-        // à laquelle elle part, ce qui prouve l'espacement sans dépendre du temps réel.
-        while (!run.IsCompleted)
-        {
-            _time.Advance(TimeSpan.FromSeconds(0.1));
-            await Task.Delay(1, Ct);
-        }
-
-        var result = await run;
+        // L'horloge est simulée : chaque pause du contrôle est franchie en avançant l'horloge de sa durée exacte, et chaque requête
+        // note l'heure simulée à laquelle elle part, ce qui prouve l'espacement sans dépendre du temps réel.
+        var result = await CrossPausesAsync(RunAsync(batchSize: 10, delaySeconds: 1.5));
 
         Assert.Equal(25, result.Checked);
         var batches = _deezer.Stamps.GroupBy(s => s.At).OrderBy(g => g.Key).Select(g => (At: g.Key, Count: g.Count())).ToList();

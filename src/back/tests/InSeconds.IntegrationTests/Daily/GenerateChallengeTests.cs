@@ -251,16 +251,26 @@ public class GenerateChallengeTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task Course_DeuxGenerationsSimultanees_UnSeulDefi_LaSecondeAttendEtVoitLeDefiDeLaPremiere()
     {
         await _app.DisposeAsync();
-        var selector = new SlowSelector(TimeSpan.FromMilliseconds(700));
+        var selector = new GatedSelector(held: true);
         _app = DailyApi.Create(await postgres.CreateDatabaseAsync(),
             configureServices: services => services.Replace(ServiceDescriptor.Singleton<ITrackSelector>(selector)));
         _ = _app.Api.Server;
         await _app.AddPlayableTracksAsync(40);
 
-        // Le tirage prend 700 ms : la seconde génération démarre pendant que la première le calcule.
+        // Le tirage reste retenu : la première génération tient le verrou du jour, les trois autres démarrent pendant qu'elle
+        // tire. Le test ne libère le tirage qu'une fois les trois vues bloquées sur le verrou.
         var generations = Enumerable.Range(0, 4)
             .Select(i => _app.GenerateAsync(origin: i % 2 == 0 ? ChallengeOrigin.Nightly : ChallengeOrigin.OnTheFly))
             .ToArray();
+        try
+        {
+            await Waiting.LockWaitersAsync(_app.Api, 3, Ct);
+        }
+        finally
+        {
+            selector.Release();
+        }
+
         var results = await Task.WhenAll(generations);
 
         Assert.Single(results, r => r.Outcome == GenerationOutcome.Created);
@@ -277,7 +287,7 @@ public class GenerateChallengeTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task Course_DeuxJoursDifferents_NeSAttendentPas()
     {
         await _app.DisposeAsync();
-        var selector = new SlowSelector(TimeSpan.FromMilliseconds(100), rendezvous: 2);
+        var selector = new GatedSelector(rendezvous: 2);
         _app = DailyApi.Create(await postgres.CreateDatabaseAsync(),
             configureServices: services => services.Replace(ServiceDescriptor.Singleton<ITrackSelector>(selector)));
         _ = _app.Api.Server;
@@ -357,10 +367,18 @@ public class GenerateChallengeTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.True(attempts * 10 >= 24 * 60, $"{attempts} essais ne couvrent pas la journée.");
     }
 
-    /// <summary>Un sélecteur qui prend son temps, pour qu'une seconde génération démarre pendant que la première tire.</summary>
-    private sealed class SlowSelector(TimeSpan delay, int rendezvous = 1) : ITrackSelector
+    /// <summary>
+    /// Un sélecteur que le test contrôle, pour qu'une seconde génération démarre pendant que la première tire : <paramref name="held"/>
+    /// le garde dans son tirage jusqu'à <see cref="Release"/>, <paramref name="rendezvous"/> fait attendre les tirages entre eux.
+    /// Aucune durée : ni pause, ni délai.
+    /// </summary>
+    private sealed class GatedSelector(int rendezvous = 1, bool held = false) : ITrackSelector
     {
+        private readonly ManualResetEventSlim _gate = new(initialState: !held);
         private readonly Barrier? _barrier = rendezvous > 1 ? new Barrier(rendezvous) : null;
+
+        /// <summary>Laisse partir les tirages retenus.</summary>
+        public void Release() => _gate.Set();
         private int _rendezvousReached;
 
         /// <summary>Combien de tirages ont trouvé les autres au point de rendez-vous.</summary>
@@ -386,7 +404,8 @@ public class GenerateChallengeTests(PostgresFixture postgres) : IAsyncLifetime
 
             if (_barrier is not null && _barrier.SignalAndWait(TimeSpan.FromSeconds(10)))
                 Interlocked.Increment(ref _rendezvousReached);
-            Thread.Sleep(delay);
+            if (!_gate.Wait(TimeSpan.FromSeconds(30)))
+                throw new TimeoutException("Le tirage n'a pas été libéré par le test.");
             Interlocked.Decrement(ref _running);
             return new CooldownSeededSelector(new InSeconds.Api.Modules.Gameplay.Domain.FisherYatesShuffle()).Select(candidates, inCooldown, count, seed);
         }
