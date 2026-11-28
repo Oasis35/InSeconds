@@ -16,7 +16,8 @@ internal sealed class CapturedLogs : ILoggerProvider
     {
     }
 
-    internal sealed record Entry(LogLevel Level, int EventId, string Message);
+    /// <param name="Exception">Le texte de l'exception (type, message, pile) quand le journal en porte une : une violation d'unicité de la base y citerait la valeur refusée.</param>
+    internal sealed record Entry(LogLevel Level, int EventId, string Message, string? Exception = null);
 
     private sealed class Logger(ConcurrentQueue<Entry> entries) : ILogger
     {
@@ -25,6 +26,6 @@ internal sealed class CapturedLogs : ILoggerProvider
         public bool IsEnabled(LogLevel logLevel) => true;
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
-            entries.Enqueue(new Entry(logLevel, eventId.Id, formatter(state, exception)));
+            entries.Enqueue(new Entry(logLevel, eventId.Id, formatter(state, exception), exception?.ToString()));
     }
 }

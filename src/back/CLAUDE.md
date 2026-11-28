@@ -52,7 +52,7 @@ Les deux dernières (`PlayerDataCommand`) enregistrent les contributeurs par `Ap
 - **Deux collections dans une même requête EF = `.AsSplitQuery()`** (projection ou `Include`), posé requête par requête (pas de réglage global).
 - **`citext`** vit dans le schéma `extensions` : ses opérateurs ne sont trouvés que si `extensions` est dans le `search_path`. Toute connexion ouverte hors du `DbContext` passe par `DatabaseServiceCollectionExtensions.WithExtensionsSearchPath`, sinon PostgreSQL compare en `text`, sensible à la casse, sans erreur.
 - **Ports** : le store (`I<M>Store`, écritures, agrégats suivis, verrous) est dans `Domain/` ; les ports de lecture (`I<M>Queries`, projections directes) dans `Application/` (le domaine ne les utilise jamais) ; implémentations `Ef…` publiques dans `Persistence/` (Wolverine refuse une implémentation interne au `codegen write`). Politiques du domaine (`ITrackSelector`, `IRunScoringPolicy`…) dans `Domain/`.
-- **Table avec une colonne `player_id`** : effacée et exportée par le contributeur RGPD du module (`IPlayerDataContributor`), sinon `PlayerDataTests` échoue (piège 48).
+- **Table avec une colonne `player_id`** : effacée et exportée par le contributeur RGPD du module (`IPlayerDataContributor`), sinon `PlayerDataTests` et `PlayerDataExportCoverageTests` échouent (piège 48).
 - **Conflit d'unicité attendu** (deux écritures simultanées) : un `IExceptionHandler` du module dérivé de `Infrastructure/Persistence/UniqueViolationExceptionHandler` le rend en 409 avec son code (`AccountConflictExceptionHandler`, `TrackConflictExceptionHandler`, `AliasConflictExceptionHandler`).
 - **`SaveChanges`** : la liste des exceptions est celle de `HandlerRulesTests.AllowedSaveChangesCallers` ; une entrée de plus s'y justifie.
 

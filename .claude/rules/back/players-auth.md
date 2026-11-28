@@ -42,7 +42,7 @@ Identité, compte, appareils, rôle admin, droits RGPD. Point d'entrée `Players
 - `PlayerDataExporter` : `IPlayerQueries.ExportAsync` plus une section par `IPlayerDataContributor` (`daily`, `runs`, `social`, enregistrés par `ApiComposition.AddPlayerDataContributors`) ; deux contributeurs du même nom font échouer l'export. Le nom de section fait partie du format téléchargé : jamais renommé.
 - `AccountErasure` (route, purge des comptes inactifs, `--delete-player`), dans la transaction de l'appelant : données de jeu (`DeleteAsync` de chaque contributeur), puis `IPlayerStore.EraseAsync` (jetons du joueur et ceux émis pour son adresse, ancien jeton, appareils, compte, ligne `players`), puis `Forget` de chaque appareil. Journal 1008 sans email ni pseudo.
 - `PlayerDataExporter` et `AccountErasure` sont en service location (ils énumèrent les contributeurs).
-- Test garde-fou : `PlayerDataTests` lit toutes les colonnes `player_id` dans `information_schema`.
+- Tests garde-fous : `PlayerDataTests` (effacement) et `PlayerDataExportCoverageTests` (export : chaque table avec `player_id`, et chaque autre clé vers `players.players`, est exportée ou exclue avec sa raison) lisent le schéma dans `information_schema`.
 
 ## Purge nocturne
 
