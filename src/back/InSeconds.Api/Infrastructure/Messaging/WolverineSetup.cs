@@ -9,10 +9,6 @@ using Wolverine.Postgresql;
 
 namespace InSeconds.Api.Infrastructure.Messaging;
 
-/// <summary>
-/// Wolverine, moteur applicatif de l'API : endpoints Wolverine.Http, transactions
-/// EF automatiques, outbox PostgreSQL dans le schéma <c>messaging</c>, validation FluentValidation.
-/// </summary>
 /// <summary>Combien de temps Wolverine garde un message, qui peut porter l'adresse d'un joueur (durées annoncées dans la doc RGPD).</summary>
 public static class MessageRetention
 {
@@ -23,6 +19,10 @@ public static class MessageRetention
     public static readonly TimeSpan DeadLetters = TimeSpan.FromDays(3);
 }
 
+/// <summary>
+/// Wolverine, moteur applicatif de l'API : endpoints Wolverine.Http, transactions
+/// EF automatiques, outbox PostgreSQL dans le schéma <c>messaging</c>, validation FluentValidation.
+/// </summary>
 public static class WolverineSetup
 {
     public static WebApplicationBuilder AddInSecondsWolverine(this WebApplicationBuilder builder, string connectionString)

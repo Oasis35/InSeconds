@@ -71,7 +71,7 @@ Appliquées chaque nuit par `players-purge-expired-tokens` :
 | Donnée | Durée |
 |---|---|
 | Jetons de connexion et de changement d'email | jusqu'à expiration (15 minutes), la ligne est supprimée par la purge nocturne |
-| Message d'email en attente ou traité (Wolverine, schéma `messaging`, il porte l'adresse du destinataire) | 5 minutes une fois traité ; 3 jours dans la file des échecs, le temps de voir une panne d'envoi (`MessageRetention`, `MessageRetentionTests`) |
+| Message d'email en attente ou traité (Wolverine, schéma `messaging`, il porte l'adresse du destinataire) | 5 minutes une fois traité ; 3 jours dans la file des échecs, le temps de voir une panne d'envoi (`MessageRetention`, `MessageRetentionTests`). L'effacement d'un compte ne purge pas cette file : un message en échec disparaît à l'expiration des 3 jours, comme l'annonce `/privacy` |
 | Appareil (même déconnecté) | 91 jours après sa dernière visite (un jour après l'expiration du cookie) |
 | Compte sans visite | 3 ans, puis effacé avec son historique (jamais un admin, sans email de prévenance) |
 | Invité | jamais effacé ; son pseudo d'invité est vidé 91 jours après sa dernière visite, il est ensuite anonyme une fois ses appareils supprimés |
