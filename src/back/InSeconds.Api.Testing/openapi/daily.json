@@ -3513,16 +3513,16 @@
       "name": "InSeconds.Api.Modules.Daily.Application.GetTodayEndpoint"
     },
     {
-      "name": "InSeconds.Api.Modules.Daily.Application.UpdateListeningEndpoint"
-    },
-    {
-      "name": "InSeconds.Api.Modules.Daily.Application.AbandonSessionEndpoint"
-    },
-    {
       "name": "InSeconds.Api.Modules.Daily.Application.StartSessionEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.SubmitAnswerEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.UpdateListeningEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.AbandonSessionEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.GetEarProfileEndpoint"
