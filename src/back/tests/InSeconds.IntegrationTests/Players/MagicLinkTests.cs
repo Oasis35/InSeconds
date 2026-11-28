@@ -60,7 +60,7 @@ public class MagicLinkTests(PostgresFixture postgres) : IAsyncLifetime
         var again = await _app.Browser().PostAsJsonAsync("/api/players/auth/magic-link", new RequestMagicLink("presse@example.com"), Ct);
         // Une autre adresse, demandée ensuite, prouve que la file a avancé.
         await _app.RequestTokenAsync("temoin@example.com");
-        await Task.Delay(500, Ct);
+        await Waiting.MessagesHandledAsync(_app.Api, Ct);
 
         Assert.Equal(HttpStatusCode.NoContent, again.StatusCode);
         Assert.Single(_app.Emails.Sent, e => e.To == "presse@example.com");
@@ -243,7 +243,7 @@ public class MagicLinkTests(PostgresFixture postgres) : IAsyncLifetime
             await firstInside.Task.WaitAsync(TimeSpan.FromSeconds(15), Ct);
             second = MagicLinkApi.VerifyAsync(_app.Browser(), token, "Double");
             // La seconde attend le verrou du jeton, que la première garde jusqu'à la fin de sa transaction.
-            await WaitForLockWaitAsync();
+            await Waiting.LockWaitersAsync(_app.Api, 1, Ct);
         }
         finally
         {
@@ -414,19 +414,6 @@ public class MagicLinkTests(PostgresFixture postgres) : IAsyncLifetime
             INSERT INTO players.accounts (player_id, email, pseudo, is_admin) VALUES ('{playerId}', '{email}', '{pseudo}', {isAdmin});
             """);
         return playerId;
-    }
-
-    /// <summary>Attend qu'une requête de cette base soit bloquée sur un verrou.</summary>
-    private async Task WaitForLockWaitAsync()
-    {
-        var deadline = DateTime.UtcNow.AddSeconds(15);
-        while (await _app.Api.ScalarAsync<long>(
-                   "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'") == 0)
-        {
-            if (DateTime.UtcNow > deadline)
-                throw new TimeoutException("Aucune requête n'attend de verrou.");
-            await Task.Delay(50, Ct);
-        }
     }
 
     /// <summary>Un jeton écrit directement en base ; renvoie sa valeur brute.</summary>
