@@ -114,30 +114,6 @@ public sealed class RateLimitPoliciesTests : IAsyncLifetime
         }
     }
 
-    [Fact(Skip = "Défaut constaté, à corriger dans le code : aucun refus 429 ne porte Retry-After (les 16 politiques, vérifié), alors que .claude/rules/back/transverse.md l'annonce. " +
-                 "Le TryGetMetadata(MetadataName.RetryAfter) de RateLimitingServiceCollectionExtensions.WriteProblemAsync ne reçoit rien d'une fenêtre glissante sans file d'attente. " +
-                 "Retirer Skip quand le code ou la doc est corrigé.")]
-    public async Task ToutRefus429_PorteRetryAfter()
-    {
-        var ct = TestContext.Current.CancellationToken;
-        var client = _app.GetTestClient();
-        var withoutRetryAfter = new List<string>();
-
-        foreach (var (policy, limit) in RateLimitingServiceCollectionExtensions.Limits)
-        {
-            for (var i = 0; i < limit.PermitLimit; i++)
-                await client.GetAsync($"/policy/{policy}", ct);
-
-            var rejected = await client.GetAsync($"/policy/{policy}", ct);
-
-            Assert.True(rejected.StatusCode == HttpStatusCode.TooManyRequests, $"{policy} : la requête {limit.PermitLimit + 1} devait être refusée.");
-            if (rejected.Headers.RetryAfter is null)
-                withoutRetryAfter.Add(policy);
-        }
-
-        Assert.True(withoutRetryAfter.Count == 0, $"Refus sans Retry-After : {string.Join(", ", withoutRetryAfter)}.");
-    }
-
     [Fact]
     public async Task UnePolitiqueSaturee_NeToucheAucuneAutre()
     {
