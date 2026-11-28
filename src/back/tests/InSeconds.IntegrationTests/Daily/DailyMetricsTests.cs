@@ -30,32 +30,29 @@ public class DailyMetricsTests(PostgresFixture postgres) : IAsyncLifetime
         measurement.Tags.TryGetValue(key, out var value) ? Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) : null;
 
     [Fact]
-    public async Task PartieJouee_CompteDemarrage_Indice_Reponses_Fin_EtLeScore()
+    public async Task PartieJouee_CompteDemarrage_Reponses_Fin_EtLeScore()
     {
         using var sessions = Collect<long>(DailyMetrics.SessionsName);
         using var answers = Collect<long>(DailyMetrics.AnswersName);
-        using var hints = Collect<long>(DailyMetrics.HintsName);
         using var scores = Collect<int>(DailyMetrics.SessionScoreName);
         var alice = await _game.NewPlayerAsync();
 
         var session = (await alice.StartAsync()).SessionId;
         await alice.ListenAsync(session, 1, 5);
-        (await alice.HintAsync(session, 1, 1)).EnsureSuccessStatusCode();
         var trackId = await _game.TrackAtAsync(Today, 1);
         (await alice.AnswerAsync(session, 1, 5, $"Artiste {trackId}", "Zzzz")).EnsureSuccessStatusCode();
         var last = await alice.FinishAsync(session, fromPosition: 2, seconds: 0.5m);
 
         Assert.Equal([DailyMetrics.Started, DailyMetrics.Completed], sessions.GetMeasurementSnapshot().Where(m => m.Value != 0).Select(m => Tag(m, "event")));
-        Assert.Equal(["1"], hints.GetMeasurementSnapshot().Select(m => Tag(m, "hint_level")));
         var all = answers.GetMeasurementSnapshot();
         Assert.Equal(5, all.Count);
         var first = all[0];
-        Assert.Equal(("5", "1", "True", "False"),
-            (Tag(first, "listened_seconds"), Tag(first, "hint_level"), Tag(first, "artist_found"), Tag(first, "title_found")));
-        Assert.All(all.Skip(1), m => Assert.Equal(("0.5", "0", "True", "True"),
-            (Tag(m, "listened_seconds"), Tag(m, "hint_level"), Tag(m, "artist_found"), Tag(m, "title_found"))));
+        Assert.Equal(("5", "True", "False"),
+            (Tag(first, "listened_seconds"), Tag(first, "artist_found"), Tag(first, "title_found")));
+        Assert.All(all.Skip(1), m => Assert.Equal(("0.5", "True", "True"),
+            (Tag(m, "listened_seconds"), Tag(m, "artist_found"), Tag(m, "title_found"))));
         // Jamais d'identifiant : un joueur ou un morceau en étiquette ferait exploser le nombre de séries.
-        Assert.All(all, m => Assert.Equal(["artist_found", "hint_level", "listened_seconds", "retry", "title_found"], m.Tags.Keys.Order()));
+        Assert.All(all, m => Assert.Equal(["artist_found", "listened_seconds", "retry", "title_found"], m.Tags.Keys.Order()));
         Assert.All(all, m => Assert.Equal("False", Tag(m, "retry")));
         Assert.True(last.Completed);
         var total = await _game.Api.ScalarAsync<int>($"SELECT total_score FROM daily.sessions WHERE id = {session}");

@@ -15,10 +15,6 @@ export const SETTINGS: DailySettings = {
   tracksPerChallenge: 3,
   allowedDurationsSeconds: [0.5, 1, 2, 5],
   durationScores: [{ seconds: 0.5, score: 1000 }, { seconds: 1, score: 850 }, { seconds: 2, score: 550 }, { seconds: 5, score: 250 }],
-  hints: [
-    { level: 1, unlockSeconds: 5, kind: 'year', penaltyPercent: 30 },
-    { level: 2, unlockSeconds: 10, kind: 'artistMasked', penaltyPercent: 60 },
-  ],
   retryScorePercent: 70,
 };
 
@@ -38,7 +34,7 @@ export const SESSION = (over: Partial<StartedSession> = {}): StartedSession => (
 });
 
 export const ANSWERED = (position: number, over: Partial<AnsweredTrack> = {}): AnsweredTrack => ({
-  position, artistCorrect: true, titleCorrect: true, score: 850, listenedSeconds: 1, hintLevel: 0,
+  position, artistCorrect: true, titleCorrect: true, score: 850, listenedSeconds: 1,
   correctArtist: `Artiste ${position}`, correctTitle: `Titre ${position}`, deezerTrackId: 100 + position, coverUrl: `https://cdn.example/c${position}.jpg`,
   averageSecondsWhenCorrect: 1.5, distribution: [{ durationSeconds: 1, count: 4 }], notFoundCount: 1, ...over,
 });
@@ -94,7 +90,6 @@ export class FakeDailyApi {
   weekReview: WeekReview | null | Error = null;
   /** La réponse du serveur à chaque réponse envoyée ; `Error` pour un échec. */
   answer: (answer: AnswerToSend) => AnsweredTrack | Error = a => ANSWERED(a.position);
-  hintFacts: readonly { kind: string; value: string | null }[] = [{ kind: 'year', value: '2013' }];
   readonly calls: string[] = [];
 
   private result<T>(value: T | Error): Promise<T> {
@@ -119,11 +114,6 @@ export class FakeDailyApi {
   updateListening(sessionId: number, position: number, seconds: number): Promise<void> {
     this.calls.push(`listening ${sessionId}/${position}/${seconds}`);
     return Promise.resolve();
-  }
-
-  requestHint(sessionId: number, position: number, level: number): Promise<readonly { kind: string; value: string | null }[]> {
-    this.calls.push(`hint ${sessionId}/${position}/${level}`);
-    return Promise.resolve(this.hintFacts);
   }
 
   /** Combien de prochaines réponses le serveur refuse en offrant une seconde tentative (rien n'est compté ni révélé). */
@@ -202,7 +192,6 @@ export function provideFakeDailyApi(fake: FakeDailyApi): Provider {
       settings: () => fake.settingsCall(),
       start: () => fake.startCall(),
       updateListening: (s: number, p: number, sec: number) => fake.updateListening(s, p, sec),
-      requestHint: (s: number, p: number, l: number) => fake.requestHint(s, p, l),
       submitAnswer: (s: number, a: AnswerToSend) => fake.submitAnswer(s, a),
       abandon: (s: number) => fake.abandon(s),
       stats: () => fake.statsCall(),

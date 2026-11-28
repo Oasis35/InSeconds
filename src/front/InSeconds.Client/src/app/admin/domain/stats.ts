@@ -31,7 +31,6 @@ export interface StatsAnswers {
   total: number;
   artistFound: number;
   titleFound: number;
-  withHint: number;
   byListened: readonly ListenedBucket[];
 }
 

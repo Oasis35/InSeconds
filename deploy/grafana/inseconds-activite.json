@@ -452,7 +452,7 @@
       "gridPos": {
         "x": 12,
         "y": 5,
-        "w": 4,
+        "w": 6,
         "h": 5
       }
     },
@@ -494,53 +494,9 @@
       },
       "id": 11,
       "gridPos": {
-        "x": 16,
+        "x": 18,
         "y": 5,
-        "w": 4,
-        "h": 5
-      }
-    },
-    {
-      "type": "stat",
-      "title": "Réponses avec indice",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROM}"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROM}"
-          },
-          "expr": "100 * sum(increase(inseconds_daily_answers_total{job=~\".*inseconds-api\",hint_level!=\"0\"}[$__range])) / sum(increase(inseconds_daily_answers_total{job=~\".*inseconds-api\"}[$__range]))",
-          "legendFormat": "",
-          "instant": true,
-          "range": false
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "decimals": 0,
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "colorMode": "value",
-        "graphMode": "none"
-      },
-      "id": 12,
-      "gridPos": {
-        "x": 20,
-        "y": 5,
-        "w": 4,
+        "w": 6,
         "h": 5
       }
     },
@@ -785,59 +741,7 @@
       "gridPos": {
         "x": 0,
         "y": 30,
-        "w": 8,
-        "h": 9
-      }
-    },
-    {
-      "type": "barchart",
-      "title": "Niveau d'indice utilisé",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROM}"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROM}"
-          },
-          "expr": "sum by (hint_level) (increase(inseconds_daily_answers_total{job=~\".*inseconds-api\"}[$__range]))",
-          "legendFormat": "niveau {{hint_level}}",
-          "instant": true,
-          "range": false,
-          "format": "table"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "reduce",
-          "options": {
-            "reducers": [
-              "lastNotNull"
-            ],
-            "mode": "seriesToRows"
-          }
-        }
-      ],
-      "options": {
-        "xField": "Field",
-        "orientation": "auto",
-        "showValue": "auto",
-        "legend": {
-          "showLegend": false
-        }
-      },
-      "id": 18,
-      "gridPos": {
-        "x": 8,
-        "y": 30,
-        "w": 8,
+        "w": 12,
         "h": 9
       }
     },
@@ -887,9 +791,9 @@
       },
       "id": 19,
       "gridPos": {
-        "x": 16,
+        "x": 12,
         "y": 30,
-        "w": 8,
+        "w": 12,
         "h": 9
       }
     },

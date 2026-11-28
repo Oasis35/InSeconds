@@ -86,7 +86,7 @@ public class AdminStatsTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Reponses_TrouveIndiceEtPalierEcoute()
+    public async Task Reponses_TrouveEtPalierEcoute()
     {
         await _game.App.AddChallengeAsync(Today, 1, 2, 3, 4, 5);
         var alice = await _game.NewPlayerAsync("Alice");
@@ -94,7 +94,7 @@ public class AdminStatsTests(PostgresFixture postgres) : IAsyncLifetime
 
         var answers = (await ReadAsync()).Answers;
 
-        Assert.Equal((3, 2, 1, 0), (answers.Total, answers.ArtistFound, answers.TitleFound, answers.WithHint));
+        Assert.Equal((3, 2, 1), (answers.Total, answers.ArtistFound, answers.TitleFound));
         Assert.Equal([(0.5m, 1), (1m, 2)], answers.ByListened.Select(x => (x.Seconds, x.Count)));
     }
 

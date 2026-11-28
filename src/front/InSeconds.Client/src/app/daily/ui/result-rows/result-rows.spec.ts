@@ -2,7 +2,7 @@ import { AnsweredTrack, DayStats, TrackStat } from '../../domain/daily';
 import { rowsFromResults, rowsFromStats } from './result-rows';
 
 const answered = (over: Partial<AnsweredTrack> = {}): AnsweredTrack => ({
-  position: 1, artistCorrect: true, titleCorrect: true, score: 1000, listenedSeconds: 0.5, hintLevel: 0,
+  position: 1, artistCorrect: true, titleCorrect: true, score: 1000, listenedSeconds: 0.5,
   correctArtist: 'Eminem', correctTitle: 'Lose Yourself', deezerTrackId: 42, coverUrl: null,
   averageSecondsWhenCorrect: 0.5, distribution: [], notFoundCount: 0,
   ...over,

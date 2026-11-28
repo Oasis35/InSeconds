@@ -35,9 +35,6 @@ internal static class DailyProblems
     public static ProblemDetails TrackLockNotReleased() =>
         ApiProblem.Of(StatusCodes.Status409Conflict, DailyErrorCodes.TrackLockNotReleased, "Le morceau en cours n'a pas encore reçu sa réponse.");
 
-    public static ProblemDetails HintLocked(decimal unlockSeconds) =>
-        ApiProblem.Of(StatusCodes.Status409Conflict, DailyErrorCodes.HintLocked, $"Cet indice se débloque après {unlockSeconds} s d'écoute.");
-
     public static ProblemDetails ListenedBelowMinimum() =>
         ApiProblem.Of(StatusCodes.Status400BadRequest, DailyErrorCodes.ListenedBelowMinimum, "La durée annoncée est inférieure à la durée réellement écoutée sur ce morceau.");
 
@@ -66,18 +63,14 @@ internal static partial class DailyLog
     // « morceau {id}) : palier … » puis « - morceau n°{position} : {artiste} / {titre} ». {TrackId} est le morceau du catalogue.
     // Figé par DailyLogTests.
     [LoggerMessage(EventId = 1002, Level = LogLevel.Information,
-        Message = "Réponse de {PlayerId} (partie {SessionId}, morceau {TrackId}) : palier {ListenedSeconds}s, artiste {ArtistCorrect}, titre {TitleCorrect}, indice {HintLevel}, score {Score} - morceau n°{TrackPosition} : {TrackArtist} / {TrackTitle}")]
+        Message = "Réponse de {PlayerId} (partie {SessionId}, morceau {TrackId}) : palier {ListenedSeconds}s, artiste {ArtistCorrect}, titre {TitleCorrect}, score {Score} - morceau n°{TrackPosition} : {TrackArtist} / {TrackTitle}")]
     public static partial void AnswerSubmitted(
         ILogger logger, Guid playerId, int sessionId, int trackId, decimal listenedSeconds, bool artistCorrect, bool titleCorrect,
-        int hintLevel, int score, int trackPosition, string trackArtist, string trackTitle);
+        int score, int trackPosition, string trackArtist, string trackTitle);
 
     [LoggerMessage(EventId = 1003, Level = LogLevel.Information,
         Message = "Partie {SessionId} terminée par {PlayerId} : score {TotalScore}")]
     public static partial void SessionCompleted(ILogger logger, int sessionId, Guid playerId, int totalScore);
-
-    [LoggerMessage(EventId = 1004, Level = LogLevel.Information,
-        Message = "Indice niveau {HintLevel} demandé par {PlayerId} (partie {SessionId}, morceau {TrackId}, n°{TrackPosition})")]
-    public static partial void HintRequested(ILogger logger, int hintLevel, Guid playerId, int sessionId, int trackId, int trackPosition);
 
     [LoggerMessage(EventId = 1005, Level = LogLevel.Information,
         Message = "Partie {SessionId} abandonnée par {PlayerId}")]
@@ -98,15 +91,6 @@ internal static partial class DailyLog
 
     [LoggerMessage(EventId = 1310, Level = LogLevel.Error, Message = "Impossible d'expirer les parties en cours des défis passés.")]
     public static partial void ExpireStaleSessionsFailed(ILogger logger, Exception exception);
-
-    // Une erreur, comme le pool insuffisant : un réglage qui promet un indice que rien ne révèle doit alerter.
-    [LoggerMessage(EventId = 1305, Level = LogLevel.Error,
-        Message = "Daily:HintUnlockDurationsSeconds propose {Configured} niveaux d'indice, les fournisseurs en révèlent {Available} : les niveaux en trop sont ignorés.")]
-    public static partial void HintLevelsBeyondProviders(ILogger logger, int configured, int available);
-
-    [LoggerMessage(EventId = 1306, Level = LogLevel.Error,
-        Message = "Daily:HintUnlockDurationsSeconds n'est pas strictement positif et croissant : les seuils par défaut sont utilisés.")]
-    public static partial void InvalidHintThresholds(ILogger logger);
 
     [LoggerMessage(EventId = 1311, Level = LogLevel.Error,
         Message = "Daily:RetryScorePercent vaut {Configured}, hors de 0 à 100 : la valeur par défaut est utilisée.")]

@@ -22,7 +22,7 @@ Un écran qui existe déjà au défi du jour se reprend tel quel, seuls les text
 
 | Situation | Écran repris | Adaptation |
 |---|---|---|
-| Lecteur | `RoundPlayerComponent` | écoute d'un seul tenant, durée du palier, ↺ libre, ni « écouter plus » ni indice |
+| Lecteur | `RoundPlayerComponent` | écoute d'un seul tenant, durée du palier, ↺ libre, sans « écouter plus » |
 | Saisie | champ avec autocomplétion de la manche | « Artiste - Titre », Valider, « Passer (une vie) » avec confirmation en ligne (« Tu perdras une vie ») |
 | Reprise d'une partie en cours | `resume-screen` | avertissement d'abandon : « Cette partie sera perdue et ne comptera pas pour ton record. » |
 | « Abandonner » (lien de l'en-tête) | `ModalService.confirm` | même texte |
@@ -38,7 +38,7 @@ Sans écran du tout : `/survie` sans accès (renvoie au défi du jour) et le lie
 2. **Manche** : un seul écran en pile.
    - **En-tête** : le logo « IN//SECONDS » à gauche et « Abandonner » à droite, comme au défi.
    - **Bloc du haut** (`run-scoreboard`) : trois zones : « Manche N » et une pastille par morceau de la manche (trouvé, à moitié, raté, retiré, en cours, à venir) à gauche, le score avec les bonnes réponses d'affilée au centre, les **vies** en cœurs rouges (3) à droite, pour qui joue la playlist d'un ami son **fantôme** (son pseudo, son total au même morceau, l'écart ; « Tu viens de dépasser Léa ! » quelques secondes au moment du dépassement ; « Tu bats Léa » au-delà de son score figé), et la rangée des paliers d'écoute (10 à 0,5 s) avec celui de la manche en ambre (repliée sur un écran bas, le clavier ouvert).
-   - **Carte du morceau en cours** : bouton ↺ à gauche de la forme d'onde, le **thème** de la manche (l'indice) en pastille juste au-dessus de la saisie quand il y en a un, la saisie, Valider, « Passer (une vie) » (lien souligné sous Valider, la confirmation dit qu'une vie sera perdue). Le **chrono de 45 s** s'affiche en gris, les 5 dernières secondes en grand et en blanc avec un tic ; à 0 la réponse tapée part seule.
+   - **Carte du morceau en cours** : bouton ↺ à gauche de la forme d'onde, le **thème** de la manche en pastille juste au-dessus de la saisie quand il y en a un, la saisie, Valider, « Passer (une vie) » (lien souligné sous Valider, la confirmation dit qu'une vie sera perdue). Le **chrono de 45 s** s'affiche en gris, les 5 dernières secondes en grand et en blanc avec un tic ; à 0 la réponse tapée part seule.
    - **La pile** dessous : les morceaux joués, avec la ligne de chaque manche passée.
 3. **Réponse** : dans la carte, pochette ronde, artiste et titre avec ✓/✗ (une moitié juste en demi-teinte), « Une vie en moins » pour un morceau raté, points du morceau qui s'envolent vers le score, badge Deezer. Enchaînement au clic ou seul après 2 s.
 4. **Morceau retiré** : quand Deezer n'a plus d'extrait, la carte devient « Morceau retiré de la manche » ; aucune vie perdue.

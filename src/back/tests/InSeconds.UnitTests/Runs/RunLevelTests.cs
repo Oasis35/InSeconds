@@ -158,7 +158,7 @@ public class RunLevelTests
         while (session.IsPending)
         {
             var found = rules.RoundOf(session.NextPosition) <= roundsFound;
-            session.Answer(challenge, new RoundOutcome(found, found, 10m, 0), new ArtistTitleScoring(), end);
+            session.Answer(challenge, new RoundOutcome(found, found, 10m), new ArtistTitleScoring(), end);
         }
 
         return session;

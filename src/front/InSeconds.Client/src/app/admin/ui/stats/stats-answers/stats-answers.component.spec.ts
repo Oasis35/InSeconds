@@ -13,15 +13,14 @@ describe('StatsAnswersComponent', () => {
   }
 
   it('montre les parts trouvées et un palier par ligne', () => {
-    const element = render({ total: 100, artistFound: 60, titleFound: 50, withHint: 20, byListened: [{ seconds: 0.5, count: 10 }, { seconds: 1, count: 30 }] });
+    const element = render({ total: 100, artistFound: 60, titleFound: 50, byListened: [{ seconds: 0.5, count: 10 }, { seconds: 1, count: 30 }] });
     const text = element.querySelector('[data-testid="stats-answers"]')!.textContent!;
     expect(text).toContain('60 %');
     expect(text).toContain('50 %');
-    expect(text).toContain('20 %');
     expect(element.querySelectorAll('[data-testid="listened-tiers"] > div')).toHaveLength(2);
   });
 
   it('rien sans réponse', () => {
-    expect(render({ total: 0, artistFound: 0, titleFound: 0, withHint: 0, byListened: [] }).querySelector('[data-testid="stats-answers"]')).toBeNull();
+    expect(render({ total: 0, artistFound: 0, titleFound: 0, byListened: [] }).querySelector('[data-testid="stats-answers"]')).toBeNull();
   });
 });

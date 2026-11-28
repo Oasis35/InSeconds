@@ -21,22 +21,13 @@ export interface DailyToday {
   readonly recap: ReturnRecap | null;
 }
 
-/** Un niveau d'indice : quand il se débloque, ce qu'il révèle (`year`, `artistMasked`) et son coût en pourcentage du score. */
-export interface HintLevelSetting {
-  readonly level: number;
-  readonly unlockSeconds: number;
-  readonly kind: string;
-  readonly penaltyPercent: number;
-}
-
-/** Les réglages publics du défi du jour : paliers d'écoute, barème, indices. */
+/** Les réglages publics du défi du jour : paliers d'écoute, barème. */
 export interface DailySettings {
   readonly guessTimerSeconds: number;
   readonly tracksPerChallenge: number;
   readonly allowedDurationsSeconds: readonly number[];
-  /** Ce que rapporte chaque palier, artiste et titre trouvés sans indice : les points en jeu du lecteur. */
+  /** Ce que rapporte chaque palier, artiste et titre trouvés : les points en jeu du lecteur. */
   readonly durationScores: readonly DurationScoreSetting[];
-  readonly hints: readonly HintLevelSetting[];
   /** Le pourcentage du score à la seconde tentative (0 : pas de seconde tentative). */
   readonly retryScorePercent: number;
 }
@@ -71,7 +62,6 @@ export interface AnsweredTrack {
   readonly titleCorrect: boolean;
   readonly score: number;
   readonly listenedSeconds: number;
-  readonly hintLevel: number;
   readonly correctArtist: string;
   readonly correctTitle: string;
   readonly deezerTrackId: number;
@@ -82,12 +72,10 @@ export interface AnsweredTrack {
   readonly notFoundCount: number;
 }
 
-/** Ce que la partie a déjà vu du morceau en cours (reprise) : le plancher d'écoute et les indices déjà payés. */
+/** Ce que la partie a déjà vu du morceau en cours (reprise) : le plancher d'écoute. */
 export interface ResumedTrack {
   readonly position: number;
   readonly listenedSeconds: number;
-  readonly hintLevel: number;
-  readonly hintFacts: readonly { readonly kind: string; readonly value: string | null }[];
   /** Les tentatives ratées déjà enregistrées sur ce morceau (1 : la seconde tentative est en cours). */
   readonly failedAttempts: number;
 }

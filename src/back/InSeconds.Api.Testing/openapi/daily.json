@@ -630,97 +630,6 @@
         }
       }
     },
-    "/api/daily/sessions/{id}/hints": {
-      "post": {
-        "tags": [
-          "Daily"
-        ],
-        "operationId": "requestHint",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RequestHint"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HintResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/daily/sessions/{id}/abandon": {
       "post": {
         "tags": [
@@ -1861,9 +1770,7 @@
       "CurrentTrackState": {
         "required": [
           "position",
-          "listenedSeconds",
-          "hintLevel",
-          "hintFacts"
+          "listenedSeconds"
         ],
         "type": "object",
         "properties": {
@@ -1874,16 +1781,6 @@
           "listenedSeconds": {
             "type": "number",
             "format": "double"
-          },
-          "hintLevel": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "hintFacts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HintFactResponse"
-            }
           },
           "failedAttempts": {
             "type": "integer",
@@ -1915,7 +1812,6 @@
           "tracksPerChallenge",
           "allowedDurationsSeconds",
           "durationScores",
-          "hints",
           "streakFreezeEveryDays",
           "streakFreezeMax",
           "retryScorePercent"
@@ -1941,12 +1837,6 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DurationScoreResponse"
-            }
-          },
-          "hints": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HintLevelResponse"
             }
           },
           "streakFreezeEveryDays": {
@@ -2130,64 +2020,6 @@
           }
         }
       },
-      "HintFactResponse": {
-        "required": [
-          "kind",
-          "value"
-        ],
-        "type": "object",
-        "properties": {
-          "kind": {
-            "type": "string"
-          },
-          "value": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
-      },
-      "HintLevelResponse": {
-        "required": [
-          "level",
-          "unlockSeconds",
-          "kind",
-          "penaltyPercent"
-        ],
-        "type": "object",
-        "properties": {
-          "level": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "unlockSeconds": {
-            "type": "number",
-            "format": "double"
-          },
-          "kind": {
-            "type": "string"
-          },
-          "penaltyPercent": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "HintResponse": {
-        "required": [
-          "facts"
-        ],
-        "type": "object",
-        "properties": {
-          "facts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HintFactResponse"
-            }
-          }
-        }
-      },
       "HttpValidationProblemDetails": {
         "type": "object",
         "properties": {
@@ -2290,23 +2122,6 @@
           }
         }
       },
-      "RequestHint": {
-        "required": [
-          "position",
-          "level"
-        ],
-        "type": "object",
-        "properties": {
-          "position": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "level": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
       "ResumedAnswer": {
         "required": [
           "position",
@@ -2314,7 +2129,6 @@
           "titleCorrect",
           "score",
           "listenedSeconds",
-          "hintLevel",
           "correctArtist",
           "correctTitle",
           "deezerTrackId",
@@ -2339,10 +2153,6 @@
           "listenedSeconds": {
             "type": "number",
             "format": "double"
-          },
-          "hintLevel": {
-            "type": "integer",
-            "format": "int32"
           },
           "correctArtist": {
             "type": "string"
@@ -2472,7 +2282,6 @@
           "total",
           "artistFound",
           "titleFound",
-          "withHint",
           "byListened"
         ],
         "type": "object",
@@ -2486,10 +2295,6 @@
             "format": "int32"
           },
           "titleFound": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "withHint": {
             "type": "integer",
             "format": "int32"
           },
@@ -2746,8 +2551,6 @@
           "averageSecondsWhenCorrect",
           "guessTimeDistribution",
           "notFoundCount",
-          "hintLevelUsed",
-          "hintPenaltyPercentApplied",
           "completed"
         ],
         "type": "object",
@@ -2796,14 +2599,6 @@
             }
           },
           "notFoundCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "hintLevelUsed": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "hintPenaltyPercentApplied": {
             "type": "integer",
             "format": "int32"
           },
@@ -3718,19 +3513,16 @@
       "name": "InSeconds.Api.Modules.Daily.Application.GetTodayEndpoint"
     },
     {
-      "name": "InSeconds.Api.Modules.Daily.Application.UpdateListeningEndpoint"
-    },
-    {
-      "name": "InSeconds.Api.Modules.Daily.Application.RequestHintEndpoint"
-    },
-    {
-      "name": "InSeconds.Api.Modules.Daily.Application.AbandonSessionEndpoint"
-    },
-    {
       "name": "InSeconds.Api.Modules.Daily.Application.StartSessionEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.SubmitAnswerEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.UpdateListeningEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.AbandonSessionEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.GetEarProfileEndpoint"

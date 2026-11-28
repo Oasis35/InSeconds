@@ -14,7 +14,7 @@ namespace InSeconds.Api.Modules.Daily.Application;
 
 /// <summary>
 /// La réponse du joueur au morceau en cours. <paramref name="ListenedSeconds"/> est le palier **annoncé** (0 pour un morceau sans extrait que le
-/// joueur passe) : le serveur le compare à ce qu'il a vu écouter, il ne le croit pas. Le niveau d'indice n'est jamais envoyé : la partie le garde.
+/// joueur passe) : le serveur le compare à ce qu'il a vu écouter, il ne le croit pas.
 /// </summary>
 public sealed record SubmitAnswer(int Position, decimal ListenedSeconds, bool WasExtended, string? Artist, string? Title);
 
@@ -51,14 +51,12 @@ public sealed record SubmitAnswerResponse(
     double? AverageSecondsWhenCorrect,
     IReadOnlyList<GuessBucketResponse> GuessTimeDistribution,
     int NotFoundCount,
-    int HintLevelUsed,
-    int HintPenaltyPercentApplied,
     bool Completed,
     bool Retry = false)
 {
     /// <summary>La réponse « fausse, retente » : aucun verdict, aucun morceau, aucun point (piège 51).</summary>
-    public static SubmitAnswerResponse RetryOffered(decimal listenedSeconds, int hintLevel) =>
-        new(false, false, 0, string.Empty, string.Empty, 0, null, listenedSeconds, null, [], 0, hintLevel, 0, false, true);
+    public static SubmitAnswerResponse RetryOffered(decimal listenedSeconds) =>
+        new(false, false, 0, string.Empty, string.Empty, 0, null, listenedSeconds, null, [], 0, false, true);
 }
 
 /// <summary>La partie et le morceau auquel le joueur répond (nom de référence compris).</summary>
@@ -86,8 +84,8 @@ public static class SubmitAnswerEndpoint
         if (attempt!.Track is null)
             return DailyProblems.TrackNotFound();
 
-        // Anti-triche (piège 35) : écouter longuement, ou débloquer un indice, puis annoncer un palier court pour gagner plus.
-        return Answer(request, attempt, rules, matcher).IsAccepted ? WolverineContinue.NoProblems : DailyProblems.ListenedBelowMinimum();
+        // Anti-triche (piège 35) : écouter longuement puis annoncer un palier court pour gagner plus.
+        return Answer(request, attempt, matcher).IsAccepted ? WolverineContinue.NoProblems : DailyProblems.ListenedBelowMinimum();
     }
 
     /// <summary>
@@ -119,14 +117,14 @@ public static class SubmitAnswerEndpoint
         var session = attempt.Loaded.Session;
         var challenge = attempt.Loaded.Challenge;
         var info = attempt.Track!;
-        var outcome = Answer(request, attempt, rules, matcher).Outcome!;
+        var outcome = Answer(request, attempt, matcher).Outcome!;
 
         // Piège 51 : une réponse non complète n'est pas corrigée devant le joueur (il saurait quelle moitié est juste) : il a une seconde tentative.
         if (session.CanOfferRetry(rules.RetryEnabled, request.ListenedSeconds, string.IsNullOrWhiteSpace(request.Artist) && string.IsNullOrWhiteSpace(request.Title), outcome.FoundBoth))
         {
             session.RecordFailedAttempt(request.ListenedSeconds);
             metrics.RetryOffered();
-            return SubmitAnswerResponse.RetryOffered(request.ListenedSeconds, outcome.HintLevelUsed);
+            return SubmitAnswerResponse.RetryOffered(request.ListenedSeconds);
         }
 
         var isRetry = rules.RetryEnabled && session.FailedAttemptsOfCurrentTrack > 0;
@@ -138,7 +136,7 @@ public static class SubmitAnswerEndpoint
         var completed = session.Answer(outcome, score, request.WasExtended, challenge.Tracks.Count, calendar.Now);
         DailyLog.AnswerSubmitted(
             logger, session.PlayerId, session.Id, info.Id, outcome.ListenedSeconds, outcome.ArtistCorrect, outcome.TitleCorrect,
-            outcome.HintLevelUsed, score, request.Position, info.Artist, info.DisplayTitle);
+            score, request.Position, info.Artist, info.DisplayTitle);
         metrics.AnswerSubmitted(outcome, score, isRetry);
 
         if (completed)
@@ -153,7 +151,7 @@ public static class SubmitAnswerEndpoint
             outcome.ArtistCorrect, outcome.TitleCorrect, score, info.Artist, info.DisplayTitle, info.DeezerTrackId, info.CoverUrl, outcome.ListenedSeconds,
             stats.AverageSecondsWhenFound,
             stats.GuessTimeDistribution.Select(b => new GuessBucketResponse(b.Seconds, b.Count)).ToList(),
-            stats.NotFoundCount, outcome.HintLevelUsed, scoring.HintPenaltyPercent(outcome.HintLevelUsed), completed);
+            stats.NotFoundCount, completed);
     }
 
     // Calculée sur la date du défi : terminer le défi d'hier après minuit ne casse pas la série (piège 18).
@@ -172,7 +170,7 @@ public static class SubmitAnswerEndpoint
         session.RecordStreakEffect(streak.RecordCompletion(challenge.Date, isLinked, rules.Streak));
     }
 
-    private static AnswerResult Answer(SubmitAnswer request, AnswerAttempt attempt, DailyRules rules, IAnswerMatcher matcher) =>
-        attempt.Loaded.Session.RoundOfCurrentTrack(rules.Hints).Answer(
+    private static AnswerResult Answer(SubmitAnswer request, AnswerAttempt attempt, IAnswerMatcher matcher) =>
+        attempt.Loaded.Session.RoundOfCurrentTrack().Answer(
             request.ListenedSeconds, request.Artist, request.Title, new TrackNames(attempt.Track!.Artist, attempt.Track.Title, attempt.Track.AltTitles), matcher);
 }

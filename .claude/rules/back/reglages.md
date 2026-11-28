@@ -27,8 +27,6 @@ paths:
 | `Daily:GuessTimerSeconds` | `20` | exposé au front, appliqué nulle part |
 | `Daily:AllowedDurationsSeconds` | `[0.5,1,1.5,2,3,5,10]` | positifs, moins de 100 s, deux décimales au plus (`numeric(4,2)`) |
 | `Daily:DurationScores` | `[{"seconds":0.5,"score":1000},{"seconds":1,"score":850},{"seconds":1.5,"score":700},{"seconds":2,"score":550},{"seconds":3,"score":400},{"seconds":5,"score":250},{"seconds":10,"score":100}]` | liste d'objets ; secondes positives, points non négatifs |
-| `Daily:HintUnlockDurationsSeconds` | `[5,10]` | strictement positifs et croissants, pas plus de niveaux que de fournisseurs d'indices |
-| `Daily:HintPenaltyPercent` | `{"1":30,"2":60}` | niveau à partir de 1, 0 à 100 % |
 | `Daily:RetryScorePercent` | `70` | 0 à 100 ; part du score de la seconde tentative, 0 la désactive (piège 51) |
 | `Daily:StreakFreezeEveryDays` / `StreakFreezeMax` / `StreakLostNudgeMinDays` | `7` / `2` / `2` | non négatifs ; 0 jour : aucun gel gagné |
 | `Runs:Lives` | `3` | 1 à 10, figé |

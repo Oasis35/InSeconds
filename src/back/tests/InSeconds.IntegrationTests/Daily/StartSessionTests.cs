@@ -204,20 +204,17 @@ public class StartSessionTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Demarrer_Reprise_RenduLePlancherEtLesIndicesDuMorceauEnCours()
+    public async Task Demarrer_Reprise_RenduLePlancherDuMorceauEnCours()
     {
         var alice = await _game.NewPlayerAsync();
         await _game.GenerateAsync();
         var started = await alice.StartAsync();
         Assert.Equal(HttpStatusCode.NoContent, (await alice.ListenAsync(started.SessionId, 1, 10)).StatusCode);
-        Assert.Equal(HttpStatusCode.OK, (await alice.HintAsync(started.SessionId, 1, 2)).StatusCode);
 
         var resumed = await alice.StartAsync();
 
         var current = resumed.CurrentTrack!;
-        Assert.Equal((1, 10m, 2), (current.Position, current.ListenedSeconds, current.HintLevel));
-        // Ce que les indices ont déjà révélé : l'année (niveau 1, cumulé) et l'artiste masqué.
-        Assert.Equal(["year", "artistMasked"], current.HintFacts.Select(f => f.Kind));
+        Assert.Equal((1, 10m), (current.Position, current.ListenedSeconds));
     }
 
     [Fact]

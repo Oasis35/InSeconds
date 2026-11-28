@@ -32,7 +32,6 @@ interface RoundState {
   /** Position du morceau en cours (1 pour le premier) ; 0 tant qu'aucune partie n'est lancée. */
   position: number;
   abandonLoading: boolean;
-  hintPending: boolean;
 }
 
 const initialState: RoundState = {
@@ -43,11 +42,10 @@ const initialState: RoundState = {
   results: [],
   position: 0,
   abandonLoading: false,
-  hintPending: false,
 };
 
 /**
- * La partie du jour en cours, sur `/daily` : la création (ou la reprise) de la partie, le morceau en cours, les réponses, les indices, la fin.
+ * La partie du jour en cours, sur `/daily` : la création (ou la reprise) de la partie, le morceau en cours, les réponses, la fin.
  * À fournir à la page de la manche (avec `TrackRoundStore`, qu'il pilote) : la route fournit aussi le lecteur (`provideGameplay()`). L'accueil
  * (`HomeStore`) n'en sait rien : la manche lui rend sa fin (`finishGame`, `enterAlreadyPlayed`, `fail`) et il lit le résultat chez lui.
  *
@@ -70,7 +68,7 @@ export const DailyRoundStore = signalStore(
         return answered ? toRoundResult(answered) : null;
       }),
       roundScore: computed(() => store.results().find(r => r.position === store.position())?.score ?? 0),
-      /** D'où viennent les points du morceau en cours (palier, moitié, indice) ; `null` quand rien n'est trouvé ou que les réglages manquent. */
+      /** D'où viennent les points du morceau en cours (palier, moitié, seconde tentative) ; `null` quand rien n'est trouvé ou que les réglages manquent. */
       roundBreakdown: computed(() => {
         const settings = store.settings();
         const answered = store.results().find(r => r.position === store.position());
@@ -80,7 +78,7 @@ export const DailyRoundStore = signalStore(
     };
   }),
   withMethods((store, api = inject(DailyApi), round = inject(TrackRoundStore), sessionLoader = inject(SessionLoader), home = inject(HomeStore), sounds = inject(SoundService)) => {
-    /** Les écoutes envoyées au serveur se suivent : une demande d'indice attend la dernière (sinon le serveur refuse, 409). */
+    /** Les écoutes envoyées au serveur se suivent : le serveur garde le maximum vu. */
     let listeningQueue: Promise<void> = Promise.resolve();
     const sentListening = new Map<number, number>();
 
@@ -100,12 +98,9 @@ export const DailyRoundStore = signalStore(
       trackId: position,
       previewUrl: store.tracks().find(t => t.position === position)?.previewUrl || null,
       waveform: store.tracks().find(t => t.position === position)?.waveform ?? null,
-      listen: { steps: settings.allowedDurationsSeconds, extendable: true, stake: (seconds, hintLevel, isRetry) => dailyStake(settings, seconds, hintLevel, isRetry) },
-      hints: { unlockSeconds: settings.hints.map(h => h.unlockSeconds), kinds: settings.hints.map(h => h.kind) },
-      // Reprise : le plancher d'écoute et les indices déjà payés du morceau en cours.
+      listen: { steps: settings.allowedDurationsSeconds, extendable: true, stake: (seconds, isRetry) => dailyStake(settings, seconds, isRetry) },
+      // Reprise : le plancher d'écoute du morceau en cours.
       listenedFloor: resumed && resumed.listenedSeconds > 0 ? resumed.listenedSeconds : null,
-      hintLevel: resumed?.hintLevel ?? 0,
-      hintFacts: resumed?.hintFacts ?? [],
       failedAttempts: resumed?.failedAttempts ?? 0,
       refreshPreviewUrl: () => refreshPreview(position),
     });
@@ -116,7 +111,7 @@ export const DailyRoundStore = signalStore(
       if (!settings) return;
       sentListening.delete(position);
       const next = store.tracks().find(t => t.position === position + 1)?.previewUrl || null;
-      patchState(store, { position, hintPending: false });
+      patchState(store, { position });
       round.start(configOf(position, settings, resumed), next);
     };
 
@@ -142,7 +137,7 @@ export const DailyRoundStore = signalStore(
       }
     };
 
-    /** Envoie l'écoute au serveur : il débloque les indices et fixe le plancher anti-triche d'après ce palier (piège 35). */
+    /** Envoie l'écoute au serveur : il fixe le plancher anti-triche d'après ce palier (piège 35). */
     const reportListening = (position: number, seconds: number) => {
       const sessionId = store.sessionId();
       sentListening.set(position, seconds);
@@ -283,21 +278,6 @@ export const DailyRoundStore = signalStore(
           sounds.play(answerSound(answered.artistCorrect === true, answered.titleCorrect === true));
         } catch {
           round.submissionFailed();
-        }
-      },
-
-      /** Un indice : le serveur le donne (et le facture), la manche l'affiche. */
-      async requestHint(level: number): Promise<void> {
-        const position = store.position();
-        patchState(store, { hintPending: true });
-        try {
-          await listeningQueue;
-          const facts = await api.requestHint(store.sessionId(), position, level);
-          round.applyHints(level, facts);
-        } catch {
-          // l'indice n'est pas révélé : le joueur peut le redemander
-        } finally {
-          patchState(store, { hintPending: false });
         }
       },
 

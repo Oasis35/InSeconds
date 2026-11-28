@@ -32,8 +32,7 @@
 
       @case ('playing') {
         <div class="screen-enter flex-1 flex flex-col justify-start pt-4">
-          <app-track-round [result]="store.roundResult()" [hintPending]="store.hintPending()"
-            (answered)="onAnswered($event)" (hintRequested)="store.requestHint($event)">
+          <app-track-round [result]="store.roundResult()" (answered)="onAnswered($event)">
             <div roundScore class="flex flex-col items-start gap-2">
               <!-- Les points à gauche, le badge Deezer à leur droite (la place est libre de ce côté). -->
               <div class="w-full flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
@@ -48,7 +47,7 @@
                   <app-deezer-badge [deezerTrackId]="store.roundDeezerTrackId() ?? undefined" width="98" height="14" [lang]="language.current()" />
                 </div>
               </div>
-              <!-- D'où viennent les points : le barème du palier, puis la moitié ou l'indice qui les réduit (pastilles visibles) ; le score descend ensuite jusqu'à son résultat. -->
+              <!-- D'où viennent les points : le barème du palier, puis la moitié ou la seconde tentative qui les réduit (pastilles visibles) ; le score descend ensuite jusqu'à son résultat. -->
               <app-score-breakdown [breakdown]="store.roundBreakdown()" />
             </div>
 

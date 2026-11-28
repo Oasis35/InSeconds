@@ -26,16 +26,14 @@ public sealed record TrackSlot(int Position, string PreviewUrl, string? Waveform
 
 /// <summary>Une réponse déjà donnée, rendue à la reprise : le morceau est révélé, le joueur l'a répondu.</summary>
 public sealed record ResumedAnswer(
-    int Position, bool ArtistCorrect, bool TitleCorrect, int Score, decimal ListenedSeconds, int HintLevel,
+    int Position, bool ArtistCorrect, bool TitleCorrect, int Score, decimal ListenedSeconds,
     string CorrectArtist, string CorrectTitle, long DeezerTrackId, string? CoverUrl);
 
-/// <summary>Le morceau en cours d'une partie reprise : ce que le serveur a vu et révélé (la reprise ne redonne pas ces indices à payer).</summary>
+/// <summary>Le morceau en cours d'une partie reprise : ce que le serveur a vu.</summary>
 /// <param name="ListenedSeconds">Le plus long palier déjà écouté : le plancher anti-triche, les paliers plus courts ne sont plus proposés.</param>
-/// <param name="HintLevel">Le niveau d'indice déjà révélé.</param>
-/// <param name="HintFacts">Ce que ces indices ont révélé.</param>
 /// <param name="FailedAttempts">Les réponses fausses déjà données sur ce morceau (0 ou 1) : à 1, la reprise rouvre la seconde tentative.</param>
 public sealed record CurrentTrackState(
-    int Position, decimal ListenedSeconds, int HintLevel, IReadOnlyList<HintFactResponse> HintFacts, int FailedAttempts = 0);
+    int Position, decimal ListenedSeconds, int FailedAttempts = 0);
 
 /// <param name="NextPosition">Le morceau à jouer maintenant : le premier sans réponse (1 pour une nouvelle partie).</param>
 /// <param name="CurrentTrack">Ce que la partie a déjà vu du morceau en cours ; vide si le joueur n'a encore rien écouté dessus.</param>
@@ -158,26 +156,19 @@ public static class StartSessionEndpoint
         {
             var info = infos[positions.First(t => t.Position == a.Position).TrackId];
             return new ResumedAnswer(
-                a.Position, a.ArtistCorrect, a.TitleCorrect, a.Score, a.ListenedSeconds, a.HintLevel, info.Artist, info.DisplayTitle, info.DeezerTrackId, info.CoverUrl);
+                a.Position, a.ArtistCorrect, a.TitleCorrect, a.Score, a.ListenedSeconds, info.Artist, info.DisplayTitle, info.DeezerTrackId, info.CoverUrl);
         }).ToList();
 
         return new StartSessionResponse(
-            session.Id, slots, StreakResponse.From(view), true, session.NextPosition, completed, CurrentTrackOf(session, positions, infos, rules));
+            session.Id, slots, StreakResponse.From(view), true, session.NextPosition, completed, CurrentTrackOf(session));
     }
 
-    private static CurrentTrackState? CurrentTrackOf(
-        DailySession session, IReadOnlyList<ChallengeTrack> positions, IReadOnlyDictionary<int, TrackInfo> infos, DailyRules rules)
+    private static CurrentTrackState? CurrentTrackOf(DailySession session)
     {
         if (session.CurrentPosition != session.NextPosition)
             return null;
 
-        var round = session.RoundOfCurrentTrack(rules.Hints);
-        var info = infos[positions.First(t => t.Position == session.NextPosition).TrackId];
-        var subject = new HintSubject(info.Artist, info.Title, (short?)info.ReleaseYear);
-        var facts = round.HintLevel == 0
-            ? []
-            : HintFacts.UpTo(round.HintLevel, rules.HintProviders, subject)
-                .Select(f => new HintFactResponse(HintLevelInfo.KindNameOf(f.Kind), f.Value)).ToList();
-        return new CurrentTrackState(session.NextPosition, round.ListenedSeconds, round.HintLevel, facts, session.FailedAttemptsOfCurrentTrack);
+        var round = session.RoundOfCurrentTrack();
+        return new CurrentTrackState(session.NextPosition, round.ListenedSeconds, session.FailedAttemptsOfCurrentTrack);
     }
 }

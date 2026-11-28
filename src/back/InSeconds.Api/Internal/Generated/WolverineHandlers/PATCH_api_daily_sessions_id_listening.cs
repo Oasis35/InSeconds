@@ -99,7 +99,7 @@ namespace Internal.Generated.WolverineHandlers
 
                 
                 // The actual HTTP request handler execution
-                InSeconds.Api.Modules.Daily.Application.UpdateListeningEndpoint.Patch(request, playableSession, _dailyRules);
+                InSeconds.Api.Modules.Daily.Application.UpdateListeningEndpoint.Patch(request, playableSession);
 
                 
                 // Added by EF Core Transaction Middleware
