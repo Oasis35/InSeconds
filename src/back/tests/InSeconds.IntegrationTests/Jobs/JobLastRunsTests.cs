@@ -220,7 +220,7 @@ public class JobLastRunsTests(JobLastRunsTests.AppFixture fixture) : IClassFixtu
         }
         catch (TimeoutException timeout)
         {
-            throw new TimeoutException($"{timeout.Message} Dernier état lu : {last}");
+            throw new TimeoutException($"{timeout.Message} Dernier état lu : {last}", timeout);
         }
     }
 
