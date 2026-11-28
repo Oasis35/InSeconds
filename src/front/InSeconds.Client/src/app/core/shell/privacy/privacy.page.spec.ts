@@ -49,7 +49,7 @@ describe('PrivacyPage', () => {
   it('renvoie aux mentions légales et au jeu', () => {
     const { link } = render();
 
-    expect(link('/legal')).not.toBeNull();
+    expect(link('/legal')!.textContent!.trim()).toBe(fr.privacy.legalLink);
     expect(link('/')).not.toBeNull();
   });
 
