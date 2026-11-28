@@ -3,6 +3,7 @@ using InSeconds.UnitTests.Support;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace InSeconds.UnitTests.Deezer;
 
@@ -28,6 +29,31 @@ public class DeezerCacheTests
         using var provider = services.BuildServiceProvider();
 
         Assert.IsType<DeezerClient>(provider.GetRequiredService<IPreviewProvider>());
+    }
+
+    [Fact]
+    public async Task Piege14_DeuxDemandesDuMemeExtrait_FontDeuxRequetes_JamaisLaMemeAdresseServieDeuxFois()
+    {
+        // Le comportement, pas seulement le type : le port rend la réponse de Deezer à chaque appel, sans rien garder. Deux appels pour le même morceau
+        // repartent chez Deezer, et la seconde adresse (nouvelle signature) remplace la première au lieu d'être celle d'avant.
+        var requests = new List<string>();
+        var signatures = new Queue<string>(["https://cdn.example/a.mp3?hdnea=premiere", "https://cdn.example/a.mp3?hdnea=seconde"]);
+        var handler = new StubHttpHandler((request, _) =>
+        {
+            requests.Add(request.RequestUri!.PathAndQuery);
+            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent($$"""{"preview":"{{signatures.Dequeue()}}"}"""),
+            });
+        });
+        var client = new DeezerClient(new HttpClient(handler) { BaseAddress = new Uri("https://api.deezer.com") }, NullLogger<DeezerClient>.Instance);
+
+        var first = await client.GetPreviewAsync(123, Ct);
+        var second = await client.GetPreviewAsync(123, Ct);
+
+        Assert.Equal(["/track/123", "/track/123"], requests);
+        Assert.Equal(new PreviewLookup.Found("https://cdn.example/a.mp3?hdnea=premiere"), first);
+        Assert.Equal(new PreviewLookup.Found("https://cdn.example/a.mp3?hdnea=seconde"), second);
     }
 
     // ---------- Recherches ----------
