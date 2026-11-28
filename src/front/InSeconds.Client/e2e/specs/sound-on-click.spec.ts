@@ -75,13 +75,13 @@ test.describe('Le son ne démarre que sur un clic', () => {
     await round.nextButton.waitFor({ state: 'visible' });
 
     // La révélation rejoue le morceau répondu ; le morceau suivant n'est pas démarré tant qu'on n'a pas cliqué.
-    await expect(page.getByText('Piste 1 / 5')).toBeVisible();
+    await game.expectTrack(1);
     await page.waitForLoadState('networkidle');
-    await expect(page.getByText('Piste 2 / 5')).toHaveCount(0);
+    await expect(game.progress).not.toHaveAttribute('data-current', '2');
 
     await round.goNext();
 
-    await expect(page.getByText('Piste 2 / 5')).toBeVisible();
+    await game.expectTrack(2);
     await expect(round.timer).toBeVisible();
   });
 });

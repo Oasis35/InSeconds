@@ -22,13 +22,13 @@ import { AuthPageComponent } from '../../ui/auth-page/auth-page.component';
       @if (!token) {
         <p class="text-sm" style="color:var(--text-muted)">{{ 'account.confirmEmail.missingToken' | translate }}</p>
       } @else if (store.isFulfilled()) {
-        <p class="text-sm" style="color:var(--text-muted)">
+        <p class="text-sm" style="color:var(--text-muted)" data-testid="confirm-email-success">
           {{ 'account.confirmEmail.success' | translate: { email: store.confirmedEmail() } }}
         </p>
       } @else {
         <p class="text-sm leading-relaxed" style="color:var(--text-muted)">{{ 'account.confirmEmail.subtitle' | translate }}</p>
         @if (store.error(); as error) {
-          <app-error-message [messageKey]="errorKey()" [traceId]="error.traceId" />
+          <app-error-message [messageKey]="errorKey()" [traceId]="error.traceId" data-testid="confirm-email-error" [attr.data-message]="errorKey()" />
         }
         <button appButton type="button" [block]="true" [disabled]="store.isPending()" (click)="confirm()">
           {{ (store.isPending() ? 'account.confirmEmail.confirming' : 'account.confirmEmail.confirm') | translate }}

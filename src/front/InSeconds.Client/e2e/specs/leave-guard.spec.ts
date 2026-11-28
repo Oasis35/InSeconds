@@ -18,7 +18,7 @@ test.describe('Confirmation de sortie en cours de partie (guard CanDeactivate)',
   test('annuler la sortie garde le joueur sur la partie', async ({ page }) => {
     const game = new GamePage(page);
     await startFromHistory(game);
-    await expect(page.getByText('Piste 1 / 5')).toBeVisible();
+    await game.expectTrack(1);
 
     // Tenter de quitter par le retour du navigateur (aucun lien en manche : ni barre, ni ligne légale)
     await page.goBack();
@@ -30,14 +30,14 @@ test.describe('Confirmation de sortie en cours de partie (guard CanDeactivate)',
     // « Continuer à jouer » → on reste sur la partie, l'URL n'a pas changé
     await game.leaveCancelButton.click();
     await expect(game.leaveConfirmButton).not.toBeVisible();
-    await expect(page.getByText('Piste 1 / 5')).toBeVisible();
+    await game.expectTrack(1);
     expect(new URL(page.url()).pathname).toBe('/daily');
   });
 
   test('confirmer la sortie navigue hors de la partie', async ({ page }) => {
     const game = new GamePage(page);
     await startFromHistory(game);
-    await expect(page.getByText('Piste 1 / 5')).toBeVisible();
+    await game.expectTrack(1);
 
     await page.goBack();
     await expect(game.leaveConfirmButton).toBeVisible();

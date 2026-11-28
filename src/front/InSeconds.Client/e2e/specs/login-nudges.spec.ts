@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
+import { loginAsPlayer } from '../fixtures/player-login';
 
 test.describe('Nudges de connexion (guest)', () => {
   test("un nouveau visiteur ne voit que « Commencer » : aucune tuile « crée un compte »", async ({ page, api }) => {
@@ -30,26 +31,28 @@ test.describe('Nudges de connexion (guest)', () => {
     await expect(page.getByRole('link', { name: 'Ne plus perdre mes parties' })).toBeVisible();
   });
 
-  test('pas de bannière "Garde ce score" sur le récap final', async ({ page, api }) => {
+  test('un compte connecté ne voit aucune tuile « crée un compte » sur le récap final', async ({ page, api }) => {
     await api.reset();
+    await loginAsPlayer(page, 'nudges-recap@example.com', 'NudgesRecapE2E');
     await page.clock.install({ time: Date.now() });
 
     const game = new GamePage(page);
     await game.playFullGame(new BlindRoundPage(page));
 
     await expect(game.doneScreen).toBeVisible();
-    await expect(page.getByText('Garde ce score')).toHaveCount(0);
+    await expect(page.getByTestId('guest-tile')).toHaveCount(0);
   });
 
-  test('pas de bannière "Reviens sur n\'importe quel appareil" sur l\'écran déjà joué', async ({ page, api }) => {
+  test("un compte connecté ne voit aucune tuile « crée un compte » sur l'écran déjà joué", async ({ page, api }) => {
     await api.reset();
+    await loginAsPlayer(page, 'nudges-played@example.com', 'NudgesPlayedE2E');
     await page.clock.install({ time: Date.now() });
 
     const game = new GamePage(page);
     await game.completeGameThenReload(new BlindRoundPage(page));
 
     await expect(game.alreadyPlayedScreen).toBeVisible();
-    await expect(page.getByText('Reviens sur n\'importe quel appareil')).toHaveCount(0);
+    await expect(page.getByTestId('guest-tile')).toHaveCount(0);
   });
 
   test("fin de partie : la tuile « Ta partie est sur ce téléphone » mène à la connexion, la croix la ferme", async ({ page, api }) => {

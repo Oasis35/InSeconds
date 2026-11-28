@@ -17,13 +17,15 @@ test.describe('Changement d\'email', () => {
 
     await page.getByPlaceholder('ton@email.com').fill(NEW_EMAIL);
     await page.getByRole('button', { name: 'Envoyer' }).click();
-    await expect(page.getByText(`Vérifie ta boîte mail à ${NEW_EMAIL}`)).toBeVisible();
+    const help = page.getByTestId('profile-email-help');
+    await expect(help).toHaveAttribute('data-message', 'account.profile.email.sentHint');
+    await expect(help).toContainText(NEW_EMAIL);
 
     const confirmUrl = await api.getLastEmailChangeLinkUrl(NEW_EMAIL);
     await page.goto(pathOf(confirmUrl));
     await page.getByRole('button', { name: 'Confirmer' }).click();
 
-    await expect(page.getByText(`Adresse confirmée : ${NEW_EMAIL}`)).toBeVisible();
+    await expect(page.getByTestId('confirm-email-success')).toContainText(NEW_EMAIL);
 
     await page.goto('/profile');
     await expect(page.getByPlaceholder('ton@email.com')).toHaveValue(NEW_EMAIL);
@@ -46,14 +48,14 @@ test.describe('Changement d\'email', () => {
     await page.getByPlaceholder('ton@email.com').fill(EMAIL_B);
     await page.getByRole('button', { name: 'Envoyer' }).click();
 
-    await expect(page.getByText('Cette adresse est déjà utilisée par un autre compte.')).toBeVisible();
+    await expect(page.getByTestId('profile-email-help')).toHaveAttribute('data-message', 'errors.players.email_taken');
   });
 
   test('lien invalide affiche une erreur avec un retour vers /profile', async ({ page }) => {
     await page.goto('/profile/confirm-email?token=un-token-qui-nexiste-pas');
     await page.getByRole('button', { name: 'Confirmer' }).click();
 
-    await expect(page.getByText('Ce lien est invalide ou a expiré.')).toBeVisible();
+    await expect(page.getByTestId('confirm-email-error')).toHaveAttribute('data-message', 'errors.players.invalid_or_expired_token');
     // Un invité n'a pas de profil : le lien « Retour au profil » le mène à la connexion (garde de la route).
     await page.getByRole('link', { name: '← Retour au profil' }).click();
     await expect(page).toHaveURL(/\/login$/);

@@ -60,7 +60,7 @@ interface StepMark {
         }
         @case ('audio-error') {
           <div class="space-y-4 text-center">
-            <p role="alert" class="text-sm" style="color:var(--text-error)">{{ 'gameplay.round.playbackError' | translate }}</p>
+            <p role="alert" data-testid="round-playback-error" class="text-sm" style="color:var(--text-error)">{{ 'gameplay.round.playbackError' | translate }}</p>
             <!-- L'un sous l'autre, comme « Valider » et « Passer » : côte à côte, « Passer (0 pts) » passe sur deux lignes à 375 px. -->
             <div class="flex flex-col gap-3">
               <button appButton type="button" [block]="true" (click)="retry.emit()">
