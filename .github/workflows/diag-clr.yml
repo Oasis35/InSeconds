@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [base, warmup, base2, warmup2]
+        variant: [g1, g2, g3, g4, g12, g34]
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -30,11 +30,18 @@ jobs:
             osr0) export DOTNET_TC_OnStackReplacement=0 ;;
             gen0) export DOTNET_GCgen0size=4000000 ;;
           esac
-          case "${{ matrix.variant }}" in warmup*) export DIAG_WARMUP=1 ;; esac
+          case "${{ matrix.variant }}" in
+            g1) args="-class InSeconds.UnitTests.Daily.CooldownSeededSelectorTests -class InSeconds.UnitTests.Daily.DailyChallengeTests -class InSeconds.UnitTests.Daily.DailyLogTests -class InSeconds.UnitTests.Daily.DailyMetricsAnswerScoreTests" ;;
+            g2) args="-class InSeconds.UnitTests.Daily.DailyPeriodScoresTests -class InSeconds.UnitTests.Daily.DailyScoringAndRulesTests -class InSeconds.UnitTests.Daily.DailySessionTests -class InSeconds.UnitTests.Daily.DailyStreakTests" ;;
+            g3) args="-class InSeconds.UnitTests.Daily.DayKpisTests -class InSeconds.UnitTests.Daily.DayStatsTests -class InSeconds.UnitTests.Daily.EarProfileTests -class InSeconds.UnitTests.Daily.HistoryCalendarTests" ;;
+            g4) args="-class InSeconds.UnitTests.Daily.ReturnCohortsTests -class InSeconds.UnitTests.Daily.TodayRevealTests -class InSeconds.UnitTests.Daily.TrackAnswerStatsTests -class InSeconds.UnitTests.Daily.TrackCooldownTests -class InSeconds.UnitTests.Daily.WeekReviewTests" ;;
+            g12) args="-class InSeconds.UnitTests.Daily.CooldownSeededSelectorTests -class InSeconds.UnitTests.Daily.DailyChallengeTests -class InSeconds.UnitTests.Daily.DailyLogTests -class InSeconds.UnitTests.Daily.DailyMetricsAnswerScoreTests -class InSeconds.UnitTests.Daily.DailyPeriodScoresTests -class InSeconds.UnitTests.Daily.DailyScoringAndRulesTests -class InSeconds.UnitTests.Daily.DailySessionTests -class InSeconds.UnitTests.Daily.DailyStreakTests" ;;
+            g34) args="-class InSeconds.UnitTests.Daily.DayKpisTests -class InSeconds.UnitTests.Daily.DayStatsTests -class InSeconds.UnitTests.Daily.EarProfileTests -class InSeconds.UnitTests.Daily.HistoryCalendarTests -class InSeconds.UnitTests.Daily.ReturnCohortsTests -class InSeconds.UnitTests.Daily.TodayRevealTests -class InSeconds.UnitTests.Daily.TrackAnswerStatsTests -class InSeconds.UnitTests.Daily.TrackCooldownTests -class InSeconds.UnitTests.Daily.WeekReviewTests" ;;
+          esac
           lscpu | grep "Model name"
           fail=0
           for i in $(seq 1 40); do
-            cmd="tests/InSeconds.UnitTests/bin/Release/net10.0/InSeconds.UnitTests -namespace InSeconds.UnitTests.Daily"
+            cmd="tests/InSeconds.UnitTests/bin/Release/net10.0/InSeconds.UnitTests $args"
             if ! $cmd > /tmp/out.txt 2>&1; then
               fail=$((fail+1)); grep -m2 -E "Fatal|CLR|failed" /tmp/out.txt | cut -c1-160
             fi
