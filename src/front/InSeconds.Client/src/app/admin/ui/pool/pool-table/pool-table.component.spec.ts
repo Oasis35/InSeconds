@@ -7,7 +7,7 @@ import { PoolTableComponent } from './pool-table.component';
 
 describe('PoolTableComponent', () => {
   /** Un bouton d'action de la ligne, par son repère de test (pas par son glyphe). */
-  const action = (r: HTMLElement, id: string) => r.querySelector<HTMLButtonElement>('[data-testid="'+id+'"]') ?? undefined;
+  const action = (r: HTMLElement, id: string) => r.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`) ?? undefined;
   function render(tracks: PoolTrack[], inputs: Partial<{
     selectedIds: number[]; togglingIds: number[]; sort: PoolSort | null; loading: boolean; totalCount: number;
     page: number; pages: number; filteredCount: number; view: string;
@@ -154,13 +154,13 @@ describe('PoolTableComponent', () => {
     });
 
     it('le renommage reste possible sur toutes les lignes, défi du jour compris', () => {
-      const { row, button } = render([track({ usageCount: 1, inTodayChallenge: true })]);
+      const { row } = render([track({ usageCount: 1, inTodayChallenge: true })]);
 
       expect(action(row(), 'edit-track')?.disabled).toBe(false);
     });
 
     it('émet le morceau pour chaque action', () => {
-      const { component, row, button } = render([track({ id: 3 })]);
+      const { component, row } = render([track({ id: 3 })]);
       const listen = vi.fn(), edit = vi.fn(), remove = vi.fn(), toggle = vi.fn();
       component.listen.subscribe(listen);
       component.edit.subscribe(edit);
@@ -213,7 +213,7 @@ describe('PoolTableComponent', () => {
     });
 
     it('vue d\'un mode : ce que le mode en dit, sans extrait, statut, genre, case à cocher ni suppression', () => {
-      const { row, button } = render([track({ lastUsedDate: '2026-10-05', unlockDate: '2026-11-04', usageCount: 3 })], { view: 'daily' });
+      const { row } = render([track({ lastUsedDate: '2026-10-05', unlockDate: '2026-11-04', usageCount: 3 })], { view: 'daily' });
 
       const cells = Array.from(row().querySelectorAll('td')).map(td => td.textContent?.trim());
       expect(cells).toHaveLength(7);
@@ -236,7 +236,7 @@ describe('PoolTableComponent', () => {
     });
 
     it('vue d\'un mode : « ↗ » demande à ouvrir le morceau dans le pool', () => {
-      const { component, row, button } = render([track({ id: 7 })], { view: 'daily' });
+      const { component, row } = render([track({ id: 7 })], { view: 'daily' });
       const open = vi.fn();
       component.openInPool.subscribe(open);
 

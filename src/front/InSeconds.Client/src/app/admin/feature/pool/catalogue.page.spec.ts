@@ -16,6 +16,7 @@ import { ReplaceTrackDialog } from './replace-track/replace-track.dialog';
 import { DeleteTrackDialog } from './delete-track/delete-track.dialog';
 import { PreviewTrackDialog } from '../../../core/audio-preview/preview-track.dialog';
 import { fakeCooldownApi, provideCooldownApiFake } from '../../data-access/testing/fake-cooldown-api';
+import { flushMicrotasks } from '../../../core/testing/settle';
 
 class FakeAudio implements PreviewAudio {
   paused = true; currentTime = 0; duration = 30; onended = null;
@@ -51,7 +52,7 @@ describe('CataloguePage', () => {
     const fixture = TestBed.createComponent(CataloguePage);
     fixture.detectChanges();
     await fixture.whenStable();
-    await new Promise<void>(resolve => setTimeout(resolve, 0));
+    await flushMicrotasks();
     fixture.detectChanges();
     const injector = fixture.debugElement.injector;
     const element = fixture.nativeElement as HTMLElement;
@@ -287,7 +288,7 @@ describe('CataloguePage', () => {
       click(b => b.textContent?.includes('admin.pool.add') ?? false);
       await detect();
       player.toggle('https://preview/1.mp3');
-      await new Promise<void>(resolve => setTimeout(resolve, 0));
+      await flushMicrotasks();
       expect(player.playing()).toBe(true);
 
       click(b => b.textContent?.includes('admin.pool.close') ?? false);
@@ -305,11 +306,11 @@ describe('CataloguePage', () => {
       api.listTracks.mockResolvedValueOnce([eminem, sabrina, nicki]).mockResolvedValue([eminem, sabrina, nicki, added]);
       click(b => b.textContent?.includes('admin.pool.add') ?? false);
       search.setQuery('E2E Track');
-      await vi.waitFor(() => expect(search.results()).toHaveLength(1), { timeout: 5000 }); // le débounce de la recherche (300 ms réelles) est passé
+      await vi.waitFor(() => expect(search.results()).toHaveLength(1), { timeout: 3000 }); // plus que le débounce de la recherche (SEARCH_DEBOUNCE_MS, en temps réel), moins que le délai du test
       await detect();
 
       click(b => b.getAttribute('aria-label') === 'admin.addPanel.addTrack');
-      await new Promise<void>(resolve => setTimeout(resolve, 0));
+      await flushMicrotasks();
       await detect();
 
       expect(api.addTrack).toHaveBeenCalledWith(42);
@@ -361,7 +362,7 @@ describe('CataloguePage', () => {
       });
       click(b => b.textContent?.includes('admin.pool.add') ?? false);
       search.setQuery('E2E Track');
-      await vi.waitFor(() => expect(search.results()).toHaveLength(1), { timeout: 5000 }); // le débounce de la recherche (300 ms réelles) est passé
+      await vi.waitFor(() => expect(search.results()).toHaveLength(1), { timeout: 3000 }); // plus que le débounce de la recherche (SEARCH_DEBOUNCE_MS, en temps réel), moins que le délai du test
       await detect();
 
       click(b => b.closest('app-search-panel') !== null && b.textContent?.trim() === '▶');
@@ -392,7 +393,7 @@ describe('CataloguePage', () => {
       await detect();
 
       click(b => b.getAttribute('data-testid') === 'recheck-selection');
-      await new Promise<void>(resolve => setTimeout(resolve, 0));
+      await flushMicrotasks();
       await detect();
 
       expect(api.recheckPreviews).toHaveBeenCalledWith([2, 3]);
