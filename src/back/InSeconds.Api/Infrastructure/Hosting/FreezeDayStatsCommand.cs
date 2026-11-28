@@ -31,7 +31,7 @@ public static class FreezeDayStatsCommand
             ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection manquante.");
 
         // La base, les réglages (paliers, barème) et les règles du jeu : le host n'est jamais démarré, aucun service hébergé ne tourne,
-        // ni Wolverine ni Hangfire. Les fournisseurs d'indices (Gameplay) servent au contrôle des réglages, comme au démarrage de l'API.
+        // ni Wolverine ni Hangfire. Le contrôle des réglages se fait comme au démarrage de l'API.
         builder.AddDatabaseSettings(connectionString);
         builder.Services.AddInSecondsDatabase(connectionString);
         builder.Services.AddGameCalendar();

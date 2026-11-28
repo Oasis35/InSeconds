@@ -47,7 +47,7 @@
                   <app-deezer-badge [deezerTrackId]="store.roundDeezerTrackId() ?? undefined" width="98" height="14" [lang]="language.current()" />
                 </div>
               </div>
-              <!-- D'où viennent les points : le barème du palier, puis la moitié ou l'indice qui les réduit (pastilles visibles) ; le score descend ensuite jusqu'à son résultat. -->
+              <!-- D'où viennent les points : le barème du palier, puis la moitié ou la seconde tentative qui les réduit (pastilles visibles) ; le score descend ensuite jusqu'à son résultat. -->
               <app-score-breakdown [breakdown]="store.roundBreakdown()" />
             </div>
 

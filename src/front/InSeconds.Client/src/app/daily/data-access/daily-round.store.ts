@@ -45,7 +45,7 @@ const initialState: RoundState = {
 };
 
 /**
- * La partie du jour en cours, sur `/daily` : la création (ou la reprise) de la partie, le morceau en cours, les réponses, les indices, la fin.
+ * La partie du jour en cours, sur `/daily` : la création (ou la reprise) de la partie, le morceau en cours, les réponses, la fin.
  * À fournir à la page de la manche (avec `TrackRoundStore`, qu'il pilote) : la route fournit aussi le lecteur (`provideGameplay()`). L'accueil
  * (`HomeStore`) n'en sait rien : la manche lui rend sa fin (`finishGame`, `enterAlreadyPlayed`, `fail`) et il lit le résultat chez lui.
  *
@@ -68,7 +68,7 @@ export const DailyRoundStore = signalStore(
         return answered ? toRoundResult(answered) : null;
       }),
       roundScore: computed(() => store.results().find(r => r.position === store.position())?.score ?? 0),
-      /** D'où viennent les points du morceau en cours (palier, moitié, indice) ; `null` quand rien n'est trouvé ou que les réglages manquent. */
+      /** D'où viennent les points du morceau en cours (palier, moitié, seconde tentative) ; `null` quand rien n'est trouvé ou que les réglages manquent. */
       roundBreakdown: computed(() => {
         const settings = store.settings();
         const answered = store.results().find(r => r.position === store.position());
@@ -78,7 +78,7 @@ export const DailyRoundStore = signalStore(
     };
   }),
   withMethods((store, api = inject(DailyApi), round = inject(TrackRoundStore), sessionLoader = inject(SessionLoader), home = inject(HomeStore), sounds = inject(SoundService)) => {
-    /** Les écoutes envoyées au serveur se suivent : une demande d'indice attend la dernière (sinon le serveur refuse, 409). */
+    /** Les écoutes envoyées au serveur se suivent : le serveur garde le maximum vu. */
     let listeningQueue: Promise<void> = Promise.resolve();
     const sentListening = new Map<number, number>();
 
@@ -137,7 +137,7 @@ export const DailyRoundStore = signalStore(
       }
     };
 
-    /** Envoie l'écoute au serveur : il débloque les indices et fixe le plancher anti-triche d'après ce palier (piège 35). */
+    /** Envoie l'écoute au serveur : il fixe le plancher anti-triche d'après ce palier (piège 35). */
     const reportListening = (position: number, seconds: number) => {
       const sessionId = store.sessionId();
       sentListening.set(position, seconds);

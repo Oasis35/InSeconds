@@ -93,7 +93,7 @@ public interface IDailyStatsQueries
     /// <summary>Les scores des parties **terminées** des défis depuis <paramref name="since"/>.</summary>
     Task<IReadOnlyList<int>> GetCompletedScoresSinceAsync(DateOnly since, CancellationToken ct);
 
-    /// <summary>Les réponses des parties des défis depuis <paramref name="since"/>, tous statuts : trouvé, indice et palier écouté.</summary>
+    /// <summary>Les réponses des parties des défis depuis <paramref name="since"/>, tous statuts : trouvé et palier écouté.</summary>
     Task<AnswerTotals> GetAnswerTotalsSinceAsync(DateOnly since, CancellationToken ct);
 
     /// <summary>

@@ -8,7 +8,7 @@ import { ScoreBreakdown } from '../../domain/score-breakdown';
 /**
  * Ce que vaut le morceau, d'un coup d'œil, sous le score de la révélation : une barre (ce qui est gagné sur ce que le palier pouvait donner,
  * le reste en rouge), sa légende (« sur 850 pts possibles », ou « Maximum possible à 1 s » quand tout est gagné) et, toujours visibles quand
- * quelque chose a réduit les points, les pastilles de la cause (« ✕ Titre raté · ÷ 2 », « Indice · − 30 % »). Tout est aligné à gauche, sous
+ * quelque chose a réduit les points, les pastilles de la cause (« ✕ Titre raté · ÷ 2 »). Tout est aligné à gauche, sous
  * le score ; les lignes se posent l'une après l'autre, puis le score du morceau descend jusqu'à son résultat.
  */
 @Component({

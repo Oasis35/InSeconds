@@ -216,7 +216,7 @@ internal static class PlayerDataSeed
             INSERT INTO daily.challenge_tracks (challenge_id, position, track_id) VALUES ({ChallengeId}, 1, 1), ({ChallengeId}, 2, 2);
             """);
 
-    /// <summary>Partie terminée : 0,5 s tout juste (1000), puis 1 s, artiste seulement, un indice (850).</summary>
+    /// <summary>Partie terminée : 0,5 s tout juste (1000), puis 1 s, artiste seulement (850).</summary>
     public static async Task AddGameAsync(ApiFactory api, Guid playerId)
     {
         var id = await api.ScalarAsync<int>("SELECT 900000 + count(*)::int FROM daily.sessions");

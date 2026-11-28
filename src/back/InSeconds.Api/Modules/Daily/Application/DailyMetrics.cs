@@ -42,7 +42,7 @@ public sealed class DailyMetrics
     {
         var meter = meterFactory.Create(MeterName);
         _sessions = meter.CreateCounter<long>(SessionsName, description: "Parties du défi du jour, par événement (event).");
-        _answers = meter.CreateCounter<long>(AnswersName, description: "Réponses définitives données, par palier écouté, niveau d'indice, artiste et titre trouvés, seconde tentative (retry).");
+        _answers = meter.CreateCounter<long>(AnswersName, description: "Réponses définitives données, par palier écouté, artiste et titre trouvés, seconde tentative (retry).");
         _retries = meter.CreateCounter<long>(RetriesName, description: "Secondes tentatives ouvertes par une réponse non complète.");
         _sessionScore = meter.CreateHistogram(
             SessionScoreName, description: "Score total d'une partie terminée.",

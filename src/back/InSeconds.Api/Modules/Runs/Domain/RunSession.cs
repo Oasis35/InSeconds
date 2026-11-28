@@ -212,7 +212,7 @@ public sealed class RunSession
         return rules.ListenAt(StepOf(rules, rules.RoundOf(NextPosition)));
     }
 
-    /// <summary>La manche Gameplay du morceau en cours, reconstituée de la partie (pas d'indice).</summary>
+    /// <summary>La manche Gameplay du morceau en cours, reconstituée de la partie.</summary>
     public TrackRound RoundOfCurrentTrack() =>
         CurrentPosition == NextPosition ? TrackRound.Resume(CurrentListenedSeconds ?? 0) : TrackRound.Start;
 

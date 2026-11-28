@@ -131,7 +131,7 @@ describe('DailyRoundStore', () => {
       expect(home.stale()).toBe(true);
     });
 
-    it('une reprise relit les réponses, le plancher d\'écoute et les indices du morceau en cours (piège 35)', async () => {
+    it('une reprise relit les réponses, le plancher d\'écoute et le palier du morceau en cours (piège 35)', async () => {
       api.start = {
         kind: 'ok',
         session: SESSION({
@@ -186,7 +186,7 @@ describe('DailyRoundStore', () => {
   });
 
   describe('une manche', () => {
-    it("envoie chaque palier choisi au serveur, une seule fois (c'est ce qui débloque les indices)", async () => {
+    it("envoie chaque palier choisi au serveur, une seule fois (c'est ce qui fixe le plancher)", async () => {
       await startGame();
       TestBed.tick();
       await flush();

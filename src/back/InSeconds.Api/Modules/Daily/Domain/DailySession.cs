@@ -38,7 +38,7 @@ public enum TrackTurn
 /// La partie d'un joueur sur le défi d'un jour : une seule par joueur et par défi.
 /// <para>
 /// **Le morceau en cours est toujours le premier sans réponse** : les morceaux se jouent dans l'ordre, et on ne déplace jamais ce
-/// verrou (piège 35). La partie y range ce que sa <see cref="TrackRound"/> garde (durée écoutée, niveau d'indice), sans que
+/// verrou (piège 35). La partie y range ce que sa <see cref="TrackRound"/> garde (durée écoutée), sans que
 /// le client le fournisse jamais. Elle se termine d'elle-même quand elle atteint le nombre **réel** de morceaux du défi (piège 38).
 /// </para>
 /// </summary>

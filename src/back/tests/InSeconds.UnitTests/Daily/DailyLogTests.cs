@@ -4,7 +4,7 @@ using InSeconds.UnitTests.Support;
 namespace InSeconds.UnitTests.Daily;
 
 /// <summary>
-/// Fige le texte des journaux du jeu, que le tableau Grafana « Un joueur » filtre (« Réponse de », « Indice niveau »…, cf.
+/// Fige le texte des journaux du jeu, que le tableau Grafana « Un joueur » filtre (« Réponse de »…, cf.
 /// <c>deploy/grafana/</c>). Changer un de ces messages vide le panneau en silence : mettre le tableau à jour en même temps. Les chiffres du
 /// jeu ne passent plus par ces textes : ce sont les compteurs de <see cref="DailyMetrics"/>.
 /// </summary>

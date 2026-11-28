@@ -14,7 +14,7 @@ namespace InSeconds.Api.Modules.Daily.Application;
 
 /// <summary>
 /// La réponse du joueur au morceau en cours. <paramref name="ListenedSeconds"/> est le palier **annoncé** (0 pour un morceau sans extrait que le
-/// joueur passe) : le serveur le compare à ce qu'il a vu écouter, il ne le croit pas. Le niveau d'indice n'est jamais envoyé : la partie le garde.
+/// joueur passe) : le serveur le compare à ce qu'il a vu écouter, il ne le croit pas.
 /// </summary>
 public sealed record SubmitAnswer(int Position, decimal ListenedSeconds, bool WasExtended, string? Artist, string? Title);
 
@@ -84,7 +84,7 @@ public static class SubmitAnswerEndpoint
         if (attempt!.Track is null)
             return DailyProblems.TrackNotFound();
 
-        // Anti-triche (piège 35) : écouter longuement, ou débloquer un indice, puis annoncer un palier court pour gagner plus.
+        // Anti-triche (piège 35) : écouter longuement puis annoncer un palier court pour gagner plus.
         return Answer(request, attempt, matcher).IsAccepted ? WolverineContinue.NoProblems : DailyProblems.ListenedBelowMinimum();
     }
 

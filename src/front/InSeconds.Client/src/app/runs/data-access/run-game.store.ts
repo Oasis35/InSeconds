@@ -288,7 +288,7 @@ export const RunGameStore = signalStore(
       trackKey: `${current.position}`,
       previewUrl: current.previewUrl,
       waveform: current.waveform ?? null,
-      // Écoute fixe (le palier de la manche) : pas de « écouter plus » ; la relecture (↺) reste possible. Pas d'indice.
+      // Écoute fixe (le palier de la manche) : pas de « écouter plus » ; la relecture (↺) reste possible.
       listen: { steps: [current.listenSeconds], extendable: false },
       refreshPreviewUrl: () => refreshPreview(current.position),
     });

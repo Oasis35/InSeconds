@@ -2,7 +2,7 @@
  * La manche d'un morceau, en TypeScript pur : écouter, saisir, envoyer, voir la
  * réponse. Chaque transition prend la manche et en rend une autre (la même si elle n'a pas lieu
  * d'être). Rien ici ne connaît le mode de jeu, le son ni le réseau : le store l'enveloppe, le mode
- * lui fournit sa politique d'écoute et d'indices et envoie la réponse.
+ * lui fournit sa politique d'écoute et envoie la réponse.
  *
  * Phases : `ready` (rien n'a démarré) → `loading` → `playing` → `listened` (le palier est joué),
  * puis `submitting` → `revealed`. À côté : `audio-error` (la lecture a échoué), `no-preview` (le

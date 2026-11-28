@@ -15,7 +15,7 @@ describe('ScoreBreakdownComponent', () => {
   }
   const base: ScoreBreakdown = { seconds: 1, base: 850, missed: null, score: 850 };
 
-  it('tout trouvé sans indice : barre pleine, « maximum possible », aucune pastille', () => {
+  it('tout trouvé : barre pleine, « maximum possible », aucune pastille', () => {
     const { byId } = render(base);
     expect((byId('breakdown-bar')?.firstElementChild as HTMLElement).style.width).toBe('100%');
     expect(byId('breakdown-base')?.textContent).toContain('daily.round.breakdown.max');

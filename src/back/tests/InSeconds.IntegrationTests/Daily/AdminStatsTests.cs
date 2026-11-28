@@ -86,7 +86,7 @@ public class AdminStatsTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Reponses_TrouveIndiceEtPalierEcoute()
+    public async Task Reponses_TrouveEtPalierEcoute()
     {
         await _game.App.AddChallengeAsync(Today, 1, 2, 3, 4, 5);
         var alice = await _game.NewPlayerAsync("Alice");

@@ -122,7 +122,7 @@ export function pop(element: HTMLElement): void {
 }
 
 /**
- * Les lignes du calcul des points d'un morceau (palier, moitié, indice) qui se posent l'une après l'autre, avant que le score ne
+ * Les lignes du calcul des points d'un morceau (palier, moitié, seconde tentative) qui se posent l'une après l'autre, avant que le score ne
  * descende au résultat. `delay` en secondes.
  */
 export function explainScore(lines: readonly HTMLElement[], delay = 0.2): void {
