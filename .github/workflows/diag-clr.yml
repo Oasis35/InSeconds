@@ -1,0 +1,39 @@
+# Diagnostic temporaire du crash CLR (0x80131506) des tests unitaires : à supprimer avec sa branche.
+name: Diag CLR
+on:
+  push:
+    branches: [feat/diag-clr]
+jobs:
+  diag:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04]
+        legacy: ['0', '1']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: src/back/global.json
+      - name: Build unit tests
+        working-directory: src/back
+        run: dotnet build tests/InSeconds.UnitTests --configuration Release
+      - name: Environment
+        run: |
+          lscpu | grep -E "Model name|Flags" | cut -c1-400
+          dotnet --info | head -30
+          cat /etc/os-release | head -3
+      - name: Loop
+        working-directory: src/back/tests/InSeconds.UnitTests/bin/Release/net10.0
+        env:
+          DOTNET_LegacyExceptionHandling: ${{ matrix.legacy }}
+        run: |
+          fail=0
+          for i in $(seq 1 60); do
+            if ! ./InSeconds.UnitTests -class "InSeconds.UnitTests.Catalogue.CandidateTests" > /tmp/out.txt 2>&1; then
+              fail=$((fail+1)); echo "run $i failed"; grep -m3 -E "Fatal|CLR" /tmp/out.txt
+            fi
+          done
+          echo "ECHECS $fail / 60 (os=${{ matrix.os }} legacy=${{ matrix.legacy }})"
