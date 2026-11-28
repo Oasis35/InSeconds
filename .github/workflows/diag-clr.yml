@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [ns-Catalogue, ns-Daily, ns-Runs, ns-Players, ns-Social, ns-Gameplay, ns-Infrastructure, ns-Deezer, ns-Waveform, par-none, cpu1]
+        variant: [CooldownSeededSelectorTests, DailyChallengeTests, DailyLogTests, DailyMetricsAnswerScoreTests, DailyPeriodScoresTests, DailyScoringAndRulesTests, DailySessionTests, DailyStreakTests, DayKpisTests, DayStatsTests, EarProfileTests, HistoryCalendarTests, ReturnCohortsTests, TodayRevealTests, TrackAnswerStatsTests, TrackCooldownTests, WeekReviewTests]
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -23,7 +23,6 @@ jobs:
         working-directory: src/back
         run: |
           case "${{ matrix.variant }}" in
-            cpu1) export DOTNET_PROCESSOR_COUNT=1 ;;
             tc0) export DOTNET_TieredCompilation=0 ;;
             pgo0) export DOTNET_TieredPGO=0 ;;
             r2r0) export DOTNET_ReadyToRun=0 ;;
@@ -35,9 +34,7 @@ jobs:
           fail=0
           for i in $(seq 1 40); do
             case "${{ matrix.variant }}" in
-              ns-*) cmd="tests/InSeconds.UnitTests/bin/Release/net10.0/InSeconds.UnitTests -namespace InSeconds.UnitTests.${{ matrix.variant }}" ; cmd="${cmd/ns-/}" ;;
-              par-none) cmd="tests/InSeconds.UnitTests/bin/Release/net10.0/InSeconds.UnitTests -parallel none" ;;
-              *) cmd="tests/InSeconds.UnitTests/bin/Release/net10.0/InSeconds.UnitTests" ;;
+              *) cmd="tests/InSeconds.UnitTests/bin/Release/net10.0/InSeconds.UnitTests -class InSeconds.UnitTests.Daily.${{ matrix.variant }}" ;;
             esac
             if ! $cmd > /tmp/out.txt 2>&1; then
               fail=$((fail+1)); grep -m2 -E "Fatal|CLR|failed" /tmp/out.txt | cut -c1-160
