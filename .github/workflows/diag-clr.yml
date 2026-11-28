@@ -10,6 +10,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, ubuntu-24.04]
         legacy: ['0', '1']
+        rep: [1, 2, 3]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     steps:
@@ -26,14 +27,14 @@ jobs:
           dotnet --info | head -30
           cat /etc/os-release | head -3
       - name: Loop
-        working-directory: src/back/tests/InSeconds.UnitTests/bin/Release/net10.0
+        working-directory: src/back
         env:
           DOTNET_LegacyExceptionHandling: ${{ matrix.legacy }}
         run: |
           fail=0
-          for i in $(seq 1 60); do
-            if ! ./InSeconds.UnitTests -class "InSeconds.UnitTests.Catalogue.CandidateTests" > /tmp/out.txt 2>&1; then
-              fail=$((fail+1)); echo "run $i failed"; grep -m3 -E "Fatal|CLR" /tmp/out.txt
+          for i in $(seq 1 40); do
+            if ! dotnet test --project tests/InSeconds.UnitTests --configuration Release --no-build > /tmp/out.txt 2>&1; then
+              fail=$((fail+1)); echo "run $i failed"; grep -m3 -E "Fatal|CLR" /tmp/out.txt; lscpu | grep "Model name"
             fi
           done
-          echo "ECHECS $fail / 60 (os=${{ matrix.os }} legacy=${{ matrix.legacy }})"
+          echo "ECHECS $fail / 40 (os=${{ matrix.os }} legacy=${{ matrix.legacy }})"
