@@ -78,7 +78,7 @@ public class FisherYatesShuffleTests
     }
 
     [Fact]
-    public void Shuffle_MemeOrdreQueLAlgorithmeDeLaV1()
+    public void Shuffle_MemeOrdreQueLAlgorithmeDOrigine()
     {
         // L'algorithme d'origine, recopié tel quel, sert de référence : les défis déjà joués ne doivent pas changer.
         var candidates = Enumerable.Range(0, 37).ToList();

@@ -47,7 +47,7 @@ public class TestingHostTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Reset_VideLeModulePlayers_SansToucherAuxTablesV1()
+    public async Task Reset_VideLeModulePlayers_SansToucherAuxTablesDuSchemaPublic()
     {
         var client = _host.CreateClient();
         Assert.Equal(HttpStatusCode.OK,

@@ -24,7 +24,7 @@ public class CatalogueOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTe
     }
 
     [Fact]
-    public async Task Les_routes_et_methodes_sont_celles_du_plan()
+    public async Task Les_routes_et_methodes_sont_celles_attendues()
     {
         var document = await ReadDocumentAsync();
 

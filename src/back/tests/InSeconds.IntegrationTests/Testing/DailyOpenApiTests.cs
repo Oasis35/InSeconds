@@ -26,7 +26,7 @@ public class DailyOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(
     }
 
     [Fact]
-    public async Task Les_routes_admin_de_F1_sont_celles_du_plan()
+    public async Task Les_routes_admin_du_Daily_sont_celles_attendues()
     {
         var document = await ReadDocumentAsync();
 
@@ -46,7 +46,7 @@ public class DailyOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(
     }
 
     [Fact]
-    public async Task Les_routes_et_methodes_sont_celles_du_plan()
+    public async Task Les_routes_et_methodes_sont_celles_attendues()
     {
         var document = await ReadDocumentAsync();
 
