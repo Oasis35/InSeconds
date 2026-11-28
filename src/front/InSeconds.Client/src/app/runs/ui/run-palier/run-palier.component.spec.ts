@@ -5,6 +5,11 @@ import { RunRoundSummary } from '../../domain/run';
 import { RunPalierComponent } from './run-palier.component';
 
 describe('RunPalierComponent', () => {
+  // Le score de la manche monte par une animation (GSAP) : ici, posé d'emblée (les animations ont leurs tests dans motion.spec.ts).
+  const flag = globalThis.window as { __disableAnimations?: boolean };
+  beforeEach(() => { flag.__disableAnimations = true; });
+  afterEach(() => { delete flag.__disableAnimations; });
+
   const summary = (over: Partial<RunRoundSummary> = {}): RunRoundSummary => ({
     round: 2, score: 1250, outcome: 'shorter', listenSeconds: 5, nextListenSeconds: 3, tracks: [], totalScore: 1700, livesLeft: 2, lifeRegained: false, fullPoints: 200, nextFullPoints: 350, ...over,
   });
@@ -26,12 +31,19 @@ describe('RunPalierComponent', () => {
     expect(element.querySelector('[data-testid="run-palier-title"]')?.textContent?.trim()).toBe('Manche 2 terminée');
     expect(element.querySelector('[data-testid="run-palier-outcome"]')?.textContent?.trim()).toBe(fr.runs.roundEnd.shorter);
     expect(element.querySelector('[data-testid="run-palier-next"]')?.textContent).toContain('3');
+    expect(element.querySelector('[data-testid="run-palier-score"]')?.textContent?.replace(/\D/g, '')).toBe('1250');
   });
 
   it('une erreur rallonge le palier : le bilan le dit', () => {
     const { element } = render(summary({ outcome: 'longer', nextListenSeconds: 10 }));
 
     expect(element.querySelector('[data-testid="run-palier-outcome"]')?.textContent?.trim()).toBe(fr.runs.roundEnd.longer);
+  });
+
+  it('une vie perdue laisse le palier où il est : le bilan le dit', () => {
+    const { element } = render(summary({ outcome: 'same', nextListenSeconds: 5 }));
+
+    expect(element.querySelector('[data-testid="run-palier-outcome"]')?.textContent?.trim()).toBe(fr.runs.roundEnd.same);
   });
 
   it('une vie rendue par la manche se dit', () => {

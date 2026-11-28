@@ -23,7 +23,6 @@ export class RunPage {
   readonly pileTracks: Locator;
   readonly paliers: Locator;
   readonly answerCard: Locator;
-  readonly withdrawnCard: Locator;
   readonly nextTrackButton: Locator;
   readonly palier: Locator;
   readonly lives: Locator;
@@ -34,7 +33,6 @@ export class RunPage {
   readonly found: Locator;
   readonly roundScores: Locator;
   readonly playAgainButton: Locator;
-  readonly resumeButton: Locator;
   readonly linkScreen: Locator;
   readonly linkTitle: Locator;
   readonly linkRules: Locator;
@@ -66,7 +64,6 @@ export class RunPage {
     this.pileTracks          = page.getByTestId('run-pile-track');
     this.paliers             = page.getByTestId('run-palier');
     this.answerCard          = page.getByTestId('run-answer');
-    this.withdrawnCard       = page.getByTestId('run-withdrawn');
     this.nextTrackButton     = page.getByTestId('run-next-track');
     this.palier              = page.getByTestId('run-palier').and(page.locator('section'));
     this.lives               = page.getByTestId('run-lives');
@@ -77,7 +74,6 @@ export class RunPage {
     this.found               = page.getByTestId('run-found');
     this.roundScores         = page.getByTestId('run-round-scores');
     this.playAgainButton     = page.getByTestId('run-play-again');
-    this.resumeButton        = page.getByRole('button', { name: 'Reprendre' });
     this.linkScreen          = page.getByTestId('run-link');
     this.linkTitle           = page.getByTestId('run-link-title');
     this.linkRules           = page.getByTestId('run-link-rules');
@@ -174,23 +170,13 @@ export class RunPage {
   }
 
   /**
-   * Répond juste aux cinq morceaux de la manche `round` : le bilan de manche s'affiche (ou le choix du thème de la suivante). Le tirage est paresseux : les morceaux d'une manche ne sont connus qu'à son arrivée, donc relus ici.
+   * Répond juste à tous les morceaux de la manche `round` : le bilan de manche s'affiche (ou le choix du thème de la suivante). Le tirage est paresseux : les morceaux d'une manche ne sont connus qu'à son arrivée, donc relus ici.
    */
   async winRound(readTracks: () => Promise<RunTrack[]>, round: number): Promise<void> {
     await expect(this.roundTitle).toContainText(`Manche ${round}`);
     const tracks = (await readTracks()).filter(t => t.round === round);
-    expect(tracks).toHaveLength(5);
+    expect(tracks.length).toBeGreaterThan(0);
     await inSequence(tracks, track => this.answerRight(track));
     await expect(this.palier.or(this.page.getByTestId('run-theme'))).toBeVisible();
-  }
-
-  /** Passe le bilan de manche (« Manche suivante ») jusqu'à ce que le morceau suivant soit jouable ; un écran de thème, s'il vient, se joue à part. */
-  async continueRound(): Promise<void> {
-    await expect(async () => {
-      // Horloge simulée : l'écran du thème garde le thème choisi à l'écran par une minuterie, qu'il faut laisser passer.
-      await this.page.clock.fastForward(1500);
-      if (await this.palierNextButton.isVisible()) await this.palierNextButton.click();
-      await expect(this.answerInput).toBeVisible({ timeout: 1000 });
-    }).toPass();
   }
 }

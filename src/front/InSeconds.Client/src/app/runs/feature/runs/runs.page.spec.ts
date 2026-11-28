@@ -6,6 +6,7 @@ import fr from '../../../../../public/i18n/fr.json';
 import { SessionLoader } from '../../../account/data-access/session-loader';
 import { ShellChromeStore } from '../../../core/shell/shell-chrome.store';
 import { VersionService } from '../../../core/version/version.service';
+import { AnswerSearchPort } from '../../../gameplay/data-access/answer-search.port';
 import { FakeAudioPort, provideFakeAudio } from '../../../gameplay/data-access/testing/fake-audio.port';
 import { FakeWaveformPort, provideFakeWaveform } from '../../../gameplay/data-access/testing/fake-waveform.port';
 import { ConfirmDialogData } from '../../../ui/modal/confirm-dialog.component';
@@ -14,19 +15,25 @@ import { RunGameStore } from '../../data-access/run-game.store';
 import { PendingInvite } from '../../../social/data-access/pending-invite';
 import { FakeSocialApi, provideFakeSocialApi } from '../../../social/data-access/testing/fake-social-api';
 import { RunShare } from '../../data-access/run-share';
-import { FakeRunsApi, ME, provideFakeRunsApi } from '../../data-access/testing/fake-runs-api';
+import { CURRENT, FakeRunsApi, ME, PLAY, ROUND, SESSION, TRACK, provideFakeRunsApi } from '../../data-access/testing/fake-runs-api';
+import { TrackRoundStore } from '../../../gameplay/data-access/track-round.store';
 import { RunFinish } from '../../domain/run';
 import { RunShareSheetComponent } from '../share-sheet/run-share-sheet.component';
 import { RunsPage } from './runs.page';
 
-/** La page sans ses écrans (testés à part) : ce qui est propre au navigateur, la sortie de partie et le renvoi sans accès. */
+/**
+ * La page sans ses écrans (testés à part) : ce qui est propre au navigateur, la sortie de partie et le renvoi sans accès. Le dernier bloc, lui, monte le
+ * vrai gabarit : c'est le seul endroit qui vérifie que la page branche le store sur les écrans.
+ */
 describe('RunsPage', () => {
   let api: FakeRunsApi;
   let sheet: { component: unknown; data: ConfirmDialogData; closed: Subject<boolean | undefined>; close: (result: boolean) => void } | null;
   let navigate: ReturnType<typeof vi.spyOn>;
+  let audio: FakeAudioPort;
 
-  function create(query: Record<string, string> = {}) {
+  function create(query: Record<string, string> = {}, withTemplate = false) {
     api = new FakeRunsApi();
+    audio = new FakeAudioPort();
     sheet = null;
     const modal = {
       openSheet: (component: unknown, options: { data: ConfirmDialogData }) => {
@@ -38,15 +45,15 @@ describe('RunsPage', () => {
     };
     TestBed.configureTestingModule({
       providers: [
-        provideTranslateService(), provideRouter([]), provideFakeRunsApi(api), provideFakeAudio(new FakeAudioPort()), provideFakeWaveform(new FakeWaveformPort()),
-        provideFakeSocialApi(new FakeSocialApi()),
+        provideTranslateService(), provideRouter([]), provideFakeRunsApi(api), provideFakeAudio(audio), provideFakeWaveform(new FakeWaveformPort()),
+        provideFakeSocialApi(new FakeSocialApi()), { provide: AnswerSearchPort, useValue: { search: () => Promise.resolve([]) } },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({}), queryParamMap: convertToParamMap(query) } } },
         { provide: ModalService, useValue: modal },
         { provide: SessionLoader, useValue: { ensureGuest: () => Promise.resolve() } },
         { provide: VersionService, useValue: { allowReload: () => undefined } },
       ],
     });
-    TestBed.overrideComponent(RunsPage, { set: { template: '' } });
+    if (!withTemplate) TestBed.overrideComponent(RunsPage, { set: { template: '' } });
     TestBed.inject(TranslateService).setTranslation('fr', fr);
     TestBed.inject(TranslateService).use('fr');
     navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
@@ -200,5 +207,151 @@ describe('RunsPage', () => {
 
     expect(invite.get()).toBe('ABCD2345');
     invite.clear();
+  });
+
+  describe('le gabarit de la page, câblé au store', () => {
+    afterEach(() => vi.useRealTimers());
+
+    /** La page se lance seule (son `ngOnInit` lit l'accueil du mode) : on attend l'écran qu'elle atteint. */
+    async function open(screen: 'welcome' | 'resume', configure: (api: FakeRunsApi) => void = () => undefined) {
+      const created = create({}, true);
+      configure(api);
+      created.fixture.detectChanges();
+      await vi.waitFor(() => expect(created.store.screen()).toBe(screen));
+      return { ...created, element: created.fixture.nativeElement as HTMLElement };
+    }
+
+    /** « Commencer », puis le lecteur annonce l'extrait prêt : la manche rend sa saisie. */
+    async function startPlaying(opened: Awaited<ReturnType<typeof open>>) {
+      await opened.store.begin();
+      audio.emit('ready');
+      TestBed.tick();
+      opened.fixture.detectChanges();
+      return { ...opened, round: opened.fixture.debugElement.injector.get(TrackRoundStore) };
+    }
+
+    const withThemes = (themes: { round: number; name: string }[]) => (api: FakeRunsApi) => {
+      api.launchResult = { kind: 'ok', play: PLAY({ session: SESSION({ themes }) }) };
+    };
+
+    it('un morceau retiré montre sa carte à la place du champ de réponse, puis le suivant rend le champ', async () => {
+      const { fixture, store, round, element } = await startPlaying(await open('welcome'));
+      const withdrawnTrack = TRACK({ position: 2, neutralized: true, points: 0, artist: null, title: null });
+      api.answerResult = PLAY({
+        session: SESSION({ totalScore: 100, round: ROUND({ score: 100 }), roundTracks: [TRACK(), withdrawnTrack], playedTracks: [TRACK(), withdrawnTrack] }),
+        revealed: TRACK(), neutralized: [{ position: 2, round: 1 }], current: CURRENT({ position: 3, positionInRound: 3, previewUrl: 'https://cdn/preview-3.mp3' }),
+      });
+      expect(element.querySelector('app-run-withdrawn-card')).toBeNull();
+      expect(element.querySelector('input')).not.toBeNull();
+
+      await store.submit(round.submit({ artist: 'Daft Punk', title: 'One More Time' })!);
+      store.next();
+      fixture.detectChanges();
+
+      expect(element.querySelector('app-run-withdrawn-card')).not.toBeNull();
+      expect(element.querySelector('input')).toBeNull();
+
+      store.next();
+      fixture.detectChanges();
+
+      expect(element.querySelector('app-run-withdrawn-card')).toBeNull();
+    });
+
+    it('le thème de la manche en cours est dit dans une pastille', async () => {
+      const withTheme = await startPlaying(await open('welcome', withThemes([{ round: 1, name: 'Rap français' }])));
+      expect(withTheme.element.querySelector('[data-testid="run-theme-pill"]')?.textContent?.trim()).toBe('Rap français');
+    });
+
+    it('sans thème pour la manche en cours, pas de pastille', async () => {
+      const without = await startPlaying(await open('welcome', withThemes([{ round: 2, name: 'Rap français' }])));
+      expect(without.element.querySelector('[data-testid="run-theme-pill"]')).toBeNull();
+    });
+
+    it('le chrono à zéro envoie ce qui est tapé', async () => {
+      vi.useFakeTimers();
+      const { fixture, store, element } = await startPlaying(await open('welcome'));
+      audio.emit('playing');
+      TestBed.tick();
+      const input = element.querySelector<HTMLInputElement>('input')!;
+      input.value = 'Daft Punk - One More Time';
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      vi.advanceTimersByTime(46_000);
+      TestBed.tick();
+      fixture.detectChanges();
+      await vi.waitFor(() => expect(api.calls.some(call => call.startsWith('submitAnswer'))).toBe(true));
+
+      expect(store.timeUp()).toBe(true);
+    });
+
+    it('la reprise : « Reprendre » relance la partie en cours, la pile et le total sont restitués à l\'écran', async () => {
+      const opened = await open('resume', mode => {
+        mode.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+        mode.joinResult = {
+          kind: 'ok',
+          play: PLAY({
+            isResuming: true,
+            session: SESSION({ totalScore: 100, round: ROUND({ score: 100 }), roundTracks: [TRACK()], playedTracks: [TRACK()] }),
+            current: CURRENT({ position: 2, positionInRound: 2, previewUrl: 'https://cdn/preview-2.mp3' }),
+          }),
+        };
+      });
+
+      opened.element.querySelector<HTMLButtonElement>('app-resume-screen button')!.click();
+      await vi.waitFor(() => expect(opened.store.screen()).toBe('playing'));
+      opened.fixture.detectChanges();
+
+      expect(api.calls).toEqual(expect.arrayContaining(['session:7', 'join:ABC234']));
+      expect(opened.element.querySelectorAll('[data-testid="run-pile-track"]')).toHaveLength(1);
+      expect(opened.element.querySelector('[data-testid="run-total-score"]')?.textContent?.replace(/\D/g, '')).toBe('100');
+    });
+
+    it('le choix du thème : une tuile touchée envoie le choix au serveur', async () => {
+      const themeChoice = { round: 2, themes: [{ id: 1, name: 'Années 80', round: 2, icon: null }, { id: 2, name: 'Rap français', round: 2, icon: null }] };
+      const waitingTheme = () => SESSION({
+        round: ROUND({ round: 2, score: 0, listenSeconds: 5 }), roundsPassed: 1, roundTracks: [], themeChoice,
+        passedRounds: [{ round: 1, score: 320, listenSeconds: 10, theme: null }],
+      });
+      const opened = await open('resume', mode => {
+        mode.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+        mode.sessionResult = waitingTheme();
+        mode.joinResult = { kind: 'ok', play: PLAY({ session: waitingTheme(), current: null, isResuming: true }) };
+        mode.chooseThemeResult = PLAY({
+          current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 5 }),
+          session: SESSION({ ...waitingTheme(), themeChoice: null, themes: [{ round: 2, name: 'Rap français' }] }),
+        });
+      });
+      opened.element.querySelector<HTMLButtonElement>('app-resume-screen button')!.click();
+      await vi.waitFor(() => expect(opened.store.screen()).toBe('theme'));
+      opened.fixture.detectChanges();
+
+      opened.element.querySelector<HTMLElement>('[data-theme-id="1"]')!.click();
+
+      await vi.waitFor(() => expect(api.calls).toContain('chooseTheme:7:2:1'));
+    });
+
+    it('« Rejouer » à la fin d\'une partie perdue lance une autre playlist', async () => {
+      const { fixture, store, round, element } = await startPlaying(await open('welcome'));
+      api.answerResult = PLAY({
+        session: SESSION({
+          status: 'lost', round: null,
+          finish: {
+            status: 'lost', totalScore: 100, roundsPassed: 0, foundCount: 1, trackCount: 20, tracks: [], rounds: [],
+            record: { bestScore: 100, bestRoundsPassed: 0, isNew: false }, challengeCode: 'ABC234', livesLeft: 0, lifeBonus: 0, completeBonus: 0, level: null,
+          },
+        }),
+        revealed: TRACK(), current: null,
+      });
+      await store.submit(round.submit({ artist: 'Daft Punk', title: 'One More Time' })!);
+      store.next();
+      fixture.detectChanges();
+      expect(store.screen()).toBe('finished');
+      expect(api.calls.filter(call => call === 'launch')).toHaveLength(1);
+
+      element.querySelector<HTMLButtonElement>('[data-testid="run-play-again"]')!.click();
+
+      await vi.waitFor(() => expect(api.calls.filter(call => call === 'launch')).toHaveLength(2));
+    });
   });
 });
