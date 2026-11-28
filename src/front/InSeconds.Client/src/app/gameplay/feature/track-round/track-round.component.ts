@@ -8,7 +8,6 @@ import { nextRetryPhrase } from '../../domain/retry-phrases';
 import { RoundSubmission } from '../../domain/track-round';
 import { shake } from '../../../ui/motion/motion';
 import { AnswerInputComponent } from '../../ui/answer-input/answer-input.component';
-import { HintPanelComponent } from '../../ui/hint-panel/hint-panel.component';
 import { RevealCardComponent } from '../../ui/reveal-card/reveal-card.component';
 import { RoundPlayerComponent } from '../../ui/round-player/round-player.component';
 import { ButtonComponent } from '../../../ui/button/button.component';
@@ -28,7 +27,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
  */
 @Component({
   selector: 'app-track-round',
-  imports: [TranslatePipe, ButtonComponent, RoundPlayerComponent, HintPanelComponent, AnswerInputComponent, RevealCardComponent],
+  imports: [TranslatePipe, ButtonComponent, RoundPlayerComponent, AnswerInputComponent, RevealCardComponent],
   providers: [AnswerSearchStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -51,11 +50,9 @@ import { ButtonComponent } from '../../../ui/button/button.component';
 
         @if (round.showsInput()) {
           <form (submit)="onSubmit($event)" class="space-y-3">
-            <!-- L'indice du mode, juste au-dessus de la saisie (le mode Run : le thème de la manche). -->
+            <!-- Le thème de la manche (mode Run), juste au-dessus de la saisie. -->
             <ng-content select="[roundTheme]" />
 
-            <app-hint-panel [levels]="round.availableHintLevels()" [kinds]="round.hintKinds()" [hints]="round.hints()" [pending]="hintPending()"
-              (request)="hintRequested.emit($event)" />
 
             <ng-content select="[roundAids]" />
 
@@ -161,8 +158,6 @@ export class TrackRoundComponent {
 
   /** Ce que le serveur a révélé (donné par le mode une fois la réponse enregistrée). */
   readonly result = input<RoundResult | null>(null);
-  /** Le mode attend la réponse du back à une demande d'indice. */
-  readonly hintPending = input(false);
   /** `inline` : toute la manche dans une carte, le bouton à gauche de la waveform (un mode à écoute fixe) ; `stacked` (défaut) : le Daily. */
   readonly layout = input<'stacked' | 'inline'>('stacked');
   /** Les textes de « Passer » : le mode qui retire une vie les remplace (« Passer (une vie) »). */
@@ -184,8 +179,6 @@ export class TrackRoundComponent {
 
   /** La réponse à envoyer ; le mode l'envoie, puis appelle `reveal()` ou `submissionFailed()` du store. */
   readonly answered = output<RoundSubmission>();
-  /** Le joueur demande ce niveau d'indice ; le mode interroge le back, puis appelle `applyHints()` du store. */
-  readonly hintRequested = output<number>();
 
   protected readonly inline = computed(() => this.layout() === 'inline');
   /** La réponse proposée touchée, le temps de l'envoi. */

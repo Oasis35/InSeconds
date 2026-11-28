@@ -138,7 +138,7 @@ describe('DailyRoundStore', () => {
           isResuming: true,
           nextPosition: 2,
           completedAnswers: [ANSWERED(1, { score: 700 })],
-          currentTrack: { position: 2, listenedSeconds: 2, hintLevel: 1, hintFacts: [{ kind: 'year', value: '1999' }], failedAttempts: 0 },
+          currentTrack: { position: 2, listenedSeconds: 2, failedAttempts: 0 },
         }),
       };
 
@@ -149,8 +149,6 @@ describe('DailyRoundStore', () => {
       expect(store.totalScore()).toBe(700);
       // Les paliers sous les 2 s déjà écoutées ne sont plus proposés.
       expect(round.steps()).toEqual([2, 5]);
-      expect(round.hintLevel()).toBe(1);
-      expect(round.hints()).toEqual([{ kind: 'year', value: '1999' }]);
     });
 
     it("une partie déjà finie ou abandonnée ailleurs : la manche rend la main, l'accueil dit « déjà joué »", async () => {
@@ -254,7 +252,7 @@ describe('DailyRoundStore', () => {
         session: SESSION({
           isResuming: true,
           nextPosition: 1,
-          currentTrack: { position: 1, listenedSeconds: 1, hintLevel: 0, hintFacts: [], failedAttempts: 1 },
+          currentTrack: { position: 1, listenedSeconds: 1, failedAttempts: 1 },
         }),
       };
 
@@ -362,21 +360,6 @@ describe('DailyRoundStore', () => {
       expect(home.screen()).toBe('done');
       expect(home.gamesPlayed()).toBe(4);
       home.stopCountdown();
-    });
-
-    it('un indice attend le palier envoyé, puis s\'affiche', async () => {
-      await startGame();
-      TestBed.tick();
-      round.listenMore();
-      TestBed.tick();
-
-      await store.requestHint(1);
-
-      const calls = api.calls.filter(c => c.startsWith('listening') || c.startsWith('hint'));
-      expect(calls.at(-1)).toBe('hint 11/1/1');
-      expect(calls.indexOf('hint 11/1/1')).toBeGreaterThan(calls.indexOf('listening 11/1/1'));
-      expect(round.hints()).toEqual([{ kind: 'year', value: '2013' }]);
-      expect(store.hintPending()).toBe(false);
     });
   });
 

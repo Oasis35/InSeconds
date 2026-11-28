@@ -8,7 +8,7 @@ const DROP_MS = 450;
 const DROP_LABEL_MS = 900;
 
 /**
- * Les points en jeu, à gauche du bouton du lecteur. Quand ils baissent (le joueur prolonge l'écoute ou prend un indice), le chiffre
+ * Les points en jeu, à gauche du bouton du lecteur. Quand ils baissent (le joueur prolonge l'écoute), le chiffre
  * décompte, la perte s'envole au-dessus (« −150 ») et le bloc rebondit un peu ; en mouvement réduit, le chiffre change simplement.
  */
 @Component({

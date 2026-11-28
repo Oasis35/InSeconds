@@ -56,15 +56,9 @@ export class DailyApi {
     }
   }
 
-  /** Pose le plus long palier écouté sur le morceau en cours : le serveur débloque les indices et fixe le plancher anti-triche (piège 35). */
+  /** Pose le plus long palier écouté sur le morceau en cours : le serveur fixe le plancher anti-triche (piège 35). */
   async updateListening(sessionId: number, position: number, listenedSeconds: number): Promise<void> {
     await firstValueFrom(this.client.updateListening(sessionId, { position, listenedSeconds }));
-  }
-
-  /** Demande un niveau d'indice ; rend tous les indices révélés jusqu'à lui (cumulés). */
-  async requestHint(sessionId: number, position: number, level: number): Promise<readonly { kind: string; value: string | null }[]> {
-    const { facts } = await firstValueFrom(this.client.requestHint(sessionId, { position, level }));
-    return facts.map(f => ({ kind: f.kind, value: f.value ?? null }));
   }
 
   /**
@@ -216,7 +210,6 @@ function toSettings(settings: DailySettingsResponse): DailySettings {
     tracksPerChallenge: settings.tracksPerChallenge,
     allowedDurationsSeconds: settings.allowedDurationsSeconds,
     durationScores: settings.durationScores.map(d => ({ seconds: d.seconds, score: d.score })),
-    hints: settings.hints.map(h => ({ level: h.level, unlockSeconds: h.unlockSeconds, kind: h.kind, penaltyPercent: h.penaltyPercent })),
     retryScorePercent: settings.retryScorePercent,
   };
 }
@@ -231,7 +224,6 @@ function toAnswered(position: number, r: SubmitAnswerResponse): AnsweredTrack {
     titleCorrect: r.titleCorrect,
     score: r.score,
     listenedSeconds: r.listenedSeconds,
-    hintLevel: r.hintLevelUsed,
     correctArtist: r.correctArtist,
     correctTitle: r.correctTitle,
     deezerTrackId: r.deezerTrackId,
@@ -249,7 +241,6 @@ function toResumed(a: ResumedAnswer): AnsweredTrack {
     titleCorrect: a.titleCorrect,
     score: a.score,
     listenedSeconds: a.listenedSeconds,
-    hintLevel: a.hintLevel,
     correctArtist: a.correctArtist,
     correctTitle: a.correctTitle,
     deezerTrackId: a.deezerTrackId,
@@ -273,8 +264,6 @@ function toSession(r: StartSessionResponse): StartedSession {
       ? {
           position: r.currentTrack.position,
           listenedSeconds: r.currentTrack.listenedSeconds,
-          hintLevel: r.currentTrack.hintLevel,
-          hintFacts: r.currentTrack.hintFacts.map(f => ({ kind: f.kind, value: f.value ?? null })),
           failedAttempts: r.currentTrack.failedAttempts ?? 0,
         }
       : null,

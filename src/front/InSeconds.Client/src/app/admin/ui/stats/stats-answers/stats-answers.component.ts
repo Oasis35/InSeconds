@@ -44,7 +44,6 @@ export class StatsAnswersComponent {
     return [
       { labelKey: 'admin.stats.artistFound', percent: percentOf(a.artistFound, a.total) ?? 0, color: 'var(--color-success)' },
       { labelKey: 'admin.stats.titleFound', percent: percentOf(a.titleFound, a.total) ?? 0, color: 'var(--color-accent-2)' },
-      { labelKey: 'admin.stats.withHint', percent: percentOf(a.withHint, a.total) ?? 0, color: 'var(--color-warn)' },
     ];
   });
 }

@@ -32,7 +32,6 @@ interface RoundState {
   /** Position du morceau en cours (1 pour le premier) ; 0 tant qu'aucune partie n'est lancée. */
   position: number;
   abandonLoading: boolean;
-  hintPending: boolean;
 }
 
 const initialState: RoundState = {
@@ -43,7 +42,6 @@ const initialState: RoundState = {
   results: [],
   position: 0,
   abandonLoading: false,
-  hintPending: false,
 };
 
 /**
@@ -100,12 +98,9 @@ export const DailyRoundStore = signalStore(
       trackId: position,
       previewUrl: store.tracks().find(t => t.position === position)?.previewUrl || null,
       waveform: store.tracks().find(t => t.position === position)?.waveform ?? null,
-      listen: { steps: settings.allowedDurationsSeconds, extendable: true, stake: (seconds, hintLevel, isRetry) => dailyStake(settings, seconds, hintLevel, isRetry) },
-      hints: { unlockSeconds: settings.hints.map(h => h.unlockSeconds), kinds: settings.hints.map(h => h.kind) },
-      // Reprise : le plancher d'écoute et les indices déjà payés du morceau en cours.
+      listen: { steps: settings.allowedDurationsSeconds, extendable: true, stake: (seconds, isRetry) => dailyStake(settings, seconds, isRetry) },
+      // Reprise : le plancher d'écoute du morceau en cours.
       listenedFloor: resumed && resumed.listenedSeconds > 0 ? resumed.listenedSeconds : null,
-      hintLevel: resumed?.hintLevel ?? 0,
-      hintFacts: resumed?.hintFacts ?? [],
       failedAttempts: resumed?.failedAttempts ?? 0,
       refreshPreviewUrl: () => refreshPreview(position),
     });
@@ -116,7 +111,7 @@ export const DailyRoundStore = signalStore(
       if (!settings) return;
       sentListening.delete(position);
       const next = store.tracks().find(t => t.position === position + 1)?.previewUrl || null;
-      patchState(store, { position, hintPending: false });
+      patchState(store, { position });
       round.start(configOf(position, settings, resumed), next);
     };
 
@@ -283,21 +278,6 @@ export const DailyRoundStore = signalStore(
           sounds.play(answerSound(answered.artistCorrect === true, answered.titleCorrect === true));
         } catch {
           round.submissionFailed();
-        }
-      },
-
-      /** Un indice : le serveur le donne (et le facture), la manche l'affiche. */
-      async requestHint(level: number): Promise<void> {
-        const position = store.position();
-        patchState(store, { hintPending: true });
-        try {
-          await listeningQueue;
-          const facts = await api.requestHint(store.sessionId(), position, level);
-          round.applyHints(level, facts);
-        } catch {
-          // l'indice n'est pas révélé : le joueur peut le redemander
-        } finally {
-          patchState(store, { hintPending: false });
         }
       },
 

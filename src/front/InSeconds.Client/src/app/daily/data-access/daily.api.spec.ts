@@ -17,7 +17,7 @@ describe('DailyApi', () => {
 
   beforeEach(() => {
     client = {
-      getToday: vi.fn(), startSession: vi.fn(), submitAnswer: vi.fn(), requestHint: vi.fn(), getTodayStats: vi.fn(),
+      getToday: vi.fn(), startSession: vi.fn(), submitAnswer: vi.fn(), getTodayStats: vi.fn(),
       getArchivePreview: vi.fn(), getDailyHistory: vi.fn(),
     };
     TestBed.configureTestingModule({ providers: [DailyApi, { provide: DailyClient, useValue: client }] });
@@ -51,11 +51,11 @@ describe('DailyApi', () => {
   describe('start', () => {
     const started = {
       sessionId: 9, tracks: [{ position: 1, previewUrl: 'u1' }], streak: STREAK, isResuming: true, nextPosition: 2,
-      completedAnswers: [{ position: 1, artistCorrect: true, titleCorrect: false, score: 425, listenedSeconds: 1, hintLevel: 0, correctArtist: 'A', correctTitle: 'T', deezerTrackId: 3, coverUrl: undefined }],
-      currentTrack: { position: 2, listenedSeconds: 2, hintLevel: 1, hintFacts: [{ kind: 'year', value: undefined }], failedAttempts: 1 },
+      completedAnswers: [{ position: 1, artistCorrect: true, titleCorrect: false, score: 425, listenedSeconds: 1, correctArtist: 'A', correctTitle: 'T', deezerTrackId: 3, coverUrl: undefined }],
+      currentTrack: { position: 2, listenedSeconds: 2, failedAttempts: 1 },
     } as unknown as StartSessionResponse;
 
-    it('rend la partie en types du domaine, indices et réponses reprises comprises', async () => {
+    it('rend la partie en types du domaine, réponses reprises comprises', async () => {
       client['startSession'].mockReturnValue(of(started));
 
       const outcome = await api.start();
@@ -64,7 +64,7 @@ describe('DailyApi', () => {
       if (outcome.kind !== 'ok') return;
       expect(outcome.session.sessionId).toBe(9);
       expect(outcome.session.completedAnswers[0]).toMatchObject({ position: 1, score: 425, coverUrl: null, distribution: [], notFoundCount: 0 });
-      expect(outcome.session.currentTrack).toEqual({ position: 2, listenedSeconds: 2, hintLevel: 1, hintFacts: [{ kind: 'year', value: null }], failedAttempts: 1 });
+      expect(outcome.session.currentTrack).toEqual({ position: 2, listenedSeconds: 2, failedAttempts: 1 });
     });
 
     it.each([
@@ -83,7 +83,7 @@ describe('DailyApi', () => {
     const response = {
       artistCorrect: true, titleCorrect: true, score: 850, correctArtist: 'A', correctTitle: 'T', deezerTrackId: 5, coverUrl: 'c',
       listenedSeconds: 1, averageSecondsWhenCorrect: undefined, guessTimeDistribution: [{ durationSeconds: 1, count: 2 }],
-      notFoundCount: 3, hintLevelUsed: 0, hintPenaltyPercentApplied: 0, completed: false,
+      notFoundCount: 3, completed: false,
     } as SubmitAnswerResponse;
     const answer = { position: 2, listenedSeconds: 1, wasExtended: false, artist: null, title: 'T' };
 
@@ -137,13 +137,6 @@ describe('DailyApi', () => {
       await expect(api.submitAnswer(11, answer)).rejects.toMatchObject({ status: 409 });
       expect(sent.count).toBe(1);
     });
-  });
-
-  it('un indice rend tous les indices révélés, valeur vide comprise', async () => {
-    client['requestHint'].mockReturnValue(of({ facts: [{ kind: 'year', value: '2013' }, { kind: 'artistMasked', value: undefined }] }) as Observable<unknown>);
-
-    expect(await api.requestHint(11, 1, 2)).toEqual([{ kind: 'year', value: '2013' }, { kind: 'artistMasked', value: null }]);
-    expect(client['requestHint']).toHaveBeenCalledWith(11, { position: 1, level: 2 });
   });
 
   it('les statistiques du jour rendent des nombres et des `null`, pas des `undefined`', async () => {

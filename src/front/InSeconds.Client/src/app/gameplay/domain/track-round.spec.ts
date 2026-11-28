@@ -1,14 +1,13 @@
 import {
-  RoundConfig, TrackRound, applyHints, askSkip, availableHintLevels, beginListening, cancelConfirm, confirmPending,
+  RoundConfig, TrackRound, askSkip, beginListening, cancelConfirm, confirmPending,
   createRound, isAnswering, listenMore, maxStep, nextStep, onAudio, previewWithdrawn, replacePreviewUrl, retryOffered, retryPlayback, retrySubmission, reveal, showsInput,
-  skipUnplayable, stakeOf, submissionFailed, submitAnswer, timeUp, unlockedHintLevel,
+  skipUnplayable, stakeOf, submissionFailed, submitAnswer, timeUp,
 } from './track-round';
 
 const CONFIG: RoundConfig = {
   trackId: 7,
   previewUrl: 'https://cdn.example/extrait.mp3',
   listen: { steps: [0.5, 1, 2, 5, 10], extendable: true },
-  hints: { unlockSeconds: [5, 10] },
 };
 
 const round = (overrides: Partial<RoundConfig> = {}): TrackRound => createRound({ ...CONFIG, ...overrides });
@@ -41,12 +40,6 @@ describe('createRound', () => {
 
   it('sans palier possible, la manche n\'est pas jouable', () => {
     expect(round({ listenedFloor: 11 }).phase).toBe('no-preview');
-  });
-
-  it('reprend le niveau d\'indice déjà révélé', () => {
-    const r = round({ hintLevel: 1, hintFacts: [{ kind: 'year', value: '2013' }] });
-    expect(r.hintLevel).toBe(1);
-    expect(r.hints).toEqual([{ kind: 'year', value: '2013' }]);
   });
 });
 
@@ -204,77 +197,13 @@ describe('retryPlayback', () => {
   });
 });
 
-describe('indices', () => {
-  const at = (seconds: number) => {
-    let r = started();
-    while (r.chosenSeconds < seconds) r = listenMore(r);
-    return r;
-  };
-
-  it('se débloquent au palier du réglage, niveau par niveau', () => {
-    expect(unlockedHintLevel(at(2))).toBe(0);
-    expect(unlockedHintLevel(at(5))).toBe(1);
-    expect(unlockedHintLevel(at(10))).toBe(2);
-  });
-
-  it('tous les niveaux débloqués se proposent ensemble (le 2 sans passer par le 1)', () => {
-    expect(availableHintLevels(at(2))).toEqual([]);
-    expect(availableHintLevels(at(5))).toEqual([1]);
-    expect(availableHintLevels(at(10))).toEqual([1, 2]);
-    const first = applyHints(at(10), 1, [{ kind: 'year', value: '2013' }]);
-    expect(availableHintLevels(first)).toEqual([2]);
-  });
-
-  it('garde ce que révèle chaque niveau, quand le back le dit', () => {
-    expect(started({ hints: { unlockSeconds: [5, 10], kinds: ['year', 'artistMasked'] } }).hintKinds).toEqual(['year', 'artistMasked']);
-    expect(at(5).hintKinds).toEqual([]);
-  });
-
-  it('le niveau suivant attend son palier', () => {
-    const first = applyHints(at(5), 1, [{ kind: 'year', value: '2013' }]);
-    expect(availableHintLevels(first)).toEqual([]);
-    expect(availableHintLevels(listenMore(first))).toEqual([2]);
-  });
-
-  it('le nombre de niveaux suit le réglage, jamais une liste en dur', () => {
-    const r = started({ hints: { unlockSeconds: [1, 2, 5] } });
-    const longer = listenMore(listenMore(listenMore(r))); // 5 s
-    expect(availableHintLevels(longer)).toEqual([1, 2, 3]);
-    expect(availableHintLevels(applyHints(longer, 2, []))).toEqual([3]);
-    expect(availableHintLevels(started({ hints: { unlockSeconds: [] } }))).toEqual([]);
-  });
-
-  it('ne proposent plus un niveau révélé, ni ceux du dessous', () => {
-    const r = applyHints(at(10), 2, [{ kind: 'year', value: '2013' }, { kind: 'artist', value: 'D___ P___' }]);
-    expect(r.hintLevel).toBe(2);
-    expect(availableHintLevels(r)).toEqual([]);
-    expect(r.hints).toHaveLength(2);
-  });
-
-  it('le niveau révélé ne redescend jamais', () => {
-    const level2 = applyHints(at(10), 2, [{ kind: 'year', value: '2013' }, { kind: 'artist', value: 'D' }]);
-    expect(applyHints(level2, 1, [{ kind: 'year', value: '2013' }])).toBe(level2);
-  });
-
-  it('prolonger l\'écoute après un indice ne le retire pas', () => {
-    const r = applyHints(at(5), 1, [{ kind: 'year', value: '2013' }]);
-    const more = listenMore(r);
-    expect(more.hintLevel).toBe(1);
-    expect(more.hints).toHaveLength(1);
-  });
-
-  it('ne sont plus proposés une fois la réponse envoyée', () => {
-    expect(availableHintLevels(submitAnswer(at(10), answer))).toEqual([]);
-  });
-});
-
 describe('points en jeu', () => {
-  const stake = (seconds: number, hintLevel: number) => seconds * 100 - hintLevel;
+  const stake = (seconds: number) => seconds * 100;
 
-  it('appelle le calcul du mode au palier en cours, avec l\'indice pris', () => {
+  it('appelle le calcul du mode au palier en cours', () => {
     const r = started({ listen: { steps: [0.5, 1], extendable: true, stake } });
     expect(stakeOf(r)).toBe(50);
-    expect(stakeOf(applyHints(listenMore(r), 1, []))).toBe(99);
+    expect(stakeOf(listenMore(r))).toBe(100);
   });
 
   it('prend le premier palier tant que rien n\'est choisi', () => {
@@ -415,7 +344,7 @@ describe('envoi et révélation', () => {
   });
 
   describe('la seconde tentative', () => {
-    const stake = (seconds: number, hint: number, isRetry: boolean) => (isRetry ? 700 : 1000) - hint;
+    const stake = (_seconds: number, isRetry: boolean) => (isRetry ? 700 : 1000);
 
     it('une réponse refusée sans être comptée rend la saisie, au même palier, sans rien envoyer de plus', () => {
       const sent = submitAnswer(listened(started({ listen: { steps: [0.5, 1], extendable: true } })), answer);

@@ -38,7 +38,6 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'daily.abandoned': 'errors.daily.abandoned',
   'daily.already_answered': 'errors.daily.already_answered',
   'daily.already_played': 'errors.daily.already_played',
-  'daily.hint_locked': 'errors.daily.hint_locked',
   'daily.invalid_month': 'errors.daily.invalid_month',
   'daily.invalid_replay_query': 'errors.daily.invalid_replay_query',
   'daily.invalid_period': 'errors.daily.invalid_period',

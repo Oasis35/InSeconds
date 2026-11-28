@@ -13,7 +13,7 @@ describe('ScoreBreakdownComponent', () => {
     const byId = (id: string) => element.querySelector<HTMLElement>(`[data-testid="${id}"]`);
     return { fixture, element, byId };
   }
-  const base: ScoreBreakdown = { seconds: 1, base: 850, missed: null, hintPenaltyPercent: 0, score: 850 };
+  const base: ScoreBreakdown = { seconds: 1, base: 850, missed: null, score: 850 };
 
   it('tout trouvé sans indice : barre pleine, « maximum possible », aucune pastille', () => {
     const { byId } = render(base);
@@ -23,19 +23,12 @@ describe('ScoreBreakdownComponent', () => {
   });
 
   it('un seul des deux trouvé : la barre ne montre que la part gagnée, les pastilles de la cause sont visibles d\'emblée', () => {
-    const { byId } = render({ ...base, missed: 'title', hintPenaltyPercent: 30, score: 298 });
+    const { byId } = render({ ...base, missed: 'title', score: 298 });
     expect(Number.parseFloat((byId('breakdown-bar')?.firstElementChild as HTMLElement).style.width)).toBeCloseTo(35, 0);
     expect(byId('breakdown-base')?.textContent).toContain('daily.round.breakdown.outOf');
     const causes = byId('breakdown-causes')!.textContent!;
     expect(causes).toContain('daily.round.breakdown.missedTitle');
     expect(causes).toContain('daily.round.breakdown.half');
-    expect(causes).toContain('daily.round.breakdown.hintPenalty');
-  });
-
-  it('un indice seul : la pastille de sa pénalité, sans celle de la moitié', () => {
-    const { byId } = render({ ...base, hintPenaltyPercent: 30, score: 595 });
-    expect(byId('breakdown-causes')!.textContent).not.toContain('daily.round.breakdown.half');
-    expect(byId('breakdown-causes')!.textContent).toContain('daily.round.breakdown.hintPenalty');
   });
 
   it('un nouveau morceau change les pastilles', () => {

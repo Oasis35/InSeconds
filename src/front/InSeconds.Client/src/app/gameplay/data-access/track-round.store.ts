@@ -1,7 +1,7 @@
 import { DestroyRef, Injector, computed, effect, inject, untracked } from '@angular/core';
 import { patchState, signalStore, signalStoreFeature, withComputed, withHooks, withMethods, withState } from '@ngrx/signals';
 import {
-  HintFact, RoundAnswer, RoundConfig, RoundSubmission, TrackRound, applyHints, askSkip, availableHintLevels, beginListening,
+  RoundAnswer, RoundConfig, RoundSubmission, TrackRound, askSkip, beginListening,
   cancelConfirm, confirmPending, createRound, listenMore, maxStep, nextStep, onAudio, previewWithdrawn, replacePreviewUrl, retryOffered, retryPlayback, retrySubmission, reveal,
   showsInput, skipUnplayable, stakeOf, submissionFailed, submitAnswer, timeUp,
 } from '../domain/track-round';
@@ -24,10 +24,9 @@ interface TrackRoundState {
  * La manche d'un morceau, à composer dans le store d'un mode, ou à fournir tel quel (`TrackRoundStore`) à côté de lui, ce que `TrackRoundComponent` injecte : l'état est
  * celui de la machine à états de `domain/`, les méthodes en sont les transitions, et le store
  * donne ses ordres au lecteur (`AudioPort`). Il ne connaît ni le mode, ni le réseau :
- * - le mode appelle `start(...)` avec ses paliers et ses indices ;
+ * - le mode appelle `start(...)` avec ses paliers ;
  * - quand le joueur répond, `submit()` rend ce qu'il faut envoyer (`RoundSubmission`) ; le mode
- *   l'envoie puis appelle `reveal()` ou `submissionFailed()` ;
- * - un indice demandé est fourni par le back : le mode appelle `applyHints(...)`.
+ *   l'envoie puis appelle `reveal()` ou `submissionFailed()`.
  */
 export function withTrackRound() {
   return signalStoreFeature(
@@ -43,13 +42,8 @@ export function withTrackRound() {
       nextStep: computed(() => { const r = round(); return r ? nextStep(r) : null; }),
       wasExtended: computed(() => round()?.extended ?? false),
       showsInput: computed(() => { const r = round(); return r ? showsInput(r) : false; }),
-      hintLevel: computed(() => round()?.hintLevel ?? 0),
-      hints: computed<readonly HintFact[]>(() => round()?.hints ?? []),
-      /** Ce que révèle chaque niveau, quand le back le dit (libellé des boutons). */
-      hintKinds: computed<readonly (string | null)[]>(() => round()?.hintKinds ?? []),
-      /** Les points en jeu (barème du palier moins l'indice pris) ; `null` si le mode n'a pas de barème. */
+      /** Les points en jeu (barème du palier) ; `null` si le mode n'a pas de barème. */
       stake: computed(() => { const r = round(); return r ? stakeOf(r) : null; }),
-      availableHintLevels: computed(() => { const r = round(); return r ? availableHintLevels(r) : []; }),
       /** La seconde tentative est en cours (une réponse a été refusée sans être comptée). */
       isRetry: computed(() => (round()?.failedAttempts ?? 0) > 0),
       /** Un compteur : il monte à chaque seconde tentative offerte, c'est lui qui fait trembler le champ. */
@@ -218,11 +212,6 @@ export function withTrackRound() {
         reveal(): void {
           const round = apply(reveal)?.after;
           if (round?.previewUrl && round.chosenSeconds > 0 && audio.state() !== 'error') audio.playFull();
-        },
-
-        /** Le back a révélé jusqu'à ce niveau, avec ces indices cumulés. */
-        applyHints: (level: number, facts: readonly HintFact[]): void => {
-          apply(round => applyHints(round, level, facts));
         },
 
         /** Fin de la manche : coupe le son et oublie le morceau. */
