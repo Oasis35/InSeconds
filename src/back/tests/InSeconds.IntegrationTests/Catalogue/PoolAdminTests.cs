@@ -260,24 +260,32 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Empty((await _app.ListAsync()).Single(t => t.Id == track.Id).AltTitles!);
     }
 
-    [Fact]
-    public async Task Renommage_TropDeTitresAlternatifs_400()
+    private static RenameTrack InvalidRename(string cas) => cas switch
+    {
+        "artiste vide" => new RenameTrack("", "Titre"),
+        "titre blanc" => new RenameTrack("Artiste", "   "),
+        "artiste trop long" => new RenameTrack(new string('a', 201), "T"),
+        "titre trop long" => new RenameTrack("A", new string('t', 301)),
+        "genre trop long" => new RenameTrack("A", "T", new string('g', 61)),
+        "trop de titres alternatifs" => new RenameTrack("A", "T", null, ["1", "2", "3", "4", "5", "6"]),
+        _ => throw new ArgumentOutOfRangeException(nameof(cas), cas, null),
+    };
+
+    [Theory]
+    [InlineData("artiste vide")]
+    [InlineData("titre blanc")]
+    [InlineData("artiste trop long")]
+    [InlineData("titre trop long")]
+    [InlineData("genre trop long")]
+    [InlineData("trop de titres alternatifs")]
+    public async Task Renommage_ChampInvalide_400_RienNeChange(string cas)
     {
         var track = await _app.AddAsync(1001);
 
-        var response = await _app.Admin().PatchAsJsonAsync($"{Tracks}/{track.Id}", new RenameTrack("A", "T", null, ["1", "2", "3", "4", "5", "6"]), Ct);
+        var response = await _app.Admin().PatchAsJsonAsync($"{Tracks}/{track.Id}", InvalidRename(cas), Ct);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task Renommage_GenreTropLong_400()
-    {
-        var track = await _app.AddAsync(1001);
-
-        var response = await _app.Admin().PatchAsJsonAsync($"{Tracks}/{track.Id}", new RenameTrack("A", "T", new string('g', 61)), Ct);
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("E2E Artist", Assert.Single(await _app.ListAsync()).Artist);
     }
 
     [Fact]
@@ -312,32 +320,23 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    [Fact]
-    public async Task Renommage_MorceauInconnu_404() =>
-        await AssertProblemAsync(await _app.Admin().PatchAsJsonAsync($"{Tracks}/99999", new RenameTrack("A", "T"), Ct), HttpStatusCode.NotFound, "common.not_found");
-
     [Theory]
-    [InlineData("", "Titre")]
-    [InlineData("Artiste", "   ")]
-    public async Task Renommage_NomVide_400_RienNeChange(string artist, string title)
+    [InlineData("renommer")]
+    [InlineData("desactiver")]
+    [InlineData("supprimer")]
+    public async Task MorceauInconnu_404(string operation)
     {
-        var track = await _app.AddAsync(1001);
+        var admin = _app.Admin();
 
-        var response = await _app.Admin().PatchAsJsonAsync($"{Tracks}/{track.Id}", new RenameTrack(artist, title), Ct);
+        var response = operation switch
+        {
+            "renommer" => await admin.PatchAsJsonAsync($"{Tracks}/99999", new RenameTrack("A", "T"), Ct),
+            "desactiver" => await admin.PutAsJsonAsync($"{Tracks}/99999/disabled", new SetTrackDisabled(true), Ct),
+            "supprimer" => await admin.DeleteAsync($"{Tracks}/99999", Ct),
+            _ => throw new ArgumentOutOfRangeException(nameof(operation), operation, null),
+        };
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("E2E Artist", Assert.Single(await _app.ListAsync()).Artist);
-    }
-
-    [Fact]
-    public async Task Renommage_NomTropLong_400()
-    {
-        var track = await _app.AddAsync(1001);
-
-        Assert.Equal(HttpStatusCode.BadRequest,
-            (await _app.Admin().PatchAsJsonAsync($"{Tracks}/{track.Id}", new RenameTrack(new string('a', 201), "T"), Ct)).StatusCode);
-        Assert.Equal(HttpStatusCode.BadRequest,
-            (await _app.Admin().PatchAsJsonAsync($"{Tracks}/{track.Id}", new RenameTrack("A", new string('t', 301)), Ct)).StatusCode);
+        await AssertProblemAsync(response, HttpStatusCode.NotFound, "common.not_found");
     }
 
     // ---------- Actualisation (PUT) ----------
@@ -554,10 +553,6 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    [Fact]
-    public async Task Desactivation_MorceauInconnu_404() =>
-        await AssertProblemAsync(await _app.Admin().PutAsJsonAsync($"{Tracks}/99999/disabled", new SetTrackDisabled(true), Ct), HttpStatusCode.NotFound, "common.not_found");
-
     // ---------- Suppression ----------
 
     [Fact]
@@ -712,10 +707,6 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(0L, await _app.Api.ScalarAsync<long>("SELECT count(*) FROM catalogue.track_genres"));
         Assert.Equal(2L, await _app.Api.ScalarAsync<long>("SELECT count(*) FROM catalogue.genres"));
     }
-
-    [Fact]
-    public async Task Suppression_MorceauInconnu_404() =>
-        await AssertProblemAsync(await _app.Admin().DeleteAsync($"{Tracks}/99999", Ct), HttpStatusCode.NotFound, "common.not_found");
 
     // ---------- Recherche admin : titres bruts ----------
 
