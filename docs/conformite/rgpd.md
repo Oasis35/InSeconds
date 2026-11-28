@@ -25,8 +25,8 @@ Panneau technique de l'admin : lecture anonyme de l'API publique de GitHub (`api
 
 ## Droits du joueur
 
-- **Copie** : `GET /api/players/me/export` (JSON : source d'arrivée, compte, appareils, puis une section par mode de jeu sous `modules` : `modules.daily` pour la série (en cours et la meilleure) et les parties, `modules.runs` pour les parties (réponses), les playlists créées, le record, l'accès, le niveau et les défis d'amis reçus, `modules.social` pour les groupes), bouton « Tes données » du profil.
-- **Ce que la copie ne contient pas** : les jetons à usage unique (`players.auth_tokens` : hash du jeton et adresse du lien, ou, pour un changement d'adresse en cours, la nouvelle adresse demandée, rattachée au joueur) et l'ancien cookie (`players.legacy_tokens`, un hash). Ce sont des données éphémères que la personne vient de saisir elle-même (jeton valable 15 minutes, ligne supprimée par la purge nocturne après son expiration, et avec le compte). `PlayerDataExportCoverageTests` classe chaque table avec `player_id` comme exportée ou exclue avec sa raison : une table nouvelle oblige à décider.
+- **Copie** : `GET /api/players/me/export` (JSON : source d'arrivée, compte (avec ses demandes de changement d'adresse encore en base : la nouvelle adresse saisie, la date, l'expiration, et si le lien a été confirmé), appareils, puis une section par mode de jeu sous `modules` : `modules.daily` pour la série (en cours et la meilleure) et les parties, `modules.runs` pour les parties (réponses), les playlists créées, le record, l'accès, le niveau et les défis d'amis reçus, `modules.social` pour les groupes), bouton « Tes données » du profil.
+- **Ce que la copie ne contient pas** : le hash des jetons à usage unique (`players.auth_tokens`, rien d'exploitable sans le jeton) et l'ancien cookie (`players.legacy_tokens`, un hash). Les jetons de connexion n'ont pas de joueur ; la **nouvelle adresse d'un changement d'email**, elle, est rattachée au joueur et sort dans la copie (`account.emailChangeRequests`). `PlayerDataExportCoverageTests` classe chaque table avec `player_id` comme exportée ou exclue avec sa raison : une table nouvelle oblige à décider.
 - **Effacement** : `POST /api/players/me/delete` (pseudo retapé pour confirmer), effacement réel (`AccountErasure`, qui appelle l'`IPlayerDataContributor` de chaque mode de jeu dans la même transaction).
 - **Sans connexion possible** : commandes de secours sur le VPS `--export-player` / `--delete-player` (cf. [`src/back/CLAUDE.md`](../../src/back/CLAUDE.md) § Commandes), réponse sous un mois, uniquement à l'adresse du compte.
 
@@ -70,7 +70,8 @@ Appliquées chaque nuit par `players-purge-expired-tokens` :
 
 | Donnée | Durée |
 |---|---|
-| Jetons de connexion et de changement d'email | jusqu'à expiration |
+| Jetons de connexion et de changement d'email | jusqu'à expiration (15 minutes), la ligne est supprimée par la purge nocturne |
+| Message d'email en attente ou traité (Wolverine, schéma `messaging`, il porte l'adresse du destinataire) | 5 minutes une fois traité ; 3 jours dans la file des échecs, le temps de voir une panne d'envoi (`MessageRetention`, `MessageRetentionTests`) |
 | Appareil (même déconnecté) | 91 jours après sa dernière visite (un jour après l'expiration du cookie) |
 | Compte sans visite | 3 ans, puis effacé avec son historique (jamais un admin, sans email de prévenance) |
 | Invité | jamais effacé ; son pseudo d'invité est vidé 91 jours après sa dernière visite, il est ensuite anonyme une fois ses appareils supprimés |

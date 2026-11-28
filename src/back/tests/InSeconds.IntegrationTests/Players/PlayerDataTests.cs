@@ -28,6 +28,25 @@ public class PlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
     public ValueTask DisposeAsync() => _app.DisposeAsync();
 
     [Fact]
+    public async Task Export_UneDemandeDeChangementDAdresse_SortAvecLaNouvelleAdresse()
+    {
+        var device = await _app.SignInDeviceAsync("alice@example.com", "Alice", SafariIphone);
+        var request = await device.Client.PostAsJsonAsync("/api/players/me/email-change", new RequestEmailChange(" Nouvelle@Example.com "), Ct);
+        Assert.Equal(HttpStatusCode.NoContent, request.StatusCode);
+        // Le jeton est créé par le handler du message, après la réponse 204.
+        await Waiting.MessagesHandledAsync(_app.Api, Ct);
+
+        var export = (await device.Client.GetFromJsonAsync<PlayerDataExport>("/api/players/me/export", Ct))!;
+
+        var change = Assert.Single(export.Account!.EmailChangeRequests);
+        Assert.Equal("nouvelle@example.com", change.NewEmail);
+        Assert.False(change.Confirmed);
+        Assert.Equal(TimeSpan.FromMinutes(15), change.ExpiresAt - change.RequestedAt);
+        // L'ancienne adresse reste celle du compte tant que le lien n'est pas confirmé.
+        Assert.Equal("alice@example.com", export.Account.Email);
+    }
+
+    [Fact]
     public async Task Export_ToutesSesDonnees_EnPieceJointe()
     {
         var device = await _app.SignInDeviceAsync("alice@example.com", "Alice", SafariIphone);
@@ -44,8 +63,9 @@ public class PlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
 
         var export = (await response.Content.ReadFromJsonAsync<PlayerDataExport>(Ct))!;
         Assert.Equal(device.PlayerId, export.PlayerId);
-        Assert.Equal(new AccountExport("alice@example.com", "Alice", export.Account!.LinkedAt, IsAdmin: false), export.Account);
+        Assert.Equal(("alice@example.com", "Alice", false), (export.Account!.Email, export.Account.Pseudo, export.Account.IsAdmin));
         Assert.NotNull(export.Account.LinkedAt);
+        Assert.Empty(export.Account.EmailChangeRequests);
         Assert.Equal("Safari · iPhone", Assert.Single(export.Devices).Label);
         // Une section par mode : Daily (sa série et ses parties) et Runs (vide ici).
         Assert.Equal(["daily", "runs", "social"], export.Modules.Keys.Order(StringComparer.Ordinal));

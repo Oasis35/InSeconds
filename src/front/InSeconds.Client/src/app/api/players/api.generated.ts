@@ -1019,6 +1019,7 @@ export interface AccountExport {
     pseudo: string;
     linkedAt: Date | undefined;
     isAdmin: boolean;
+    emailChangeRequests: EmailChangeRequestExport[];
 
     [key: string]: any;
 }
@@ -1062,6 +1063,15 @@ export interface DeviceResponse {
 
 export interface EmailChangedResponse {
     email: string;
+
+    [key: string]: any;
+}
+
+export interface EmailChangeRequestExport {
+    newEmail: string;
+    requestedAt: Date;
+    expiresAt: Date;
+    confirmed: boolean;
 
     [key: string]: any;
 }

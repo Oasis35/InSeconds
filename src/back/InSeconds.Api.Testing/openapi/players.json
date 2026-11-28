@@ -728,7 +728,8 @@
           "email",
           "pseudo",
           "linkedAt",
-          "isAdmin"
+          "isAdmin",
+          "emailChangeRequests"
         ],
         "type": "object",
         "properties": {
@@ -747,6 +748,12 @@
           },
           "isAdmin": {
             "type": "boolean"
+          },
+          "emailChangeRequests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmailChangeRequestExport"
+            }
           }
         }
       },
@@ -856,6 +863,31 @@
         "properties": {
           "email": {
             "type": "string"
+          }
+        }
+      },
+      "EmailChangeRequestExport": {
+        "required": [
+          "newEmail",
+          "requestedAt",
+          "expiresAt",
+          "confirmed"
+        ],
+        "type": "object",
+        "properties": {
+          "newEmail": {
+            "type": "string"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "confirmed": {
+            "type": "boolean"
           }
         }
       },
