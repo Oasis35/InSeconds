@@ -5,8 +5,9 @@ namespace InSeconds.UnitTests.Waveform;
 /// <summary>
 /// La forme d'un extrait qui n'a pas la forme des fixtures (stéréo 44,1 kHz) : mono, 32 et 48 kHz, plus court que la fenêtre de 30 s, plus long.
 /// Le décodeur reçoit des trames MPEG-1 couche III de silence, fabriquées ici (en-tête, informations latérales à zéro) : aucun encodeur n'est nécessaire et
-/// aucun audio de Deezer n'entre dans le dépôt (piège 47). Du silence ne dit rien de l'énergie, mais prouve que le décodage, le rythme des tranches et la
-/// taille du blob tiennent pour chaque format (piège 50 : MPEG-1, 44,1 kHz est le cas nominal, les autres ne doivent pas casser le calcul).
+/// aucun audio de Deezer n'entre dans le dépôt (piège 47). Du silence ne dit rien de l'énergie ni du découpage en tranches (les valeurs, elles, sont tenues par
+/// <c>WaveformAnalyzerTests</c>) : ces tests prouvent que le décodage tient pour chaque format, que le blob garde sa taille et que le flux n'est pas lu au-delà
+/// de la fenêtre de 30 s (piège 50 : MPEG-1, 44,1 kHz est le cas nominal, les autres ne doivent pas casser le calcul).
 /// </summary>
 public class WaveformAnalyzerFormatsTests
 {
@@ -49,7 +50,7 @@ public class WaveformAnalyzerFormatsTests
     {
         var data = Analyze(SilentMp3(sampleRate, mono, FramesFor(5, sampleRate)));
 
-        // 30 s × 6 barres et 30 s × 60 valeurs, quelle que soit la fréquence : la tranche suit la durée, pas le nombre d'échantillons.
+        // 30 s × 6 barres et 30 s × 60 valeurs, quelle que soit la fréquence : la taille du blob est fixe.
         Assert.Equal(180, data.Bars.Length);
         Assert.Equal(1800, data.Envelope.Length);
         Assert.All(data.Bars, bar => Assert.Equal(0, bar));
@@ -84,7 +85,7 @@ public class WaveformAnalyzerFormatsTests
     [Fact]
     public void UnFluxAuMilieuDUnExtrait_Tronque_DonneUneFormeSansLever()
     {
-        // Le téléchargement s'est arrêté au milieu d'une trame : les trames entières comptent, la queue coupée est ignorée.
+        // Le téléchargement s'est arrêté au milieu d'une trame : la dernière trame coupée ne fait pas échouer le calcul (le décodeur la décode quand même).
         var mp3 = SilentMp3(44_100, mono: false, FramesFor(2, 44_100));
 
         var data = Analyze(mp3[..^100]);

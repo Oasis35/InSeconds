@@ -46,6 +46,8 @@ public class DeezerCacheTests
                 Content = new StringContent($$"""{"preview":"{{signatures.Dequeue()}}"}"""),
             });
         });
+        // Le client lui-même : un cache ajouté dans le client serait vu ici ; un décorateur de cache enregistré par `AddDeezer` pour le port, lui, est vu par
+        // le test de type juste au-dessus (le câblage). Les deux se complètent.
         var client = new DeezerClient(new HttpClient(handler) { BaseAddress = new Uri("https://api.deezer.com") }, NullLogger<DeezerClient>.Instance);
 
         var first = await client.GetPreviewAsync(123, Ct);
