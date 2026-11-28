@@ -4,6 +4,8 @@ import { RunSounds } from './run-sounds';
 
 describe('RunSounds', () => {
   let audio: FakeAudioPort;
+  /** Les contextes audio que RunSounds crée : on les observe sans toucher à son champ privé. */
+  let contexts: AudioContext[];
 
   const create = (): RunSounds => {
     TestBed.configureTestingModule({ providers: [RunSounds, provideFakeAudio(audio)] });
@@ -14,15 +16,26 @@ describe('RunSounds', () => {
   const awake = async (): Promise<RunSounds> => {
     const sounds = create();
     sounds.unlock();
-    await vi.waitFor(() => expect((sounds as unknown as { context: AudioContext }).context.state).toBe('running'));
+    await vi.waitFor(() => expect(contexts[0]?.state).toBe('running'));
     return sounds;
   };
 
   beforeEach(() => {
     audio = new FakeAudioPort();
+    contexts = [];
+    const Real = AudioContext;
+    vi.stubGlobal('AudioContext', class extends Real {
+      constructor(...args: ConstructorParameters<typeof AudioContext>) {
+        super(...args);
+        contexts.push(this);
+      }
+    });
   });
 
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
 
   it('réveillé dans un clic, un son se joue vraiment : une note par note du son', async () => {
     const sounds = await awake();

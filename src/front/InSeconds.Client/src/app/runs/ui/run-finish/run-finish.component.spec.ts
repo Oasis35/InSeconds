@@ -81,7 +81,7 @@ describe('RunFinishComponent', () => {
 
     expect(text(element, 'run-play-again')).toBe('runs.finished.playAgain');
     expect(again.classList).toContain('app-button--primary');
-    expect(again.compareDocumentPosition(element.querySelector('[data-testid="run-share"]')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(again.compareDocumentPosition(element.querySelector('[data-testid="run-share"]')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
   it('« Rejouer » est le seul bouton principal : le partage passe en contour neutre, sans lueur ; sans accès, le partage reste principal', () => {

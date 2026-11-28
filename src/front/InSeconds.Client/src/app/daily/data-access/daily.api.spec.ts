@@ -207,6 +207,6 @@ describe('DailyApi', () => {
   it("une autre erreur de l'historique remonte", async () => {
     client['getDailyHistory'].mockReturnValue(throwError(() => problem(500, 'common.unexpected')));
 
-    await expect(api.history(null)).rejects.toBeDefined();
+    await expect(api.history(null)).rejects.toMatchObject({ status: 500, code: 'common.unexpected' });
   });
 });

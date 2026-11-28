@@ -117,7 +117,7 @@ describe('TrackRoundComponent', () => {
 
       const cards = element.querySelector('[roundAids]')!;
       expect(cards.textContent).toBe('Cartes du mode');
-      expect(cards.compareDocumentPosition(input()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(cards.compareDocumentPosition(input()) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     });
 
     it('avec des réponses proposées : plus de champ ni de « Valider », toucher une réponse l\'envoie', () => {
