@@ -14,7 +14,6 @@ namespace InSeconds.Api.Testing.Deezer;
 public sealed class FakeDeezerState
 {
     private readonly ConcurrentQueue<string> _requests = new();
-    private readonly ConcurrentDictionary<long, bool> _withoutPreview = new();
 
     /// <summary>Chemin et requête de chaque appel reçu (<c>/track/123</c>, <c>/search?q=…</c>), dans l'ordre.</summary>
     public IReadOnlyCollection<string> Requests => _requests;
@@ -25,22 +24,12 @@ public sealed class FakeDeezerState
     /// </summary>
     public Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage?>>? Intercept { get; set; }
 
-    /// <summary>Ces morceaux n'ont plus d'extrait (Deezer les connaît toujours, sans adresse d'écoute), jusqu'au prochain <see cref="Reset"/>.</summary>
-    public void WithoutPreview(IEnumerable<long> deezerTrackIds)
-    {
-        foreach (var id in deezerTrackIds)
-            _withoutPreview[id] = true;
-    }
-
-    internal bool HasNoPreview(long deezerTrackId) => _withoutPreview.ContainsKey(deezerTrackId);
-
     internal void Record(HttpRequestMessage request) =>
         _requests.Enqueue(request.RequestUri?.PathAndQuery ?? string.Empty);
 
     public void Reset()
     {
         _requests.Clear();
-        _withoutPreview.Clear();
         Intercept = null;
     }
 }
@@ -49,8 +38,7 @@ public sealed class FakeDeezerState
 /// Le faux Deezer de l'hôte de test (S9 : jamais dans l'image de prod) : le vrai client Deezer et son cache
 /// tournent sur ce transport truqué. Conventions :
 /// <list type="bullet">
-/// <item><description>un morceau d'identifiant ≥ <see cref="NoPreviewFrom"/> n'a pas d'extrait, ni ceux que le test en a privés
-/// (<see cref="FakeDeezerState.WithoutPreview"/>) ;</description></item>
+/// <item><description>un morceau d'identifiant ≥ <see cref="NoPreviewFrom"/> n'a pas d'extrait ;</description></item>
 /// <item><description>l'extrait (<c>/test-audio.mp3</c>, le fichier que le front de test sert aussi au navigateur) est un MP3 synthétique de 6 s : 2 s de basse
 /// forte, 2 s d'aigu faible, 2 s de silence ;</description></item>
 /// <item><description>un identifiant ≥ <see cref="NotFoundFrom"/> (et en dessous) : Deezer ne le connaît pas (erreur 800 en HTTP 200) ;</description></item>
@@ -99,7 +87,7 @@ public sealed class FakeDeezerHandler(FakeDeezerState state) : HttpMessageHandle
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(SyntheticPreview.Value) { Headers = { { "Content-Type", "audio/mpeg" } } } };
 
         if (path.StartsWith("/track/", StringComparison.OrdinalIgnoreCase) && long.TryParse(path["/track/".Length..], out var id))
-            return state.HasNoPreview(id) ? Json(TrackJson(id, preview: "")) : TrackResponse(id);
+            return TrackResponse(id);
 
         if (path.StartsWith("/album/", StringComparison.OrdinalIgnoreCase) && long.TryParse(path["/album/".Length..], out var albumId))
             return Json(AlbumJson(albumId));

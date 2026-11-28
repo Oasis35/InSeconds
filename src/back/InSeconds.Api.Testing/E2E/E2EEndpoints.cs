@@ -1,7 +1,3 @@
-using InSeconds.Api.Modules.Runs.Application;
-using Microsoft.Extensions.Options;
-using InSeconds.Api.Infrastructure.Settings;
-using System.Text.Json;
 using InSeconds.Api.Infrastructure.Persistence;
 using InSeconds.Api.Infrastructure.Time;
 using InSeconds.Api.Modules.Catalogue.Domain;
@@ -39,10 +35,8 @@ public static class E2EEndpoints
         var e2e = routes.MapGroup(Prefix).ExcludeFromDescription();
 
         // Vide les tables des modules, les emails capturés, et remet le faux Deezer et son cache à zéro.
-        e2e.MapPost("/reset", async (
-            DatabaseResetter resetter, CapturingEmailSender emails, FakeDeezerState deezer, DeezerCache deezerCache, InSecondsDbContext db,
-            ISettingsReloader reloader, CancellationToken ct) =>
-            Results.Ok(new ResetResponse(await ResetAsync(resetter, emails, deezer, deezerCache, db, reloader, ct))));
+        e2e.MapPost("/reset", async (DatabaseResetter resetter, CapturingEmailSender emails, FakeDeezerState deezer, DeezerCache deezerCache, CancellationToken ct) =>
+            Results.Ok(new ResetResponse(await ResetAsync(resetter, emails, deezer, deezerCache, ct))));
 
         // Le pool de test : 50 morceaux jouables et 5 sans extrait, avec leurs défis (rien si le pool n'est pas vide).
         e2e.MapPost("/seed-catalogue", async (InSecondsDbContext db, TimeProvider time, CancellationToken ct) =>
@@ -51,39 +45,10 @@ public static class E2EEndpoints
         // Remise à zéro complète puis seed du catalogue (le fixture E2E envoie un jeton admin, ignoré ici).
         e2e.MapPost("/reseed", async (
             DatabaseResetter resetter, CapturingEmailSender emails, FakeDeezerState deezer, DeezerCache deezerCache,
-            InSecondsDbContext db, ISettingsReloader reloader, TimeProvider time, CancellationToken ct) =>
+            InSecondsDbContext db, TimeProvider time, CancellationToken ct) =>
         {
-            await ResetAsync(resetter, emails, deezer, deezerCache, db, reloader, ct);
+            await ResetAsync(resetter, emails, deezer, deezerCache, ct);
             return Results.Ok(new SeedResponse(await CatalogueSeed.SeedAsync(db, time, ct)));
-        });
-
-        // Pose un réglage du mode Run (« Runs:… », valeur JSON) le temps d'un test : la remise à zéro suivante les efface tous, chaque test
-        // repart des valeurs par défaut. Un autre préfixe est refusé (ce n'est pas une porte vers les réglages du jeu du jour).
-        e2e.MapPost("/runs/settings", async (
-            RunSettingRequest request, SettingsStore settings, IOptionsMonitor<RunsOptions> options, InSecondsDbContext db, ISettingsReloader reloader,
-            CancellationToken ct) =>
-        {
-            if (request.Key is null || !request.Key.StartsWith("Runs:", StringComparison.Ordinal))
-                return Results.BadRequest("Un réglage « Runs:… » seulement.");
-            JsonDocument value;
-            try
-            {
-                value = JsonDocument.Parse(request.Json ?? "");
-            }
-            catch (JsonException e)
-            {
-                return Results.BadRequest($"JSON invalide : {e.Message}");
-            }
-
-            using (value)
-                await settings.SetAsync(request.Key, value.RootElement, ct);
-            // Des réglages incohérents empêcheraient tout lancement jusqu'à la remise à zéro : refusés tout de suite, avec la raison.
-            var problems = RunsOptionsChecks.Problems(options.CurrentValue);
-            if (problems.Count == 0)
-                return Results.NoContent();
-            await db.Database.ExecuteSqlAsync($"DELETE FROM infra.settings WHERE key = {request.Key}", ct);
-            reloader.Reload();
-            return Results.BadRequest(string.Join(" ; ", problems));
         });
 
         // Génère le défi du jour tout de suite, sans Hangfire (les fixtures qui ont juste besoin d'un défi) :
@@ -160,14 +125,6 @@ public static class E2EEndpoints
                 new RunTrackEntry(t.Position, t.Round, tracks[t.TrackId].DeezerTrackId, tracks[t.TrackId].Artist, tracks[t.TrackId].Title))]));
         });
 
-        // Le faux Deezer ne donne plus d'extrait pour ces morceaux (le morceau existe toujours) : un Run les neutralise quand il y arrive.
-        // Remis à zéro par /reset.
-        e2e.MapPost("/deezer/without-preview", (WithoutPreviewRequest request, FakeDeezerState deezer) =>
-        {
-            deezer.WithoutPreview(request.DeezerTrackIds);
-            return Results.Ok();
-        });
-
         // Dernier email envoyé à une adresse (lien de connexion, confirmation de changement d'email).
         e2e.MapGet("/last-email", (string to, CapturingEmailSender emails) =>
             emails.LastTo(to) is { } email ? Results.Ok(email) : Results.NotFound());
@@ -183,13 +140,9 @@ public static class E2EEndpoints
     }
 
     private static async Task<IReadOnlyList<string>> ResetAsync(
-        DatabaseResetter resetter, CapturingEmailSender emails, FakeDeezerState deezer, DeezerCache deezerCache, InSecondsDbContext db,
-        ISettingsReloader reloader, CancellationToken ct)
+        DatabaseResetter resetter, CapturingEmailSender emails, FakeDeezerState deezer, DeezerCache deezerCache, CancellationToken ct)
     {
         var schemas = await resetter.ResetAsync(ct);
-        // Les réglages du mode Run posés par un test (/runs/settings) ne passent pas au suivant.
-        await db.Database.ExecuteSqlRawAsync("DELETE FROM infra.settings WHERE key LIKE 'Runs:%'", ct);
-        reloader.Reload();
         emails.Clear();
         deezer.Reset();
         deezerCache.Clear();
@@ -209,9 +162,3 @@ public sealed record GenerateTodayResponse(bool Created, int Tracks);
 public sealed record RunTrackEntry(int Position, int Round, long DeezerTrackId, string Artist, string Title);
 
 public sealed record RunTracksResponse(string Code, IReadOnlyList<RunTrackEntry> Tracks);
-
-public sealed record WithoutPreviewRequest(IReadOnlyList<long> DeezerTrackIds);
-
-/// <param name="Key">Le réglage, « Runs:… » seulement.</param>
-/// <param name="Json">Sa valeur, en JSON (<c>false</c>, <c>[…]</c>…).</param>
-public sealed record RunSettingRequest(string Key, string Json);
