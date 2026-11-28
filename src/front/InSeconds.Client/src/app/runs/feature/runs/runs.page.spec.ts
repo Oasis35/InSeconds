@@ -257,7 +257,7 @@ describe('RunsPage', () => {
       expect(element.querySelector('app-run-withdrawn-card')).toBeNull();
     });
 
-    it('le thème de la manche en cours est dit dans une pastille ; celui d\'une autre manche, non', async () => {
+    it('le thème de la manche en cours est dit dans une pastille', async () => {
       const withTheme = await startPlaying(await open('welcome', withThemes([{ round: 1, name: 'Rap français' }])));
       expect(withTheme.element.querySelector('[data-testid="run-theme-pill"]')?.textContent?.trim()).toBe('Rap français');
     });
@@ -267,7 +267,7 @@ describe('RunsPage', () => {
       expect(without.element.querySelector('[data-testid="run-theme-pill"]')).toBeNull();
     });
 
-    it('le chrono à zéro envoie ce qui est tapé, sans demander de confirmation', async () => {
+    it('le chrono à zéro envoie ce qui est tapé', async () => {
       vi.useFakeTimers();
       const { fixture, store, element } = await startPlaying(await open('welcome'));
       audio.emit('playing');
@@ -285,13 +285,73 @@ describe('RunsPage', () => {
       expect(store.timeUp()).toBe(true);
     });
 
-    it('la reprise : « Reprendre » relance la partie en cours depuis l\'accueil du mode', async () => {
-      const opened = await open('resume', mode => { mode.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } }); });
+    it('la reprise : « Reprendre » relance la partie en cours, la pile et le total sont restitués à l\'écran', async () => {
+      const opened = await open('resume', mode => {
+        mode.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+        mode.joinResult = {
+          kind: 'ok',
+          play: PLAY({
+            isResuming: true,
+            session: SESSION({ totalScore: 100, round: ROUND({ score: 100 }), roundTracks: [TRACK()], playedTracks: [TRACK()] }),
+            current: CURRENT({ position: 2, positionInRound: 2, previewUrl: 'https://cdn/preview-2.mp3' }),
+          }),
+        };
+      });
 
       opened.element.querySelector<HTMLButtonElement>('app-resume-screen button')!.click();
       await vi.waitFor(() => expect(opened.store.screen()).toBe('playing'));
+      opened.fixture.detectChanges();
 
       expect(api.calls).toEqual(expect.arrayContaining(['session:7', 'join:ABC234']));
+      expect(opened.element.querySelectorAll('[data-testid="run-pile-track"]')).toHaveLength(1);
+      expect(opened.element.querySelector('[data-testid="run-total-score"]')?.textContent?.replace(/\D/g, '')).toBe('100');
+    });
+
+    it('le choix du thème : une tuile touchée envoie le choix au serveur', async () => {
+      const themeChoice = { round: 2, themes: [{ id: 1, name: 'Années 80', round: 2, icon: null }, { id: 2, name: 'Rap français', round: 2, icon: null }] };
+      const waitingTheme = () => SESSION({
+        round: ROUND({ round: 2, score: 0, listenSeconds: 5 }), roundsPassed: 1, roundTracks: [], themeChoice,
+        passedRounds: [{ round: 1, score: 320, listenSeconds: 10, theme: null }],
+      });
+      const opened = await open('resume', mode => {
+        mode.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+        mode.sessionResult = waitingTheme();
+        mode.joinResult = { kind: 'ok', play: PLAY({ session: waitingTheme(), current: null, isResuming: true }) };
+        mode.chooseThemeResult = PLAY({
+          current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 5 }),
+          session: SESSION({ ...waitingTheme(), themeChoice: null, themes: [{ round: 2, name: 'Rap français' }] }),
+        });
+      });
+      opened.element.querySelector<HTMLButtonElement>('app-resume-screen button')!.click();
+      await vi.waitFor(() => expect(opened.store.screen()).toBe('theme'));
+      opened.fixture.detectChanges();
+
+      opened.element.querySelector<HTMLElement>('[data-theme-id="1"]')!.click();
+
+      await vi.waitFor(() => expect(api.calls).toContain('chooseTheme:7:2:1'));
+    });
+
+    it('« Rejouer » à la fin d\'une partie perdue lance une autre playlist', async () => {
+      const { fixture, store, round, element } = await startPlaying(await open('welcome'));
+      api.answerResult = PLAY({
+        session: SESSION({
+          status: 'lost', round: null,
+          finish: {
+            status: 'lost', totalScore: 100, roundsPassed: 0, foundCount: 1, trackCount: 20, tracks: [], rounds: [],
+            record: { bestScore: 100, bestRoundsPassed: 0, isNew: false }, challengeCode: 'ABC234', livesLeft: 0, lifeBonus: 0, completeBonus: 0, level: null,
+          },
+        }),
+        revealed: TRACK(), current: null,
+      });
+      await store.submit(round.submit({ artist: 'Daft Punk', title: 'One More Time' })!);
+      store.next();
+      fixture.detectChanges();
+      expect(store.screen()).toBe('finished');
+      expect(api.calls.filter(call => call === 'launch')).toHaveLength(1);
+
+      element.querySelector<HTMLButtonElement>('[data-testid="run-play-again"]')!.click();
+
+      await vi.waitFor(() => expect(api.calls.filter(call => call === 'launch')).toHaveLength(2));
     });
   });
 });
