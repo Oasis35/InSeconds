@@ -58,6 +58,20 @@ describe('RunGameStore, chrono et fin de partie', () => {
       expect(store.clockAlert()).toBe(false);
     });
 
+    it('l\'alerte commence à 5 s exactement : à 6 s rien, à 5 s elle est là', async () => {
+      await startRun();
+      audio.emit('playing');
+      TestBed.tick();
+
+      vi.advanceTimersByTime(39_000);
+      expect(store.clockLeft()).toBe(6);
+      expect(store.clockAlert()).toBe(false);
+
+      vi.advanceTimersByTime(1_000);
+      expect(store.clockLeft()).toBe(5);
+      expect(store.clockAlert()).toBe(true);
+    });
+
     it('un tic à chaque seconde des cinq dernières (le service se tait seul pendant un extrait)', async () => {
       await startRun();
       audio.emit('playing');
