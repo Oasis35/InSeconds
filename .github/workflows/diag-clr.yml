@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [CooldownSeededSelectorTests, DailyChallengeTests, DailyLogTests, DailyMetricsAnswerScoreTests, DailyPeriodScoresTests, DailyScoringAndRulesTests, DailySessionTests, DailyStreakTests, DayKpisTests, DayStatsTests, EarProfileTests, HistoryCalendarTests, ReturnCohortsTests, TodayRevealTests, TrackAnswerStatsTests, TrackCooldownTests, WeekReviewTests]
+        variant: [base, warmup, base2, warmup2]
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -30,12 +30,11 @@ jobs:
             osr0) export DOTNET_TC_OnStackReplacement=0 ;;
             gen0) export DOTNET_GCgen0size=4000000 ;;
           esac
+          case "${{ matrix.variant }}" in warmup*) export DIAG_WARMUP=1 ;; esac
           lscpu | grep "Model name"
           fail=0
           for i in $(seq 1 40); do
-            case "${{ matrix.variant }}" in
-              *) cmd="tests/InSeconds.UnitTests/bin/Release/net10.0/InSeconds.UnitTests -class InSeconds.UnitTests.Daily.${{ matrix.variant }}" ;;
-            esac
+            cmd="tests/InSeconds.UnitTests/bin/Release/net10.0/InSeconds.UnitTests -namespace InSeconds.UnitTests.Daily"
             if ! $cmd > /tmp/out.txt 2>&1; then
               fail=$((fail+1)); grep -m2 -E "Fatal|CLR|failed" /tmp/out.txt | cut -c1-160
             fi
