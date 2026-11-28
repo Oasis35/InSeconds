@@ -34,6 +34,11 @@ describe('DayHighlightComponent', () => {
     expect(q('score-better-than')?.textContent).toContain('72 %');
   });
 
+  it('« mieux que 0 % » s\'affiche aussi : zéro n\'est pas « pas de pourcentage »', () => {
+    const q = render([row(1, false)], 0);
+    expect(q('score-better-than')?.textContent).toContain('0 %');
+  });
+
   it('seul à avoir joué : la phrase vient de l\'historique du joueur', () => {
     const history: DayHistory = { fastestSeconds: 1, fastestFoundPercent: 9, previousGames: 5, previousBestScore: 3000, previousAverageScore: 2000 };
     const q = render([row(1, true)], null, history, 3200);

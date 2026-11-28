@@ -17,10 +17,10 @@ La manche d'un morceau (écouter, répondre, voir la réponse), partagée par le
 - Politiques fournies par le mode : `ListenPolicy` (paliers, prolongeable ou non, `stake` : calcul des points en jeu, lu par `stakeOf`). Sans `stake`, pas de points en jeu (Survie) ; le jeu du jour donne `dailyStake`. La manche ne connaît aucun barème.
 - Projections de `<app-track-round>` : `[roundCorner]`, `[roundAids]` (au-dessus de la saisie), `[roundTheme]` (tout en haut de la saisie : le thème du mode), `[roundActions]`, `[roundLinks]` (à côté de « Passer »), `[roundScore]`, `[roundNext]`, `[roundReveal]`.
 - Entrées : `choices` remplace le champ et « Valider » par des réponses à toucher ; `locked` retient la réponse pendant que le mode traite une action (le temps écoulé l'envoie au déverrouillage) ; `RoundConfig.trackKey` signale qu'un autre morceau arrive au même `trackId` (saisie vidée, forme et redemande d'extrait de l'ancien ignorées).
-- **Entrée dans le champ** : `AnswerInputComponent` émet `enter`, c'est `TrackRoundComponent.onEnter` qui choisit la proposition en surbrillance en lisant le store à cet instant. L'entrée `highlighted` du champ n'est à jour qu'au cycle suivant : `↓` puis `Entrée` rapides validaient la saisie brute (E2E `autocomplete-keyboard-nav.spec.ts`).
+- **Entrée dans le champ** : `AnswerInputComponent` émet `enter`, c'est `TrackRoundComponent.onEnter` qui choisit la proposition en surbrillance en lisant le store à cet instant. L'entrée `highlighted` du champ n'est à jour qu'au cycle suivant : `↓` puis `Entrée` rapides validaient la saisie brute (`track-round.component.spec.ts`, « ↓ Entrée enchaînés sans rafraîchir entre les deux »).
 - Le champ ne prend le focus seul qu'avec une souris (`(pointer: fine)`) : sur écran tactile, le clavier couvrirait la manche et iOS ne l'ouvre que sur un geste.
 - L'écoute automatique n'a lieu qu'une fois par morceau (`autoStarted`), sinon un retour au repos ramenait le joueur au premier palier.
-- Sélecteurs stables des E2E : champ « Artiste - Titre », ✕, « Valider », « Valider quand même », « ▶ X s », « ↺ X s », `round-timer`, `round-skip`, `guess-time-chart` et `data-bucket`. Les changer impose d'adapter les E2E.
+- Sélecteurs stables des E2E : champ « Artiste - Titre », « Valider », « Valider quand même », « ▶ X s », « ↺ X s », `round-timer`, `round-skip`, `guess-time-chart` et `data-bucket`. Les changer impose d'adapter les E2E.
 
 ## Le lecteur : `AudioPort` et `HtmlAudioPort`
 
