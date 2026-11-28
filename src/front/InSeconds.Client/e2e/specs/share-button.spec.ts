@@ -88,7 +88,7 @@ test.describe('Bouton partager', () => {
     await expect(game.shareCopiedButton).not.toBeVisible();
   });
 
-  test("ouvre le menu de partage du téléphone sur écran tactile, sans rien copier", async ({ page }) => {
+  test("ouvre le menu de partage du téléphone sur écran tactile, sans rien copier", { tag: '@webkit' }, async ({ page }) => {
     await simulatePhoneShareMenu(page);
     const game = new GamePage(page);
     await game.startWithFakeClock();
