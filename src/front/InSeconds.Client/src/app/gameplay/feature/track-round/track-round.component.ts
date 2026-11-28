@@ -88,7 +88,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
 
             @if (phase === 'submit-error') {
               <div class="rounded-xl px-4 py-3 space-y-3" style="background:rgb(var(--rgb-danger) / 0.08);border:1px solid rgb(var(--rgb-danger) / 0.3)">
-                <p role="alert" class="text-sm text-center font-semibold" style="color:var(--text-error)">{{ 'gameplay.answer.submitFailed' | translate }}</p>
+                <p role="alert" data-testid="round-submit-error" class="text-sm text-center font-semibold" style="color:var(--text-error)">{{ 'gameplay.answer.submitFailed' | translate }}</p>
                 <button appButton type="button" [block]="true" (click)="retrySubmission()">
                   {{ 'gameplay.answer.retry' | translate }}
                 </button>

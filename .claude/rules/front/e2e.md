@@ -29,6 +29,7 @@ Specs dans `e2e/specs/`, page objects dans `e2e/pages/`, fixtures dans `e2e/fixt
 
 - Pas d'`await` dans une boucle (Sonar) : `inSequence` / `times` de `e2e/fixtures/sequence.ts`.
 - Les paliers se jouent en temps réel : attendre le temps écouté affiché par le lecteur (`data-testid="round-timer"`, motif `frSeconds` de `blind-round.page.ts`), jamais une attente fixe. Une spec qui écoute jusqu'à 10 s est `test.slow()`.
+- Un élément se retrouve par `data-testid`, jamais par son texte français ; un état se lit dans ses attributs (exemples : `daily-progress` porte `data-current` et `data-total`, `profile-email-help` porte `data-message`, la clé de traduction). Un `getByText` français qui reste se remplace par un `data-testid` quand on touche à sa spec. Une absence (`toHaveCount(0)`) ne se vérifie que sur un repère qui existe ailleurs dans le même parcours, sinon le test ne peut pas échouer.
 - Les suggestions de l'autocomplete sont des `role="option"`. Sélecteurs stables de la manche : `gameplay-audio.md`.
 - Le son vient de `/test-audio.mp3` (`e2e/public/`), copié par la seule configuration de build `e2e` : jamais dans l'image de prod (vérifié par `scripts/check-nginx-headers.sh`).
 - Le menu de partage natif n'existe pas dans Chromium headless : `share-button.spec.ts` le simule.
