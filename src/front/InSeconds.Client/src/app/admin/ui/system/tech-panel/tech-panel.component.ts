@@ -94,14 +94,14 @@ export interface CiLine {
       <section>
         <h2 class="tech-title">{{ 'admin.system.health' | translate }}</h2>
         <p class="tech-row">
-          <span class="tech-icon" aria-hidden="true" [style.color]="apiDown() ? 'var(--text-error)' : 'var(--color-success)'">{{ apiDown() ? '✗' : '✓' }}</span>
+          <span class="tech-icon" data-testid="tech-icon" aria-hidden="true" [style.color]="apiDown() ? 'var(--text-error)' : 'var(--color-success)'">{{ apiDown() ? '✗' : '✓' }}</span>
           <span class="tech-label">{{ 'admin.system.api' | translate }}</span>
           <span class="tech-value" [style.color]="apiDown() ? 'var(--text-error)' : null" data-testid="api-health">
             @if (apiDown()) { {{ 'admin.system.apiDown' | translate }} } @else if (latencyMs() !== null) { {{ 'admin.system.latency' | translate: { ms: latencyMs() } }} }
           </span>
         </p>
         <p class="tech-row">
-          <span class="tech-icon" aria-hidden="true" [style.color]="backupIcon(backup(), backupAt()).color">{{ backupIcon(backup(), backupAt()).icon }}</span>
+          <span class="tech-icon" data-testid="tech-icon" aria-hidden="true" [style.color]="backupIcon(backup(), backupAt()).color">{{ backupIcon(backup(), backupAt()).icon }}</span>
           <span class="tech-label">{{ 'admin.system.backup' | translate }}</span>
           <span class="tech-value" [style.color]="stale(backup()) ? 'var(--text-error)' : null" data-testid="backup">
             @if (backupAt(); as at) { {{ at | date: 'dd/MM HH:mm' }} } @else if (!backupFailure()) { {{ 'admin.system.noBackup' | translate }} }
@@ -117,7 +117,7 @@ export interface CiLine {
           </p>
         }
         <p class="tech-row">
-          <span class="tech-icon" aria-hidden="true" [style.color]="backupIcon(restoreTest(), restoreTestAt()).color">{{ backupIcon(restoreTest(), restoreTestAt()).icon }}</span>
+          <span class="tech-icon" data-testid="tech-icon" aria-hidden="true" [style.color]="backupIcon(restoreTest(), restoreTestAt()).color">{{ backupIcon(restoreTest(), restoreTestAt()).icon }}</span>
           <span class="tech-label">{{ 'admin.system.restoreTest' | translate }}</span>
           <span class="tech-value" [style.color]="stale(restoreTest()) ? 'var(--text-error)' : null" data-testid="restore-test">
             @if (restoreTestAt(); as at) { {{ at | date: 'dd/MM HH:mm' }} } @else if (!restoreTestFailure()) { {{ 'admin.system.noRestoreTest' | translate }} }
@@ -134,7 +134,7 @@ export interface CiLine {
         <section data-testid="tech-catalogue">
           <h2 class="tech-title">{{ 'admin.system.catalogue' | translate }}</h2>
           <p class="tech-row">
-            <span class="tech-icon" aria-hidden="true" [style.color]="countColor(pool.missingPreviewCount)">{{ countIcon(pool.missingPreviewCount) }}</span>
+            <span class="tech-icon" data-testid="tech-icon" aria-hidden="true" [style.color]="countColor(pool.missingPreviewCount)">{{ countIcon(pool.missingPreviewCount) }}</span>
             <span class="tech-label">{{ 'admin.system.missingPreviews' | translate }}</span>
             @if (pool.missingPreviewCount > 0) {
               <a routerLink="/admin/catalogue" [queryParams]="{ extrait: 'absent' }" class="tech-value underline hover:text-(--text-hi)" style="color:var(--color-warn)"
@@ -144,7 +144,7 @@ export interface CiLine {
             }
           </p>
           <p class="tech-row">
-            <span class="tech-icon" aria-hidden="true" [style.color]="countColor(pool.missingWaveformCount)">{{ countIcon(pool.missingWaveformCount) }}</span>
+            <span class="tech-icon" data-testid="tech-icon" aria-hidden="true" [style.color]="countColor(pool.missingWaveformCount)">{{ countIcon(pool.missingWaveformCount) }}</span>
             <span class="tech-label">{{ 'admin.system.missingWaveforms' | translate }}</span>
             <span class="tech-value" data-testid="missing-waveforms" [style.color]="pool.missingWaveformCount > 0 ? 'var(--color-warn)' : null">{{ pool.missingWaveformCount }}</span>
           </p>
@@ -160,7 +160,7 @@ export interface CiLine {
         } @else {
           @for (job of jobs() ?? []; track job.id) {
             <p class="tech-row" data-testid="nightly-job">
-              <span class="tech-icon" aria-hidden="true" [style.color]="jobIcon(job).color">{{ jobIcon(job).icon }}</span>
+              <span class="tech-icon" data-testid="tech-icon" aria-hidden="true" [style.color]="jobIcon(job).color">{{ jobIcon(job).icon }}</span>
               <span class="tech-label" [style.color]="job.tone === 'error' ? 'var(--text-error)' : null">{{ 'admin.system.jobs.' + job.id | translate }}</span>
               <span class="sr-only">{{ 'admin.system.jobTone.' + job.tone | translate }}</span>
               <span class="tech-value">{{ job.at ? (job.at | date: 'dd/MM HH:mm') : '-' }}</span>
@@ -170,7 +170,7 @@ export interface CiLine {
         @if (nextChallenge(); as next) {
           @let ok = next.kind === 'ready';
           <p class="tech-row mt-1 pt-1.5" style="border-top:1px solid var(--border-subtle)" data-testid="next-challenge">
-            <span class="tech-icon" aria-hidden="true" [style.color]="ok ? 'var(--color-success)' : 'var(--text-error)'">{{ ok ? '✓' : '✗' }}</span>
+            <span class="tech-icon" data-testid="tech-icon" aria-hidden="true" [style.color]="ok ? 'var(--color-success)' : 'var(--text-error)'">{{ ok ? '✓' : '✗' }}</span>
             <span class="tech-label" [style.color]="ok ? null : 'var(--text-error)'">{{ (next.kind === 'retrying' ? 'admin.system.todayChallenge' : 'admin.system.nextChallenge') | translate }}</span>
             <span class="tech-value" [style.color]="ok ? null : 'var(--text-error)'">
               @switch (next.kind) {
@@ -202,7 +202,7 @@ export interface CiLine {
           @for (line of ci(); track line.labelKey) {
             <a [href]="line.run?.url ?? line.url" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 hover:text-(--text-hi)" data-testid="ci-line"
               [title]="'admin.system.ciState.' + (line.run?.state ?? 'none') | translate">
-              <span class="tech-icon" aria-hidden="true" [style.color]="ciColor(line)">{{ ciIcon(line) }}</span>
+              <span class="tech-icon" data-testid="tech-icon" aria-hidden="true" [style.color]="ciColor(line)">{{ ciIcon(line) }}</span>
               <span style="color:var(--text-light)">{{ line.labelKey | translate }}</span>
               <span class="sr-only">{{ 'admin.system.ciState.' + (line.run?.state ?? 'none') | translate }}</span>
             </a>

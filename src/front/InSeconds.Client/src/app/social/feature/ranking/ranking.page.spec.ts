@@ -11,6 +11,7 @@ import { PendingInvite } from '../../data-access/pending-invite';
 import { DAILY, DAILY_LOCKED, FakeSocialApi, GROUP, provideFakeSocialApi } from '../../data-access/testing/fake-social-api';
 import { signIn } from '../testing/session';
 import { RankingPage } from './ranking.page';
+import { flushMicrotasks } from '../../../core/testing/settle';
 
 describe('RankingPage', () => {
   let api: FakeSocialApi;
@@ -50,7 +51,7 @@ describe('RankingPage', () => {
     const fixture = TestBed.createComponent(RankingPage);
     const settle = async () => {
       fixture.detectChanges();
-      await new Promise(resolve => setTimeout(resolve));
+      await flushMicrotasks();
       await fixture.whenStable();
       fixture.detectChanges();
     };

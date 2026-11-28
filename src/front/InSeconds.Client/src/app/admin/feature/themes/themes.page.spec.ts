@@ -10,6 +10,7 @@ import { fakeCooldownApi, provideCooldownApiFake } from '../../data-access/testi
 import { PoolTheme, PoolTrack } from '../../domain/pool-track';
 import { ThemesPage } from './themes.page';
 import { stubContentTabs } from '../../ui/content-tabs/testing/content-tabs.stub';
+import { flushMicrotasks } from '../../../core/testing/settle';
 
 class FakeAudio implements PreviewAudio {
   paused = true; currentTime = 0; duration = 30; onended = null;
@@ -49,10 +50,10 @@ describe('ThemesPage', () => {
     const fixture = TestBed.createComponent(ThemesPage);
     fixture.detectChanges();
     await fixture.whenStable();
-    await new Promise<void>(resolve => setTimeout(resolve, 0));
+    await flushMicrotasks();
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;
-    const settle = async () => { await fixture.whenStable(); await new Promise<void>(resolve => setTimeout(resolve, 0)); fixture.detectChanges(); };
+    const settle = async () => { await fixture.whenStable(); await flushMicrotasks(); fixture.detectChanges(); };
     return { fixture, element, settle, player: fixture.debugElement.injector.get(AudioPreviewPlayer) };
   }
 

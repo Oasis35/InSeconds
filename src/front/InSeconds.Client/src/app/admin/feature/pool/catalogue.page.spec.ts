@@ -305,7 +305,7 @@ describe('CataloguePage', () => {
       api.listTracks.mockResolvedValueOnce([eminem, sabrina, nicki]).mockResolvedValue([eminem, sabrina, nicki, added]);
       click(b => b.textContent?.includes('admin.pool.add') ?? false);
       search.setQuery('E2E Track');
-      await new Promise<void>(resolve => setTimeout(resolve, 400));
+      await vi.waitFor(() => expect(search.results()).toHaveLength(1), { timeout: 5000 }); // le débounce de la recherche (300 ms réelles) est passé
       await detect();
 
       click(b => b.getAttribute('aria-label') === 'admin.addPanel.addTrack');
@@ -361,7 +361,7 @@ describe('CataloguePage', () => {
       });
       click(b => b.textContent?.includes('admin.pool.add') ?? false);
       search.setQuery('E2E Track');
-      await new Promise<void>(resolve => setTimeout(resolve, 400));
+      await vi.waitFor(() => expect(search.results()).toHaveLength(1), { timeout: 5000 }); // le débounce de la recherche (300 ms réelles) est passé
       await detect();
 
       click(b => b.closest('app-search-panel') !== null && b.textContent?.trim() === '▶');

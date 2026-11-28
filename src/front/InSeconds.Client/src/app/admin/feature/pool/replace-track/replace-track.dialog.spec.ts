@@ -8,6 +8,7 @@ import { FakeCatalogueApi, fakeCatalogueApi, poolTrack, problem, provideCatalogu
 import { fakeCooldownApi, provideCooldownApiFake } from '../../../data-access/testing/fake-cooldown-api';
 import { DeezerResult } from '../../../domain/pool-track';
 import { ReplaceTrackDialog } from './replace-track.dialog';
+import { flushMicrotasks } from '../../../../core/testing/settle';
 
 describe('ReplaceTrackDialog', () => {
   const track = poolTrack({ id: 645, deezerTrackId: 3098519, artist: 'Queen', title: 'Under Pressure', preview: 'missing' });
@@ -35,7 +36,7 @@ describe('ReplaceTrackDialog', () => {
 
   const settle = async (fixture: { detectChanges(): void; whenStable(): Promise<unknown> }) => {
     await fixture.whenStable();
-    await new Promise<void>(resolve => setTimeout(resolve, 0));
+    await flushMicrotasks();
     fixture.detectChanges();
   };
 
