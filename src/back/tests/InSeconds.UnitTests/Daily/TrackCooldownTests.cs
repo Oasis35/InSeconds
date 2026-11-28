@@ -13,6 +13,9 @@ public class TrackCooldownTests
     [InlineData(100, 75, 3, 25)] // le nombre de morceaux par défi vient des réglages
     [InlineData(5, 75, 5, 0)] // tout petit pool : un morceau peut revenir dès le lendemain
     [InlineData(0, 75, 5, 0)]
+    [InlineData(100, 0, 5, 0)] // borne de la fonction, sous le minimum des réglages (10 %) : aucun morceau bloqué
+    [InlineData(100, 90, 5, 18)] // la part la plus haute que les réglages acceptent (DailyOptionsChecks)
+    [InlineData(100, 100, 5, 20)] // borne de la fonction, au-delà du maximum des réglages (90 %) : tout le pool bloqué, plus aucun défi ne se génère
     public void Jours_PartDuPoolDiviseeParLesMorceauxDUnDefi_ArrondieVersLeBas(int playable, int percent, int perChallenge, int days) =>
         Assert.Equal(days, TrackCooldown.Days(playable, percent, perChallenge));
 
