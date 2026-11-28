@@ -107,6 +107,8 @@ public sealed class RateLimitPoliciesTests : IAsyncLifetime
             var rejected = await client.GetAsync($"/policy/{policy}", ct);
 
             Assert.True(rejected.StatusCode == HttpStatusCode.TooManyRequests, $"{policy} : la requête {limit.PermitLimit + 1} devait être refusée.");
+            // Dit par transverse.md : la fenêtre glissante sans file d'attente ne donne pas de délai, aucun refus ne porte Retry-After.
+            Assert.True(rejected.Headers.RetryAfter is null, $"{policy} : un refus porte Retry-After, la doc (transverse.md) dit le contraire.");
             Assert.Equal("application/problem+json", rejected.Content.Headers.ContentType?.MediaType);
             var problem = JsonDocument.Parse(await rejected.Content.ReadAsStringAsync(ct)).RootElement;
             Assert.Equal(ErrorCodes.ForStatus(429), problem.GetProperty("code").GetString());

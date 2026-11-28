@@ -1,4 +1,3 @@
-using InSeconds.Api.Infrastructure.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using Wolverine.Runtime;
 
@@ -28,6 +27,5 @@ public class MessageRetentionTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(TimeSpan.FromMinutes(5), durability.KeepAfterMessageHandling);
         Assert.True(durability.DeadLetterQueueExpirationEnabled);
         Assert.Equal(TimeSpan.FromDays(3), durability.DeadLetterQueueExpiration);
-        Assert.Equal((MessageRetention.AfterHandling, MessageRetention.DeadLetters), (durability.KeepAfterMessageHandling, durability.DeadLetterQueueExpiration));
     }
 }
