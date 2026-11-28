@@ -472,12 +472,6 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasDefaultValue((short)0)
                         .HasColumnName("current_failed_attempts");
 
-                    b.Property<short>("CurrentHintLevel")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("smallint")
-                        .HasDefaultValue((short)0)
-                        .HasColumnName("current_hint_level");
-
                     b.Property<decimal?>("CurrentListenedSeconds")
                         .HasPrecision(4, 2)
                         .HasColumnType("numeric(4,2)")
@@ -614,10 +608,6 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     b.Property<bool>("ArtistCorrect")
                         .HasColumnType("boolean")
                         .HasColumnName("artist_correct");
-
-                    b.Property<short>("HintLevel")
-                        .HasColumnType("smallint")
-                        .HasColumnName("hint_level");
 
                     b.Property<decimal>("ListenedSeconds")
                         .HasPrecision(4, 2)

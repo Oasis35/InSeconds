@@ -40,6 +40,7 @@ describe('ConfirmEmailPage', () => {
 
     expect(api.confirmEmailChange).toHaveBeenCalledWith('jeton');
     expect(text(fixture)).toContain('account.confirmEmail.success');
+    expect(query(fixture, '[data-testid="confirm-email-success"]')).not.toBeNull();
     expect(query(fixture, 'button')).toBeNull();
   });
 
@@ -50,6 +51,7 @@ describe('ConfirmEmailPage', () => {
     await settle(fixture);
 
     expect(text(fixture)).toContain('errors.players.invalid_or_expired_token');
+    expect(query(fixture, '[data-testid="confirm-email-error"]')?.getAttribute('data-message')).toBe('errors.players.invalid_or_expired_token');
     expect(query(fixture, '[data-testid="error-code"]')).not.toBeNull();
   });
 

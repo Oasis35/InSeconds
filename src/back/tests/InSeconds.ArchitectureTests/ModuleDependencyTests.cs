@@ -13,6 +13,33 @@ public class ModuleDependencyTests
     private const string ModulesNamespace = "InSeconds.Api.Modules";
     private static readonly Assembly Api = typeof(Program).Assembly;
 
+    /// <summary>
+    /// Un noyau (Players, Catalogue) ne connaît **aucun mode** (Daily, plus tard Runs), pas même par ses <c>Contracts</c>, à une seule exception
+    /// nommée (<see cref="ModuleRules.NamedExceptions"/> : <c>Daily.Contracts.IStreakGrants</c>, le gel offert à la création d'un compte). Le sens
+    /// normal est l'inverse : un mode implémente un contrat du noyau (<c>IPlayerDataContributor</c> pour les droits RGPD, <c>ITrackUsage</c> pour
+    /// l'usage des morceaux), que le noyau appelle sans savoir quel mode le fournit.
+    /// </summary>
+    [Fact]
+    public void UnNoyau_NeVoitAucunMode_SaufLesExceptionsNommees()
+    {
+        foreach (var mode in ModuleRules.Modes)
+        {
+            var forbidden = ModuleRules.TypesOf(Api, mode);
+            // Un renommage du dossier d'un mode ne doit pas faire passer la règle à vide.
+            Assert.Contains(forbidden, name => name.StartsWith($"{ModuleRules.Namespace(mode)}.Domain.", StringComparison.Ordinal));
+
+            foreach (var core in ModuleRules.Cores)
+            {
+                var result = Types.InAssembly(Api)
+                    .That().ResideInNamespace(ModuleRules.Namespace(core))
+                    .ShouldNot().HaveDependencyOnAny(forbidden)
+                    .GetResult();
+
+                Assert.True(result.IsSuccessful, $"{core} voit {mode} : {string.Join(", ", result.FailingTypeNames ?? [])}");
+            }
+        }
+    }
+
     [Fact]
     public void UnModule_NUtiliseDesAutresModulesQueLeurDossierContracts()
     {

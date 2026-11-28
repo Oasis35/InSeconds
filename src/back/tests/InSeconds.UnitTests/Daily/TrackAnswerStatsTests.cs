@@ -14,7 +14,7 @@ public class TrackAnswerStatsTests
     [Fact]
     public void PremierJoueur_TrouveLeMorceau_MoyenneEgaleASonPalier_AucunEchec()
     {
-        var stats = TrackAnswerStats.Build(PriorAnswerStats.None, new RoundOutcome(true, false, 2, 0), Steps);
+        var stats = TrackAnswerStats.Build(PriorAnswerStats.None, new RoundOutcome(true, false, 2), Steps);
 
         Assert.Equal((2d, 0), (stats.AverageSecondsWhenFound, stats.NotFoundCount));
         Assert.Equal([0, 0, 0, 1, 0, 0, 0], stats.GuessTimeDistribution.Select(b => b.Count));
@@ -23,7 +23,7 @@ public class TrackAnswerStatsTests
     [Fact]
     public void PremierJoueur_NeTrouvePas_PasDeMoyenne_ToutEnEchec()
     {
-        var stats = TrackAnswerStats.Build(PriorAnswerStats.None, new RoundOutcome(false, false, 1, 0), Steps);
+        var stats = TrackAnswerStats.Build(PriorAnswerStats.None, new RoundOutcome(false, false, 1), Steps);
 
         Assert.Null(stats.AverageSecondsWhenFound);
         Assert.Equal(1, stats.NotFoundCount);
@@ -36,7 +36,7 @@ public class TrackAnswerStatsTests
         // Trois ont déjà trouvé (1 s, 1 s, 3 s) et un a échoué ; celui-ci trouve à 1 s.
         var prior = Prior(found: 3, foundSeconds: 5, notFound: 1, (1m, 2), (3m, 1));
 
-        var stats = TrackAnswerStats.Build(prior, new RoundOutcome(true, true, 1, 0), Steps);
+        var stats = TrackAnswerStats.Build(prior, new RoundOutcome(true, true, 1), Steps);
 
         Assert.Equal(6d / 4, stats.AverageSecondsWhenFound);
         Assert.Equal(1, stats.NotFoundCount);
@@ -46,7 +46,7 @@ public class TrackAnswerStatsTests
     [Fact]
     public void Histogramme_UnPalierParDureeAutorisee_CroissantEtSansDoublon_ComptesANulCompris()
     {
-        var stats = TrackAnswerStats.Build(PriorAnswerStats.None, new RoundOutcome(true, true, 1, 0), [10m, 1m, 3m, 1m]);
+        var stats = TrackAnswerStats.Build(PriorAnswerStats.None, new RoundOutcome(true, true, 1), [10m, 1m, 3m, 1m]);
 
         Assert.Equal([1m, 3m, 10m], stats.GuessTimeDistribution.Select(b => b.Seconds));
         Assert.Equal([1, 0, 0], stats.GuessTimeDistribution.Select(b => b.Count));
@@ -55,7 +55,7 @@ public class TrackAnswerStatsTests
     [Fact]
     public void ArtisteSeulOuTitreSeul_CompteCommeTrouve()
     {
-        Assert.Equal(1, TrackAnswerStats.Build(PriorAnswerStats.None, new RoundOutcome(true, false, 1, 0), Steps).GuessTimeDistribution.Sum(b => b.Count));
-        Assert.Equal(1, TrackAnswerStats.Build(PriorAnswerStats.None, new RoundOutcome(false, true, 1, 0), Steps).GuessTimeDistribution.Sum(b => b.Count));
+        Assert.Equal(1, TrackAnswerStats.Build(PriorAnswerStats.None, new RoundOutcome(true, false, 1), Steps).GuessTimeDistribution.Sum(b => b.Count));
+        Assert.Equal(1, TrackAnswerStats.Build(PriorAnswerStats.None, new RoundOutcome(false, true, 1), Steps).GuessTimeDistribution.Sum(b => b.Count));
     }
 }

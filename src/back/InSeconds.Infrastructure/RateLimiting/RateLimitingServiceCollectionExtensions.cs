@@ -55,11 +55,9 @@ public static class RateLimitingServiceCollectionExtensions
             [RateLimitPolicies.RunHistoryPreview] = (40, TimeSpan.FromMinutes(5), PartitionBy.Player),
             // Un joueur crée ou rejoint quelques groupes : 20 écritures en 10 minutes ne gênent personne et bornent les lignes créées.
             [RateLimitPolicies.SocialWrite] = (20, TimeSpan.FromMinutes(10), PartitionBy.Player),
-            // Valeurs très larges, à resserrer seulement après avoir regardé les 429 : une partie du jour, c'est un démarrage, cinq réponses et
-            // au plus deux indices par morceau. Par joueur, donc un réseau partagé (école, bureau) n'est jamais gêné ; sans identité, par IP.
+            // Valeurs très larges, à resserrer seulement après avoir regardé les 429 : une partie du jour, c'est un démarrage, cinq réponses. Par joueur, donc un réseau partagé (école, bureau) n'est jamais gêné ; sans identité, par IP.
             [RateLimitPolicies.DailyStart] = (30, TimeSpan.FromMinutes(10), PartitionBy.Player),
             [RateLimitPolicies.DailyAnswer] = (60, TimeSpan.FromMinutes(5), PartitionBy.Player),
-            [RateLimitPolicies.DailyHint] = (40, TimeSpan.FromMinutes(5), PartitionBy.Player),
             // Un lien s'ouvre une fois par ami : large pour un NAT partagé, trop étroit pour deviner des codes (31⁸ possibles).
             [RateLimitPolicies.SocialInvitation] = (60, TimeSpan.FromMinutes(5), PartitionBy.Ip),
         };

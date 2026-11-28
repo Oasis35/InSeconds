@@ -35,7 +35,7 @@
             "type": "loki",
             "uid": "${DS_LOGS}"
           },
-          "expr": "sum(count_over_time({service_name=\"inseconds-api\"} | PlayerId=~\"(?i)${player}.*\" | PlayerId!=\"\" |~ \"démarrée par|reprise par|Réponse de|terminée par|Indice niveau|abandonnée par|Connexion par magic link|Compte effacé\" [$__range])) or vector(0)",
+          "expr": "sum(count_over_time({service_name=\"inseconds-api\"} | PlayerId=~\"(?i)${player}.*\" | PlayerId!=\"\" |~ \"démarrée par|reprise par|Réponse de|terminée par|abandonnée par|Connexion par magic link|Compte effacé\" [$__range])) or vector(0)",
           "legendFormat": "",
           "queryType": "instant"
         }
@@ -133,7 +133,7 @@
             "type": "loki",
             "uid": "${DS_LOGS}"
           },
-          "expr": "sum(count_over_time({service_name=\"inseconds-api\"} | PlayerId=~\"(?i)${player}.*\" | PlayerId!=\"\" |~ \"démarrée par|reprise par|Réponse de|terminée par|Indice niveau|abandonnée par|Connexion par magic link|Compte effacé\" [1m]))",
+          "expr": "sum(count_over_time({service_name=\"inseconds-api\"} | PlayerId=~\"(?i)${player}.*\" | PlayerId!=\"\" |~ \"démarrée par|reprise par|Réponse de|terminée par|abandonnée par|Connexion par magic link|Compte effacé\" [1m]))",
           "legendFormat": "actions",
           "queryType": "range"
         },

@@ -29,4 +29,4 @@ Tables des schémas `runs` et `social` : [`CLAUDE.md`](../../CLAUDE.md) § Modè
 
 ## Tests
 
-`UnitTests/Runs` (règles, partie, tirage, réglages, thèmes, Hits, niveau), `IntegrationTests/Runs` (jeu complet par HTTP : vies, paliers, neutralisation, chrono, fin, record, comparaison, fantôme, historique, effacement), `UnitTests/Social` et `IntegrationTests/Social` (groupes, classements, alias), E2E `runs.spec.ts` (accès, parties, thèmes, lien d'un ami), `groups.spec.ts`, `admin-groups.spec.ts`, `admin-themes.spec.ts`.
+`UnitTests/Runs` (règles, partie, tirage, réglages, thèmes, Hits, niveau), `IntegrationTests/Runs` (jeu complet par HTTP : vies, paliers, neutralisation, chrono, fin, record, comparaison, fantôme, historique, effacement), `UnitTests/Social` et `IntegrationTests/Social` (groupes, classements, alias), E2E `runs.spec.ts` (accès, lien d'un ami, un parcours aux règles actuelles ; le choix de thème en jeu : `admin-themes.spec.ts`), `groups.spec.ts`, `admin-groups.spec.ts`, `admin-themes.spec.ts`.

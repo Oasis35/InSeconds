@@ -148,8 +148,8 @@ public class TrackUsageTests(PostgresFixture postgres) : IAsyncLifetime
         {
             await _app.Api.ExecuteAsync(
                 $"""
-                INSERT INTO daily.answers (session_id, position, listened_seconds, was_extended, hint_level, artist_correct, title_correct, score)
-                VALUES ({session}, {i + 1}, 1, false, 0, {answers[i].artist}, {answers[i].title}, 0)
+                INSERT INTO daily.answers (session_id, position, listened_seconds, was_extended, artist_correct, title_correct, score)
+                VALUES ({session}, {i + 1}, 1, false, {answers[i].artist}, {answers[i].title}, 0)
                 """);
         }
     }

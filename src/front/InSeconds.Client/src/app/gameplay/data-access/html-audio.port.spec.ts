@@ -342,6 +342,22 @@ describe('HtmlAudioPort', () => {
       return { player: injector.get(HtmlAudioPort), destroy: () => injector.destroy() };
     }
 
+    it('une sonde d\'adresse en retard ne remonte plus rien une fois le lecteur détruit', () => {
+      const { player, destroy } = portIn();
+      destroy();
+      (player as unknown as { report: (message: string) => void }).report('AudioError: en retard');
+      expect(report).not.toHaveBeenCalled();
+    });
+
+    it('un injecteur détruit sans que le lecteur ait été libéré ne fait pas lever le signalement (NG0205)', () => {
+      const { player } = portIn();
+      const gone = createEnvironmentInjector([], TestBed.inject(EnvironmentInjector));
+      gone.destroy();
+      (player as unknown as { injector: unknown }).injector = gone;
+      expect(() => (player as unknown as { report: (message: string) => void }).report('AudioError: en retard')).not.toThrow();
+      expect(report).not.toHaveBeenCalled();
+    });
+
     it('lecture / pause fait ce que la manche a branché, au lieu de relancer l’extrait arrêté à son palier', () => {
       const pressed = vi.fn();
       const release = port.onPlayPauseKey(pressed);

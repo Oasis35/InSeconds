@@ -40,7 +40,7 @@ public class ReportClientErrorTests
     }
 
     [Fact]
-    public void Remontee_JournaliseEnErreur_AvecLIdentifiantDeLaV1()
+    public void Remontee_JournaliseEnErreur_AvecSonIdentifiantDEvenement()
     {
         ReportClientErrorEndpoint.Post(Report(), Request(), _logger);
 
@@ -118,7 +118,7 @@ public class ReportClientErrorTests
     }
 
     [Fact]
-    public void Remontee_SansCesChamps_FrontV1EnCache_Accepte()
+    public void Remontee_SansCesChamps_FrontAncienEnCache_Accepte()
     {
         var report = Report();
 

@@ -19,6 +19,13 @@ describe('DailyProgressComponent', () => {
     expect(bar.style.width).toBe('40%');
   });
 
+  it('porte le rang du morceau et le total en attributs, que les parcours E2E lisent à la place du texte', () => {
+    const { el } = render(0, 5);
+    const progress = el.querySelector('[data-testid="daily-progress"]')!;
+    expect(progress.getAttribute('data-current')).toBe('1');
+    expect(progress.getAttribute('data-total')).toBe('5');
+  });
+
   it('émet abandon au clic sur le lien', () => {
     const { fixture, el } = render(0, 5);
     const spy = vi.fn();

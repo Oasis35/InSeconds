@@ -27,7 +27,7 @@ describe('RunDiscComponent', () => {
   it('pas encore de disque : un cercle en pointillés, sans couleur de disque', () => {
     const svg = render('runs.discs.none');
 
-    expect(svg.querySelector('[data-testid="disc-none"]')?.getAttribute('stroke-dasharray')).toBeTruthy();
+    expect(svg.querySelector('[data-testid="disc-none"]')?.getAttribute('stroke-dasharray')).toBe('7 7');
     expect(svg.querySelector('[fill="var(--disc-gold)"]')).toBeNull();
   });
 

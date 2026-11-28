@@ -40,13 +40,10 @@ public class SearchTelemetryTests(PostgresFixture postgres) : IAsyncLifetime
         var response = await _app.Api.CreateClient().GetAsync($"/api/catalogue/search?q={secret}", Ct);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        Activity? request = null;
-        for (var i = 0; i < 40 && request is null; i++)
-        {
-            request = activities.FirstOrDefault(a => a.GetTagItem("url.path") as string == "/api/catalogue/search");
-            if (request is null)
-                await Task.Delay(50, Ct);
-        }
+        // Le span serveur se ferme à la fin de la requête, un peu après que le client a reçu la réponse.
+        var request = await Waiting.UntilAsync(
+            () => Task.FromResult(activities.FirstOrDefault(a => a.GetTagItem("url.path") as string == "/api/catalogue/search")),
+            found => found is not null, "Le span de la recherche n'a pas été fermé.", Ct);
 
         Assert.NotNull(request);
         foreach (var tag in request.TagObjects)

@@ -28,7 +28,6 @@ Commandes de l'API (`Program.cs`, avant toute composition ; hôte minimal, ni se
 | `--migrate-only` | applique les migrations (déploiement, copie prod → staging) | 0 |
 | `--rotate-data-protection-key` | crée une clé Data Protection active tout de suite (après une copie de base, piège 17) | 0 |
 | `--freeze-day-stats` | fige les stats de tous les jours terminés sans photo, une transaction par jour, rejouable | 0 ; 1 si les réglages ne passent pas `DailyOptionsChecks` ou si un jour a échoué |
-| `--purge-daily-before aaaa-mm-jj [--apply]` | efface les jours de défi **avant** cette date (parties, réponses, photos de stats, défis) et rejoue les séries ; sans `--apply`, simulation (compte, ne supprime rien) ; mode d'emploi : `docs/exploitation/purge-parties.md` | 0 ; 1 réglages incohérents ou date trop récente (au plus J-1) ; 64 date manquante ou illisible |
 | `--export-player <email>` | JSON de `PlayerDataExporter` sur la sortie standard, journaux sur la sortie d'erreur, jamais l'adresse | 0 ; 2 aucun compte ; 64 adresse manquante |
 | `--delete-player <email>` | `AccountErasure` dans une transaction | 0 ; 2 ; 64 |
 
@@ -53,7 +52,7 @@ Les deux dernières (`PlayerDataCommand`) enregistrent les contributeurs par `Ap
 - **Deux collections dans une même requête EF = `.AsSplitQuery()`** (projection ou `Include`), posé requête par requête (pas de réglage global).
 - **`citext`** vit dans le schéma `extensions` : ses opérateurs ne sont trouvés que si `extensions` est dans le `search_path`. Toute connexion ouverte hors du `DbContext` passe par `DatabaseServiceCollectionExtensions.WithExtensionsSearchPath`, sinon PostgreSQL compare en `text`, sensible à la casse, sans erreur.
 - **Ports** : le store (`I<M>Store`, écritures, agrégats suivis, verrous) est dans `Domain/` ; les ports de lecture (`I<M>Queries`, projections directes) dans `Application/` (le domaine ne les utilise jamais) ; implémentations `Ef…` publiques dans `Persistence/` (Wolverine refuse une implémentation interne au `codegen write`). Politiques du domaine (`ITrackSelector`, `IRunScoringPolicy`…) dans `Domain/`.
-- **Table avec une colonne `player_id`** : effacée et exportée par le contributeur RGPD du module (`IPlayerDataContributor`), sinon `PlayerDataTests` échoue (piège 48).
+- **Table avec une colonne `player_id`** : effacée et exportée par le contributeur RGPD du module (`IPlayerDataContributor`), sinon `PlayerDataTests` et `PlayerDataExportCoverageTests` échouent (piège 48).
 - **Conflit d'unicité attendu** (deux écritures simultanées) : un `IExceptionHandler` du module dérivé de `Infrastructure/Persistence/UniqueViolationExceptionHandler` le rend en 409 avec son code (`AccountConflictExceptionHandler`, `TrackConflictExceptionHandler`, `AliasConflictExceptionHandler`).
 - **`SaveChanges`** : la liste des exceptions est celle de `HandlerRulesTests.AllowedSaveChangesCallers` ; une entrée de plus s'y justifie.
 
@@ -63,7 +62,7 @@ Les deux dernières (`PlayerDataCommand`) enregistrent les contributeurs par `Ap
 2. **Étapes Wolverine**, dans l'ordre du code généré : `Before` (rare : contrôle d'origine), `LoadAsync` (agrégat ou record de chargement, par le store), `Validate` ou `ValidateAsync` (renvoie `<M>Problems.X()` ou `WolverineContinue.NoProblems`), puis `Get` / `Post` / `Put` / `Delete`. Jamais de `SaveChangesAsync` ni d'`IResult` ; `[EmptyResponse]` pour un 204 ; un message à publier se renvoie (ou `OutgoingMessages`) et part dans la même transaction.
 3. **`[NotBody]`** sur tout paramètre complexe chargé ou injecté qui n'est pas le corps (sinon Wolverine tente de le lire dans le corps, 400 sans message), y compris un service concret (`DailyRules`, `DailyMetrics`) quand il est le seul paramètre complexe.
 4. **Attributs** : `[WolverinePost("/api/<m>/…", OperationId = "verbeNom")]`, `[Authorize]` si un joueur est exigé (rien à poser pour `/api/admin*` : la policy Admin est automatique, `SecurityTests` le vérifie), `[ProducesResponseType<ProblemDetails>(StatusCodes.Status4xx…)]` pour chaque 401/403/404/409/429 (le 400 de validation est déduit), `[EnableRateLimiting(RateLimitPolicies.X)]` si la route crée, écrit en rafale ou appelle Deezer (politique existante ou nouvelle dans `InSeconds.Infrastructure/RateLimiting`). `[NonTransactional]` seulement pour un traitement long ou une écriture qui doit être visible avant la fin (cas écrits dans les règles des modules).
-5. **Code d'erreur** `module.raison` dans `<M>ErrorCodes` (`PlayersErrorCodes`, `CatalogueErrorCodes`, `DailyErrorCodes` / `DailyAdminErrorCodes`, `RunsErrorCodes`, `SocialErrorCodes`, `ErrorCodes` pour `common.*`), ProblemDetails fabriqué dans `<M>Problems` ; jamais renommé ; ajouté au front dans `ERROR_MESSAGE_KEYS`.
+5. **Code d'erreur** `module.raison` dans `<M>ErrorCodes` (`PlayersErrorCodes`, `CatalogueErrorCodes`, `DailyErrorCodes` / `DailyAdminErrorCodes`, `RunsErrorCodes`, `SocialErrorCodes`, `ErrorCodes` pour `common.*`), ProblemDetails fabriqué dans `<M>Problems` ; jamais renommé ; ajouté à `published-error-codes.json` (liste commitée côté front, vérifiée par `PublishedErrorCodesTests` : `UPDATE_PUBLISHED_ERROR_CODES=1` la réécrit) puis au front dans `ERROR_MESSAGE_KEYS`.
 6. **Port** nommé par l'intention (méthode ajoutée au store ou au port de lecture), **migration** si le schéma change.
 7. **Codegen** : `rm -rf InSeconds.Api/Internal/Generated && dotnet run --project InSeconds.Api -- codegen write`, **avant les tests** (ils relisent le code commité).
 8. **Test d'intégration** dans `tests/InSeconds.IntegrationTests/<M>/` (cf. [Tests d'intégration](#tests-dintégration)).
@@ -90,6 +89,7 @@ Les deux dernières (`PlayerDataCommand`) enregistrent les contributeurs par `Ap
 - Harnais par module : `DailyApi`, `GameApi`, `CatalogueApi`, `MagicLinkApi`, `RunGame`. Journaux : `CapturedLogs` (niveau, EventId, message). Staging simulé : `TestCertificate.StagingSettings()`.
 - Noms en français `Situation_Resultat` ; un test d'un piège porte `PiegeNN_` (ou `_PiegeNN`), un test de sécurité `SN_`. Un test qui démarre un vrai serveur Hangfire va dans la collection `HangfireServerCollection` (seule à passer, Hangfire garde un état global).
 - `Assert` de xUnit seulement.
+- Les classes de tests s'exécutent en parallèle dans un même processus : un `MeterListener` voit les instruments de **tous** les tests, il filtre donc sur `instrument.Meter.Scope` (la fabrique du test) avant d'activer quoi que ce soit. Un rappel de mesure qui lève (un `Assert`, un `Single()`) sur les mesures des autres tests plantait le processus (« Internal CLR error 0x80131506 », un lancement sur trois en CI).
 
 ## Règles de sécurité (S1 à S16)
 

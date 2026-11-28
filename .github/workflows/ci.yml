@@ -320,6 +320,12 @@ jobs:
         env:
           CI: 'true'
 
+      # Un test réussi seulement à sa seconde tentative laisse le job vert (retries: 1) : il est signalé en avertissement et dans le résumé du job.
+      - name: Tests E2E instables
+        if: always()
+        working-directory: src/front/InSeconds.Client
+        run: node scripts/e2e-flaky.mjs playwright-results/results.json
+
       - name: Diagnostics (on failure)
         if: failure() || cancelled()
         run: |

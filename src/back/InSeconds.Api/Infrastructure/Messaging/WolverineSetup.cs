@@ -9,6 +9,16 @@ using Wolverine.Postgresql;
 
 namespace InSeconds.Api.Infrastructure.Messaging;
 
+/// <summary>Combien de temps Wolverine garde un message, qui peut porter l'adresse d'un joueur (durées annoncées dans la doc RGPD).</summary>
+public static class MessageRetention
+{
+    /// <summary>Un message traité est effacé de la base au bout de ce délai.</summary>
+    public static readonly TimeSpan AfterHandling = TimeSpan.FromMinutes(5);
+
+    /// <summary>Un message en échec reste dans la file des échecs ce temps-là, puis il est effacé.</summary>
+    public static readonly TimeSpan DeadLetters = TimeSpan.FromDays(3);
+}
+
 /// <summary>
 /// Wolverine, moteur applicatif de l'API : endpoints Wolverine.Http, transactions
 /// EF automatiques, outbox PostgreSQL dans le schéma <c>messaging</c>, validation FluentValidation.
@@ -36,6 +46,11 @@ public static class WolverineSetup
         opts.Policies.AutoApplyTransactions();
         opts.Policies.UseDurableLocalQueues();
         opts.UseFluentValidation();
+        // Un message d'email porte l'adresse du destinataire (SendMagicLinkEmail, changement d'email) : un message traité ne reste que 5 minutes en base,
+        // un message en échec (file des échecs) 3 jours, le temps de voir et de rejouer une panne d'envoi, pas plus (RGPD, docs/conformite/rgpd.md).
+        opts.Durability.KeepAfterMessageHandling = MessageRetention.AfterHandling;
+        opts.Durability.DeadLetterQueueExpirationEnabled = true;
+        opts.Durability.DeadLetterQueueExpiration = MessageRetention.DeadLetters;
         // Le sas des candidats : un lot après l'autre (quota de Deezer, et deux ajouts en même temps ne doivent pas créer le même genre neuf).
         opts.LocalQueueFor<InSeconds.Api.Modules.Catalogue.Application.ReadCandidates>().Sequential();
         opts.LocalQueueFor<InSeconds.Api.Modules.Catalogue.Application.AddCandidatesToCatalogue>().Sequential();

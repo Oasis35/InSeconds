@@ -44,7 +44,7 @@ public class CookieValidationTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task RetraitDuRoleAdmin_EffectifEnMoinsDUneMinute()
+    public async Task Piege5_RetraitDuRoleAdmin_EffectifEnMoinsDUneMinute()
     {
         var client = _api.CreateClient();
         var playerId = await PostGuestAsync(client);
@@ -59,7 +59,7 @@ public class CookieValidationTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task RoleAdmin_LuEnBase_PasDansLeCookie()
+    public async Task Piege5_RoleAdmin_LuEnBase_PasDansLeCookie()
     {
         var client = _api.CreateClient();
         var playerId = await PostGuestAsync(client);

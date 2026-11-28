@@ -5,7 +5,7 @@ using InSeconds.UnitTests.Support;
 
 namespace InSeconds.UnitTests.Deezer;
 
-/// <summary>Le client Deezer : les trois ports, et ses erreurs renvoyées en HTTP 200 (piège 16).</summary>
+/// <summary>Le client Deezer : ses cinq ports, ses erreurs renvoyées en HTTP 200 (piège 16) et le téléchargement d'extrait (piège 50).</summary>
 public class DeezerClientTests
 {
     private const string Quota = """{"error":{"type":"Exception","message":"Quota limit exceeded","code":4}}""";
@@ -327,6 +327,212 @@ public class DeezerClientTests
         var entry = Assert.Single(logger.Entries);
         Assert.Equal(Microsoft.Extensions.Logging.LogLevel.Warning, entry.Level);
         Assert.Contains(entry.Properties, p => p.Key == "DeezerCode" && Equals(p.Value, 4));
+    }
+
+    // ---------- Téléchargement de l'extrait (IPreviewAudioSource) : garde-fous du piège 50 ----------
+
+    private const string SignedUrl = "https://cdnt-preview.dzcdn.net/api/1/1/a/b/c.mp3?hdnea=exp=1~acl=/secret/*~hmac=SIGNATURE";
+    private const int ThreeMegabytes = 3 * 1024 * 1024;
+
+    [Fact]
+    public async Task Telechargement_ExtraitDuCdn_Telecharge()
+    {
+        var bytes = new byte[] { 1, 2, 3, 4 };
+
+        var download = await CreateDownloader(Audio(bytes)).DownloadAsync(SignedUrl, Ct);
+
+        Assert.Equal(bytes, Assert.IsType<PreviewDownload.Downloaded>(download).Content);
+    }
+
+    [Theory]
+    [InlineData("https://evil.example/extrait.mp3")]
+    [InlineData("https://dzcdn.net.evil.example/extrait.mp3")]
+    [InlineData("http://localhost:5175/api/admin")]
+    [InlineData("http://169.254.169.254/latest/meta-data")]
+    [InlineData("ftp://cdnt-preview.dzcdn.net/extrait.mp3")]
+    [InlineData("file:///etc/passwd")]
+    [InlineData("/relatif/extrait.mp3")]
+    [InlineData("pas une adresse")]
+    public async Task Telechargement_HoteOuSchemaHorsCdn_RefuseSansRequete(string url)
+    {
+        var handler = Audio([1, 2, 3]);
+
+        var download = await CreateDownloader(handler).DownloadAsync(url, Ct);
+
+        Assert.IsType<PreviewDownload.Unavailable>(download);
+        Assert.Null(handler.LastRequest);
+    }
+
+    [Fact]
+    public async Task Telechargement_RedirectionVersUnHoteHorsCdn_Refusee()
+    {
+        // HttpClient suit les redirections : l'adresse finale (RequestMessage de la réponse) doit rester sur le CDN.
+        var handler = new StubHttpHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new ByteArrayContent([1, 2, 3]),
+            RequestMessage = new HttpRequestMessage(HttpMethod.Get, "https://evil.example/extrait.mp3"),
+        }));
+
+        var download = await CreateDownloader(handler).DownloadAsync(SignedUrl, Ct);
+
+        Assert.IsType<PreviewDownload.Unavailable>(download);
+    }
+
+    [Fact]
+    public async Task Telechargement_RedirectionVersUnAutreHoteDuCdn_Acceptee()
+    {
+        var handler = new StubHttpHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new ByteArrayContent([1, 2, 3]),
+            RequestMessage = new HttpRequestMessage(HttpMethod.Get, "https://cdn-other.dzcdn.net/extrait.mp3"),
+        }));
+
+        Assert.IsType<PreviewDownload.Downloaded>(await CreateDownloader(handler).DownloadAsync(SignedUrl, Ct));
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.Forbidden)]
+    [InlineData(HttpStatusCode.NotFound)]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    public async Task Telechargement_StatutNonSuccess_Indisponible(HttpStatusCode status)
+    {
+        var handler = new StubHttpHandler((_, _) => Task.FromResult(new HttpResponseMessage(status) { Content = new ByteArrayContent([1, 2, 3]) }));
+
+        Assert.IsType<PreviewDownload.Unavailable>(await CreateDownloader(handler).DownloadAsync(SignedUrl, Ct));
+    }
+
+    [Fact]
+    public async Task Telechargement_CorpsVide_Indisponible() =>
+        Assert.IsType<PreviewDownload.Unavailable>(await CreateDownloader(Audio([])).DownloadAsync(SignedUrl, Ct));
+
+    [Fact]
+    public async Task Telechargement_ContentLengthAuDessusDe3Mo_RefuseSansLireLeCorps()
+    {
+        var content = new ByteArrayContent([1, 2, 3]);
+        content.Headers.ContentLength = ThreeMegabytes + 1;
+        var handler = new StubHttpHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = content }));
+
+        Assert.IsType<PreviewDownload.Unavailable>(await CreateDownloader(handler).DownloadAsync(SignedUrl, Ct));
+    }
+
+    [Fact]
+    public async Task Telechargement_SansContentLength_ArreteLaLectureAu3Mo()
+    {
+        // Pas de Content-Length fiable : la lecture s'arrête dès que la limite est dépassée.
+        var handler = new StubHttpHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StreamContent(new ForwardOnlyStream(ThreeMegabytes + 1)),
+        }));
+
+        Assert.IsType<PreviewDownload.Unavailable>(await CreateDownloader(handler).DownloadAsync(SignedUrl, Ct));
+    }
+
+    [Fact]
+    public async Task Telechargement_ExactementLaLimite_Telecharge()
+    {
+        var handler = new StubHttpHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StreamContent(new ForwardOnlyStream(ThreeMegabytes)),
+        }));
+
+        var download = await CreateDownloader(handler).DownloadAsync(SignedUrl, Ct);
+
+        Assert.Equal(ThreeMegabytes, Assert.IsType<PreviewDownload.Downloaded>(download).Content.Length);
+    }
+
+    [Fact]
+    public async Task Telechargement_AnnulationDeLAppelant_Relancee()
+    {
+        var handler = new StubHttpHandler((_, ct) =>
+        {
+            ct.ThrowIfCancellationRequested();
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([1]) });
+        });
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => CreateDownloader(handler).DownloadAsync(SignedUrl, cts.Token));
+    }
+
+    [Fact]
+    public async Task Telechargement_DelaiInterneDuHttpClient_PasUneAnnulation_Indisponible()
+    {
+        var handler = new StubHttpHandler((_, _) => throw new TaskCanceledException("délai dépassé"));
+
+        Assert.IsType<PreviewDownload.Unavailable>(await CreateDownloader(handler).DownloadAsync(SignedUrl, Ct));
+    }
+
+    [Fact]
+    public async Task Annulation_EstPropagee_AlbumEtTelechargement()
+    {
+        var client = Create(new StubHttpHandler((_, ct) =>
+        {
+            ct.ThrowIfCancellationRequested();
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"data":[]}""") });
+        }));
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        // Préviews, métadonnées et recherche sont déjà couvertes ci-dessus : ici l'album et le téléchargement.
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.GetAlbumAsync(1, cts.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.DownloadAsync(SignedUrl, cts.Token));
+    }
+
+    [Fact]
+    public async Task Telechargement_Journal_JamaisLAdresseSigneeNiSaQuery()
+    {
+        var logger = new CapturingLogger<DeezerClient>();
+        // Quatre échecs qui journalisent : statut 403, hôte final hors CDN après redirection, hôte initial refusé, exception réseau.
+        var forbidden = new StubHttpHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.Forbidden) { Content = new ByteArrayContent([1]) }));
+        var redirected = new StubHttpHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new ByteArrayContent([1]),
+            RequestMessage = new HttpRequestMessage(HttpMethod.Get, "https://evil.example/x.mp3?hdnea=SIGNATURE"),
+        }));
+
+        await new DeezerClient(new HttpClient(forbidden), logger).DownloadAsync(SignedUrl, Ct);
+        await new DeezerClient(new HttpClient(redirected), logger).DownloadAsync(SignedUrl, Ct);
+        await new DeezerClient(new HttpClient(forbidden), logger).DownloadAsync("https://evil.example/x.mp3?hdnea=SIGNATURE", Ct);
+        await new DeezerClient(new HttpClient(new StubHttpHandler((_, _) => throw new HttpRequestException("boom"))), logger).DownloadAsync(SignedUrl, Ct);
+
+        Assert.NotEmpty(logger.Entries);
+        foreach (var entry in logger.Entries)
+        {
+            Assert.DoesNotContain("SIGNATURE", entry.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("hdnea", entry.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("/secret/", entry.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain(entry.Properties, p => p.Value?.ToString()?.Contains("SIGNATURE", StringComparison.Ordinal) == true);
+        }
+    }
+
+    private static DeezerClient CreateDownloader(StubHttpHandler handler) =>
+        new(new HttpClient(handler), new CapturingLogger<DeezerClient>());
+
+    private static StubHttpHandler Audio(byte[] bytes) =>
+        new((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) }));
+
+    /// <summary>Flux sans longueur connue : <see cref="StreamContent"/> n'annonce alors aucun Content-Length.</summary>
+    private sealed class ForwardOnlyStream(int length) : Stream
+    {
+        private int _remaining = length;
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            var n = Math.Min(count, _remaining);
+            _remaining -= n;
+            return n;
+        }
+
+        public override void Flush() { }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 
     private static DeezerClient Create(StubHttpHandler handler) =>

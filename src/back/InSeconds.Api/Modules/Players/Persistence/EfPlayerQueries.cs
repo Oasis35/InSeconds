@@ -41,7 +41,7 @@ public sealed class EfPlayerQueries(InSecondsDbContext db) : IPlayerQueries
                     p.AcquisitionSource,
                     p.DeviceClass,
                     p.GuestPseudo,
-                    Account = account == null ? null : new AccountExport(account.Email, account.Pseudo, account.LinkedAt, account.IsAdmin),
+                    Account = account == null ? null : new { account.Email, account.Pseudo, account.LinkedAt, account.IsAdmin },
                 })
             .FirstOrDefaultAsync(ct);
         if (player is null)
@@ -52,6 +52,17 @@ public sealed class EfPlayerQueries(InSecondsDbContext db) : IPlayerQueries
             .OrderBy(s => s.CreatedAt)
             .Select(s => new DeviceExport(s.UserAgentLabel, s.CreatedAt, s.LastSeenAt, s.RevokedAt))
             .ToListAsync(ct);
-        return new PlayerRecordExport(player.CreatedAt, player.LastSeenAt, player.AcquisitionSource, player.DeviceClass, player.GuestPseudo, player.Account, devices);
+        AccountExport? accountExport = null;
+        if (player.Account is { } row)
+        {
+            var requests = await db.Set<AuthToken>().AsNoTracking()
+                .Where(t => t.PlayerId == playerId && t.Purpose == AuthTokenPurpose.EmailChange)
+                .OrderBy(t => t.CreatedAt)
+                .Select(t => new EmailChangeRequestExport(t.NewEmail!, t.CreatedAt, t.ExpiresAt, t.ConsumedAt != null))
+                .ToListAsync(ct);
+            accountExport = new AccountExport(row.Email, row.Pseudo, row.LinkedAt, row.IsAdmin, requests);
+        }
+
+        return new PlayerRecordExport(player.CreatedAt, player.LastSeenAt, player.AcquisitionSource, player.DeviceClass, player.GuestPseudo, accountExport, devices);
     }
 }

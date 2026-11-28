@@ -1,4 +1,4 @@
-import { Page, Locator } from '@playwright/test';
+import { Page, Locator, expect } from '@playwright/test';
 import { loginAsPlayer } from '../fixtures/player-login';
 import { times } from '../fixtures/sequence';
 import { BlindRoundPage } from './blind-round.page';
@@ -13,6 +13,8 @@ export class GamePage {
   readonly shareButton: Locator;
   readonly shareCopiedButton: Locator;
   readonly retryButton: Locator;
+  /** « Piste 1 / 5 » : le rang du morceau en cours, lu dans ses attributs (jamais dans le texte français). */
+  readonly progress: Locator;
   // Reprise
   readonly resumePromptHeading: Locator;
   readonly resumeButton: Locator;
@@ -40,6 +42,7 @@ export class GamePage {
     this.shareButton           = page.getByRole('button', { name: /Partager mon score/i });
     this.shareCopiedButton     = page.getByRole('button', { name: /Copié/i });
     this.retryButton           = page.getByRole('button', { name: 'Réessayer' });
+    this.progress              = page.getByTestId('daily-progress');
     this.resumePromptHeading   = page.getByRole('heading', { name: 'Partie en pause' });
     this.resumeButton          = page.getByRole('button', { name: 'Reprendre' });
     this.abandonButton         = page.getByRole('button', { name: 'Abandonner', exact: true }).first();
@@ -114,6 +117,11 @@ export class GamePage {
     await loginAsPlayer(this.page, email, pseudo);
     await this.goto();
     await this.waitForWelcome();
+  }
+
+  /** Le morceau en cours est le n-ième de la partie (« Piste n / 5 »). */
+  async expectTrack(position: number): Promise<void> {
+    await expect(this.progress).toHaveAttribute('data-current', String(position));
   }
 
   async waitForWelcome(): Promise<void> {

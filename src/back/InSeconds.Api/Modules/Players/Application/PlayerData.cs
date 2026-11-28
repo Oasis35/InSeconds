@@ -8,8 +8,14 @@ using Wolverine.Http;
 
 namespace InSeconds.Api.Modules.Players.Application;
 
+/// <summary>Une demande de changement d'adresse : la nouvelle adresse que le joueur a saisie, gardée tant que la purge nocturne ne l'a pas effacée.</summary>
+/// <param name="Confirmed">Le lien envoyé à cette adresse a été utilisé.</param>
+public sealed record EmailChangeRequestExport(string NewEmail, DateTimeOffset RequestedAt, DateTimeOffset ExpiresAt, bool Confirmed);
+
 /// <param name="IsAdmin">Le rôle admin du compte, posé à la main (piège 5).</param>
-public sealed record AccountExport(string Email, string Pseudo, DateTimeOffset? LinkedAt, bool IsAdmin);
+/// <param name="EmailChangeRequests">Ses demandes de changement d'adresse encore en base, de la plus ancienne à la plus récente.</param>
+public sealed record AccountExport(
+    string Email, string Pseudo, DateTimeOffset? LinkedAt, bool IsAdmin, IReadOnlyList<EmailChangeRequestExport> EmailChangeRequests);
 
 /// <param name="Label">Navigateur et système (« Safari · iPhone »), jamais l'en-tête brut.</param>
 public sealed record DeviceExport(string? Label, DateTimeOffset CreatedAt, DateTimeOffset LastSeenAt, DateTimeOffset? RevokedAt);

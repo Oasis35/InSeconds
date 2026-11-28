@@ -17,7 +17,7 @@ public sealed record StatsCohortResponse(string Key, int New, int Day1Eligible, 
 public sealed record StatsListenedResponse(decimal Seconds, int Count);
 
 /// <summary>Les réponses de la période, tous statuts de partie confondus.</summary>
-public sealed record StatsAnswersResponse(int Total, int ArtistFound, int TitleFound, int WithHint, IReadOnlyList<StatsListenedResponse> ByListened);
+public sealed record StatsAnswersResponse(int Total, int ArtistFound, int TitleFound, IReadOnlyList<StatsListenedResponse> ByListened);
 
 /// <param name="Days">La période demandée : 7, 30 ou 90 jours, aujourd'hui compris.</param>
 /// <param name="Daily">Un point par jour de défi qui a des parties, du plus ancien au plus récent (les jours sans partie sont absents).</param>
@@ -66,7 +66,7 @@ public static class GetStatsEndpoint
         return new StatsResponse(
             period, daily, Medians.Decimal(scores), ToResponse(overall), bySource.Select(ToResponse).ToList(), byDevice.Select(ToResponse).ToList(),
             new StatsAnswersResponse(
-                answers.Total, answers.ArtistFound, answers.TitleFound, answers.WithHint,
+                answers.Total, answers.ArtistFound, answers.TitleFound,
                 answers.ByListened.OrderBy(x => x.Key).Select(x => new StatsListenedResponse(x.Key, x.Value)).ToList()));
     }
 

@@ -204,20 +204,17 @@ public class StartSessionTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Demarrer_Reprise_RenduLePlancherEtLesIndicesDuMorceauEnCours()
+    public async Task Demarrer_Reprise_RenduLePlancherDuMorceauEnCours()
     {
         var alice = await _game.NewPlayerAsync();
         await _game.GenerateAsync();
         var started = await alice.StartAsync();
         Assert.Equal(HttpStatusCode.NoContent, (await alice.ListenAsync(started.SessionId, 1, 10)).StatusCode);
-        Assert.Equal(HttpStatusCode.OK, (await alice.HintAsync(started.SessionId, 1, 2)).StatusCode);
 
         var resumed = await alice.StartAsync();
 
         var current = resumed.CurrentTrack!;
-        Assert.Equal((1, 10m, 2), (current.Position, current.ListenedSeconds, current.HintLevel));
-        // Ce que les indices ont déjà révélé : l'année (niveau 1, cumulé) et l'artiste masqué.
-        Assert.Equal(["year", "artistMasked"], current.HintFacts.Select(f => f.Kind));
+        Assert.Equal((1, 10m), (current.Position, current.ListenedSeconds));
     }
 
     [Fact]
@@ -271,6 +268,41 @@ public class StartSessionTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal((short)3, await _game.Api.ScalarAsync<short>($"SELECT status FROM daily.sessions WHERE id = {old}"));
         Assert.NotNull(await _game.Api.ScalarAsync<DateTime?>($"SELECT ended_at FROM daily.sessions WHERE id = {old}"));
         Assert.Equal((short)0, await _game.Api.ScalarAsync<short>($"SELECT status FROM daily.sessions WHERE id = {started.SessionId}"));
+    }
+
+    // --- Minuit UTC : la frontière entre deux jours de jeu ---
+
+    [Fact]
+    public async Task Piege18_Minuit_UneSecondeAvantLeDefiDuJour_UneSecondeApresCeluiDuLendemain_EtLaVeilleSeTermine()
+    {
+        var alice = await _game.NewPlayerAsync();
+        var bob = await _game.NewPlayerAsync();
+        await _game.GenerateAsync();
+        _game.Time.SetUtcNow(new DateTimeOffset(Today.Year, Today.Month, Today.Day, 23, 59, 59, TimeSpan.Zero));
+
+        // 23:59:59 : c'est encore le défi du jour.
+        Assert.Equal("can_start", (await bob.TodayAsync()).State);
+        var session = (await alice.StartAsync()).SessionId;
+        await alice.AnswerCorrectlyAsync(session, 1, 1);
+
+        // 00:00:00 : le jour de jeu a changé, rien n'est généré par la simple lecture.
+        _game.Time.Advance(TimeSpan.FromSeconds(1));
+        Assert.Equal("no_challenge", (await bob.TodayAsync()).State);
+        Assert.Equal(1L, await _game.App.ChallengeCountAsync());
+
+        // La partie commencée avant minuit reste jouable et se termine sur le défi de la veille (piège 18).
+        var finished = await alice.FinishAsync(session, fromPosition: 2);
+        Assert.NotNull(finished);
+        Assert.Equal((short)1, await _game.Api.ScalarAsync<short>($"SELECT status FROM daily.sessions WHERE id = {session}"));
+
+        // Le premier départ après minuit prend le défi du nouveau jour (généré à la volée), pas celui de la veille.
+        var started = await bob.StartAsync();
+        Assert.False(started.IsResuming);
+        Assert.Equal(2L, await _game.App.ChallengeCountAsync());
+        Assert.Equal(
+            Today.AddDays(1),
+            await _game.Api.ScalarAsync<DateOnly>(
+                $"SELECT c.date FROM daily.sessions s JOIN daily.challenges c ON c.id = s.challenge_id WHERE s.id = {started.SessionId}"));
     }
 
     // --- GET /api/daily/today : lecture seule ---

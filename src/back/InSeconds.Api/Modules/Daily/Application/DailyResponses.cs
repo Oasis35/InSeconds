@@ -27,8 +27,5 @@ public sealed record StreakResponse(
         view.Streak, view.Freezes, view.MaxFreezes, view.FreezeEveryDays, view.NextFreezeInDays, view.MissedDays, view.LostStreak, view.LastPlayedDate);
 }
 
-/// <summary>Un indice révélé : ce qu'il montre (<c>year</c>, <c>artistMasked</c>) et sa valeur (vide si l'année est inconnue).</summary>
-public sealed record HintFactResponse(string Kind, string? Value);
-
 /// <summary>Nombre de joueurs qui ont trouvé le morceau en écoutant ce palier.</summary>
 public sealed record GuessBucketResponse(decimal DurationSeconds, int Count);

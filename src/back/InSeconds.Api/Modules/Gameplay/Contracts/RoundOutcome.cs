@@ -2,12 +2,10 @@ namespace InSeconds.Api.Modules.Gameplay.Contracts;
 
 /// <summary>
 /// Ce qu'une réponse a donné, **sans points** (le calcul appartient au mode) : artiste et
-/// titre sont corrigés séparément (le score partiel en dépend), avec le palier d'écoute annoncé et le niveau
-/// d'indice révélé au moment de répondre.
+/// titre sont corrigés séparément (le score partiel en dépend), avec le palier d'écoute annoncé.
 /// </summary>
 /// <param name="ListenedSeconds">Le palier d'écoute de la réponse (celui que le mode transforme en points).</param>
-/// <param name="HintLevelUsed">Le niveau d'indice le plus haut révélé sur ce morceau (0 : aucun).</param>
-public sealed record RoundOutcome(bool ArtistCorrect, bool TitleCorrect, decimal ListenedSeconds, int HintLevelUsed)
+public sealed record RoundOutcome(bool ArtistCorrect, bool TitleCorrect, decimal ListenedSeconds)
 {
     /// <summary>Artiste et titre trouvés : le score complet.</summary>
     public bool FoundBoth => ArtistCorrect && TitleCorrect;

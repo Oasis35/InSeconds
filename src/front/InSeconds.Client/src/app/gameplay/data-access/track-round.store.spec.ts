@@ -12,7 +12,6 @@ const CONFIG: RoundConfig = {
   trackId: 7,
   previewUrl: URL,
   listen: { steps: [0.5, 1, 2, 5, 10], extendable: true },
-  hints: { unlockSeconds: [5, 10] },
 };
 
 describe('TrackRoundStore', () => {
@@ -324,24 +323,6 @@ describe('TrackRoundStore', () => {
       emit('error');
 
       expect(store.skipUnplayable()).toMatchObject({ listenedSeconds: 1, wasExtended: true, artist: null, title: null });
-    });
-  });
-
-  describe('indices', () => {
-    it('se proposent aux paliers du réglage', () => {
-      listenedTo(2);
-      expect(store.availableHintLevels()).toEqual([]);
-      listenedTo(5);
-      expect(store.availableHintLevels()).toEqual([1]);
-    });
-
-    it('les indices du back sont affichés tels quels et ne se redemandent pas', () => {
-      listenedTo(10);
-      store.applyHints(2, [{ kind: 'year', value: '2013' }, { kind: 'artist', value: 'D___ P___' }]);
-
-      expect(store.hintLevel()).toBe(2);
-      expect(store.hints()).toHaveLength(2);
-      expect(store.availableHintLevels()).toEqual([]);
     });
   });
 

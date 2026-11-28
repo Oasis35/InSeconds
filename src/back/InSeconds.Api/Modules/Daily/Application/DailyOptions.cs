@@ -78,23 +78,9 @@ public sealed class DailyOptions
     public IReadOnlyList<DurationScore> EffectiveDurationScores =>
         DurationScores is { Count: > 0 } configured ? configured : DefaultDurationScores;
 
-    /// <summary>Les durées d'écoute qui débloquent le niveau 1, 2… d'indice.</summary>
-    public decimal[]? HintUnlockDurationsSeconds { get; set; }
-
-    public static readonly decimal[] DefaultHintUnlockDurationsSeconds = [5m, 10m];
-
-    public IReadOnlyList<decimal> EffectiveHintUnlockDurationsSeconds => HintUnlockDurationsSeconds ?? DefaultHintUnlockDurationsSeconds;
-
-    /// <summary>Le pourcentage retiré du score par niveau d'indice révélé.</summary>
-    public Dictionary<int, int>? HintPenaltyPercent { get; set; }
-
-    public static readonly IReadOnlyDictionary<int, int> DefaultHintPenaltyPercent = new Dictionary<int, int> { [1] = 30, [2] = 60 };
-
-    public IReadOnlyDictionary<int, int> EffectiveHintPenaltyPercent => HintPenaltyPercent ?? DefaultHintPenaltyPercent;
-
     /// <summary>
     /// Le score d'une réponse donnée à la **seconde tentative**, en pourcentage de celui de la première : 70 vaut 70 % (le palier du dernier
-    /// écouté, puis la moitié si un seul des deux est trouvé, puis la pénalité d'indice). 0 : pas de seconde tentative.
+    /// écouté, puis la moitié si un seul des deux est trouvé). 0 : pas de seconde tentative.
     /// </summary>
     public int RetryScorePercent { get; set; } = DefaultRetryScorePercent;
 

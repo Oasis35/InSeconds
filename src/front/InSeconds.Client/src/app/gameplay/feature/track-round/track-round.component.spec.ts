@@ -15,7 +15,6 @@ const CONFIG: RoundConfig = {
   trackId: 7,
   previewUrl: 'https://cdn.example/extrait.mp3',
   listen: { steps: [0.5, 1, 2, 5, 10], extendable: true },
-  hints: { unlockSeconds: [5, 10] },
 };
 
 const RESULT: RoundResult = {
@@ -29,8 +28,8 @@ const MUSE: AnswerSuggestion = { artist: 'Muse', title: 'Uprising' };
 @Component({
   imports: [TrackRoundComponent],
   template: `
-    <app-track-round [result]="result()" [hintPending]="hintPending()" [layout]="layout()" [skipLabelKey]="skipLabelKey()" [alert]="alert()" [timeUp]="timeUp()"
-      [choices]="choices()" [locked]="locked()" (answered)="answered.push($event)" (hintRequested)="hints.push($event)">
+    <app-track-round [result]="result()" [layout]="layout()" [skipLabelKey]="skipLabelKey()" [alert]="alert()" [timeUp]="timeUp()"
+      [choices]="choices()" [locked]="locked()" (answered)="answered.push($event)">
       <span roundCorner>0:45</span>
       <p roundAids>Cartes du mode</p>
       <p roundReveal>Révélation du mode</p>
@@ -41,7 +40,6 @@ const MUSE: AnswerSuggestion = { artist: 'Muse', title: 'Uprising' };
 })
 class Host {
   readonly result = signal<RoundResult | null>(null);
-  readonly hintPending = signal(false);
   readonly layout = signal<'stacked' | 'inline'>('stacked');
   readonly skipLabelKey = signal('gameplay.round.skip');
   readonly alert = signal(false);
@@ -49,7 +47,6 @@ class Host {
   readonly choices = signal<readonly { artist: string; title: string }[] | null>(null);
   readonly locked = signal(false);
   readonly answered: RoundSubmission[] = [];
-  readonly hints: number[] = [];
 }
 
 describe('TrackRoundComponent', () => {
@@ -120,7 +117,7 @@ describe('TrackRoundComponent', () => {
 
       const cards = element.querySelector('[roundAids]')!;
       expect(cards.textContent).toBe('Cartes du mode');
-      expect(cards.compareDocumentPosition(input()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(cards.compareDocumentPosition(input()) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     });
 
     it('avec des réponses proposées : plus de champ ni de « Valider », toucher une réponse l\'envoie', () => {
@@ -280,6 +277,27 @@ describe('TrackRoundComponent', () => {
       expect(fixture.componentInstance.answered).toHaveLength(1);
     });
 
+    it('↓ Entrée enchaînés sans rafraîchir entre les deux choisissent la première proposition (frappes rapides)', async () => {
+      await showSuggestions('daf');
+      const down = new KeyboardEvent('keydown', { key: 'ArrowDown', cancelable: true, bubbles: true });
+      const enter = new KeyboardEvent('keydown', { key: 'Enter', cancelable: true, bubbles: true });
+      input().dispatchEvent(down);
+      input().dispatchEvent(enter);
+      refresh();
+
+      expect(enter.defaultPrevented).toBe(true);
+      expect(input().value).toBe('Daft Punk - Get Lucky');
+      expect(fixture.componentInstance.answered).toEqual([]);
+    });
+
+    it('↑ sans surbrillance puis Entrée choisit la dernière proposition', async () => {
+      await showSuggestions('daf');
+      press('ArrowUp');
+
+      expect(press('Enter').defaultPrevented).toBe(true);
+      expect(input().value).toBe('Muse - Uprising');
+    });
+
     it('Échap ferme la liste sans toucher au champ', async () => {
       await showSuggestions('daf');
       press('Escape');
@@ -380,36 +398,6 @@ describe('TrackRoundComponent', () => {
     });
   });
 
-  describe('indices', () => {
-    it('proposent les niveaux débloqués, nommés d\'après le back, et relaient la demande au mode', () => {
-      start({ hints: { unlockSeconds: [5, 10], kinds: ['year', 'artistMasked'] } });
-      for (let i = 0; i < 4; i++) store.listenMore(); // 0,5 → 1 → 2 → 5 → 10 s
-      emit('playing');
-
-      expect(element.querySelectorAll('[data-testid="hints"] button')).toHaveLength(2);
-      button('gameplay.hint.ask.artist')!.click();
-      expect(fixture.componentInstance.hints).toEqual([2]);
-    });
-
-    it('montrent ce que le back révèle', () => {
-      start();
-      for (let i = 0; i < 3; i++) store.listenMore();
-      store.applyHints(1, [{ kind: 'year', value: '2013' }]);
-      refresh();
-
-      expect(element.querySelector('[data-testid="hints"]')?.textContent).toContain('2013');
-      expect(element.querySelectorAll('[data-testid="hints"] button')).toHaveLength(0);
-    });
-
-    it('les boutons attendent la réponse du back', () => {
-      start();
-      for (let i = 0; i < 3; i++) store.listenMore();
-      fixture.componentInstance.hintPending.set(true);
-      refresh();
-      expect(button('gameplay.hint.button')!.disabled).toBe(true);
-    });
-  });
-
   describe('révélation', () => {
     beforeEach(() => {
       start();
@@ -482,7 +470,7 @@ describe('TrackRoundComponent', () => {
   describe('en ligne (le mode Run)', () => {
     beforeEach(() => {
       fixture.componentInstance.layout.set('inline');
-      start({ listen: { steps: [10], extendable: false }, hints: { unlockSeconds: [] } });
+      start({ listen: { steps: [10], extendable: false } });
     });
 
     it('toute la manche dans une carte, le coin du mode en haut à droite, sans repères ni « écouter plus »', () => {

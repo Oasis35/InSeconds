@@ -8,27 +8,26 @@ import { nextRetryPhrase } from '../../domain/retry-phrases';
 import { RoundSubmission } from '../../domain/track-round';
 import { shake } from '../../../ui/motion/motion';
 import { AnswerInputComponent } from '../../ui/answer-input/answer-input.component';
-import { HintPanelComponent } from '../../ui/hint-panel/hint-panel.component';
 import { RevealCardComponent } from '../../ui/reveal-card/reveal-card.component';
 import { RoundPlayerComponent } from '../../ui/round-player/round-player.component';
 import { ButtonComponent } from '../../../ui/button/button.component';
 
 /**
- * La manche d'un morceau, de l'écoute à la révélation : le lecteur, les indices, la saisie avec son
+ * La manche d'un morceau, de l'écoute à la révélation : le lecteur, la saisie avec son
  * autocomplete, « Valider » et « Passer », puis la carte de révélation. Elle ne connaît pas le mode :
- * le mode fournit le `TrackRoundStore` (qu'il démarre avec ses paliers et ses indices), envoie la
+ * le mode fournit le `TrackRoundStore` (qu'il démarre avec ses paliers), envoie la
  * réponse quand `answered` part, puis donne le `result` du serveur et appelle `reveal()` du store.
  *
  * Emplacements de projection du mode : `[roundActions]` (ses boutons, au-dessus de « Valider »),
  * `[roundScore]` (ses points) et `[roundNext]` (sa suite). En ligne
  * (`layout="inline"`, un mode à écoute fixe) : `[roundCorner]` (en haut à droite de la carte, son chrono), `[roundAids]` (au-dessus de la
- * saisie, dans les deux dispositions : les coups de pouce du mode), `[roundTheme]` (tout en haut de la saisie : l'indice du mode) et `[roundReveal]` (sa révélation, dans la carte, à la place de la carte de révélation) ; « Passer »
+ * saisie, dans les deux dispositions : les coups de pouce du mode), `[roundTheme]` (tout en haut de la saisie : le thème du mode) et `[roundReveal]` (sa révélation, dans la carte, à la place de la carte de révélation) ; « Passer »
  * y est un simple lien souligné sous « Valider », et `[roundLinks]` y met son propre lien à côté (même style). Avec `choices`, la saisie devient autant de réponses à toucher (une seule est juste,
  * le serveur corrige comme une saisie).
  */
 @Component({
   selector: 'app-track-round',
-  imports: [TranslatePipe, ButtonComponent, RoundPlayerComponent, HintPanelComponent, AnswerInputComponent, RevealCardComponent],
+  imports: [TranslatePipe, ButtonComponent, RoundPlayerComponent, AnswerInputComponent, RevealCardComponent],
   providers: [AnswerSearchStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -51,11 +50,9 @@ import { ButtonComponent } from '../../../ui/button/button.component';
 
         @if (round.showsInput()) {
           <form (submit)="onSubmit($event)" class="space-y-3">
-            <!-- L'indice du mode, juste au-dessus de la saisie (le mode Run : le thème de la manche). -->
+            <!-- Le thème de la manche (mode Run), juste au-dessus de la saisie. -->
             <ng-content select="[roundTheme]" />
 
-            <app-hint-panel [levels]="round.availableHintLevels()" [kinds]="round.hintKinds()" [hints]="round.hints()" [pending]="hintPending()"
-              (request)="hintRequested.emit($event)" />
 
             <ng-content select="[roundAids]" />
 
@@ -91,7 +88,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
 
             @if (phase === 'submit-error') {
               <div class="rounded-xl px-4 py-3 space-y-3" style="background:rgb(var(--rgb-danger) / 0.08);border:1px solid rgb(var(--rgb-danger) / 0.3)">
-                <p role="alert" class="text-sm text-center font-semibold" style="color:var(--text-error)">{{ 'gameplay.answer.submitFailed' | translate }}</p>
+                <p role="alert" data-testid="round-submit-error" class="text-sm text-center font-semibold" style="color:var(--text-error)">{{ 'gameplay.answer.submitFailed' | translate }}</p>
                 <button appButton type="button" [block]="true" (click)="retrySubmission()">
                   {{ 'gameplay.answer.retry' | translate }}
                 </button>
@@ -161,8 +158,6 @@ export class TrackRoundComponent {
 
   /** Ce que le serveur a révélé (donné par le mode une fois la réponse enregistrée). */
   readonly result = input<RoundResult | null>(null);
-  /** Le mode attend la réponse du back à une demande d'indice. */
-  readonly hintPending = input(false);
   /** `inline` : toute la manche dans une carte, le bouton à gauche de la waveform (un mode à écoute fixe) ; `stacked` (défaut) : le Daily. */
   readonly layout = input<'stacked' | 'inline'>('stacked');
   /** Les textes de « Passer » : le mode qui retire une vie les remplace (« Passer (une vie) »). */
@@ -184,8 +179,6 @@ export class TrackRoundComponent {
 
   /** La réponse à envoyer ; le mode l'envoie, puis appelle `reveal()` ou `submissionFailed()` du store. */
   readonly answered = output<RoundSubmission>();
-  /** Le joueur demande ce niveau d'indice ; le mode interroge le back, puis appelle `applyHints()` du store. */
-  readonly hintRequested = output<number>();
 
   protected readonly inline = computed(() => this.layout() === 'inline');
   /** La réponse proposée touchée, le temps de l'envoi. */

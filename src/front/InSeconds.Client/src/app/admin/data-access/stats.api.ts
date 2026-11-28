@@ -26,7 +26,6 @@ function toStats(r: StatsResponse): Stats {
       total: r.answers.total,
       artistFound: r.answers.artistFound,
       titleFound: r.answers.titleFound,
-      withHint: r.answers.withHint,
       byListened: r.answers.byListened.map(b => ({ seconds: b.seconds, count: b.count })),
     },
   };

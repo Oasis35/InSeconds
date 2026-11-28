@@ -268,7 +268,7 @@ describe('RunsApi', () => {
       client['getRunHistory'].mockReturnValueOnce(throwError(() => problem(401, 'common.unauthorized'))).mockReturnValueOnce(throwError(() => problem(500, 'common.unexpected')));
 
       expect((await api.history(null)).runs).toEqual([]);
-      await expect(api.history(null)).rejects.toBeDefined();
+      await expect(api.history(null)).rejects.toMatchObject({ status: 500, code: 'common.unexpected' });
     });
 
     it("les Hits : vides en null, aucun pour un navigateur inconnu (401), une autre erreur remonte", async () => {
@@ -281,7 +281,7 @@ describe('RunsApi', () => {
         { key: 'first_setlist', earned: true, progress: null, target: null }, { key: 'ten_setlists', earned: false, progress: 7, target: 10 },
       ]);
       expect(await api.hits()).toEqual([]);
-      await expect(api.hits()).rejects.toBeDefined();
+      await expect(api.hits()).rejects.toMatchObject({ status: 500, code: 'common.unexpected' });
     });
 
     it("l'extrait d'un morceau joué : son adresse, `null` sans extrait", async () => {

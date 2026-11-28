@@ -39,10 +39,10 @@ Identité, compte, appareils, rôle admin, droits RGPD. Point d'entrée `Players
 
 ## Droits RGPD (piège 48)
 
-- `PlayerDataExporter` : `IPlayerQueries.ExportAsync` plus une section par `IPlayerDataContributor` (`daily`, `runs`, `social`, enregistrés par `ApiComposition.AddPlayerDataContributors`) ; deux contributeurs du même nom font échouer l'export. Le nom de section fait partie du format téléchargé : jamais renommé.
-- `AccountErasure` (route, purge des comptes inactifs, `--delete-player`), dans la transaction de l'appelant : données de jeu (`DeleteAsync` de chaque contributeur), puis `IPlayerStore.EraseAsync` (jetons du joueur et ceux émis pour son adresse, ancien jeton, appareils, compte, ligne `players`), puis `Forget` de chaque appareil. Journal 1008 sans email ni pseudo.
+- `PlayerDataExporter` : `IPlayerQueries.ExportAsync` (compte, appareils, et les demandes de changement d'adresse encore en base : `AccountExport.EmailChangeRequests`) plus une section par `IPlayerDataContributor` (`daily`, `runs`, `social`, enregistrés par `ApiComposition.AddPlayerDataContributors`) ; deux contributeurs du même nom font échouer l'export. Le nom de section fait partie du format téléchargé : jamais renommé.
+- `AccountErasure` (route, purge des comptes inactifs, `--delete-player`), dans la transaction de l'appelant : données de jeu (`DeleteAsync` de chaque contributeur), puis `IPlayerStore.EraseAsync` (jetons du joueur et ceux émis pour son adresse, ancien jeton, appareils, compte, ligne `players`), puis `Forget` de chaque appareil. Journal 1008 sans email ni pseudo. Un message d'email (`SendMagicLinkEmail`, changement d'adresse) porte l'adresse du destinataire dans la base de Wolverine : traité, il en part au bout de 5 minutes, en échec il reste 3 jours dans la file des échecs (`MessageRetention` dans `WolverineSetup`, `MessageRetentionTests`).
 - `PlayerDataExporter` et `AccountErasure` sont en service location (ils énumèrent les contributeurs).
-- Test garde-fou : `PlayerDataTests` lit toutes les colonnes `player_id` dans `information_schema`.
+- Tests garde-fous : `PlayerDataTests` (effacement) et `PlayerDataExportCoverageTests` (export : chaque table avec `player_id`, et chaque autre clé vers `players.players`, est exportée ou exclue avec sa raison) lisent le schéma dans `information_schema`.
 
 ## Purge nocturne
 

@@ -173,20 +173,6 @@ public class SecondAttemptTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task IndiceEtSecondeTentative_LesDeuxPenalitesSAppliquent()
-    {
-        await _alice.ListenAsync(_session, 1, 5);
-        await _alice.HintAsync(_session, 1, 1); // −30 %
-        await _alice.AnswerAsync(_session, 1, 5, "Zzzz", "Yyyy");
-
-        var final = await ReadAsync(await _alice.AnswerAsync(_session, 1, 5, $"Artiste {_trackId}", $"Titre {_trackId}"));
-
-        // 250 × 0,7 = 175 ; 175 × 0,7 = 122,5 → 122.
-        Assert.Equal(122, final.Score);
-        Assert.Equal(1, final.HintLevelUsed);
-    }
-
-    [Fact]
     public async Task ReglageAZero_PasDeSecondeTentative_LaCorrectionEstImmediate()
     {
         await _game.SetSettingAsync("Daily:RetryScorePercent", "0");

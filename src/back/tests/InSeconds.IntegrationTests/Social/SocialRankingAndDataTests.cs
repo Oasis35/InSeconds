@@ -400,6 +400,24 @@ public class SocialRankingAndDataTests(PostgresFixture postgres) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task Effacement_LeJoueurQuitteLeClassementGeneralGarde_SansAttendreLaMinute()
+    {
+        var (alice, bob, carol) = (await _game.NewPlayerAsync("Alice"), await _game.NewPlayerAsync("Bob"), await _game.NewPlayerAsync("Carol"));
+        await AddRunAsync(bob.Id, status: 2, roundsPassed: 4, score: 2500);
+        await AddRunAsync(carol.Id, status: 2, roundsPassed: 4, score: 1700);
+        await GrantAccessAsync(bob.Id, carol.Id);
+        // Le classement est lu, donc gardé une minute : Carol y figure.
+        Assert.Equal(["Bob", "Carol"], (await GeneralAsync(alice)).Top.Select(e => e.Pseudo));
+
+        (await carol.Client.PostAsJsonAsync("/api/players/me/delete", new DeleteMyAccount("Carol"), Ct)).EnsureSuccessStatusCode();
+
+        // Son nom quitte le classement tout de suite, sans avancer l'horloge : l'effacement vide le cache (sinon son pseudo y resterait une minute).
+        var after = await GeneralAsync(alice);
+        Assert.Equal(["Bob"], after.Top.Select(e => e.Pseudo));
+        Assert.Equal(1, after.Total);
+    }
+
+    [Fact]
     public async Task Piege48_ToutesLesColonnesPlayerIdDeSocial_SontConnuesDeLEffacement()
     {
         var tables = (await _game.Api.ScalarAsync<string[]>("""

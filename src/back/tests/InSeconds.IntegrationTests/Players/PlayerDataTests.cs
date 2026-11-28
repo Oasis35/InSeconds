@@ -28,6 +28,25 @@ public class PlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
     public ValueTask DisposeAsync() => _app.DisposeAsync();
 
     [Fact]
+    public async Task Export_UneDemandeDeChangementDAdresse_SortAvecLaNouvelleAdresse()
+    {
+        var device = await _app.SignInDeviceAsync("alice@example.com", "Alice", SafariIphone);
+        var request = await device.Client.PostAsJsonAsync("/api/players/me/email-change", new RequestEmailChange(" Nouvelle@Example.com "), Ct);
+        Assert.Equal(HttpStatusCode.NoContent, request.StatusCode);
+        // Le jeton est créé par le handler du message, après la réponse 204.
+        await Waiting.MessagesHandledAsync(_app.Api, Ct);
+
+        var export = (await device.Client.GetFromJsonAsync<PlayerDataExport>("/api/players/me/export", Ct))!;
+
+        var change = Assert.Single(export.Account!.EmailChangeRequests);
+        Assert.Equal("nouvelle@example.com", change.NewEmail);
+        Assert.False(change.Confirmed);
+        Assert.Equal(TimeSpan.FromMinutes(15), change.ExpiresAt - change.RequestedAt);
+        // L'ancienne adresse reste celle du compte tant que le lien n'est pas confirmé.
+        Assert.Equal("alice@example.com", export.Account.Email);
+    }
+
+    [Fact]
     public async Task Export_ToutesSesDonnees_EnPieceJointe()
     {
         var device = await _app.SignInDeviceAsync("alice@example.com", "Alice", SafariIphone);
@@ -44,8 +63,9 @@ public class PlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
 
         var export = (await response.Content.ReadFromJsonAsync<PlayerDataExport>(Ct))!;
         Assert.Equal(device.PlayerId, export.PlayerId);
-        Assert.Equal(new AccountExport("alice@example.com", "Alice", export.Account!.LinkedAt, IsAdmin: false), export.Account);
+        Assert.Equal(("alice@example.com", "Alice", false), (export.Account!.Email, export.Account.Pseudo, export.Account.IsAdmin));
         Assert.NotNull(export.Account.LinkedAt);
+        Assert.Empty(export.Account.EmailChangeRequests);
         Assert.Equal("Safari · iPhone", Assert.Single(export.Devices).Label);
         // Une section par mode : Daily (sa série et ses parties) et Runs (vide ici).
         Assert.Equal(["daily", "runs", "social"], export.Modules.Keys.Order(StringComparer.Ordinal));
@@ -66,7 +86,7 @@ public class PlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
             second =>
             {
                 Assert.Equal((2, "Artiste 2", "Titre 2"), (second.Position, second.Artist, second.Title));
-                Assert.Equal((1m, true, false, 850, 1), (second.ListenedSeconds, second.ArtistFound, second.TitleFound, second.Score, second.HintLevel));
+                Assert.Equal((1m, true, false, 850), (second.ListenedSeconds, second.ArtistFound, second.TitleFound, second.Score));
             });
     }
 
@@ -216,16 +236,16 @@ internal static class PlayerDataSeed
             INSERT INTO daily.challenge_tracks (challenge_id, position, track_id) VALUES ({ChallengeId}, 1, 1), ({ChallengeId}, 2, 2);
             """);
 
-    /// <summary>Partie terminée : 0,5 s tout juste (1000), puis 1 s, artiste seulement, un indice (850).</summary>
+    /// <summary>Partie terminée : 0,5 s tout juste (1000), puis 1 s, artiste seulement (850).</summary>
     public static async Task AddGameAsync(ApiFactory api, Guid playerId)
     {
         var id = await api.ScalarAsync<int>("SELECT 900000 + count(*)::int FROM daily.sessions");
         await api.ExecuteAsync($"""
             INSERT INTO daily.sessions (id, player_id, challenge_id, status, started_at, ended_at, total_score, total_listened_seconds)
             VALUES ({id}, '{playerId}', {ChallengeId}, 1, '2026-10-01T08:00:00Z', '2026-10-01T08:05:00Z', 1850, 1.5);
-            INSERT INTO daily.answers (session_id, position, listened_seconds, was_extended, hint_level, artist_correct, title_correct, score) VALUES
-              ({id}, 1, 0.5, false, 0, true, true, 1000),
-              ({id}, 2, 1, true, 1, true, false, 850);
+            INSERT INTO daily.answers (session_id, position, listened_seconds, was_extended, artist_correct, title_correct, score) VALUES
+              ({id}, 1, 0.5, false, true, true, 1000),
+              ({id}, 2, 1, true, true, false, 850);
             """);
     }
 }

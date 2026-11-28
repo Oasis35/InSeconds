@@ -128,7 +128,7 @@ public class StreakTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task PartieDeLaVeilleTermineeApresMinuit_ContinueLaSerie_Piege18()
+    public async Task Piege18_PartieDeLaVeilleTermineeApresMinuit_ContinueLaSerie()
     {
         var alice = await _game.NewPlayerAsync("Alice");
         await _game.SetStreakAsync(alice.Id, 3, Today.AddDays(-1), 0);
@@ -240,21 +240,38 @@ public class StreakTests(PostgresFixture postgres) : IAsyncLifetime
         // Le gel offert et la première complétion créent tous deux la ligne de série d'un joueur qui n'en a pas : sans verrou, les deux
         // l'insèrent et la seconde échoue sur la clé primaire (500).
         var player = await _game.NewPlayerAsync("Eve");
-        async Task GrantAsync(int delayBeforeSaveMs)
+        // La première tient le verrou de la série (transaction ouverte) jusqu'à ce que le test la libère ; la seconde est lancée
+        // une fois le verrou pris, et le test attend de la voir bloquée dessus avant de libérer la première.
+        var holdingLock = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        async Task GrantAsync(TaskCompletionSource? signalLockTaken, Task beforeSave)
         {
             using var scope = _game.Api.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>();
             await using var transaction = await db.Database.BeginTransactionAsync(Ct);
             await new InSeconds.Api.Modules.Daily.Application.DailyStreakGrants(new InSeconds.Api.Modules.Daily.Persistence.EfDailyStore(db))
                 .GrantAccountCreationFreezeAsync(player.Id, Ct);
-            await Task.Delay(delayBeforeSaveMs, Ct);
+            signalLockTaken?.SetResult();
+            await beforeSave.WaitAsync(Ct);
             await db.SaveChangesAsync(Ct);
             await transaction.CommitAsync(Ct);
         }
 
-        var first = GrantAsync(delayBeforeSaveMs: 700);
-        await Task.Delay(150, Ct);
-        var second = GrantAsync(delayBeforeSaveMs: 0);
+        var first = GrantAsync(holdingLock, release.Task);
+        // Si la première échoue avant d'avoir le verrou, son erreur sort ici plutôt qu'un blocage.
+        await Task.WhenAny(holdingLock.Task, first);
+        if (first.IsFaulted)
+            await first;
+        var second = GrantAsync(null, Task.CompletedTask);
+        try
+        {
+            await Waiting.LockWaitersAsync(_game.Api, 1, Ct);
+        }
+        finally
+        {
+            release.SetResult();
+        }
+
         await Task.WhenAll(first, second);
 
         Assert.Equal(1L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM daily.streaks WHERE player_id = '{player.Id}'"));

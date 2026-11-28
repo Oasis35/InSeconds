@@ -148,7 +148,7 @@ public partial class ProfileTests(PostgresFixture postgres) : IAsyncLifetime
         var again = await device.Client.PostAsJsonAsync("/api/players/me/email-change", new RequestEmailChange("cible2@example.com"), Ct);
         // Une autre demande, ensuite, prouve que la file a avancé.
         await _app.RequestTokenAsync("temoin@example.com");
-        await Task.Delay(500, Ct);
+        await Waiting.MessagesHandledAsync(_app.Api, Ct);
 
         Assert.Equal(HttpStatusCode.NoContent, again.StatusCode);
         Assert.DoesNotContain(_app.Emails.Sent, e => e.To == "cible2@example.com");

@@ -20,7 +20,7 @@ On enchaîne des **manches de 3 morceaux**, jusqu'à avoir perdu ses **3 vies** 
 
 1. Le son démarre **au clic** (iPhone) : « Jouer » ou « Commencer », « Jouer » sur le lien d'un ami, « Reprendre » après une pause, « Manche suivante » entre deux manches.
 2. **Écoute d'un seul tenant**, de la durée du palier de la manche. Pas d'« écouter plus » ; la relecture (↺) reste libre.
-3. Le joueur tape **« Artiste - Titre »** dans un seul champ (autocomplétion Deezer), puis **Valider**. Pas d'indice.
+3. Le joueur tape **« Artiste - Titre »** dans un seul champ (autocomplétion Deezer), puis **Valider**.
 4. **« Passer (une vie) »** : 0 point et **une vie perdue**, après confirmation (« Tu perdras une vie »).
 5. **Chrono de 45 s par morceau** (`Runs:AnswerSeconds`) : il part au premier son et compte l'écoute, les réécoutes et la saisie. À zéro, le navigateur envoie ce qui est tapé ; une réponse arrivée après le chrono (5 s de marge réseau) est un morceau passé. Le chrono continue pendant une absence. Le serveur fait foi.
 6. **La réponse s'affiche aussitôt** : pochette, artiste et titre, ce qui était juste, les points du morceau. Le joueur enchaîne quand il veut, ou après 2 s.

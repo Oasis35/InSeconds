@@ -14,7 +14,7 @@ public class DailyOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(
         Assert.Equal(
             [
                 "abandonSession", "getAdminDailySettings", "getArchiveDay", "getArchiveIndex", "getArchivePreview", "getChallengeStats", "getDailyHistory", "getDailySettings", "getDashboard", "getEarProfile",
-                "getMyArchiveDay", "getNextChallenge", "getPlayerHistory", "getReplayTracks", "getStats", "getToday", "getTodayStats", "getWeekReview", "listChallenges", "listRegisteredPlayers", "recomputeDayStats", "requestHint",
+                "getMyArchiveDay", "getNextChallenge", "getPlayerHistory", "getReplayTracks", "getStats", "getToday", "getTodayStats", "getWeekReview", "listChallenges", "listRegisteredPlayers", "recomputeDayStats",
                 "startSession", "submitAnswer", "updateListening", "updateTrackCooldownPoolPercent",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));
@@ -26,7 +26,7 @@ public class DailyOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(
     }
 
     [Fact]
-    public async Task Les_routes_admin_de_F1_sont_celles_du_plan()
+    public async Task Les_routes_admin_du_Daily_sont_celles_attendues()
     {
         var document = await ReadDocumentAsync();
 
@@ -46,7 +46,7 @@ public class DailyOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(
     }
 
     [Fact]
-    public async Task Les_routes_et_methodes_sont_celles_du_plan()
+    public async Task Les_routes_et_methodes_sont_celles_attendues()
     {
         var document = await ReadDocumentAsync();
 
@@ -54,7 +54,6 @@ public class DailyOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(
         Assert.Equal(("get", "/api/daily/settings"), (MethodOf(document, "getDailySettings"), PathOf(document, "getDailySettings")));
         Assert.Equal(("post", "/api/daily/sessions"), (MethodOf(document, "startSession"), PathOf(document, "startSession")));
         Assert.Equal(("patch", "/api/daily/sessions/{id}/listening"), (MethodOf(document, "updateListening"), PathOf(document, "updateListening")));
-        Assert.Equal(("post", "/api/daily/sessions/{id}/hints"), (MethodOf(document, "requestHint"), PathOf(document, "requestHint")));
         Assert.Equal(("post", "/api/daily/sessions/{id}/answers"), (MethodOf(document, "submitAnswer"), PathOf(document, "submitAnswer")));
         Assert.Equal(("post", "/api/daily/sessions/{id}/abandon"), (MethodOf(document, "abandonSession"), PathOf(document, "abandonSession")));
         Assert.Equal(("get", "/api/daily/stats/today"), (MethodOf(document, "getTodayStats"), PathOf(document, "getTodayStats")));

@@ -7,6 +7,7 @@ import { ModalService } from '../../../ui/modal/modal.service';
 import { FakeCatalogueApi, candidate, fakeCatalogueApi, problem, provideCatalogueApiFake } from '../../data-access/testing/fake-catalogue-api';
 import { Candidate } from '../../domain/candidates';
 import { CandidatesPage } from './candidates.page';
+import { flushMicrotasks } from '../../../core/testing/settle';
 
 class FakeAudio implements PreviewAudio {
   paused = true; currentTime = 0; duration = 30; onended = null;
@@ -36,7 +37,7 @@ describe('CandidatesPage', () => {
       ],
     });
     const fixture = TestBed.createComponent(CandidatesPage);
-    const settle = async () => { await fixture.whenStable(); await new Promise<void>(resolve => setTimeout(resolve, 0)); fixture.detectChanges(); };
+    const settle = async () => { await fixture.whenStable(); await flushMicrotasks(); fixture.detectChanges(); };
     fixture.detectChanges();
     await settle();
     const el = fixture.nativeElement as HTMLElement;

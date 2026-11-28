@@ -76,7 +76,7 @@ public class DayStatsTests
     [InlineData(new[] { 700 }, 700)]
     [InlineData(new[] { 100, 900, 500 }, 500)]
     [InlineData(new[] { 100, 201 }, 150)] // division entière : 150,5 devient 150
-    public void MedianeEntiere_CommeLaV1(int[] values, int expected) => Assert.Equal(expected, Medians.Integer(values));
+    public void MedianeEntiere(int[] values, int expected) => Assert.Equal(expected, Medians.Integer(values));
 
     [Theory]
     [InlineData(new int[0], null)]

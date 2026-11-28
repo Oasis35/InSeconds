@@ -10,7 +10,7 @@ public class SettingsJsonFlattenerTests
         public int GuessTimerSeconds { get; set; }
         public decimal[] AllowedDurationsSeconds { get; set; } = [];
         public List<DurationScore> DurationScores { get; set; } = [];
-        public Dictionary<int, int> HintPenaltyPercent { get; set; } = [];
+        public Dictionary<int, int> PenaltyPercent { get; set; } = [];
         public string CoverUrlTemplate { get; set; } = "";
         public bool Enabled { get; set; }
     }
@@ -22,14 +22,14 @@ public class SettingsJsonFlattenerTests
     }
 
     [Fact]
-    public void Flatten_LesValeursDuPlan_SeLientAuxOptions()
+    public void Flatten_LesValeursDeDaily_SeLientAuxOptions()
     {
         var data = new Dictionary<string, string?>();
         SettingsJsonFlattener.Flatten("Daily:GuessTimerSeconds", "20", data);
         SettingsJsonFlattener.Flatten("Daily:AllowedDurationsSeconds", "[0.5,1,1.5,2,3,5,10]", data);
         SettingsJsonFlattener.Flatten("Daily:DurationScores",
             """[{"seconds":0.5,"score":1000},{"seconds":1,"score":850},{"seconds":10,"score":100}]""", data);
-        SettingsJsonFlattener.Flatten("Daily:HintPenaltyPercent", """{"1":30,"2":60}""", data);
+        SettingsJsonFlattener.Flatten("Daily:PenaltyPercent", """{"1":30,"2":60}""", data);
         SettingsJsonFlattener.Flatten("Daily:CoverUrlTemplate", "\"https://cdn/{hash}.jpg\"", data);
         SettingsJsonFlattener.Flatten("Daily:Enabled", "true", data);
 
@@ -39,7 +39,7 @@ public class SettingsJsonFlattenerTests
         Assert.Equal(20, options.GuessTimerSeconds);
         Assert.Equal([0.5m, 1m, 1.5m, 2m, 3m, 5m, 10m], options.AllowedDurationsSeconds);
         Assert.Equal([(0.5m, 1000), (1m, 850), (10m, 100)], options.DurationScores.Select(d => (d.Seconds, d.Score)));
-        Assert.Equal(60, options.HintPenaltyPercent[2]);
+        Assert.Equal(60, options.PenaltyPercent[2]);
         Assert.Equal("https://cdn/{hash}.jpg", options.CoverUrlTemplate);
         Assert.True(options.Enabled);
     }
@@ -49,10 +49,10 @@ public class SettingsJsonFlattenerTests
     {
         var data = new Dictionary<string, string?>();
 
-        SettingsJsonFlattener.Flatten("Daily:HintUnlockDurationsSeconds", "[5,10]", data);
+        SettingsJsonFlattener.Flatten("Daily:ThresholdSeconds", "[5,10]", data);
 
-        Assert.Equal("5", data["Daily:HintUnlockDurationsSeconds:0"]);
-        Assert.Equal("10", data["Daily:HintUnlockDurationsSeconds:1"]);
+        Assert.Equal("5", data["Daily:ThresholdSeconds:0"]);
+        Assert.Equal("10", data["Daily:ThresholdSeconds:1"]);
         Assert.Equal(2, data.Count);
     }
 

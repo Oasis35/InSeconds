@@ -126,7 +126,7 @@ describe('TechPanelComponent', () => {
     const lines = Array.from(element.querySelectorAll<HTMLAnchorElement>('[data-testid="ci-line"]'));
     expect(lines.map(l => l.getAttribute('href'))).toEqual(['https://github.test/run/1', 'https://github.test/staging']);
     expect(lines[0].textContent).toContain('admin.system.ciState.failure');
-    expect(lines[0].querySelector('.tech-icon')?.textContent).toBe('✗');
+    expect(lines[0].querySelector('[data-testid="tech-icon"]')?.textContent).toBe('✗');
     expect(lines[1].textContent).toContain('admin.system.ciState.none');
     // La prod et le staging côte à côte, sur une même ligne.
     expect(lines[0].parentElement).toBe(lines[1].parentElement);
@@ -141,8 +141,8 @@ describe('TechPanelComponent', () => {
     expect(link.textContent).toContain('admin.system.tracksCount');
     expect(byTestId('missing-waveforms')?.textContent).toContain('0');
     // L'indicateur à gauche de la ligne : ✓ à zéro, ! sinon.
-    expect(byTestId('missing-waveforms')?.parentElement?.querySelector('.tech-icon')?.textContent).toBe('✓');
-    expect(byTestId('missing-previews')?.parentElement?.querySelector('.tech-icon')?.textContent).toBe('!');
+    expect(byTestId('missing-waveforms')?.parentElement?.querySelector('[data-testid="tech-icon"]')?.textContent).toBe('✓');
+    expect(byTestId('missing-previews')?.parentElement?.querySelector('[data-testid="tech-icon"]')?.textContent).toBe('!');
   });
 
   it('rien du catalogue tant qu\'il n\'est pas lu ; aucun morceau sans extrait : pas de lien', () => {
@@ -154,13 +154,13 @@ describe('TechPanelComponent', () => {
   it('le défi de demain : prêt en vert, pas assez de morceaux ou génération en échec en rouge', () => {
     const ready = render({ nextChallenge: { kind: 'ready', eligibleCount: 212, generated: false } }).byTestId('next-challenge')!;
     expect(ready.textContent).toContain('admin.system.nextChallengeReady');
-    expect(ready.querySelector('span')?.style.color).toBe('var(--color-success)');
+    expect(ready.querySelector<HTMLElement>('[data-testid="tech-icon"]')?.style.color).toBe('var(--color-success)');
 
     TestBed.resetTestingModule();
     const retrying = render({ nextChallenge: { kind: 'retrying', retryAt: '2026-11-04T00:10:00Z' } }).byTestId('next-challenge')!;
     expect(retrying.textContent).toContain('admin.system.nextChallengeRetryAt');
     expect(retrying.textContent).toContain('admin.system.todayChallenge');
-    expect(retrying.querySelector('span')?.style.color).toBe('var(--text-error)');
+    expect(retrying.querySelector<HTMLElement>('[data-testid="tech-icon"]')?.style.color).toBe('var(--text-error)');
 
     TestBed.resetTestingModule();
     const short = render({ nextChallenge: { kind: 'insufficient', eligibleCount: 2, requiredCount: 5 } }).byTestId('next-challenge')!;

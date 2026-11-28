@@ -23,7 +23,7 @@ public sealed record PlayerHistoryRow(DateOnly Date, SessionStatus Status, int T
 public sealed record DaySessionCounts(DateOnly Date, int Completed, int Abandoned, int Expired, int Players, int FirstTimePlayers);
 
 /// <summary>Les réponses d'une période : totaux, et le nombre de réponses par palier écouté.</summary>
-public sealed record AnswerTotals(int Total, int ArtistFound, int TitleFound, int WithHint, IReadOnlyDictionary<decimal, int> ByListened);
+public sealed record AnswerTotals(int Total, int ArtistFound, int TitleFound, IReadOnlyDictionary<decimal, int> ByListened);
 
 /// <summary>
 /// Lectures des statistiques, en agrégats. **Les joueurs effacés n'y figurent pas** : l'effacement (<c>AccountErasure</c>) supprime leurs
@@ -93,7 +93,7 @@ public interface IDailyStatsQueries
     /// <summary>Les scores des parties **terminées** des défis depuis <paramref name="since"/>.</summary>
     Task<IReadOnlyList<int>> GetCompletedScoresSinceAsync(DateOnly since, CancellationToken ct);
 
-    /// <summary>Les réponses des parties des défis depuis <paramref name="since"/>, tous statuts : trouvé, indice et palier écouté.</summary>
+    /// <summary>Les réponses des parties des défis depuis <paramref name="since"/>, tous statuts : trouvé et palier écouté.</summary>
     Task<AnswerTotals> GetAnswerTotalsSinceAsync(DateOnly since, CancellationToken ct);
 
     /// <summary>

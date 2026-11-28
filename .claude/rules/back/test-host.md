@@ -20,9 +20,9 @@ Conventions des tests d'intégration (fixture, `ApiFactory`, harnais, noms) : `s
 
 ## Routes `/api/e2e` (`E2E/E2EEndpoints.cs`)
 
-`reset`, `reseed`, `seed-catalogue`, `generate-today`, `delete-challenge`, `login-as-admin`, `set-streak`, `runs/settings`, `runs/latest-tracks`, `deezer/without-preview`, `last-email`, `throw`. Points à savoir :
+`reset`, `reseed`, `seed-catalogue`, `generate-today`, `delete-challenge`, `login-as-admin`, `set-streak`, `runs/latest-tracks`, `last-email`, `throw`. Points à savoir :
 
-- `reset` (`DatabaseResetter`, Respawn) vide **tous les schémas sauf** `public`, `infra`, `extensions`, `messaging` et `jobs`, lus en base à chaque appel : un nouveau module est couvert sans rien changer. Il remet aussi à zéro les emails capturés, le faux Deezer et son cache, et les réglages `Runs:` posés par un test.
+- `reset` (`DatabaseResetter`, Respawn) vide **tous les schémas sauf** `public`, `infra`, `extensions`, `messaging` et `jobs`, lus en base à chaque appel : un nouveau module est couvert sans rien changer. Il remet aussi à zéro les emails capturés, le faux Deezer et son cache.
 - `seed-catalogue` (`CatalogueSeed`) : 55 morceaux dans un **ordre fixe**, les index comptent (défis d'avant-hier, d'hier et du jour, cooldowns variés, morceaux sans extrait) ; l'usage est écrit en **vrais défis** que le vrai `IDailyTrackUsage` relit. Genres et album notés comme lus : un contrôle nocturne lancé sur ce pool ne les change pas.
 - `login-as-admin` : le compte `admin-e2e@e2e.test`, par le chemin du dev-login, puis `is_admin` en base et une ligne `runs.access` (le rôle ne donne pas l'accès Survie d'office) ; la session est neuve, le rôle relu en base.
 - `runs/latest-tracks` : les morceaux de la dernière playlist (rien ne les montre avant la réponse, piège 31) pour que les E2E sachent quoi répondre.

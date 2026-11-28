@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using InSeconds.Api.Testing.Deezer;
 using InSeconds.Api.Testing.E2E;
 using InSeconds.Api.Testing.Email;
-using InSeconds.Deezer;
 using InSeconds.Infrastructure.Email;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
@@ -48,7 +47,7 @@ public class TestingHostTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Reset_VideLeModulePlayers_SansToucherAuxTablesV1()
+    public async Task Reset_VideLeModulePlayers_SansToucherAuxTablesDuSchemaPublic()
     {
         var client = _host.CreateClient();
         Assert.Equal(HttpStatusCode.OK,
@@ -120,25 +119,6 @@ public class TestingHostTests(PostgresFixture postgres) : IAsyncLifetime
         // Le cache est vidé aussi : la même recherche repart chez Deezer.
         await client.GetAsync("/api/catalogue/search?q=daft-punk", TestContext.Current.CancellationToken);
         Assert.Single(deezer.Requests);
-    }
-
-    [Fact]
-    public async Task DeezerWithoutPreview_PriveCesMorceauxDExtrait_JusquAuReset()
-    {
-        var client = _host.CreateClient();
-        var previews = _host.Services.GetRequiredService<IPreviewProvider>();
-        const long track = 66609426;
-
-        var response = await client.PostAsJsonAsync(
-            "/api/e2e/deezer/without-preview", new WithoutPreviewRequest([track]), TestContext.Current.CancellationToken);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.IsType<PreviewLookup.Missing>(await previews.GetPreviewAsync(track, TestContext.Current.CancellationToken));
-        // Les autres morceaux gardent leur extrait.
-        Assert.IsType<PreviewLookup.Found>(await previews.GetPreviewAsync(6297555, TestContext.Current.CancellationToken));
-
-        await client.PostAsync("/api/e2e/reset", null, TestContext.Current.CancellationToken);
-        Assert.IsType<PreviewLookup.Found>(await previews.GetPreviewAsync(track, TestContext.Current.CancellationToken));
     }
 
     [Fact]

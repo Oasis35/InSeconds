@@ -14,7 +14,7 @@ InSeconds est un blind test musical : un défi du jour, le même pour tout le mo
 | Le savoir de chaque module, domaine front et du déploiement (invariants, pièges, où regarder), en règles à portée de chemin : chaque fichier déclare ses `paths` et n'est chargé par Claude Code que quand on touche un fichier qui correspond ; le tableau des réglages est dans `back/reglages.md` | `.claude/rules/` |
 | Sous-agents de relecture (`relecteur-pr`, `gardien-code`, `gardien-da`, `gardien-rgpd`) | [`.claude/agents/`](../.claude/agents/) |
 | **Le jeu** | |
-| Règles du défi du jour (score, anti-triche, série, indices) | [`regles-du-jeu.md`](regles-du-jeu.md) |
+| Règles du défi du jour (score, anti-triche, série, seconde tentative) | [`regles-du-jeu.md`](regles-du-jeu.md) |
 | Ce qui reste à faire | [`taches.md`](taches.md) |
 | **La Survie** | |
 | Sommaire du mode | [`runs/README.md`](runs/README.md) |
@@ -28,7 +28,6 @@ InSeconds est un blind test musical : un défi du jour, le même pour tout le mo
 | **Exploitation** | |
 | VPS, stacks, déploiement, staging, commandes utiles | [`exploitation/deploiement.md`](exploitation/deploiement.md) |
 | Secrets : inventaire, rôle, renouvellement | [`exploitation/secrets.md`](exploitation/secrets.md) |
-| Purger les anciens jours de défi (`--purge-daily-before`) | [`exploitation/purge-parties.md`](exploitation/purge-parties.md) |
 | CI, SonarCloud, Dependabot, quand un job casse | [`exploitation/ci.md`](exploitation/ci.md) |
 | Accès SSH de secours | [`exploitation/acces-secours-ssh.md`](exploitation/acces-secours-ssh.md) |
 | Postgres partagé, sauvegardes, contrôle de restauration | [`deploy/infra/README.md`](../deploy/infra/README.md) |

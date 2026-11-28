@@ -218,6 +218,7 @@ describe('ProfilePage', () => {
 
       expect(api.requestEmailChange).toHaveBeenCalledWith('nouveau@example.com');
       expect(text(fixture)).toContain('account.profile.email.sentHint');
+      expect(query(fixture, '[data-testid="profile-email-help"]')?.getAttribute('data-message')).toBe('account.profile.email.sentHint');
     });
 
     it('refuse une adresse invalide sans permettre l\'envoi', async () => {
@@ -239,6 +240,7 @@ describe('ProfilePage', () => {
       await settle(fixture);
 
       expect(text(fixture)).toContain('errors.players.email_taken');
+      expect(query(fixture, '[data-testid="profile-email-help"]')?.getAttribute('data-message')).toBe('errors.players.email_taken');
     });
   });
 

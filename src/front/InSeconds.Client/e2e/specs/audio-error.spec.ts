@@ -9,7 +9,7 @@ import { BlindRoundPage } from '../pages/blind-round.page';
 // réseau réelle vers l'aperçu (`test-audio.mp3`, servi en mode Testing par FakeDeezerHandler,
 // cf. CLAUDE.md racine) et vérifie le comportement dans un vrai navigateur, contrairement
 // aux tests unitaires qui stubbent entièrement AudioPlayerService.
-test.describe('Échec de lecture audio', () => {
+test.describe('Échec de lecture audio', { tag: '@webkit' }, () => {
   test.beforeEach(async ({ api }) => {
     await api.reset();
   });
@@ -29,7 +29,7 @@ test.describe('Échec de lecture audio', () => {
     await game.clickStart();
 
     // État d'erreur affiché, avec les deux issues possibles.
-    await expect(page.getByText("Impossible de lire l'aperçu. Réessaie, ou passe ce morceau.")).toBeVisible();
+    await expect(page.getByTestId('round-playback-error')).toBeVisible();
     await expect(game.retryButton).toBeVisible();
     await expect(page.getByRole('button', { name: /^Passer/ })).toBeVisible();
 
@@ -90,7 +90,7 @@ test.describe('Échec de lecture audio', () => {
     await game.waitForWelcome();
     await game.clickStart();
 
-    await expect(page.getByText("Impossible de lire l'aperçu. Réessaie, ou passe ce morceau.")).toBeVisible();
+    await expect(page.getByTestId('round-playback-error')).toBeVisible();
 
     shouldFail = false;
     await game.retryButton.click();
@@ -111,7 +111,7 @@ test.describe('Échec de lecture audio', () => {
     await game.waitForWelcome();
     await game.clickStart();
 
-    await expect(page.getByText("Impossible de lire l'aperçu. Réessaie, ou passe ce morceau.")).toBeVisible();
+    await expect(page.getByTestId('round-playback-error')).toBeVisible();
 
     await page.getByRole('button', { name: /^Passer/ }).click();
 
