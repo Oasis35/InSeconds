@@ -203,7 +203,7 @@ public class DailySessionTests
     }
 
     [Fact]
-    public void Statuts_ValeursStockeesDuPlan()
+    public void Statuts_ValeursStockeesEnBase()
     {
         Assert.Equal([0, 1, 2, 3], new[] { SessionStatus.Pending, SessionStatus.Completed, SessionStatus.Abandoned, SessionStatus.Expired }.Select(s => (int)s));
     }

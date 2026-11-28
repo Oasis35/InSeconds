@@ -13,7 +13,7 @@ public sealed class DailyLogTests
     private static readonly Guid PlayerId = Guid.Parse("6f1c2a4e-0000-4000-8000-000000000001");
 
     [Fact]
-    public void Reponse_TexteDeLaV1()
+    public void Reponse_TexteLuParLeTableauGrafana()
     {
         var logger = new CapturingLogger<DailyLogTests>();
 

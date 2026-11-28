@@ -82,7 +82,7 @@ public class DailyScoringAndRulesTests
     // --- les réglages ---
 
     [Fact]
-    public void ParDefaut_LesValeursDeLaV1()
+    public void ParDefaut_LesValeursDuJeu()
     {
         Assert.Equal([0.5m, 1m, 1.5m, 2m, 3m, 5m, 10m], Defaults.EffectiveAllowedDurationsSeconds);
         Assert.Equal(7, Defaults.StreakRules.FreezeEveryDays);

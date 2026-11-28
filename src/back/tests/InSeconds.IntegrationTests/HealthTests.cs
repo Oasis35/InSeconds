@@ -18,7 +18,7 @@ public class HealthTests(PostgresFixture postgres) : IAsyncLifetime
     public ValueTask DisposeAsync() => _api.DisposeAsync();
 
     [Fact]
-    public async Task Health_RenvoieLeMemeFormatQuEnV1()
+    public async Task Health_RenvoieStatutHeureEtBuild()
     {
         var response = await _api.CreateClient().GetAsync("/health", TestContext.Current.CancellationToken);
 

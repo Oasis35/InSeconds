@@ -17,7 +17,7 @@ public class DailySettingsTests(PostgresFixture postgres) : IAsyncLifetime
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact]
-    public async Task ParDefaut_LesValeursDeLaV1_SansAucuneLigneEnBase()
+    public async Task ParDefaut_LesValeursDuJeu_SansAucuneLigneEnBase()
     {
         // La seconde tentative est coupée par défaut dans ces tests (GameApi) : le réglage est donc donné, sa valeur par défaut (70) est vue par DailyScoringAndRulesTests.
         await using var game = await GameApi.CreateAsync(
