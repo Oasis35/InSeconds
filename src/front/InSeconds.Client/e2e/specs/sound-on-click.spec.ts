@@ -23,7 +23,7 @@ async function simulateTabFocus(page: Page): Promise<void> {
   });
 }
 
-test.describe('Le son ne démarre que sur un clic', () => {
+test.describe('Le son ne démarre que sur un clic', { tag: '@webkit' }, () => {
   test.beforeEach(async ({ api }) => {
     await api.reseed();
   });

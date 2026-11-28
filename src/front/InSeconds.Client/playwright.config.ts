@@ -2,6 +2,11 @@ import { defineConfig, devices } from '@playwright/test';
 
 const e2eDbConnection = process.env['E2E_DB_CONNECTION'];
 
+// Safari sur iPhone, la plateforme de la plupart des joueurs (les pièges 7 et 46 sont nés sur Safari) : le moteur WebKit, à la taille d'un
+// téléphone, sur les seuls tests marqués `@webkit` (le son sur un clic, l'échec de lecture, la partie complète, le menu de partage du téléphone).
+// Joué en CI (l'image Playwright embarque WebKit) ; en local seulement avec E2E_WEBKIT=1, après `npx playwright install webkit`.
+const webkitEnabled = !!process.env['CI'] || !!process.env['E2E_WEBKIT'];
+
 export default defineConfig({
   testDir: './e2e',
   timeout: process.env['CI'] ? 60_000 : 30_000,
@@ -40,6 +45,9 @@ export default defineConfig({
         },
       },
     },
+    ...(webkitEnabled
+      ? [{ name: 'webkit', grep: /@webkit/, use: { ...devices['iPhone 13'] } }]
+      : []),
   ],
 
   webServer: process.env['CI']

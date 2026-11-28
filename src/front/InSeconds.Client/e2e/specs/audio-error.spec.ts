@@ -9,7 +9,7 @@ import { BlindRoundPage } from '../pages/blind-round.page';
 // réseau réelle vers l'aperçu (`test-audio.mp3`, servi en mode Testing par FakeDeezerHandler,
 // cf. CLAUDE.md racine) et vérifie le comportement dans un vrai navigateur, contrairement
 // aux tests unitaires qui stubbent entièrement AudioPlayerService.
-test.describe('Échec de lecture audio', () => {
+test.describe('Échec de lecture audio', { tag: '@webkit' }, () => {
   test.beforeEach(async ({ api }) => {
     await api.reset();
   });
