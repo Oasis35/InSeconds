@@ -99,7 +99,10 @@ public sealed class RateLimitPoliciesTests : IAsyncLifetime
         foreach (var (policy, limit) in RateLimitingServiceCollectionExtensions.Limits.OrderBy(entry => entry.Key, StringComparer.Ordinal))
         {
             for (var i = 0; i < limit.PermitLimit; i++)
-                Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/policy/{policy}", ct)).StatusCode);
+            {
+                var allowed = await client.GetAsync($"/policy/{policy}", ct);
+                Assert.True(allowed.StatusCode == HttpStatusCode.OK, $"{policy} : la requête {i + 1} sur {limit.PermitLimit} devait passer.");
+            }
 
             var rejected = await client.GetAsync($"/policy/{policy}", ct);
 
@@ -118,14 +121,21 @@ public sealed class RateLimitPoliciesTests : IAsyncLifetime
     {
         var ct = TestContext.Current.CancellationToken;
         var client = _app.GetTestClient();
-        var (policy, limit) = RateLimitingServiceCollectionExtensions.Limits.First(entry => entry.Key == RateLimitPolicies.MagicLinkRequest);
-        for (var i = 0; i < limit.PermitLimit; i++)
-            await client.GetAsync($"/policy/{policy}", ct);
+        var withoutRetryAfter = new List<string>();
 
-        var rejected = await client.GetAsync($"/policy/{policy}", ct);
+        foreach (var (policy, limit) in RateLimitingServiceCollectionExtensions.Limits)
+        {
+            for (var i = 0; i < limit.PermitLimit; i++)
+                await client.GetAsync($"/policy/{policy}", ct);
 
-        Assert.Equal(HttpStatusCode.TooManyRequests, rejected.StatusCode);
-        Assert.NotNull(rejected.Headers.RetryAfter);
+            var rejected = await client.GetAsync($"/policy/{policy}", ct);
+
+            Assert.True(rejected.StatusCode == HttpStatusCode.TooManyRequests, $"{policy} : la requête {limit.PermitLimit + 1} devait être refusée.");
+            if (rejected.Headers.RetryAfter is null)
+                withoutRetryAfter.Add(policy);
+        }
+
+        Assert.True(withoutRetryAfter.Count == 0, $"Refus sans Retry-After : {string.Join(", ", withoutRetryAfter)}.");
     }
 
     [Fact]
