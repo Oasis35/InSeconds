@@ -72,18 +72,26 @@ public class SocialAccessAndRevealTests(PostgresFixture postgres) : IAsyncLifeti
         var day = Assert.Single(yesterday.Modes);
         Assert.True(day.Revealed);
         Assert.Equal([100, null, null], day.Entries.Select(e => e.Score));
-        var detail = (await alice.Client.GetFromJsonAsync<GroupDetailResponse>($"/api/social/groups/{group.Id}", Ct))!;
-        Assert.Equal(["Alice", "Bob", "Carol"], detail.Members.Select(m => m.Pseudo).Order());
-        var ranking = (await alice.Client.GetFromJsonAsync<GroupRankingResponse>($"/api/social/groups/{group.Id}/ranking", Ct))!;
-        Assert.Equal(["Alice", "Bob", "Carol"], ranking.Entries.Select(e => e.Pseudo).Order());
+        var detailForAlice = (await alice.Client.GetFromJsonAsync<GroupDetailResponse>($"/api/social/groups/{group.Id}", Ct))!;
+        var detailForBob = (await bob.Client.GetFromJsonAsync<GroupDetailResponse>($"/api/social/groups/{group.Id}", Ct))!;
+        Assert.Equal(["Alice", "Bob", "Carol"], detailForAlice.Members.Select(m => m.Pseudo).Order());
+        Assert.Equal(detailForBob.Members.Select(m => (m.Pseudo, m.IsOwner)).Order(), detailForAlice.Members.Select(m => (m.Pseudo, m.IsOwner)).Order());
+        var rankingForAlice = (await alice.Client.GetFromJsonAsync<GroupRankingResponse>($"/api/social/groups/{group.Id}/ranking", Ct))!;
+        var rankingForBob = (await bob.Client.GetFromJsonAsync<GroupRankingResponse>($"/api/social/groups/{group.Id}/ranking", Ct))!;
+        Assert.Equal(["Alice", "Bob", "Carol"], rankingForAlice.Entries.Select(e => e.Pseudo).Order());
+        Assert.Equal(rankingForBob.Entries.Select(e => (e.Rank, e.Pseudo, e.Performance, e.Points)), rankingForAlice.Entries.Select(e => (e.Rank, e.Pseudo, e.Performance, e.Points)));
     }
 
-    // Les noms des champs que le classement d'un groupe a le droit de rendre : un champ de plus (un titre, un identifiant de morceau, une pochette)
-    // casse ce test, et c'est voulu.
+    // Les noms des champs que chaque classement d'un groupe a le droit de rendre, une liste par route : un champ de plus (un titre, un identifiant de
+    // morceau, une pochette), ou un champ d'une réponse qui passe dans l'autre, casse ce test, et c'est voulu.
     private static readonly HashSet<string> ScoresFields = new(StringComparer.OrdinalIgnoreCase)
     {
         "groupId", "name", "modes", "mode", "day", "todayRevealed", "weekDays", "today", "week", "rank", "pseudo", "isMe", "played", "score", "points", "playedDays",
-        "revealed", "entries",
+    };
+
+    private static readonly HashSet<string> DayScoresFields = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "groupId", "name", "modes", "mode", "day", "revealed", "entries", "rank", "pseudo", "isMe", "played", "score",
     };
 
     private static IEnumerable<string> FieldNames(JsonElement element) => element.ValueKind switch
@@ -93,13 +101,13 @@ public class SocialAccessAndRevealTests(PostgresFixture postgres) : IAsyncLifeti
         _ => [],
     };
 
-    private static async Task<IReadOnlyList<string>> UnknownFieldsAsync(Gamer gamer, params string[] urls)
+    private static async Task<IReadOnlyList<string>> UnknownFieldsAsync(Gamer gamer, string scoresUrl, string dayScoresUrl)
     {
         var unknown = new List<string>();
-        foreach (var url in urls)
+        foreach (var (url, allowed) in new[] { (scoresUrl, ScoresFields), (dayScoresUrl, DayScoresFields) })
         {
             var body = await gamer.Client.GetStringAsync(url, Ct);
-            unknown.AddRange(FieldNames(JsonDocument.Parse(body).RootElement).Where(name => !ScoresFields.Contains(name)).Select(name => $"{url} : {name}"));
+            unknown.AddRange(FieldNames(JsonDocument.Parse(body).RootElement).Where(name => !allowed.Contains(name)).Select(name => $"{url} : {name}"));
         }
 
         return unknown;
@@ -114,7 +122,7 @@ public class SocialAccessAndRevealTests(PostgresFixture postgres) : IAsyncLifeti
 
         // Alice a commencé sa partie sans la finir : elle voit qui a joué, mais ni le score de Bob, ni le moindre champ d'un morceau.
         var session = (await alice.StartAsync()).SessionId;
-        Assert.Empty(await UnknownFieldsAsync(alice, urls));
+        Assert.Empty(await UnknownFieldsAsync(alice, urls[0], urls[1]));
         var during = await ScoresAsync(alice, group);
         Assert.False(during.TodayRevealed);
         Assert.All(during.Today, e => Assert.Null(e.Score));
@@ -127,7 +135,7 @@ public class SocialAccessAndRevealTests(PostgresFixture postgres) : IAsyncLifeti
         // Une fois finie, les scores s'ouvrent, et les champs restent les mêmes : un score, jamais un morceau.
         await alice.AnswerCorrectlyAsync(session, 1, 1);
         await alice.FinishAsync(session, fromPosition: 2, day: Today);
-        Assert.Empty(await UnknownFieldsAsync(alice, urls));
+        Assert.Empty(await UnknownFieldsAsync(alice, urls[0], urls[1]));
         var after = await ScoresAsync(alice, group);
         Assert.True(after.TodayRevealed);
         Assert.Equal(900, after.Today.Single(e => e.Pseudo == "Bob").Score);
