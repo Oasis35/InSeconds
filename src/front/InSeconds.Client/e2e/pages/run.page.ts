@@ -179,5 +179,4 @@ export class RunPage {
     await inSequence(tracks, track => this.answerRight(track));
     await expect(this.palier.or(this.page.getByTestId('run-theme'))).toBeVisible();
   }
-
 }
