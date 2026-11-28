@@ -38,3 +38,5 @@ Specs dans `e2e/specs/`, page objects dans `e2e/pages/`, fixtures dans `e2e/fixt
 ## Répartition en CI
 
 Six jobs `e2e` dans l'image `mcr.microsoft.com/playwright` ; `scripts/e2e-shard.mjs <n> 6` donne les specs du job n selon leur durée mesurée (`scripts/e2e-weights.json`, une spec nouvelle compte 10 s). Recalcul quand l'écart entre les jobs se creuse ou après l'ajout de specs : `gh run download <run> -p 'playwright-report-*' -D <dossier>` puis `node scripts/e2e-weights.mjs <dossier>`.
+
+**Tests instables** : `retries: 1` en CI garde le job vert quand un test ne réussit qu'à sa seconde tentative ; l'étape « Tests E2E instables » (`scripts/e2e-flaky.mjs`, test dans `scripts/e2e-flaky.test.mjs`, lancé par `lint:arch`) les signale en avertissement et dans le résumé du job. Elle n'échoue pas par défaut ; `--max <n>` la ferait échouer au-delà de n tests instables (non utilisé aujourd'hui). Une spec de plus de 60 s se coupe par sujet, comme les specs `admin-*` (une par onglet).

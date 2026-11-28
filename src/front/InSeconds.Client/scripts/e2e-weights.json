@@ -1,7 +1,6 @@
 {
   "source": "Moyenne de 7 run(s) de la CI, mesurée le 2026-11-18 (première tentative de chaque test). Mise à jour : node scripts/e2e-weights.mjs <dossier des rapports>.",
   "weights": {
-    "admin.spec.ts": 107,
     "scoring.spec.ts": 65,
     "share-button.spec.ts": 56,
     "already-played.spec.ts": 51,
