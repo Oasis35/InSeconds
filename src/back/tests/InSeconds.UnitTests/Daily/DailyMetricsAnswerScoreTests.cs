@@ -30,7 +30,9 @@ public sealed class DailyMetricsAnswerScoreTests
         using var listener = new MeterListener();
         listener.InstrumentPublished = (instrument, l) =>
         {
-            if (instrument.Name == DailyMetrics.AnswerScoreName) l.EnableMeasurementEvents(instrument);
+            // Un MeterListener voit les instruments de tout le processus : on ne garde que ceux de la fabrique de ce test.
+            if (ReferenceEquals(instrument.Meter.Scope, factory) && instrument.Name == DailyMetrics.AnswerScoreName)
+                l.EnableMeasurementEvents(instrument);
         };
         listener.SetMeasurementEventCallback<int>((_, value, tags, _) =>
             recorded.Add((value, tags.ToArray().Single(t => t.Key == "listened_seconds").Value as string)));
@@ -50,7 +52,12 @@ public sealed class MetricsSeedTests
         using var factory = new TestFactory();
         var seen = new List<(string, string)>();
         using var listener = new MeterListener();
-        listener.InstrumentPublished = (instrument, l) => l.EnableMeasurementEvents(instrument);
+        // Un MeterListener voit les instruments de tout le processus, ceux des tests lancés en parallèle compris : sans ce
+        // filtre, le rappel ci-dessous s'exécute sur leurs mesures et leurs threads, et son Assert y lève une exception.
+        listener.InstrumentPublished = (instrument, l) =>
+        {
+            if (ReferenceEquals(instrument.Meter.Scope, factory)) l.EnableMeasurementEvents(instrument);
+        };
         listener.SetMeasurementEventCallback<long>((instrument, value, tags, _) =>
         {
             Assert.Equal(0, value);

@@ -89,6 +89,7 @@ Les deux dernières (`PlayerDataCommand`) enregistrent les contributeurs par `Ap
 - Harnais par module : `DailyApi`, `GameApi`, `CatalogueApi`, `MagicLinkApi`, `RunGame`. Journaux : `CapturedLogs` (niveau, EventId, message). Staging simulé : `TestCertificate.StagingSettings()`.
 - Noms en français `Situation_Resultat` ; un test d'un piège porte `PiegeNN_` (ou `_PiegeNN`), un test de sécurité `SN_`. Un test qui démarre un vrai serveur Hangfire va dans la collection `HangfireServerCollection` (seule à passer, Hangfire garde un état global).
 - `Assert` de xUnit seulement.
+- Les classes de tests s'exécutent en parallèle dans un même processus : un `MeterListener` voit les instruments de **tous** les tests, il filtre donc sur `instrument.Meter.Scope` (la fabrique du test) avant d'activer quoi que ce soit. Un rappel de mesure qui lève (un `Assert`, un `Single()`) sur les mesures des autres tests plantait le processus (« Internal CLR error 0x80131506 », un lancement sur trois en CI).
 
 ## Règles de sécurité (S1 à S16)
 
