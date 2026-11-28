@@ -260,14 +260,13 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
                 Total = g.Count(),
                 ArtistFound = g.Count(a => a.ArtistCorrect),
                 TitleFound = g.Count(a => a.TitleCorrect),
-                WithHint = g.Count(a => a.HintLevel > 0),
             })
             .SingleOrDefaultAsync(ct);
         var byListened = await answers
             .GroupBy(a => a.ListenedSeconds)
             .Select(g => new { Seconds = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.Seconds, x => x.Count, ct);
-        return new AnswerTotals(totals?.Total ?? 0, totals?.ArtistFound ?? 0, totals?.TitleFound ?? 0, totals?.WithHint ?? 0, byListened);
+        return new AnswerTotals(totals?.Total ?? 0, totals?.ArtistFound ?? 0, totals?.TitleFound ?? 0, byListened);
     }
 
     public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<DateOnly>>> GetPlayedDatesAsync(

@@ -66,7 +66,7 @@ public class PlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
             second =>
             {
                 Assert.Equal((2, "Artiste 2", "Titre 2"), (second.Position, second.Artist, second.Title));
-                Assert.Equal((1m, true, false, 850, 1), (second.ListenedSeconds, second.ArtistFound, second.TitleFound, second.Score, second.HintLevel));
+                Assert.Equal((1m, true, false, 850), (second.ListenedSeconds, second.ArtistFound, second.TitleFound, second.Score));
             });
     }
 
@@ -223,9 +223,9 @@ internal static class PlayerDataSeed
         await api.ExecuteAsync($"""
             INSERT INTO daily.sessions (id, player_id, challenge_id, status, started_at, ended_at, total_score, total_listened_seconds)
             VALUES ({id}, '{playerId}', {ChallengeId}, 1, '2026-10-01T08:00:00Z', '2026-10-01T08:05:00Z', 1850, 1.5);
-            INSERT INTO daily.answers (session_id, position, listened_seconds, was_extended, hint_level, artist_correct, title_correct, score) VALUES
-              ({id}, 1, 0.5, false, 0, true, true, 1000),
-              ({id}, 2, 1, true, 1, true, false, 850);
+            INSERT INTO daily.answers (session_id, position, listened_seconds, was_extended, artist_correct, title_correct, score) VALUES
+              ({id}, 1, 0.5, false, true, true, 1000),
+              ({id}, 2, 1, true, true, false, 850);
             """);
     }
 }

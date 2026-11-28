@@ -6,11 +6,10 @@ namespace InSeconds.UnitTests.Daily;
 public class DailySessionTests
 {
     private static readonly DateTimeOffset Now = new(2026, 10, 5, 12, 0, 0, TimeSpan.Zero);
-    private static readonly HintPolicy Hints = new([5m, 10m]);
 
     private static DailySession NewSession() => DailySession.Start(Guid.NewGuid(), challengeId: 7, Now);
 
-    private static RoundOutcome Found(decimal seconds = 1, int hintLevel = 0) => new(true, true, seconds, hintLevel);
+    private static RoundOutcome Found(decimal seconds = 1) => new(true, true, seconds);
 
     [Fact]
     public void Start_EstEnCours_SurLePremierMorceau_SansRienEcoute()
@@ -19,7 +18,7 @@ public class DailySessionTests
 
         Assert.Equal((SessionStatus.Pending, 0, 1, 0), (session.Status, session.AnsweredCount, session.NextPosition, session.TotalScore));
         Assert.Null(session.CurrentPosition);
-        Assert.Equal(TrackRound.Start, session.RoundOfCurrentTrack(Hints));
+        Assert.Equal(TrackRound.Start, session.RoundOfCurrentTrack());
     }
 
     // --- le verrou : toujours le premier morceau sans réponse (piège 35) ---
@@ -64,7 +63,7 @@ public class DailySessionTests
 
         Assert.Equal(1, session.FailedAttemptsOfCurrentTrack);
         // La seconde tentative ne peut pas annoncer plus court que la première : le prix suit le dernier palier.
-        Assert.Equal(2, session.RoundOfCurrentTrack(Hints).ListenedSeconds);
+        Assert.Equal(2, session.RoundOfCurrentTrack().ListenedSeconds);
     }
 
     [Theory]
@@ -95,7 +94,7 @@ public class DailySessionTests
 
         session.RecordFailedAttempt(1);
 
-        Assert.Equal(5, session.RoundOfCurrentTrack(Hints).ListenedSeconds);
+        Assert.Equal(5, session.RoundOfCurrentTrack().ListenedSeconds);
     }
 
     [Fact]
@@ -118,34 +117,21 @@ public class DailySessionTests
     {
         var session = NewSession();
 
-        session.KeepRound(TrackRound.Start.Listen(6).RevealHint(1, Hints).Round!);
+        session.KeepRound(TrackRound.Start.Listen(6));
 
         Assert.Equal((short)1, session.CurrentPosition);
-        var round = session.RoundOfCurrentTrack(Hints);
-        Assert.Equal((6m, 1), (round.ListenedSeconds, round.HintLevel));
+        var round = session.RoundOfCurrentTrack();
+        Assert.Equal(6m, round.ListenedSeconds);
     }
 
     [Fact]
     public void RoundOfCurrentTrack_UnVerrouSurUnAutreMorceau_RepartDeZero()
     {
         var session = NewSession();
-        session.KeepRound(TrackRound.Resume(10, 2));
-        session.Answer(Found(10, 2), 40, false, 5, Now);
-        // Le verrou est libéré par la réponse : le morceau 2 ne reprend ni l'écoute ni l'indice du morceau 1.
-        Assert.Equal(TrackRound.Start, session.RoundOfCurrentTrack(Hints));
-    }
-
-    [Fact]
-    public void RoundOfCurrentTrack_BorneLeNiveauDIndiceALaPolitique()
-    {
-        var session = NewSession();
-        session.KeepRound(TrackRound.Resume(10, 2));
-
-        // Le réglage a perdu un niveau : le niveau 2 relu ne pénalise plus le score.
-        var round = session.RoundOfCurrentTrack(new HintPolicy([5m]));
-
-        Assert.Equal(1, round.HintLevel);
-        Assert.Equal(0, session.RoundOfCurrentTrack(HintPolicy.None).HintLevel);
+        session.KeepRound(TrackRound.Resume(10));
+        session.Answer(Found(10), 40, false, 5, Now);
+        // Le verrou est libéré par la réponse : le morceau 2 ne reprend pas l'écoute du morceau 1.
+        Assert.Equal(TrackRound.Start, session.RoundOfCurrentTrack());
     }
 
     // --- les réponses ---
@@ -154,7 +140,7 @@ public class DailySessionTests
     public void Answer_AjouteLaReponse_CumuleLeScoreEtLesSecondes_LiberantLeVerrou()
     {
         var session = NewSession();
-        session.KeepRound(TrackRound.Resume(2, 0));
+        session.KeepRound(TrackRound.Resume(2));
 
         var completed = session.Answer(Found(2), 550, wasExtended: true, 5, Now);
 
@@ -165,18 +151,17 @@ public class DailySessionTests
         Assert.Equal((550, 2m, 2), (session.TotalScore, session.TotalListenedSeconds, session.NextPosition));
         Assert.Null(session.CurrentPosition);
         Assert.Null(session.CurrentListenedSeconds);
-        Assert.Equal((short)0, session.CurrentHintLevel);
     }
 
     [Fact]
-    public void Answer_GardeLeNiveauDIndiceEtLaCorrectionDeLaReponse()
+    public void Answer_GardeLaCorrectionDeLaReponse()
     {
         var session = NewSession();
 
-        session.Answer(new RoundOutcome(true, false, 5, 1), 125, false, 5, Now);
+        session.Answer(new RoundOutcome(true, false, 5), 125, false, 5, Now);
 
         var answer = Assert.Single(session.Answers);
-        Assert.Equal((true, false, (short)1), (answer.ArtistCorrect, answer.TitleCorrect, answer.HintLevel));
+        Assert.Equal((true, false), (answer.ArtistCorrect, answer.TitleCorrect));
     }
 
     [Fact]

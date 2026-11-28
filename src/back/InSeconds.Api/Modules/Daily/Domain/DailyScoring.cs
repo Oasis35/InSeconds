@@ -4,16 +4,13 @@ namespace InSeconds.Api.Modules.Daily.Domain;
 
 /// <summary>
 /// Les points d'une réponse : le calcul appartient au mode, la manche n'en donne pas. Moins on écoute, plus on
-/// gagne ; l'indice coûte un pourcentage.
+/// gagne.
 /// </summary>
 public interface IDailyScoringPolicy
 {
     /// <param name="outcome">Ce que la manche a donné.</param>
     /// <param name="isRetry">C'est la réponse de la seconde tentative (le score est réduit du pourcentage de <c>Daily:RetryScorePercent</c>).</param>
     int Score(RoundOutcome outcome, bool isRetry = false);
-
-    /// <summary>Le pourcentage retiré pour ce niveau d'indice (0 : aucun indice, ou niveau sans pénalité).</summary>
-    int HintPenaltyPercent(int hintLevel);
 }
 
 /// <summary>Un palier d'écoute et ses points (<c>Daily:DurationScores</c>).</summary>
@@ -21,23 +18,19 @@ public sealed record DurationScore(decimal Seconds, int Score);
 
 /// <summary>
 /// Le barème : rien si ni l'artiste ni le titre n'est trouvé ; un palier inconnu
-/// vaut 0 ; artiste et titre = le barème du palier, un seul des deux = la moitié ; à la seconde tentative, le pourcentage de réduction ;
-/// puis la pénalité de l'indice sur ce score.
+/// vaut 0 ; artiste et titre = le barème du palier, un seul des deux = la moitié ; à la seconde tentative, le pourcentage de réduction.
 /// </summary>
 /// <remarks>Le front affiche les points en jeu avec la même règle (<c>daily/domain/stake.ts</c>) : un changement de calcul ici s'y reporte.</remarks>
 public sealed class DurationScoringPolicy : IDailyScoringPolicy
 {
     private readonly IReadOnlyDictionary<decimal, int> _baseScores;
-    private readonly IReadOnlyDictionary<int, int> _hintPenaltyPercent;
     private readonly int _retryScorePercent;
 
-    public DurationScoringPolicy(IEnumerable<DurationScore> durationScores, IReadOnlyDictionary<int, int> hintPenaltyPercent, int retryScorePercent)
+    public DurationScoringPolicy(IEnumerable<DurationScore> durationScores, int retryScorePercent)
     {
         ArgumentNullException.ThrowIfNull(durationScores);
-        ArgumentNullException.ThrowIfNull(hintPenaltyPercent);
         // Un palier écrit deux fois dans les réglages : le dernier l'emporte, sans exception.
         _baseScores = durationScores.GroupBy(d => d.Seconds).ToDictionary(g => g.Key, g => g.Last().Score);
-        _hintPenaltyPercent = hintPenaltyPercent;
         _retryScorePercent = retryScorePercent;
     }
 
@@ -51,12 +44,8 @@ public sealed class DurationScoringPolicy : IDailyScoringPolicy
         var score = outcome.FoundBoth ? baseScore : (int)Math.Round(baseScore * 0.5);
         if (isRetry)
             score = (int)Math.Round(score * _retryScorePercent / 100m);
-        var penalty = HintPenaltyPercent(outcome.HintLevelUsed);
-        return penalty > 0 ? (int)Math.Round(score * (1 - penalty / 100m)) : score;
+        return score;
     }
-
-    public int HintPenaltyPercent(int hintLevel) =>
-        hintLevel > 0 && _hintPenaltyPercent.TryGetValue(hintLevel, out var percent) ? percent : 0;
 }
 
 /// <summary>

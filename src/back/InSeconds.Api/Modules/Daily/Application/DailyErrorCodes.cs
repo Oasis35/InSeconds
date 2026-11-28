@@ -19,7 +19,6 @@ public static class DailyErrorCodes
     public const string TrackLockNotReleased = "daily.track_lock_not_released";
 
     /// <summary>L'indice n'est pas encore débloqué : la durée écoutée n'a pas atteint son seuil.</summary>
-    public const string HintLocked = "daily.hint_locked";
 
     public const string AlreadyAnswered = "daily.already_answered";
 

@@ -43,7 +43,7 @@ public sealed class DailyPlayerData(InSecondsDbContext db, ITrackDirectory track
             {
                 var track = trackAt.TryGetValue(a.Position, out var id) ? catalogue.GetValueOrDefault(id) : null;
                 return new GameTrackExport(
-                    a.Position, track?.Artist, track?.DisplayTitle, a.ListenedSeconds, a.HintLevel, a.ArtistCorrect, a.TitleCorrect, a.Score, a.AnsweredAt);
+                    a.Position, track?.Artist, track?.DisplayTitle, a.ListenedSeconds, a.ArtistCorrect, a.TitleCorrect, a.Score, a.AnsweredAt);
             }).ToList();
             return new GameExport(
                 row.Challenge.Date, row.Session.Status.ToString(), row.Session.StartedAt, row.Session.EndedAt, row.Session.TotalScore, answers);

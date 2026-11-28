@@ -9,12 +9,6 @@ namespace InSeconds.Api.Modules.Daily.Application;
 public sealed record DurationScoreResponse(decimal Seconds, int Score);
 
 /// <summary>
-/// Un niveau d'indice : quand il se débloque, ce qu'il révèle (<c>year</c>, <c>artistMasked</c>, que le front traduit en « Indice année »,
-/// « Indice artiste ») et ce qu'il coûte en pourcentage du score.
-/// </summary>
-public sealed record HintLevelResponse(int Level, decimal UnlockSeconds, string Kind, int PenaltyPercent);
-
-/// <summary>
 /// Les réglages publics du défi du jour, lus à chaud. <paramref name="RetryScorePercent"/> : le score de la seconde tentative en pourcentage de la première
 /// (0 : pas de seconde tentative).
 /// </summary>
@@ -23,17 +17,13 @@ public sealed record DailySettingsResponse(
     int TracksPerChallenge,
     IReadOnlyList<decimal> AllowedDurationsSeconds,
     IReadOnlyList<DurationScoreResponse> DurationScores,
-    IReadOnlyList<HintLevelResponse> Hints,
     int StreakFreezeEveryDays,
     int StreakFreezeMax,
     int RetryScorePercent);
 
 public static class GetDailySettingsEndpoint
 {
-    /// <summary>
-    /// <c>GET /api/daily/settings</c> : public. Les niveaux d'indice viennent des réglages **et** des fournisseurs d'indices : le front n'en
-    /// affiche jamais plus que le serveur n'en révèle.
-    /// </summary>
+    /// <summary><c>GET /api/daily/settings</c> : public.</summary>
     [WolverineGet("/api/daily/settings", OperationId = "getDailySettings")]
     public static DailySettingsResponse Get(DailyRules rules)
     {
@@ -43,7 +33,6 @@ public static class GetDailySettingsEndpoint
             options.EffectiveTracksPerChallenge,
             rules.AllowedDurations,
             options.EffectiveDurationScores.Select(d => new DurationScoreResponse(d.Seconds, d.Score)).ToList(),
-            rules.HintLevels.Select(l => new HintLevelResponse(l.Level, l.UnlockSeconds, l.KindName, l.PenaltyPercent)).ToList(),
             options.StreakFreezeEveryDays,
             options.StreakFreezeMax,
             rules.RetryScorePercent);

@@ -17,6 +17,5 @@ public sealed record GameExport(
 
 /// <param name="Artist">L'artiste attendu, rien si le morceau a été supprimé du catalogue depuis.</param>
 /// <param name="Title">Le titre attendu, tel que montré au joueur.</param>
-/// <param name="HintLevel">0 sans indice, 1 année, 2 artiste masqué.</param>
 public sealed record GameTrackExport(
-    int Position, string? Artist, string? Title, decimal ListenedSeconds, int HintLevel, bool ArtistFound, bool TitleFound, int Score, DateTimeOffset? AnsweredAt);
+    int Position, string? Artist, string? Title, decimal ListenedSeconds, bool ArtistFound, bool TitleFound, int Score, DateTimeOffset? AnsweredAt);

@@ -73,12 +73,9 @@ public sealed class DailySession
     /// <summary>Le plancher d'écoute du morceau verrouillé : ce que le serveur a vu (jamais ce que le client annonce).</summary>
     public decimal? CurrentListenedSeconds { get; private set; }
 
-    /// <summary>Le niveau d'indice le plus haut révélé sur le morceau verrouillé.</summary>
-    public short CurrentHintLevel { get; private set; }
-
     /// <summary>
     /// Les réponses fausses déjà données sur le morceau verrouillé (0 ou 1) : après une réponse qui n'est pas complète, le joueur a **une** seconde tentative,
-    /// définitive. Jamais envoyé par le client, comme le niveau d'indice.
+    /// définitive. Jamais envoyé par le client.
     /// </summary>
     public short CurrentFailedAttempts { get; private set; }
 
@@ -110,16 +107,12 @@ public sealed class DailySession
         return position == NextPosition ? TrackTurn.Current : TrackTurn.NotYet;
     }
 
-    /// <summary>
-    /// La manche du morceau en cours, reconstituée de la partie. Le niveau d'indice relu est **borné à la politique** :
-    /// un réglage qui perdrait un niveau ne laisse pas un niveau inexistant pénaliser le score.
-    /// </summary>
-    public TrackRound RoundOfCurrentTrack(HintPolicy policy)
+    /// <summary>La manche du morceau en cours, reconstituée de la partie.</summary>
+    public TrackRound RoundOfCurrentTrack()
     {
-        ArgumentNullException.ThrowIfNull(policy);
         if (CurrentPosition != NextPosition)
             return TrackRound.Start;
-        return TrackRound.Resume(CurrentListenedSeconds ?? 0, Math.Min(CurrentHintLevel, policy.LevelCount));
+        return TrackRound.Resume(CurrentListenedSeconds ?? 0);
     }
 
     /// <summary>Les tentatives déjà ratées sur le morceau en cours (0 si le verrou est sur un autre morceau).</summary>
@@ -145,13 +138,12 @@ public sealed class DailySession
     public bool CanOfferRetry(bool retryEnabled, decimal claimedSeconds, bool blankAnswer, bool foundBoth) =>
         retryEnabled && FailedAttemptsOfCurrentTrack == 0 && claimedSeconds > 0 && !blankAnswer && !foundBoth;
 
-    /// <summary>Enregistre la manche du morceau en cours (ce que <see cref="TrackRound.Listen"/> ou <see cref="TrackRound.RevealHint"/> a rendu).</summary>
+    /// <summary>Enregistre la manche du morceau en cours (ce que <see cref="TrackRound.Listen"/> a rendu).</summary>
     public void KeepRound(TrackRound round)
     {
         ArgumentNullException.ThrowIfNull(round);
         CurrentPosition = (short)NextPosition;
         CurrentListenedSeconds = round.ListenedSeconds;
-        CurrentHintLevel = (short)round.HintLevel;
     }
 
     /// <summary>
@@ -199,7 +191,6 @@ public sealed class DailySession
     {
         CurrentPosition = null;
         CurrentListenedSeconds = null;
-        CurrentHintLevel = 0;
         CurrentFailedAttempts = 0;
     }
 }
@@ -218,7 +209,6 @@ public sealed class SessionAnswer
         Position = position;
         ListenedSeconds = outcome.ListenedSeconds;
         WasExtended = wasExtended;
-        HintLevel = (short)outcome.HintLevelUsed;
         ArtistCorrect = outcome.ArtistCorrect;
         TitleCorrect = outcome.TitleCorrect;
         Score = score;
@@ -232,8 +222,6 @@ public sealed class SessionAnswer
     public decimal ListenedSeconds { get; private set; }
 
     public bool WasExtended { get; private set; }
-
-    public short HintLevel { get; private set; }
 
     public bool ArtistCorrect { get; private set; }
 

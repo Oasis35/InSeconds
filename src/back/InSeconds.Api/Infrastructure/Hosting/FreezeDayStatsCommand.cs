@@ -48,7 +48,7 @@ public static class FreezeDayStatsCommand
 
         // Le contrôle de démarrage de l'API (DailyOptionsStartupCheck) : une photo est figée pour de bon, jamais avec des réglages incohérents.
         var rules = host.Services.GetRequiredService<DailyRules>();
-        var problems = DailyOptionsChecks.Problems(rules.Options, rules.MaxHintLevel);
+        var problems = DailyOptionsChecks.Problems(rules.Options);
         if (problems.Count > 0)
         {
             foreach (var problem in problems)

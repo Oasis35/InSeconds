@@ -214,7 +214,7 @@ public sealed class RunSession
 
     /// <summary>La manche Gameplay du morceau en cours, reconstituée de la partie (pas d'indice).</summary>
     public TrackRound RoundOfCurrentTrack() =>
-        CurrentPosition == NextPosition ? TrackRound.Resume(CurrentListenedSeconds ?? 0, 0) : TrackRound.Start;
+        CurrentPosition == NextPosition ? TrackRound.Resume(CurrentListenedSeconds ?? 0) : TrackRound.Start;
 
     /// <summary>L'extrait du morceau en cours part vers le navigateur : seul le premier envoi compte (une reprise ou une adresse fraîche ne remet rien à zéro).</summary>
     public void ServeCurrent(DateTimeOffset now)
