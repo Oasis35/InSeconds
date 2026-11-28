@@ -9,7 +9,7 @@ namespace InSeconds.IntegrationTests.Daily;
 /// Le profil d'oreille (<c>GET /api/daily/profile</c>) : les chiffres du joueur dans la durée, comparés à tous les joueurs seulement au-dessus des
 /// seuils ; jamais les parties d'un autre.
 /// </summary>
-public class EarProfileTests(PostgresFixture postgres) : IAsyncLifetime
+public class EarProfileEndpointTests(PostgresFixture postgres) : IAsyncLifetime
 {
     private GameApi _game = null!;
 
