@@ -4,6 +4,7 @@ import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { httpErrorReportingInterceptor } from './http-error-reporting.interceptor';
 import { ErrorReportingService } from '../errors/error-reporting.service';
+import { flushMicrotasks } from '../testing/settle';
 
 describe('httpErrorReportingInterceptor', () => {
   let http: HttpClient;
@@ -30,8 +31,6 @@ describe('httpErrorReportingInterceptor', () => {
 
   afterEach(() => httpMock.verify());
 
-  /** Laisse la relecture asynchrone du corps d'erreur se terminer. */
-  const flushMicrotasks = () => new Promise(resolve => setTimeout(resolve));
 
   it('remonte un 500 avec le code d\'erreur de l\'API et re-propage l\'erreur', async () => {
     let propagated = false;

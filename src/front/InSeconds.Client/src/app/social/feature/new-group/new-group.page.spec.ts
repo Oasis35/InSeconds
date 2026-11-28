@@ -5,6 +5,7 @@ import { ShareService } from '../../../core/share/share.service';
 import { FakeSocialApi, provideFakeSocialApi } from '../../data-access/testing/fake-social-api';
 import { signIn } from '../testing/session';
 import { NewGroupPage } from './new-group.page';
+import { flushMicrotasks } from '../../../core/testing/settle';
 
 describe('NewGroupPage', () => {
   let api: FakeSocialApi;
@@ -30,7 +31,7 @@ describe('NewGroupPage', () => {
       input.value = name;
       input.dispatchEvent(new Event('input'));
       el.querySelector<HTMLFormElement>('[data-testid="new-group"]')!.dispatchEvent(new Event('submit'));
-      await new Promise(resolve => setTimeout(resolve));
+      await flushMicrotasks();
       await fixture.whenStable();
       fixture.detectChanges();
     };

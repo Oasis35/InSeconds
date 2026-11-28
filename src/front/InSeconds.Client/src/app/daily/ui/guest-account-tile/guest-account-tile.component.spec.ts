@@ -27,12 +27,11 @@ describe('GuestAccountTileComponent', () => {
     expect(dismissed).toHaveBeenCalledTimes(1);
   });
 
-  it('série perdue : sans croix, au singulier puis au pluriel', () => {
-    const one = render('lost', 1).el;
-    expect(one.querySelector('[data-testid="guest-tile-dismiss"]')).toBeNull();
-    expect(one.textContent).toContain('daily.guestTile.lost.title.one');
-    TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ providers: [provideRouter([]), provideTranslateService()] });
-    expect(render('lost', 9).el.textContent).toContain('daily.guestTile.lost.title.other');
+  it('série perdue : sans croix', () => {
+    expect(render('lost', 1).el.querySelector('[data-testid="guest-tile-dismiss"]')).toBeNull();
+  });
+
+  it.each([[1, 'one'], [9, 'other']] as const)('série perdue de %s jour(s) : le titre au cas « %s »', (streak, plural) => {
+    expect(render('lost', streak).el.textContent).toContain(`daily.guestTile.lost.title.${plural}`);
   });
 });

@@ -6,6 +6,8 @@ import { poolTrack as track } from '../../../domain/testing/pool-track.fixture';
 import { PoolTableComponent } from './pool-table.component';
 
 describe('PoolTableComponent', () => {
+  /** Un bouton d'action de la ligne, par son repère de test (pas par son glyphe). */
+  const action = (r: HTMLElement, id: string) => r.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`) ?? undefined;
   function render(tracks: PoolTrack[], inputs: Partial<{
     selectedIds: number[]; togglingIds: number[]; sort: PoolSort | null; loading: boolean; totalCount: number;
     page: number; pages: number; filteredCount: number; view: string;
@@ -107,7 +109,7 @@ describe('PoolTableComponent', () => {
     it('un morceau jamais utilisé se supprime, sans bouton de désactivation', () => {
       const { row, button } = render([track()]);
 
-      expect(button(row(), '🗑')).toBeDefined();
+      expect(action(row(), 'delete-track')).toBeDefined();
       expect(button(row(), 'admin.pool.disable')).toBeUndefined();
       expect(row().textContent).toContain('admin.pool.neverPlayed');
     });
@@ -115,7 +117,7 @@ describe('PoolTableComponent', () => {
     it('un morceau utilisé se désactive à la place de la suppression', () => {
       const { row, button } = render([track({ usageCount: 2 })]);
 
-      expect(button(row(), '🗑')).toBeUndefined();
+      expect(action(row(), 'delete-track')).toBeUndefined();
       expect(button(row(), 'admin.pool.disable')?.disabled).toBe(false);
       expect(row().querySelector('[data-testid="usage-badge"]')?.textContent).toContain('admin.pool.views.daily');
     });
@@ -126,7 +128,7 @@ describe('PoolTableComponent', () => {
         usages: [{ mode: 'autre', usageCount: 0, lastUsedDate: null, unlockDate: null, inTodayChallenge: false, answerCount: 0, foundCount: 0 }],
       })]);
 
-      expect(button(row(), '🗑')).toBeUndefined();
+      expect(action(row(), 'delete-track')).toBeUndefined();
       expect(button(row(), 'admin.pool.disable')?.disabled).toBe(false);
       expect(row().querySelector('[data-testid="usage-badge"]')?.textContent).toContain('autre');
     });
@@ -152,22 +154,22 @@ describe('PoolTableComponent', () => {
     });
 
     it('le renommage reste possible sur toutes les lignes, défi du jour compris', () => {
-      const { row, button } = render([track({ usageCount: 1, inTodayChallenge: true })]);
+      const { row } = render([track({ usageCount: 1, inTodayChallenge: true })]);
 
-      expect(button(row(), '✎')?.disabled).toBe(false);
+      expect(action(row(), 'edit-track')?.disabled).toBe(false);
     });
 
     it('émet le morceau pour chaque action', () => {
-      const { component, row, button } = render([track({ id: 3 })]);
+      const { component, row } = render([track({ id: 3 })]);
       const listen = vi.fn(), edit = vi.fn(), remove = vi.fn(), toggle = vi.fn();
       component.listen.subscribe(listen);
       component.edit.subscribe(edit);
       component.delete.subscribe(remove);
       component.toggleSelection.subscribe(toggle);
 
-      button(row(), '▶')!.click();
-      button(row(), '✎')!.click();
-      button(row(), '🗑')!.click();
+      action(row(), 'listen-track')!.click();
+      action(row(), 'edit-track')!.click();
+      action(row(), 'delete-track')!.click();
       (row().querySelector('input[type="checkbox"]') as HTMLInputElement).click();
 
       expect(listen).toHaveBeenCalledWith(expect.objectContaining({ id: 3 }));
@@ -211,7 +213,7 @@ describe('PoolTableComponent', () => {
     });
 
     it('vue d\'un mode : ce que le mode en dit, sans extrait, statut, genre, case à cocher ni suppression', () => {
-      const { row, button } = render([track({ lastUsedDate: '2026-10-05', unlockDate: '2026-11-04', usageCount: 3 })], { view: 'daily' });
+      const { row } = render([track({ lastUsedDate: '2026-10-05', unlockDate: '2026-11-04', usageCount: 3 })], { view: 'daily' });
 
       const cells = Array.from(row().querySelectorAll('td')).map(td => td.textContent?.trim());
       expect(cells).toHaveLength(7);
@@ -220,8 +222,8 @@ describe('PoolTableComponent', () => {
       expect(cells[4]).toBe('2026-11-04');
       expect(cells[5]).toBe('3');
       expect(row().querySelector('input[type="checkbox"]')).toBeNull();
-      expect(button(row(), '✎')).toBeUndefined();
-      expect(button(row(), '🗑')).toBeUndefined();
+      expect(action(row(), 'edit-track')).toBeUndefined();
+      expect(action(row(), 'delete-track')).toBeUndefined();
     });
 
     it('vue d\'un mode : dates vides et zéro apparition pour un morceau que ce mode n\'a pas joué', () => {
@@ -234,11 +236,11 @@ describe('PoolTableComponent', () => {
     });
 
     it('vue d\'un mode : « ↗ » demande à ouvrir le morceau dans le pool', () => {
-      const { component, row, button } = render([track({ id: 7 })], { view: 'daily' });
+      const { component, row } = render([track({ id: 7 })], { view: 'daily' });
       const open = vi.fn();
       component.openInPool.subscribe(open);
 
-      button(row(), '↗')!.click();
+      action(row(), 'open-in-pool')!.click();
 
       expect(open).toHaveBeenCalledWith(expect.objectContaining({ id: 7 }));
     });
